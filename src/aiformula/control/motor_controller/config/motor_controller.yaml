@@ -1,0 +1,37 @@
+/**:
+  ros__parameters:
+    publish_timer_loop_duration: 0.01
+
+    # 0: ideal diff-drive, 1: copied BKUP tuning, 2: live RPM correction.
+    controller_state: 1
+
+    model_path: ""
+    velocity_body_topic: "/aiformula_sensing/vectornav/velocity_body"
+    odom_topic: "/aiformula_sensing/gyro_odometry_publisher/odom"
+    joy_topic: "/aiformula_control/joy_node/joy"
+    state0_button_triangle: 2
+    state1_button_circle: 1
+    state2_button_cross: 0
+    debug_topic: "/aiformula_control/motor_controller/correction_debug"
+    rpm_weight_topic: "/aiformula_control/correction_controller_trainer/rpm_weights"
+    rpm_correction_enabled: true
+    rpm_fallback_to_body_correction: false
+
+    history_sample_period_sec: 0.05
+    history_span_tolerance_sec: 0.30
+    # RPM correction keeps the model loaded in mode 2. These parameters decide when
+    # recent history is good enough to apply it, without dropping out on callback jitter.
+    rpm_min_history_samples: 4
+    rpm_history_window_sec: 0.0
+    rpm_history_max_sample_gap_sec: 0.50
+    rpm_hold_last_valid_sec: 0.50
+    rpm_hold_command_v_tolerance: 0.50
+    rpm_hold_command_omega_tolerance: 0.20
+    # Set <= 0 to disable linear input command limiting. Applies to all controller states.
+    max_command_v: 4.0
+    max_corrected_v: 3.0
+    max_corrected_omega: 1.0
+    stop_deadband: 0.0001
+
+    debug_compare_enabled: true
+    debug_csv_path: "correction_control_debug.csv"

@@ -1,0 +1,79 @@
+traffic_light_gate_node:
+  ros__parameters:
+    red_stable_frames: 3
+    green_stable_frames: 3
+    publish_rate_hz: 10.0
+    traffic_light_state_topic: /traffic_light/state
+    odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
+    semantic_constraints_topic: /semantic_constraints
+    theta_ref_topic: /theta_ref
+
+local_costmap_node:
+  ros__parameters:
+    low_cost: 20
+    unknown_cost: 180
+    lethal_cost: 255
+    red_forward_center_x_ratio: 0.5
+    red_forward_width_ratio: 0.20
+    red_forward_top_y_ratio: 0.25
+    red_forward_bottom_y_ratio: 0.62
+    mask_stale_timeout_sec: 0.5
+    publish_rate_hz: 10.0
+    fallback_height: 120
+    fallback_width: 160
+    road_mask_topic: /aiformula_perception/road_detector/mask_image
+    offroad_mask_topic: /semantic_perception/offroad_mask
+    lane_guidance_mask_topic: /lane_guidance_mask
+    semantic_constraints_topic: /semantic_constraints
+    local_costmap_topic: /local_semantic_costmap
+    local_costmap_debug_topic: /local_semantic_costmap_debug
+
+local_primitive_planner_node:
+  ros__parameters:
+    planner_rate_hz: 10.0
+    primitive_duration_sec: 1.0
+    small_left_w: 0.30
+    medium_left_w: 0.55
+    strong_left_w: 0.85
+    slow_forward_v: 0.15
+    diversion_v: 0.08
+    heading_weight: 0.8
+    smoothness_weight: 0.4
+    curvature_weight: 0.3
+    semantic_cost_weight: 1.0
+    progress_weight: 0.25
+    local_costmap_topic: /local_semantic_costmap
+    semantic_constraints_topic: /semantic_constraints
+    theta_ref_topic: /theta_ref
+    odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
+    selected_primitive_topic: /selected_primitive
+    selected_path_debug_topic: /selected_path_debug
+    planner_cmd_vel_topic: /planner_cmd_vel
+    planner_score_debug_topic: /planner_score_debug
+    primitive_markers_topic: /semantic_planner/primitive_markers
+    marker_frame_id: base_footprint
+    marker_forward_scale_m: 5.0
+    marker_lateral_scale_m: 3.0
+
+lane_recovery_gate_node:
+  ros__parameters:
+    stable_required_frames: 5
+    min_confidence: 0.65
+    horizontal_angle_threshold_deg: 15.0
+    max_center_jump_ratio: 0.18
+    lane_result_topic: /lane_result
+    semantic_constraints_topic: /semantic_constraints
+    lane_recovery_state_topic: /lane_recovery_state
+
+safety_supervisor_node:
+  ros__parameters:
+    max_linear_velocity: 0.25
+    max_angular_velocity: 1.2
+    costmap_stale_timeout_sec: 0.5
+    allow_cmd_clamping: true
+    planner_cmd_vel_topic: /planner_cmd_vel
+    local_costmap_topic: /local_semantic_costmap
+    semantic_constraints_topic: /semantic_constraints
+    selected_primitive_topic: /selected_primitive
+    output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel
+    safety_state_topic: /safety_state

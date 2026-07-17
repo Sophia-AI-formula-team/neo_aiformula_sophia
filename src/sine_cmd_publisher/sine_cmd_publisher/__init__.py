@@ -1,0 +1,1 @@
+"""Sine command publisher package."""

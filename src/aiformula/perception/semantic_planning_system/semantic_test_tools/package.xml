@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>semantic_test_tools</name>
+  <version>0.1.0</version>
+  <description>Fake publishers and demos for semantic local planning.</description>
+  <maintainer email="user@example.com">ROS2 Light Avoidance</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>semantic_planner_core</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
