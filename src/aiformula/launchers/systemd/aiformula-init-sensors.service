@@ -1,0 +1,13 @@
+[Unit]
+Description=AI Formula sensor initialization
+After=multi-user.target network-online.target zed_x_daemon.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/workspace/src/aiformula/launchers/shellscript/init_sensors.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
