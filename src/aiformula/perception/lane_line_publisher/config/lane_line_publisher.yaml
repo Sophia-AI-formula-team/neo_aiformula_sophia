@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    lane_line_publisher:
+      queue_size: 10    # queue size for subscribers and publishers
+      roi:              # interest region in the vehicle frame [m]
+        xmin: 0.0
+        # xmax: 15.0
+        xmax: 10.0
+        ymin: -4.0
+        ymax: 4.0
+      spacing: 0.5      # spacing between published lane line points [m]
+    
+    lane_pixel_finder:
+      min_area: 100     # minimum connected component area for mask noise removal [pix^2]
+      tolerance: 10     # tolerance to relax lane pixel search bounds [pix]
+      image_component_merge_gap_px: 20     # image-space gap to pre-merge raw components [pix]
+      vehicle_component_max_gap_x_m: 0.8   # max forward gap to merge/split lane candidates [m]
+      vehicle_component_max_gap_y_m: 0.35  # max lateral jump to merge/split lane candidates [m]

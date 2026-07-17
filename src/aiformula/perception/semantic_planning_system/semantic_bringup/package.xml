@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>semantic_bringup</name>
+  <version>0.1.0</version>
+  <description>Launch and configuration for the semantic local planning prototype.</description>
+  <maintainer email="user@example.com">ROS2 Light Avoidance</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>semantic_gate_ros</exec_depend>
+  <exec_depend>semantic_costmap_ros</exec_depend>
+  <exec_depend>semantic_local_planner_ros</exec_depend>
+  <exec_depend>semantic_lane_recovery_ros</exec_depend>
+  <exec_depend>semantic_safety_ros</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

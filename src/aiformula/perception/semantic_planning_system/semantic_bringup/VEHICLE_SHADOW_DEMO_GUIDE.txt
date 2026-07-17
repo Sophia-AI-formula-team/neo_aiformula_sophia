@@ -1,0 +1,249 @@
+Semantic Planning Vehicle Shadow Demo Guide
+===========================================
+
+Purpose
+-------
+
+This demo is designed for vehicle-side validation when the robot cannot or
+should not move. It runs the semantic mask adapter, semantic costmap, local
+primitive planner, lane recovery gate, and safety supervisor, but publishes the
+final supervised velocity to a shadow topic:
+
+  /semantic_demo/cmd_vel_shadow
+
+It does not publish to the real motor-controller topic:
+
+  /aiformula_control/game_pad/cmd_vel
+
+
+Source Tree Placement
+---------------------
+
+The folder can be placed under the AIFormula repository like this:
+
+  aiformula/
+    perception/
+      semantic_planning_system/
+        semantic_planner_core/
+        semantic_gate_ros/
+        semantic_costmap_ros/
+        semantic_local_planner_ros/
+        semantic_lane_recovery_ros/
+        semantic_safety_ros/
+        semantic_bringup/
+        semantic_test_tools/
+
+colcon will recursively discover the package.xml files inside
+semantic_planning_system. The semantic_planning_system folder itself does not
+need a package.xml.
+
+
+Build
+-----
+
+From the ROS2 workspace root:
+
+  colcon build --symlink-install --packages-up-to semantic_bringup
+  source install/setup.bash
+
+
+Launch The Vehicle Shadow Demo
+------------------------------
+
+Start the normal vehicle camera/odometry stack first, for example the existing
+AIFormula launch that provides:
+
+  /aiformula_sensing/zed_node/left_image/undistorted
+  /aiformula_sensing/gyro_odometry_publisher/odom
+
+Then run:
+
+  ros2 launch semantic_bringup semantic_vehicle_shadow_demo.launch.py
+
+
+Launch Sequence
+---------------
+
+The launch file starts these nodes:
+
+1. color_semantic_mask_node
+   Package: semantic_costmap_ros
+   Input:
+     /aiformula_sensing/zed_node/left_image/undistorted
+   Outputs:
+     /semantic_perception/road_mask
+     /semantic_perception/offroad_mask
+     /semantic_perception/color_mask_debug
+   Role:
+     Uses simple color thresholds. Black/dark lower-image pixels become the
+     road mask. Green middle/top-to-lower image pixels become the
+     offroad/lethal mask.
+
+2. red_pixel_traffic_light_adapter_node
+   Package: semantic_gate_ros
+   Input:
+     /red_pixels_count
+   Output:
+     /traffic_light/state
+   Role:
+     Converts a red-pixel count into red/unknown state. In the shadow config it
+     stays silent if /red_pixels_count is missing, so manual red-state testing
+     can use /traffic_light/state directly.
+
+3. traffic_light_gate_node
+   Package: semantic_gate_ros
+   Inputs:
+     /traffic_light/state
+     /aiformula_sensing/gyro_odometry_publisher/odom
+   Outputs:
+     /semantic_constraints
+     /theta_ref
+   Role:
+     Applies stable red/green counters. On stable red, saves theta_ref and
+     enables red_forward_forbidden and diversion_active.
+
+4. local_costmap_node
+   Package: semantic_costmap_ros
+   Inputs:
+     /semantic_perception/road_mask
+     /semantic_perception/offroad_mask
+     /semantic_constraints
+   Outputs:
+     /local_semantic_costmap
+     /local_semantic_costmap_debug
+   Role:
+     Builds the image-space semantic costmap. Road is low cost, unknown is
+     medium-high cost, green/offroad and the middle-to-upper red forward ROI
+     are lethal.
+
+5. local_primitive_planner_node
+   Package: semantic_local_planner_ros
+   Inputs:
+     /local_semantic_costmap
+     /semantic_constraints
+     /theta_ref
+     /aiformula_sensing/gyro_odometry_publisher/odom
+   Outputs:
+     /selected_primitive
+     /selected_path_debug
+     /planner_cmd_vel
+     /planner_score_debug
+     /semantic_planner/primitive_markers
+   Role:
+     Scores STOP, left-diversion, and slow-forward primitives. Red forward and
+     lethal cost are hard constraints. theta_ref is only a soft heading prior.
+
+6. lane_recovery_gate_node
+   Package: semantic_lane_recovery_ros
+   Inputs:
+     /lane_result
+     /semantic_constraints
+   Output:
+     /lane_recovery_state
+   Role:
+     Prevents lane detection from directly taking over during diversion.
+
+7. safety_supervisor_node
+   Package: semantic_safety_ros
+   Inputs:
+     /planner_cmd_vel
+     /local_semantic_costmap
+     /semantic_constraints
+     /selected_primitive
+   Outputs:
+     /semantic_demo/cmd_vel_shadow
+     /safety_state
+   Role:
+     Final safety check. In this demo, output is shadow-only and cannot move
+     the robot.
+
+
+RViz2 Visualization
+-------------------
+
+Start RViz2:
+
+  rviz2
+
+Suggested displays:
+
+1. Image
+   Topic:
+     /semantic_perception/color_mask_debug
+   Use this to verify that black road and green forbidden regions are detected.
+
+2. Image
+   Topic:
+     /local_semantic_costmap_debug
+   Use this to verify the costmap generated from the masks.
+
+3. MarkerArray
+   Topic:
+     /semantic_planner/primitive_markers
+   Fixed frame:
+     base_footprint
+   Meaning:
+     Green line: selected primitive.
+     Blue line: valid but not selected primitive.
+     Red line: invalid primitive.
+     Text label: primitive name and reason.
+
+4. Path
+   Topic:
+     /selected_path_debug
+   Note:
+     This path is still normalized image-space debug data. The MarkerArray is
+     easier to read in RViz because it maps image coordinates to a simple local
+     base_footprint plane.
+
+
+Manual Red-Gate Test
+--------------------
+
+If /red_pixels_count is not available, manually force a red state:
+
+  ros2 topic pub /traffic_light/state std_msgs/msg/String "{data: red}" -r 5
+
+Then inspect:
+
+  ros2 topic echo /semantic_constraints
+  ros2 topic echo /selected_primitive
+  ros2 topic echo /planner_score_debug
+  ros2 topic echo /safety_state
+  ros2 topic echo /semantic_demo/cmd_vel_shadow
+
+
+Expected Static-Vehicle Behavior
+--------------------------------
+
+When masks are valid:
+
+  - /semantic_perception/color_mask_debug should show blue overlay on black road
+    and red overlay on green forbidden regions, including the middle/top fence
+    area if it is visible.
+  - /local_semantic_costmap_debug should update continuously.
+  - /semantic_planner/primitive_markers should update continuously in RViz2.
+  - /selected_primitive should become STOP if no safe moving primitive exists.
+  - Under red gate, SLOW_FORWARD should be invalid.
+
+When masks are missing or stale:
+
+  - local_costmap_node publishes a conservative high-cost costmap.
+  - safety_supervisor_node should stop or keep the shadow command at zero.
+
+
+Important Safety Note
+---------------------
+
+The shadow demo does not command the vehicle. To drive the robot in the future,
+change safety_supervisor_node output_cmd_vel_topic from:
+
+  /semantic_demo/cmd_vel_shadow
+
+to:
+
+  /aiformula_control/game_pad/cmd_vel
+
+Do this only after verifying masks, constraints, selected primitives, and
+safety behavior, and make sure no other controller is publishing to the same
+final velocity topic.
