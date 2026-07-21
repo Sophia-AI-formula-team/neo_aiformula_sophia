@@ -562,10 +562,18 @@ class MotorController(Node):
         return float(np.clip(value, -limit, limit))
 
     def twist_callback(self, msg: Twist) -> None:
-        base_v = self.clamp_command(float(msg.linear.x), self.max_command_v)
+        raw_v = float(msg.linear.x)
+        base_v = (
+            raw_v
+            if self.controller_state == self.STATE_BKUP
+            else self.clamp_command(raw_v, self.max_command_v)
+        )
         base_omega = float(msg.angular.z)
         now_sec = self.get_clock().now().nanoseconds * 1.0e-9
-        is_stop_command = abs(base_v) <= self.stop_deadband and abs(base_omega) <= self.stop_deadband
+        if self.controller_state == self.STATE_BKUP:
+            is_stop_command = base_v == 0.0 and base_omega == 0.0
+        else:
+            is_stop_command = abs(base_v) <= self.stop_deadband and abs(base_omega) <= self.stop_deadband
 
         self.append_latest_response_to_history(now_sec)
         history_ready, history_span_sec = self.history_ready()
@@ -573,11 +581,17 @@ class MotorController(Node):
         if self.controller_state == self.STATE_CORRECTED and self.rpm_correction_enabled and self.rpm_model is not None:
             self.append_latest_response_to_rpm_history(base_v, base_omega, now_sec)
             rpm_history_ready, _ = self.rpm_history_ready()
-        model_v, model_omega, params, used_model_estimate = self.correct_command(
-            base_v,
-            base_omega,
-            history_ready,
-        )
+        if self.controller_state == self.STATE_BKUP:
+            model_v = base_v
+            model_omega = base_omega
+            params = np.asarray([1.0, 1.0, 0.0, 0.0], dtype=np.float32)
+            used_model_estimate = False
+        else:
+            model_v, model_omega, params, used_model_estimate = self.correct_command(
+                base_v,
+                base_omega,
+                history_ready,
+            )
 
         if is_stop_command:
             applied_v = 0.0
@@ -933,12 +947,12 @@ class MotorController(Node):
         return right_rpm, left_rpm, self.rpm_latest_params
 
     def cmd_to_can_rpms(self, linear_velocity: float, angular_velocity: float, state: int) -> tuple[float, float]:
+        if state == self.STATE_BKUP:
+            return self.bkup_cmd_to_can_rpms(linear_velocity, angular_velocity)
         if abs(linear_velocity) <= self.stop_deadband and abs(angular_velocity) <= self.stop_deadband:
             return 0.0, 0.0
         if state == self.STATE_IDEAL:
             return self.ideal_cmd_to_can_rpms(linear_velocity, angular_velocity)
-        if state == self.STATE_BKUP:
-            return self.bkup_cmd_to_can_rpms(linear_velocity, angular_velocity)
         if state == self.STATE_CORRECTED:
             return self.corrected_cmd_to_can_rpms(linear_velocity, angular_velocity)
         raise ValueError(f"Unsupported controller state: {state}")
@@ -952,35 +966,33 @@ class MotorController(Node):
         return self.ideal_cmd_to_can_rpms(linear_velocity, angular_velocity)
 
     def bkup_cmd_to_can_rpms(self, linear_velocity: float, angular_velocity: float) -> tuple[float, float]:
-        omega_cmd = self.bkup_inverse_sigmoid_omega(angular_velocity)
-        right_wheel, left_wheel = self.cmd_to_wheel_rad_per_sec(linear_velocity, omega_cmd)
-        right_cmd = self.apply_motor_gain_offset(right_wheel, gain=0.84, offset=2.81)
-        left_cmd = self.apply_motor_gain_offset(left_wheel, gain=0.844, offset=2.81)
-        scale = 60.0 / (2.0 * math.pi)
-        return right_cmd * scale * self.gear_ratio, left_cmd * scale * self.gear_ratio
+        wheel_angular_velocities = np.array(
+            [
+                (linear_velocity / (self.diameter * 0.5))
+                + (self.tread / self.diameter) * angular_velocity,
+                (linear_velocity / (self.diameter * 0.5))
+                - (self.tread / self.diameter) * angular_velocity,
+            ]
+        )
+        a_left = 0.834
+        w0_left = 2.76
+        a_right = 0.844
+        w0_right = 2.81
+        wL_cmd = np.sign(wheel_angular_velocities[0]) * (
+            abs(wheel_angular_velocities[0]) / a_left + w0_left
+        )
+        wR_cmd = np.sign(wheel_angular_velocities[1]) * (
+            abs(wheel_angular_velocities[1]) / a_right + w0_right
+        )
+        minute_to_second = 60.0
+        rpm_left = (wL_cmd * (minute_to_second / (2.0 * np.pi))) * self.gear_ratio
+        rpm_right = (wR_cmd * (minute_to_second / (2.0 * np.pi))) * self.gear_ratio
+        return float(rpm_left), float(rpm_right)
 
     def cmd_to_wheel_rad_per_sec(self, linear_velocity: float, angular_velocity: float) -> tuple[float, float]:
         right = (linear_velocity / (self.diameter * 0.5)) + (self.tread / self.diameter) * angular_velocity
         left = (linear_velocity / (self.diameter * 0.5)) - (self.tread / self.diameter) * angular_velocity
         return float(right), float(left)
-
-    def bkup_inverse_sigmoid_omega(self, omega_des: float) -> float:
-        if abs(omega_des) <= self.stop_deadband:
-            return 0.0
-        if omega_des >= 0.0:
-            return self.inv_sigmoid(omega_des, L=1.53908994, k=3.15496243, x0=3.36664054, c=-0.0621119)
-        return self.inv_sigmoid(omega_des, L=1.68283261, k=2.91627673, x0=-3.22124235, c=1.6954783)
-
-    @staticmethod
-    def inv_sigmoid(y: float, L: float, k: float, x0: float, c: float) -> float:
-        eps = 1.0e-6
-        y_clamped = np.clip(y, -c + eps, L - c - eps)
-        return float(x0 - (1.0 / k) * np.log(L / (y_clamped + c) - 1.0))
-
-    def apply_motor_gain_offset(self, wheel_rad_per_sec: float, gain: float, offset: float) -> float:
-        if abs(wheel_rad_per_sec) <= self.stop_deadband:
-            return 0.0
-        return float(np.sign(wheel_rad_per_sec) * (abs(wheel_rad_per_sec) / gain + offset))
 
     def make_debug_row(
         self,
