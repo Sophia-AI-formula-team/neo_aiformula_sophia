@@ -95,9 +95,6 @@ struct DynamicRoiConfig {
     int min_component_pixels = 180;
     double min_component_row_span_ratio = 0.05;
     int min_roi_component_area = 50;
-    int image_component_merge_gap_px = 20;
-    double vehicle_component_max_gap_x_m = 0.8;
-    double vehicle_component_max_gap_y_m = 0.35;
     double near_field_start_ratio = 0.78;
     double min_projected_line_span_m = 1.0;
     int min_published_points = 3;
@@ -151,13 +148,6 @@ struct SideResult {
     int lost_count = 0;
 };
 
-struct LaneCandidate {
-    std::vector<cv::Point> component_pixels;
-    std::vector<cv::Point> path_pixels;
-    std::vector<Eigen::Vector3d> vehicle_points;
-    double score = std::numeric_limits<double>::infinity();
-};
-
 struct FrameResult {
     cv::Mat cleaned_mask;
     std::vector<cv::Point> global_roi_polygon;
@@ -170,10 +160,6 @@ std::unique_ptr<DynamicRoiProcessor> g_dynamic_roi_processor;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_dynamic_roi_image_pub;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_linear_fit_image_pub;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_vehicle_fit_image_pub;
-
-std::vector<Eigen::Vector3d> pixelsToVehiclePoints(const std::vector<cv::Point>& pixels,
-                                                   const cv::Mat& inverse_camera_matrix,
-                                                   const tf2::Transform& vehicle_T_camera);
 
 int clampInt(const int value, const int low, const int high) { return std::max(low, std::min(value, high)); }
 
@@ -461,10 +447,7 @@ double rowCoverageRatio(const std::vector<cv::Point>& pixels, const int rows, co
 bool populateComponentSupportMetrics(SideResult& result, const std::vector<cv::Point>& pixels, const cv::Size& image_size,
                                      const DynamicRoiConfig& cfg) {
     const int rows = image_size.height;
-    const int min_component_pixels = std::max(
-        cfg.lane_path_min_points,
-        static_cast<int>(std::lround(static_cast<double>(cfg.min_component_pixels) * imageWidthScale(image_size.width))));
-    if (static_cast<int>(pixels.size()) < min_component_pixels) {
+    if (static_cast<int>(pixels.size()) < cfg.min_component_pixels) {
         result.status = "too_few_component_pixels";
         return false;
     }
@@ -660,318 +643,66 @@ std::vector<cv::Point> extractLanePath(const std::vector<cv::Point>& pixels, con
     return path;
 }
 
-double rectDistanceSquared(const cv::Rect& lhs, const cv::Rect& rhs) {
-    const int lhs_right = lhs.x + lhs.width - 1;
-    const int rhs_right = rhs.x + rhs.width - 1;
-    const int lhs_bottom = lhs.y + lhs.height - 1;
-    const int rhs_bottom = rhs.y + rhs.height - 1;
-
-    int dx = 0;
-    if (lhs_right < rhs.x) {
-        dx = rhs.x - lhs_right;
-    } else if (rhs_right < lhs.x) {
-        dx = lhs.x - rhs_right;
-    }
-
-    int dy = 0;
-    if (lhs_bottom < rhs.y) {
-        dy = rhs.y - lhs_bottom;
-    } else if (rhs_bottom < lhs.y) {
-        dy = lhs.y - rhs_bottom;
-    }
-
-    return static_cast<double>(dx * dx + dy * dy);
-}
-
-bool componentsWithinImageGap(const std::vector<cv::Point>& lhs, const std::vector<cv::Point>& rhs,
-                              const double max_gap_squared) {
-    for (const auto& lhs_pixel : lhs) {
-        for (const auto& rhs_pixel : rhs) {
-            const double dx = static_cast<double>(lhs_pixel.x - rhs_pixel.x);
-            const double dy = static_cast<double>(lhs_pixel.y - rhs_pixel.y);
-            if (dx * dx + dy * dy <= max_gap_squared) return true;
-        }
-    }
-    return false;
-}
-
-int findComponentRoot(std::vector<int>& parent, const int index) {
-    if (parent[index] == index) return index;
-    parent[index] = findComponentRoot(parent, parent[index]);
-    return parent[index];
-}
-
-std::vector<std::vector<cv::Point>> mergeImageComponentsByDistance(
-    const std::vector<std::vector<cv::Point>>& components, const int max_gap_px) {
-    if (components.size() < 2 || max_gap_px <= 0) return components;
-
-    std::vector<cv::Rect> bounds;
-    bounds.reserve(components.size());
-    for (const auto& component : components) bounds.emplace_back(cv::boundingRect(component));
-
-    std::vector<int> parent(components.size());
-    std::iota(parent.begin(), parent.end(), 0);
-
-    const double max_gap_squared = static_cast<double>(max_gap_px * max_gap_px);
-    for (std::size_t lhs = 0; lhs < components.size(); ++lhs) {
-        for (std::size_t rhs = lhs + 1; rhs < components.size(); ++rhs) {
-            if (rectDistanceSquared(bounds[lhs], bounds[rhs]) > max_gap_squared) continue;
-            if (!componentsWithinImageGap(components[lhs], components[rhs], max_gap_squared)) continue;
-
-            const int lhs_root = findComponentRoot(parent, static_cast<int>(lhs));
-            const int rhs_root = findComponentRoot(parent, static_cast<int>(rhs));
-            if (lhs_root != rhs_root) parent[rhs_root] = lhs_root;
-        }
-    }
-
-    std::vector<int> root_to_merged_index(components.size(), -1);
-    std::vector<std::vector<cv::Point>> merged_components;
-    for (std::size_t index = 0; index < components.size(); ++index) {
-        const int root = findComponentRoot(parent, static_cast<int>(index));
-        if (root_to_merged_index[root] < 0) {
-            root_to_merged_index[root] = static_cast<int>(merged_components.size());
-            merged_components.emplace_back();
-        }
-
-        auto& merged = merged_components[static_cast<std::size_t>(root_to_merged_index[root])];
-        merged.insert(merged.end(), components[index].begin(), components[index].end());
-    }
-    return merged_components;
-}
-
-bool isFiniteVehiclePoint(const Eigen::Vector3d& point) {
-    return std::isfinite(point.x()) && std::isfinite(point.y()) && std::isfinite(point.z());
-}
-
-bool isVehicleContinuous(const Eigen::Vector3d& previous, const Eigen::Vector3d& current,
-                         const DynamicRoiConfig& cfg) {
-    if (!isFiniteVehiclePoint(previous) || !isFiniteVehiclePoint(current)) return false;
-    const double dx = std::abs(current.x() - previous.x());
-    const double dy = std::abs(current.y() - previous.y());
-    return dx <= cfg.vehicle_component_max_gap_x_m && dy <= cfg.vehicle_component_max_gap_y_m;
-}
-
-void sortLaneCandidateByVehicleX(LaneCandidate& candidate) {
-    if (candidate.path_pixels.size() != candidate.vehicle_points.size()) return;
-
-    std::vector<std::size_t> order(candidate.vehicle_points.size());
-    std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(), order.end(), [&candidate](const std::size_t lhs, const std::size_t rhs) {
-        const auto& lhs_point = candidate.vehicle_points[lhs];
-        const auto& rhs_point = candidate.vehicle_points[rhs];
-        if (std::abs(lhs_point.x() - rhs_point.x()) > 1e-9) return lhs_point.x() < rhs_point.x();
-        return lhs_point.y() < rhs_point.y();
-    });
-
-    std::vector<cv::Point> sorted_pixels;
-    std::vector<Eigen::Vector3d> sorted_points;
-    sorted_pixels.reserve(order.size());
-    sorted_points.reserve(order.size());
-    for (const auto index : order) {
-        sorted_pixels.emplace_back(candidate.path_pixels[index]);
-        sorted_points.emplace_back(candidate.vehicle_points[index]);
-    }
-    candidate.path_pixels = std::move(sorted_pixels);
-    candidate.component_pixels = candidate.path_pixels;
-    candidate.vehicle_points = std::move(sorted_points);
-}
-
-std::vector<LaneCandidate> splitPathByVehicleDistance(const std::vector<cv::Point>& path_pixels,
-                                                      const std::vector<Eigen::Vector3d>& vehicle_points,
-                                                      const DynamicRoiConfig& cfg) {
-    std::vector<LaneCandidate> candidates;
-    if (path_pixels.size() != vehicle_points.size()) return candidates;
-
-    std::vector<cv::Point> segment_pixels;
-    std::vector<Eigen::Vector3d> segment_points;
-    const auto flush_segment = [&]() {
-        if (static_cast<int>(segment_pixels.size()) >= cfg.lane_path_min_points) {
-            LaneCandidate candidate;
-            candidate.path_pixels = segment_pixels;
-            candidate.component_pixels = segment_pixels;
-            candidate.vehicle_points = segment_points;
-            sortLaneCandidateByVehicleX(candidate);
-            candidates.emplace_back(std::move(candidate));
-        }
-        segment_pixels.clear();
-        segment_points.clear();
-    };
-
-    for (std::size_t index = 0; index < path_pixels.size(); ++index) {
-        const auto& point = vehicle_points[index];
-        if (!isFiniteVehiclePoint(point)) {
-            flush_segment();
-            continue;
-        }
-        if (!segment_points.empty() && !isVehicleContinuous(segment_points.back(), point, cfg)) flush_segment();
-        segment_pixels.emplace_back(path_pixels[index]);
-        segment_points.emplace_back(point);
-    }
-    flush_segment();
-    return candidates;
-}
-
-double candidateMinX(const LaneCandidate& candidate) {
-    return candidate.vehicle_points.empty() ? std::numeric_limits<double>::infinity()
-                                            : candidate.vehicle_points.front().x();
-}
-
-int candidateBottomRow(const LaneCandidate& candidate) { return bottomRow(candidate.path_pixels); }
-
-bool canMergeVehicleCandidates(const LaneCandidate& previous, const LaneCandidate& current,
-                               const DynamicRoiConfig& cfg) {
-    if (previous.vehicle_points.empty() || current.vehicle_points.empty()) return false;
-    const std::array<Eigen::Vector3d, 2> previous_endpoints{previous.vehicle_points.front(),
-                                                            previous.vehicle_points.back()};
-    const std::array<Eigen::Vector3d, 2> current_endpoints{current.vehicle_points.front(),
-                                                           current.vehicle_points.back()};
-    for (const auto& previous_endpoint : previous_endpoints) {
-        for (const auto& current_endpoint : current_endpoints) {
-            if (!isFiniteVehiclePoint(previous_endpoint) || !isFiniteVehiclePoint(current_endpoint)) continue;
-            const double dx = std::abs(current_endpoint.x() - previous_endpoint.x());
-            const double dy = std::abs(current_endpoint.y() - previous_endpoint.y());
-            if (dx <= cfg.vehicle_component_max_gap_x_m && dy <= cfg.vehicle_component_max_gap_y_m) return true;
-        }
-    }
-    return false;
-}
-
-void appendLaneCandidate(LaneCandidate& target, const LaneCandidate& source) {
-    target.path_pixels.insert(target.path_pixels.end(), source.path_pixels.begin(), source.path_pixels.end());
-    target.component_pixels = target.path_pixels;
-    target.vehicle_points.insert(target.vehicle_points.end(), source.vehicle_points.begin(), source.vehicle_points.end());
-    sortLaneCandidateByVehicleX(target);
-}
-
-std::vector<LaneCandidate> mergeVehicleLaneSegments(std::vector<LaneCandidate> segments,
-                                                    const DynamicRoiConfig& cfg) {
-    for (auto& segment : segments) sortLaneCandidateByVehicleX(segment);
-    std::sort(segments.begin(), segments.end(), [](const auto& lhs, const auto& rhs) {
-        return candidateMinX(lhs) < candidateMinX(rhs);
-    });
-
-    std::vector<LaneCandidate> merged;
-    LaneCandidate current;
-    bool has_current = false;
-    for (const auto& segment : segments) {
-        if (segment.path_pixels.empty() || segment.vehicle_points.empty()) continue;
-        if (!has_current) {
-            current = segment;
-            has_current = true;
-            continue;
-        }
-        if (canMergeVehicleCandidates(current, segment, cfg)) {
-            appendLaneCandidate(current, segment);
-        } else {
-            if (static_cast<int>(current.path_pixels.size()) >= cfg.lane_path_min_points)
-                merged.emplace_back(std::move(current));
-            current = segment;
-        }
-    }
-    if (has_current && static_cast<int>(current.path_pixels.size()) >= cfg.lane_path_min_points)
-        merged.emplace_back(std::move(current));
-    return merged;
-}
-
-double scoreLaneCandidate(const cv::Size& image_size, const LaneCandidate& candidate, const int side,
-                          const ImageLineFit* reference_line, const double center_u, const DynamicRoiConfig& cfg) {
-    if (candidate.path_pixels.empty()) return std::numeric_limits<double>::infinity();
-    if (reference_line != nullptr && reference_line->valid) {
-        double error_sum = 0.0;
-        for (const auto& pixel : candidate.path_pixels) {
-            const double pred = reference_line->a * static_cast<double>(pixel.y) + reference_line->b;
-            error_sum += std::abs(static_cast<double>(pixel.x) - pred);
-        }
-        return error_sum / static_cast<double>(candidate.path_pixels.size());
-    }
-    return scoreInitComponent(image_size, candidate.path_pixels, side, center_u, cfg);
-}
-
-std::vector<LaneCandidate> makeVehicleLaneCandidates(const std::vector<std::vector<cv::Point>>& raw_components,
-                                                     const ImageLineFit* reference_line, const int side,
-                                                     const cv::Size& image_size, const DynamicRoiConfig& cfg,
-                                                     const cv::Mat& inverse_camera_matrix,
-                                                     const tf2::Transform& vehicle_T_camera) {
-    const auto image_components = mergeImageComponentsByDistance(raw_components, cfg.image_component_merge_gap_px);
-
-    std::vector<LaneCandidate> segments;
-    for (const auto& component : image_components) {
-        const auto path_pixels = extractLanePath(component, reference_line, side, image_size, cfg);
-        if (static_cast<int>(path_pixels.size()) < cfg.lane_path_min_points) continue;
-
-        const auto vehicle_points = pixelsToVehiclePoints(path_pixels, inverse_camera_matrix, vehicle_T_camera);
-        auto split_segments = splitPathByVehicleDistance(path_pixels, vehicle_points, cfg);
-        segments.insert(segments.end(), split_segments.begin(), split_segments.end());
-    }
-
-    auto candidates = mergeVehicleLaneSegments(std::move(segments), cfg);
-    const double center_u = 0.5 * static_cast<double>(image_size.width - 1);
-    for (auto& candidate : candidates)
-        candidate.score = scoreLaneCandidate(image_size, candidate, side, reference_line, center_u, cfg);
-    return candidates;
-}
-
-LaneCandidate selectBestVehicleCandidate(const cv::Mat& cleaned_mask, const cv::Mat& roi_mask, const int side,
-                                         const ImageLineFit* reference_line, const DynamicRoiConfig& cfg,
-                                         const cv::Mat& inverse_camera_matrix,
-                                         const tf2::Transform& vehicle_T_camera) {
+std::vector<cv::Point> selectBestComponent(const cv::Mat& cleaned_mask, const cv::Mat& roi_mask, const int side,
+                                           const ImageLineFit* reference_line, const DynamicRoiConfig& cfg) {
     cv::Mat masked;
     cv::bitwise_and(cleaned_mask, roi_mask, masked);
-    auto raw_components = componentPixels(masked, cfg.min_roi_component_area);
-    if (raw_components.empty()) return {};
+    auto components = componentPixels(masked, cfg.min_roi_component_area);
+    if (components.empty()) return {};
 
-    auto candidates = makeVehicleLaneCandidates(raw_components, reference_line, side, cleaned_mask.size(), cfg,
-                                                inverse_camera_matrix, vehicle_T_camera);
-    if (candidates.empty()) return {};
-
-    std::sort(candidates.begin(), candidates.end(), [](const auto& lhs, const auto& rhs) {
-        return candidateBottomRow(lhs) > candidateBottomRow(rhs);
+    std::sort(components.begin(), components.end(), [](const auto& lhs, const auto& rhs) {
+        return bottomRow(lhs) > bottomRow(rhs);
     });
 
+    const double center_u = 0.5 * static_cast<double>(cleaned_mask.cols - 1);
     const int bottom_group_tolerance = std::max(2, cleaned_mask.rows / 100);
     std::size_t index = 0;
-    while (index < candidates.size()) {
-        const int group_bottom = candidateBottomRow(candidates[index]);
+    while (index < components.size()) {
+        const int group_bottom = bottomRow(components[index]);
         double best_score = std::numeric_limits<double>::infinity();
-        LaneCandidate best_candidate;
+        std::vector<cv::Point> best_component;
 
-        while (index < candidates.size() &&
-               candidateBottomRow(candidates[index]) >= group_bottom - bottom_group_tolerance) {
-            const auto& candidate = candidates[index];
-            if (candidate.score < best_score) {
-                best_score = candidate.score;
-                best_candidate = candidate;
+        while (index < components.size() && bottomRow(components[index]) >= group_bottom - bottom_group_tolerance) {
+            const auto& pixels = components[index];
+            double score = std::numeric_limits<double>::infinity();
+            if (reference_line != nullptr && reference_line->valid) {
+                double error_sum = 0.0;
+                for (const auto& pixel : pixels) {
+                    const double pred = reference_line->a * static_cast<double>(pixel.y) + reference_line->b;
+                    error_sum += std::abs(static_cast<double>(pixel.x) - pred);
+                }
+                score = error_sum / static_cast<double>(pixels.size());
+            } else {
+                score = scoreInitComponent(cleaned_mask.size(), pixels, side, center_u, cfg);
+            }
+
+            if (score < best_score) {
+                best_score = score;
+                best_component = pixels;
             }
             ++index;
         }
 
-        if (!best_candidate.path_pixels.empty() && std::isfinite(best_score)) return best_candidate;
+        if (!best_component.empty() && std::isfinite(best_score)) return best_component;
     }
     return {};
 }
 
-std::pair<LaneCandidate, std::vector<cv::Point>> extractInitCandidate(const cv::Mat& cleaned_mask, const int side,
-                                                                      const ImageLineFit& opposite_line,
-                                                                      const DynamicRoiConfig& cfg,
-                                                                      const cv::Mat& inverse_camera_matrix,
-                                                                      const tf2::Transform& vehicle_T_camera) {
+std::pair<std::vector<cv::Point>, std::vector<cv::Point>> extractInitPixels(const cv::Mat& cleaned_mask,
+                                                                            const int side,
+                                                                            const ImageLineFit& opposite_line,
+                                                                            const DynamicRoiConfig& cfg) {
     auto [roi_mask, roi_polygon] = buildInitRoi(cleaned_mask.size(), side, opposite_line, cfg);
-    return {selectBestVehicleCandidate(cleaned_mask, roi_mask, side, nullptr, cfg, inverse_camera_matrix,
-                                       vehicle_T_camera),
-            roi_polygon};
+    return {selectBestComponent(cleaned_mask, roi_mask, side, nullptr, cfg), roi_polygon};
 }
 
-std::pair<LaneCandidate, std::vector<cv::Point>> extractTrackingCandidate(const cv::Mat& cleaned_mask,
-                                                                          const ImageLineFit& previous_line,
-                                                                          const int side,
-                                                                          const ImageLineFit& opposite_line,
-                                                                          const DynamicRoiConfig& cfg,
-                                                                          const cv::Mat& inverse_camera_matrix,
-                                                                          const tf2::Transform& vehicle_T_camera) {
+std::pair<std::vector<cv::Point>, std::vector<cv::Point>> extractTrackingPixels(const cv::Mat& cleaned_mask,
+                                                                                const ImageLineFit& previous_line,
+                                                                                const int side,
+                                                                                const ImageLineFit& opposite_line,
+                                                                                const DynamicRoiConfig& cfg) {
     auto [roi_mask, roi_polygon] = buildTrackingRoi(cleaned_mask.size(), previous_line, side, opposite_line, cfg);
-    return {selectBestVehicleCandidate(cleaned_mask, roi_mask, side, &previous_line, cfg, inverse_camera_matrix,
-                                       vehicle_T_camera),
-            roi_polygon};
+    return {selectBestComponent(cleaned_mask, roi_mask, side, &previous_line, cfg), roi_polygon};
 }
 
 bool hasExcessiveJump(const ImageLineFit& previous_line, const ImageLineFit& current_line, const int rows,
@@ -1013,8 +744,7 @@ class DynamicRoiProcessor {
 public:
     explicit DynamicRoiProcessor(const DynamicRoiConfig& cfg) : cfg_(cfg) {}
 
-    FrameResult findLanePixels(const cv::Mat& mask, const cv::Mat& inverse_camera_matrix,
-                               const tf2::Transform& vehicle_T_camera) {
+    FrameResult findLanePixels(const cv::Mat& mask) {
         FrameResult frame;
         const cv::Mat binary_mask = toBinaryMask(mask);
         cv::Mat cleaned_mask = removeSmallComponents(binary_mask, scaledMinArea(binary_mask.size(), cfg_));
@@ -1023,8 +753,7 @@ public:
         frame.cleaned_mask = cropped_mask;
         frame.global_roi_polygon = std::move(global_roi_polygon);
 
-        for (const int side : {LEFT, RIGHT})
-            frame.side_results[side] = processSide(frame.cleaned_mask, side, inverse_camera_matrix, vehicle_T_camera);
+        for (const int side : {LEFT, RIGHT}) frame.side_results[side] = processSide(frame.cleaned_mask, side);
         applyRightReferenceSpacingGuard(frame.side_results, frame.cleaned_mask.size());
         return frame;
     }
@@ -1037,8 +766,7 @@ public:
     }
 
 private:
-    SideResult processSide(const cv::Mat& cleaned_mask, const int side, const cv::Mat& inverse_camera_matrix,
-                           const tf2::Transform& vehicle_T_camera) {
+    SideResult processSide(const cv::Mat& cleaned_mask, const int side) {
         ImageLineFit& stored_line = stored_lines_[side];
         ImageLineFit& opposite_line = stored_lines_[side == LEFT ? RIGHT : LEFT];
         bool use_tracking_roi = stored_line.valid && stored_line.lost_count <= cfg_.max_lost_frames;
@@ -1046,10 +774,9 @@ private:
         std::vector<cv::Point> roi_polygon;
         SideResult result;
         if (use_tracking_roi) {
-            auto [tracking_candidate, tracking_polygon] =
-                extractTrackingCandidate(cleaned_mask, stored_line, side, opposite_line, cfg_, inverse_camera_matrix,
-                                         vehicle_T_camera);
-            result = evaluateSideCandidate(tracking_candidate, "tracking", side, cleaned_mask.size());
+            auto [tracking_pixels, tracking_polygon] =
+                extractTrackingPixels(cleaned_mask, stored_line, side, opposite_line, cfg_);
+            result = evaluateSideCandidate(tracking_pixels, "tracking", &stored_line, side, cleaned_mask.size());
             roi_polygon = std::move(tracking_polygon);
 
             const int tracking_bottom = bottomRow(result.component_pixels);
@@ -1057,9 +784,8 @@ private:
                 static_cast<int>(std::lround(static_cast<double>(cleaned_mask.rows) * cfg_.tracking_recovery_bottom_ratio));
             const bool should_try_init = result.status != "ok" || tracking_bottom < recovery_row;
             if (should_try_init) {
-                auto [init_candidate, init_polygon] =
-                    extractInitCandidate(cleaned_mask, side, opposite_line, cfg_, inverse_camera_matrix, vehicle_T_camera);
-                auto init_result = evaluateSideCandidate(init_candidate, "init", side, cleaned_mask.size());
+                auto [init_pixels, init_polygon] = extractInitPixels(cleaned_mask, side, opposite_line, cfg_);
+                auto init_result = evaluateSideCandidate(init_pixels, "init", nullptr, side, cleaned_mask.size());
                 const int init_bottom = bottomRow(init_result.component_pixels);
                 if (init_result.status == "ok" &&
                     (result.status != "ok" ||
@@ -1070,9 +796,8 @@ private:
                 }
             }
         } else {
-            auto [init_candidate, init_polygon] =
-                extractInitCandidate(cleaned_mask, side, opposite_line, cfg_, inverse_camera_matrix, vehicle_T_camera);
-            result = evaluateSideCandidate(init_candidate, "init", side, cleaned_mask.size());
+            auto [init_pixels, init_polygon] = extractInitPixels(cleaned_mask, side, opposite_line, cfg_);
+            result = evaluateSideCandidate(init_pixels, "init", nullptr, side, cleaned_mask.size());
             roi_polygon = std::move(init_polygon);
         }
 
@@ -1099,19 +824,22 @@ private:
         return result;
     }
 
-    SideResult evaluateSideCandidate(const LaneCandidate& candidate, const std::string& roi_mode, const int side,
-                                     const cv::Size& image_size) const {
+    SideResult evaluateSideCandidate(const std::vector<cv::Point>& component, const std::string& roi_mode,
+                                     const ImageLineFit* reference_line, const int side, const cv::Size& image_size) const {
         SideResult result;
         result.roi_mode = roi_mode;
-        result.component_pixels = candidate.component_pixels;
-        result.pixels = candidate.path_pixels;
+        result.component_pixels = component;
+        result.pixels = component;
 
-        if (candidate.path_pixels.empty()) {
-            result.status = "no_vehicle_lane_candidate";
+        if (!populateComponentSupportMetrics(result, component, image_size, cfg_)) return result;
+
+        auto path_pixels = extractLanePath(component, reference_line, side, image_size, cfg_);
+        if (static_cast<int>(path_pixels.size()) < cfg_.lane_path_min_points) {
+            result.status = "insufficient_continuous_lane_path";
             return result;
         }
-        if (!populateComponentSupportMetrics(result, candidate.path_pixels, image_size, cfg_)) return result;
 
+        result.pixels = std::move(path_pixels);
         ImageLineFit current_line;
         double angle_deg = 0.0;
         const bool fit_ok = fitImageLineUv(result.pixels, current_line, angle_deg);
@@ -1486,10 +1214,7 @@ cv::Mat visualizeLanePixels(const cv::Mat& binary_mask, const LaneLines& lane_li
 }
 
 DynamicRoiConfig makeDynamicRoiConfig(const int min_area, const int tolerance, const double xmin, const double xmax,
-                                      const double ymin, const double ymax, const double spacing,
-                                      const int image_component_merge_gap_px = 20,
-                                      const double vehicle_component_max_gap_x_m = 0.8,
-                                      const double vehicle_component_max_gap_y_m = 0.35) {
+                                      const double ymin, const double ymax, const double spacing) {
     DynamicRoiConfig cfg;
     cfg.min_area = min_area;
     cfg.tolerance = tolerance;
@@ -1498,9 +1223,6 @@ DynamicRoiConfig makeDynamicRoiConfig(const int min_area, const int tolerance, c
     cfg.ymin = ymin;
     cfg.ymax = ymax;
     cfg.spacing = spacing;
-    cfg.image_component_merge_gap_px = image_component_merge_gap_px;
-    cfg.vehicle_component_max_gap_x_m = vehicle_component_max_gap_x_m;
-    cfg.vehicle_component_max_gap_y_m = vehicle_component_max_gap_y_m;
     return cfg;
 }
 
@@ -1524,25 +1246,13 @@ void LaneLinePublisher::initMembers() {
     const auto camera_name = getRosParameter<std::string>(this, "camera_name");
     const auto min_area = getRosParameter<int>(this, "lane_pixel_finder.min_area");
     const auto tolerance = getRosParameter<int>(this, "lane_pixel_finder.tolerance");
-    const DynamicRoiConfig default_dynamic_roi_cfg;
-    const auto image_component_merge_gap_px = declare_parameter<int>(
-        "lane_pixel_finder.image_component_merge_gap_px",
-        default_dynamic_roi_cfg.image_component_merge_gap_px);
-    const auto vehicle_component_max_gap_x_m = declare_parameter<double>(
-        "lane_pixel_finder.vehicle_component_max_gap_x_m",
-        default_dynamic_roi_cfg.vehicle_component_max_gap_x_m);
-    const auto vehicle_component_max_gap_y_m = declare_parameter<double>(
-        "lane_pixel_finder.vehicle_component_max_gap_y_m",
-        default_dynamic_roi_cfg.vehicle_component_max_gap_y_m);
 
     getCameraParams(this, camera_name, camera_matrix_);
     camera_matrix_ = camera_matrix_.inv();
     vehicle_T_camera_ = getTf2Transform(this, vehicle_frame_id_, camera_frame_id);
 
     g_dynamic_roi_processor = std::make_unique<DynamicRoiProcessor>(
-        makeDynamicRoiConfig(min_area, tolerance, xmin_, xmax_, ymin_, ymax_, spacing_,
-                             image_component_merge_gap_px, vehicle_component_max_gap_x_m,
-                             vehicle_component_max_gap_y_m));
+        makeDynamicRoiConfig(min_area, tolerance, xmin_, xmax_, ymin_, ymax_, spacing_));
 }
 
 void LaneLinePublisher::initConnections() {
@@ -1583,7 +1293,7 @@ void LaneLinePublisher::findLaneLines(const cv::Mat& mask, const builtin_interfa
                                       LaneLines& lane_lines) const {
     if (!g_dynamic_roi_processor) return;
 
-    auto frame_result = g_dynamic_roi_processor->findLanePixels(mask, camera_matrix_, vehicle_T_camera_);
+    auto frame_result = g_dynamic_roi_processor->findLanePixels(mask);
     lane_lines.left.pixels = frame_result.side_results[LEFT].pixels;
     lane_lines.right.pixels = frame_result.side_results[RIGHT].pixels;
 
@@ -1642,7 +1352,6 @@ void LaneLinePublisher::publishContourPoints(const std::vector<std::vector<Eigen
         const auto& points = contour_points[i];
         pcl::PointCloud<pcl::PointXYZ> cloud;
         for (const auto& point : points) {
-            if (!isFiniteVehiclePoint(point)) continue;
             auto& p = cloud.points.emplace_back();
             p.x = point.x();
             p.y = point.y();
@@ -1665,7 +1374,6 @@ void LaneLinePublisher::publishLaneLines(const LaneLines& lane_lines,
         const auto& lane_line_points = lane_line_ptrs[i]->points;
         pcl::PointCloud<pcl::PointXYZ> cloud;
         for (const auto& point : lane_line_points) {
-            if (!isFiniteVehiclePoint(point)) continue;
             auto& p = cloud.points.emplace_back();
             p.x = point.x();
             p.y = point.y();
