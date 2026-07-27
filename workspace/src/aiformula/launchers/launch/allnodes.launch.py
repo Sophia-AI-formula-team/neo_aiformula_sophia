@@ -295,7 +295,7 @@ def generate_launch_description():
         DeclareLaunchArgument("sender_timeout_sec", default_value="0.01"),
         DeclareLaunchArgument("enable_can_fd", default_value="false"),
         DeclareLaunchArgument("launch_rviz", default_value="true"),
-        DeclareLaunchArgument("launch_image_view", default_value="true"),
+        DeclareLaunchArgument("launch_image_view", default_value="false"),
         DeclareLaunchArgument(
             "image_view_topic",
             default_value="/aiformula_perception/lane_line_publisher/vehicle_fit_image",
@@ -318,12 +318,14 @@ def generate_launch_description():
                 executable="rviz2",
                 arguments=[
                     "-d",
-                    "/home/workspace/src/aiformula/perception/lane_line_publisher/rviz/2x2.rviz",
+                    "/home/workspace/src/aiformula/perception/lane_line_publisher/rviz/0629llp.rviz",
                 ],
                 output="both",
                 additional_env={
                     "DISPLAY": ":0",
                     "XAUTHORITY": "/home/control/.Xauthority",
+                    "QT_FONT_DPI": "120",
+                    "QT_SCALE_FACTOR": "1",
                 },
                 condition=IfCondition(LaunchConfiguration("launch_rviz")),
             ),

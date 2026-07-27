@@ -7,6 +7,7 @@ Runnable ROS 2 source snapshot from the Sophia vehicle computer, captured on 202
 - `workspace/src/aiformula`: the ROS 2 workspace source tree from `/home/workspace/src/aiformula` on the vehicle.
 - `workspace/src/aiformula/control`: motor control, correction training, end-to-end control, GNSS following, PID control, and trajectory-following packages.
 - `dependencies`: the source and platform dependency tree from `/home/dependencies`, including VectorNav, the ZED ROS 2 wrapper, ros2_socketcan, ZED X driver/configuration files, and captured package reports.
+- `legacy/control`: archived control code kept for reference and excluded from active workspace builds.
 - `codexws`: debug reports, test tools, patches, and source snapshots. `COLCON_IGNORE` prevents these diagnostic copies from creating duplicate ROS packages during a workspace build.
 
 Generated `build/`, `install/`, `log/`, Python caches, bags, and diagnostic run outputs are intentionally excluded.
