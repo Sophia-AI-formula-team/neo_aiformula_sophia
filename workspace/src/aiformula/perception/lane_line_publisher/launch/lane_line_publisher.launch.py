@@ -30,8 +30,6 @@ def create_lane_line_publisher_node(context: LaunchContext) -> Tuple[Node]:
             namespace="/aiformula_perception",
             output="screen",
             emulate_tty=True,
-            respawn=True,
-            respawn_delay=2.0,
             parameters=[config_path,
                         camera_params_path,
                         {
@@ -56,7 +54,7 @@ def create_lane_line_publisher_node(context: LaunchContext) -> Tuple[Node]:
 
 def create_rviz_node(context: LaunchContext) -> Tuple[Node]:
     package_dir = get_package_share_directory("lane_line_publisher")
-    rviz_path = osp.join(package_dir, "rviz", "2x2.rviz")
+    rviz_path = osp.join(package_dir, "rviz", "lane_line_publisher.rviz")
     return (
         Node(
             package="rviz2",
