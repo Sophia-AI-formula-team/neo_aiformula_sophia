@@ -13,6 +13,3 @@
     lane_pixel_finder:
       min_area: 100     # minimum connected component area for mask noise removal [pix^2]
       tolerance: 10     # tolerance to relax lane pixel search bounds [pix]
-      image_component_merge_gap_px: 20     # image-space gap to pre-merge raw components [pix]
-      vehicle_component_max_gap_x_m: 0.8   # max forward gap to merge/split lane candidates [m]
-      vehicle_component_max_gap_y_m: 0.35  # max lateral jump to merge/split lane candidates [m]
