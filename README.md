@@ -6,7 +6,7 @@ Runnable ROS 2 source snapshot from the Sophia vehicle computer, captured on 202
 
 - `src/aiformula`: vehicle, sensing, perception, control, launch, and common packages from `/home/workspace/src/aiformula` on the vehicle.
 - `src/trajectory_follower`: trajectory followers, including the separately launched `lya_0221` executable.
-- `src/e2e_zw`, `src/gnss_follower`, `src/pid_controller`, `src/sine_cmd_publisher`, and `src/correction_controller_trainer`: other remote ROS packages.
+- `src/e2e_zw`, `src/gnss_follower`, `src/pid_controller`, and `src/correction_controller_trainer`: other remote ROS packages.
 - `src/aiformula/sensing/vectornav`, `src/aiformula/sensing/zed-ros2-wrapper`, and `src/ros2_socketcan`: vendored source dependencies required by the installed remote stack.
 - `dependencies`: exact remote platform, ROS package, apt, and Python package snapshots.
 - `codexws`: debug reports, test tools, patches, and source snapshots. `COLCON_IGNORE` prevents these diagnostic copies from creating duplicate ROS packages during a workspace build.
@@ -55,4 +55,3 @@ The launch controls real CAN-connected hardware. Verify the vehicle is safely su
 ## 2026-07-17 lane fix
 
 The deployed lane-line publisher scales its 1920-pixel `min_component_pixels` threshold to the incoming image width. At 640 pixels the threshold is 60 instead of 180. The test image produced 9 finite, non-zero points in each left, center, and right cloud. Details are in `codexws/DEBUG_REPORT_2026-07-17.md` and its Chinese version.
-
