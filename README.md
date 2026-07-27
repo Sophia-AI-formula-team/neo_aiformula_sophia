@@ -4,11 +4,9 @@ Runnable ROS 2 source snapshot from the Sophia vehicle computer, captured on 202
 
 ## Repository layout
 
-- `src/aiformula`: vehicle, sensing, perception, control, launch, and common packages from `/home/workspace/src/aiformula` on the vehicle.
-- `src/trajectory_follower`: trajectory followers, including the separately launched `lya_0221` executable.
-- `src/e2e_zw`, `src/gnss_follower`, `src/pid_controller`, and `src/correction_controller_trainer`: other remote ROS packages.
-- `src/aiformula/sensing/vectornav`, `src/aiformula/sensing/zed-ros2-wrapper`, and `src/ros2_socketcan`: vendored source dependencies required by the installed remote stack.
-- `dependencies`: exact remote platform, ROS package, apt, and Python package snapshots.
+- `workspace/src/aiformula`: the ROS 2 workspace source tree from `/home/workspace/src/aiformula` on the vehicle.
+- `workspace/src/aiformula/control`: motor control, correction training, end-to-end control, GNSS following, PID control, and trajectory-following packages.
+- `dependencies`: the source and platform dependency tree from `/home/dependencies`, including VectorNav, the ZED ROS 2 wrapper, ros2_socketcan, ZED X driver/configuration files, and captured package reports.
 - `codexws`: debug reports, test tools, patches, and source snapshots. `COLCON_IGNORE` prevents these diagnostic copies from creating duplicate ROS packages during a workspace build.
 
 Generated `build/`, `install/`, `log/`, Python caches, bags, and diagnostic run outputs are intentionally excluded.
@@ -27,8 +25,8 @@ See `dependencies/README.md` for the full captured dependency state.
 
 ```bash
 source /opt/ros/foxy/setup.bash
-rosdep install --from-paths src --ignore-src --rosdistro foxy -r -y
-colcon build --symlink-install
+rosdep install --from-paths dependencies workspace/src --ignore-src --rosdistro foxy -r -y
+colcon build --base-paths dependencies workspace/src --symlink-install
 source install/local_setup.bash
 ```
 
