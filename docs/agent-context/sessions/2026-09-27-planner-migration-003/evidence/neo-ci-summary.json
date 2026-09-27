@@ -1,0 +1,258 @@
+{
+  "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "repository_id": 1303517209,
+  "head_sha": "93761b5f4df2cbcf87ac01f533e992fdbd33c456",
+  "raw_evidence_local_only": true,
+  "runs": [
+    {
+      "run_id": 36295295919,
+      "run_url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295295919",
+      "artifact_id": 10923587927,
+      "archive_path": "runs/36295295919/artifacts/10923587927.zip",
+      "archive_sha256": "2169759d812444c3c4be7b020a189d4f1c754564bdc6aa0229e5b5abb76bae6e",
+      "unit_xml": [],
+      "unit_test_count": 293,
+      "runtime": {
+        "source": "evidence/runtime.json",
+        "sha256": "8e81d23227b34216bbac4018babfe86c6f6d532dcffdb603f6c18d44a66a7d94",
+        "passed": true,
+        "scope": "Real DDS package and synthetic-bundle REPEAT handoff; no complete camera lap, vehicle dynamics or hardware validation",
+        "checks": 63,
+        "failed_checks": 0,
+        "observations": {
+          "actual_vectornav_message_type": "vectornav_msgs.msg._common_group.CommonGroup",
+          "closed_loop_repeat_tracking_tested": false,
+          "full_lap_camera_to_route_tested": false,
+          "hardware_emergency_stop_tested": false,
+          "largest_recorder_consensus_points": 8,
+          "managed_teacher_stop_signal_simulated": true,
+          "published_source_messages": {
+            "camera": 7,
+            "mask": 95,
+            "teacher": 307,
+            "vn": 1029
+          },
+          "ready_bundle_and_repeat_handoff_tested": true,
+          "real_dds": true,
+          "received_command_messages": 438,
+          "teacher_supervisor_process_tested": false,
+          "uses_test_json_vectornav_adapter": false
+        }
+      },
+      "control_demo": {
+        "source": "evidence/control_demo/metrics.json",
+        "sha256": "9b91f63e83fa3046b242e5c96301c69b076ca7e41d017a66cbadb1dfd61bac14",
+        "all_pass": true,
+        "evidence": "synthetic ideal-unicycle closed-loop, not vehicle validation",
+        "route_length_m": 77.63068695492231,
+        "route_sample_count": 389,
+        "scenarios": {
+          "speed_0.4_offset_0.0": {
+            "status": "completed",
+            "completed_laps": 2.0001582854653432,
+            "speed_cap_mps": 0.4,
+            "initial_lateral_offset_m": 0.0,
+            "initial_heading_offset_rad": 0.0,
+            "cross_track_p95_m": 0.0005054256431784151,
+            "cross_track_rmse_m": 0.00035214150660651367,
+            "command_limits_pass": true
+          },
+          "speed_0.4_offset_0.25": {
+            "status": "completed",
+            "completed_laps": 2.0001257622517588,
+            "speed_cap_mps": 0.4,
+            "initial_lateral_offset_m": 0.25,
+            "initial_heading_offset_rad": 0.12,
+            "cross_track_p95_m": 0.0032037697188312115,
+            "cross_track_rmse_m": 0.025744972688756827,
+            "command_limits_pass": true
+          },
+          "speed_0.8_offset_0.0": {
+            "status": "completed",
+            "completed_laps": 2.0000091262670816,
+            "speed_cap_mps": 0.8,
+            "initial_lateral_offset_m": 0.0,
+            "initial_heading_offset_rad": 0.0,
+            "cross_track_p95_m": 0.0008759151336341302,
+            "cross_track_rmse_m": 0.0012670755604439552,
+            "command_limits_pass": true
+          },
+          "speed_0.8_offset_0.25": {
+            "status": "completed",
+            "completed_laps": 2.0003398177712044,
+            "speed_cap_mps": 0.8,
+            "initial_lateral_offset_m": 0.25,
+            "initial_heading_offset_rad": 0.12,
+            "cross_track_p95_m": 0.002099567673486714,
+            "cross_track_rmse_m": 0.02510316575024395,
+            "command_limits_pass": true
+          }
+        },
+        "safety_checks": {
+          "start_off_route_rejected": true,
+          "start_wrong_heading_rejected": true,
+          "fixed_does_not_forward_teacher": true,
+          "fixed_ignores_invalid_teacher_after_handover": true,
+          "manual_estop_zero": true,
+          "reset_does_not_rearm": true,
+          "reference_divergence_latches_fallback": true,
+          "reference_fallback_stops_on_pose_loss": true,
+          "slower_fixed_bend_does_not_false_fallback": true,
+          "yaw_fallback_preserves_candidate_slowdown": true
+        },
+        "final_arbiter": {
+          "TEACH": {
+            "first_state": "TEACH",
+            "expected_first_state": "TEACH",
+            "peak_normal_acceleration_mps2": 0.5000000000000004,
+            "peak_normal_yaw_acceleration_rps2": 0.0,
+            "teacher_stop_is_immediate_zero": true,
+            "passed": true
+          },
+          "REPEAT": {
+            "first_state": "REPEAT",
+            "expected_first_state": "REPEAT",
+            "peak_normal_acceleration_mps2": 0.5000000000000004,
+            "peak_normal_yaw_acceleration_rps2": 0.8000000000000002,
+            "teacher_stop_is_immediate_zero": true,
+            "passed": true
+          },
+          "FALLBACK": {
+            "first_state": "FALLBACK",
+            "expected_first_state": "FALLBACK",
+            "peak_normal_acceleration_mps2": 0.5000000000000004,
+            "peak_normal_yaw_acceleration_rps2": 0.8000000000000007,
+            "teacher_stop_is_immediate_zero": true,
+            "passed": true
+          }
+        },
+        "files": [
+          {
+            "path": "evidence/control_demo/closed_loop.png",
+            "sha256": "0892919c0475e50e478a5095d539ec18d0f7a34c0e3113e552ee77702da71378",
+            "bytes": 197068
+          },
+          {
+            "path": "evidence/control_demo/final_arbiter_commands.csv",
+            "sha256": "763e592f142260f7461c0369200a263c982e5dda82a7aec03c9c1145d66864ad",
+            "bytes": 6146
+          },
+          {
+            "path": "evidence/control_demo/speed_0.4_offset_0.0.csv",
+            "sha256": "0c0e9bf9f2d053be7a1793872c688a65acdbad02cce5e9878aa233c07edec81f",
+            "bytes": 2026360
+          },
+          {
+            "path": "evidence/control_demo/speed_0.4_offset_0.25.csv",
+            "sha256": "387181dcb9f438762dd48cf23e7bea22e8d70ea520fed4bdd37139846f53b189",
+            "bytes": 2013792
+          },
+          {
+            "path": "evidence/control_demo/speed_0.8_offset_0.0.csv",
+            "sha256": "536ecf0ba246369b7c0e362940f02e2334e2ec648977983bc8758a18b542c5cd",
+            "bytes": 1050179
+          },
+          {
+            "path": "evidence/control_demo/speed_0.8_offset_0.25.csv",
+            "sha256": "2aea34e5d0da33f125b40abfcf99e5b9251f08208a62b7743ebff3eeae471f7e",
+            "bytes": 1049323
+          }
+        ]
+      },
+      "unit_test_evidence": {
+        "source": "runs/36295295919/workflow.log",
+        "sha256": "4f31c9639c14e136e36ec300ac691f598ca52e37540e5656b71fcf1c36179d24",
+        "source_kind": "downloaded_workflow_log_colcon_summary",
+        "tests": 293,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "pytest_xml_not_present_in_artifact": true
+      }
+    },
+    {
+      "run_id": 36295295920,
+      "run_url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295295920",
+      "artifact_id": 10922854447,
+      "archive_path": "runs/36295295920/artifacts/10922854447.zip",
+      "archive_sha256": "f2c23a28323db321570babf21200794e09e5011c7c53d8a5ffafd48673d68ce8",
+      "unit_xml": [],
+      "unit_test_count": 520,
+      "runtime": {
+        "source": "evidence/runtime.json",
+        "sha256": "46f124d0f57e28b7383dfb9c3cb9e876c8b2824c84254b213dcdfef28cb36162",
+        "passed": true,
+        "scope": "Stationary DDS safety/windows only; no full-lap repeat or physical hardware proof",
+        "cases": [
+          {
+            "case": "default_guard",
+            "passed": true,
+            "checks": 11,
+            "failed_checks": 0
+          },
+          {
+            "case": "normal",
+            "passed": true,
+            "checks": 25,
+            "failed_checks": 0
+          },
+          {
+            "case": "no_gnss_build",
+            "passed": true,
+            "checks": 12,
+            "failed_checks": 0
+          },
+          {
+            "case": "startup_gap",
+            "passed": true,
+            "checks": 16,
+            "failed_checks": 0
+          },
+          {
+            "case": "future_gps",
+            "passed": true,
+            "checks": 17,
+            "failed_checks": 0
+          },
+          {
+            "case": "missing_bits",
+            "passed": true,
+            "checks": 17,
+            "failed_checks": 0
+          },
+          {
+            "case": "uncertainty",
+            "passed": true,
+            "checks": 17,
+            "failed_checks": 0
+          },
+          {
+            "case": "future_wheel",
+            "passed": true,
+            "checks": 18,
+            "failed_checks": 0
+          },
+          {
+            "case": "future_gyro",
+            "passed": true,
+            "checks": 18,
+            "failed_checks": 0
+          }
+        ],
+        "total_checks": 151
+      },
+      "unit_test_evidence": {
+        "source": "runs/36295295920/workflow.log",
+        "sha256": "49b4082225d08beccea5e579888d79d4f11b1f0515892c2dc9da8f176780361e",
+        "source_kind": "downloaded_workflow_log_colcon_summary",
+        "tests": 520,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "pytest_xml_not_present_in_artifact": true
+      }
+    }
+  ],
+  "supersedes_local_draft": "verified_ci_summary.json",
+  "supersedes_reason": "Draft inferred zero tests from absent archived pytest.xml; corrected below using preserved workflow-log colcon summaries. Absence of XML is not absence of tests."
+}

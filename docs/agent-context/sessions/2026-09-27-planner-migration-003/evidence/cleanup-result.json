@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "purpose": "verified_removal_of_this_task_from_wrong_repository",
+  "authorized_by": "User request: delete the old misplaced content and put it in the correct repository",
+  "completed_utc": "2026-09-27T05:00:57Z",
+  "post_verification_utc": "2026-09-27T05:02:19Z",
+  "old_repository": {"full_name": "Sophia-AI-formula-team/aiformula_sophia", "id": 1001834365},
+  "new_repository": {"full_name": "Sophia-AI-formula-team/neo_aiformula_sophia", "id": 1303517209},
+  "new_code_sha": "93761b5f4df2cbcf87ac01f533e992fdbd33c456",
+  "new_context_sha_at_cleanup": "b3e5767632edc7caede9c2461792f368d1711059",
+  "successful_new_runs_required_before_deletion": [36295295919, 36295295920, 36295592296],
+  "backup": {
+    "raw_files_local_only": true,
+    "raw_files_reviewed_for_publication": false,
+    "log_count": 11,
+    "artifact_zip_count": 8,
+    "total_raw_bytes": 16161491,
+    "all_sha256_and_sizes_verified": true,
+    "all_zip_crc_verified": true,
+    "sanitized_inventory_sha256": "e037129470d8b861782707b8d23411b6de5a8ab688a77bbce133aba9549bd7e4",
+    "local_source_feature_branch_retained": true
+  },
+  "deleted_branch": {
+    "ref": "refs/heads/feat/causal-lane-teach-repeat",
+    "expected_sha": "328c2283347499161cec22775ce13e0834d29c60",
+    "method": "Explicit old repository URL; git push deletion with exact force-with-lease expectation, no history rewrite",
+    "command_exit_code": 0,
+    "post_verification_http_status": 404
+  },
+  "deleted_artifact_ids": [10907254320, 10908241097, 10907578935, 10907504429, 10909535764, 10910746481, 10910997912, 10910912347],
+  "deleted_run_ids": [36246982242, 36247053458, 36247279346, 36247470378, 36251432303, 36256272843, 36256810479, 36257132332, 36258746524, 36258939592, 36259235841],
+  "every_delete_cli_exit_code": 0,
+  "ownership_checked_before_each_delete": true,
+  "post_verification": {
+    "remaining_runs": 0,
+    "remaining_artifacts": 0,
+    "remaining_workflows": 0,
+    "repository_preserved": true,
+    "preserved_branches_unchanged": {
+      "main": "dd55f65ef2fe434512d9f7bf48fff7c17141fac3",
+      "agent/improve-public-research-readme": "8d5c6e4091cabb2be6375d0515a728f721352069",
+      "agent/portfolio-refresh-20260806": "4546eceb394ee7e6a4b31315d97b3e0be6f3635a",
+      "backup/pre-history-reset-2026-05-21": "25835cbc7439010c4d9b5df28a69da8c1632a832"
+    },
+    "unrelated_pull_requests_preserved": [{"number": 1, "state": "closed"}, {"number": 2, "state": "open"}]
+  },
+  "not_claimed": [
+    "Deletion of old repository, main, unrelated branches or PRs",
+    "Immediate removal of hidden Git objects or GitHub caches",
+    "Vehicle, complete real-bag lap, physical stop or motor validation"
+  ]
+}

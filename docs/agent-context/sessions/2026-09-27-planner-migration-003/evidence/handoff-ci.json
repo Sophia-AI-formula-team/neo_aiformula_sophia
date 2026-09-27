@@ -1,0 +1,29 @@
+{
+  "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "repository_id": 1303517209,
+  "run_id": 36295592296,
+  "run_url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295592296",
+  "head_sha": "b3e5767632edc7caede9c2461792f368d1711059",
+  "status": "completed",
+  "conclusion": "success",
+  "evidence_source": "GitHub API and actual job logs; each log says Ran 33 tests, OK",
+  "jobs": [
+    {"id": 108553717600, "os": "ubuntu-latest", "python": "3.8", "tests": 33, "result": "OK", "test_seconds": 0.205},
+    {"id": 108553717456, "os": "ubuntu-latest", "python": "3.13", "tests": 33, "result": "OK", "test_seconds": 0.222},
+    {"id": 108553717566, "os": "windows-latest", "python": "3.8", "tests": 33, "result": "OK", "test_seconds": 1.039},
+    {"id": 108553717538, "os": "windows-latest", "python": "3.13", "tests": 33, "result": "OK", "test_seconds": 0.929}
+  ],
+  "previous_failed_attempt": {
+    "run_id": 36295441564,
+    "head_sha": "50d63b9a14d777e3112616426985b4555887e2bc",
+    "conclusion": "failure",
+    "cause": "Canonical repository test reads workflow source, omitted from sparse checkout",
+    "fix": "Add .github/workflows to sparse checkout and assert the path remains present",
+    "failure_retained_on_new_repository": true
+  },
+  "limits": [
+    "33 distinct tests repeated in four environments, not 132 independent scenarios",
+    "Handoff tool, sealed records, links and exact archive bytes only; no ROS or hardware proof",
+    "This run predates the migration-003 session; later publication CI must verify that new record"
+  ]
+}

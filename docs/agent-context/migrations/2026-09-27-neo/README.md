@@ -37,9 +37,27 @@ VectorNav 11个消息定义与旧来源逐SHA256一致。没有修改算法、�
 删除前再次核对旧仓库ID、分支HEAD及精确运行名单。分支有新提交或出现非本任务运行就停止核查。
 不得删除旧main、其它3分支、PR#1/#2、仓库本身或改写公共历史。
 
-当前阶段：新代码已推送；新CI、交接文件发布核验以及旧目标清理尚在进行。
-最终完成状态由新的清理回执记录；不能从这份备份清单里的 `remote_mutations_performed=false`
-推断之后没有清理，它只描述备份生成时刻。
+2026-09-27 05:02 UTC 已完成删除后核验：旧 feature 分支返回404，旧 Actions 运行、artifact、workflow列表均为0。
+删除精确的11次运行和8个产物；旧main、另外3个分支SHA和PR#1/#2状态均保留。
+旧本地来源分支/19个原件备份仍可恢复；不宣称隐藏Git对象或GitHub缓存立即消失。
+详细过程与精确ID见 [迁移session](../../sessions/2026-09-27-planner-migration-003/SESSION.md) /
+[清理证据](../../sessions/2026-09-27-planner-migration-003/evidence/cleanup-result.json) /
+[封存ZIP](../../bundles/2026-09-27-planner-migration-003.zip)。
+备份清单里的 `remote_mutations_performed=false` 只描述备份生成时刻，不代表之后没有执行清理。
+
+## neo 新证据（不是改写旧链接）
+
+| 检查 | 实际neo运行 | 结果与边界 |
+| --- | --- | --- |
+| Teach-repeat Foxy | [36295295919](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295295919) | 293单测、63项真实DDS检查通过；合成bundle，不是相机整圈 |
+| GNSS Foxy | [36295295920](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295295920) | 520单测（含前293项）、9个静止DDS场景151项检查通过；不是完整圈到repeat |
+| Agent交接 | [36295592296](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295592296) | 同33项测试在Ubuntu/Windows × Python3.8/3.13四组通过；早于本迁移session的发布 |
+
+两组Foxy都对应功能提交93761b5；交接CI对应b3e5767。
+交接的[首次失败](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36295441564)保留：
+sparse checkout少取了workflow源文件，已在b3e5767补齐并加回归检查，未放宽断言。
+实际日志和artifact核验摘要见 [neo-ci-summary](../../sessions/2026-09-27-planner-migration-003/evidence/neo-ci-summary.json)。
+单测计数来自CI日志，artifact没有pytest XML。4组理想运动模型demo通过，但没有新MP4/GIF、实车动力学或急停证明。
 
 ## 尚不代表实车可用
 
