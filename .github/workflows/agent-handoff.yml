@@ -38,6 +38,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
+            .github/workflows
             docs/agent-context
             tools
             workspace/src/aiformula/control/lane_mapping_lya_reference

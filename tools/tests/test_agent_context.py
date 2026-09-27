@@ -31,6 +31,7 @@ class RepositoryContextTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "agent-handoff.yml").read_text(encoding="utf-8")
         self.assertIn("GITHUB_REPOSITORY_ID", workflow)
         self.assertIn("1303517209", workflow)
+        self.assertRegex(workflow, r"(?m)^\s+\.github/workflows\s*$")
 
     def test_entrypoints_and_local_links(self):
         paths = [ROOT / "AGENTS.md", ROOT / "AGENT_CONTEXT.md", ROOT / "README.md"]
