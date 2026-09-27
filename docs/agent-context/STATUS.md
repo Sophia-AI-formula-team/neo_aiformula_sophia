@@ -13,6 +13,7 @@
 | 旧规划档案（非当前部署指令） | [SESSION](sessions/2026-09-27-planner-001/SESSION.md) / [ZIP](bundles/2026-09-27-planner-001.zip) |
 | 旧发布档案（原始哈希保留） | [回执](receipts/2026-09-27-planner-publication-002.md) / [ZIP](bundles/2026-09-27-planner-validation-002.zip) |
 | 迁移和清理记录 | [迁移说明](migrations/2026-09-27-neo/README.md) / [SESSION](sessions/2026-09-27-planner-migration-003/SESSION.md) / [ZIP](bundles/2026-09-27-planner-migration-003.zip) |
+| neo发布回执 | [2026-09-27-planner-neo-publication-003](receipts/2026-09-27-planner-neo-publication-003.md)，固定证据提交44a5005 |
 | 旧目标清理 | 本任务旧分支、11次CI、8个artifact已删除；main/其它分支/PR保留；原件备份可恢复 |
 | 新仓库 CI | Foxy两组成功：293/520单测、63/151项DDS检查；交接33项×4环境成功；[实际新run与限制](migrations/2026-09-27-neo/README.md) |
 | 实验 agent 回传 | 尚无；不能推断已读、已部署或已实验 |

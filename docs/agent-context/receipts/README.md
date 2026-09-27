@@ -5,6 +5,9 @@
 
 目前没有现场 agent 的 RECEIVED/RESULT_READY 回执。不要据此推断实验已经开始。
 
+当前neo发布和旧目标清理：[2026-09-27-planner-neo-publication-003](2026-09-27-planner-neo-publication-003.md)。
+这是planner发布回执，不是现场接手或实车放行。
+
 规划发布历史：[首轮失败及调查](2026-09-27-planner-publication-001.md) →
 [修复验证完成](2026-09-27-planner-publication-002.md)。这不是现场 agent 的接收 ACK。
 
