@@ -1,0 +1,95 @@
+lane_lap_recorder:
+  ros__parameters:
+    mask_topic: /aiformula_perception/pub_mask_image
+    vectornav_topic: /aiformula_sensing/vectornav/raw/common
+    camera_info_topic: /aiformula_sensing/zed_node/left/camera_info
+    lya_command_topic: /lane_learning/lya_cmd
+    map_frame: lane_map
+    base_frame: base_footprint
+    camera_frame_override: ''
+    output_directory: ~/.ros/lane_learning/maps
+    grid_resolution_m: 0.1
+    consensus_min_frame_votes: 5
+    consensus_min_reliable_frame_votes: 1
+    max_projection_sensitivity_m_per_px: 0.5
+    max_reliable_projection_sensitivity_m_per_px: 0.1
+    max_mask_age_ms: 1000.0
+    max_pose_mask_gap_ms: 200.0
+    max_vectornav_age_ms: 250.0
+    future_tolerance_ms: 20.0
+    yaw_offset_rad: 0.0
+    position_jump_tolerance_m: 0.35
+    maximum_speed_mps: 8.0
+    max_candidate_cells: 200000
+    max_confirmed_cells: 100000
+    candidate_ttl_s: 30.0
+    vectornav_buffer_size: 4096
+    trace_min_distance_m: 0.05
+    trace_min_yaw_rad: 0.03
+    max_trace_points: 100000
+    max_log_rows: 2000000
+    max_session_duration_s: 3600.0
+    finish_max_speed_mps: 0.15
+    finish_stopped_duration_s: 0.5
+    # Route settings are validated by route.py; unknown fields fail closed.
+    route_config_json: '{}'
+
+lane_fixed_follower:
+  ros__parameters:
+    safety_mode: lya_reference
+    command_output_topic: /lane_learning/cmd_vel
+    teacher_command_topic: /lane_learning/lya_cmd
+    vectornav_topic: /aiformula_sensing/vectornav/raw/common
+    mask_topic: /aiformula_perception/pub_mask_image
+    camera_frame_override: ''
+    visual_max_age_s: 0.5
+    visual_max_pose_mask_gap_s: 0.15
+    visual_min_consecutive_matches: 3
+    visual_vn_buffer_size: 512
+    visual_max_anchor_points: 100000
+    visual_max_image_pixels: 2500000
+    refinement_publish_rate_hz: 1.0
+    # Bounded robust point-to-line matcher; unknown fields fail closed.
+    visual_matcher_config_json: '{}'
+    ready_bundle_topic: /lane_learning/route_bundle
+    route_bundle_path: ''
+    emergency_stop_topic: /lane_learning/emergency_stop
+    emergency_stop_transient_local: false
+    teacher_state_topic: /lane_learning/teacher_state
+    log_directory: ~/.ros/lane_learning
+    control_rate_hz: 20.0
+    maximum_speed_mps: 0.8
+    accepted_teacher_max_speed_mps: 2.25
+    maximum_yaw_rate_rps: 0.4
+    maximum_acceleration_mps2: 0.5
+    maximum_yaw_acceleration_rps2: 0.8
+    maximum_lateral_acceleration_mps2: 0.35
+    maximum_cross_track_m: 0.8
+    maximum_heading_error_rad: 1.0
+    start_distance_m: 1.0
+    start_heading_error_rad: 0.6
+    pose_timeout_s: 0.25
+    teacher_timeout_s: 0.25
+    stopped_speed_mps: 0.08
+    stopped_settle_s: 1.0
+    reference_speed_delta_mps: 0.35
+    reference_yaw_delta_rps: 0.15
+    reference_recovery_s: 0.5
+    yaw_offset_rad: 0.0
+    position_jump_tolerance_m: 0.35
+    vectornav_maximum_speed_mps: 8.0
+    enable_vehicle_output: false
+    motor_zero_passthrough_verified: false
+    hardware_stop_verified: false
+    reject_competing_publishers: true
+    require_managed_teacher_stop: true
+
+lane_teacher_supervisor:
+  ros__parameters:
+    teacher_package: trajectory_follower
+    teacher_executable: lya_follower_connected_omegat_global
+    teacher_command_topic: /lane_learning/lya_cmd
+    control_state_topic: /lane_learning/control_state
+    teacher_state_topic: /lane_learning/teacher_state
+    emergency_stop_topic: /lane_learning/emergency_stop
+    log_directory: ~/.ros/lane_learning

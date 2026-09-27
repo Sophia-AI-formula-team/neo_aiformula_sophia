@@ -1,0 +1,22 @@
+lane_endpoint_follower:
+  ros__parameters:
+    can_topic: /aiformula_sensing/vehicle_info
+    gyro_topic: /aiformula_sensing/zed_node/imu/data_raw
+    gnss_topic: /aiformula_sensing/vectornav/raw/gps
+    mask_topic: /aiformula_perception/pub_mask_image
+    camera_info_topic: /aiformula_sensing/zed_node/left/camera_info
+    base_frame: base_footprint
+    map_frame: lane_teach_local
+    command_output_topic: /lane_learning_gnss/cmd_vel
+    enable_vehicle_output: false
+    hardware_stop_verified: false
+    motor_zero_passthrough_verified: false
+    maximum_speed_mps: 0.8
+    maximum_yaw_rate_rps: 0.4
+    wheel_diameter_m: 0.254
+    max_gnss_horizontal_sigma_m: 1.5
+    max_endpoint_distance_m: 3.0
+    mask_max_age_s: 0.5
+    pose_mask_gap_s: 0.15
+    gyro_bias_radps: 0.0
+    log_directory: ~/.ros/lane_learning_gnss

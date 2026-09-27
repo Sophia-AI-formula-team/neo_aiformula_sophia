@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lane_mapping_fixed</name><version>0.1.0</version>
+  <description>Standalone fixed-route control mode using the shared causal mapping implementation.</description>
+  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
+  <license>MIT</license><buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>lane_mapping_lya_reference</exec_depend><exec_depend>rclpy</exec_depend>
+  <exec_depend>launch</exec_depend><exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend><test_depend>python3-pytest</test_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

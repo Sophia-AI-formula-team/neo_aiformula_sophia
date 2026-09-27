@@ -1,0 +1,54 @@
+name: Lane teach-repeat (ROS 2 Foxy)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
+      - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
+      - 'dependencies/vectornav/vectornav_msgs/**'
+      - '.github/workflows/lane-teach-repeat.yml'
+  pull_request:
+    paths:
+      - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
+      - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
+      - 'dependencies/vectornav/vectornav_msgs/**'
+      - '.github/workflows/lane-teach-repeat.yml'
+permissions:
+  contents: read
+jobs:
+  foxy-build-and-dds:
+    runs-on: ubuntu-latest
+    container: ros:foxy-ros-base-focal
+    timeout-minutes: 20
+    steps:
+      - name: Verify canonical deployment repository
+        shell: bash
+        run: |
+          test "$GITHUB_REPOSITORY_ID" = "1303517209"
+          test "$GITHUB_REPOSITORY" = "Sophia-AI-formula-team/neo_aiformula_sophia"
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            workspace/src/aiformula/control/lane_mapping_lya_reference
+            workspace/src/aiformula/control/lane_mapping_fixed
+            dependencies/vectornav/vectornav_msgs
+      - name: ROS test dependencies (ephemeral CI container only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor --yes -o /usr/share/keyrings/ros-archive-keyring.gpg
+          apt-get update
+          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs
+      - name: Build native messages and both packages, unit tests, DDS smoke
+        shell: bash
+        run: bash workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/ci_verify.sh "$GITHUB_WORKSPACE"
+      - name: Upload build, test and runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lane-foxy-validation
+          path: |
+            /tmp/lane_teach_repeat_ws/log
+            /tmp/lane_teach_repeat_ws/build/*/test_results
+            /tmp/lane_teach_repeat_ws/evidence
+          retention-days: 14

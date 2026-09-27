@@ -1,0 +1,6 @@
+# Apply to the EXISTING VectorNav driver at its startup, not to the follower.
+# Preserve the vehicle's other serial/binary-output settings.
+# 0x0230 = FIX | POSLLA | POSU. No driver/service is started by this package.
+/**:
+  ros__parameters:
+    BO1.gpsField: 560

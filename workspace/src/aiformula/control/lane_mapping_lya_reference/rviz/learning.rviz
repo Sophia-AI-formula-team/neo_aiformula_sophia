@@ -1,0 +1,108 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 24; 24; 24
+    Fixed Frame: lane_map
+    Frame Rate: 20
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Metre grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 100
+      Color: 90; 90; 90
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Historical lane consensus
+      Enabled: true
+      Topic:
+        Value: /lane_lap_recorder/consensus
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Size (m): 0.08
+      Style: Points
+      Color Transformer: FlatColor
+      Color: 255; 210; 40
+      Position Transformer: XYZ
+    - Class: rviz_default_plugins/Path
+      Name: First lap localization trace
+      Enabled: true
+      Topic:
+        Value: /lane_lap_recorder/trajectory
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Color: 120; 120; 120
+      Line Style: Lines
+      Line Width: 0.05
+    - Class: rviz_default_plugins/Path
+      Name: Validated fixed route
+      Enabled: true
+      Topic:
+        Value: /lane_fixed_follower/route
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Color: 40; 220; 240
+      Line Style: Lines
+      Line Width: 0.08
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Frozen repeat localization map
+      Enabled: true
+      Topic:
+        Value: /lane_fixed_follower/anchor_consensus
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Size (m): 0.06
+      Style: Points
+      Color Transformer: FlatColor
+      Color: 150; 130; 70
+      Position Transformer: XYZ
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Live multi-frame lane refinement
+      Enabled: true
+      Topic:
+        Value: /lane_fixed_follower/refined_consensus
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Size (m): 0.09
+      Style: Points
+      Color Transformer: FlatColor
+      Color: 100; 240; 120
+      Position Transformer: XYZ
+    - Class: rviz_default_plugins/Pose
+      Name: Mask corrected repeat pose
+      Enabled: true
+      Topic:
+        Value: /lane_fixed_follower/pose
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+        Depth: 1
+      Shape: Arrow
+      Color: 50; 220; 255
+    - Class: rviz_default_plugins/Pose
+      Name: Raw VectorNav pose
+      Enabled: true
+      Topic:
+        Value: /lane_fixed_follower/raw_pose
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+        Depth: 1
+      Shape: Arrow
+      Color: 240; 80; 80
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Fixed metric view
+      Scale: 12
+      Angle: 0
+      X: 0
+      Y: 0
+Window Geometry:
+  Width: 1400
+  Height: 900
