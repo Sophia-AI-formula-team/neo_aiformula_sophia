@@ -1,0 +1,21 @@
+{
+  "evidence_kind": "prior_local_read_only_audit_summary_not_rerun_in_this_documentation_session",
+  "dataset_label": "rosbag2_2026_01_20-15_31_07",
+  "raw_gps_messages": 2440,
+  "raw_gps_group_fields": "0x210",
+  "required_gps_group_fields": "0x230",
+  "gps_missing_poslla": true,
+  "rpm_can_messages": 2984,
+  "wheel_source_gaps_above_200ms": 119,
+  "max_wheel_source_gap_seconds": 2.894,
+  "accepted_wheel_poses_full_start_diagnostic": 1,
+  "accepted_wheel_poses_fixed_20s_start_diagnostic": 1,
+  "fixed_20s_start_next_gap_seconds_rounded": 0.336,
+  "ready_route_created": false,
+  "gnss_failure_prevents_mapping": false,
+  "mapping_failure_reason": "Raw motion continuity gate failed. No threshold relaxation, automatic reset or fabricated missing motion.",
+  "poisoned_vectornav_comparison": "Same output hash with all VectorNav messages replaced, but only one accepted pose; insufficient for a complete-lap independence claim.",
+  "reproduction_tool": "pid_ws/src/lane_mapping_fixed_gnss/scripts/replay_bag_audit.py",
+  "original_evidence_available": "Local controlled archive; raw bag and full reports are not in this public package. Ask planner for an authorized transfer if needed.",
+  "physical_validation": "not_run"
+}

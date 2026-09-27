@@ -1,0 +1,9 @@
+# Keep reviewed session bytes stable across Windows/Linux checkouts and ZIP hashes.
+/AGENTS.md text eol=lf
+/AGENT_CONTEXT.md text eol=lf
+/docs/agent-context/** text eol=lf
+/docs/agent-context/bundles/*.zip binary
+/tools/agent_handoff.py text eol=lf
+/tools/tests/*.py text eol=lf
+/.github/workflows/agent-handoff.yml text eol=lf
+/workspace/src/aiformula/control/lane_mapping_*/scripts/*.sh text eol=lf

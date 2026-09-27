@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "purpose": "pre_cleanup_read_only_ci_backup",
+  "started_utc": "2026-09-27T04:43:59.729202+00:00",
+  "repository": {
+    "id": 1001834365,
+    "node_id": "R_kgDOO7bHfQ",
+    "full_name": "Sophia-AI-formula-team/aiformula_sophia",
+    "default_branch": "main",
+    "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia"
+  },
+  "source_branch": "feat/causal-lane-teach-repeat",
+  "expected_runs": 11,
+  "expected_artifacts": 8,
+  "raw_evidence_local_only": true,
+  "raw_evidence_publication_reviewed": false,
+  "inventory_contains_raw_logs_coordinates_or_absolute_paths": false,
+  "remote_mutations_performed": false,
+  "download_method": "existing_gh_cli_read_only",
+  "backup_script_sha256": "d1fd38070985da29ae3f4a6633cf39f24f31804ff2d9cfd9f9942e76c596c8bd",
+  "runs": [
+    {
+      "id": 36246982242,
+      "workflow_id": 367731743,
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "head_sha": "a6172354720f03ef7f4d5ba6c4d8fbb7b7f78377",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36246982242",
+      "created_at": "2026-09-26T13:59:36Z",
+      "updated_at": "2026-09-26T14:01:11Z",
+      "log_path": "runs/36246982242/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 183275,
+        "sha256": "00319b7bb5f7dfe248ca9968097eae3f09d52f2c7312c9c64c75c189ce597738"
+      }
+    },
+    {
+      "id": 36247053458,
+      "workflow_id": 367731743,
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "head_sha": "b04a47c2c4832971f1652798596ac7ef67cb11f8",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36247053458",
+      "created_at": "2026-09-26T14:00:45Z",
+      "updated_at": "2026-09-26T14:02:23Z",
+      "log_path": "runs/36247053458/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 238681,
+        "sha256": "f41a35ad430bc125c2eb547a6e68a067b939fe8e3586d31544834881fbc18c1f"
+      }
+    },
+    {
+      "id": 36247279346,
+      "workflow_id": 367731743,
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "head_sha": "d34ecbe977c081270596e98974bb0cf484162c63",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36247279346",
+      "created_at": "2026-09-26T14:04:46Z",
+      "updated_at": "2026-09-26T14:06:29Z",
+      "log_path": "runs/36247279346/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 248544,
+        "sha256": "3497755895aa97c59bb113247bb11345596b6fd8c65badeeec88a58434f7ffeb"
+      }
+    },
+    {
+      "id": 36247470378,
+      "workflow_id": 367731743,
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "head_sha": "a256971e2e4537e595facdb00eb7797cfa117b2b",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36247470378",
+      "created_at": "2026-09-26T14:08:11Z",
+      "updated_at": "2026-09-26T14:09:55Z",
+      "log_path": "runs/36247470378/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 190606,
+        "sha256": "601a5deab6b4df121666fbb7ec4dcddcb9c1eb33d8f6627254b636284df236af"
+      }
+    },
+    {
+      "id": 36251432303,
+      "workflow_id": 367731743,
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "head_sha": "56670bac62871033ec18a0249e2ecf9ae79ceb65",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36251432303",
+      "created_at": "2026-09-26T15:17:41Z",
+      "updated_at": "2026-09-26T15:19:47Z",
+      "log_path": "runs/36251432303/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 195157,
+        "sha256": "78e83331cf88e6a2121a555fe81c83a4dd15a1fa68faae35030bbead4e2937a3"
+      }
+    },
+    {
+      "id": 36256272843,
+      "workflow_id": 367817696,
+      "name": "Endpoint GNSS (ROS 2 Foxy)",
+      "head_sha": "807c7770970e39c757afd5e8202355c4d6233efa",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36256272843",
+      "created_at": "2026-09-26T16:40:09Z",
+      "updated_at": "2026-09-26T16:41:45Z",
+      "log_path": "runs/36256272843/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 236506,
+        "sha256": "c08da8558784db55f4908dccd813e1154894e5c52b7b1d227d1abc356b51ed14"
+      }
+    },
+    {
+      "id": 36256810479,
+      "workflow_id": 367817696,
+      "name": "Endpoint GNSS (ROS 2 Foxy)",
+      "head_sha": "aa9d42740e59569d3eb8fda12c02430f466f2954",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36256810479",
+      "created_at": "2026-09-26T16:49:01Z",
+      "updated_at": "2026-09-26T16:51:14Z",
+      "log_path": "runs/36256810479/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 183892,
+        "sha256": "52730582b2348c87565e27470050de49a324bcce5ad578b591c2e24a43636079"
+      }
+    },
+    {
+      "id": 36257132332,
+      "workflow_id": 367817696,
+      "name": "Endpoint GNSS (ROS 2 Foxy)",
+      "head_sha": "7662f5a5174b7579afadd23291c8e023288ecdfc",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36257132332",
+      "created_at": "2026-09-26T16:54:30Z",
+      "updated_at": "2026-09-26T16:56:50Z",
+      "log_path": "runs/36257132332/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 236249,
+        "sha256": "38ad16590b8d6553edd1f45122386cf52706f0e67e1a2020ac45eb66569bfa5c"
+      }
+    },
+    {
+      "id": 36258746524,
+      "workflow_id": 367839309,
+      "name": "Agent handoff integrity",
+      "head_sha": "38ad8699f786b61926bc708d9564374e17519b6c",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36258746524",
+      "created_at": "2026-09-26T17:21:37Z",
+      "updated_at": "2026-09-26T17:22:35Z",
+      "log_path": "runs/36258746524/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 153010,
+        "sha256": "2b42a42dceedd1c65923c0f0deee0ed40245558788d925866489a1126e13df00"
+      }
+    },
+    {
+      "id": 36258939592,
+      "workflow_id": 367839309,
+      "name": "Agent handoff integrity",
+      "head_sha": "dc2cacfa1918851fb08d937629b1bd77f48f2daf",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36258939592",
+      "created_at": "2026-09-26T17:24:57Z",
+      "updated_at": "2026-09-26T17:25:48Z",
+      "log_path": "runs/36258939592/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 152867,
+        "sha256": "e84f22991a747a52cbb1e843c0bed3ec43b9823491e5d85e425c9c251cbd10a4"
+      }
+    },
+    {
+      "id": 36259235841,
+      "workflow_id": 367839309,
+      "name": "Agent handoff integrity",
+      "head_sha": "328c2283347499161cec22775ce13e0834d29c60",
+      "head_branch": "feat/causal-lane-teach-repeat",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36259235841",
+      "created_at": "2026-09-26T17:30:00Z",
+      "updated_at": "2026-09-26T17:30:50Z",
+      "log_path": "runs/36259235841/workflow.log",
+      "download": {
+        "status": "complete",
+        "bytes": 136651,
+        "sha256": "eebd0bf01e8518b16610d68151ffc444ac22193afa2e69b2f4df431207f1bd4a"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 10907254320,
+      "run_id": 36246982242,
+      "name": "lane-foxy-validation",
+      "api_size_in_bytes": 2660043,
+      "expired": false,
+      "archive_path": "runs/36246982242/artifacts/10907254320.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 2660043,
+        "sha256": "898e7c69f1e91b8e5dd02617042a50105139cec8df7673651366fed934bc8365",
+        "zip_member_count": 70,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10907504429,
+      "run_id": 36247470378,
+      "name": "lane-foxy-validation",
+      "api_size_in_bytes": 2678960,
+      "expired": false,
+      "archive_path": "runs/36247470378/artifacts/10907504429.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 2678960,
+        "sha256": "6ed92b6b7cfd4bd6924aa5e5e80a519e27916f72dd1ba7e94f60c9d2090f8205",
+        "zip_member_count": 90,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10907578935,
+      "run_id": 36247279346,
+      "name": "lane-foxy-validation",
+      "api_size_in_bytes": 2679290,
+      "expired": false,
+      "archive_path": "runs/36247279346/artifacts/10907578935.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 2679290,
+        "sha256": "3fba21cfeb2166c89f7cedbae92ec174519e0279437e69f732b1918a19574c22",
+        "zip_member_count": 90,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10908241097,
+      "run_id": 36247053458,
+      "name": "lane-foxy-validation",
+      "api_size_in_bytes": 2659224,
+      "expired": false,
+      "archive_path": "runs/36247053458/artifacts/10908241097.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 2659224,
+        "sha256": "da5342347a049dc7529fea675911d686d7c9b730338f0c5501c08e74fc76d85a",
+        "zip_member_count": 70,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10909535764,
+      "run_id": 36251432303,
+      "name": "lane-foxy-validation",
+      "api_size_in_bytes": 2774950,
+      "expired": false,
+      "archive_path": "runs/36251432303/artifacts/10909535764.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 2774950,
+        "sha256": "2d407fd18ce18de6c9b02377ba7e50bdd40ce600342dc74e922c2fcab7c8e236",
+        "zip_member_count": 95,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10910746481,
+      "run_id": 36256272843,
+      "name": "lane-endpoint-gnss-foxy-validation",
+      "api_size_in_bytes": 138711,
+      "expired": false,
+      "archive_path": "runs/36256272843/artifacts/10910746481.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 138711,
+        "sha256": "1eedac7881f11455e5fa790999d2be6ef18ff026febeca4cdd100d8e777446c8",
+        "zip_member_count": 104,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10910912347,
+      "run_id": 36257132332,
+      "name": "lane-endpoint-gnss-foxy-validation",
+      "api_size_in_bytes": 210597,
+      "expired": false,
+      "archive_path": "runs/36257132332/artifacts/10910912347.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 210597,
+        "sha256": "debae7a26672404402c0c41ab5b1b10eab6fc0aa98c697131c9b2617827bf83f",
+        "zip_member_count": 110,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    },
+    {
+      "id": 10910997912,
+      "run_id": 36256810479,
+      "name": "lane-endpoint-gnss-foxy-validation",
+      "api_size_in_bytes": 204278,
+      "expired": false,
+      "archive_path": "runs/36256810479/artifacts/10910997912.zip",
+      "download": {
+        "status": "complete",
+        "bytes": 204278,
+        "sha256": "ba56a76b44de66201df6400de79887c7c2ad5429fe5eac1eb1c30821f7d7f0d6",
+        "zip_member_count": 107,
+        "zip_crc_verified": true,
+        "api_size_matches": true
+      }
+    }
+  ],
+  "failures": [],
+  "finished_utc": "2026-09-27T04:45:07.805408+00:00",
+  "backup_complete": true,
+  "raw_evidence_bytes": 16161491,
+  "cleanup_prerequisites_remaining": [
+    "Verify new-repository delivery and successful matching CI independently",
+    "Review and publish only the sanitized inventory/selected evidence",
+    "Recheck old repository ID, branch head and exact deletion allowlist immediately before cleanup"
+  ]
+}

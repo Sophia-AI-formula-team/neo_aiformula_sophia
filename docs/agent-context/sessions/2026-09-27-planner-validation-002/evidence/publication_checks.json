@@ -1,0 +1,29 @@
+{
+  "scope": "Agent context, offline packager and repository evidence integrity only; not vehicle validation.",
+  "initial_publication_sha": "38ad8699f786b61926bc708d9564374e17519b6c",
+  "first_ci": {
+    "url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36258746524",
+    "conclusion": "failure",
+    "cause": "Windows path aliases prevented four mock fault-injection predicates from matching canonical paths."
+  },
+  "fixed_test_sha": "dc2cacfa1918851fb08d937629b1bd77f48f2daf",
+  "successful_ci": {
+    "url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36258939592",
+    "conclusion": "success",
+    "jobs": [
+      {"os": "ubuntu-latest", "python": "3.8", "result": "success"},
+      {"os": "ubuntu-latest", "python": "3.13", "result": "success"},
+      {"os": "windows-latest", "python": "3.8", "result": "success"},
+      {"os": "windows-latest", "python": "3.13", "result": "success"}
+    ]
+  },
+  "local_postfix_test_result": {"tests": 32, "passed": 31, "skipped": 1, "failed": 0, "exit_code": 0},
+  "local_skip_reason": "Real symlink creation not permitted; alias and simulated reparse tests passed.",
+  "functional_ros_code_unchanged": true,
+  "first_bundle": {
+    "bytes": 12044,
+    "sha256": "2f32f685070e1d02d3ec9d60d06ffb75f5f01691fbe7bf66408d18f2b78bc38e",
+    "git_blob_sha_verified_via_github_contents_api": "40df9b3035da5633b790eb0b28635411e9a675cc"
+  },
+  "redaction": "Counts and public GitHub identifiers only. Runner paths and complete environment dumps are not copied."
+}

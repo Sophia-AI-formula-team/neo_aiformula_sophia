@@ -1,0 +1,50 @@
+name: Agent handoff integrity
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'AGENTS.md'
+      - 'AGENT_CONTEXT.md'
+      - 'README.md'
+      - '.gitattributes'
+      - 'docs/agent-context/**'
+      - 'tools/agent_handoff.py'
+      - 'tools/tests/**'
+      - '.github/workflows/agent-handoff.yml'
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'AGENT_CONTEXT.md'
+      - 'README.md'
+      - '.gitattributes'
+      - 'docs/agent-context/**'
+      - 'tools/agent_handoff.py'
+      - 'tools/tests/**'
+      - '.github/workflows/agent-handoff.yml'
+permissions:
+  contents: read
+jobs:
+  context-and-offline-tools:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.8', '3.13']
+    steps:
+      - name: Verify canonical repository identity
+        run: python -c "import os; assert os.environ['GITHUB_REPOSITORY_ID'] == '1303517209'; assert os.environ['GITHUB_REPOSITORY'] == 'Sophia-AI-formula-team/neo_aiformula_sophia'"
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docs/agent-context
+            tools
+            workspace/src/aiformula/control/lane_mapping_lya_reference
+            workspace/src/aiformula/control/lane_mapping_fixed
+            workspace/src/aiformula/control/lane_mapping_fixed_gnss
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test packager, sealed records, local links and exact bundle bytes
+        run: python -B -m unittest discover -s tools/tests -v

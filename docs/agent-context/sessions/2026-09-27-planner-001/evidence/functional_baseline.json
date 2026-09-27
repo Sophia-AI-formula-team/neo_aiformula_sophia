@@ -1,0 +1,33 @@
+{
+  "evidence_kind": "reviewed_summary_of_prior_native_ci",
+  "head_sha": "7662f5a5174b7579afadd23291c8e023288ecdfc",
+  "run_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36257132332",
+  "artifact_url": "https://github.com/Sophia-AI-formula-team/aiformula_sophia/actions/runs/36257132332/artifacts/10910912347",
+  "artifact_retention_days": 14,
+  "conclusion": "success",
+  "container": "ros:foxy-ros-base-focal",
+  "python_version": "3.8.10",
+  "built_packages": ["vectornav_msgs", "lane_mapping_lya_reference", "lane_mapping_fixed", "lane_mapping_fixed_gnss"],
+  "unit_tests": {"total": 520, "shared_reference": 293, "gnss": 227, "failed": 0, "skipped": 0},
+  "runtime_source_report_sha256": "b817ac873a9f1e867abe007b3121360d307da05fb35c96f9028e7cf0cb3cd7b6",
+  "dds_checks_passed": 151,
+  "dds_checks_total": 151,
+  "dds_cases": [
+    {"case": "default_guard", "checks": 11, "passed": true},
+    {"case": "normal", "checks": 25, "passed": true},
+    {"case": "no_gnss_build", "checks": 12, "passed": true},
+    {"case": "startup_gap", "checks": 16, "passed": true},
+    {"case": "future_gps", "checks": 17, "passed": true},
+    {"case": "missing_bits", "checks": 17, "passed": true},
+    {"case": "uncertainty", "checks": 17, "passed": true},
+    {"case": "future_wheel", "checks": 18, "passed": true},
+    {"case": "future_gyro", "checks": 18, "passed": true}
+  ],
+  "synthetic_inputs": true,
+  "actual_ros_messages_and_services": true,
+  "physical_stop_tested": false,
+  "complete_moving_lap_and_repeat_tested": false,
+  "older_two_packages_dds_repeat_rerun_by_this_workflow": false,
+  "redaction": "Only counts, package names, public run IDs and report hash retained. Per-case details, coordinates and machine paths not copied.",
+  "limitation": "Stationary DDS safety/windows only; no full-lap repeat or physical hardware proof. Summary is not the complete raw CI artifact."
+}

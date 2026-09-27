@@ -2,6 +2,16 @@
 
 Runnable ROS 2 source snapshot from the Sophia vehicle computer, captured on 2026-07-17 JST.
 
+## Lane teach/repeat and agent handoff
+
+The canonical destination is **Sophia-AI-formula-team/neo_aiformula_sophia**
+(repository ID 1303517209), branch `feat/causal-lane-teach-repeat`.
+Start with [AGENT_CONTEXT.md](AGENT_CONTEXT.md), [current handoff](docs/agent-context/STATUS.md)
+and [experiment recording/upload protocol](docs/agent-context/PROTOCOL.md).
+The three lane-mapping packages are under `workspace/src/aiformula/control/`, beside LYA.
+GNSS in `_gnss` is only a fixed-route start check, never a mapping input.
+CI and handoff receipts do not authorize driving the vehicle.
+
 ## Repository layout
 
 - `workspace/src/aiformula`: the ROS 2 workspace source tree from `/home/workspace/src/aiformula` on the vehicle.
