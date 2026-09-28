@@ -1,0 +1,99 @@
+{
+  "elapsed_wall_s": 0.403462700000091,
+  "evidence_level": "synthetic_offline_only",
+  "fixture": {
+    "initial_heading_offset_rad": 0.04,
+    "initial_outward_offset_m": 0.1,
+    "lane_width_m": 2.4,
+    "radius_m": 20.0,
+    "timestep_s": 0.05
+  },
+  "gates": {
+    "controller_acceleration_mps2": 0.5,
+    "controller_lateral_acceleration_mps2": 0.35,
+    "controller_maximum_yaw_rate_rps": 0.4,
+    "controller_yaw_acceleration_rps2": 0.8,
+    "maximum_cross_track_m": 0.8,
+    "route_lateral_acceleration_mps2": 0.6
+  },
+  "limits": [
+    "Ideal noiseless unicycle and exact current pose, not vehicle accuracy",
+    "Full synthetic completed first lap available before route construction",
+    "No mask projection, online localization, sensor errors, DDS or hardware exercised",
+    "2.0 m/s is the current LYA-profile reference; startup slew and feedback remain active",
+    "0.35 m/s^2 checks fixed-reference route feasibility, not every feedback command",
+    "No future runtime observation or recorded teacher-speed replay"
+  ],
+  "passed": true,
+  "reference_speed_mps": 2.0,
+  "route_diagnostics": {
+    "closure_distance_m": 4.898587196589413e-15,
+    "closure_heading_error_rad": 2.4492935982947064e-16,
+    "final_interpolated_sections": 0,
+    "final_max_unsupported_gap_m": 0.0,
+    "final_support_fraction": 1.0,
+    "input_lane_points": 9600,
+    "input_trajectory_points": 801,
+    "localization_accuracy_verified": false,
+    "max_curvature_1pm": 0.05046808181211885,
+    "max_speed_mps": 2.0,
+    "min_clearance_m": 1.1975739983880254,
+    "min_speed_mps": 2.0,
+    "obstacle_safety_verified": false,
+    "prior_interpolated_sections": 0,
+    "prior_length_m": 125.66338316179203,
+    "prior_max_unsupported_gap_m": 0.0,
+    "prior_support_fraction": 1.0,
+    "requires_operator_review": true,
+    "route_length_m": 125.64315854477644,
+    "route_sample_count": 629,
+    "travelled_distance_m": 125.66338316179201,
+    "valid": true
+  },
+  "schema_version": 1,
+  "sources": {
+    "lane_mapping_lya_reference/lane_mapping_lya_reference/controller.py": "52d94a095e223746acdf666a970897bb3a7c218c8921ba4e7f419373083684c8",
+    "lane_mapping_lya_reference/lane_mapping_lya_reference/route.py": "3353e91e907b004c3c29862cd0aa9edb0e4775104fac3e923533d39af3b14d70",
+    "trajectory_follower/trajectory_follower/lya_profile.py": "1ddf8a610f5a690e4cd91b11206380e046f991c2ab4279867892c70a4ba964a0"
+  },
+  "speed_policy": "fixed_reference",
+  "tight_curve_rejections": [
+    {
+      "diagnostics": {
+        "allowed_lateral_accel_mps2": 0.6,
+        "reference_speed_mps": 2.0,
+        "rejection_reason": "fixed speed infeasible: reference=2 m/s requires lateral acceleration=0.806319 m/s^2; allowed=0.6 m/s^2",
+        "required_lateral_accel_mps2": 0.806319009351687,
+        "valid": false
+      },
+      "radius_m": 5.0,
+      "reason": "fixed speed infeasible: reference=2 m/s requires lateral acceleration=0.806319 m/s^2; allowed=0.6 m/s^2",
+      "rejected": true,
+      "stage": "route_builder"
+    },
+    {
+      "allowed_lateral_acceleration_mps2": 0.35,
+      "radius_m": 9.0,
+      "reason": "fixed speed infeasible: reference=2 m/s; required yaw=0.222944 rad/s (allowed=0.4), required lateral acceleration=0.445888 m/s^2 (allowed=0.35)",
+      "rejected": true,
+      "required_lateral_acceleration_mps2": 0.4458877067244186,
+      "route_max_curvature_1pm": 0.11147192668110464,
+      "stage": "controller_attachment"
+    }
+  ],
+  "tracking": {
+    "commanded_speed_max_mps": 2.0,
+    "commanded_speed_min_mps": 0.025,
+    "completed_laps": 1,
+    "cross_track_max_m": 0.10000000000000142,
+    "cross_track_p95_m": 0.03301950228117799,
+    "cross_track_rmse_m": 0.01650873785383957,
+    "final_cross_track_m": 0.00010489881361795821,
+    "maximum_commanded_lateral_acceleration_mps2": 0.4024362469790256,
+    "samples": 1298,
+    "simulated_duration_s": 64.85000000000001,
+    "steady_after_s": 10.0,
+    "steady_cross_track_rmse_m": 0.00031647610978846857,
+    "steady_mean_command_speed_mps": 1.999999842687707
+  }
+}

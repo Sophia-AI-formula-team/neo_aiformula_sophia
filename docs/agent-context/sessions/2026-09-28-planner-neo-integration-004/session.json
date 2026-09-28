@@ -1,0 +1,35 @@
+{
+  "base_code_sha": "ef7e5ceb7dbf0b730e34f1f9e5de2a0e33807f23",
+  "consumed_handoff_id": "user-request-20260928-neo-integration",
+  "created_utc": "2026-09-28T12:41:59Z",
+  "dependency_sources": [
+    "Existing neo source and native VectorNav message definitions; no local dependencies installed.",
+    "Official rosdep python3-transforms3d maps Ubuntu Focal to pip: https://github.com/ros/rosdistro/blob/master/rosdep/python.yaml",
+    "tf_transformations upstream dependency documentation: https://github.com/DLu/tf_transformations",
+    "Disposable Foxy CI pins transforms3d 0.4.2 without upgrading NumPy: https://pypi.org/project/transforms3d/0.4.2/"
+  ],
+  "external_artifacts": [
+    {
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591132/artifacts/10971892226",
+      "sha256": "b6b0e15f30dcbbb611b8df256a414e2edd2035999fd830a39b3e6bdb426aacfd",
+      "bytes": 2817464,
+      "access_note": "GitHub Actions artifact, 14-day retention. API-provided digest/size; extracted reports downloaded and reviewed. Permanent selected reports included here. Not vehicle evidence."
+    },
+    {
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591136/artifacts/10971942198",
+      "sha256": "0803f26921678483a558d56044369e70419537c6aed6698ab6e515dffbe8561b",
+      "bytes": 233999,
+      "access_note": "GitHub Actions artifact, 14-day retention. API-provided digest/size; extracted reports downloaded and reviewed. Permanent selected reports included here. Not vehicle evidence."
+    }
+  ],
+  "id": "2026-09-28-planner-neo-integration-004",
+  "input_handoff_id": "user-request-20260928-neo-integration",
+  "publication_review": {
+    "privacy_checked": true,
+    "secrets_checked": true
+  },
+  "result": "partial",
+  "role": "planner",
+  "schema_version": 1,
+  "status": "handed_off"
+}

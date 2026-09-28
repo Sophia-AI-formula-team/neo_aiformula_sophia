@@ -22,7 +22,13 @@ TEACH 不再暗缩到旧的 0.8 或附加新包启动 slew。第二圈固定本�
 默认教师上限 0 仅支持私有预览；非私有输出必须指定审核过的正数上限和三个部署确认。
 这些改变不会让下文历史真实 bag 失败自动变成成功，也不代表更高速度已获实车验收。
 
-新增验证分层如下；**本次真实上游 DDS 结果待对应提交 CI**，不能用历史 run 代替：
+新增验证分层如下。功能基线 `bab577b9cb71e5459301c785843ef54ba4a2cefa` 的
+[Foxy 真实上游 CI](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591132)
+和 [GNSS CI](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591136)
+均已通过：354 + 262 = 616 个包单测（两组有重叠，不相加重复计数），Header 另 4 个；
+旧两包 DDS 63 项，GNSS 9 场景 151 项；真实 LYA/完整 Header 两场景 24 项。
+本地 Windows 同范围 619 passed、1 平台 skip。首次真 LYA CI 因 transforms3d 未声明失败，
+补依赖后重跑通过，失败 run 36426750831 保留，不删失败记录。
 
 - 本地 `road_detector/test/test_output_contract.py`：执行生产图像方法检查完整 Header、像素和尺寸，模型边界替身；不是实际推理。
 - 本地 `_gnss/test/test_deployment_guard.py`：执行真实 node 方法检查 resolved 输出、竞争发布者、graph 失败、运行中 HOLD；graph/ROS 消息为替身，不是 DDS。

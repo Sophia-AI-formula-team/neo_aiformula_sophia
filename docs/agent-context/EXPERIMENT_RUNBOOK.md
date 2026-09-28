@@ -21,8 +21,8 @@
 
 **已知记录风险**：共享 RunJournal 默认仅保留 4 × 5 MiB，会删除早期记录。
 不能只在结尾打包它；另存不轮转的 run manifest 和阶段快照，必要时使用有磁盘预算的外部日志收集。
-空间不足立即记为证据不完整，不能悄悄继续。GNSS 节点目前也没有完整有效参数和源码哈希快照，
-现场记录必须补上；不能仅附 repo 中默认 YAML。
+空间不足立即记为证据不完整，不能悄悄继续。GNSS 节点启动日志已记录有效参数和速度来源，
+现场仍须补实际源码哈希/overlay/依赖快照，并在轮转前保存；不能仅附 repo 中默认 YAML。
 
 时间必须区分：源 header `source_ns`、接收时 ROS 时钟、接收时单调时钟，以及 clock domain/进程 epoch。
 不同主机 monotonic 不能相减。LYA `Twist` 没有 header，只能记录本地接收新鲜度，不能编造源时间。
@@ -40,7 +40,7 @@ ros2 node info /lane_endpoint_follower
 ros2 param dump /lane_endpoint_follower
 ros2 topic info /aiformula_sensing/vehicle_info --verbose
 ros2 topic info /aiformula_sensing/zed_node/imu/data_raw --verbose
-ros2 topic info /aiformula_perception/pub_mask_image --verbose
+ros2 topic info /aiformula_perception/road_detector/mask_image --verbose
 ros2 topic info /aiformula_sensing/vectornav/raw/gps --verbose
 ```
 
@@ -57,7 +57,7 @@ shell 历史或认证文件，以免把 token/个人资料带入证据。
 | --- | --- | --- |
 | `/aiformula_sensing/vehicle_info` | `can_msgs/msg/Frame`；ID 1809/0x711，左 RPM=data[4]、右=data[0]；默认轮径0.254m | 原始字节/单位/频率；仅已核实的低8位无符号前进协议。高字节/倒车/未知协议不猜 |
 | `/aiformula_sensing/zed_node/imu/data_raw` | `sensor_msgs/msg/Imu`；只用 angular_velocity，经固定安装旋转 | 静止 bias、轴方向/符号、时间连续性；不读 orientation、不换 INS |
-| `/aiformula_perception/pub_mask_image` | 完整 mono8/8UC1 mask | 来自 road detector，不是 ROI；尺寸/frame/编码和时间戳 |
+| `/aiformula_perception/road_detector/mask_image` | 完整 mono8/8UC1 mask | 来自 road detector，不是 ROI；尺寸/frame/编码和时间戳 |
 | CameraInfo / TF | 匹配图像尺寸/frame，已到达的固定安装外参 | 实际相机内参/高度/俯角、地面假设；不要只相信文件名 |
 | `/aiformula_sensing/vectornav/raw/gps` | 原生 `vectornav_msgs/msg/GpsGroup`，FIX/POSLLA/POSU=0x230，3D fix，有效不确定度 | Honda 默认0x210缺POSLLA；经授权用包内 `vectornav_endpoint_fields.yaml` 附加到驱动启动，不是 follower 参数 |
 
@@ -95,7 +95,7 @@ GNSS 日志有精确经纬度，公开前脱敏。
 
 1. 独立手操急停能切断驱动，以及恢复开关不会自动重新行驶。
 2. 软件零命令 → 下游实际轮速/CAN 指令为零 → 物理车轮停止，三者分别留证。
-   现有仿射电机补偿可能把零映射成非零，不能只看上游 Twist。
+   当前 neo 源码已有零命令旁路；须核对实际安装版本和物理输出，不能只看上游 Twist。
 3. 下游命令断流超时有效；单个控制器拥有真实 command topic，无竞争发布者。
 4. `enable_vehicle_output` / `hardware_stop_verified` / `motor_zero_passthrough_verified`
    的开启者、时间和证据。把参数设 true 本身不是验证。
@@ -120,7 +120,10 @@ GNSS 日志有精确经纬度，公开前脱敏。
 6. 手操急停/软件 estop 均需记录；reset 不代表允许自动继续。运动链丢失后结束本 run，不能续用漏运动的地图。
 
 LYA 起停只管理本 launch 所创建进程，不杀别的控制器、不假设其它发布者已停止。
-当前命令上限0.8m/s、0.4rad/s只是软件限幅，不表示该速度已被现场批准；任务没有提速授权。
+速度默认继承 LYA 当前 `REFERENCE_SPEED_MPS`（当前 2.0），仅明确配置覆盖；第一圈保留通过
+准入的教师原命令，repeat 原角速度门限 0.4 不变。软件默认值不是现场驾驶批准。
+记录有效参考、教师正数准入上限、路线可行性和实际输出；上限 0 仅私有预览，不可接车辆输出。
+`_gnss` 原轮速门限 3.0 不随参考自动升高，参考冲突在启动时报错；不得靠放宽门限消除错误。
 
 ## 5. 必须报告“效果”，不能只报运行速度
 

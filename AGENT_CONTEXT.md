@@ -134,5 +134,10 @@ repeat 角速度限值仍为 0.4 rad/s；独立的教师角速度准入默认继
 
 上游 Header 单测与本地算法测试不能代替 ROS。新增 `neo_upstream_smoke.py` 使用真实 supervisor
 和已安装 LYA，验证合成输入下的反馈输出与真实进程退出；可追加生产 mask 发布方法 + cv_bridge/DDS。
-**本次新增真实上游 DDS 结果待对应提交 CI**，不将脚本存在或历史 CI 当本次通过。
+基线 `bab577b9cb71e5459301c785843ef54ba4a2cefa` 的
+[真实上游 CI](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591132)
+已通过：默认当前参考 2 与全局 YAML 覆盖 4 两场景，真实反馈分别 2/2.15、4/4.15，
+实际子进程退出及完整 Header DDS 传输共 24 项检查。
+[_gnss CI](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591136)
+三包共 616 单测、9 个合成 DDS 场景 151 项检查；Header 另 4 单测。失败的前一次 CI 保留在 session。
 这些测试仍不覆盖模型推理、真实传感器驱动、整圈建图精度、实际遥控/电机/急停。
