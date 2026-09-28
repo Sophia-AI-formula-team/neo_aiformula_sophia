@@ -51,7 +51,9 @@ jobs:
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor --yes -o /usr/share/keyrings/ros-archive-keyring.gpg
           apt-get update
-          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge ros-foxy-can-msgs
+          apt-get install -y --no-install-recommends python3-pip python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge ros-foxy-can-msgs
+          # Official rosdep uses pip for this tf_transformations dependency on Focal.
+          python3 -m pip install --no-deps transforms3d==0.4.2
       - name: Build all three packages, regression and real DDS isolation checks
         shell: bash
         run: bash workspace/src/aiformula/control/lane_mapping_fixed_gnss/scripts/ci_verify.sh "$GITHUB_WORKSPACE"

@@ -283,7 +283,7 @@ def test_profile_and_lya_runtime_dependencies_are_declared():
     assert 'trajectory_follower' in dependencies('lane_mapping_lya_reference')
     assert 'lane_mapping_lya_reference' in dependencies('lane_mapping_fixed')
     assert 'lane_mapping_lya_reference' in dependencies('lane_mapping_fixed_gnss')
-    assert {'tf2_ros', 'tf2_geometry_msgs', 'tf_transformations'} <= dependencies('trajectory_follower')
+    assert {'tf2_ros', 'tf2_geometry_msgs', 'tf_transformations', 'python3-transforms3d'} <= dependencies('trajectory_follower')
     entries = [node.value.replace(' ', '')
                for node in ast.walk(read_tree(CONTROL / 'trajectory_follower/setup.py'))
                if isinstance(node, ast.Constant) and isinstance(node.value, str)]

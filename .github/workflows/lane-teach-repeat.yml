@@ -51,7 +51,10 @@ jobs:
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor --yes -o /usr/share/keyrings/ros-archive-keyring.gpg
           apt-get update
-          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge
+          apt-get install -y --no-install-recommends python3-pip python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge
+          # Official rosdep resolves python3-transforms3d via pip on Focal.
+          # Pin the pure-Python dependency without upgrading ROS's NumPy.
+          python3 -m pip install --no-deps transforms3d==0.4.2
       - name: Build native messages, lane packages and real neo LYA; unit and DDS tests
         shell: bash
         run: bash workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/ci_verify.sh "$GITHUB_WORKSPACE"

@@ -39,6 +39,12 @@
 
 ## clone 和编译
 
+`trajectory_follower/package.xml` 显式声明 `python3-transforms3d`：Foxy 的
+`tf_transformations` 可能能安装/编译，却在真正启动时缺这个 Python 依赖。
+[官方 rosdep 规则](https://github.com/ros/rosdistro/blob/master/rosdep/python.yaml)
+在 Focal 通过 pip 解析它。依赖安装仍需车端授权；本项目 CI 在一次性容器中固定为
+`transforms3d==0.4.2`，不升级 ROS 的 NumPy。本机未安装任何新依赖。
+
 目标环境是 **Ubuntu 20.04 + ROS 2 Foxy / Python 3.8**。先准备好系统 ROS 环境和车上原来的感知、定位、LYA 依赖。下面只编译明确列出的包，不让 colcon 遍历整个车辆项目。依赖安装需先获得车端环境修改授权；已有依赖时跳过 rosdep 安装。
 
 ```bash
