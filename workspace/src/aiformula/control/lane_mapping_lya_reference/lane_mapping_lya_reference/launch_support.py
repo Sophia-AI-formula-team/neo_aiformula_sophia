@@ -33,6 +33,13 @@ def _nodes(context, mode):
     if not Path(params_file).is_file():
         raise ValueError("params_file does not exist: " + params_file)
     shared = {"use_sim_time": use_sim_time}
+    # Empty means inherit the LYA source default or the user's params_file.
+    # Never let a numeric launch default silently override that config file.
+    if value("reference_speed_mps").strip():
+        reference = float(value("reference_speed_mps"))
+        if not math.isfinite(reference) or reference <= 0:
+            raise ValueError("reference_speed_mps must be finite and positive")
+        shared["reference_speed_mps"] = reference
     follower = {
         **shared,
         "safety_mode": mode,
@@ -109,14 +116,15 @@ def generate_learning_launch(mode):
         "hardware_stop_verified": "false",
         "route_bundle_path": "",
         "log_directory": "~/.ros/lane_learning",
-        "mask_topic": "/aiformula_perception/pub_mask_image",
+        "mask_topic": "/aiformula_perception/road_detector/mask_image",
         "vectornav_topic": "/aiformula_sensing/vectornav/raw/common",
         "camera_info_topic": "/aiformula_sensing/zed_node/left/camera_info",
         "camera_frame_override": "",
         "base_frame": "base_footprint",
         "yaw_offset_rad": "0.0",
         "teacher_package": "trajectory_follower",
-        "teacher_executable": "lya_follower_connected_omegat_global",
+        "teacher_executable": "lya_0221",
+        "reference_speed_mps": "",
     }
     descriptions = {
         "record": "Start the passive first-lap recorder; false loads an existing route only",
@@ -127,6 +135,7 @@ def generate_learning_launch(mode):
         "hardware_stop_verified": "Operator has physically verified independent manual emergency stop",
         "route_bundle_path": "Absolute bundle.json path when reusing an existing map",
         "yaw_offset_rad": "Calibrated VectorNav yaw mounting correction, used by both recorder and follower",
+        "reference_speed_mps": "Optional override for all nodes; empty inherits params_file or the current LYA source default",
     }
     declarations = [DeclareLaunchArgument(name, default_value=default,
                                           description=descriptions.get(name, name))

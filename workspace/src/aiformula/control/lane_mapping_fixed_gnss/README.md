@@ -1,7 +1,7 @@
 # lane_mapping_fixed_gnss
 
 第三个独立 ROS 2 包，位于 `neo_aiformula_sophia/workspace/src/aiformula/control/`，与实际 `trajectory_follower`、原有两个 lane_mapping 包同级。
-旧包保持不变。本包复用 `lane_mapping_lya_reference` 的纯算法、安全控制、日志和 LYA 进程管理；不实例化它的 VectorNav 定位节点。
+本包复用 `lane_mapping_lya_reference` 的纯算法、安全控制、日志和 LYA 进程管理；不实例化它的 VectorNav 定位节点。三个包的共享接线/参考速度修复不改变这里独立的 CAN + raw gyro 运动链，旧两个包仍是 VectorNav CommonGroup 链，不能混用验收结论。
 
 ## GNSS 的使用边界
 
@@ -24,7 +24,7 @@ GNSS **只用于定轨迹起点的粗定位，不用于建图**。只在 LYA **�
 |---|---|
 | CAN | `/aiformula_sensing/vehicle_info`，`can_msgs/Frame`，ID 1809 (0x711)，左 `data[4]`、右 `data[0]`；轮径 0.254 m |
 | 原始陀螺仪 | `/aiformula_sensing/zed_node/imu/data_raw`，只读取 `angular_velocity`，经已标定安装旋转转入车体系 |
-| 完整 mask | `/aiformula_perception/pub_mask_image`，mono8；不是 lane publisher ROI |
+| 完整 mask | `/aiformula_perception/road_detector/mask_image`，mono8；不是 lane publisher ROI |
 | 内参 / 外参 | CameraInfo + 已到达的固定相机安装 TF |
 | GNSS，仅端点 | `/aiformula_sensing/vectornav/raw/gps`，`vectornav_msgs/GpsGroup` 的 `fix`、`poslla`、`posu` |
 
@@ -49,11 +49,13 @@ cd ~/lane_learning_ws
 rosdep install --from-paths \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_fixed_gnss \
+  src/neo_aiformula_sophia/workspace/src/aiformula/control/trajectory_follower \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --ignore-src --rosdistro foxy -r -y
 colcon build --symlink-install --base-paths \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_fixed_gnss \
+  src/neo_aiformula_sophia/workspace/src/aiformula/control/trajectory_follower \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --packages-up-to lane_mapping_fixed_gnss
 source install/setup.bash
@@ -61,17 +63,23 @@ ros2 launch lane_mapping_fixed_gnss fixed_gnss.launch.py
 rviz2 -d "$(ros2 pkg prefix lane_mapping_fixed_gnss)/share/lane_mapping_fixed_gnss/rviz/mapping.rviz"
 ```
 
-### neo 基线的已知部署阻塞
+### 当前 neo 接线与速度约定
 
-- 默认 LYA executable 在 neo 中存在，电机话题重映射仍匹配；但其输出允许到 `4.0 m/s`、`0.45 rad/s`，本包仍拒绝超过原教师准入 `2.25 m/s`、`0.4 rad/s` 的命令。迁移未修改 LYA、安全参数或控制算法，超限会 HOLD，需要单独审核兼容方案。
-- neo 的 `road_detector.publish_result` 没有保留 mask 的 `header.frame_id`。本包严格要求完整 mask 带真实 optical frame；空 frame 会拒绝建图/定位。需要在上游正确传递原始 header 并核对 CameraInfo/固定 TF，不能伪造 frame 或放松准入。本包没有 frame override。
-- 受管 LYA 自己仍依赖原有 gyro odometry、filtered lane pose 和 filtered omega 发布者；新包自己的 raw gyro 里程计不会冒充该输入。
+- 默认受管教师为实际 `lya_0221`；它与固定路线默认继承 `trajectory_follower/lya_profile.py` 的 `REFERENCE_SPEED_MPS`（原 `v_t`）。本次源码值 2.0，不是新包另抄的固定常量：源改为 4，默认随之继承 4。原 LYA 反馈律未改，因此 2.0 参考加正前方 1 m 误差时可能输出约 2.15。
+- 第一圈保留通过准入的原 LYA 命令，不再缩到 0.8 或追加新包启动 slew。第二圈固定本次所选参考，不回放第一圈速度，也不按曲率暗中减速；原 `0.35 m/s²` 横向限值不放宽，不可行路线拒绝生成/运行。跟踪反馈、启动加速度限制、故障停车仍保留。
+- 0.35 是 `v_ref² × |曲率|` 的名义参考检查，不是反馈后实际 `v × omega` 严格上限。repeat 角速度仍限 0.4 rad/s；独立教师角速度准入继承 LYA 当前 `MAX_YAW_RATE_RPS`（本次 2.0 rad/s），两者不混同。
+- `reference_speed_mps` launch 默认空，不覆盖当前源码/配置；显式值统一作用于本包和受管教师。`params_file` 也传给 supervisor，可通过全局 `/**.ros__parameters.reference_speed_mps` 统一覆盖。repeat `maximum_speed_mps=0` 表示使用有效参考，不是硬编码 2.0。
+- 默认值在重新构建/启动时读取，运行中不热更新。修改参考后，旧 bundle 的速度 policy/参考不匹配就拒绝，需重生成并验证路线；不能换 profile 偷偷降速使用旧结果。
+- road detector 已修复完整 Header 传递；本包仍严格检查真实 optical frame、CameraInfo 尺寸和固定 TF，不提供 frame override、不猜 frame。
+- 受管 LYA 仍依赖原有 gyro odometry、filtered lane pose、filtered omega；本包自己的 raw gyro 里程计不替代它的输入。
 
-上述是实车集成阻塞，不影响只用合成原生消息的独立 DDS 测试。CI 通过不等于这些现场问题已解决。
+真实安装的 LYA 与生产 mask 发布方法新增独立 DDS 集成测试；本次结果待对应提交 CI。Header 本地单测、历史合成 DDS 或编译通过都不是模型推理、全车接线和实车验证。
 
 默认只向 `/lane_learning_gnss/cmd_vel` 输出，不连接电机；启动后不自动开车。不要同时启动旧两包的 command selector 或第二个 LYA。launch 启动的 LYA 只向私有 `/lane_learning/lya_cmd` 发布。
 
-实车接管前必须核实独立手操急停、下游超时看门狗以及**零指令确实透传到电机**。现有仿射电机补偿可能把零输入映射成非零，不能以“已经发零”代替物理停车验证。要绑定真实 command topic，必须显式同时打开 `enable_vehicle_output`、`hardware_stop_verified`、`motor_zero_passthrough_verified`；实际 remap 后的输出话题也检查。软件安全门限不是硬件急停替代品。
+实车接管前必须核实独立手操急停、下游超时看门狗以及**零指令确实透传到电机**。当前 neo 电机源码已有完整停止命令的零 RPM 旁路，但不能以代码存在代替车上验证。要绑定真实 command topic，必须同时明确三个部署确认开关，并为 `accepted_teacher_max_speed_mps` 设置经过审核的正数上限。默认 0 只允许私有预览，不是实车无限速许可；也不能把电机 `max_command_v=4.0` 当统一硬上限，因为 `STATE_BKUP` 绕开它。
+
+本包现在在 arm/prepare/start_repeat 前及每个控制 tick 检查实际 resolved/remapped 输出话题的 publisher。竞争发布者或 graph 查询失败会发零并 HOLD，竞争者消失不会自动恢复。**这不是遥控/自主仲裁器，不能阻止别人的消息到达电机**；真实遥控所有权、DDS 发现延迟和硬件急停仍待现场验证。
 
 ## 操作顺序
 

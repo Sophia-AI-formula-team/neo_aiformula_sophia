@@ -6,6 +6,9 @@ on:
       - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed_gnss/**'
+      - 'workspace/src/aiformula/control/trajectory_follower/**'
+      - 'workspace/src/aiformula/perception/road_detector/**'
+      - 'workspace/src/aiformula/launchers/**'
       - 'dependencies/vectornav/vectornav_msgs/**'
       - '.github/workflows/lane-endpoint-gnss.yml'
   pull_request:
@@ -13,6 +16,9 @@ on:
       - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed_gnss/**'
+      - 'workspace/src/aiformula/control/trajectory_follower/**'
+      - 'workspace/src/aiformula/perception/road_detector/**'
+      - 'workspace/src/aiformula/launchers/**'
       - 'dependencies/vectornav/vectornav_msgs/**'
       - '.github/workflows/lane-endpoint-gnss.yml'
 permissions:
@@ -34,6 +40,10 @@ jobs:
             workspace/src/aiformula/control/lane_mapping_lya_reference
             workspace/src/aiformula/control/lane_mapping_fixed
             workspace/src/aiformula/control/lane_mapping_fixed_gnss
+            workspace/src/aiformula/control/trajectory_follower
+            workspace/src/aiformula/perception/road_detector/road_detector
+            workspace/src/aiformula/perception/road_detector/test
+            workspace/src/aiformula/launchers
             dependencies/vectornav/vectornav_msgs
       - name: Install dependencies in disposable CI container
         shell: bash
@@ -41,7 +51,7 @@ jobs:
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor --yes -o /usr/share/keyrings/ros-archive-keyring.gpg
           apt-get update
-          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-can-msgs
+          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge ros-foxy-can-msgs
       - name: Build all three packages, regression and real DDS isolation checks
         shell: bash
         run: bash workspace/src/aiformula/control/lane_mapping_fixed_gnss/scripts/ci_verify.sh "$GITHUB_WORKSPACE"

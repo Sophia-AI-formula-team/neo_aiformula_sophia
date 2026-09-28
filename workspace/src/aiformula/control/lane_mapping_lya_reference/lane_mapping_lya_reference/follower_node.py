@@ -22,6 +22,7 @@ from sensor_msgs.msg import Image, PointCloud2, PointField
 from std_msgs.msg import Bool, Header, String
 from std_srvs.srv import Trigger
 from vectornav_msgs.msg import CommonGroup
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS
 
 from lane_mapping_lya_reference.mapping_core import (
     CausalSampleBuffer, GroundLookup, VectorNavLocalizer,
@@ -374,8 +375,8 @@ class FixedFollower(Node):
             "safety_mode": "fixed_only",
             "command_output_topic": "/lane_learning/cmd_vel",
             "teacher_command_topic": "/lane_learning/lya_cmd",
-            "vectornav_topic": "/vectornav/raw/common",
-            "mask_topic": "/aiformula_perception/pub_mask_image",
+            "vectornav_topic": "/aiformula_sensing/vectornav/raw/common",
+            "mask_topic": "/aiformula_perception/road_detector/mask_image",
             "camera_frame_override": "",
             "visual_max_age_s": 0.5,
             "visual_max_pose_mask_gap_s": 0.15,
@@ -391,9 +392,11 @@ class FixedFollower(Node):
             "route_bundle_path": "",
             "log_directory": "./lane_learning_logs",
             "control_rate_hz": 20.0,
-            "maximum_speed_mps": 0.8,
-            "accepted_teacher_max_speed_mps": 2.25,
+            "reference_speed_mps": REFERENCE_SPEED_MPS,
+            "maximum_speed_mps": 0.0,  # inherit the effective LYA reference
+            "accepted_teacher_max_speed_mps": 0.0,
             "maximum_yaw_rate_rps": 0.4,
+            "accepted_teacher_max_yaw_rate_rps": MAX_YAW_RATE_RPS,
             "maximum_acceleration_mps2": 0.5,
             "maximum_yaw_acceleration_rps2": 0.8,
             "maximum_lateral_acceleration_mps2": 0.35,
@@ -421,15 +424,21 @@ class FixedFollower(Node):
         for key, value in defaults.items():
             self.declare_parameter(key, value)
         self.p = {key: self.get_parameter(key).value for key in defaults}
+        if self.p["maximum_speed_mps"] == 0.0:
+            self.p["maximum_speed_mps"] = self.p["reference_speed_mps"]
         if forced_safety_mode is not None:
             self.p["safety_mode"] = forced_safety_mode
         for key in defaults:
             if isinstance(defaults[key], float):
                 number = float(self.p[key])
-                if not math.isfinite(number) or (key != "yaw_offset_rad" and number <= 0):
+                nonnegative = key == "accepted_teacher_max_speed_mps"
+                if (not math.isfinite(number) or (nonnegative and number < 0)
+                        or (not nonnegative and key != "yaw_offset_rad" and number <= 0)):
                     raise ValueError("invalid parameter " + key)
         if not 5 <= self.p["control_rate_hz"] <= 100:
             raise ValueError("control_rate_hz must be between 5 and 100")
+        if self.p["maximum_speed_mps"] < self.p["reference_speed_mps"]:
+            raise ValueError("repeat speed cap cannot be below the fixed reference speed")
         for key in ("visual_min_consecutive_matches", "visual_vn_buffer_size",
                     "visual_max_anchor_points", "visual_max_image_pixels"):
             if isinstance(self.p[key], bool) or not isinstance(self.p[key], int) or self.p[key] <= 0:
@@ -454,8 +463,10 @@ class FixedFollower(Node):
             reference_yaw_delta=self.p["reference_yaw_delta_rps"],
             reference_recovery_s=self.p["reference_recovery_s"],
             accepted_teacher_max_speed=self.p["accepted_teacher_max_speed_mps"],
+            accepted_teacher_max_yaw_rate=self.p["accepted_teacher_max_yaw_rate_rps"],
             maximum_acceleration=self.p["maximum_acceleration_mps2"],
             maximum_yaw_acceleration=self.p["maximum_yaw_acceleration_rps2"],
+            preserve_teacher_command=True,
         )
         self.localizer = self._new_localizer()
         self.journal = RunJournal(self.p["log_directory"])
@@ -503,6 +514,9 @@ class FixedFollower(Node):
                 "enable_vehicle_output", "motor_zero_passthrough_verified", "hardware_stop_verified")):
             self.journal.close()
             raise ValueError("refusing all vehicle-bus writes: motor zero and physical stop must be verified")
+        if self.output_topic != "/lane_learning/cmd_vel" and self.p["accepted_teacher_max_speed_mps"] <= 0:
+            self.journal.close()
+            raise ValueError("vehicle output requires an explicitly approved teacher speed ceiling")
         self.state_publisher = self.create_publisher(String, "~/control_state", durable_qos)
         self.teacher_enabled_publisher = self.create_publisher(Bool, "~/teacher_enabled", durable_qos)
         self.pose_publisher = self.create_publisher(PoseStamped, "~/pose", sensor_qos)
@@ -531,6 +545,8 @@ class FixedFollower(Node):
         self.timer = self.create_timer(1.0 / self.p["control_rate_hz"], self._tick,
                                        clock=self.steady_clock)
         self.journal.write({"event": "startup", "parameters": self.p,
+                            "speed_policy": "fixed_reference",
+                            "lya_source_default_mps": REFERENCE_SPEED_MPS,
                             "source_sha256": {name: hashlib.sha256(
                                 Path(__file__).with_name(name).read_bytes()).hexdigest()
                                 for name in ("follower_node.py", "mask_localization.py",
@@ -554,6 +570,8 @@ class FixedFollower(Node):
 
     def _deployment_guard(self):
         if self.output_topic != "/lane_learning/cmd_vel":
+            if self.p["accepted_teacher_max_speed_mps"] <= 0:
+                return "vehicle output requires an explicitly approved teacher speed ceiling"
             if not all(self.p[name] for name in (
                     "enable_vehicle_output", "motor_zero_passthrough_verified", "hardware_stop_verified")):
                 return "vehicle output requires enable flag, verified motor zero bypass and verified hardware stop"
@@ -877,6 +895,7 @@ class FixedFollower(Node):
                 manifest, route, metadata = load_bundle(path)
                 repeat_context = load_repeat_context(path, manifest, metadata, self.p)
                 controller = ClosedRouteController(route,
+                    reference_speed_mps=self.p["reference_speed_mps"],
                     maximum_speed=self.p["maximum_speed_mps"],
                     maximum_yaw_rate=self.p["maximum_yaw_rate_rps"],
                     maximum_acceleration=self.p["maximum_acceleration_mps2"],

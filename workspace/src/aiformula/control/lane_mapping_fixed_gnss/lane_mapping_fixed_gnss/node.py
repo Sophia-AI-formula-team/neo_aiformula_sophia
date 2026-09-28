@@ -29,6 +29,7 @@ from std_msgs.msg import Bool, Header, String
 from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformListener
 from vectornav_msgs.msg import GpsGroup
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS
 
 from lane_mapping_lya_reference.controller import ClosedRouteController, Command, Pose, fresh
 from lane_mapping_lya_reference.follower_node import RunJournal, finite_json
@@ -57,13 +58,16 @@ class EndpointFollower(Node):
         "can_topic": "/aiformula_sensing/vehicle_info",
         "gyro_topic": "/aiformula_sensing/zed_node/imu/data_raw",
         "gnss_topic": "/aiformula_sensing/vectornav/raw/gps",
-        "mask_topic": "/aiformula_perception/pub_mask_image",
+        "mask_topic": "/aiformula_perception/road_detector/mask_image",
         "camera_info_topic": "/aiformula_sensing/zed_node/left/camera_info",
         "base_frame": "base_footprint", "map_frame": "lane_teach_local",
         "command_output_topic": "/lane_learning_gnss/cmd_vel",
         "enable_vehicle_output": False, "hardware_stop_verified": False,
         "motor_zero_passthrough_verified": False,
-        "maximum_speed_mps": 0.8, "maximum_yaw_rate_rps": 0.4,
+        "reference_speed_mps": REFERENCE_SPEED_MPS,
+        "maximum_speed_mps": 0.0, "maximum_yaw_rate_rps": 0.4,
+        "accepted_teacher_max_yaw_rate_rps": MAX_YAW_RATE_RPS,
+        "accepted_teacher_max_speed_mps": 0.0,
         "wheel_diameter_m": 0.254, "gyro_bias_radps": 0.0,
         "gyro_mount_quaternion": [0.0, 0.0, 0.0, 0.0],
         "max_gnss_horizontal_sigma_m": 1.5, "max_endpoint_distance_m": 3.0,
@@ -95,12 +99,17 @@ class EndpointFollower(Node):
             "motor_zero_passthrough_verified": bool(self.p["motor_zero_passthrough_verified"]),
             "maximum_speed_mps": float(self.p["maximum_speed_mps"]),
             "maximum_yaw_rate_rps": float(self.p["maximum_yaw_rate_rps"]),
+            "accepted_teacher_max_speed_mps": float(self.p["accepted_teacher_max_speed_mps"]),
+            "accepted_teacher_max_yaw_rate_rps": float(self.p["accepted_teacher_max_yaw_rate_rps"]),
+            "preserve_teacher_command": True,
             "stopped_speed_mps": 0.05,
             "hardware_stop_verified": bool(self.p["hardware_stop_verified"]),
         }, event_sink=self.journal.write)
         resolved_output = self.command_pub.topic_name
         if resolved_output == self.teacher_subscription.topic_name:
             raise ValueError("resolved output cannot alias teacher input")
+        if resolved_output != "/lane_learning_gnss/cmd_vel" and self.p["accepted_teacher_max_speed_mps"] <= 0:
+            raise ValueError("vehicle output requires an explicitly approved positive teacher speed ceiling")
         if resolved_output != "/lane_learning_gnss/cmd_vel" and not all(self.p[x] for x in (
                 "enable_vehicle_output", "hardware_stop_verified", "motor_zero_passthrough_verified")):
             raise ValueError("remapped vehicle output requires all deployment confirmations")
@@ -132,6 +141,7 @@ class EndpointFollower(Node):
         self.teach_enabled = False
         self.repeat_prepared = False
         self.closing = False
+        self.deployment_issue = None
         self.tf_buffer = Buffer(cache_time=Duration(seconds=10))
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.worker = MapWorker(self._commit_guard)
@@ -163,20 +173,30 @@ class EndpointFollower(Node):
         self.last_state_ns = 0
         self.create_timer(0.05, self._tick, callback_group=self.group,
                           clock=Clock(clock_type=ClockType.STEADY_TIME))
-        self._event("started", gnss_policy="start_and_end_only", input_provenance={
+        self._event("started", gnss_policy="start_and_end_only", parameters=self.p,
+            speed_policy="fixed_reference", lya_source_default_mps=REFERENCE_SPEED_MPS,
+            reference_speed_mps=self.p["reference_speed_mps"], input_provenance={
             "motion": "Honda RPM bytes + raw gyro angular_velocity only",
             "heading": "integrated local heading; not ENU",
             "gnss": "GpsGroup FIX|POSLLA|POSU; endpoint windows only"})
 
     def _validate(self):
+        if self.p["maximum_speed_mps"] == 0.0:
+            self.p["maximum_speed_mps"] = self.p["reference_speed_mps"]
         if self.p["map_frame"] != "lane_teach_local":
             raise ValueError("bundle coordinate frame is lane_teach_local")
-        for name in ("maximum_speed_mps", "maximum_yaw_rate_rps", "wheel_diameter_m",
+        for name in ("reference_speed_mps", "maximum_speed_mps", "maximum_yaw_rate_rps",
+                     "accepted_teacher_max_yaw_rate_rps", "wheel_diameter_m",
                      "max_gnss_horizontal_sigma_m", "max_endpoint_distance_m", "mask_max_age_s",
                      "pose_mask_gap_s"):
             value = float(self.p[name])
             if not math.isfinite(value) or value <= 0:
                 raise ValueError("invalid positive parameter: " + name)
+        ceiling = float(self.p["accepted_teacher_max_speed_mps"])
+        if not math.isfinite(ceiling) or ceiling < 0:
+            raise ValueError("teacher ceiling must be finite and nonnegative")
+        if self.p["maximum_speed_mps"] < self.p["reference_speed_mps"]:
+            raise ValueError("repeat speed cap cannot be below the fixed reference speed")
         if not math.isfinite(float(self.p["gyro_bias_radps"])):
             raise ValueError("invalid gyro bias")
         mounting = np.asarray(self.p["gyro_mount_quaternion"], dtype=float)
@@ -188,6 +208,8 @@ class EndpointFollower(Node):
         output = self.p["command_output_topic"]
         if not isinstance(output, str) or not output.startswith("/"):
             raise ValueError("output topic must be absolute")
+        if output != "/lane_learning_gnss/cmd_vel" and ceiling <= 0:
+            raise ValueError("vehicle output requires an explicitly approved positive teacher speed ceiling")
         if output != "/lane_learning_gnss/cmd_vel" and not all(self.p[x] for x in (
                 "enable_vehicle_output", "hardware_stop_verified", "motor_zero_passthrough_verified")):
             raise ValueError("real output requires all three explicit deployment confirmations")
@@ -196,12 +218,45 @@ class EndpointFollower(Node):
         self.route_config = json.loads(self.p["route_config_json"])
         if not isinstance(self.route_config, dict):
             raise ValueError("route_config_json must be an object")
+        self.route_config.update(reference_speed_mps=self.p["reference_speed_mps"],
+                                 max_speed_mps=self.p["reference_speed_mps"])
 
     def _times(self):
         return self.get_clock().now().nanoseconds, time.monotonic_ns()
 
     def _event(self, event, **values):
         self.journal.write(finite_json(dict(event=event, **values)))
+
+    def _deployment_guard(self):
+        # Use the publisher's resolved name, including launch/CLI remappings.
+        # ROS graph discovery is diagnostic protection, not motor arbitration
+        # or proof that a physical emergency stop can stop another publisher.
+        topic = self.command_pub.topic_name
+        if topic != "/lane_learning_gnss/cmd_vel" and self.p["accepted_teacher_max_speed_mps"] <= 0:
+            return "vehicle output requires an explicitly approved positive teacher speed ceiling"
+        if topic != "/lane_learning_gnss/cmd_vel" and not all(self.p[name] for name in (
+                "enable_vehicle_output", "hardware_stop_verified", "motor_zero_passthrough_verified")):
+            return "vehicle output requires all three deployment confirmations"
+        try:
+            count = self.count_publishers(topic)
+            if type(count) is not int or count < 1:
+                return "cannot verify command ownership on " + topic
+            if count > 1:
+                return "competing command publisher detected on " + topic
+        except Exception as error:
+            return "cannot verify command ownership on " + topic + ": " + str(error)
+        return None
+
+    def _check_deployment(self):
+        issue = self._deployment_guard()
+        if issue:
+            if issue != self.deployment_issue or self.safety.state not in ("HOLD", "ESTOP"):
+                self._fault(issue)
+            else:
+                self._send(Command())
+        # Clearing the diagnostic never arms or resumes the safety state.
+        self.deployment_issue = issue
+        return issue
 
     def _stopped(self, now, steady):
         p = self.last_motion
@@ -551,6 +606,9 @@ class EndpointFollower(Node):
 
     @serialized
     def _arm(self, request, response):
+        issue = self._check_deployment()
+        if issue:
+            return self._reply(response, (False, issue))
         now, steady = self._times()
         if self.session_motion_invalid:
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
@@ -576,6 +634,9 @@ class EndpointFollower(Node):
 
     @serialized
     def _prepare(self, request, response):
+        issue = self._check_deployment()
+        if issue:
+            return self._reply(response, (False, issue))
         now, steady = self._times()
         if self.session_motion_invalid:
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
@@ -588,6 +649,9 @@ class EndpointFollower(Node):
 
     @serialized
     def _repeat(self, request, response):
+        issue = self._check_deployment()
+        if issue:
+            return self._reply(response, (False, issue))
         if self.session_motion_invalid:
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
         return self._reply(response, self.safety.start_repeat(*self._times()))
@@ -636,7 +700,8 @@ class EndpointFollower(Node):
                     self._gnss_reject(str(error))
             elif kind == "bundle":
                 controller = ClosedRouteController(envelope["route"],
-                    maximum_speed=self.p["maximum_speed_mps"], maximum_yaw_rate=self.p["maximum_yaw_rate_rps"])
+                    maximum_speed=self.p["maximum_speed_mps"], maximum_yaw_rate=self.p["maximum_yaw_rate_rps"],
+                    reference_speed_mps=self.p["reference_speed_mps"])
                 result = self.safety.set_ready(controller, envelope["path"], now, steady)
                 if not result[0]:
                     self._fault(result[1])
@@ -674,6 +739,9 @@ class EndpointFollower(Node):
         dt = (steady - self.last_tick_ns) * 1e-9
         self.last_tick_ns = steady
         try:
+            # Recheck every control tick, including publishers discovered after
+            # arming. A graph fault immediately publishes zero and enters HOLD.
+            deployment_issue = self._check_deployment()
             if (self.session_started and self.last_motion is None and not self.session_motion_invalid
                     and not fresh(self.session_start_clocks[0], self.session_start_clocks[1],
                                   now, steady, 0.2, 0.0)):
@@ -689,7 +757,8 @@ class EndpointFollower(Node):
                     self._gnss_reject(str(error))
             if self.worker.failure or self.journal.failed:
                 raise ValueError(self.worker.failure or self.journal.failed)
-            self._consume(now, steady)
+            if not deployment_issue:
+                self._consume(now, steady)
         except Exception as error:
             self._fault("runtime check: " + str(error))
         self._send(self.safety.tick(now, steady, dt))
@@ -699,6 +768,7 @@ class EndpointFollower(Node):
             state = dict(self.safety.snapshot(), stamp_ns=now, gnss=self.anchors.snapshot(),
                          repeat_start_reference_usable=self.start_reference_usable,
                          session_motion_invalid=self.session_motion_invalid,
+                         deployment_issue=self.deployment_issue,
                          gnss_subscription_active=self.gnss_subscription is not None,
                          bundle_path=self.bundle_path, log_directory=str(self.journal.directory))
             self.state_pub.publish(String(data=json.dumps(finite_json(state), allow_nan=False)))

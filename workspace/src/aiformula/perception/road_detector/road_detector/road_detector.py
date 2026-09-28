@@ -1,4 +1,5 @@
 import sys
+from copy import deepcopy
 import cv2
 import rclpy
 from rclpy.node import Node
@@ -111,9 +112,9 @@ class RoadDetector(Node):
             _, ll_seg_points = torch.max(ll_seg_mask_raw, 1)
             ll_seg_mask = ll_seg_points.int().squeeze().cpu().numpy()
 
-        self.publish_result(undistorted_image, ll_seg_mask, msg.header.stamp)
+        self.publish_result(undistorted_image, ll_seg_mask, msg.header)
 
-    def publish_result(self, image, ll_seg_mask, time_stamp):
+    def publish_result(self, image, ll_seg_mask, source_header):
         ll_seg_mask = np.array(ll_seg_mask, dtype=np.uint8)
         ll_seg_mask_bin = (ll_seg_mask > 0).astype(np.uint8)
 
@@ -123,13 +124,15 @@ class RoadDetector(Node):
         annotated_image = cv2.addWeighted(image, 1.0, color_mask, 0.5, 0)
 
         annotated_msg = self.cv_bridge.cv2_to_imgmsg(annotated_image, "bgr8")
-        annotated_msg.header.stamp = time_stamp
+        # Both products retain the camera frame and acquisition time, without
+        # sharing mutable Header/Time objects with the input or each other.
+        annotated_msg.header = deepcopy(source_header)
         self.annotated_mask_image_pub.publish(annotated_msg)
 
         # Publish mask image
         mask_image = (ll_seg_mask_bin * 255).astype(np.uint8)
         ll_seg_mask_msg = self.cv_bridge.cv2_to_imgmsg(mask_image, "mono8")
-        ll_seg_mask_msg.header.stamp = time_stamp
+        ll_seg_mask_msg.header = deepcopy(source_header)
         self.lane_mask_image_pub.publish(ll_seg_mask_msg)
 
 

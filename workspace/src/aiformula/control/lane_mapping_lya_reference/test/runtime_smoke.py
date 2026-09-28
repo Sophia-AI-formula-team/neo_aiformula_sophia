@@ -14,6 +14,8 @@ both immutable safety profiles and a synthetic ready-bundle handoff into REPEAT.
 The bundle is generated independently from analytic circle geometry, not from
 the stationary camera scene.  This is NOT a full-lap camera-to-route integration,
 closed-loop vehicle simulation, real-track accuracy or hardware-stop test.
+The repeat fixture explicitly selects a 0.2 m/s fixed reference; it is not a
+validation of the production LYA's 2.0 m/s reference (see neo_upstream_smoke.py).
 
 The only command-output topic is /lane_learning/cmd_vel on a private localhost
 ROS domain.  No actuator topic, legacy LYA process or teacher supervisor runs.
@@ -54,7 +56,7 @@ def synthetic_bundle(directory, frame_id):
     dense = np.linspace(-math.pi / 2.0, 3.0 * math.pi / 2.0, 2400, endpoint=False)
     lanes = np.vstack([np.column_stack((r * np.cos(dense), radius + r * np.sin(dense)))
                        for r in (radius - 1.2, radius + 1.2)])
-    route = build_route(trajectory, lanes, {"max_speed_mps": 0.2})
+    route = build_route(trajectory, lanes, {"reference_speed_mps": 0.2})
     coordinates = {"frame_id": frame_id, "origin_lla": [35.0, 139.0, 10.0],
                    "heading_source": "vectornav_yaw_ned_to_enu", "yaw_offset_rad": 0.0}
     route.update(coordinates)
@@ -64,7 +66,8 @@ def synthetic_bundle(directory, frame_id):
                     parameters={"mask_threshold": 127, "base_frame": extrinsic["parent_frame"],
                                 "max_projection_sensitivity_m_per_px": 0.5,
                                 "max_reliable_projection_sensitivity_m_per_px": 0.1},
-                    fixture_kind="analytic_circle_not_recorded_camera_lap")
+                    fixture_kind="analytic_circle_not_recorded_camera_lap",
+                    speed_policy="fixed_reference", reference_speed_mps=0.2)
     directory.mkdir(exist_ok=False)
     with (directory / "consensus.csv").open("x", encoding="utf-8", newline="") as stream:
         writer = csv.writer(stream)
@@ -405,6 +408,9 @@ def run_suite(report, directory):
             "first_sample": synthetic_route["route_samples"][0],
             "source": "analytic circle, separate from recorder camera smoke",
             "route_sample_count": len(synthetic_route["route_samples"]),
+            "speed_policy": synthetic_route["speed_policy"],
+            "reference_speed_mps": synthetic_route["reference_speed_mps"],
+            "production_speed_default_tested": False,
         }
 
         for profile, package, executable, forced, opposite in (
@@ -430,6 +436,13 @@ def run_suite(report, directory):
                 "emergency_stop_topic": source_topics["estop"],
                 "ready_bundle_topic": bundle_topic,
                 "teacher_state_topic": teacher_state_topic,
+                # This existing stationary fixture deliberately tests 0.2 m/s.
+                # Its bundle records the same fixed-reference policy, rather
+                # than replaying a legacy speed profile under new defaults.
+                "reference_speed_mps": 0.2,
+                "maximum_speed_mps": 0.8,
+                "maximum_yaw_rate_rps": 0.4,
+                "accepted_teacher_max_speed_mps": 0.0,
                 "log_directory": str(directory / (profile + "_logs")),
                 # Keep every vehicle-output override false.  Exact default private
                 # topic is deliberately required by the production deployment gate.
@@ -605,6 +618,8 @@ def run_suite(report, directory):
             "full_lap_camera_to_route_tested": False,
             "closed_loop_repeat_tracking_tested": False,
             "teacher_supervisor_process_tested": False,
+            "production_speed_default_tested": False,
+            "fixture_reference_speed_mps": 0.2,
             "managed_teacher_stop_signal_simulated": True,
             "hardware_emergency_stop_tested": False,
         }

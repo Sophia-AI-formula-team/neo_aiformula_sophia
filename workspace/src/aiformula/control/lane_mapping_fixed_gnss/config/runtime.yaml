@@ -3,7 +3,7 @@ lane_endpoint_follower:
     can_topic: /aiformula_sensing/vehicle_info
     gyro_topic: /aiformula_sensing/zed_node/imu/data_raw
     gnss_topic: /aiformula_sensing/vectornav/raw/gps
-    mask_topic: /aiformula_perception/pub_mask_image
+    mask_topic: /aiformula_perception/road_detector/mask_image
     camera_info_topic: /aiformula_sensing/zed_node/left/camera_info
     base_frame: base_footprint
     map_frame: lane_teach_local
@@ -11,8 +11,9 @@ lane_endpoint_follower:
     enable_vehicle_output: false
     hardware_stop_verified: false
     motor_zero_passthrough_verified: false
-    maximum_speed_mps: 0.8
-    maximum_yaw_rate_rps: 0.4
+    # Speed inherits trajectory_follower.lya_profile unless explicitly overridden.
+    # 0 means unconfigured private preview, forbidden for any vehicle output.
+    accepted_teacher_max_speed_mps: 0.0
     wheel_diameter_m: 0.254
     max_gnss_horizontal_sigma_m: 1.5
     max_endpoint_distance_m: 3.0

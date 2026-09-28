@@ -20,14 +20,22 @@
 实车前必须完成这几项，而不是只把开关改为 `true`：
 
 1. 确认手操硬急停确实绕过自主控制链路，能断驱动，并由安全员保持可操作。ROS Bool 急停是补充，不能替代它。
-2. 确认电机接收到零速度、零角速度时真的输出零。现有仿射命令修正存在 `(base_v-b_v)/a_v` 这样的计算，**输入零不必然输出零**；没有验证零指令旁路/修正前，不允许接真实控制总线。这两个新包没有修改电机控制器。
+2. 确认电机接收到零速度、零角速度时真的输出零。当前 neo 电机源码已有完整停止命令的零 RPM 旁路，不能再把它描述为必然被仿射补偿改成非零；但源码检查不等于已验证车上安装版本、接线和实际停车。这两个新包没有修改电机控制器。
 3. 确认电机端自身有断流停车机制。Python 回调、DDS、进程关闭或本机卡死都不是硬实时安全保证。
 4. 停掉其他直接向同一电机命令话题发送的 LYA/控制器。这里只能停止本次 supervisor 启动的 LYA；不会搜寻或杀死其他用户进程。ROS 图检测能发现竞争发布者，但不能替代硬件互锁。
 5. 检查实际车宽、路线安全边距、GNSS/INS 跨圈误差、VectorNav 安装朝向、相机标定和静态 TF。目前仍**假设天线至车体参考点的平移杆臂为零**。mask 匹配只能修正局部可观测、且在门限内的偏差；不能代替安装标定、修好错误地图，或保证全局重定位。
 
-默认上限为 `0.8 m/s`、`0.4 rad/s`，并不代表这些速度已经在你的车上通过验收。没有障碍物检测、独立车道越界证明或安全认证；LYA 同样可能犯错。
+默认受管教师现在是 neo 实际使用的 `lya_0221`。它与第二圈固定路线默认继承唯一来源 `trajectory_follower/lya_profile.py` 的 `REFERENCE_SPEED_MPS`（原 `v_t`），不是在新包各处复制一个常数。本次源码值是 `2.0 m/s`；以后把该源值改为 4，新包的默认参考也随之为 4。LYA 原反馈律保留，例如本次 2.0 参考、正前方 1 m 误差、朝向相同时会输出约 `2.15 m/s`，不能说教师每帧恒定输出参考值。
 
-最终选定的行驶输出统一受加速度/角加速度斜率限制，包括 TEACH 和 FALLBACK；HOLD/ESTOP 的停车输出直接归零，不慢慢减到零。这也仍依赖电机端正确执行零命令。
+第一圈 TEACH 以及参考版的 LYA FALLBACK 保留通过准入检查的原教师命令，不再暗中缩到 `0.8 m/s` 或附加新包的启动斜率限制。默认 `accepted_teacher_max_speed_mps=0` 只表示私有预览未指定线速度上限，**不是实车可无限速**；任何非私有输出必须同时具备三个部署确认和经过审核的正数教师上限，超限拒绝并停车，而非静默裁小。不能拿电机参数 `max_command_v=4.0` 当统一硬上限：当前 `STATE_BKUP` 路径绕开它。
+
+第二圈固定的是本次运行所选的同源参考，不回放第一圈速度，也不按曲率偷偷生成慢速曲线；跟踪误差反馈、启动加速度限制和停车门限仍可能让实际指令不同于参考。原横向加速度限值 `0.35 m/s²` 不放宽，路线若无法在该参考速度下满足曲率/角速度/横向加速度限制就拒绝 ready/运行，而不是悄悄减速。因此某些弯道会明确不可行。这不是实车速度验收；HOLD/ESTOP 仍直接归零。
+
+这里的 0.35 是 `v_ref² × |曲率|` 的名义参考可行性检查，**不是反馈后实际 `v × omega` 的严格上限**。repeat 角速度门限仍是 `0.4 rad/s`，没有随速度参考继承而提高；独立教师角速度准入 `accepted_teacher_max_yaw_rate_rps` 默认继承 LYA 当前 `MAX_YAW_RATE_RPS`（本次 2.0 rad/s）。这两个角色的范围不能混同。
+
+`reference_speed_mps` launch 参数默认空，表示不覆盖源码当前默认值/配置；显式填写时统一覆盖 recorder、follower 和受管 LYA。也可在 `params_file` 用全局 `/**: {ros__parameters: {reference_speed_mps: 4.0}}` 为一次运行统一选择值，不能只改其中一个节点。repeat 的 `maximum_speed_mps=0` 是“使用本次有效参考”的内部哨兵，不是零速或另一个硬编码 2.0。改变参考不会自动获得实车许可，也不会放宽曲率、教师上限和停车门限。
+
+继承发生在重新构建/启动时，运行中不热更新。改参考后，旧 bundle 的速度 policy/参考不匹配会被拒绝，必须重新生成并验证路线；不能偷偷切回另一 profile 降速使用旧结果。
 
 ## clone 和编译
 
@@ -44,12 +52,14 @@ cd ~/lane_learning_ws
 rosdep install --from-paths \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_fixed \
+  src/neo_aiformula_sophia/workspace/src/aiformula/control/trajectory_follower \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --ignore-src --rosdistro foxy -r -y
 
 colcon build --symlink-install --base-paths \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference \
   src/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_fixed \
+  src/neo_aiformula_sophia/workspace/src/aiformula/control/trajectory_follower \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --packages-up-to lane_mapping_fixed
 source install/setup.bash
@@ -57,7 +67,7 @@ source install/setup.bash
 
 如果 `vectornav_msgs` 已在车上的已 source 工作空间中安装，可以省略上面两处 VectorNav 源码路径。neo 仓库的原生消息源码位于 `dependencies/vectornav/vectornav_msgs`，不是旧仓库的 sensing 目录。
 
-现有 LYA 必须能被 `ros2 pkg executables trajectory_follower` 找到。若尚未安装，可单独对本仓库的 `workspace/src/aiformula/control/trajectory_follower` 执行受限的 `colcon build --base-paths ... --packages-select trajectory_follower`；先核对并经授权补齐它的运行依赖（包括 pandas、tf_transformations、tf2_geometry_msgs、example_interfaces；写 Excel 还需要 pandas 可用的引擎）。新包不会重写 LYA 或启动其输入链。
+`trajectory_follower` 是新包的实际依赖，不是只靠测试替身替代的可选项。上面包含它的源码构建路径，并须能在 `ros2 pkg executables trajectory_follower` 中找到 `lya_0221`。其 `tf_transformations`、`tf2_ros`、`tf2_geometry_msgs` 等运行依赖已在 package.xml 声明；安装仍须取得环境授权。当前修改只把原 `v_t` 提为共享参考参数，不更换 LYA 反馈律，也不启动其传感器/滤波输入链。
 
 ```bash
 ros2 pkg executables lane_mapping_lya_reference
@@ -67,21 +77,19 @@ colcon test --packages-select lane_mapping_lya_reference lane_mapping_fixed
 colcon test-result --verbose
 ```
 
-### neo 基线的已知部署阻塞
+### neo 接线修复与尚未验证的部分
 
-迁移仅调整目录和构建入口，不表示已通过整车集成。在 neo 基线 `8914b613` 中：
+2026-09-28 修正了迁移时暴露的接线问题：默认 mask 与 neo `topic_list.yaml` 一致；road detector 将输入的完整 Header 独立复制到 mask 和标注图；默认教师改为实际 `lya_0221`。严格 frame/标定检查保留，不能用猜测的 frame override 绕过。
 
-- 默认 `lya_follower_connected_omegat_global` 已注册，发布 `Twist` 到 `/aiformula_control/game_pad/cmd_vel`，与 supervisor 的私有重映射相符。它仍需要 `/aiformula_sensing/gyro_odometry_publisher/odom`、`/filtered_lane_pose` 和 `/filtered_omega_t` 的原有发布者。
-- 该 LYA 允许 `0.8–4.0 m/s`、`±0.45 rad/s`，而本包保留原有教师准入上限 `2.25 m/s`、`±0.4 rad/s`。超限会被拒绝并停车；本次没有放宽门限或修改 LYA。需要单独审核兼容方案后才能声称第一圈可运行。
-- neo 的 `road_detector.publish_result` 只传递 stamp，没有保留输入图像的 `header.frame_id`。完整 mask 必须带真实相机 optical frame，并有已核对的标定/安装 TF；空 frame 会被默认路径拒绝。参考/固定版已有 `camera_frame_override` 仅可填写经过实测核对的相机 frame，不能猜一个名字绕过标定；严格 GNSS 版需要上游正确提供完整 header。
+`lya_0221` 仍需要 `/aiformula_sensing/gyro_odometry_publisher/odom`、`/filtered_lane_pose`、`/filtered_omega_t` 的真实发布者。supervisor 只管理自己启动的进程组，不能同时另起一个直发电机的 LYA。
 
-CI 构建和合成 DDS 不启动这些真实上游，也不解决上述阻塞。现场需另行核对实际安装版本、消息和停车链。
+新增 `test/neo_upstream_smoke.py` 会在私有 localhost/domain 启动真实已安装 LYA，检查继承当前参考及误差反馈、实际 STOPPED/子进程退出，并可用真实 cv_bridge/DDS 检查生产 mask 发布方法。**本次新增真实上游 DDS 结果待对应提交 CI 验证**；本地 Header 单测不等于模型推理/驱动/整车测试。以 [VALIDATION](VALIDATION.md) 和对应提交的证据为准。
 
 ## 需要什么输入
 
 | 输入 | 默认话题/约定 |
 | --- | --- |
-| 完整二值车道 mask | `/aiformula_perception/pub_mask_image`，`mono8` 或 `8UC1`；不是 lane-line publisher 的 ROI |
+| 完整二值车道 mask | `/aiformula_perception/road_detector/mask_image`，`mono8` 或 `8UC1`；不是 lane-line publisher 的 ROI |
 | VectorNav | `/aiformula_sensing/vectornav/raw/common`，原生 `vectornav_msgs/CommonGroup` |
 | 相机标定 | `/aiformula_sensing/zed_node/left/camera_info`，尺寸与 mask 一致 |
 | 相机外参 | `base_footprint <- mask 对应相机 optical frame` 的全静态 TF 链 |
@@ -159,7 +167,7 @@ ros2 topic echo /lane_learning/recorder_state
    ros2 service call /lane_fixed_follower/start_repeat std_srvs/srv/Trigger '{}'
    ```
 
-参考版把 LYA 当作速度上界而非最低速度：固定路线主动减速不会因此回退；转向差异在同一较低速度下比较，避免相同曲率因速度不同被误判。确实分歧时进入 `FALLBACK`，使用受限 LYA，但只要固定候选仍有效，回退也不会提速超过候选的主动减速目标；固定跟踪明确拒绝时才允许使用原受限 LYA。LYA 的零速命令立即停车。**恢复一致也不会自动切回固定路线**，需一致维持恢复窗口，再由操作员调用：
+参考版把 LYA 当作安全参考，比较目标指令而非启动 ramp，并在相同比较速度下核对转向。确实分歧或固定控制拒绝时进入 `FALLBACK`，保留通过教师准入检查的原 LYA 指令；它不是“只取较慢者”的仲裁器，回退可能比固定候选快，所以上车前必须审核教师上限。LYA 的零速命令立即停车。**恢复一致也不会自动切回固定路线**，需一致维持恢复窗口，再由操作员调用：
 
 ```bash
 ros2 service call /lane_fixed_follower/resume_reference std_srvs/srv/Trigger '{}'
@@ -180,17 +188,18 @@ bundle、route、metadata 是一组文件。不要手改坐标原点或单独拷
 
 ## 实车输出必须显式打开
 
-只有上面的物理验证实际完成后，才可以选择实车话题并声明三项条件：
+只有上面的物理验证实际完成，且现场配置已明确设置经过审核的正数 `lane_fixed_follower.ros__parameters.accepted_teacher_max_speed_mps` 后，才可以选择实车话题并声明三项条件。这里不代替现场选择一个未经批准的数值：
 
 ```bash
 ros2 launch lane_mapping_lya_reference reference.launch.py \
+  params_file:=/绝对路径/已审核的learning.yaml \
   command_output_topic:=/aiformula_control/game_pad/cmd_vel \
   enable_vehicle_output:=true \
   motor_zero_passthrough_verified:=true \
   hardware_stop_verified:=true
 ```
 
-这些参数只是操作员声明，**不会替你测试急停或修复电机零指令**。仍需显式 `arm`；不要把验证开关写成无人检查的默认启动项。
+这些参数只是操作员声明，**不会替你测试急停、电机零指令或遥控所有权**。`accepted_teacher_max_speed_mps=0` 在非私有输出下必须拒绝，即使三个开关均为 true。仍需显式 `arm`；不要把验证开关写成无人检查的默认启动项。
 
 软件急停（仍须保留手操硬急停）：
 

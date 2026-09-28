@@ -24,6 +24,8 @@ DEFAULT_CONFIG = {
     "maximum_acceleration_mps2": 0.5,
     "maximum_yaw_acceleration_rps2": 0.8,
     "accepted_teacher_max_speed_mps": 2.25,
+    "accepted_teacher_max_yaw_rate_rps": 0.4,
+    "preserve_teacher_command": False,
     "pose_timeout_s": 0.25,
     "teacher_timeout_s": 0.25,
     "teacher_state_timeout_s": 1.0,
@@ -71,7 +73,10 @@ class RuntimeSafety:
                 if not isinstance(value, str) or not value.startswith("/"):
                     raise ValueError("absolute command topic required")
             else:
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                unconfigured_teacher = (key == "accepted_teacher_max_speed_mps"
+                    and self.config["preserve_teacher_command"] and value == 0)
+                if (isinstance(value, bool) or not isinstance(value, (int, float))
+                        or not math.isfinite(value) or (value <= 0 and not unconfigured_teacher)):
                     raise ValueError("finite positive limit required: " + key)
         count = self.config["visual_min_consecutive_matches"]
         if not isinstance(count, int) or count < 3:
@@ -87,6 +92,8 @@ class RuntimeSafety:
             maximum_acceleration=c["maximum_acceleration_mps2"],
             maximum_yaw_acceleration=c["maximum_yaw_acceleration_rps2"],
             accepted_teacher_max_speed=c["accepted_teacher_max_speed_mps"],
+            accepted_teacher_max_yaw_rate=c["accepted_teacher_max_yaw_rate_rps"],
+            preserve_teacher_command=c["preserve_teacher_command"],
             pose_timeout_s=c["pose_timeout_s"], teacher_timeout_s=c["teacher_timeout_s"],
             stopped_speed=c["stopped_speed_mps"], stopped_settle_s=c["stopped_settle_s"],
             safety_mode="fixed_only")
@@ -200,6 +207,9 @@ class RuntimeSafety:
         c = self.config
         if not c["hardware_stop_verified"]:
             return "physical emergency stop has not been verified"
+        if (c["command_output_topic"] != "/lane_learning_gnss/cmd_vel"
+                and c["preserve_teacher_command"] and c["accepted_teacher_max_speed_mps"] <= 0):
+            return "vehicle output requires an explicitly approved positive teacher speed ceiling"
         if c["command_output_topic"] != "/lane_learning_gnss/cmd_vel" and not (
                 c["enable_vehicle_output"] and c["motor_zero_passthrough_verified"]):
             return "vehicle command output and motor zero passthrough are not verified"

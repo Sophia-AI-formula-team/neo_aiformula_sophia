@@ -7,6 +7,7 @@ DDS; direct node access is read-only evidence, never a callback substitute.
 Only /lane_learning_gnss/cmd_vel is used, in a private localhost ROS domain.
 The stationary scene deliberately cannot produce a valid driven closed route.
 This is not a complete lap/repeat test or proof of a physical emergency stop.
+The synthetic teacher publishes 0.2 m/s; this is not production-speed validation.
 """
 import argparse
 from datetime import datetime, timezone
@@ -48,7 +49,8 @@ def run_case(name, output):
     prefix = "/" + token
     report = dict(case=name, passed=False, checks=[], synthetic=True,
                   actual_ros_messages=True, domain_id=int(os.environ["ROS_DOMAIN_ID"]),
-                  command_output_topic="/lane_learning_gnss/cmd_vel", physical_stop_tested=False)
+                  command_output_topic="/lane_learning_gnss/cmd_vel", physical_stop_tested=False,
+                  production_speed_default_tested=False, fixture_teacher_speed_mps=0.2)
     node = probe = executor = None
     clients = []
     arguments = ["--ros-args"]
@@ -57,6 +59,9 @@ def run_case(name, output):
         "gnss_topic": prefix + "/gps", "mask_topic": prefix + "/mask",
         "camera_info_topic": prefix + "/camera", "base_frame": token + "_base",
         "map_frame": "lane_teach_local", "log_directory": str(output.parent / (name + "_logs")),
+        # Explicit low-speed regression fixture, not the production LYA profile.
+        "reference_speed_mps": 0.2, "maximum_speed_mps": 0.8, "maximum_yaw_rate_rps": 0.4,
+        "accepted_teacher_max_speed_mps": 0.0,  # Unconfigured ceiling: private output only.
         "hardware_stop_verified": name != "default_guard",  # Synthetic private bus ONLY.
         "enable_vehicle_output": False, "motor_zero_passthrough_verified": False,
     }

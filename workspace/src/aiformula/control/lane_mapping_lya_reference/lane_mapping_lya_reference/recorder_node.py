@@ -28,6 +28,7 @@ from std_msgs.msg import Header, String
 from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformListener
 from vectornav_msgs.msg import CommonGroup
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS
 
 from lane_mapping_lya_reference.mapping_core import (
     CausalSampleBuffer, GroundLookup, SparseConsensusMap, VectorNavLocalizer,
@@ -90,9 +91,9 @@ class LaneLapRecorder(Node):
     """Records continuous localization and ordered trace, not LYA actuations."""
 
     DEFAULTS = {
-        "mask_topic": "/aiformula_perception/pub_mask_image",
-        "vectornav_topic": "/vectornav/raw/common",
-        "camera_info_topic": "/zed/zed_node/left/camera_info",
+        "mask_topic": "/aiformula_perception/road_detector/mask_image",
+        "vectornav_topic": "/aiformula_sensing/vectornav/raw/common",
+        "camera_info_topic": "/aiformula_sensing/zed_node/left/camera_info",
         "lya_command_topic": "/lane_learning/lya_cmd",
         "map_frame": "lane_map", "base_frame": "base_link",
         "camera_frame_override": "",
@@ -113,6 +114,7 @@ class LaneLapRecorder(Node):
         "max_session_duration_s": 3600.0,
         "finish_max_speed_mps": 0.15, "finish_stopped_duration_s": 0.5,
         "route_config_json": "{}",
+        "reference_speed_mps": REFERENCE_SPEED_MPS,
     }
 
     def __init__(self):
@@ -187,8 +189,8 @@ class LaneLapRecorder(Node):
         self.get_logger().info("Passive lap recorder; logs: {}".format(self.session_dir))
 
     def _validate_parameters(self):
-        if self.params["mask_topic"] == "/aiformula_perception/road_detector/mask_image":
-            raise ValueError("Legacy ROI mask is forbidden; use the full-mask topic")
+        # In neo, allnodes remaps the full road-detector output to this topic.
+        # A historical topic-name blacklist cannot establish image provenance.
         positive = ("grid_resolution_m", "max_mask_age_ms", "max_pose_mask_gap_ms",
                     "max_vectornav_age_ms", "max_candidate_cells", "max_confirmed_cells",
                     "candidate_ttl_s", "vectornav_buffer_size", "max_trace_points",
@@ -211,6 +213,10 @@ class LaneLapRecorder(Node):
         self.route_config = json.loads(str(self.params["route_config_json"]))
         if not isinstance(self.route_config, dict):
             raise ValueError("route_config_json must encode an object")
+        reference = float(self.params["reference_speed_mps"])
+        if not math.isfinite(reference) or reference <= 0.0:
+            raise ValueError("reference_speed_mps must be finite and positive")
+        self.route_config.update(reference_speed_mps=reference, max_speed_mps=reference)
 
     def _open_logs(self):
         base = Path(str(self.params["output_directory"])).expanduser().resolve()

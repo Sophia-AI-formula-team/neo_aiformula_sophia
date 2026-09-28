@@ -18,6 +18,7 @@ from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from std_msgs.msg import Bool, String
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS
 
 
 class TeacherSupervisor(Node):
@@ -25,7 +26,8 @@ class TeacherSupervisor(Node):
         super().__init__("lane_teacher_supervisor")
         for key, value in {
             "teacher_package": "trajectory_follower",
-            "teacher_executable": "lya_follower_connected_omegat_global",
+            "teacher_executable": "lya_0221",
+            "reference_speed_mps": REFERENCE_SPEED_MPS,
             "teacher_command_topic": "/lane_learning/lya_cmd",
             "control_state_topic": "/lane_learning/control_state",
             "teacher_state_topic": "/lane_learning/teacher_state",
@@ -49,7 +51,9 @@ class TeacherSupervisor(Node):
             encoding="utf-8",
         )
         self._logger.addHandler(self._handler)
-        self._event("starting", log_directory=str(directory))
+        self._event("starting", log_directory=str(directory),
+                    lya_source_default_mps=REFERENCE_SPEED_MPS,
+                    reference_speed_mps=value("reference_speed_mps"))
         qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
                          durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self._status = self.create_publisher(String, str(value("teacher_state_topic")), qos)
@@ -68,6 +72,13 @@ class TeacherSupervisor(Node):
             "--ros-args", "-r", "/aiformula_control/game_pad/cmd_vel:="
             + str(value("teacher_command_topic")),
         ]
+        # The same explicit reference is passed to the documented neo teacher
+        # and to the fixed-route follower. Do not edit its feedback law here.
+        if executable == "lya_0221":
+            speed = float(value("reference_speed_mps"))
+            if not 0.0 < speed < float("inf"):
+                raise ValueError("reference_speed_mps must be finite and positive")
+            command.extend(["-p", "reference_speed_mps:=" + str(speed)])
         self._expected_stop = False
         self._stop_started = None
         self._reported_exit = False

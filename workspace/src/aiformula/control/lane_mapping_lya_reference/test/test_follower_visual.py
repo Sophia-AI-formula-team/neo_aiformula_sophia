@@ -23,6 +23,7 @@ from lane_mapping_lya_reference.controller import (ClosedRouteController, Comman
     Pose, SafetyArbiter, fresh, load_bundle)
 from lane_mapping_lya_reference.mapping_core import CausalSampleBuffer, GroundLookup, VectorNavLocalizer, make_transform
 from lane_mapping_lya_reference.mask_localization import LaneMapLocalizer
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS
 
 
 class Publisher:
@@ -92,6 +93,7 @@ def module():
         LaneMapLocalizer=LaneMapLocalizer, ClosedRouteController=ClosedRouteController,
         Command=Command, Pose=Pose, SafetyArbiter=SafetyArbiter, fresh=fresh,
         load_bundle=load_bundle, PoseStamped=pose_message,
+        REFERENCE_SPEED_MPS=REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS=MAX_YAW_RATE_RPS,
         Header=header, PointCloud2=Obj, PointField=type("PointField", (), {
             "FLOAT32": 7, "__init__": lambda self, **kwargs: self.__dict__.update(kwargs)}),
         String=Obj, Bool=Obj, Twist=lambda: Obj(linear=Obj(x=0), angular=Obj(z=0)))
@@ -109,7 +111,20 @@ def harness(module):
     defaults = next(item.value for item in init.body if isinstance(item, ast.Assign)
                     and any(isinstance(target, ast.Name) and target.id == "defaults" for target in item.targets))
     node = cls.__new__(cls)
-    node.p = ast.literal_eval(defaults)
+    # Resolve only the real shared profile constants; never evaluate arbitrary
+    # source expressions merely to reconstruct a ROS-free defaults fixture.
+    profile = {"REFERENCE_SPEED_MPS": REFERENCE_SPEED_MPS,
+               "MAX_YAW_RATE_RPS": MAX_YAW_RATE_RPS}
+
+    class ProfileConstants(ast.NodeTransformer):
+        def visit_Name(self, item):
+            if item.id not in profile:
+                raise ValueError("unexpected name in production defaults: " + item.id)
+            return ast.copy_location(ast.Constant(value=profile[item.id]), item)
+
+    node.p = ast.literal_eval(ProfileConstants().visit(defaults))
+    if node.p["maximum_speed_mps"] == 0.0:
+        node.p["maximum_speed_mps"] = node.p["reference_speed_mps"]
     node.arbiter = SafetyArbiter()
     node.arbiter.repeat_selected, node.arbiter.state = True, "HOLD"
     node.clock = Obj(ros=1000000000, steady=1000000000)

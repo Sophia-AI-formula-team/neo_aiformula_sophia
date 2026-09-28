@@ -1,6 +1,6 @@
 lane_lap_recorder:
   ros__parameters:
-    mask_topic: /aiformula_perception/pub_mask_image
+    mask_topic: /aiformula_perception/road_detector/mask_image
     vectornav_topic: /aiformula_sensing/vectornav/raw/common
     camera_info_topic: /aiformula_sensing/zed_node/left/camera_info
     lya_command_topic: /lane_learning/lya_cmd
@@ -40,7 +40,7 @@ lane_fixed_follower:
     command_output_topic: /lane_learning/cmd_vel
     teacher_command_topic: /lane_learning/lya_cmd
     vectornav_topic: /aiformula_sensing/vectornav/raw/common
-    mask_topic: /aiformula_perception/pub_mask_image
+    mask_topic: /aiformula_perception/road_detector/mask_image
     camera_frame_override: ''
     visual_max_age_s: 0.5
     visual_max_pose_mask_gap_s: 0.15
@@ -58,9 +58,9 @@ lane_fixed_follower:
     teacher_state_topic: /lane_learning/teacher_state
     log_directory: ~/.ros/lane_learning
     control_rate_hz: 20.0
-    maximum_speed_mps: 0.8
-    accepted_teacher_max_speed_mps: 2.25
-    maximum_yaw_rate_rps: 0.4
+    # Speed inherits trajectory_follower.lya_profile unless explicitly overridden.
+    # 0 means unconfigured private preview, forbidden for any vehicle output.
+    accepted_teacher_max_speed_mps: 0.0
     maximum_acceleration_mps2: 0.5
     maximum_yaw_acceleration_rps2: 0.8
     maximum_lateral_acceleration_mps2: 0.35
@@ -87,7 +87,7 @@ lane_fixed_follower:
 lane_teacher_supervisor:
   ros__parameters:
     teacher_package: trajectory_follower
-    teacher_executable: lya_follower_connected_omegat_global
+    teacher_executable: lya_0221
     teacher_command_topic: /lane_learning/lya_cmd
     control_state_topic: /lane_learning/control_state
     teacher_state_topic: /lane_learning/teacher_state

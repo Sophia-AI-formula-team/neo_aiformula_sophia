@@ -24,6 +24,31 @@
 帧数/时间/距离界限内用 raw motion 建种子图。不能让同一帧刚加入地图的点证明自己定位正确。
 冻结的驾驶路线与在线降噪层分离，不能无审批偷偷移动路线。
 
+### 当前 LYA 接线与参考速度契约（2026-09-28）
+
+受管教师默认是 neo 实际的 `lya_0221`。教师与三个新包默认继承唯一来源
+`trajectory_follower/lya_profile.py` 的 `REFERENCE_SPEED_MPS`（原 `v_t`）；本次源码值为
+2.0 m/s，不是在新包各处复制 2.0。修改该源值为 4 时，新包默认也继承 4。
+`reference_speed_mps` launch 默认空，表示不覆盖当前源码/配置；显式值统一覆盖相关节点。
+`params_file` 可用全局 `/**.ros__parameters.reference_speed_mps` 指定本次参考，GNSS 的
+supervisor 也接收同一配置。repeat `maximum_speed_mps=0` 表示使用有效参考。
+
+源码默认在重新构建/启动后读取，运行中不热更新。修改参考后，旧 bundle 的速度 policy/参考
+不匹配就拒绝，需要重新生成并验证路线；不能偷偷换 profile 降速继续跑旧图。
+
+第一圈保留通过准入检查的真实 LYA 指令，不缩到旧的 0.8 m/s 或另加新包的 slew。
+LYA 原反馈律不变，参考不是每帧实际输出：本次 2.0 参考、前方 1 m 误差时可能输出 2.15。
+第二圈固定的是本次有效参考，不回放第一圈速度、不按曲率悄悄减速；误差反馈、启动限制
+和停车检查仍保留。原名义横向检查 0.35 m/s² 不放宽，不可行路线拒绝 ready/运行。
+这是 `v_ref² × |曲率|` 的参考可行性检查，不是反馈后实际 `v × omega` 的严格物理上限。
+repeat 角速度限值仍为 0.4 rad/s；独立的教师角速度准入默认继承 LYA 当前 `MAX_YAW_RATE_RPS`
+（本次为 2.0 rad/s），不能把教师范围扩大误写成 repeat 也已提高。
+
+默认 `accepted_teacher_max_speed_mps=0` 只允许私有预览的未指定教师线速度上限；
+任何非私有输出必须有三个部署确认和经过审核的正数上限。不能把电机参数 4.0 当实测硬上限：
+当前 `STATE_BKUP` 路径绕过该截断。教师 FALLBACK 保留原命令，可能比固定候选快；它不是
+“只取较慢者”的仲裁器。没有障碍物/硬件验证，不因参考同源而获得上车许可。
+
 ### 用户最后明确的 GNSS 约束（优先于旧文档/聊天）
 
 **GNSS 是用来判断定轨迹起点的，不许用 GNSS 建图。**
@@ -84,16 +109,25 @@
 所以下一步先核对车端时序、原始运动和标定，拿到合格连续输入，再验证地图和跨圈定位。
 当前状态：**尚未实车放行**。详细行动/验收/回传字段在当前任务单中。
 
-## 新仓库迁移时发现的明确实车阻塞
+## 接线修复、测试状态与剩余现场边界
 
-以下来自 neo 基线 `8914b613c7200709f7c8617aed2d408afd911a0d` 的源码审计，不能被合成 CI 替代：
+2026-09-27 迁移档案中的缺 Header、错误默认教师和速度不一致是当时事实；封存记录不回写。
+2026-09-28 当前改动修复以下确定问题，实际发布基线和 CI 回执仍以 STATUS 为准：
 
-- [road_detector.py](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/8914b613c7200709f7c8617aed2d408afd911a0d/workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py#L114)
-  只把输入 stamp 传给输出 mask，丢失 frame_id；当前严格 frame 检查会拒绝。正确方向是保持原始完整
-  Header 和真实标定，不能伪造 frame 或取消检查。本次迁移没有改 road_detector。
-- neo 根 README 的 `lya_0221` 与三个新包默认管理的 `lya_follower_connected_omegat_global` 不是同一程序。
-  两个 entry 都存在，但不能同时运行并假定 supervisor 能关掉另一个；它只能管理自己创建的进程组。
-- neo 同名 LYA 的线速度限幅为0.8–4.0m/s，角速度上限0.45rad/s；新包 teacher 准入仍保守地限制到
-  2.25m/s和0.4rad/s，超出会拒绝。迁移没有放宽限制或提高固定路线速度。
-- VectorNav 的11个消息定义与旧来源一致；驱动默认依然0x210缺POSLLA。repeat起点仍需正确0x230配置，
-  但不能用它参与建图。具体部署步骤以包 README 为准。
+- 默认完整 mask 改为 neo `allnodes.launch.py` / `topic_list.yaml` 的
+  `/aiformula_perception/road_detector/mask_image`。road detector 把完整输入 Header 独立复制给
+  mask/标注图；严格 frame、尺寸、标定检查不取消，不能用 ROI 或猜测 frame 代替。
+- 默认教师改为 `lya_0221`，保持其反馈律，补齐真实 `trajectory_follower` 运行依赖。
+  它仍要求原 gyro odometry、filtered lane pose、filtered omega 输入。supervisor 只管理自己的
+  子进程组，不能和另一个直发电机的 LYA 并行运行。
+- `_gnss` 已补实际 resolved/remapped 输出话题的竞争 publisher / graph 异常检查，服务前和
+  控制 tick 都检查，故障发零 HOLD，不自动恢复。这不是遥控仲裁，不能停止其他发布者。
+- 当前 motor 源码已有零 RPM 停止旁路，不再声称零指令必然被补偿为非零；实际安装版本、
+  电机端断流停车、遥控所有权和物理急停仍未现场验证。
+- VectorNav 默认仍 0x210 缺 POSLLA；`_gnss` repeat 起点需经授权配置 0x230，仍禁止 GNSS 建图。
+  CAN、原始 GPS 默认名已沿实际 launch 核对，不把 converted GNSS 话题当 raw GPS。
+
+上游 Header 单测与本地算法测试不能代替 ROS。新增 `neo_upstream_smoke.py` 使用真实 supervisor
+和已安装 LYA，验证合成输入下的反馈输出与真实进程退出；可追加生产 mask 发布方法 + cv_bridge/DDS。
+**本次新增真实上游 DDS 结果待对应提交 CI**，不将脚本存在或历史 CI 当本次通过。
+这些测试仍不覆盖模型推理、真实传感器驱动、整圈建图精度、实际遥控/电机/急停。

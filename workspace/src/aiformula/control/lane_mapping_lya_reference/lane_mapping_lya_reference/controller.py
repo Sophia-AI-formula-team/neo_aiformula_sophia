@@ -110,16 +110,36 @@ class ClosedRouteController:
 
     Initial attachment is only at route start. Every later nearest-point query
     searches a bounded reachable arc interval, never the entire loop/other lane.
+    A non-None reference speed requires matching fixed-reference route metadata;
+    infeasible bends are rejected, not silently turned into a slower profile.
     """
     def __init__(self, route, maximum_speed=0.8, maximum_yaw_rate=0.4,
                  maximum_acceleration=0.5, maximum_yaw_acceleration=0.8,
                  maximum_lateral_acceleration=0.35, maximum_cross_track=0.8,
                  maximum_heading_error=1.0, start_distance=1.0,
-                 start_heading_error=0.6, k_x=0.5, k_y=1.2, k_yaw=1.0):
+                 start_heading_error=0.6, k_x=0.5, k_y=1.2, k_yaw=1.0,
+                 reference_speed_mps=None):
         if route.get("schema_version") != 1 or route.get("closed") is not True:
             raise ValueError("only a validated closed schema-1 route is accepted")
         if route.get("diagnostics", {}).get("valid") is not True:
             raise ValueError("route diagnostics do not report a valid candidate")
+        self.reference_speed_mps = reference_speed_mps
+        policy = route.get("speed_policy", "profile")
+        if reference_speed_mps is None:
+            if policy != "profile":
+                raise ValueError("route speed policy requires explicit fixed reference configuration")
+        else:
+            if (isinstance(reference_speed_mps, bool)
+                    or not math.isfinite(float(reference_speed_mps))
+                    or float(reference_speed_mps) <= 0):
+                raise ValueError("reference speed must be finite and positive")
+            self.reference_speed_mps = float(reference_speed_mps)
+            saved_reference = route.get("reference_speed_mps")
+            if (policy != "fixed_reference" or isinstance(saved_reference, bool)
+                    or not isinstance(saved_reference, (int, float))
+                    or not math.isfinite(saved_reference)
+                    or abs(saved_reference - self.reference_speed_mps) > 1e-9):
+                raise ValueError("route speed policy/reference mismatch; rebuild the fixed reference route")
         samples = route.get("route_samples", [])
         if not 8 <= len(samples) <= 5000:
             raise ValueError("route must contain 8..5000 samples")
@@ -131,6 +151,9 @@ class ClosedRouteController:
                 raise ValueError("route contains non-finite values")
             if row["speed_mps"] <= 0 or row["speed_mps"] > 8.0:
                 raise ValueError("invalid route speed profile")
+            if (self.reference_speed_mps is not None
+                    and abs(row["speed_mps"] - self.reference_speed_mps) > 1e-9):
+                raise ValueError("fixed reference route contains a different speed profile")
             if self.samples and row["s_m"] <= self.samples[-1]["s_m"]:
                 raise ValueError("route arc lengths must strictly increase")
             self.samples.append(row)
@@ -180,11 +203,28 @@ class ClosedRouteController:
                 self.start_distance, self.start_heading_error, self.k_x, self.k_y,
                 self.k_yaw)):
             raise ValueError("controller limits and gains must be finite and positive")
+        if self.reference_speed_mps is not None:
+            if self.reference_speed_mps > self.maximum_speed:
+                raise ValueError("fixed speed infeasible: reference={:.6g} m/s; allowed={:.6g} m/s".format(
+                    self.reference_speed_mps, self.maximum_speed))
+            self._check_fixed_speed(max(abs(row["curvature_1pm"]) for row in self.samples))
         self.progress = 0.0
         self.arc_lengths = [row["s_m"] for row in self.samples]
         self.last_command = Command()
         self.attached = False
         self.last_metrics = {}
+
+    def _check_fixed_speed(self, curvature):
+        reference = self.reference_speed_mps
+        required_yaw = reference * abs(curvature)
+        required_lateral = reference ** 2 * abs(curvature)
+        if (required_yaw > self.maximum_yaw_rate + 1e-9
+                or required_lateral > self.maximum_lateral_acceleration + 1e-9):
+            raise ControlFault(
+                "fixed speed infeasible: reference={:.6g} m/s; required yaw={:.6g} rad/s "
+                "(allowed={:.6g}), required lateral acceleration={:.6g} m/s^2 "
+                "(allowed={:.6g})".format(reference, required_yaw, self.maximum_yaw_rate,
+                    required_lateral, self.maximum_lateral_acceleration))
 
     def attach(self, pose):
         head = self.samples[0]
@@ -250,10 +290,14 @@ class ClosedRouteController:
         if abs(e_yaw) > self.maximum_heading_error:
             raise ControlFault("route heading gate exceeded")
         curvature = reference["curvature_1pm"]
-        v_ref = min(reference["speed_mps"], self.maximum_speed)
-        if abs(curvature) > 1e-6:
-            v_ref = min(v_ref, math.sqrt(self.maximum_lateral_acceleration / abs(curvature)),
-                        self.maximum_yaw_rate / abs(curvature))
+        if self.reference_speed_mps is not None:
+            self._check_fixed_speed(curvature)
+            v_ref = self.reference_speed_mps
+        else:
+            v_ref = min(reference["speed_mps"], self.maximum_speed)
+            if abs(curvature) > 1e-6:
+                v_ref = min(v_ref, math.sqrt(self.maximum_lateral_acceleration / abs(curvature)),
+                            self.maximum_yaw_rate / abs(curvature))
         speed = clamp(v_ref * math.cos(e_yaw) + self.k_x * e_x, 0.0, self.maximum_speed)
         omega = v_ref * curvature + self.k_y * v_ref * sinc(e_yaw) * e_y + self.k_yaw * e_yaw
         omega = clamp(omega, -self.maximum_yaw_rate, self.maximum_yaw_rate)
@@ -264,6 +308,8 @@ class ClosedRouteController:
                       self.last_command.yaw_rate + self.maximum_yaw_acceleration * dt)
         self.last_command = Command(speed, omega)
         self.last_metrics = dict(progress_m=self.progress, lap=int(self.progress // self.length),
+                                 speed_policy="fixed_reference" if self.reference_speed_mps is not None else "profile",
+                                 reference_speed_mps=self.reference_speed_mps,
                                  cross_track_m=distance, heading_error_rad=e_yaw,
                                  v_ref_mps=v_ref, omega_ref_rps=v_ref * curvature,
                                  requested_speed_mps=requested_speed,
@@ -272,22 +318,38 @@ class ClosedRouteController:
 
 
 class SafetyArbiter:
-    """No automatic rearming; fixed_only forbids teacher use after handover."""
+    """No automatic rearming; fixed_only forbids teacher use after handover.
+
+    Preserve mode leaves the teacher's accepted command unchanged. A zero
+    teacher speed ceiling means unconfigured private replay, not vehicle
+    approval: the ROS deployment boundary must reject it for vehicle output.
+    """
     def __init__(self, maximum_speed=0.8, maximum_yaw_rate=0.4,
                  pose_timeout_s=0.25, teacher_timeout_s=0.25,
                  stopped_speed=0.08, stopped_settle_s=1.0,
                  safety_mode="fixed_only", reference_speed_delta=0.35,
                  reference_yaw_delta=0.15, reference_recovery_s=0.5,
                  accepted_teacher_max_speed=2.25, maximum_acceleration=0.5,
-                 maximum_yaw_acceleration=0.8):
+                 maximum_yaw_acceleration=0.8, preserve_teacher_command=False,
+                 accepted_teacher_max_yaw_rate=None):
         if safety_mode not in ("fixed_only", "lya_reference"):
             raise ValueError("unknown safety mode")
         self.safety_mode = safety_mode
+        if not isinstance(preserve_teacher_command, bool):
+            raise ValueError("preserve_teacher_command must be boolean")
+        self.preserve_teacher_command = preserve_teacher_command
         self.accepted_teacher_max_speed = accepted_teacher_max_speed
+        if (isinstance(accepted_teacher_max_speed, bool)
+                or not math.isfinite(float(accepted_teacher_max_speed))
+                or accepted_teacher_max_speed < 0
+                or (accepted_teacher_max_speed == 0 and not preserve_teacher_command)):
+            raise ValueError("teacher speed limit must be positive, or zero for private preserve-mode replay")
+        self.accepted_teacher_max_yaw_rate = (maximum_yaw_rate if accepted_teacher_max_yaw_rate is None
+                                               else accepted_teacher_max_yaw_rate)
         if any(not math.isfinite(float(v)) or float(v) <= 0 for v in (
                 maximum_speed, maximum_yaw_rate, pose_timeout_s, teacher_timeout_s,
                 stopped_speed, stopped_settle_s, reference_speed_delta,
-                reference_yaw_delta, reference_recovery_s, accepted_teacher_max_speed,
+                reference_yaw_delta, reference_recovery_s, self.accepted_teacher_max_yaw_rate,
                 maximum_acceleration, maximum_yaw_acceleration)):
             raise ValueError("all safety limits must be finite and positive")
         self.reference_speed_delta = reference_speed_delta
@@ -355,13 +417,15 @@ class SafetyArbiter:
             return False
         speed, ly, lz, ax, ay, omega = values
         if (any(abs(v) > 1e-6 for v in (ly, lz, ax, ay))
-                or not 0.0 <= speed <= self.accepted_teacher_max_speed
-                or abs(omega) > self.maximum_yaw_rate):
+                or speed < 0.0
+                or (self.accepted_teacher_max_speed > 0 and speed > self.accepted_teacher_max_speed)
+                or abs(omega) > self.accepted_teacher_max_yaw_rate):
             self.teacher = None
             self.hold("teacher command outside configured envelope")
             return False
         self.raw_teacher = Command(speed, omega)
-        ratio = min(1.0, self.maximum_speed / speed) if speed > 1e-6 else 1.0
+        ratio = (1.0 if self.preserve_teacher_command or speed <= 1e-6
+                 else min(1.0, self.maximum_speed / speed))
         self.teacher = Command(speed * ratio, omega * ratio)
         self.teacher_stamp_ns = now_ns
         self.teacher_received_ns = steady_ns
@@ -432,7 +496,7 @@ class SafetyArbiter:
         return True, self.reason
 
     def _output(self, target, dt):
-        """Final common limiter, including teacher/fallback and mode transitions.
+        """Repeat and legacy-mode limiter, including mode transitions.
 
         The controller's own limiter remains useful when used independently.
         Applying identical limits twice does not halve the ramp; the final
@@ -454,6 +518,22 @@ class SafetyArbiter:
                   self.last_output.yaw_rate + self.maximum_yaw_acceleration * dt))
         return self.last_output
 
+    def _teacher_output(self, dt):
+        if not self.preserve_teacher_command:
+            return self._output(self.teacher, dt)
+        # The real LYA owns TEACH/FALLBACK commands. Its configured acceptance
+        # envelope and all mode/freshness/stop gates still apply; repeat's
+        # speed cap and startup slew must not silently rewrite this command.
+        target = self.teacher
+        if (target is None or not all(math.isfinite(v) for v in (target.speed, target.yaw_rate))
+                or target.speed < 0
+                or (self.accepted_teacher_max_speed > 0 and target.speed > self.accepted_teacher_max_speed)
+                or abs(target.yaw_rate) > self.accepted_teacher_max_yaw_rate):
+            self.hold("teacher command outside configured envelope")
+            return Command()
+        self.last_output = target if target.speed > 0.0 else Command()
+        return self.last_output
+
     def command(self, now_ns, steady_ns, dt):
         if self.state not in ("TEACH", "REPEAT", "FALLBACK"):
             self.last_output = Command()
@@ -469,7 +549,7 @@ class SafetyArbiter:
             if not self.teacher_fresh(now_ns, steady_ns):
                 self.hold("teacher command stale or clock invalid")
                 return Command()
-            return self._output(self.teacher, dt)
+            return self._teacher_output(dt)
         if self.safety_mode == "lya_reference" and not self.teacher_fresh(now_ns, steady_ns):
             self.hold("reference teacher command stale or clock invalid")
             return Command()
@@ -483,7 +563,7 @@ class SafetyArbiter:
             self.reference_agree_since_ns = None
             if self.safety_mode == "lya_reference":
                 self.state, self.reason = "FALLBACK", "route controller rejected: " + str(error)
-                return self._output(self.teacher, dt)
+                return self._teacher_output(dt)
             else:
                 self.hold(str(error))
                 return Command()
@@ -505,6 +585,8 @@ class SafetyArbiter:
                 self.reference_agree_since_ns = None
                 self.state, self.reason = "FALLBACK", "fixed/teacher command disagreement"
             if self.state == "FALLBACK":
+                if self.preserve_teacher_command:
+                    return self._teacher_output(dt)
                 # While a valid candidate requests slowing, yaw disagreement
                 # must not accelerate the car back to the faster teacher speed.
                 return self._output(reference, dt)

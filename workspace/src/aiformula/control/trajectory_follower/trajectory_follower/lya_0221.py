@@ -3,14 +3,13 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Pose2D
 from nav_msgs.msg import Odometry
-from example_interfaces.msg import Float32MultiArray
 import math
-import pandas as pd
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from rclpy.duration import Duration
 
 from tf2_ros import Buffer, TransformListener, TransformBroadcaster
 import tf_transformations
+from .lya_profile import REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS
 
 class LYAController:
     def __init__(self, v_t, lambda_v, lambda_a, k1, k2):
@@ -26,6 +25,10 @@ class LYAController:
 class TrajectoryFollower(Node):
     def __init__(self):
         super().__init__('trajectory_follower')
+        self.declare_parameter('reference_speed_mps', REFERENCE_SPEED_MPS)
+        reference_speed = float(self.get_parameter('reference_speed_mps').value)
+        if not math.isfinite(reference_speed) or reference_speed <= 0.0:
+            raise ValueError('reference_speed_mps must be finite and positive')
 
         # ---- (1) 订阅里程计 ----
         self.create_subscription(Odometry, 
@@ -60,7 +63,7 @@ class TrajectoryFollower(Node):
 
         # ---- (5) 初始化LYA控制器 ----
         self.lya = LYAController(
-            v_t=2.0, 
+            v_t=reference_speed,
             lambda_v=0.15, 
             lambda_a=2.5, 
             k1=0.8, 
@@ -72,7 +75,7 @@ class TrajectoryFollower(Node):
         self.previous_time = self.get_clock().now()
 
         # ============ 设定最终角速度的饱和阈值 ============
-        self.omega_max = 2.0  # 仅用于限制最终输出的 omega
+        self.omega_max = MAX_YAW_RATE_RPS  # 仅用于限制最终输出的 omega
 
     def omega_t_callback(self, msg):
         """

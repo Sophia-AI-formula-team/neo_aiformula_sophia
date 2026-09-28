@@ -5,12 +5,20 @@ on:
     paths:
       - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
+      - 'workspace/src/aiformula/control/lane_mapping_fixed_gnss/**'
+      - 'workspace/src/aiformula/control/trajectory_follower/**'
+      - 'workspace/src/aiformula/perception/road_detector/**'
+      - 'workspace/src/aiformula/launchers/**'
       - 'dependencies/vectornav/vectornav_msgs/**'
       - '.github/workflows/lane-teach-repeat.yml'
   pull_request:
     paths:
       - 'workspace/src/aiformula/control/lane_mapping_lya_reference/**'
       - 'workspace/src/aiformula/control/lane_mapping_fixed/**'
+      - 'workspace/src/aiformula/control/lane_mapping_fixed_gnss/**'
+      - 'workspace/src/aiformula/control/trajectory_follower/**'
+      - 'workspace/src/aiformula/perception/road_detector/**'
+      - 'workspace/src/aiformula/launchers/**'
       - 'dependencies/vectornav/vectornav_msgs/**'
       - '.github/workflows/lane-teach-repeat.yml'
 permissions:
@@ -31,6 +39,11 @@ jobs:
           sparse-checkout: |
             workspace/src/aiformula/control/lane_mapping_lya_reference
             workspace/src/aiformula/control/lane_mapping_fixed
+            workspace/src/aiformula/control/lane_mapping_fixed_gnss
+            workspace/src/aiformula/control/trajectory_follower
+            workspace/src/aiformula/perception/road_detector/road_detector
+            workspace/src/aiformula/perception/road_detector/test
+            workspace/src/aiformula/launchers
             dependencies/vectornav/vectornav_msgs
       - name: ROS test dependencies (ephemeral CI container only)
         shell: bash
@@ -38,8 +51,8 @@ jobs:
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor --yes -o /usr/share/keyrings/ros-archive-keyring.gpg
           apt-get update
-          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs
-      - name: Build native messages and both packages, unit tests, DDS smoke
+          apt-get install -y --no-install-recommends python3-colcon-common-extensions python3-numpy python3-pytest python3-matplotlib python3-opencv ros-foxy-tf2-ros ros-foxy-tf2-geometry-msgs ros-foxy-tf-transformations ros-foxy-cv-bridge
+      - name: Build native messages, lane packages and real neo LYA; unit and DDS tests
         shell: bash
         run: bash workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/ci_verify.sh "$GITHUB_WORKSPACE"
       - name: Upload build, test and runtime evidence

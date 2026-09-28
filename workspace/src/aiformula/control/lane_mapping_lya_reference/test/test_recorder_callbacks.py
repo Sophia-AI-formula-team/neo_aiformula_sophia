@@ -19,6 +19,7 @@ import pytest
 
 from lane_mapping_lya_reference.mapping_core import CausalSampleBuffer, VectorNavLocalizer
 from lane_mapping_lya_reference.route import RouteBuildError
+from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS
 
 
 class Publisher:
@@ -48,7 +49,8 @@ def harness(tmp_path):
                  "json": json, "hashlib": hashlib, "Path": Path, "uuid": uuid,
                  "time": Obj(monotonic_ns=lambda: clock.value),
                  "String": lambda **kwargs: Obj(**kwargs),
-                 "RouteBuildError": RouteBuildError}
+                 "RouteBuildError": RouteBuildError,
+                 "REFERENCE_SPEED_MPS": REFERENCE_SPEED_MPS}
     exec(compile(tree, str(source), "exec"), namespace)
     cls = namespace["LaneLapRecorder"]
     node = cls.__new__(cls)

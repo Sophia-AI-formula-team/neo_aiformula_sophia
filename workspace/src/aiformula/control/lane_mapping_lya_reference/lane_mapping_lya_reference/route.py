@@ -31,6 +31,8 @@ DEFAULT_CONFIG = {
     "smoothing_iterations": 12,
     "max_curvature_1pm": 0.80,
     "max_speed_mps": 1.0,
+    # Zero retains the explicitly selected legacy curvature-speed profile.
+    "reference_speed_mps": 0.0,
     "max_lateral_accel_mps2": 0.60,
     "max_accel_mps2": 0.40,
     "max_decel_mps2": 0.50,
@@ -62,8 +64,10 @@ def _config(config):
     for key, value in result.items():
         if isinstance(value, bool) or not isinstance(value, (int, float, np.number)):
             raise RouteBuildError("Route setting must be numeric: " + key)
-        if not math.isfinite(float(value)) or float(value) <= 0:
-            raise RouteBuildError("Route setting must be finite and positive: " + key)
+        number = float(value)
+        if (not math.isfinite(number) or number < 0
+                or (number == 0 and key != "reference_speed_mps")):
+            raise RouteBuildError("Route setting must be finite and positive (reference speed may be zero): " + key)
         if key in integer_keys:
             if int(value) != value:
                 raise RouteBuildError("Route setting must be an integer: " + key)
@@ -246,6 +250,20 @@ def _curvature(points):
 
 
 def _speed_profile(points, curvature, cfg):
+    reference = cfg["reference_speed_mps"]
+    if reference > 0.0:
+        required = reference ** 2 * float(np.max(np.abs(curvature)))
+        allowed = cfg["max_lateral_accel_mps2"]
+        if required > allowed + 1e-9:
+            raise RouteBuildError(
+                "fixed speed infeasible: reference={:.6g} m/s requires lateral "
+                "acceleration={:.6g} m/s^2; allowed={:.6g} m/s^2".format(
+                    reference, required, allowed),
+                {"reference_speed_mps": reference,
+                 "required_lateral_accel_mps2": required,
+                 "allowed_lateral_accel_mps2": allowed})
+        # This is a fixed reference, not a recording of the teacher's commands.
+        return np.full(len(points), reference, dtype=np.float64)
     speeds = np.minimum(cfg["max_speed_mps"], np.sqrt(
         cfg["max_lateral_accel_mps2"] / np.maximum(np.abs(curvature), 1e-9)))
     segment_length = np.linalg.norm(np.roll(points, -1, axis=0) - points, axis=1)
@@ -355,4 +373,6 @@ def build_route(trajectory, lane_points, config=None):
         "right_clearance_m": float(final_edges[index, 1]),
     } for index, point in enumerate(route)]
     return {"schema_version": 1, "closed": True, "route_samples": samples,
+            "speed_policy": "fixed_reference" if cfg["reference_speed_mps"] > 0 else "profile",
+            "reference_speed_mps": cfg["reference_speed_mps"],
             "diagnostics": diagnostics, "config": cfg}
