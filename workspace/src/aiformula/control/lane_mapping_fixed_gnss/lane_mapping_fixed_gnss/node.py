@@ -37,7 +37,7 @@ from lane_mapping_lya_reference.mapping_core import make_transform
 from lane_mapping_lya_reference.recorder_node import point_cloud
 from .anchors import EndpointAnchors, decode_vectornav_gps
 from .control import RuntimeSafety
-from .motion import CausalWheelGyroOdometry, decode_honda_rpm
+from .motion import CausalWheelGyroOdometry, decode_honda_rpm, DEFAULT_CONFIG as MOTION_DEFAULT_CONFIG
 from .worker import MapWorker
 
 
@@ -197,6 +197,10 @@ class EndpointFollower(Node):
             raise ValueError("teacher ceiling must be finite and nonnegative")
         if self.p["maximum_speed_mps"] < self.p["reference_speed_mps"]:
             raise ValueError("repeat speed cap cannot be below the fixed reference speed")
+        if self.p["reference_speed_mps"] > MOTION_DEFAULT_CONFIG["max_speed_mps"]:
+            raise ValueError("LYA reference {} m/s exceeds raw-motion admission {} m/s; "
+                "review the motion limit before deployment; reference will not be silently reduced".format(
+                    self.p["reference_speed_mps"], MOTION_DEFAULT_CONFIG["max_speed_mps"]))
         if not math.isfinite(float(self.p["gyro_bias_radps"])):
             raise ValueError("invalid gyro bias")
         mounting = np.asarray(self.p["gyro_mount_quaternion"], dtype=float)

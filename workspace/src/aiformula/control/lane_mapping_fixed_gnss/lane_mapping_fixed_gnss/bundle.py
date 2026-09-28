@@ -121,7 +121,9 @@ def build_bundle(outputroot, snapshot, calibration, route_config=None, session_i
     shared = {"localization_kind": LOCALIZATION_KIND, "frame_id": "lane_teach_local",
               "coordinate_convention": COORDINATE_CONVENTION,
               "origin_local_xyz": [0.0, 0.0, 0.0],
-              "heading_source": "wheel_rawgyro_start_relative"}
+              "heading_source": "wheel_rawgyro_start_relative",
+              "speed_policy": route["speed_policy"],
+              "reference_speed_mps": route["reference_speed_mps"]}
     route.update(shared)
     metadata = dict(shared, schema_version=SCHEMA_VERSION, session_id=session_id,
                     finished=True, model_type="causal_odometry_mask_consensus",
@@ -266,7 +268,42 @@ def load_bundle(manifest_path):
             or metadata.get("trace_points") != len(trace)
             or metadata.get("consensus_points") != len(consensus)):
         raise ValueError("frozen geometry integrity mismatch")
-    # Check the route's actual spacing/tangent/curvature contract as well as
-    # the producer's diagnostics flag. This pure controller emits no commands.
-    ClosedRouteController(route)
+    # Validate geometry against its recorded BUILD contract, not an unrelated
+    # controller's legacy .8 m/s/profile defaults. The ROS node independently
+    # constructs its controller with the current DEPLOYMENT limits before it
+    # can accept this candidate for repeat; successful loading is not approval.
+    policy = route.get("speed_policy", "profile")
+    if policy == "fixed_reference":
+        reference = route.get("reference_speed_mps")
+        if (isinstance(reference, bool) or not isinstance(reference, (int, float))
+                or not math.isfinite(reference) or reference <= 0):
+            raise ValueError("fixed reference bundle requires a finite positive reference speed")
+        for payload in (manifest, metadata):
+            saved_reference = payload.get("reference_speed_mps")
+            if (payload.get("speed_policy") != policy or isinstance(saved_reference, bool)
+                    or not isinstance(saved_reference, (int, float))
+                    or not math.isfinite(saved_reference) or saved_reference != reference):
+                raise ValueError("bundle speed policy/reference metadata mismatch")
+        config = route.get("config")
+        if not isinstance(config, dict) or config.get("reference_speed_mps") != reference:
+            raise ValueError("fixed reference bundle route build configuration mismatch")
+        limits = {}
+        for key in ("max_curvature_1pm", "max_lateral_accel_mps2"):
+            value = config.get(key)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or value <= 0):
+                raise ValueError("invalid saved route build limit: " + key)
+            limits[key] = float(value)
+        ClosedRouteController(route, reference_speed_mps=reference,
+            maximum_speed=reference,
+            maximum_yaw_rate=reference * limits["max_curvature_1pm"],
+            maximum_lateral_acceleration=limits["max_lateral_accel_mps2"])
+    else:
+        # Older profile bundles predate these metadata fields. They remain
+        # readable, but may not claim a contradictory fixed-reference policy.
+        if any(payload.get("speed_policy", "profile") != "profile"
+               or payload.get("reference_speed_mps", 0.0) != 0.0
+               for payload in (manifest, route, metadata)):
+            raise ValueError("bundle speed policy/reference metadata mismatch")
+        ClosedRouteController(route)
     return manifest, route, metadata, snapshot.consensus_xy, calibration

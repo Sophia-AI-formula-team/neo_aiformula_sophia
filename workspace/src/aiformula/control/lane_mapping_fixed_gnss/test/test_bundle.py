@@ -1,11 +1,13 @@
 """Local-map readiness is independent of GNSS and preserves geometry integrity."""
 
 import hashlib
+from contextlib import nullcontext
 import inspect
 import json
 import math
 from pathlib import Path
 import sys
+import time
 
 import numpy as np
 import pytest
@@ -15,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parents[2] / "lane_mapping_lya_reference")
 
 from lane_mapping_fixed_gnss.bundle import build_bundle, geometry_sha256, load_bundle
 from lane_mapping_fixed_gnss.mapping import MapSnapshot
+from lane_mapping_fixed_gnss.worker import MapWorker
 from lane_mapping_lya_reference.controller import ClosedRouteController
 
 
@@ -169,4 +172,89 @@ def test_unknown_outer_schema_fails(tmp_path, snapshot):
     manifest["schema_version"] = 1
     rewrite(path, manifest)
     with pytest.raises(ValueError, match="unsupported"):
+        load_bundle(path)
+
+
+@pytest.mark.parametrize("reference", [0.2, 2.0, 2.5])
+def test_fixed_reference_build_load_and_actual_worker_bundle_job(tmp_path, snapshot, reference):
+    """Real geometry build/load/worker: no mocked builder, loader or matcher."""
+    calibration = {"frame_id": "camera", "K": [1., 0., 0., 0., 1., 0., 0., 0., 1.]}
+    config = {"reference_speed_mps": reference}
+    before = geometry_sha256(snapshot)
+    path = build_bundle(tmp_path / "direct", snapshot, calibration, route_config=config)
+    manifest, route, metadata, anchor, loaded_calibration = load_bundle(path)
+    for payload in (manifest, route, metadata):
+        assert payload["speed_policy"] == "fixed_reference"
+        assert payload["reference_speed_mps"] == reference
+    assert {row["speed_mps"] for row in route["route_samples"]} == {reference}
+    assert np.array_equal(anchor, snapshot.consensus_xy)
+    assert loaded_calibration == calibration
+    assert geometry_sha256(snapshot) == before
+
+    worker = MapWorker(lambda unused_job: nullcontext(True))
+    try:
+        # This is an explicit analytic frozen-map fixture, not a claimed camera
+        # lap. The real background bundle branch performs all subsequent work.
+        worker.snapshot = snapshot
+        worker.calibration = calibration
+        worker.submit({"kind": "bundle", "root": str(tmp_path / "worker"), "route_config": config})
+        deadline = time.monotonic() + 5.0
+        result = None
+        while result is None and time.monotonic() < deadline:
+            assert worker.failure is None
+            result = worker.take()
+            if result is None:
+                time.sleep(0.002)
+        assert result is not None, "real bundle worker timed out"
+        assert result["kind"] == "bundle", result
+        assert Path(result["path"]).is_file()
+        assert result["route"]["reference_speed_mps"] == reference
+        assert result["manifest"]["speed_policy"] == "fixed_reference"
+        assert worker.matcher is not None
+        assert load_bundle(result["path"])[1]["route_samples"] == route["route_samples"]
+        assert geometry_sha256(worker.snapshot) == before
+    finally:
+        worker.close()
+    assert not worker.thread.is_alive()
+
+
+def test_loaded_fixed_candidate_still_requires_current_deployment_limits(tmp_path, snapshot):
+    # Build accepts this .52 m/s^2 circle under its recorded .60 limit. It must
+    # load as a candidate, then fail the separate deployment .35 limit.
+    path = build_bundle(tmp_path, snapshot, {"frame_id": "camera"},
+                        route_config={"reference_speed_mps": 2.5})
+    _, route, _, _, _ = load_bundle(path)
+    with pytest.raises(ValueError, match="fixed speed infeasible"):
+        ClosedRouteController(route, reference_speed_mps=2.5, maximum_speed=2.5)
+
+
+@pytest.mark.parametrize("payload", ["manifest", "metadata", "route"])
+def test_fixed_reference_policy_mismatch_rejected_even_with_updated_hash(tmp_path, snapshot, payload):
+    path = build_bundle(tmp_path, snapshot, {"frame_id": "camera"},
+                        route_config={"reference_speed_mps": 2.0})
+    manifest = json.loads(path.read_text())
+    if payload == "manifest":
+        manifest["reference_speed_mps"] = 0.8
+    else:
+        target = path.parent / manifest[payload + "_path"]
+        body = json.loads(target.read_text())
+        body["reference_speed_mps"] = 0.8
+        rewrite(target, body)
+        manifest[payload + "_sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
+    rewrite(path, manifest)
+    with pytest.raises(ValueError, match="speed policy/reference"):
+        load_bundle(path)
+
+
+def test_fixed_bundle_geometry_still_checked_after_payload_hash_update(tmp_path, snapshot):
+    path = build_bundle(tmp_path, snapshot, {"frame_id": "camera"},
+                        route_config={"reference_speed_mps": 2.0})
+    manifest = json.loads(path.read_text())
+    target = path.parent / manifest["route_path"]
+    route = json.loads(target.read_text())
+    route["route_samples"][5]["curvature_1pm"] += 0.1
+    rewrite(target, route)
+    manifest["route_sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
+    rewrite(path, manifest)
+    with pytest.raises(ValueError, match="curvature is inconsistent"):
         load_bundle(path)

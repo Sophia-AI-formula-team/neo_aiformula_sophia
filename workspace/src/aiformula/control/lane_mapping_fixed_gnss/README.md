@@ -65,6 +65,11 @@ rviz2 -d "$(ros2 pkg prefix lane_mapping_fixed_gnss)/share/lane_mapping_fixed_gn
 
 ### 当前 neo 接线与速度约定
 
+**继承数值不等于提高已有准入门限。** raw-motion 原有速度门限是
+`motion.DEFAULT_CONFIG.max_speed_mps=3.0`；有效 LYA 参考若为 4，本节点会启动失败并明确说明
+4 与 3 的冲突，不改成 3、不擅自提高轮速门限，也不等开车后才中断整圈。要实际运行更高速度，
+先由现场测量和 planner 审核运动准入及控制可行性；这不是车辆物理极速的证据。
+
 - 默认受管教师为实际 `lya_0221`；它与固定路线默认继承 `trajectory_follower/lya_profile.py` 的 `REFERENCE_SPEED_MPS`（原 `v_t`）。本次源码值 2.0，不是新包另抄的固定常量：源改为 4，默认随之继承 4。原 LYA 反馈律未改，因此 2.0 参考加正前方 1 m 误差时可能输出约 2.15。
 - 第一圈保留通过准入的原 LYA 命令，不再缩到 0.8 或追加新包启动 slew。第二圈固定本次所选参考，不回放第一圈速度，也不按曲率暗中减速；原 `0.35 m/s²` 横向限值不放宽，不可行路线拒绝生成/运行。跟踪反馈、启动加速度限制、故障停车仍保留。
 - 0.35 是 `v_ref² × |曲率|` 的名义参考检查，不是反馈后实际 `v × omega` 严格上限。repeat 角速度仍限 0.4 rad/s；独立教师角速度准入继承 LYA 当前 `MAX_YAW_RATE_RPS`（本次 2.0 rad/s），两者不混同。

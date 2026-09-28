@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT.parent / "lane_mapping_lya_reference"))
 from lane_mapping_fixed_gnss.control import RuntimeSafety, Command, Pose
+from lane_mapping_fixed_gnss.motion import DEFAULT_CONFIG as MOTION_DEFAULT_CONFIG
 from lane_mapping_lya_reference.controller import fresh
 from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS, MAX_YAW_RATE_RPS
 
@@ -42,6 +43,7 @@ def harness():
                  "math": math, "np": np, "json": json,
                  "REFERENCE_SPEED_MPS": REFERENCE_SPEED_MPS,
                  "MAX_YAW_RATE_RPS": MAX_YAW_RATE_RPS,
+                 "MOTION_DEFAULT_CONFIG": MOTION_DEFAULT_CONFIG,
                  "Command": Command, "fresh": fresh,
                  "Twist": lambda: Obj(linear=Obj(x=0.0), angular=Obj(z=0.0))}
     exec(compile(tree, str(source), "exec"), namespace)
@@ -186,6 +188,15 @@ def test_explicit_reference_override_drives_inherited_cap_and_route_metadata(har
     node._validate()
     assert node.p["maximum_speed_mps"] == 0.2
     assert node.route_config["reference_speed_mps"] == 0.2
+
+
+def test_reference_above_existing_motion_limit_is_rejected_at_startup(harness):
+    node, _, _ = harness
+    node.p["reference_speed_mps"] = 4.0
+    node.p["maximum_speed_mps"] = 0.0
+    assert MOTION_DEFAULT_CONFIG["max_speed_mps"] == 3.0
+    with pytest.raises(ValueError, match="motion"):
+        node._validate()
 
 
 @pytest.mark.parametrize("count", [0, -1, None, "1", True])

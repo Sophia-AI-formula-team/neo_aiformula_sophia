@@ -90,6 +90,73 @@ def node_overrides(nodes):
     return [node.parameters[-1] for node in nodes if node.kind == 'Node']
 
 
+def runtime_defaults(source, profile_override=None):
+    """Evaluate the actual production parameter dictionary, without its node."""
+    namespace = profile_values()
+    if profile_override is not None:
+        namespace['REFERENCE_SPEED_MPS'] = profile_override
+    candidates = []
+    for node in ast.walk(read_tree(source)):
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if (isinstance(key, ast.Constant) and key.value == 'reference_speed_mps'
+                        and isinstance(value, ast.Name) and value.id == 'REFERENCE_SPEED_MPS'):
+                    candidates.append(node)
+    assert len(candidates) == 1, str(source)
+    return eval(compile(ast.Expression(candidates[0]), str(source), 'eval'), namespace)
+
+
+def subscript_key(node):
+    """Normalize the Index wrapper used by Foxy's Python 3.8 AST."""
+    value = node.slice
+    if isinstance(value, ast.Index):
+        value = value.value
+    return value.value if isinstance(value, ast.Constant) else None
+
+
+def merge_simple_parameter_fixture(node, declared_defaults):
+    """Model only file wildcard/exact-node and later-dict precedence.
+
+    This deliberately small offline fixture is NOT the ROS parameter parser.
+    It checks the actual launch action ordering and does not claim transport or
+    all ROS selector/type semantics have been exercised.
+    """
+    merged = dict(declared_defaults)
+    for item in node.parameters:
+        if isinstance(item, dict):
+            merged.update(item)
+        else:
+            document = yaml.safe_load(Path(item).read_text(encoding='utf-8'))
+            for selector in ('/**', node.name, '/' + node.name):
+                merged.update(document.get(selector, {}).get('ros__parameters', {}))
+    return merged
+
+
+def production_teacher_speed_argument(parameters):
+    """Execute actual supervisor argv assembly; never spawn the process."""
+    source = SHARED / 'supervisor.py'
+    tree = read_tree(source)
+    owner = next(node for node in tree.body if isinstance(node, ast.ClassDef)
+                 and node.name == 'TeacherSupervisor')
+    init = next(node for node in owner.body if isinstance(node, ast.FunctionDef)
+                and node.name == '__init__')
+    statements = []
+    for node in init.body:
+        if (isinstance(node, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == 'command'
+                        for target in node.targets)):
+            statements.append(node)
+        if (isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+                and isinstance(node.test.left, ast.Name)
+                and node.test.left.id == 'executable'):
+            statements.append(node)
+    assert len(statements) == 2
+    namespace = dict(binary=Path('/inert-fixture/lya_0221'),
+                     executable='lya_0221', value=parameters.__getitem__)
+    exec(compile(ast.Module(body=statements, type_ignores=[]), str(source), 'exec'), namespace)
+    return next(item for item in namespace['command'] if item.startswith('reference_speed_mps:='))
+
+
 def test_actual_neo_road_detector_remaps_the_full_mask_topic():
     namespace = launch_namespace(ALLNODES, ['create_road_detector_node'])
     node, = namespace['create_road_detector_node']({})
@@ -236,3 +303,102 @@ def test_direct_node_mask_defaults_also_match_neo(source):
                     defaults.append(value.value)
     assert defaults, 'No mask default was checked in ' + str(source)
     assert all(value == topics()['perception']['mask_image'] for value in defaults)
+
+
+def test_direct_recorder_topics_match_neo_launch_configuration():
+    """Raw/common and CameraInfo are not keys in neo's topic_list.yaml."""
+    direct = runtime_defaults(SHARED / 'recorder_node.py')
+    shared = launch_namespace(SHARED / 'launch_support.py',
+                              ['_boolean', '_nodes', 'generate_learning_launch'])
+    for mode in ('fixed_only', 'lya_reference'):
+        launch_defaults = defaults_from(shared['generate_learning_launch'](mode))
+        package = 'lane_mapping_fixed' if mode == 'fixed_only' else 'lane_mapping_lya_reference'
+        config = yaml.safe_load((CONTROL / package / 'config/learning.yaml').read_text(encoding='utf-8'))
+        configured = config['lane_lap_recorder']['ros__parameters']
+        for topic in ('vectornav_topic', 'camera_info_topic', 'mask_topic'):
+            assert direct[topic] == launch_defaults[topic] == configured[topic]
+    # Ground the common namespace in the real driver launch and topic list.
+    vectornav = launch_namespace(AIFORMULA / 'launchers/launch/vectornav.launch.py',
+                                 ['generate_launch_description'])
+    driver = next(node for node in vectornav['generate_launch_description']()
+                  if node.executable == 'vectornav')
+    prefix = driver.namespace.rstrip('/') + '/' + driver.name
+    assert topics()['sensing']['vectornav']['imu'] == prefix + '/imu'
+    assert direct['vectornav_topic'] == prefix + '/raw/common'
+    # The ZED camera_info convention is checked against the deployed node
+    # namespace/name, not falsely attributed to a missing topic-list entry.
+    zed_namespace = launch_namespace(ALLNODES, ['create_zed_node'])
+    zed_namespace.update(check_zedx_available_fps=lambda *args: True,
+                         IfCondition=action('IfCondition'))
+    zed, = zed_namespace['create_zed_node'](
+        dict(grab_resolution='HD1080', grab_frame_rate='15', pub_downscale_factor='3.0'))
+    assert direct['camera_info_topic'] == zed.namespace.rstrip('/') + '/' + zed.name + '/left/camera_info'
+
+
+@pytest.mark.parametrize('mode', ['fixed_only', 'lya_reference', 'gnss'])
+@pytest.mark.parametrize('launch_override,expected', [('', 4.0), ('1.75', 1.75)])
+def test_wildcard_yaml_reference_and_explicit_launch_precedence_offline(tmp_path, mode, launch_override, expected):
+    """Synthetic merge model: /** sets 4; only an explicit launch arg wins."""
+    config = tmp_path / 'reference_override.yaml'
+    config.write_text('/**:\n  ros__parameters:\n    reference_speed_mps: 4.0\n', encoding='utf-8')
+    if mode == 'gnss':
+        namespace = launch_namespace(GNSS / 'launch/fixed_gnss.launch.py',
+                                     ['nodes', 'generate_launch_description'])
+        defaults = defaults_from(namespace['generate_launch_description']())
+        actions = namespace['nodes'](dict(defaults, params_file=str(config),
+                                          reference_speed_mps=launch_override))
+    else:
+        namespace = launch_namespace(SHARED / 'launch_support.py',
+                                     ['_boolean', '_nodes', 'generate_learning_launch'])
+        defaults = defaults_from(namespace['generate_learning_launch'](mode))
+        actions = namespace['_nodes'](dict(defaults, params_file=str(config),
+                                           reference_speed_mps=launch_override), mode)
+    sources = {
+        'lane_fixed_follower': SHARED / 'follower_node.py',
+        'lane_lap_recorder': SHARED / 'recorder_node.py',
+        'lane_teacher_supervisor': SHARED / 'supervisor.py',
+        'lane_gnss_teacher_supervisor': SHARED / 'supervisor.py',
+        'lane_endpoint_follower': GNSS / 'lane_mapping_fixed_gnss/node.py',
+    }
+    nodes = [item for item in actions if item.kind == 'Node']
+    assert len(nodes) == (2 if mode == 'gnss' else 3)
+    for node in nodes:
+        merged = merge_simple_parameter_fixture(node, runtime_defaults(sources[node.name]))
+        assert merged['reference_speed_mps'] == expected
+        if node.executable == 'teacher_supervisor':
+            # The actual argv-producing statements must carry the same value
+            # to the managed LYA child, not just retain it inside the supervisor.
+            assert production_teacher_speed_argument(merged) == 'reference_speed_mps:=' + str(expected)
+
+
+@pytest.mark.parametrize('source,class_name,method', [
+    (SHARED / 'follower_node.py', 'FixedFollower', '__init__'),
+    (GNSS / 'lane_mapping_fixed_gnss/node.py', 'EndpointFollower', '_validate'),
+])
+@pytest.mark.parametrize('profile,override,explicit_cap,expected', [
+    (4.0, None, 0.0, 4.0), (4.0, 1.75, 0.0, 1.75),
+    (4.0, 1.75, 2.5, 2.5),
+])
+def test_actual_speed_cap_initialization_inherits_effective_reference(
+        source, class_name, method, profile, override, explicit_cap, expected):
+    defaults = runtime_defaults(source, profile_override=profile)
+    assert defaults['maximum_speed_mps'] == 0.0
+    params = dict(defaults, maximum_speed_mps=explicit_cap)
+    if override is not None:
+        params['reference_speed_mps'] = override
+    owner = next(node for node in read_tree(source).body
+                 if isinstance(node, ast.ClassDef) and node.name == class_name)
+    function = next(node for node in owner.body
+                    if isinstance(node, ast.FunctionDef) and node.name == method)
+    # Execute the exact production if-statement, including its guard and RHS.
+    # Other initialization may create ROS entities and is intentionally omitted.
+    candidates = [node for node in function.body if isinstance(node, ast.If)
+                  and isinstance(node.test, ast.Compare)
+                  and isinstance(node.test.left, ast.Subscript)
+                  and subscript_key(node.test.left) == 'maximum_speed_mps'
+                  and any(isinstance(value, ast.Constant) and value.value == 0.0
+                          for value in node.test.comparators)]
+    assert len(candidates) == 1
+    node = SimpleNamespace(p=params)
+    exec(compile(ast.Module(body=candidates, type_ignores=[]), str(source), 'exec'), {'self': node})
+    assert node.p['maximum_speed_mps'] == expected

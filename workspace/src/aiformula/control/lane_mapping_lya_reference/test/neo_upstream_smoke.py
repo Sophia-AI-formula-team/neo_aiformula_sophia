@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Isolated Foxy DDS test of the actual neo LYA process and mask publisher.
 
-The real TeacherSupervisor starts the installed lya_0221 executable. Synthetic
-Odometry/Pose2D inputs exercise its original feedback law, then a real control
-heartbeat requests shutdown. STOPPED is never fabricated by this test.
+The real TeacherSupervisor starts the installed lya_0221 executable in two
+isolated cases: its current source default and a ROS /** YAML override of 4.0.
+Synthetic Odometry/Pose2D inputs exercise its original feedback law, then a real
+control heartbeat requests shutdown. STOPPED is never fabricated by this test.
 
 The optional road-detector publication check executes the production
 publish_result method with real cv_bridge and DDS publishers, but bypasses all
@@ -62,7 +63,7 @@ def publication_method(source):
     return namespace["publish_result"]
 
 
-def run_suite(report, directory, road_source):
+def run_suite(report, directory, road_source, reference_override=None):
     # Never import ROS before main() establishes the isolated domain/locality.
     import rclpy
     from rclpy.executors import SingleThreadedExecutor
@@ -74,7 +75,23 @@ def run_suite(report, directory, road_source):
     from lane_mapping_lya_reference.supervisor import TeacherSupervisor
     from trajectory_follower.lya_profile import REFERENCE_SPEED_MPS
 
-    rclpy.init(args=["--ros-args", "-p", "log_directory:=" + str(directory / "teacher")])
+    ros_arguments = ["--ros-args", "-p", "log_directory:=" + str(directory / "teacher")]
+    expected_reference = float(REFERENCE_SPEED_MPS)
+    report["reference_configuration"] = dict(source="current_lya_source_default",
+        source_default_mps=REFERENCE_SPEED_MPS, effective_reference_mps=expected_reference)
+    if reference_override is not None:
+        expected_reference = float(reference_override)
+        params_file = directory / "reference_override.yaml"
+        # This is the only route by which the override enters the supervisor:
+        # exercise the real ROS wildcard YAML parser, not a parameter double.
+        with params_file.open("x", encoding="utf-8") as stream:
+            stream.write("/**:\n  ros__parameters:\n    reference_speed_mps: "
+                         + str(expected_reference) + "\n")
+        ros_arguments.extend(["--params-file", str(params_file)])
+        report["reference_configuration"].update(source="global_ros_params_file",
+            effective_reference_mps=expected_reference, params_file=str(params_file),
+            params_file_sha256=hashlib.sha256(params_file.read_bytes()).hexdigest())
+    rclpy.init(args=ros_arguments)
     executor = SingleThreadedExecutor()
     probe = supervisor = None
     status, commands = [], []
@@ -159,10 +176,13 @@ def run_suite(report, directory, road_source):
         check(report, "actual_motor_output_remapped_private",
               "/aiformula_control/game_pad/cmd_vel:=" + PRIVATE_COMMAND in child.args,
               command_topic=PRIVATE_COMMAND)
-        check(report, "teacher_inherits_current_source_reference",
-              math.isfinite(REFERENCE_SPEED_MPS) and REFERENCE_SPEED_MPS > 0.0
-              and "reference_speed_mps:=" + str(float(REFERENCE_SPEED_MPS)) in child.args,
+        check(report, "teacher_receives_effective_reference_at_startup",
+              math.isfinite(expected_reference) and expected_reference > 0.0
+              and supervisor.get_parameter("reference_speed_mps").value == expected_reference
+              and "reference_speed_mps:=" + str(expected_reference) in child.args,
+              configuration_source=report["reference_configuration"]["source"],
               source_reference_mps=REFERENCE_SPEED_MPS,
+              effective_reference_mps=expected_reference,
               meaning="reference, not guaranteed constant LYA output")
         spec = importlib.util.find_spec("trajectory_follower.lya_0221")
         installed_source = Path(spec.origin)
@@ -174,10 +194,10 @@ def run_suite(report, directory, road_source):
         check(report, "real_supervisor_running_heartbeat", True, child_pid=child.pid)
 
         # Identity odometry + zero target error yields v_t; a 1 m forward
-        # target yields v_t + lambda_v * r (2.15 for the current v_t=2.0), not
-        # a replayed speed curve. Changing the shared source also changes this test.
-        for target_x, expected, label in ((0.0, REFERENCE_SPEED_MPS, "zero_error"),
-                                         (1.0, REFERENCE_SPEED_MPS + 0.15, "forward_error")):
+        # target yields v_t + lambda_v * r, not a replayed speed curve. The
+        # source-default case is not hardcoded to 2; the YAML case expects 4.15.
+        for target_x, expected, label in ((0.0, expected_reference, "zero_error"),
+                                         (1.0, expected_reference + 0.15, "forward_error")):
             latest["target_x"] = target_x
             started = time.monotonic()
 
@@ -189,7 +209,8 @@ def run_suite(report, directory, road_source):
 
             wait_for(lambda: len(matched()) >= 3, label + " LYA command")
             check(report, "real_lya_" + label + "_feedback_output", True,
-                  source_reference_mps=REFERENCE_SPEED_MPS, target_x_m=target_x,
+                  source_reference_mps=REFERENCE_SPEED_MPS,
+                  effective_reference_mps=expected_reference, target_x_m=target_x,
                   expected_speed_mps=expected, observed=matched()[-3:])
 
         if road_source is not None:
@@ -298,21 +319,47 @@ def main(argv=None):
         parser.error("Road detector source does not exist: " + str(road_source))
     output.parent.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="neo-upstream-smoke-", dir=str(output.parent)))
-    os.environ["ROS_DOMAIN_ID"] = str(domain)
     os.environ["ROS_LOCALHOST_ONLY"] = "1"
-    os.environ["ROS_LOG_DIR"] = str(directory / "ros_logs")
-    report = dict(schema_version=1, passed=False, checks=[],
+    report = dict(schema_version=2, passed=False, checks=[], cases=[],
         started_utc=datetime.now(timezone.utc).isoformat(),
         ros_distro=os.environ.get("ROS_DISTRO", "unknown"), ros_domain_id=domain,
         ros_localhost_only=True, log_directory=str(directory),
         scope="real neo upstream LYA feedback and owned-process handoff; optional mask publication",
         limits=["Synthetic upstream inputs, no perception inference or sensor drivers",
+                "The 4.0 YAML case tests private supervisor propagation only; not GNSS motion-gate or driving approval",
                 "No camera-to-map lap, mapping quality or closed-loop vehicle tracking",
                 "No physical stop, real remote-control arbitration or motor-zero validation",
                 "ROS graph absence is sampled diagnostic evidence, not hardware isolation proof"])
     started = time.monotonic()
     try:
-        run_suite(report, directory, road_source)
+        # Use separate DDS domains as well as a complete shutdown/init cycle;
+        # stale discovery from the first case must not satisfy the second one.
+        cases = (("source_default", domain, None),
+                 ("global_yaml_override", 215 + (domain - 215 + 1) % 15, 4.0))
+        for name, case_domain, reference_override in cases:
+            case_directory = directory / name
+            case_directory.mkdir()
+            os.environ["ROS_DOMAIN_ID"] = str(case_domain)
+            os.environ["ROS_LOG_DIR"] = str(case_directory / "ros_logs")
+            case = dict(name=name, passed=False, checks=[], ros_domain_id=case_domain,
+                        ros_localhost_only=True, log_directory=str(case_directory))
+            report["cases"].append(case)
+            case_started = time.monotonic()
+            try:
+                run_suite(case, case_directory, road_source if reference_override is None else None,
+                          reference_override=reference_override)
+                case["passed"] = True
+            except Exception as error:
+                case["error"], case["traceback"] = str(error), traceback.format_exc()
+                raise
+            finally:
+                case["elapsed_s"] = time.monotonic() - case_started
+                report["checks"].extend(dict(item, case=name) for item in case["checks"])
+                with (case_directory / "result.json").open("x", encoding="utf-8") as stream:
+                    json.dump(case, stream, indent=2, sort_keys=True, allow_nan=False)
+                    stream.write("\n")
+            check(report, "isolated_case_completed_" + name, case["passed"],
+                  ros_domain_id=case_domain, log_directory=str(case_directory))
         report["passed"] = True
     except Exception as error:
         report["error"], report["traceback"] = str(error), traceback.format_exc()
