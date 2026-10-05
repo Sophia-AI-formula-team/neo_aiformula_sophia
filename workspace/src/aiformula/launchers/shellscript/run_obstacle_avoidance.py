@@ -22,13 +22,17 @@ def reset_lane_source():
     """Publish False repeatedly during DDS discovery, for at most two seconds."""
     import rclpy
     from rclpy.context import Context
+    from rclpy.executors import SingleThreadedExecutor
     from std_msgs.msg import Bool
 
     context = Context()
     node = None
+    executor = None
     rclpy.init(args=[], context=context)
     try:
         node = rclpy.create_node("obstacle_avoidance_source_reset", context=context)
+        executor = SingleThreadedExecutor(context=context)
+        executor.add_node(node)
         publisher = node.create_publisher(Bool, "/point_flag", 10)
         message = Bool(data=False)
         deadline = time.monotonic() + 2.0
@@ -36,7 +40,7 @@ def reset_lane_source():
         while time.monotonic() < deadline and rclpy.ok(context=context):
             publisher.publish(message)
             matched = matched or publisher.get_subscription_count() > 0
-            rclpy.spin_once(node, timeout_sec=0.05)
+            executor.spin_once(timeout_sec=0.05)
         if matched:
             print("OA exited: sent /point_flag=false to restore the lane source.", flush=True)
         else:
@@ -47,6 +51,8 @@ def reset_lane_source():
                 flush=True,
             )
     finally:
+        if executor is not None:
+            executor.shutdown()
         if node is not None:
             node.destroy_node()
         if rclpy.ok(context=context):
