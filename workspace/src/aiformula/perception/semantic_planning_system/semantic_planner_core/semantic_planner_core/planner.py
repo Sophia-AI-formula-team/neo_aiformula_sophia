@@ -28,6 +28,8 @@ class LocalPrimitivePlanner:
     red_forward_width_ratio: float = 0.20
     red_forward_top_y_ratio: float = 0.25
     red_forward_bottom_y_ratio: float = 0.62
+    left_preference_bonus: float = 0.12
+    right_preference_penalty: float = 0.0
 
     def plan(
         self,
@@ -127,7 +129,9 @@ class LocalPrimitivePlanner:
             - self.weights.progress * progress
         )
         if constraints.red_forward_forbidden and "LEFT" in primitive.name:
-            total -= 0.12
+            total -= self.left_preference_bonus
+        if constraints.red_forward_forbidden and "RIGHT" in primitive.name:
+            total += self.right_preference_penalty
 
         return {
             "valid": True,

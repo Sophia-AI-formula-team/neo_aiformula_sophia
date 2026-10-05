@@ -1,25 +1,76 @@
-Semantic Planning Vehicle Shadow Demo Guide
-===========================================
+语义局部规划车上 Demo / Live 使用指南
+====================================
 
-Purpose
--------
+一、Demo 目的
+-------------
 
-This demo is designed for vehicle-side validation when the robot cannot or
-should not move. It runs the semantic mask adapter, semantic costmap, local
-primitive planner, lane recovery gate, and safety supervisor, but publishes the
-final supervised velocity to a shadow topic:
+本文档说明两种车上启动方式：
+
+  1. Shadow Demo：
+     用于静态验证，不会让机器人移动。
+
+  2. Vehicle Live：
+     用于实际上车低速运行，会发布到真实底盘速度话题。
+
+建议顺序：
+
+  先跑 Shadow Demo，确认 mask、costmap、RViz 路径、selected_primitive、
+  safety_state 都正常后，再跑 Vehicle Live。
+
+
+二、Shadow Demo 和 Vehicle Live 的区别
+--------------------------------------
+
+Shadow Demo 输出到：
 
   /semantic_demo/cmd_vel_shadow
 
-It does not publish to the real motor-controller topic:
+它不会发布到真实底盘控制话题：
 
   /aiformula_control/game_pad/cmd_vel
 
+Vehicle Live 输出到：
 
-Source Tree Placement
----------------------
+  /aiformula_control/game_pad/cmd_vel
 
-The folder can be placed under the AIFormula repository like this:
+它会实际给底盘发布 geometry_msgs/Twist，因此必须谨慎使用。
+
+两者都基于红色像素点计数：
+
+  /red_pixels_count
+
+该话题会通过 red_pixel_traffic_light_adapter_node 转换成：
+
+  /traffic_light/state
+
+再交给 traffic_light_gate_node 生成语义约束。
+
+
+三、Shadow Demo 会启动什么
+-------------------------
+
+它会启动：
+
+  - 颜色语义 mask adapter
+  - 红灯语义 adapter
+  - 交通灯 gate
+  - local semantic costmap
+  - local primitive planner
+  - lane recovery gate
+  - safety supervisor
+
+Shadow Demo 最终速度发布到：
+
+  /semantic_demo/cmd_vel_shadow
+
+因此可以在机器人暂时不能移动、或者不希望移动时，验证相机图像、mask、costmap、
+primitive 选择、RViz 可视化和安全监督逻辑。
+
+
+四、推荐目录放置方式
+--------------------
+
+可以把整个文件夹放在 AIFormula 仓库中：
 
   aiformula/
     perception/
@@ -33,178 +84,414 @@ The folder can be placed under the AIFormula repository like this:
         semantic_bringup/
         semantic_test_tools/
 
-colcon will recursively discover the package.xml files inside
-semantic_planning_system. The semantic_planning_system folder itself does not
-need a package.xml.
+注意：
+
+  - semantic_planning_system 只是外层收纳文件夹。
+  - semantic_planning_system 本身不需要 package.xml。
+  - colcon 会递归发现里面每个 ROS2 package 的 package.xml。
 
 
-Build
------
+五、编译方式
+------------
 
-From the ROS2 workspace root:
+在 ROS2 workspace 根目录执行：
 
   colcon build --symlink-install --packages-up-to semantic_bringup
   source install/setup.bash
 
+如果你想只检查这些包是否可被发现：
 
-Launch The Vehicle Shadow Demo
-------------------------------
+  colcon list | grep semantic
 
-Start the normal vehicle camera/odometry stack first, for example the existing
-AIFormula launch that provides:
+
+六、启动前置条件
+----------------
+
+先启动车上已有的相机、odometry、TF 等基础节点，至少需要提供：
 
   /aiformula_sensing/zed_node/left_image/undistorted
   /aiformula_sensing/gyro_odometry_publisher/odom
 
-Then run:
+如果有已有红色像素统计节点，也可以提供：
+
+  /red_pixels_count
+
+如果没有 /red_pixels_count，也可以手动发布 /traffic_light/state 做红灯测试。
+
+
+七、启动 Shadow Demo
+--------------------
+
+执行：
 
   ros2 launch semantic_bringup semantic_vehicle_shadow_demo.launch.py
 
+这个 launch 使用配置文件：
 
-Launch Sequence
----------------
+  semantic_bringup/config/semantic_vehicle_shadow_demo.yaml
 
-The launch file starts these nodes:
+
+八、启动 Vehicle Live
+--------------------
+
+确认 Shadow Demo 正常后，才启动 Vehicle Live。
+
+启动命令：
+
+  ros2 launch semantic_bringup semantic_vehicle_live.launch.py
+
+这个 launch 使用配置文件：
+
+  semantic_bringup/config/semantic_vehicle_live.yaml
+
+Vehicle Live 和 Shadow Demo 启动的节点基本一致，但关键区别是：
+
+  - safety_supervisor_node 的 output_cmd_vel_topic 为：
+
+      /aiformula_control/game_pad/cmd_vel
+
+  - max_linear_velocity 默认设置为：
+
+      0.55
+
+  - max_angular_velocity 默认设置为：
+
+      0.85
+
+  - planner 的 slow_forward_v 默认设置为：
+
+      0.45
+
+  - planner 的 diversion_v 默认设置为：
+
+      0.28
+
+因此 Vehicle Live 仍是低速版本，但不再使用极慢的静态验证速度。
+这组参数按 1.2m 车长的中低速实车验证档设置：直行速度提高，绕行速度也提高，
+但角速度上限不激进，便于先观察路径选择和安全监督是否稳定。
+
+启动前必须确认没有其他节点同时发布：
+
+  /aiformula_control/game_pad/cmd_vel
+
+例如 teleop、旧 follower、其他 controller。如果多个节点同时发布到底盘速度话题，
+车辆行为会不可预测。
+
+
+九、Vehicle Live 上车前检查清单
+-------------------------------
+
+上车前建议按顺序确认：
+
+1. 相机图像正常：
+
+     ros2 topic hz /aiformula_sensing/zed_node/left_image/undistorted
+
+2. odometry 正常：
+
+     ros2 topic hz /aiformula_sensing/gyro_odometry_publisher/odom
+
+3. 红色像素计数正常：
+
+     ros2 topic echo /red_pixels_count
+
+4. traffic light state 正常：
+
+     ros2 topic echo /traffic_light/state
+
+   看到红色像素超过阈值后应出现：
+
+     red
+
+5. 颜色 mask 正常：
+
+     ros2 topic echo /semantic_perception/road_mask --once
+     ros2 topic echo /semantic_perception/offroad_mask --once
+
+   更推荐在 RViz2 中看：
+
+     /semantic_perception/color_mask_debug
+
+6. costmap 正常：
+
+     /local_semantic_costmap_debug
+
+7. planner 正常：
+
+     ros2 topic echo /selected_primitive
+     ros2 topic echo /planner_score_debug
+
+8. RViz2 中左右 primitive 都能看到：
+
+     /semantic_planner/primitive_markers
+
+9. safety state 正常：
+
+     ros2 topic echo /safety_state
+
+10. 确认真实输出话题：
+
+     ros2 topic echo /aiformula_control/game_pad/cmd_vel
+
+   Vehicle Live 会向这里发布 Twist。
+
+
+十、启动后节点顺序和作用
+------------------------
 
 1. color_semantic_mask_node
-   Package: semantic_costmap_ros
-   Input:
+
+   Package:
+     semantic_costmap_ros
+
+   订阅：
      /aiformula_sensing/zed_node/left_image/undistorted
-   Outputs:
+
+   发布：
      /semantic_perception/road_mask
      /semantic_perception/offroad_mask
      /semantic_perception/color_mask_debug
-   Role:
-     Uses simple color thresholds. Black/dark lower-image pixels become the
-     road mask. Green middle/top-to-lower image pixels become the
-     offroad/lethal mask.
+
+   作用：
+     不使用训练模型，只用颜色阈值从前视相机图像中提取语义区域。
+
+     - 黑色/暗色路面 -> road_mask
+     - 绿色边界/绿色区域 -> offroad_mask
+     - debug overlay -> color_mask_debug
+
+   注意：
+     这是前视透视图像空间处理，不是 BEV。
+
 
 2. red_pixel_traffic_light_adapter_node
-   Package: semantic_gate_ros
-   Input:
+
+   Package:
+     semantic_gate_ros
+
+   订阅：
      /red_pixels_count
-   Output:
+
+   发布：
      /traffic_light/state
-   Role:
-     Converts a red-pixel count into red/unknown state. In the shadow config it
-     stays silent if /red_pixels_count is missing, so manual red-state testing
-     can use /traffic_light/state directly.
+
+   作用：
+     把 /red_pixels_count 的红色像素数量转换成语义交通灯状态。
+
+     - 红色像素数量大于 red_pixel_threshold -> red
+     - 红色像素数量小于 clear_pixel_threshold -> unknown
+
+   在 Shadow Demo 中，如果 /red_pixels_count 缺失，该节点默认保持沉默，
+   这样你可以手动发布 /traffic_light/state。
+
+   在 Vehicle Live 中，如果 /red_pixels_count 缺失或过期，该节点会发布 unknown。
+
 
 3. traffic_light_gate_node
-   Package: semantic_gate_ros
-   Inputs:
+
+   Package:
+     semantic_gate_ros
+
+   订阅：
      /traffic_light/state
      /aiformula_sensing/gyro_odometry_publisher/odom
-   Outputs:
+
+   发布：
      /semantic_constraints
      /theta_ref
-   Role:
-     Applies stable red/green counters. On stable red, saves theta_ref and
-     enables red_forward_forbidden and diversion_active.
+
+   作用：
+     连续检测稳定红灯/绿灯。
+
+     稳定红灯时：
+
+       - 保存当前 yaw 为 theta_ref
+       - red_light_active = true
+       - red_forward_forbidden = true
+       - diversion_active = true
+       - allow_lane_follow = false
+
+   theta_ref 只是软 heading prior，不能覆盖红灯禁行和 offroad 禁行硬约束。
+
 
 4. local_costmap_node
-   Package: semantic_costmap_ros
-   Inputs:
+
+   Package:
+     semantic_costmap_ros
+
+   订阅：
      /semantic_perception/road_mask
      /semantic_perception/offroad_mask
      /semantic_constraints
-   Outputs:
+
+   发布：
      /local_semantic_costmap
      /local_semantic_costmap_debug
-   Role:
-     Builds the image-space semantic costmap. Road is low cost, unknown is
-     medium-high cost, green/offroad and the middle-to-upper red forward ROI
-     are lethal.
+
+   作用：
+     构建前视图像空间 semantic costmap。
+
+     - road_mask 区域：低 cost
+     - 未知区域：中高 cost
+     - offroad/绿色区域：lethal cost
+     - 红灯 forward forbidden ROI：lethal cost
+
+   如果 mask 缺失或过期，会发布保守高 cost costmap。
+
 
 5. local_primitive_planner_node
-   Package: semantic_local_planner_ros
-   Inputs:
+
+   Package:
+     semantic_local_planner_ros
+
+   订阅：
      /local_semantic_costmap
      /semantic_constraints
      /theta_ref
      /aiformula_sensing/gyro_odometry_publisher/odom
-   Outputs:
+
+   发布：
      /selected_primitive
      /selected_path_debug
      /planner_cmd_vel
      /planner_score_debug
      /semantic_planner/primitive_markers
-   Role:
-     Scores STOP, left-diversion, and slow-forward primitives. Red forward and
-     lethal cost are hard constraints. theta_ref is only a soft heading prior.
+
+   作用：
+     生成并评分短时域 motion primitives。
+
+     当前包含：
+
+       - STOP
+       - SMALL_LEFT
+       - MEDIUM_LEFT
+       - STRONG_LEFT
+       - LEFT_THEN_ALIGN
+       - SMALL_RIGHT
+       - MEDIUM_RIGHT
+       - STRONG_RIGHT
+       - RIGHT_THEN_ALIGN
+       - SLOW_FORWARD
+
+     左右两侧都会生成、评分、可视化。
+
+     planner 使用 left_preference_bonus 让策略在左右同样安全时更偏向左侧，
+     但不会禁用右侧。如果左侧不可行、右侧可行，右侧仍然可以被选中。
+
 
 6. lane_recovery_gate_node
-   Package: semantic_lane_recovery_ros
-   Inputs:
+
+   Package:
+     semantic_lane_recovery_ros
+
+   订阅：
      /lane_result
      /semantic_constraints
-   Output:
+
+   发布：
      /lane_recovery_state
-   Role:
-     Prevents lane detection from directly taking over during diversion.
+
+   作用：
+     控制 lane detection 什么时候可以恢复为软引导。
+
+     diversion_active 时，lane detection 不允许直接接管机器人。
+
 
 7. safety_supervisor_node
-   Package: semantic_safety_ros
-   Inputs:
+
+   Package:
+     semantic_safety_ros
+
+   订阅：
      /planner_cmd_vel
      /local_semantic_costmap
      /semantic_constraints
      /selected_primitive
-   Outputs:
+
+   发布：
      /semantic_demo/cmd_vel_shadow
      /safety_state
-   Role:
-     Final safety check. In this demo, output is shadow-only and cannot move
-     the robot.
+
+   作用：
+     最终安全监督。
+
+     在 shadow demo 中，只发布 shadow cmd，不会驱动车。
 
 
-RViz2 Visualization
--------------------
+十一、RViz2 可视化
+----------------
 
-Start RViz2:
+启动 RViz2：
 
   rviz2
 
-Suggested displays:
+推荐设置 Fixed Frame：
+
+  base_footprint
+
+推荐添加以下 Displays：
 
 1. Image
+
    Topic:
      /semantic_perception/color_mask_debug
-   Use this to verify that black road and green forbidden regions are detected.
+
+   用途：
+     检查黑色路面和绿色禁行区域是否被正确提取。
+
+   颜色含义：
+     - 蓝色 overlay：黑色路面 road mask
+     - 红色 overlay：绿色禁行/offroad mask
+
 
 2. Image
+
    Topic:
      /local_semantic_costmap_debug
-   Use this to verify the costmap generated from the masks.
+
+   用途：
+     检查 semantic costmap 是否正常。
+
+   典型含义：
+     - 深色：低 cost
+     - 灰色：未知/中高 cost
+     - 白色：lethal cost
+
 
 3. MarkerArray
+
    Topic:
      /semantic_planner/primitive_markers
-   Fixed frame:
-     base_footprint
-   Meaning:
-     Green line: selected primitive.
-     Blue line: valid but not selected primitive.
-     Red line: invalid primitive.
-     Text label: primitive name and reason.
+
+   用途：
+     实时查看所有 primitive 的规划和选择过程。
+
+   颜色含义：
+     - 绿色：当前选中的 primitive
+     - 蓝色：有效但未选中的 primitive
+     - 红色：无效 primitive
+     - 文本：primitive 名称和原因
+
+   正常情况下，左右两侧 primitive 都应该能看到。
+
 
 4. Path
+
    Topic:
      /selected_path_debug
-   Note:
-     This path is still normalized image-space debug data. The MarkerArray is
-     easier to read in RViz because it maps image coordinates to a simple local
-     base_footprint plane.
+
+   说明：
+     这是归一化 image-space path debug。更推荐主要看 MarkerArray，因为
+     MarkerArray 已经映射到 base_footprint 附近的局部显示平面，更容易读。
 
 
-Manual Red-Gate Test
---------------------
+十二、手动红灯测试
+----------------
 
-If /red_pixels_count is not available, manually force a red state:
+如果没有 /red_pixels_count，可以手动发布红灯状态：
 
   ros2 topic pub /traffic_light/state std_msgs/msg/String "{data: red}" -r 5
 
-Then inspect:
+然后观察：
 
   ros2 topic echo /semantic_constraints
   ros2 topic echo /selected_primitive
@@ -212,38 +499,1275 @@ Then inspect:
   ros2 topic echo /safety_state
   ros2 topic echo /semantic_demo/cmd_vel_shadow
 
+预期：
 
-Expected Static-Vehicle Behavior
---------------------------------
-
-When masks are valid:
-
-  - /semantic_perception/color_mask_debug should show blue overlay on black road
-    and red overlay on green forbidden regions, including the middle/top fence
-    area if it is visible.
-  - /local_semantic_costmap_debug should update continuously.
-  - /semantic_planner/primitive_markers should update continuously in RViz2.
-  - /selected_primitive should become STOP if no safe moving primitive exists.
-  - Under red gate, SLOW_FORWARD should be invalid.
-
-When masks are missing or stale:
-
-  - local_costmap_node publishes a conservative high-cost costmap.
-  - safety_supervisor_node should stop or keep the shadow command at zero.
+  - /semantic_constraints 中 red_forward_forbidden 应为 true
+  - SLOW_FORWARD 应 invalid
+  - 如果左右都有安全空间，应更倾向选择左侧 primitive
+  - 如果所有移动 primitive 都不安全，应选择 STOP
 
 
-Important Safety Note
----------------------
+十三、参数调整总览
+----------------
 
-The shadow demo does not command the vehicle. To drive the robot in the future,
-change safety_supervisor_node output_cmd_vel_topic from:
+主要参数在：
 
-  /semantic_demo/cmd_vel_shadow
+  semantic_bringup/config/semantic_vehicle_shadow_demo.yaml
 
-to:
+实际动车参数在：
+
+  semantic_bringup/config/semantic_vehicle_live.yaml
+
+两份配置大部分参数相同，主要区别是输出话题和速度限制。
+
+下面按节点说明。
+
+
+13.1 color_semantic_mask_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+image_topic
+  默认：
+    /aiformula_sensing/zed_node/left_image/undistorted
+
+  作用：
+    输入相机图像。
+
+  调整建议：
+    如果相机话题不同，改这里。
+
+
+road_mask_topic
+  默认：
+    /semantic_perception/road_mask
+
+  作用：
+    输出黑色路面 mask。
+
+
+offroad_mask_topic
+  默认：
+    /semantic_perception/offroad_mask
+
+  作用：
+    输出绿色禁行区域 mask。
+
+
+debug_image_topic
+  默认：
+    /semantic_perception/color_mask_debug
+
+  作用：
+    输出颜色分割调试图。
+
+
+road_roi_top_ratio
+  默认：
+    0.35
+
+  作用：
+    从图像高度的 35% 位置往下开始检测黑色路面。
+
+  调大：
+    只看更靠近机器人底部的区域，减少天空/远处误检。
+
+  调小：
+    允许更远处区域被识别为路面。
+
+  建议：
+    你们当前前视相机下，可以先在 0.30 到 0.45 之间试。
+
+
+offroad_roi_top_ratio
+  默认：
+    0.10
+
+  作用：
+    从图像高度的 10% 位置往下开始检测绿色禁行区域。
+
+  调大：
+    忽略更上方的绿色区域。
+
+  调小：
+    更早检测画面上方绿色围挡/边界。
+
+  建议：
+    如果绿色围挡在画面上方明显可见，保持 0.05 到 0.15。
+
+
+road_value_max
+  默认：
+    80
+
+  作用：
+    HSV 中 V 通道阈值，低于该亮度认为可能是黑色路面。
+
+  调大：
+    更多灰色/偏亮路面会被识别为 road。
+
+  调小：
+    只有更暗的区域被识别为 road。
+
+  现象判断：
+    - road_mask 太碎、路面识别少：调大
+    - 阴影/黑边/非路面误识别多：调小
+
+
+road_saturation_max
+  默认：
+    120
+
+  作用：
+    黑色路面通常饱和度不高。该参数限制 road mask 的最大饱和度。
+
+  调大：
+    允许更多带颜色的暗区域进入 road。
+
+  调小：
+    road mask 更保守。
+
+
+green_h_min / green_h_max
+  默认：
+    green_h_min = 35
+    green_h_max = 90
+
+  作用：
+    HSV 色相范围，用于识别绿色禁行区域。
+
+  调整建议：
+    如果绿色围挡偏黄，降低 green_h_min。
+    如果绿色围挡偏青，增大 green_h_max。
+
+
+green_s_min
+  默认：
+    45
+
+  作用：
+    绿色区域最小饱和度。
+
+  调大：
+    只识别更鲜艳的绿色，减少灰色/白色误检。
+
+  调小：
+    可以识别更淡的绿色，但误检可能增加。
+
+
+green_v_min
+  默认：
+    35
+
+  作用：
+    绿色区域最小亮度。
+
+  调大：
+    忽略更暗的绿色。
+
+  调小：
+    阴影中的绿色也可能被识别。
+
+
+morph_kernel_size
+  默认：
+    5
+
+  作用：
+    对 mask 做开闭运算，减少噪声。
+
+  调大：
+    mask 更平滑，但细小区域可能被抹掉。
+
+  调小：
+    保留细节，但噪点更多。
+
+
+13.2 red_pixel_traffic_light_adapter_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+red_pixels_topic
+  默认：
+    /red_pixels_count
+
+  作用：
+    输入红色像素数量。
+
+
+traffic_light_state_topic
+  默认：
+    /traffic_light/state
+
+  作用：
+    输出 red/unknown。
+
+
+red_pixel_threshold
+  默认：
+    600
+
+  作用：
+    红色像素数超过该阈值时发布 red。
+
+  调大：
+    红灯触发更保守。
+
+  调小：
+    红灯更容易触发，但误触发风险增加。
+
+
+clear_pixel_threshold
+  默认：
+    100
+
+  作用：
+    红色像素数低于该阈值时回到 unknown。
+
+  注意：
+    red_pixel_threshold 和 clear_pixel_threshold 留出滞回区间，避免状态抖动。
+
+
+stale_timeout_sec
+  默认：
+    0.5
+
+  作用：
+    /red_pixels_count 超过该时间未更新时认为 stale。
+
+
+publish_unknown_when_stale
+  Shadow Demo 默认：
+    false
+
+  Vehicle Live 默认：
+    true
+
+  作用：
+    在 shadow demo 中默认 false，避免没有 /red_pixels_count 时反复发布 unknown，
+    干扰你手动发布 /traffic_light/state。
+
+    在 live 模式中默认 true。这样红色像素计数缺失或过期时，系统不会继续使用
+    旧的 red-pixel 输入。
+
+
+13.3 traffic_light_gate_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+red_stable_frames
+  默认：
+    3
+
+  作用：
+    连续多少帧 red 后才打开红灯 gate。
+
+  调大：
+    更抗误检，但响应更慢。
+
+  调小：
+    响应更快，但更容易误触发。
+
+
+green_stable_frames
+  默认：
+    3
+
+  作用：
+    连续多少帧 green 后解除红灯 gate。
+
+
+publish_rate_hz
+  默认：
+    10.0
+
+  作用：
+    发布 semantic_constraints 和 theta_ref 的频率。
+
+
+odom_topic
+  默认：
+    /aiformula_sensing/gyro_odometry_publisher/odom
+
+  作用：
+    用于读取当前 yaw，并在稳定红灯时保存 theta_ref。
+
+
+13.4 local_costmap_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+low_cost
+  默认：
+    20
+
+  作用：
+    road_mask 内的低 cost。
+
+
+unknown_cost
+  默认：
+    180
+
+  作用：
+    未知区域 cost。
+
+  调大：
+    planner 更不愿意进入未知区域。
+
+  调小：
+    planner 更愿意探索未知区域，但风险增加。
+
+
+lethal_cost
+  默认：
+    255
+
+  作用：
+    硬禁行 cost。
+
+
+red_forward_center_x_ratio
+  默认：
+    0.5
+
+  作用：
+    红灯 forward forbidden ROI 的中心 x 位置。
+
+  小于 0.5：
+    禁行区偏左。
+
+  大于 0.5：
+    禁行区偏右。
+
+
+red_forward_width_ratio
+  默认：
+    0.20
+
+  作用：
+    红灯 forward forbidden ROI 宽度。
+
+  调大：
+    更宽的前方区域被禁止，绕行更保守。
+
+  调小：
+    只禁止更窄的中央前方区域。
+
+
+red_forward_top_y_ratio
+  默认：
+    0.25
+
+  作用：
+    红灯 forward forbidden ROI 的上边界。
+
+  调小：
+    禁行区向画面更上方扩展。
+
+  调大：
+    禁行区从更靠下位置开始。
+
+
+red_forward_bottom_y_ratio
+  默认：
+    0.62
+
+  作用：
+    红灯 forward forbidden ROI 的下边界。
+
+  调大：
+    禁行区向机器人近处扩展，直行更容易被禁。
+
+  调小：
+    禁行区只覆盖更远处。
+
+  当前设计：
+    根据前视透视图，红灯 forward forbidden 应主要覆盖画面中部到上方，
+    而不是底部近处。
+
+
+mask_stale_timeout_sec
+  默认：
+    0.5
+
+  作用：
+    road/offroad mask 超过该时间未更新，则 costmap 进入保守模式。
+
+
+fallback_height / fallback_width
+  默认：
+    120 / 160
+
+  作用：
+    mask 缺失时生成保守 fallback costmap 的尺寸。
+
+
+13.5 local_primitive_planner_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+planner_rate_hz
+  默认：
+    10.0
+
+  作用：
+    planner 运行频率。
+
+
+primitive_duration_sec
+  默认：
+    1.0
+
+  作用：
+    primitive 的名义持续时间。
+
+
+small_left_w / medium_left_w / strong_left_w
+  默认：
+    0.30 / 0.55 / 0.85
+
+  作用：
+    左侧 primitive 的角速度强度。
+
+  注意：
+    当前右侧 primitive 使用这些值的负数。
+
+
+slow_forward_v
+  Shadow Demo 默认：
+    0.15
+
+  Vehicle Live 默认：
+    0.45
+
+  作用：
+    SLOW_FORWARD 的名义线速度。
+
+  红灯 gate active 时：
+    SLOW_FORWARD 一定 invalid。
+
+
+diversion_v
+  Shadow Demo 默认：
+    0.08
+
+  Vehicle Live 默认：
+    0.28
+
+  作用：
+    左右绕行 primitive 的名义线速度。
+
+
+heading_weight
+  默认：
+    0.8
+
+  作用：
+    theta_ref 方向一致性权重。
+
+  调大：
+    更倾向保持红灯触发时保存的方向。
+
+  注意：
+    theta_ref 只是软约束，不会覆盖 red gate/offroad 硬约束。
+
+
+smoothness_weight
+  默认：
+    0.4
+
+  作用：
+    与上一帧 primitive 不一致时的惩罚。
+
+  调大：
+    选择更稳定，不容易频繁切换。
+
+
+curvature_weight
+  默认：
+    0.3
+
+  作用：
+    转弯角速度惩罚。
+
+  调大：
+    更偏向小转角路径。
+
+  调小：
+    更容易选择强转向路径。
+
+
+semantic_cost_weight
+  默认：
+    1.0
+
+  作用：
+    costmap 采样代价权重。
+
+  调大：
+    更重视避开高 cost 区域。
+
+
+progress_weight
+  默认：
+    0.25
+
+  作用：
+    前进进展奖励。
+
+  调大：
+    更偏向能向远处推进的路径。
+
+
+left_preference_bonus
+  默认：
+    0.12
+
+  作用：
+    当红灯 gate active 时，降低左侧 primitive 的 total cost。
+
+  调大：
+    更偏向左侧路径。
+
+  调小：
+    左右选择更均衡。
+
+  建议：
+    如果你希望仍然明显偏左，但右侧保留备选，可以在 0.05 到 0.20 之间调。
+
+
+right_preference_penalty
+  默认：
+    0.0
+
+  作用：
+    右侧 primitive 的额外惩罚。
+
+  建议：
+    默认保持 0.0，因为我们已经用 left_preference_bonus 提供左侧偏好。
+    如果实车强烈不希望右绕，可以少量增加，比如 0.05。
+
+
+primitive_markers_topic
+  默认：
+    /semantic_planner/primitive_markers
+
+  作用：
+    RViz2 MarkerArray 可视化话题。
+
+
+marker_frame_id
+  默认：
+    base_footprint
+
+  作用：
+    RViz2 marker 所在坐标系。
+
+
+marker_forward_scale_m
+  默认：
+    5.0
+
+  作用：
+    把 image-space y 方向映射到 RViz 前向距离时使用的尺度。
+
+  调大：
+    RViz 中路径显示更长。
+
+  调小：
+    RViz 中路径显示更短。
+
+
+marker_lateral_scale_m
+  默认：
+    3.0
+
+  作用：
+    把 image-space x 方向映射到 RViz 横向距离时使用的尺度。
+
+  调大：
+    左右路径分得更开。
+
+  调小：
+    左右路径更靠近。
+
+
+13.6 lane_recovery_gate_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+stable_required_frames
+  默认：
+    5
+
+  作用：
+    lane result 连续稳定多少帧后才允许 recoverable。
+
+
+min_confidence
+  默认：
+    0.65
+
+  作用：
+    lane 置信度最低要求。
+
+
+horizontal_angle_threshold_deg
+  默认：
+    15.0
+
+  作用：
+    接近水平的 lane 会被拒绝。
+
+
+max_center_jump_ratio
+  默认：
+    0.18
+
+  作用：
+    lane center 单帧跳变过大时拒绝恢复。
+
+
+13.7 safety_supervisor_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+max_linear_velocity
+  Shadow Demo 默认：
+    0.25
+
+  Vehicle Live 默认：
+    0.55
+
+  作用：
+    最大线速度限制。
+
+
+max_angular_velocity
+  Shadow Demo 默认：
+    1.2
+
+  Vehicle Live 默认：
+    0.85
+
+  作用：
+    最大角速度限制。
+
+
+costmap_stale_timeout_sec
+  默认：
+    0.5
+
+  作用：
+    costmap 超时后停止输出。
+
+
+allow_cmd_clamping
+  默认：
+    true
+
+  作用：
+    如果 planner_cmd_vel 超限，是否允许 clamp。
+
+  true：
+    限幅后继续发布。
+
+  false：
+    直接停车。
+
+
+output_cmd_vel_topic
+  shadow demo 默认：
+    /semantic_demo/cmd_vel_shadow
+
+  Vehicle Live 默认：
+    /aiformula_control/game_pad/cmd_vel
+
+  安全提醒：
+    只有在确认 mask、costmap、primitive、safety_state 都可靠后，才允许使用 live 配置。
+
+
+十四、推荐调参顺序
+----------------
+
+建议按这个顺序调，不要一开始就调 planner cost：
+
+1. 先调 color_semantic_mask_node
+
+   目标：
+     /semantic_perception/color_mask_debug 中：
+       - 黑色路面稳定呈蓝色 overlay
+       - 绿色边界稳定呈红色 overlay
+       - 噪声不要太多
+
+
+2. 再调 local_costmap_node
+
+   目标：
+     /local_semantic_costmap_debug 中：
+       - 可行驶路面是低 cost
+       - 绿色区域是 lethal
+       - 红灯时中上部 forward ROI 是 lethal
+
+
+3. 再调 primitive markers 显示尺度
+
+   目标：
+     /semantic_planner/primitive_markers 在 RViz2 中容易看清。
+
+   常调：
+     marker_forward_scale_m
+     marker_lateral_scale_m
+
+
+4. 再调左右偏好
+
+   目标：
+     左右路径都生成，但左右同样安全时偏向左侧。
+
+   常调：
+     left_preference_bonus
+     right_preference_penalty
+
+
+5. 最后调 planner 权重
+
+   常调：
+     curvature_weight
+     heading_weight
+     semantic_cost_weight
+     progress_weight
+     smoothness_weight
+
+
+十五、常见现象和调整建议
+------------------------
+
+现象：绿色禁行区域没有被识别
+  调整：
+    降低 green_s_min 或 green_v_min。
+    扩大 green_h_min / green_h_max。
+    降低 offroad_roi_top_ratio。
+
+
+现象：很多非绿色区域被识别为禁行
+  调整：
+    提高 green_s_min。
+    收窄 green_h_min / green_h_max。
+    提高 green_v_min。
+
+
+现象：黑色路面识别太少
+  调整：
+    提高 road_value_max。
+    降低 road_roi_top_ratio，让更远处也参与识别。
+
+
+现象：阴影或黑边被识别成路面
+  调整：
+    降低 road_value_max。
+    降低 road_saturation_max。
+    提高 road_roi_top_ratio。
+
+
+现象：红灯时 SLOW_FORWARD 仍然被选中
+  这不应该发生。
+  检查：
+    /semantic_constraints 中 red_forward_forbidden 是否为 true。
+    /traffic_light/state 是否稳定发布 red。
+
+
+现象：只看到左侧路径，看不到右侧路径
+  检查：
+    RViz2 MarkerArray 是否订阅 /semantic_planner/primitive_markers。
+    右侧路径是否在视野外，可调 marker_lateral_scale_m。
+    /planner_score_debug 中是否存在 SMALL_RIGHT/MEDIUM_RIGHT/STRONG_RIGHT/RIGHT_THEN_ALIGN。
+
+
+现象：左右都安全，但总是不想选左侧
+  调整：
+    增大 left_preference_bonus。
+    或少量增大 right_preference_penalty。
+
+
+现象：左侧明明不可行仍选择左侧
+  检查：
+    /semantic_perception/offroad_mask 是否正确覆盖左侧禁行区域。
+    /local_semantic_costmap_debug 中左侧是否变成 lethal。
+    如果没有，先调 mask，不要先调 planner。
+
+
+现象：输出速度不为 0，担心车会动
+  Shadow Demo 只发布到：
+    /semantic_demo/cmd_vel_shadow
+
+  不会发布到：
+    /aiformula_control/game_pad/cmd_vel
+
+  如需确认：
+    ros2 topic echo /semantic_demo/cmd_vel_shadow
+    ros2 topic echo /aiformula_control/game_pad/cmd_vel
+
+  Vehicle Live 会发布到：
+    /aiformula_control/game_pad/cmd_vel
+
+  如果不想动车，不要启动 semantic_vehicle_live.launch.py。
+
+
+十六、安全提醒
+--------------
+
+Shadow Demo 不会驱动车。
+
+Vehicle Live 会驱动车。
+
+Vehicle Live 已经把 safety_supervisor_node 的 output_cmd_vel_topic 设置为：
 
   /aiformula_control/game_pad/cmd_vel
 
-Do this only after verifying masks, constraints, selected primitives, and
-safety behavior, and make sure no other controller is publishing to the same
-final velocity topic.
+在此之前必须确认：
+
+  - color mask 稳定
+  - costmap 正确
+  - 红灯 gate 正确
+  - SLOW_FORWARD 在红灯下必定 invalid
+  - 左右 primitive 都正常生成
+  - selected_primitive 合理
+  - safety_state 合理
+  - 没有其他 controller 同时发布到底盘速度话题
+
+保守原则：
+
+  不确定时停车。
+
+实际运行建议：
+
+  - 第一次上车时架空车轮或确保前方空旷。
+  - 保持急停可用。
+  - 先观察 /planner_cmd_vel 和 /aiformula_control/game_pad/cmd_vel。
+  - 确认没有其他 controller 同时发布真实 cmd_vel。
+  - 先用低速参数，不要一开始提高 max_linear_velocity。
+
+
+十七、方案 C：保留原 lane_points，并用 mux 切换新旧路径点
+----------------------------------------------------
+
+17.1 正确顺序和真实接口
+~~~~~~~~~~~~~~~~~~~~~~
+
+你们原来的控制链路应按这个顺序理解：
+
+  lane_points
+    -> withoutkalman
+    -> LYA controller
+    -> 底盘 cmd_vel
+
+原 lane_points 实际发布的不是一个 /lane_points 数组话题，而是三个 Pose2D 话题：
+
+  /processed_point_a
+  /processed_point_b
+  /processed_point_c
+
+消息类型：
+
+  geometry_msgs/Pose2D
+
+坐标系：
+
+  车辆坐标系
+
+因此方案 C 已经改成三路 Pose2D mux，而不是 Float32MultiArray mux。
+
+
+17.2 新总链路
+~~~~~~~~~~~~
+
+最终链路是：
+
+  原 lane_points 节点
+    -> /original_processed_point_a
+    -> /original_processed_point_b
+    -> /original_processed_point_c
+       \
+        -> lane_points_mux_node
+          -> /processed_point_a
+          -> /processed_point_b
+          -> /processed_point_c
+          -> withoutkalman -> LYA -> cmd_vel
+       /
+  semantic planner
+    -> /semantic_planner/processed_point_a
+    -> /semantic_planner/processed_point_b
+    -> /semantic_planner/processed_point_c
+
+也就是说：
+
+  original_processed_point_a/b/c
+    是原 lane_points 节点的输出，但改了名字。
+
+  semantic_planner/processed_point_a/b/c
+    是新 semantic planner 生成的车辆坐标系三点。
+
+  processed_point_a/b/c
+    是 mux 之后给 withoutkalman 的最终输入。
+
+
+17.3 为什么不能让两个节点同时发 processed_point_a/b/c
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+如果原 lane_points 和 semantic planner 同时发布：
+
+  /processed_point_a
+  /processed_point_b
+  /processed_point_c
+
+withoutkalman 会收到混在一起的数据，车辆行为会不可预测。
+
+所以方案 C 要求：
+
+  原 lane_points 节点不要直接发 /processed_point_a/b/c，
+  而是 remap 到 /original_processed_point_a/b/c。
+
+  lane_points_mux_node 是唯一发布 /processed_point_a/b/c 的节点。
+
+
+17.4 semantic 侧启动方式
+~~~~~~~~~~~~~~~~~~~~~~
+
+启动语义桥接：
+
+  ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+
+这个 launch 会启动：
+
+  - color_semantic_mask_node
+  - red_pixel_traffic_light_adapter_node
+  - traffic_light_gate_node
+  - local_costmap_node
+  - local_primitive_planner_node
+  - planned_lane_points_adapter_node
+  - lane_points_mux_node
+  - lane_recovery_gate_node
+
+它不会启动：
+
+  - safety_supervisor_node
+
+因此它不会直接发布：
+
+  /aiformula_control/game_pad/cmd_vel
+
+
+17.5 原 lane_points 的启动要求
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+原 lane_points 节点仍然要启动，但要把三个输出 remap 成：
+
+  /original_processed_point_a
+  /original_processed_point_b
+  /original_processed_point_c
+
+示例形式：
+
+  ros2 run lane_points lane_0529oa --ros-args \
+    -r /processed_point_a:=/original_processed_point_a \
+    -r /processed_point_b:=/original_processed_point_b \
+    -r /processed_point_c:=/original_processed_point_c
+
+如果原节点内部使用的是相对话题名，则可能需要写成：
+
+  ros2 run lane_points lane_0529oa --ros-args \
+    -r processed_point_a:=/original_processed_point_a \
+    -r processed_point_b:=/original_processed_point_b \
+    -r processed_point_c:=/original_processed_point_c
+
+以实际 `ros2 topic list` 和 `ros2 node info` 结果为准。
+
+
+17.6 withoutkalman 和 LYA 的启动方式
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+withoutkalman 和 LYA 可以保持原来的订阅关系：
+
+  /processed_point_a/b/c -> withoutkalman -> LYA
+
+因为现在 /processed_point_a/b/c 由 lane_points_mux_node 统一发布。
+
+需要确认：
+
+  ros2 topic info /processed_point_a
+  ros2 topic info /processed_point_b
+  ros2 topic info /processed_point_c
+
+每个话题应该只有一个 publisher：
+
+  lane_points_mux_node
+
+
+17.7 semantic planner 的三点生成逻辑
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+semantic planner 仍然先在前视图像空间里选择 primitive。
+
+planned_lane_points_adapter_node 从选中的路径中取三个点：
+
+  point_a_path_fraction: 0.0
+  point_b_path_fraction: 0.5
+  point_c_path_fraction: 1.0
+
+也就是：
+
+  A 点：路径近端
+  B 点：路径中段
+  C 点：路径远端
+
+然后把归一化图像点近似转换为车辆坐标系：
+
+  Pose2D.x = 前向距离，单位 m
+  Pose2D.y = 横向偏移，单位 m，左侧为正
+  Pose2D.theta = 默认 0.0，与原 lane_points 行为一致
+
+当前转换是近似比例映射：
+
+  vehicle_x = (1 - image_y_ratio) * vehicle_forward_scale_m
+  vehicle_y = (0.5 - image_x_ratio) * vehicle_lateral_scale_m
+
+默认：
+
+  vehicle_forward_scale_m: 5.0
+  vehicle_lateral_scale_m: 3.0
+
+  theta_mode: zero
+
+注意：
+
+  这还不是标定后的 BEV 或相机到地面投影。
+  它只是为了先接通 withoutkalman / LYA 链路的车辆坐标近似。
+  如果下游确实要用路径方向角，可以把 theta_mode 改成 path_heading。
+
+
+17.8 mux 切换规则
+~~~~~~~~~~~~~~~~
+
+lane_points_mux_node 的默认规则是：
+
+  1. 如果 diversion_active=true 或 red_forward_forbidden=true：
+       进入红灯低速找路状态。
+       如果 costmap fresh、semantic 三点 fresh 且数值合理，
+       使用 /semantic_planner/processed_point_a/b/c。
+
+  2. 如果 semantic planner 当前选择 STOP：
+       发布三个零 Pose2D，不继续使用旧路径点。
+       同时发布 /lane_stop_flag=true。
+
+  3. 如果 semantic 三点缺失、超时、越界，或者 costmap stale：
+       发布三个零 Pose2D，保守停车。
+       同时发布 /lane_stop_flag=true。
+
+  4. 如果没有处于 diversion：
+       使用 /original_processed_point_a/b/c。
+       发布 /lane_stop_flag=false。
+
+  5. 一旦经历过 diversion：
+       必须等待 /lane_recovery_state 变成 recoverable，
+       才允许切回 /original_processed_point_a/b/c。
+
+  6. 当红灯绕行路径可用时：
+       发布 /lane_stop_flag=false。
+       发布 /semantic_planner/speed_limit = search_speed_limit_mps。
+
+注意：
+
+  /semantic_planner/speed_limit 只是建议速度限制。
+  如果 LYA 或下层速度控制器没有订阅这个话题，它不会自动减速。
+  真正要实现“红灯后先减速找路”，需要让 LYA 或速度控制节点使用该 speed limit。
+
+
+17.9 需要观察的话题
+~~~~~~~~~~~~~~~~~~
+
+启动后观察：
+
+  ros2 topic echo /original_processed_point_a
+  ros2 topic echo /semantic_planner/processed_point_a
+  ros2 topic echo /processed_point_a
+  ros2 topic echo /semantic_planner/lane_points_mux_state
+  ros2 topic echo /local_semantic_costmap_health
+  ros2 topic echo /lane_stop_flag
+  ros2 topic echo /semantic_planner/speed_limit
+  ros2 topic echo /selected_primitive
+  ros2 topic echo /lane_recovery_state
+
+也建议分别看 b/c：
+
+  ros2 topic echo /processed_point_b
+  ros2 topic echo /processed_point_c
+
+其中：
+
+  /semantic_planner/lane_points_mux_state
+    会显示当前 mux 选择了 original、semantic 还是 zero，
+    以及选择原因。
+
+
+17.10 planned_lane_points_adapter_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+semantic_point_a_topic / semantic_point_b_topic / semantic_point_c_topic
+  默认：
+    /semantic_planner/processed_point_a
+    /semantic_planner/processed_point_b
+    /semantic_planner/processed_point_c
+
+  作用：
+    输出 semantic planner 生成的三点 Pose2D。
+
+
+vehicle_forward_scale_m
+  默认：
+    5.0
+
+  作用：
+    图像纵向归一化距离到车辆前向距离的近似比例。
+
+
+vehicle_lateral_scale_m
+  默认：
+    3.0
+
+  作用：
+    图像横向归一化距离到车辆左右偏移的近似比例。
+
+
+point_a_path_fraction / point_b_path_fraction / point_c_path_fraction
+  默认：
+    0.0 / 0.5 / 1.0
+
+  作用：
+    从选中的 primitive 路径中取 A/B/C 三个点的位置。
+
+
+theta_mode
+  默认：
+    zero
+
+  可选：
+    zero
+    path_heading
+
+  作用：
+    zero 时 Pose2D.theta 始终为 0.0，和原 lane_points 代码一致。
+    path_heading 时 Pose2D.theta 使用 semantic path 的局部方向角。
+
+
+17.11 lane_points_mux_node 参数
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+original_point_a_topic / original_point_b_topic / original_point_c_topic
+  默认：
+    /original_processed_point_a
+    /original_processed_point_b
+    /original_processed_point_c
+
+  作用：
+    接收原 lane_points 节点输出。
+
+
+semantic_point_a_topic / semantic_point_b_topic / semantic_point_c_topic
+  默认：
+    /semantic_planner/processed_point_a
+    /semantic_planner/processed_point_b
+    /semantic_planner/processed_point_c
+
+  作用：
+    接收 semantic planner 输出。
+
+
+output_point_a_topic / output_point_b_topic / output_point_c_topic
+  默认：
+    /processed_point_a
+    /processed_point_b
+    /processed_point_c
+
+  作用：
+    输出给 withoutkalman。
+
+
+lane_stop_flag_topic
+  默认：
+    /lane_stop_flag
+
+  作用：
+    当没有可用 semantic 路径、costmap stale、selected primitive 为 STOP、
+    或等待 lane recovery 时，发布 true。
+    当 original 或 semantic 路径可用时，发布 false。
+
+
+speed_limit_topic
+  默认：
+    /semantic_planner/speed_limit
+
+  作用：
+    发布建议速度限制。
+    normal 使用 normal_speed_limit_mps。
+    红灯低速找路使用 search_speed_limit_mps。
+    停车状态使用 stop_speed_limit_mps。
+
+
+normal_speed_limit_mps / search_speed_limit_mps / stop_speed_limit_mps
+  Vehicle Live 默认：
+    0.45 / 0.18 / 0.0
+
+  作用：
+    给下层控制器使用的建议速度。
+
+
+min_semantic_point_x_m / max_semantic_point_x_m / max_abs_semantic_point_y_m
+  默认：
+    0.05 / 5.5 / 2.2
+
+  作用：
+    semantic 三点越界时不允许接管，mux 输出停车状态。
+
+
+require_recoverable_after_diversion
+  默认：
+    true
+
+  作用：
+    经历红灯绕行后，必须等 lane_recovery_state=recoverable 才能切回原 lane_points。
+
+
+publish_zero_when_blocked
+  默认：
+    true
+
+  作用：
+    当不允许发布 original，且 semantic 又不可用时，发布三个零 Pose2D。
+    这样可以避免 withoutkalman / LYA 使用旧路径。
+
+
+17.12 实车启动建议
+~~~~~~~~~~~~~~~~~
+
+第一步：启动原传感器和基础节点。
+
+第二步：启动原 lane_points，但 remap 三个 processed_point 话题到 original_processed_point。
+
+第三步：启动语义 bridge：
+
+  ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+
+第四步：确认 mux 输出：
+
+  ros2 topic echo /semantic_planner/lane_points_mux_state
+  ros2 topic echo /processed_point_a
+  ros2 topic echo /processed_point_b
+  ros2 topic echo /processed_point_c
+
+第五步：启动 withoutkalman。
+
+第六步：启动 LYA controller。
+
+第七步：确认真实底盘速度只来自 LYA controller，不要同时启动 semantic_vehicle_live.launch.py。
+
+如果发现车辆方向反了，优先检查：
+
+  - Pose2D.y 的正方向是否和原 lane_points 一致
+  - vehicle_forward_scale_m / vehicle_lateral_scale_m 是否需要调整
+  - old lane_points 和 semantic points 的坐标尺度是否一致
+  - withoutkalman 是否假设 A/B/C 三点的远近顺序
