@@ -28,6 +28,9 @@ and live acceptance. Existing versions must remain recoverable.
   [PR #11](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/pull/11).
   Its publication history is included in the PR #9 integration branch; use
   that PR's commit list for the integration revision and subsequent handoffs.
+- Vehicle integration commit: `a27ed9a` (merge of the handed-off A2 publication).
+  A copy of that revision's root AGENTS, handoff, and Jetson environment document
+  is preserved at `/home/control/aiformula_runtime/yolop_a2_20261005/handoff_a27ed9a`.
 - Vehicle source root: `/home/workspace/src/aiformula` on
   `control@192.168.0.197`.
 - The 98 files in `perception/semantic_planning_system` were copied into their
