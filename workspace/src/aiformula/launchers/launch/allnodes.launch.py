@@ -92,6 +92,8 @@ def create_zed_node(context: LaunchContext) -> Tuple[Node]:
 
 
 def create_road_detector_node(context: LaunchContext) -> Tuple[Node]:
+    if LaunchConfiguration("launch_legacy_road_detector").perform(context).lower() not in ("true", "1", "yes"):
+        return ()
     _, topic_names = get_frame_ids_and_topic_names()
     road_detector_dir = get_package_share_directory("road_detector")
 
@@ -99,7 +101,7 @@ def create_road_detector_node(context: LaunchContext) -> Tuple[Node]:
         Node(
             package="road_detector",
             executable="road_detector",
-            name="road_detector",
+            name="road_detector_legacy",
             namespace="/aiformula_perception",
             output="screen",
             parameters=[
@@ -261,6 +263,11 @@ def generate_launch_description():
     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
 
     launch_args = (
+        DeclareLaunchArgument(
+            "launch_legacy_road_detector",
+            default_value="false",
+            description="Enable the archived lane-only detector instead of a separately launched YOLOP detector.",
+        ),
         DeclareLaunchArgument(
             "weight_path",
             default_value="/home/workspace/src/aiformula/perception/road_detector/weights/123.pth",

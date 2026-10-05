@@ -28,8 +28,14 @@ Copy the vehicle semantic packages and `lane_0927oa` into their corresponding re
 - A `launch_legacy_road_detector` argument defaults to `false`. Setting it to `true` opts into the preserved lane-only detector, named `road_detector_legacy`. Do not run both detectors on the same lane-mask topic.
 - The newer YOLOP repository/branch and associated AGENTS instructions have not yet been identified. Do not substitute the old lane-only model or claim the vehicle installation/acceptance is complete.
 - The existing obstacle avoidance subscribes to `/cone_mask` and `/cone_bbox_image`. It computes a spline and renders it to `/processed_image`; its control interface is three `Pose2D` topics, not an existing `/bspline` Path topic.
+- Added a separately invoked `ros2 launch launchers obstacle_avoidance.launch.py`, defaulting to the unchanged `oa_neo` B-spline implementation. `algorithm:=oa_neo_nurbs` and `algorithm:=oa_neo_ubs` select the other preserved algorithms.
+- This launch remaps OA `/processed_point_a/b/c` outputs to `/oa_point_a/b/c`, and OA `/lane_stop_flag` to `/point_flag`. The existing `withoutkalman_0312` already switches between those sources, so the original `lane_0215` need not be replaced.
+- A small process wrapper forwards launch termination signals and, after the OA process exits, publishes `/point_flag=false` for a bounded two-second discovery window. This is best-effort cleanup; SIGKILL, power loss, or an undiscovered subscriber can prevent confirmation. These new launch/helper files are repository preparation only and have not been deployed or live-tested on the vehicle.
+- The existing filter retains its latest A/B/C values while rebuilding subscriptions, so a transition may briefly use stale points. No filter algorithm was changed in this task.
 
 ## Acceptance status
+
+Passed locally: the 100 uploaded source files (98 semantic files, `lane_0927oa.py`, and its `setup.py`) match the captured vehicle SHA-256 values; Python source parsing and `git diff --check`.
 
 Pending: newer YOLOP identity, checkpoint identity, reversible deployment, real camera mask output, detection output, and manual obstacle-avoidance spline output. No bag smoke was run. No live acceptance has passed yet.
 
