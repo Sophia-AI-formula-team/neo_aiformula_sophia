@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "cases": 8,
+  "frames": [
+    {
+      "index": 0,
+      "domain": "real_manual",
+      "detections": 2,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 66,
+      "domain": "real_manual",
+      "detections": 3,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 104,
+      "domain": "real_manual",
+      "detections": 2,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 244,
+      "domain": "real_manual",
+      "detections": 2,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 317,
+      "domain": "synthetic",
+      "detections": 7,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 353,
+      "domain": "synthetic",
+      "detections": 5,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 1452,
+      "domain": "synthetic_negative",
+      "detections": 0,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    },
+    {
+      "index": 1474,
+      "domain": "synthetic_negative",
+      "detections": 0,
+      "exact_outputs": true,
+      "encoder_visits": 1
+    }
+  ],
+  "public_entrypoint": "yolop_a3_runtime.PerceptionModel",
+  "model_sha256": "12f8202587f33972ec09f6f513817ec6a30aa35310256fd356119d547d4edc02",
+  "torch": "2.11.0+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 4070 Ti",
+  "python": "3.12.10",
+  "observed_median_ms": 54.525200000171026,
+  "observed_p95_ms": 64.83364500013522,
+  "limitation": "Eight diagnostic views after two warmups; exact packaging parity, not accuracy acceptance, ROS latency or Orin throughput."
+}

@@ -1,0 +1,29 @@
+{
+  "file": "weights/shared_best.pth",
+  "sha256": "12f8202587f33972ec09f6f513817ec6a30aa35310256fd356119d547d4edc02",
+  "bytes": 79781607,
+  "architecture": "a3_mobilenet_shared_fpn_independent_v4",
+  "run": "shared_adaptation_v6",
+  "epoch": 24,
+  "global_step": 9600,
+  "source_checkpoint_sha256": "f538155aad10c280519bb9934370f4af52284fed99c66069946ddb5b7a6c6698",
+  "status": "experimental_not_vehicle_accepted",
+  "dtype": "float32",
+  "inference_only": true,
+  "tensors": 328,
+  "exact_source_tensor_match": true,
+  "encoder_passes_per_frame": 1,
+  "score_threshold": 0.5,
+  "transform": {
+    "min_size": 640,
+    "max_size": 1280
+  },
+  "lane_mask_values": [
+    0,
+    255
+  ],
+  "obstacle_mask_values": [
+    0,
+    255
+  ]
+}

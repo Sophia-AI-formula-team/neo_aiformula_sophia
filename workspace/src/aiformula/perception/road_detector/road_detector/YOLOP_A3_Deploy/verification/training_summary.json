@@ -1,0 +1,369 @@
+{
+  "completed_epochs": 30,
+  "completed_updates": 12000,
+  "elapsed_seconds": 10956.67200000002,
+  "exit_code": 0,
+  "stop_reason": "validation_plateau",
+  "selected_epoch": 24,
+  "selected_updates": 9600,
+  "score": 0.7275057389414247,
+  "relative_gates": {
+    "real_manual_iou": true,
+    "synthetic_iou": true,
+    "synthetic_recovery_iou": true,
+    "synthetic_curriculum_iou": true,
+    "synthetic_negative_iou": true,
+    "dash_gaps": true,
+    "occluded": true,
+    "centerline": true,
+    "marking_false_positives": true,
+    "empty_false_positive_rate": true,
+    "real_lane_recall": true,
+    "real_centerline_coverage": true,
+    "real_lane_breaks": true,
+    "real_object_1": true,
+    "real_object_3": true,
+    "real_object_10": true,
+    "real_object_91": true,
+    "real_small_object_recall": true,
+    "unity_object_1": true,
+    "unity_object_10": true,
+    "unity_object_91": true,
+    "unity_small_object_recall": true
+  },
+  "absolute_acceptance": {
+    "real_iou_vs_a1": true,
+    "real_recall_vs_a1": false,
+    "empty_fp_vs_a1": false,
+    "real_object_recall": false
+  },
+  "baseline": {
+    "lane": {
+      "domains": {
+        "real_manual": {
+          "tp": 6993859,
+          "fp": 2250299,
+          "fn": 2074824,
+          "iou": 0.6178876333578408,
+          "precision": 0.7565706903754782,
+          "recall": 0.7712099981882705,
+          "dice": 0.7638202068155345
+        },
+        "synthetic": {
+          "tp": 7022789,
+          "fp": 623275,
+          "fn": 539323,
+          "iou": 0.8579666422613861,
+          "precision": 0.9184842031141774,
+          "recall": 0.9286809029012001,
+          "dice": 0.9235544091546547
+        },
+        "synthetic_recovery": {
+          "tp": 17749400,
+          "fp": 1810501,
+          "fn": 1249468,
+          "iou": 0.8529523408422427,
+          "precision": 0.9074381306940152,
+          "recall": 0.9342346080829658,
+          "dice": 0.9206414240039665
+        },
+        "synthetic_curriculum": {
+          "tp": 60883331,
+          "fp": 8716662,
+          "fn": 5842981,
+          "iou": 0.8070112798045316,
+          "precision": 0.8747605908523582,
+          "recall": 0.9124336288809128,
+          "dice": 0.8932000467554666
+        },
+        "synthetic_negative": {
+          "tp": 0,
+          "fp": 96948,
+          "fn": 0,
+          "iou": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "dice": 0.0
+        }
+      },
+      "empty_false_positive_rate": 0.010988681457431457,
+      "empty_pixels": 26611200,
+      "behavior": {
+        "markings": 0.005749302494615388,
+        "dash_gaps": 0.734554166624124,
+        "occluded": 0.9766502808988764,
+        "centerline": 0.8896411167210049
+      }
+    },
+    "objects": {
+      "real": {
+        "1": {
+          "tp": 96,
+          "fp": 42,
+          "fn": 117,
+          "recall": 0.4507042253521127,
+          "precision": 0.6956521739130435,
+          "f1": 0.5470085470085471
+        },
+        "3": {
+          "tp": 348,
+          "fp": 106,
+          "fn": 250,
+          "recall": 0.5819397993311036,
+          "precision": 0.7665198237885462,
+          "f1": 0.6615969581749049
+        },
+        "10": {
+          "tp": 80,
+          "fp": 55,
+          "fn": 78,
+          "recall": 0.5063291139240507,
+          "precision": 0.5925925925925926,
+          "f1": 0.5460750853242321
+        },
+        "91": {
+          "tp": 109,
+          "fp": 100,
+          "fn": 473,
+          "recall": 0.1872852233676976,
+          "precision": 0.5215311004784688,
+          "f1": 0.27560050568900124
+        }
+      },
+      "unity": {
+        "1": {
+          "tp": 1009,
+          "fp": 13,
+          "fn": 71,
+          "recall": 0.9342592592592592,
+          "precision": 0.987279843444227,
+          "f1": 0.9600380589914367
+        },
+        "3": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "recall": 0.0,
+          "precision": 0.0,
+          "f1": 0.0
+        },
+        "10": {
+          "tp": 985,
+          "fp": 138,
+          "fn": 17,
+          "recall": 0.9830339321357285,
+          "precision": 0.8771148708815673,
+          "f1": 0.9270588235294117
+        },
+        "91": {
+          "tp": 3379,
+          "fp": 1359,
+          "fn": 958,
+          "recall": 0.7791099838598109,
+          "precision": 0.7131701139721401,
+          "f1": 0.7446831955922865
+        }
+      },
+      "sizes": {
+        "real": {
+          "small": {
+            "proposal_recall": 0.4941921858500528,
+            "recall": 0.17634635691657866,
+            "total": 947
+          },
+          "large": {
+            "proposal_recall": 0.9403973509933775,
+            "recall": 0.7715231788079471,
+            "total": 604
+          }
+        },
+        "unity": {
+          "small": {
+            "proposal_recall": 0.7866379310344828,
+            "recall": 0.6447557471264368,
+            "total": 2784
+          },
+          "large": {
+            "proposal_recall": 0.9988995873452545,
+            "recall": 0.9843191196698762,
+            "total": 3635
+          }
+        }
+      },
+      "samples": 1488
+    },
+    "geometry": {
+      "centerline_coverage": 0.5646551375257188,
+      "mean_longest_missing_row_fraction": 0.013427815570672715,
+      "samples": 245
+    }
+  },
+  "selected": {
+    "lane": {
+      "domains": {
+        "real_manual": {
+          "tp": 7004426,
+          "fp": 2243792,
+          "fn": 2064257,
+          "iou": 0.6191771473528118,
+          "precision": 0.75738115169863,
+          "recall": 0.7723752169967789,
+          "dice": 0.7648047014066408
+        },
+        "synthetic": {
+          "tp": 7031121,
+          "fp": 622888,
+          "fn": 530991,
+          "iou": 0.859025167990226,
+          "precision": 0.918619379726363,
+          "recall": 0.9297827114964708,
+          "dice": 0.9241673354201113
+        },
+        "synthetic_recovery": {
+          "tp": 17770016,
+          "fp": 1801617,
+          "fn": 1228852,
+          "iou": 0.8543077721505051,
+          "precision": 0.9079475381538168,
+          "recall": 0.9353197253646901,
+          "dice": 0.9214303957317018
+        },
+        "synthetic_curriculum": {
+          "tp": 60961072,
+          "fp": 8625997,
+          "fn": 5765240,
+          "iou": 0.8090139878792566,
+          "precision": 0.8760402309802702,
+          "recall": 0.9135987015137297,
+          "dice": 0.8944253535901953
+        },
+        "synthetic_negative": {
+          "tp": 0,
+          "fp": 100744,
+          "fn": 0,
+          "iou": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "dice": 0.0
+        }
+      },
+      "empty_false_positive_rate": 0.01132504359066859,
+      "empty_pixels": 26611200,
+      "behavior": {
+        "markings": 0.006085882675933235,
+        "dash_gaps": 0.7356604611335752,
+        "occluded": 0.9764545726653159,
+        "centerline": 0.8892164522948092
+      }
+    },
+    "objects": {
+      "real": {
+        "1": {
+          "tp": 96,
+          "fp": 45,
+          "fn": 117,
+          "recall": 0.4507042253521127,
+          "precision": 0.6808510638297872,
+          "f1": 0.5423728813559322
+        },
+        "3": {
+          "tp": 390,
+          "fp": 169,
+          "fn": 208,
+          "recall": 0.6521739130434783,
+          "precision": 0.6976744186046512,
+          "f1": 0.6741573033707865
+        },
+        "10": {
+          "tp": 78,
+          "fp": 46,
+          "fn": 80,
+          "recall": 0.4936708860759494,
+          "precision": 0.6290322580645161,
+          "f1": 0.5531914893617021
+        },
+        "91": {
+          "tp": 117,
+          "fp": 110,
+          "fn": 465,
+          "recall": 0.20103092783505155,
+          "precision": 0.5154185022026432,
+          "f1": 0.2892459826946848
+        }
+      },
+      "unity": {
+        "1": {
+          "tp": 1013,
+          "fp": 7,
+          "fn": 67,
+          "recall": 0.937962962962963,
+          "precision": 0.9931372549019608,
+          "f1": 0.9647619047619047
+        },
+        "3": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "recall": 0.0,
+          "precision": 0.0,
+          "f1": 0.0
+        },
+        "10": {
+          "tp": 985,
+          "fp": 94,
+          "fn": 17,
+          "recall": 0.9830339321357285,
+          "precision": 0.9128822984244671,
+          "f1": 0.9466602594906295
+        },
+        "91": {
+          "tp": 3411,
+          "fp": 1250,
+          "fn": 926,
+          "recall": 0.7864883560064561,
+          "precision": 0.7318172066080241,
+          "f1": 0.7581684818848633
+        }
+      },
+      "sizes": {
+        "real": {
+          "small": {
+            "proposal_recall": 0.5100316789862724,
+            "recall": 0.20485744456177402,
+            "total": 947
+          },
+          "large": {
+            "proposal_recall": 0.9420529801324503,
+            "recall": 0.8062913907284768,
+            "total": 604
+          }
+        },
+        "unity": {
+          "small": {
+            "proposal_recall": 0.7952586206896551,
+            "recall": 0.6537356321839081,
+            "total": 2784
+          },
+          "large": {
+            "proposal_recall": 0.9991746905089408,
+            "recall": 0.9873452544704264,
+            "total": 3635
+          }
+        }
+      },
+      "samples": 1488
+    },
+    "geometry": {
+      "centerline_coverage": 0.5651221632437,
+      "mean_longest_missing_row_fraction": 0.013348450491307635,
+      "samples": 245
+    }
+  },
+  "dataset_counts": {
+    "lane_train": 8584,
+    "lane_validation": 1867,
+    "object_train": 6062,
+    "object_validation": 1488
+  },
+  "scope": "Repeated model-selection validation, not an independent final or vehicle test."
+}
