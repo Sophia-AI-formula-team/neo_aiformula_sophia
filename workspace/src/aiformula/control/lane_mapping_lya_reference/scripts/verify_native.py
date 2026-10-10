@@ -22,13 +22,21 @@ def main():
     expected = hashlib.sha256(args.source.read_bytes()).hexdigest()
     assert native.API_VERSION == 1, "incompatible graph API"
     assert native.RADIUS_GRAPH_API_VERSION == 1, "incompatible radius graph API"
+    assert native.LOCAL_SUPPORT_API_VERSION == 1, "incompatible local support API"
     assert native.SOURCE_SHA256 == expected, "loaded extension does not match the C source"
     assert native.graph_forest(b"\x03\x03\x04", 3) == ([0, 0, 2], [-1, 0, -1])
     assert native.connected_subsets(b"\x03\x03\x04", 3, b"\x07\x05", [0, 1]) == b"\x03\x00"
     assert native.radius_graph(struct.pack("=dddd", 0., 0., .22, 0.),
                                struct.pack("=qqqq", 0, 0, 1, 0), 2, .22 ** 2) == b"\x03\x03"
+    graph = native.prepare_graph(b"\x03\x03\x04", 3)
+    support, counts = native.local_support(graph, 3, struct.pack("=qqq", 0, 1, 2),
+        struct.pack("=qq", 0, 1), b"\x01\x01\x01\x01\x00\x01",
+        struct.pack("=qqq", -1, 0, -1))
+    assert support == b"\x01\x01\x00\x00\x00\x00"
+    assert struct.unpack("=qq", counts) == (2, 0)
     result = dict(backend="native", api_version=native.API_VERSION,
         radius_graph_api_version=native.RADIUS_GRAPH_API_VERSION,
+        local_support_api_version=native.LOCAL_SUPPORT_API_VERSION,
         source_sha256=expected, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
         binary_name=binary.name, python=sys.version, platform=platform.platform(),
         installed_prefix_verified=args.install_prefix is not None, real_calls_passed=True)

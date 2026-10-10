@@ -13,6 +13,7 @@
 
 #define MAX_POINTS 4000
 #define MAX_QUERIES 4000
+#define MAX_CANDIDATES 2048
 #define MAX_WORDS ((MAX_POINTS + 63) / 64)
 #define GRAPH_CAPSULE "lane_mapping_lya_native.Graph.v1"
 
@@ -533,7 +534,238 @@ static PyObject *radius_graph(PyObject *self, PyObject *args)
     return output;
 }
 
+/* One bounded allocation per call, rather than Q x n Python masks. All ids
+ * are copied from native-int64 bytes with memcpy before entering the kernel. */
+typedef struct {
+    int candidates[MAX_CANDIDATES];
+    int targets[MAX_QUERIES];
+    int parents[MAX_POINTS];
+    int positions[MAX_POINTS];
+    int parent_positions[MAX_CANDIDATES];
+    int roots[MAX_POINTS];
+    unsigned char ranks[MAX_POINTS];
+} SupportWork;
+
+static int index_bytes_length(PyObject *value, const char *name, int maximum, int *count)
+{
+    Py_ssize_t length;
+    if (!PyBytes_CheckExact(value)) {
+        PyErr_Format(PyExc_TypeError, "%s must be immutable built-in bytes", name);
+        return 0;
+    }
+    length = PyBytes_GET_SIZE(value);
+    if (length % sizeof(int64_t) || length / sizeof(int64_t) > maximum) {
+        PyErr_Format(PyExc_ValueError, "%s must contain at most %d native int64 values", name, maximum);
+        return 0;
+    }
+    *count = (int)(length / sizeof(int64_t));
+    return 1;
+}
+
+static int copy_support_ids(PyObject *value, int count, int size, const char *name, int *output)
+{
+    int index;
+    const char *bytes = PyBytes_AS_STRING(value);
+    for (index = 0; index < count; ++index) {
+        int64_t vertex;
+        memcpy(&vertex, bytes + (size_t)index * sizeof(int64_t), sizeof(vertex));
+        if (vertex < 0 || vertex >= size) {
+            PyErr_Format(PyExc_ValueError, "%s[%d] must be in [0, n)", name, index);
+            return 0;
+        }
+        output[index] = (int)vertex;
+    }
+    return 1;
+}
+
+static int support_root(int *roots, int vertex)
+{
+    while (roots[vertex] != vertex) {
+        roots[vertex] = roots[roots[vertex]];
+        vertex = roots[vertex];
+    }
+    return vertex;
+}
+
+static int validate_support_forest(const Graph *graph, PyObject *parent_bytes, SupportWork *work)
+{
+    int vertex;
+    const char *bytes = PyBytes_AS_STRING(parent_bytes);
+    for (vertex = 0; vertex < graph->size; ++vertex) {
+        int64_t parent;
+        memcpy(&parent, bytes + (size_t)vertex * sizeof(int64_t), sizeof(parent));
+        if (parent < -1 || parent >= graph->size) {
+            PyErr_Format(PyExc_ValueError, "parents[%d] must be -1 or in [0, n)", vertex);
+            return 0;
+        }
+        work->parents[vertex] = (int)parent;
+        work->roots[vertex] = vertex;
+        work->ranks[vertex] = 0;
+        work->positions[vertex] = -1;
+    }
+    for (vertex = 0; vertex < graph->size; ++vertex) {
+        int parent = work->parents[vertex], left, right;
+        const uint64_t *neighbors, *reverse;
+        if (parent < 0)
+            continue;
+        neighbors = graph->rows + (size_t)vertex * graph->words;
+        reverse = graph->rows + (size_t)parent * graph->words;
+        /* The certificate must work from any allowed seed. Requiring both
+         * directed edges makes each accepted forest edge genuinely undirected,
+         * even if the caller supplied a graph with unrelated directed edges. */
+        if (!(neighbors[parent / 64] & (UINT64_C(1) << (parent % 64))) ||
+            !(reverse[vertex / 64] & (UINT64_C(1) << (vertex % 64)))) {
+            PyErr_Format(PyExc_ValueError, "parents[%d] is not a bidirectional graph edge", vertex);
+            return 0;
+        }
+        left = support_root(work->roots, vertex);
+        right = support_root(work->roots, parent);
+        if (left == right) {
+            PyErr_Format(PyExc_ValueError, "parents contain a cycle at vertex %d", vertex);
+            return 0;
+        }
+        if (work->ranks[left] < work->ranks[right]) {
+            work->roots[left] = right;
+        } else {
+            work->roots[right] = left;
+            if (work->ranks[left] == work->ranks[right])
+                ++work->ranks[left];
+        }
+    }
+    return 1;
+}
+
+static void support_rows(const Graph *graph, const SupportWork *work, int columns,
+                         int queries, const unsigned char *allowed,
+                         unsigned char *support, unsigned char *counts)
+{
+    int row;
+    for (row = 0; row < queries; ++row) {
+        const unsigned char *input = allowed + (size_t)row * columns;
+        unsigned char *output = support + (size_t)row * columns;
+        int seed = work->targets[row], seed_position = work->positions[seed];
+        int column, edge_count = 0;
+        int64_t count = 0;
+        uint64_t mask[MAX_WORDS], reached[MAX_WORDS];
+        memset(output, 0, (size_t)columns);
+        /* A connected set is never evidence for a seed outside that set. */
+        if (seed_position < 0 || !input[seed_position]) {
+            memcpy(counts + (size_t)row * sizeof(count), &count, sizeof(count));
+            continue;
+        }
+        for (column = 0; column < columns; ++column) {
+            int parent = work->parent_positions[column];
+            if (!input[column])
+                continue;
+            ++count;
+            if (parent >= 0 && input[parent])
+                ++edge_count;
+        }
+        /* A subset of an acyclic bidirectional forest is connected iff it
+         * retains vertices-1 edges. No global-component shortcut is needed. */
+        if (edge_count == count - 1) {
+            memcpy(output, input, (size_t)columns);
+        } else {
+            memset(mask, 0, (size_t)graph->words * sizeof(uint64_t));
+            for (column = 0; column < columns; ++column) {
+                int vertex = work->candidates[column];
+                if (input[column])
+                    mask[vertex / 64] |= UINT64_C(1) << (vertex % 64);
+            }
+            flood_subset(graph, mask, seed, reached);
+            count = 0;
+            for (column = 0; column < columns; ++column) {
+                int vertex = work->candidates[column];
+                output[column] = (unsigned char)((reached[vertex / 64] >> (vertex % 64)) & 1);
+                count += output[column];
+            }
+        }
+        /* Counts deliberately use native int64 byte order, matching Python
+         * np.frombuffer(count_bytes, dtype=np.int64), without alignment casts. */
+        memcpy(counts + (size_t)row * sizeof(count), &count, sizeof(count));
+    }
+}
+
+static PyObject *local_support(PyObject *self, PyObject *args)
+{
+    PyObject *capsule, *size, *candidate_bytes, *target_bytes, *allowed_bytes, *parent_bytes;
+    PyObject *support = NULL, *counts = NULL, *output = NULL;
+    Graph graph;
+    SupportWork *work = NULL;
+    int columns, queries, column;
+    Py_ssize_t offset, allowed_size, invalid_offset = -1;
+    const unsigned char *allowed;
+    unsigned char *support_data, *count_data;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOO:local_support", &capsule, &size,
+                         &candidate_bytes, &target_bytes, &allowed_bytes, &parent_bytes))
+        return NULL;
+    if (!PyCapsule_CheckExact(capsule)) {
+        PyErr_SetString(PyExc_TypeError, "local_support requires a prepared graph capsule");
+        return NULL;
+    }
+    if (!parse_graph(capsule, size, &graph) ||
+        !index_bytes_length(candidate_bytes, "candidates", MAX_CANDIDATES, &columns) ||
+        !index_bytes_length(target_bytes, "targets", MAX_QUERIES, &queries))
+        return NULL;
+    allowed_size = (Py_ssize_t)queries * columns;
+    if (!exact_bytes(allowed_bytes, allowed_size, "allowed") ||
+        !exact_bytes(parent_bytes, (Py_ssize_t)graph.size * sizeof(int64_t), "parents"))
+        return NULL;
+    work = (SupportWork *)PyMem_Malloc(sizeof(SupportWork));
+    if (!work)
+        return PyErr_NoMemory();
+    if (!copy_support_ids(candidate_bytes, columns, graph.size, "candidates", work->candidates) ||
+        !copy_support_ids(target_bytes, queries, graph.size, "targets", work->targets) ||
+        !validate_support_forest(&graph, parent_bytes, work))
+        goto cleanup;
+    for (column = 0; column < columns; ++column) {
+        int vertex = work->candidates[column];
+        if (work->positions[vertex] >= 0) {
+            PyErr_Format(PyExc_ValueError, "candidates[%d] duplicates an earlier vertex", column);
+            goto cleanup;
+        }
+        work->positions[vertex] = column;
+    }
+    for (column = 0; column < columns; ++column) {
+        int parent = work->parents[work->candidates[column]];
+        work->parent_positions[column] = parent < 0 ? -1 : work->positions[parent];
+    }
+    support = PyBytes_FromStringAndSize(NULL, allowed_size);
+    counts = PyBytes_FromStringAndSize(NULL, (Py_ssize_t)queries * sizeof(int64_t));
+    if (!support || !counts)
+        goto cleanup;
+    allowed = (const unsigned char *)PyBytes_AS_STRING(allowed_bytes);
+    support_data = (unsigned char *)PyBytes_AS_STRING(support);
+    count_data = (unsigned char *)PyBytes_AS_STRING(counts);
+    /* args retain the immutable graph/bytes; ids and forest are owned copies.
+     * Validate every allowed byte, including rows whose seed is absent. Reject
+     * before computing any result. No Python API runs without the GIL. */
+    Py_BEGIN_ALLOW_THREADS
+    for (offset = 0; offset < allowed_size; ++offset) {
+        if (allowed[offset] > 1) {
+            invalid_offset = offset;
+            break;
+        }
+    }
+    if (invalid_offset < 0)
+        support_rows(&graph, work, columns, queries, allowed, support_data, count_data);
+    Py_END_ALLOW_THREADS
+    if (invalid_offset >= 0) {
+        PyErr_Format(PyExc_ValueError, "allowed[%zd] must be 0 or 1", invalid_offset);
+        goto cleanup;
+    }
+    output = PyTuple_Pack(2, support, counts);
+cleanup:
+    Py_XDECREF(support);
+    Py_XDECREF(counts);
+    PyMem_Free(work);
+    return output;
+}
+
 static PyMethodDef methods[] = {
+    {"local_support", local_support, METH_VARARGS,
+     "Exact local support (graph, n, int64 candidates, int64 targets, uint8 allowed, int64 parents). Returns uint8 support and native-int64 counts bytes."},
     {"radius_graph", radius_graph, METH_VARARGS,
      "Exact adjacent-key graph (f64 points, int64 keys, n, radius_squared float)."},
     {"prepare_graph", prepare_graph, METH_VARARGS,
@@ -556,6 +788,8 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         return NULL;
     if (PyModule_AddIntConstant(result, "API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "RADIUS_GRAPH_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "LOCAL_SUPPORT_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||
         PyModule_AddStringConstant(result, "SOURCE_SHA256", SOURCE_SHA256) < 0) {

@@ -211,6 +211,19 @@ def test_original_bucket_capacity_fail_closed(kind):
         build_graph(points)
 
 
+def test_python_support_rejects_mixed_component_size_collision(monkeypatch):
+    monkeypatch.setattr(module, "_GRAPH_NATIVE", None)
+    index = build_graph(np.array([[0., 0.], [.1, 0.], [2., 0.], [2.1, 0.]]))
+    allowed = np.array([[True, False, True, False]])
+    assert index._component_sizes[index.components[0]] == allowed.sum() == 2
+    observed, counts = index._local_support(
+        np.array([0], dtype=np.int64), np.arange(4, dtype=np.int64),
+        allowed, return_counts=True)
+    assert observed is allowed
+    np.testing.assert_array_equal(observed, [[True, False, False, False]])
+    np.testing.assert_array_equal(counts, [1])
+
+
 @pytest.mark.parametrize("layout", ["thick", "clipped", "permuted"])
 def test_full_index_geometry_is_identical_to_unbatched_all_pairs_graph(monkeypatch, layout):
     x = np.arange(-1., 2.01, .1)

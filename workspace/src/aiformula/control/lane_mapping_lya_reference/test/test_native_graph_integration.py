@@ -34,10 +34,12 @@ def native():
         result = pytest.importorskip("_lane_mapping_lya_native")
     assert result.API_VERSION == 1
     assert result.RADIUS_GRAPH_API_VERSION == 1
+    assert result.LOCAL_SUPPORT_API_VERSION == 1
     assert callable(result.radius_graph)
     assert callable(result.prepare_graph)
     assert callable(result.graph_forest)
     assert callable(result.connected_subsets)
+    assert callable(result.local_support)
     return result
 
 
@@ -50,6 +52,7 @@ class NativeSpy:
         self.graph_calls = []
         self.subset_calls = []
         self.subset_graphs = []
+        self.local_calls = []
 
     def __getattr__(self, name):
         return getattr(self.native, name)
@@ -71,6 +74,11 @@ class NativeSpy:
         self.subset_calls.append((count, len(masks), tuple(seeds)))
         self.subset_graphs.append((count, type(graph).__name__, id(graph)))
         return self.native.connected_subsets(graph, count, masks, seeds)
+
+    def local_support(self, graph, count, candidates, targets, allowed, parents):
+        self.local_calls.append((count, type(graph).__name__, id(graph),
+                                 candidates, targets, allowed, parents))
+        return self.native.local_support(graph, count, candidates, targets, allowed, parents)
 
 
 def build(monkeypatch, backend, points, cfg=None, **kwargs):
@@ -225,7 +233,9 @@ def test_induced_support_calls_native_and_cannot_cross_removed_u_bridge(monkeypa
                                        targets, candidates, allowed.copy(), return_counts=True)
     assert_bytes(observed, baseline)
     assert_bytes(counts, baseline_counts)
-    assert spy.subset_calls, "forest shortcut must not make this native-flood test vacuous"
+    assert len(spy.local_calls) == 1, "the whole native local-support path must actually execute"
+    assert spy.local_calls[0][:3] == (len(points), "PyCapsule", id(actual._native_graph))
+    assert not spy.subset_calls, "native local support must not fall through to Python mask preparation"
     assert len(spy.prepare_calls) == 1
     assert all(call == (len(points), "PyCapsule", id(actual._native_graph))
                for call in spy.subset_graphs)
@@ -261,6 +271,7 @@ def test_graph_capacity_boundary_preserves_large_index_python_fallback(monkeypat
         assert_bytes(observed, expected)
         assert np.count_nonzero(observed) == 1
         assert not spy.subset_calls
+        assert not spy.local_calls
         with pytest.raises(ValueError, match="bounded graph capacity"):
             invoke(monkeypatch, spy, module._line_weights, points[:1],
                    np.array([[0., 1.]]), actual, np.array([0]), actual.cfg)
@@ -270,7 +281,8 @@ def test_real_512_point_patch_and_missing_seed_are_bit_exact(monkeypatch, native
     points = rectangle(-1., 1., -1., 1., step=.05)
     selected = np.array([0, len(points) // 2, len(points) - 1], dtype=np.int64)
     baseline = build(monkeypatch, None, points, normal_targets=selected)
-    actual = build(monkeypatch, native, points, normal_targets=selected)
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=selected)
     assert actual.cfg["max_patch_points"] == 512
     assert_index_exact(actual, baseline)
     candidates = actual._patch((0, 0), actual.cfg["normal_max_radius_m"])
@@ -278,7 +290,8 @@ def test_real_512_point_patch_and_missing_seed_are_bit_exact(monkeypatch, native
     assert len(candidates) == 512
     missing = np.setdiff1d(np.arange(len(points)), candidates)[0]
     allowed = np.ones((1, len(candidates)), dtype=bool)
-    observed, counts = invoke(monkeypatch, native, actual._local_support,
+    before_calls = len(spy.local_calls)
+    observed, counts = invoke(monkeypatch, spy, actual._local_support,
                               np.array([missing]), candidates, allowed.copy(), return_counts=True)
     expected, expected_counts = invoke(monkeypatch, None, baseline._local_support,
                                        np.array([missing]), candidates, allowed.copy(), return_counts=True)
@@ -286,6 +299,7 @@ def test_real_512_point_patch_and_missing_seed_are_bit_exact(monkeypatch, native
     assert_bytes(counts, expected_counts)
     assert not np.any(observed)
     assert counts.tolist() == [0]
+    assert len(spy.local_calls) == before_calls + 1
 
 
 @pytest.mark.parametrize("kind", ["unique", "duplicates", "shifted_seed", "near_u", "remote_u", "batch"])
@@ -535,3 +549,180 @@ def test_3999_padding_and_direct_api_reject_4001(monkeypatch, native):
     keys = np.floor(larger / .22).astype(np.int64)
     with pytest.raises(ValueError):
         native.radius_graph(larger.tobytes(), keys.tobytes(), len(larger), .22 ** 2)
+
+
+def independent_local_support(index, targets, candidates, allowed):
+    """Plain per-row graph walk: no production forest or native subset helper.
+
+    The radius graph itself is separately compared against the independent
+    all-pairs oracle above. These cases use unique candidate IDs, matching the
+    bounded patches produced by _FrozenIndex._patch.
+    """
+    result = np.zeros_like(allowed, dtype=bool)
+    for row, seed in enumerate(targets):
+        positions = {int(value): position for position, value in enumerate(candidates)}
+        if int(seed) not in positions or not allowed[row, positions[int(seed)]]:
+            continue
+        permitted = {int(value) for value, enabled in zip(candidates, allowed[row]) if enabled}
+        pending = [int(seed)]
+        visited = {int(seed)}
+        while pending:
+            current = pending.pop()
+            for other in permitted - visited:
+                if index._adjacency_bits[current] & (1 << other):
+                    visited.add(other)
+                    pending.append(other)
+        for value in visited:
+            result[row, positions[value]] = True
+    return result, np.sum(result, axis=1, dtype=np.int64)
+
+
+def local_support_case(kind):
+    points = scene("filled_band") if kind == "thick" else scene("thin")
+    if kind in ("near_u", "remote_u", "clipped"):
+        points = u_shape(.6 if kind == "near_u" else 3.)
+    candidates = np.arange(len(points), dtype=np.int64)
+    targets = np.array([0, len(points) // 2, len(points) - 1], dtype=np.int64)
+    # Ordinary PCA starts with the target's global component. The U examples
+    # below retain both branches globally, then remove the connecting bridge.
+    allowed = np.ones((len(targets), len(candidates)), dtype=bool)
+    if kind in ("near_u", "remote_u", "clipped"):
+        targets = np.array([0, 31], dtype=np.int64)
+        allowed = np.tile(points[:, 0] < .5, (2, 1))
+        if kind == "clipped":
+            candidates = candidates[1:]
+            allowed = allowed[:, 1:]
+    elif kind == "seed_forbidden":
+        allowed[np.arange(len(targets)), targets] = False
+    elif kind == "seed_absent":
+        candidates = np.setdiff1d(candidates, targets).astype(np.int64)
+        allowed = np.ones((len(targets), len(candidates)), dtype=bool)
+    elif kind == "empty_rows":
+        targets = np.empty(0, dtype=np.int64)
+        allowed = np.empty((0, len(candidates)), dtype=bool)
+    elif kind == "empty_candidates":
+        candidates = np.empty(0, dtype=np.int64)
+        allowed = np.empty((len(targets), 0), dtype=bool)
+    elif kind in ("random", "reversed", "strided"):
+        allowed = np.random.RandomState(126).uniform(size=allowed.shape) > .3
+        allowed[np.arange(len(targets)), targets] = True
+        if kind == "reversed":
+            candidates = candidates[::-1].copy()
+            allowed = allowed[:, ::-1].copy()
+    return points, targets, candidates, allowed
+
+
+@pytest.mark.parametrize("kind", ["whole", "thick", "near_u", "remote_u", "clipped",
+                                  "seed_forbidden", "seed_absent", "empty_rows",
+                                  "empty_candidates", "random", "reversed", "strided"])
+@pytest.mark.parametrize("return_counts", [False, True])
+def test_native_local_support_preserves_alias_bytes_and_independent_walk(
+        monkeypatch, native, kind, return_counts):
+    points, targets, candidates, allowed = local_support_case(kind)
+    no_normals = np.empty(0, dtype=np.int64)
+    baseline = build(monkeypatch, None, points, normal_targets=no_normals)
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=no_normals)
+    assert_index_exact(actual, baseline)
+    # Keep the original contract's pre-filtered global-component eligibility;
+    # connectivity must still be recomputed inside each induced local patch.
+    allowed &= baseline.components[candidates][None, :] == baseline.components[targets][:, None]
+    if kind == "strided":
+        backing = np.ones((len(targets), 2 * len(candidates)), dtype=bool)
+        backing[:, ::2] = allowed
+        allowed = backing[:, ::2]
+        assert not allowed.flags.c_contiguous
+    initial = allowed.copy()
+    target_bytes, candidate_bytes = targets.tobytes(), candidates.tobytes()
+    graph_before = {name: getattr(actual, name).tobytes() for name in ARRAYS}
+    expected, expected_counts = invoke(monkeypatch, None, baseline._local_support,
+                                       targets, candidates, initial.copy(), return_counts=True)
+    walked, walked_counts = independent_local_support(baseline, targets, candidates, initial)
+    assert_bytes(expected, walked)
+    assert_bytes(expected_counts, walked_counts)
+    result = invoke(monkeypatch, spy, actual._local_support,
+                    targets, candidates, allowed, return_counts=return_counts)
+    observed = result[0] if return_counts else result
+    assert observed is allowed, "the original caller-owned mask must be filled in place"
+    assert_bytes(observed, expected)
+    if return_counts:
+        counts = result[1]
+        assert_bytes(counts, expected_counts)
+        assert counts.dtype == np.int64 and counts.flags.writeable
+        assert not np.shares_memory(counts, allowed)
+        if len(counts):
+            counts[0] = -123  # owned copy, not a read-only bytes view or graph state
+            assert_bytes(observed, expected)
+    if kind == "strided":
+        assert np.all(backing[:, 1::2]), "native fill must not touch the non-view columns"
+    assert len(spy.local_calls) == 1
+    assert spy.local_calls[0] == (len(points), "PyCapsule", id(actual._native_graph),
+                                 candidate_bytes, target_bytes, initial.tobytes(),
+                                 actual._forest_parents.tobytes())
+    assert not spy.subset_calls, "the early native branch must own the entire support operation"
+    assert len(spy.prepare_calls) == 1
+    assert targets.tobytes() == target_bytes and candidates.tobytes() == candidate_bytes
+    for name in ARRAYS:
+        assert getattr(actual, name).tobytes() == graph_before[name], name
+
+
+@pytest.mark.parametrize("ids_dtype", [np.dtype("int32"), np.dtype("int64").newbyteorder("S")])
+def test_non_native_int64_local_ids_keep_python_fallback(monkeypatch, native, ids_dtype):
+    points, targets, candidates, allowed = local_support_case("near_u")
+    targets, candidates = targets.astype(ids_dtype), candidates.astype(ids_dtype)
+    baseline = build(monkeypatch, None, points, normal_targets=np.empty(0, dtype=np.int64))
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=np.empty(0, dtype=np.int64))
+    expected, expected_counts = invoke(monkeypatch, None, baseline._local_support,
+                                       targets, candidates, allowed.copy(), return_counts=True)
+    input_mask = allowed.copy()
+    observed, counts = invoke(monkeypatch, spy, actual._local_support,
+                              targets, candidates, input_mask, return_counts=True)
+    assert observed is input_mask
+    assert_bytes(observed, expected)
+    assert_bytes(counts, expected_counts)
+    assert not spy.local_calls, "different integer byte order/width is not native int64"
+
+
+def test_local_support_native_failure_cannot_quietly_fall_back(monkeypatch, native):
+    class RejectingSupport(NativeSpy):
+        def local_support(self, *args):
+            self.local_calls.append(args)
+            raise RuntimeError("injected native local-support failure")
+
+    points = u_shape(3.)
+    spy = RejectingSupport(native)
+    actual = build(monkeypatch, spy, points, normal_targets=np.empty(0, dtype=np.int64))
+    targets = np.array([0], dtype=np.int64)
+    candidates = np.arange(len(points), dtype=np.int64)
+    allowed = np.tile(points[:, 0] < .5, (1, 1))
+    before = allowed.tobytes()
+    with pytest.raises(RuntimeError, match="injected native local-support failure"):
+        invoke(monkeypatch, spy, actual._local_support, targets, candidates, allowed)
+    assert len(spy.local_calls) == 1
+    assert not spy.subset_calls
+    assert allowed.tobytes() == before
+
+
+@pytest.mark.parametrize("use_native", [False, True])
+def test_mixed_components_cannot_exploit_equal_component_size(monkeypatch, native, use_native):
+    # Defensive validation added with the local-support integration: the old
+    # internal Python fast path assumed callers already removed other global
+    # components. Do not claim unchanged behavior for that invalid old input.
+    points = np.array([[0., 0.], [.1, 0.], [2., 0.], [2.1, 0.]])
+    backend = NativeSpy(native) if use_native else None
+    index = build(monkeypatch, backend, points, normal_targets=np.empty(0, dtype=np.int64))
+    targets = np.array([0], dtype=np.int64)
+    candidates = np.arange(4, dtype=np.int64)
+    allowed = np.array([[True, False, True, False]])
+    assert index._component_sizes[index.components[0]] == allowed.sum() == 2
+    expected, expected_counts = independent_local_support(index, targets, candidates, allowed)
+    observed, counts = invoke(monkeypatch, backend, index._local_support,
+                              targets, candidates, allowed, return_counts=True)
+    assert observed is allowed
+    assert_bytes(observed, expected)
+    assert_bytes(counts, expected_counts)
+    np.testing.assert_array_equal(observed, [[True, False, False, False]])
+    np.testing.assert_array_equal(counts, [1])
+    if use_native:
+        assert len(backend.local_calls) == 1

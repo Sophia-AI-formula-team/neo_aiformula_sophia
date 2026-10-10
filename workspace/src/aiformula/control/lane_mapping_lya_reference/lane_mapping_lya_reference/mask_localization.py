@@ -32,9 +32,10 @@ except ImportError:
 
 if _GRAPH_NATIVE is not None and (
         getattr(_GRAPH_NATIVE, "API_VERSION", None) != 1 or
-        getattr(_GRAPH_NATIVE, "RADIUS_GRAPH_API_VERSION", None) != 1 or not all(
+        getattr(_GRAPH_NATIVE, "RADIUS_GRAPH_API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "LOCAL_SUPPORT_API_VERSION", None) != 1 or not all(
             callable(getattr(_GRAPH_NATIVE, name, None)) for name in
-            ("radius_graph", "prepare_graph", "graph_forest", "connected_subsets"))):
+            ("radius_graph", "local_support", "prepare_graph", "graph_forest", "connected_subsets"))):
     raise RuntimeError("incompatible lane graph native extension; rebuild this package")
 
 
@@ -543,6 +544,22 @@ class _FrozenIndex:
         only vertices inside each query circle may be traversed. This is exact
         connectivity, not a truncated flood-fill that could invent a thin line.
         """
+        if (_GRAPH_NATIVE is not None and self._native_graph is not None
+                and targets.dtype == np.int64 and candidates.dtype == np.int64
+                and targets.ndim == candidates.ndim == 1 and allowed.dtype == np.bool_
+                and allowed.shape == (len(targets), len(candidates))):
+            # The native routine validates this exact forest and computes the
+            # same seed-induced support. Keep the original in-place mask API.
+            packed_support, packed_counts = _GRAPH_NATIVE.local_support(
+                self._native_graph, len(self.anchor), candidates.tobytes(),
+                targets.tobytes(), allowed.tobytes(), self._forest_parents.tobytes())
+            allowed[...] = np.frombuffer(packed_support, dtype=np.bool_).reshape(allowed.shape)
+            counts = np.frombuffer(packed_counts, dtype=np.int64).copy()
+            return (allowed, counts) if return_counts else allowed
+        # Runtime callers already apply this filter. Enforce it here as well:
+        # an equal-sized set containing other components is not a whole-component
+        # certificate for this seed. Native flood naturally excludes such nodes.
+        allowed &= self.components[targets, None] == self.components[candidates][None, :]
         # A connected candidate subset is not support for a seed outside it.
         # In particular, bounded patch truncation can exclude a target. Check
         # membership before either whole-component or spanning-tree shortcuts.

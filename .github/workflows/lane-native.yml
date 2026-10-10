@@ -39,7 +39,7 @@ jobs:
           python setup.py build_ext --inplace
           mkdir native-evidence
           PYTHONPATH=. python scripts/verify_native.py --source native/lane_graph_native.c --output native-evidence/native.json
-          python -m pytest test/test_native_graph_integration.py test/test_native_graph_kernel.py test/test_native_radius_graph.py -q --junitxml=native-evidence/tests.xml
+          python -m pytest test/test_native_graph_integration.py test/test_native_graph_kernel.py test/test_native_radius_graph.py test/test_native_local_support.py -q --junitxml=native-evidence/tests.xml
           cp _lane_mapping_lya_native*.pyd native-evidence/ 2>/dev/null || cp _lane_mapping_lya_native*.so native-evidence/
       - uses: actions/upload-artifact@v4
         if: always()
