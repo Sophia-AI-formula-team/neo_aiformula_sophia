@@ -119,7 +119,8 @@ class TeachMapEngine:
         self._clock = clock or time.perf_counter
         self._map = SparseConsensusMap(cfg["grid_resolution_m"], cfg["minimum_frame_votes"],
                                        cfg["minimum_reliable_votes"], cfg["max_candidate_cells"],
-                                       cfg["max_confirmed_cells"], cfg["candidate_ttl_s"])
+                                       cfg["max_confirmed_cells"], cfg["candidate_ttl_s"],
+                                       measured_geometry=True)
         self._trace = []
         self._matcher = None
         self._anchor_frontier = None
@@ -327,7 +328,8 @@ class TeachMapEngine:
                 selected.discard_pending()
             return self._result(False, "past_direction_capacity", prior, stamp, started, metrics)
         prepared_support = _readonly(support, 2)
-        keys = self._map.points_to_unique_keys(world)
+        prepared_geometry = self._map.prepare_geometry(world, stamp)
+        keys = prepared_geometry.keys
         reliable = self._map.points_to_unique_keys(world[sensitivity <= self.config["reliable_sensitivity"]])
         if not self._capacity_allows(keys, reliable):
             if selected is not None:
@@ -346,7 +348,7 @@ class TeachMapEngine:
             if result is not None and not selected.commit(result):
                 selected.discard_pending()
                 return self._result(False, "matcher_commit_rejected", prior, stamp, started, metrics)
-            self._map.update(keys, reliable, stamp_ns=stamp)
+            self._map.update(keys, reliable, stamp_ns=stamp, geometry=prepared_geometry)
             if self._map.capacity_rejected_cells or self._map.confirmation_capacity_rejections:
                 self._latch("unexpected_map_capacity")
                 return self._result(False, self._fault, prior, stamp, started, metrics)
@@ -381,7 +383,10 @@ class TeachMapEngine:
                 raise ValueError("cannot freeze an empty teach map")
             points, votes = self._map.confirmed_points_and_votes()
             self._snapshot = MapSnapshot(np.asarray(self._trace), points, votes,
-                                         int(self._map.last_stamp_ns), dict(self.counts))
+                                         int(self._map.last_stamp_ns), dict(self.counts,
+                                             consensus_coordinate_semantics="measured_frame_equal_mean",
+                                             consensus_grid_resolution_m=self.config["grid_resolution_m"],
+                                             consensus_vote_semantics="one_vote_per_cell_per_committed_frame"))
         return self._snapshot
 
     def capture_repeat_state(self):

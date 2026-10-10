@@ -13,7 +13,7 @@ This module never changes timestamps or claims physical camera/IMU synchrony.
 One serialized caller owns the estimator. Published samples are immutable.
 """
 from collections import deque
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 import math
 from numbers import Integral, Real
 from types import MappingProxyType
@@ -30,6 +30,11 @@ DEFAULT_CONFIG = {
     "initialization_accel_max_deviation_mps2": 0.05,
     "initialization_gyro_max_norm_radps": 0.02,
     "initialization_gyro_max_deviation_radps": 0.002,
+    # R9 engineering consistency budget, NOT a measured IMU noise bound.
+    # Conditional design envelope: h>=0.5 m, range<=30 m, <=0.05 m projection
+    # allowance gives 0.04508 m at 2.5e-5 rad. This does not verify that envelope,
+    # change camera/range, or bound unobservable constant acceleration/bias.
+    "initialization_direction_error_rad": 2.5e-5,
     "minimum_heading_denominator": 0.25,
 }
 
@@ -103,6 +108,54 @@ def _heading(up, rate, minimum):
     return result
 
 
+def _direction_angle(first, second):
+    cross = (first[1] * second[2] - first[2] * second[1],
+             first[2] * second[0] - first[0] * second[2],
+             first[0] * second[1] - first[1] * second[0])
+    return math.atan2(_norm(cross), math.fsum(a * b for a, b in zip(first, second)))
+
+
+def _mean_vector(vectors):
+    return tuple(math.fsum(row[axis] for row in vectors) / len(vectors) for axis in range(3))
+
+
+def _transport_directions(window, bias):
+    """Each gravity direction transported to the LAST source, in O(N) work.
+
+    q maps a given past body frame into the final body frame. Right-composing
+    the next earlier interval preserves noncommuting angular increments. Only
+    gyro[k] propagates interval [t[k], t[k+1]]; the final raw rate has no interval.
+    All storage is bounded by the initializer's original sample capacity.
+    """
+    directions = [None] * len(window)
+    q = (1., 0., 0., 0.)
+    for index in range(len(window) - 1, -1, -1):
+        direction = _unit(window[index][3])
+        w, x, y, z = q
+        # Unit quaternion vector action, independent of moving-state Rodrigues.
+        cross = (y * direction[2] - z * direction[1],
+                 z * direction[0] - x * direction[2],
+                 x * direction[1] - y * direction[0])
+        inner = tuple(cross[j] + w * direction[j] for j in range(3))
+        second = (y * inner[2] - z * inner[1],
+                  z * inner[0] - x * inner[2],
+                  x * inner[1] - y * inner[0])
+        directions[index] = _unit(tuple(direction[j] + 2. * second[j] for j in range(3)))
+        if index == 0:
+            break
+        previous = window[index - 1]
+        rate = tuple(previous[2][j] - bias[j] for j in range(3))
+        magnitude = _norm(rate)
+        if magnitude == 0.:
+            continue
+        half = .5 * magnitude * (window[index][0] - previous[0]) * 1e-9
+        factor = -math.sin(half) / magnitude
+        a, b, c, d = (math.cos(half), *(factor * value for value in rate))
+        q = _unit((w*a-x*b-y*c-z*d, w*b+x*a+y*d-z*c,
+                   w*c-x*d+y*a+z*b, w*d+x*c-y*b+z*a))
+    return tuple(directions)
+
+
 def _fresh(source, receipt, now, steady):
     if not 0 <= now - source <= _SOURCE_AGE_NS:
         raise ValueError("attitude_source_stale_or_future")
@@ -125,6 +178,36 @@ class StationaryEvidence:
 
 
 @dataclass(frozen=True)
+class InitializationBlock:
+    first_source_stamp_ns: int
+    last_source_stamp_ns: int
+    first_received_steady_ns: int
+    last_received_steady_ns: int
+    sample_count: int
+    gyro_mean: tuple
+    up_at_endpoint: tuple
+
+
+@dataclass(frozen=True)
+class InitializationModelCheck:
+    endpoint_source_stamp_ns: int
+    direction_error_budget_rad: float
+    training_gyro_mean: tuple
+    heldout_gyro_mean: tuple
+    training_up_at_endpoint: tuple
+    heldout_up_at_endpoint: tuple
+    heldout_direction_residual_rad: float
+    maximum_block_direction_residual_rad: float
+    perpendicular_bias_difference_radps: float
+    perpendicular_bias_angle_rad: float
+    blocks: tuple
+    passed: bool
+    reason: str
+    bias_source: str = "first_three_disjoint_source_quarters; last_quarter_held_out"
+    unobservable: str = "constant acceleration/accelerometer bias and rotation about gravity"
+
+
+@dataclass(frozen=True)
 class InitializationEvidence:
     first_source_stamp_ns: int
     last_source_stamp_ns: int
@@ -138,6 +221,7 @@ class InitializationEvidence:
     accel_max_deviation_mps2: float
     gyro_max_norm_radps: float
     gyro_max_deviation_radps: float
+    model_check: InitializationModelCheck
     assumption: str = "stationary gravity and gyro bias; not physical stillness proof"
 
 
@@ -240,12 +324,15 @@ class CausalRawAttitude:
                 raise ValueError("invalid_" + key)
         if values["minimum_heading_denominator"] > 1:
             raise ValueError("invalid_minimum_heading_denominator")
+        if values["initialization_direction_error_rad"] >= math.pi / 2:
+            raise ValueError("invalid_initialization_direction_error_rad")
         self.config = MappingProxyType(values)
         self._window = deque(maxlen=values["initialization_max_samples"])
         self.last_source_stamp_ns = self.last_received_steady_ns = None
         self.last_sample = None
         self.fault_reason = None
         self.initialization_wait_reason = "no_samples"
+        self.last_initialization_model_check = None
         self.window_resets = self.window_evictions = 0
 
     @property
@@ -278,6 +365,11 @@ class CausalRawAttitude:
         if _norm(gyro) > cfg["initialization_gyro_max_norm_radps"]:
             self._clear_window("initialization_gyro_not_stationary")
             return None
+        if _norm(force) == 0.:
+            # A finite zero vector is an unqualified startup observation, not
+            # a late _unit exception that accidentally latches a sensor fault.
+            self._clear_window("initialization_zero_specific_force")
+            return None
         if len(self._window) == self._window.maxlen:
             self.window_evictions += 1
         self._window.append((stamp, receipt, gyro, force))
@@ -300,14 +392,54 @@ class CausalRawAttitude:
         if count < cfg["initialization_min_samples"] or duration < cfg["initialization_duration_s"]:
             self.initialization_wait_reason = "initialization_window_incomplete"
             return None
-        up = _unit(mean_f)
-        held = tuple(gyro[i] - mean_g[i] for i in range(3))
+        rows = tuple(self._window)
+        span_ns = stamp - rows[0][0]
+        groups = [[] for _ in range(4)]
+        for index, row in enumerate(rows):
+            # Exact integer source boundaries; no duplicated boundary samples.
+            groups[min(3, 4 * (row[0] - rows[0][0]) // span_ns)].append(index)
+        if min(len(group) for group in groups) < 2:
+            self.initialization_wait_reason = "initialization_source_quarters_incomplete"
+            return None  # Keep the window and source frontier; do not reset time.
+        training = groups[0] + groups[1] + groups[2]
+        bias = _mean_vector(tuple(rows[index][2] for index in training))
+        heldout_mean = _mean_vector(tuple(rows[index][2] for index in groups[3]))
+        directions = _transport_directions(rows, bias)
+        centers = tuple(_unit(_mean_vector(tuple(directions[index] for index in group)))
+                        for group in groups)
+        training_up = _unit(_mean_vector(tuple(directions[index] for index in training)))
+        heldout_error = _direction_angle(training_up, centers[3])
+        # Pairwise block diameter also bounds each block center relative to the
+        # final positive-weight direction mean; the holdout cannot move a gate.
+        block_error = max(_direction_angle(centers[i], centers[j])
+                          for i in range(4) for j in range(i + 1, 4))
+        difference = tuple(heldout_mean[i] - bias[i] for i in range(3))
+        parallel = math.fsum(difference[i] * training_up[i] for i in range(3))
+        perpendicular = _norm(tuple(difference[i] - parallel * training_up[i] for i in range(3)))
+        bias_angle = perpendicular * duration
+        budget = cfg["initialization_direction_error_rad"]
+        reason = ("initialization_direction_model_inconsistent"
+                  if max(heldout_error, block_error) > budget else
+                  "initialization_bias_not_stationary" if bias_angle > budget else "accepted")
+        blocks = tuple(InitializationBlock(rows[group[0]][0], rows[group[-1]][0],
+            rows[group[0]][1], rows[group[-1]][1], len(group),
+            _mean_vector(tuple(rows[index][2] for index in group)), centers[part])
+            for part, group in enumerate(groups))
+        check = InitializationModelCheck(stamp, budget, bias, heldout_mean, training_up,
+            centers[3], heldout_error, block_error, perpendicular, bias_angle, blocks,
+            reason == "accepted", reason)
+        self.last_initialization_model_check = check
+        if not check.passed:
+            self._clear_window(reason)
+            return None
+        up = _unit(_mean_vector(directions))
+        held = tuple(gyro[i] - bias[i] for i in range(3))
         _heading(up, held, cfg["minimum_heading_denominator"])
         initialization = InitializationEvidence(
             self._window[0][0], stamp, self._window[0][1], receipt, count, duration,
             mean_f, mean_g, gravity, accel_spread,
-            max(_norm(row[2]) for row in self._window), gyro_spread)
-        result = AttitudeSample(stamp, receipt, up, mean_g, held, initialization,
+            max(_norm(row[2]) for row in self._window), gyro_spread, check)
+        result = AttitudeSample(stamp, receipt, up, bias, held, initialization,
                                 cfg["minimum_heading_denominator"])
         self._window.clear()
         self.initialization_wait_reason = None
@@ -369,6 +501,8 @@ class CausalRawAttitude:
                     last_source_stamp_ns=self.last_source_stamp_ns,
                     last_received_steady_ns=self.last_received_steady_ns,
                     initialization_wait_reason=self.initialization_wait_reason,
+                    last_initialization_model_check=(None if self.last_initialization_model_check is None
+                                                     else asdict(self.last_initialization_model_check)),
                     retained_initialization_samples=len(self._window),
                     window_resets=self.window_resets, window_evictions=self.window_evictions,
                     dynamic_acceleration_used=False, ins_orientation_used=False, gnss_used=False)

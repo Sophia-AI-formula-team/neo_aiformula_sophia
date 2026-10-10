@@ -41,6 +41,8 @@ def map_state(grid):
     return {"candidate_votes": dict(grid.candidate_votes),
             "candidate_reliable_votes": dict(grid.candidate_reliable_votes),
             "confirmed_keys": set(grid.confirmed_keys),
+            "measured_means": dict(grid._cell_means),
+            "geometry_generation": grid._geometry_generation,
             "last_stamp_ns": grid.last_stamp_ns}
 
 
@@ -178,7 +180,12 @@ class Harness:
         points = self.points if points is None else points
         world = transform_local_points(points, *row["pose_xyyaw"])
         keys = self.expected_map.points_to_unique_keys(world)
-        self.expected_map.update(keys, keys, stamp_ns=row["stamp_ns"])
+        # The copied pre-transaction map now explicitly owns measured geometry.
+        # Keep the independent key/vote expectation and every atomicity check;
+        # supply actual current measurements instead of falling back to centers.
+        geometry = self.expected_map.prepare_geometry(world, row["stamp_ns"])
+        np.testing.assert_array_equal(geometry.keys, keys)
+        self.expected_map.update(keys, keys, stamp_ns=row["stamp_ns"], geometry=geometry)
         assert map_state(self.engine._map) == map_state(self.expected_map)
         assert len(self.engine._trace) == len(self.before["trace"]) + 1
         self.update.assert_called_once()

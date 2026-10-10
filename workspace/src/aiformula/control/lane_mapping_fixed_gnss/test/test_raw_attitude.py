@@ -54,6 +54,7 @@ def test_defaults_are_engineering_admission_not_vehicle_or_timeout_changes():
         "initialization_accel_max_deviation_mps2": .05,
         "initialization_gyro_max_norm_radps": .02,
         "initialization_gyro_max_deviation_radps": .002,
+        "initialization_direction_error_rad": 2.5e-5,
         "minimum_heading_denominator": .25,
     }
 

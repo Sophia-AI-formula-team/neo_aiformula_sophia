@@ -7,6 +7,7 @@ build/load with an explicitly owned analytic frozen-map fixture.
 
 from contextlib import nullcontext
 from dataclasses import replace
+import math
 from pathlib import Path
 import sys
 from unittest.mock import Mock
@@ -57,7 +58,39 @@ def test_accumulated_correction_survives_repeat_without_reopening_initial_gate(t
     reset = LaneMapLocalizer(snapshot.consensus_xy)
     failed = reset.match(points, raw, 1800000000, prior_stamp_ns=1800000000, commit=False)
     assert not failed.accepted and failed.reason == "initial_innovation_gate"
-    assert failed.metrics["inlier_ratio"] == 1.
+    # Independent literal grouping oracle, not the production voxel/map helper.
+    # R9a stores a mean per confirmation cell: its last representative is
+    # 6.975 m, not the old 7 m grid centre. Finite support conservatively excludes
+    # the current x=7 endpoint on each straight lane; these are not bad fits or
+    # a loss of the committed .6 m correction. This does not claim full observed
+    # endpoint support is retained by the single-mean representation.
+    def grouped_means(rows, width, rounded):
+        groups = {}
+        for point in rows:
+            key = tuple(math.floor(float(v) / width + (.5 if rounded else 0.)) for v in point)
+            groups.setdefault(key, []).append(point)
+        return [tuple(math.fsum(float(p[axis]) for p in group) / len(group) for axis in (0, 1))
+                for _, group in sorted(groups.items())]
+
+    cell_means = grouped_means(points, .1, True)
+    reference = grouped_means(cell_means, .08, False)
+    current = grouped_means(points, .1, False)
+    expected_inliers = []
+    for point in current:
+        lane_x = [anchor[0] for anchor in reference if anchor[1] == point[1]]
+        if min(lane_x) <= point[0] <= max(lane_x):
+            expected_inliers.append(point)
+    snapshot_by_cell = sorted(map(tuple, snapshot.consensus_xy),
+                              key=lambda point: tuple(math.floor(float(v) / .1 + .5) for v in point))
+    np.testing.assert_allclose(snapshot_by_cell, cell_means,
+                               rtol=0., atol=1e-12)
+    assert len(cell_means) == len(reference) == len(current) == 122
+    assert len(expected_inliers) == 120
+    assert failed.metrics["nearest_correspondences_before_support"] == 122
+    assert failed.metrics["finite_support_rejected_correspondences"] == 2
+    assert failed.metrics["scan_feature_weight_sum"] == 122.
+    assert failed.metrics["inliers"] == 120
+    assert failed.metrics["inlier_ratio"] == len(expected_inliers) / len(current)
     assert failed.metrics["rmse_after_m"] < 1e-12
 
     repeat = engine.repeat_localizer()
