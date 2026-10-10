@@ -171,6 +171,9 @@ def test_near_remote_u_induced_support_cannot_follow_removed_bridge(bridge_x):
 def test_distance_temporaries_never_exceed_65536_pairs(monkeypatch, members):
     # One original rectangular query straddles the 65536-pair boundary.
     # Observe the actual temporary passed to sum, not source-code spelling.
+    # This specifically audits the retained NumPy implementation. Native
+    # construction has its own exact graph/capacity/call-proof tests.
+    monkeypatch.setattr(module, "_GRAPH_NATIVE", None)
     points = np.zeros((members, 2))
     original_sum = module.np.sum
     observed_sizes = []
