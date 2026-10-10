@@ -129,6 +129,7 @@ class TeachMapEngine:
         self._first_stamp = None
         self._first_pose = None
         self._last_seen_stamp = None
+        self._last_motion_source_stamp = None
         self._tracking_started = False
         self._snapshot = None
         self._past_direction_support = None
@@ -195,7 +196,8 @@ class TeachMapEngine:
     def _deadline(self, started):
         return (self._clock() - started) * 1000.0 > self.config["max_processing_ms"]
 
-    def _match_reference(self, scan, prior, stamp, started, scan_support, scan_sensitivity):
+    def _match_reference(self, scan, prior, stamp, started, scan_support, scan_sensitivity,
+                         motion_source_stamp_ns=None):
         refresh = (self._matcher is None or (
             self._map.last_stamp_ns != self._anchor_frontier and (
                 stamp - self._keyframe_stamp >= self.config["keyframe_refresh_s"] * 1e9
@@ -214,8 +216,11 @@ class TeachMapEngine:
         if pre_match_ms > self.config["max_processing_ms"]:
             selected.discard_pending()
             return None, None, None, timing, "processing_deadline"
-        result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
-                                scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
+        motion_kwargs = ({} if motion_source_stamp_ns is None else
+                         {"motion_source_stamp_ns": motion_source_stamp_ns})
+        prior_stamp = stamp if motion_source_stamp_ns is None else motion_source_stamp_ns
+        result = selected.match(scan, prior, stamp, prior_stamp_ns=prior_stamp, commit=False,
+                                scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity, **motion_kwargs)
         attempts.append({"reference": "candidate" if candidate is not None else "active",
                          "frontier_ns": frontier, "accepted": result.accepted,
                          "reason": result.reason, "metrics": dict(result.metrics)})
@@ -224,8 +229,8 @@ class TeachMapEngine:
             if self._deadline(started):
                 return None, None, None, dict(timing, reference_attempts=attempts), "processing_deadline"
             selected, frontier = self._matcher, self._anchor_frontier
-            result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
-                                    scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
+            result = selected.match(scan, prior, stamp, prior_stamp_ns=prior_stamp, commit=False,
+                                    scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity, **motion_kwargs)
             attempts.append({"reference": "active", "frontier_ns": frontier,
                              "accepted": result.accepted, "reason": result.reason,
                              "metrics": dict(result.metrics)})
@@ -249,7 +254,8 @@ class TeachMapEngine:
                           >= self.config["minimum_reliable_votes"] for k in keys)
         return len(self._map.confirmed_keys) + prospective <= self.config["max_confirmed_cells"]
 
-    def process(self, local_xy, sensitivity, prior_xyyaw, stamp_ns, commit_guard=None):
+    def process(self, local_xy, sensitivity, prior_xyyaw, stamp_ns, commit_guard=None,
+                motion_source_stamp_ns=None):
         started = self._clock()
         prior = np.asarray(prior_xyyaw, dtype=float)
         points, sensitivity = np.asarray(local_xy, dtype=float), np.asarray(sensitivity, dtype=float)
@@ -269,6 +275,16 @@ class TeachMapEngine:
             self._latch("nonincreasing_mask_stamp")
             return self._result(False, self._fault, prior, stamp, started)
         self._last_seen_stamp = stamp
+        if motion_source_stamp_ns is None:
+            if self._last_motion_source_stamp is not None:
+                return self._result(False, "missing_motion_source_stamp", prior, stamp, started)
+        elif (isinstance(motion_source_stamp_ns, bool) or not isinstance(motion_source_stamp_ns, Integral)
+              or not 0 < motion_source_stamp_ns < 2 ** 63 or motion_source_stamp_ns > stamp
+              or (self._last_motion_source_stamp is not None
+                  and motion_source_stamp_ns <= self._last_motion_source_stamp)):
+            return self._result(False, "invalid_or_nonincreasing_motion_source_stamp", prior, stamp, started)
+        if motion_source_stamp_ns is not None:
+            motion_source_stamp_ns = int(motion_source_stamp_ns)
         if self._first_stamp is None:
             self._first_stamp, self._first_pose = stamp, prior.copy()
         if stamp - self._first_stamp > self.config["max_duration_s"] * 1e9:
@@ -291,7 +307,7 @@ class TeachMapEngine:
         if self._tracking_started:
             selected, result, candidate, metrics, failure = self._match_reference(
                 points[sensitivity <= self.config["reliable_sensitivity"]], prior, stamp, started, points,
-                sensitivity[sensitivity <= self.config["reliable_sensitivity"]])
+                sensitivity[sensitivity <= self.config["reliable_sensitivity"]], motion_source_stamp_ns)
             if failure is not None:
                 return self._result(False, failure, prior, stamp, started, metrics)
             pose, reason = result.pose_xyyaw, "matched_past_consensus"
@@ -335,6 +351,7 @@ class TeachMapEngine:
                 self._latch("unexpected_map_capacity")
                 return self._result(False, self._fault, prior, stamp, started, metrics)
             self._trace.append(np.asarray(pose, dtype=float).copy())
+            self._last_motion_source_stamp = motion_source_stamp_ns
             # The entire preceding stable observation supplies paint direction
             # only, never an unconfirmed reference position. Publish it in the
             # same guarded transaction; a rejected/current frame cannot help

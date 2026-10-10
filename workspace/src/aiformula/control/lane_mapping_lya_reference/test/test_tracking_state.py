@@ -41,7 +41,9 @@ def test_capture_is_constant_size_no_anchor_or_index_work(tracked, monkeypatch):
     monkeypatch.setattr(localization, "_FrozenIndex", forbidden)
     state = localizer.capture_tracking_state()
     assert {field.name for field in fields(state)} == {
-        "config", "correction_se2", "last_accepted_stamp_ns", "last_seen_stamp_ns"}
+        "config", "correction_se2", "last_accepted_stamp_ns", "last_seen_stamp_ns",
+        "motion_information"}
+    assert state.motion_information is None  # Explicit legacy calls create no motion state.
     assert state.last_accepted_stamp_ns == state.last_seen_stamp_ns == 300000000
     np.testing.assert_allclose(state.correction_se2, [0., -.3, 0.], atol=1e-12)
 

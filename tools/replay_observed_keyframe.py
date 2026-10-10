@@ -168,7 +168,7 @@ def map_prior(raw, origin):
                      math.atan2(math.sin(raw[2] - origin[2]), math.cos(raw[2] - origin[2]))])
 
 
-def replay_fixture(fixture_path, repo, revision, output):
+def replay_fixture(fixture_path, repo, revision, output, *, motion_factor=False):
     fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     if fixture["schema_version"] != 1 or fixture["kind"] != "observed_mask_wheel_gyro_prefix":
         raise ValueError("unsupported fixture")
@@ -213,7 +213,8 @@ def replay_fixture(fixture_path, repo, revision, output):
             if image.format != "PNG" or image.size != (camera["width"], camera["height"]):
                 raise ValueError("invalid fixture PNG")
             points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(image.convert("L")), 127)
-        result = engine.process(points, sensitivity, prior, stamp)
+        motion_kwargs = ({"motion_source_stamp_ns": accepted.stamp_ns} if motion_factor else {})
+        result = engine.process(points, sensitivity, prior, stamp, **motion_kwargs)
         if engine._matcher is not None and dict(engine._matcher.config) != default_matcher:
             raise ValueError("matcher gates differ from production defaults")
         frontier = result["matched_against_frontier_ns"]
@@ -231,6 +232,7 @@ def replay_fixture(fixture_path, repo, revision, output):
                              "line_endings_only" if expected in (actual["lf"], actual["crlf"]) else
                              "different_content")
     report = dict(schema_version=1, kind="offline_observed_prefix_core_regression",
+                  motion_factor_enabled=bool(motion_factor),
                   fixture_sha256=sha(fixture_path.read_bytes()), source_sha256=hashes,
                   source_line_ending_hashes=text_hashes, source_equivalence_to_recording=equivalence,
                   source_revision=resolved_revision, source_mode="git_blob" if revision else "worktree",
@@ -267,6 +269,8 @@ def main():
     replay.add_argument("--fixture", type=Path, required=True)
     replay.add_argument("--repo", type=Path, required=True)
     replay.add_argument("--revision", help="Optional immutable Git source; otherwise current worktree")
+    replay.add_argument("--motion-factor", action="store_true",
+                        help="Pass the real past motion source stamp to the new fusion core")
     for child in (export, replay):
         child.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -275,7 +279,8 @@ def main():
     if args.operation == "export":
         result = export_fixture(args.backend, args.unity, args.output)
     else:
-        result = replay_fixture(args.fixture, args.repo, args.revision, args.output)
+        result = replay_fixture(args.fixture, args.repo, args.revision, args.output,
+                                motion_factor=args.motion_factor)
     print(json.dumps(result, allow_nan=False))
 
 

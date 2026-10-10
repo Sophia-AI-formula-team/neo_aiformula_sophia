@@ -1,18 +1,34 @@
 """Optional NumPy/Pillow evidence checks, separate from standard-library handoff tests."""
 import json
 import math
+import contextlib
+import io
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import sys
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from replay_observed_keyframe import map_prior, pose_digest, source_hashes, source_ns, write_new
+import replay_observed_keyframe as replay
 
 
 class ObservedFixtureHelpers(unittest.TestCase):
+    def test_cli_motion_factor_is_explicit_and_historical_default_is_preserved(self):
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "not-written.json"
+                args = ["replay", "replay", "--fixture", "fixture.json", "--repo", ".",
+                        "--output", str(output)] + (["--motion-factor"] if enabled else [])
+                with patch("sys.argv", args), patch.object(replay, "replay_fixture", return_value={}) as call:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        replay.main()
+                self.assertEqual(call.call_args.kwargs, {"motion_factor": enabled})
+                self.assertFalse(output.exists())
+
     def test_source_time_keeps_original_rounding_and_positive_epoch(self):
         self.assertEqual(source_ns(0.), 1_000_000_000)
         self.assertEqual(source_ns(5.659999873), 6_659_999_873)

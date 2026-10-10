@@ -254,7 +254,8 @@ def test_committed_state_handoff_never_serializes_or_restores_scan_geometry():
     assert source.match(lanes(), [0., .05, 0.], 1).accepted
     state = source.capture_tracking_state()
     assert set(state.__dataclass_fields__) == {
-        "config", "correction_se2", "last_accepted_stamp_ns", "last_seen_stamp_ns"}
+        "config", "correction_se2", "last_accepted_stamp_ns", "last_seen_stamp_ns", "motion_information"}
+    assert state.motion_information is None  # Legacy acquisition carries no motion factor or scan cache.
     repeated = LaneMapLocalizer.from_tracking_state(source.anchor_points, state)
     assert repeated._scan_geometry_index is None
     assert repeated.capture_tracking_state() == state

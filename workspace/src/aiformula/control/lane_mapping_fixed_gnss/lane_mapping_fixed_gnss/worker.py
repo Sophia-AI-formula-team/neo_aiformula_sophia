@@ -89,7 +89,8 @@ class MapWorker:
             local, sensitivity = self._project(job)
             if kind == "teach":
                 envelope["result"] = self.engine.process(local, sensitivity, job["prior"],
-                    job["stamp_ns"], commit_guard=lambda: self.guard(job))
+                    job["stamp_ns"], commit_guard=lambda: self.guard(job),
+                    motion_source_stamp_ns=job["prior_stamp_ns"])
                 if time.monotonic_ns() - self.last_export_ns > 500000000:
                     # A copy from the worker's own consensus, not an optimistic
                     # per-frame overlay presented as a confirmed map.
@@ -100,7 +101,8 @@ class MapWorker:
                     raise ValueError("repeat map is not loaded")
                 result = self.matcher.match(local[sensitivity <= 0.1], job["prior"],
                     job["stamp_ns"], prior_stamp_ns=job["prior_stamp_ns"], commit=False,
-                    scan_support_xy=local, scan_sensitivity=sensitivity[sensitivity <= 0.1])
+                    scan_support_xy=local, scan_sensitivity=sensitivity[sensitivity <= 0.1],
+                    motion_source_stamp_ns=job["prior_stamp_ns"])
                 job["proposal_correction"] = tuple(float(v) for v in result.correction_se2)
                 committed = False
                 try:

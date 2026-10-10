@@ -90,6 +90,14 @@ DEFAULT_CONFIG = {
     "max_total_translation_m": 1.0,
     "max_total_yaw_rad": 0.25,
     "runtime_budget_ms": 40.0,
+    # Engineering information model, NOT measured sensor/map covariance.
+    # It is enabled only by an explicit, genuinely paired motion source stamp.
+    "motion_visual_frame_sigma_m": 0.05,
+    "motion_lateral_noise_m_sqrt_s": 0.05,
+    "motion_yaw_noise_rad_sqrt_s": 0.002,
+    "motion_initial_lateral_sigma_m": 0.05,
+    "motion_initial_yaw_sigma_rad": 0.02,
+    "motion_visual_reference_period_s": 0.1,
     "refinement_resolution_m": 0.10,
     "refinement_min_frame_votes": 3,
     "refinement_window_s": 10.0,
@@ -126,6 +134,19 @@ def _configuration(config):
             result[key] = int(value)
         else:
             result[key] = float(value)
+    # These new engineering parameters become variances/information. A finite
+    # positive input alone can still overflow when squared, underflow to zero,
+    # or produce an infinite reciprocal. Reject that configuration up front.
+    for key in ("motion_visual_frame_sigma_m", "motion_lateral_noise_m_sqrt_s",
+                "motion_yaw_noise_rad_sqrt_s", "motion_initial_lateral_sigma_m",
+                "motion_initial_yaw_sigma_rad", "motion_visual_reference_period_s"):
+        try:
+            value = result[key] if key == "motion_visual_reference_period_s" else result[key] ** 2
+            reciprocal = 1.0 / value
+        except (OverflowError, ZeroDivisionError) as error:
+            raise ValueError("motion setting has unrepresentable variance/information: " + key) from error
+        if not (math.isfinite(value) and value > 0 and math.isfinite(reciprocal) and reciprocal > 0):
+            raise ValueError("motion setting has unrepresentable variance/information: " + key)
     for key in ("normal_max_variance_ratio", "min_overlap_ratio",
                 "normal_diversity_ratio", "observable_eigen_ratio"):
         if result[key] > 1:
@@ -307,6 +328,65 @@ def _line_weights(points, normals, support_index, support_ids, cfg):
 
 
 @dataclass(frozen=True)
+class MotionInformationState:
+    """Committed 2-D engineering information in raw-heading lateral/yaw axes.
+
+    This is a projected, short-step motion regularizer, not a calibrated full
+    IMU covariance or a model of the pose/map cross correlation. Immutable
+    tuples keep candidate, repeat and background handoffs independent.
+    """
+
+    source_stamp_ns: int
+    raw_prior_xyyaw: tuple
+    covariance: tuple
+
+    def __post_init__(self):
+        if (isinstance(self.source_stamp_ns, bool) or not isinstance(self.source_stamp_ns, Integral)
+                or not 0 < self.source_stamp_ns < 2 ** 63):
+            raise ValueError("motion information requires a positive integer source stamp")
+        prior = _pose(self.raw_prior_xyyaw)
+        covariance = np.asarray(self.covariance, dtype=np.float64)
+        if (covariance.shape != (2, 2) or not np.all(np.isfinite(covariance))
+                or not np.allclose(covariance, covariance.T, rtol=0, atol=1e-14)
+                or np.min(np.linalg.eigvalsh(covariance)) <= 0):
+            raise ValueError("motion information covariance must be finite symmetric positive definite")
+        object.__setattr__(self, "source_stamp_ns", int(self.source_stamp_ns))
+        object.__setattr__(self, "raw_prior_xyyaw", tuple(float(v) for v in prior))
+        object.__setattr__(self, "covariance", tuple(tuple(float(v) for v in row) for row in covariance))
+
+
+def _motion_prediction(state, prior, correction_yaw, source_stamp_ns, config):
+    """Pure two-mode propagation; all time is actual source time, never frames.
+
+    F projects the old lateral error into the current raw-heading plane and
+    propagates yaw error along the corrected odometry increment. Q is the
+    continuous straight short-step model, including lateral/yaw correlation.
+    Forward uncertainty and gyro bias are not estimated. No time clipping or
+    covariance floor is hidden here; external source/watchdog checks remain.
+    """
+    dt = (source_stamp_ns - state.source_stamp_ns) * 1e-9
+    if not math.isfinite(dt) or dt <= 0:
+        raise ValueError("motion source must strictly increase after commit")
+    old = np.asarray(state.raw_prior_xyyaw)
+    normal = np.array([-math.sin(prior[2]), math.cos(prior[2])])
+    previous_normal = np.array([-math.sin(old[2]), math.cos(old[2])])
+    displacement = _rotation(correction_yaw) @ (prior[:2] - old[:2])
+    lever = float(normal @ np.array([-displacement[1], displacement[0]]))
+    transition = np.array([[float(normal @ previous_normal), lever], [0., 1.]])
+    q_lat = config["motion_lateral_noise_m_sqrt_s"] ** 2
+    q_yaw = config["motion_yaw_noise_rad_sqrt_s"] ** 2
+    # v*dt == lever. This form avoids dividing by a tiny but valid source dt.
+    process = np.array([[q_lat * dt + lever * lever * q_yaw * dt / 3.,
+                         lever * q_yaw * dt / 2.],
+                        [lever * q_yaw * dt / 2., q_yaw * dt]])
+    covariance = transition @ np.asarray(state.covariance) @ transition.T + process
+    covariance = (covariance + covariance.T) * .5
+    if not np.all(np.isfinite(covariance)) or np.min(np.linalg.eigvalsh(covariance)) <= 0:
+        raise ValueError("nonfinite motion information propagation")
+    return covariance, dt
+
+
+@dataclass(frozen=True)
 class CommittedLocalizationState:
     """Small immutable same-session tracking handoff, never map evidence.
 
@@ -319,6 +399,7 @@ class CommittedLocalizationState:
     correction_se2: tuple
     last_accepted_stamp_ns: object
     last_seen_stamp_ns: object
+    motion_information: object = None
 
     def __post_init__(self):
         config = MappingProxyType(_configuration(self.config))
@@ -335,6 +416,11 @@ class CommittedLocalizationState:
                 self.last_seen_stamp_ns is None
                 or self.last_accepted_stamp_ns > self.last_seen_stamp_ns):
             raise ValueError("committed tracking timestamp cannot be newer than seen timestamp")
+        if self.motion_information is not None and (
+                not isinstance(self.motion_information, MotionInformationState)
+                or self.last_accepted_stamp_ns is None
+                or self.motion_information.source_stamp_ns > self.last_accepted_stamp_ns):
+            raise ValueError("motion information must belong to a committed past pose")
         object.__setattr__(self, "config", config)
         object.__setattr__(self, "correction_se2", tuple(float(value) for value in correction))
 
@@ -1024,6 +1110,8 @@ class LaneMapLocalizer:
         self.committed_frames = 0
         self._pending_result = None
         self._pending_data = None
+        self._pending_motion_information = None
+        self._motion_information = None
         self._refined_votes = {}
         self._refinement_growth_stopped = False
         self._refinement_global_rejections = 0
@@ -1054,6 +1142,7 @@ class LaneMapLocalizer:
         candidate._correction = np.array(state.correction_se2, dtype=np.float64)
         candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
         candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
+        candidate._motion_information = state.motion_information
         # Pure current-mask geometry memoization, not pose/map evidence. The
         # next index rechecks every dependency against its own current points.
         # Sharing this immutable source does not inherit a pending match.
@@ -1064,7 +1153,7 @@ class LaneMapLocalizer:
         """Copy only constant-size committed tracking state, with no index work."""
         return CommittedLocalizationState(
             self.config, tuple(self._correction),
-            self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
+            self.last_accepted_stamp_ns, self.last_seen_stamp_ns, self._motion_information)
 
     @classmethod
     def from_tracking_state(cls, anchor_xy, state, anchor_support_xy=None, anchor_support_stamp_ns=None):
@@ -1079,6 +1168,7 @@ class LaneMapLocalizer:
         candidate._correction = np.array(state.correction_se2, dtype=np.float64)
         candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
         candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
+        candidate._motion_information = state.motion_information
         return candidate
 
     def matches_anchor_source(self, anchor_xy):
@@ -1098,6 +1188,7 @@ class LaneMapLocalizer:
         """Revoke an uncommitted proposal after a caller's deadline/guard fails."""
         self._pending_result = None
         self._pending_data = None
+        self._pending_motion_information = None
 
     def refined_points_and_votes(self):
         if not self._refined_votes:
@@ -1150,10 +1241,12 @@ class LaneMapLocalizer:
             else:
                 self._refined_votes[key] = self._refinement.candidate_votes[key]
         self._correction = correction.copy()
+        self._motion_information = self._pending_motion_information
         self.last_accepted_stamp_ns = stamp
         self.committed_frames += 1
         self._pending_data = None
         self._pending_result = None
+        self._pending_motion_information = None
         return True
 
     def _correspondences(self, local, estimate, scan_normals=None):
@@ -1168,7 +1261,7 @@ class LaneMapLocalizer:
         return world, rotated, selected, normals, residual
 
     def match(self, local_xy, prior_xyyaw, stamp_ns, prior_stamp_ns=None, commit=True,
-              scan_support_xy=None, scan_sensitivity=None):
+              scan_support_xy=None, scan_sensitivity=None, motion_source_stamp_ns=None):
         """Propose a point-to-line fit using only this mask and the frozen anchor.
 
         Strictly increasing mask stamps prevent frame-vote replay.  Optional
@@ -1178,11 +1271,16 @@ class LaneMapLocalizer:
         ``scan_support_xy`` is optional SAME-current-mask geometry before the
         reliable-sensitivity cut. It defines local line directions only; those
         extra points are never fit, voted as inliers or used as old-map evidence.
+        ``motion_source_stamp_ns`` explicitly enables the engineering motion
+        factor. It is the source of this raw prior, not the mask/receipt clock.
+        Once committed, omitting it is an error, including after keyframe or
+        repeat handoff. The first motion-aware acquisition remains visual-only.
         """
         started = time.perf_counter_ns()
         cfg = self.config
         self._pending_result = None
         self._pending_data = None
+        self._pending_motion_information = None
         metrics = {"graph_backend": graph_backend_info(), "anchor_points": len(self._anchor),
                    "anchor_line_points": int(np.sum(self._index.normal_valid)),
                    "anchor_multiscale_line_points": int(np.sum(
@@ -1211,6 +1309,14 @@ class LaneMapLocalizer:
         prior = None
         predicted = np.zeros(3, dtype=np.float64)
         source_stamp = int(stamp_ns) if isinstance(stamp_ns, Integral) and not isinstance(stamp_ns, bool) else 0
+        motion_covariance = None
+        motion_precision = None
+        motion_dt = None
+        motion_posterior = None
+        motion_next_state = None
+        metrics.update(motion_factor_enabled=motion_source_stamp_ns is not None,
+                       motion_information_model="engineering_projected_lateral_yaw_not_calibrated_covariance",
+                       motion_source_stamp_ns=None, motion_source_stamp_invalid=False)
 
         def finish(reason, accepted=False, estimate=None, world=None):
             elapsed = (time.perf_counter_ns() - started) / 1e6
@@ -1229,6 +1335,7 @@ class LaneMapLocalizer:
                 self.accepted_frames += 1
                 self._pending_result = result
                 self._pending_data = (source_stamp, correction.copy(), world.copy())
+                self._pending_motion_information = motion_next_state
                 if commit:
                     self.commit(result)
             else:
@@ -1259,6 +1366,35 @@ class LaneMapLocalizer:
             if (not isinstance(prior_stamp_ns, Integral) or isinstance(prior_stamp_ns, bool)
                     or not 0 < prior_stamp_ns <= source_stamp):
                 return finish("future_or_invalid_prior_stamp")
+        if motion_source_stamp_ns is None:
+            if self._motion_information is not None:
+                return finish("missing_motion_source_stamp")
+        else:
+            if (isinstance(motion_source_stamp_ns, bool) or not isinstance(motion_source_stamp_ns, Integral)
+                    or not 0 < motion_source_stamp_ns < 2 ** 63
+                    or motion_source_stamp_ns > source_stamp
+                    or (prior_stamp_ns is not None and motion_source_stamp_ns != prior_stamp_ns)):
+                metrics["motion_source_stamp_invalid"] = True
+                return finish("future_or_invalid_motion_source_stamp")
+            motion_source_stamp_ns = int(motion_source_stamp_ns)
+            metrics["motion_source_stamp_ns"] = motion_source_stamp_ns
+            if cfg["allow_longitudinal_correction"]:
+                return finish("motion_information_requires_lateral_mode")
+            if self._motion_information is None:
+                motion_posterior = np.diag([cfg["motion_initial_lateral_sigma_m"] ** 2,
+                                           cfg["motion_initial_yaw_sigma_rad"] ** 2])
+                metrics["motion_factor_initialization"] = True
+            else:
+                if motion_source_stamp_ns <= self._motion_information.source_stamp_ns:
+                    return finish("nonincreasing_motion_source_stamp")
+                try:
+                    motion_covariance, motion_dt = _motion_prediction(
+                        self._motion_information, prior, self._correction[2], motion_source_stamp_ns, cfg)
+                    motion_precision = np.linalg.inv(motion_covariance)
+                except (ValueError, FloatingPointError, np.linalg.LinAlgError):
+                    return finish("invalid_motion_information")
+                metrics.update(motion_factor_initialization=False, motion_interval_s=motion_dt,
+                               motion_predicted_covariance=motion_covariance.tolist())
         metrics["input_scan_points"] = len(scan)
         if not len(self._anchor):
             return finish("empty_anchor")
@@ -1380,7 +1516,29 @@ class LaneMapLocalizer:
                         (predicted[:2] - prior[:2]) @ dominant_normal)
                     continue
             vectors = eigenvectors[:, observed]
-            step = -(vectors @ ((vectors.T @ gradient) / eigenvalues[observed]))
+            if motion_precision is None:
+                step = -(vectors @ ((vectors.T @ gradient) / eigenvalues[observed]))
+            else:
+                # The rank above is VISUAL ONLY. A prior may regularize an
+                # observable fit, never turn a rejected visual scan into a pose.
+                # z_solver = [lateral_m, rotation_scale_m * yaw_rad].
+                motion_jacobian = np.diag([1., 1. / cfg["rotation_scale_m"]])
+                motion_residual = np.array([float((estimate[:2] - predicted[:2]) @ dominant_normal),
+                                            _wrap(estimate[2] - predicted[2])])
+                # A pause or rejected-frame gap grows motion uncertainty, not
+                # the evidence supplied by this one image. Faster-than-reference
+                # frames share one frame's information over the reference time.
+                visual_interval = min(motion_dt, cfg["motion_visual_reference_period_s"])
+                visual_scale = (visual_interval / cfg["motion_visual_reference_period_s"] /
+                                (weight_sum * cfg["motion_visual_frame_sigma_m"] ** 2))
+                information = visual_scale * hessian + motion_jacobian.T @ motion_precision @ motion_jacobian
+                fused_gradient = visual_scale * gradient + motion_jacobian.T @ motion_precision @ motion_residual
+                try:
+                    step = -np.linalg.solve(information, fused_gradient)
+                except np.linalg.LinAlgError:
+                    return finish("invalid_motion_information")
+                metrics["motion_visual_information_scale"] = float(visual_scale)
+                metrics["motion_visual_interval_s"] = float(visual_interval)
             full_step = basis @ step
             full_step[2] /= cfg["rotation_scale_m"]
             estimate[:2] += full_step[:2]
@@ -1392,7 +1550,7 @@ class LaneMapLocalizer:
                 break
             if (time.perf_counter_ns() - started) / 1e6 > cfg["runtime_budget_ms"]:
                 return finish("runtime_budget_exceeded")
-        world, _, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
+        world, final_rotated, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
         inlier = np.abs(residual) <= cfg["inlier_distance_m"]
         count = int(np.sum(inlier))
         metrics["inliers"] = count
@@ -1429,4 +1587,25 @@ class LaneMapLocalizer:
             return finish("initial_innovation_gate" if initial else "tracking_innovation_gate")
         if np.linalg.norm(total_xy) > cfg["max_total_translation_m"] or abs(total_yaw) > cfg["max_total_yaw_rad"]:
             return finish("total_correction_gate")
+        if motion_source_stamp_ns is not None:
+            if motion_precision is not None:
+                # Final information must use the final correspondences, in
+                # physical [metres, radians], not the scaled solver coordinates.
+                lever = final_rotated[selected]
+                physical_jacobian = np.column_stack((normals @ dominant_normal,
+                    normals[:, 0] * -lever[:, 1] + normals[:, 1] * lever[:, 0]))
+                weight = fit_weight[selected] * np.minimum(
+                    1., cfg["huber_delta_m"] / np.maximum(np.abs(residual), 1e-12))
+                final_visual = physical_jacobian.T @ (physical_jacobian * weight[:, None])
+                try:
+                    motion_posterior = np.linalg.inv(motion_precision + visual_scale * final_visual)
+                    motion_posterior = (motion_posterior + motion_posterior.T) * .5
+                except np.linalg.LinAlgError:
+                    return finish("invalid_motion_information")
+            try:
+                motion_next_state = MotionInformationState(
+                    motion_source_stamp_ns, tuple(prior), tuple(map(tuple, motion_posterior)))
+            except ValueError:
+                return finish("invalid_motion_information")
+            metrics["motion_posterior_covariance"] = motion_posterior.tolist()
         return finish("matched_observable_subspace", True, estimate, world[selected[inlier]])
