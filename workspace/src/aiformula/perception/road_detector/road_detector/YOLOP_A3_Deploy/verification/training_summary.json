@@ -1,0 +1,512 @@
+{
+  "tag": "a3-v14",
+  "selected_updates": 16384,
+  "completed_updates": 16384,
+  "elapsed_seconds": 10603.640999999974,
+  "stop_reason": "step_budget",
+  "metrics": {
+    "train": {
+      "samples": 180,
+      "metrics": {
+        "raw": {
+          "tp": 2881504,
+          "fp": 377428,
+          "fn": 165014,
+          "iou": 0.8415740201510188,
+          "precision": 0.884186598554373,
+          "recall": 0.9458352125278761,
+          "dice": 0.9139725158394723
+        },
+        "post": {
+          "tp": 2724855,
+          "fp": 365252,
+          "fn": 321663,
+          "iou": 0.798663157246825,
+          "precision": 0.8817995622805295,
+          "recall": 0.8944161826714958,
+          "dice": 0.8880630639806082
+        }
+      },
+      "regions": {
+        "raw/gap": {
+          "numerator": 347187,
+          "denominator": 380178,
+          "value": 0.9132222274829159
+        },
+        "raw/hidden": {
+          "numerator": 22592,
+          "denominator": 23130,
+          "value": 0.9767401642888024
+        },
+        "raw/markings": {
+          "numerator": 7322,
+          "denominator": 1610790,
+          "value": 0.004545595639406751
+        },
+        "raw/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/gap": {
+          "numerator": 320011,
+          "denominator": 380178,
+          "value": 0.841739921826092
+        },
+        "post/hidden": {
+          "numerator": 18746,
+          "denominator": 23130,
+          "value": 0.8104626026805015
+        },
+        "post/markings": {
+          "numerator": 6308,
+          "denominator": 1610790,
+          "value": 0.003916090862247717
+        },
+        "post/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        }
+      },
+      "geometry": {
+        "scenes": 180,
+        "positive_scenes": 180,
+        "measured_scenes": 180,
+        "unmeasured_scenes": 0,
+        "min_measurement_fraction": 0.56640625,
+        "min_center_coverage": 0.48717948717948717,
+        "worst_scene_width_p95": 9.0,
+        "mean_width_error": 0.5022667698004234,
+        "worst_overwidth_fraction": 0.44,
+        "bad_width_scenes": 169,
+        "clipped_predictions": 16,
+        "false_joins": 51
+      }
+    },
+    "validation": {
+      "samples": 594,
+      "metrics": {
+        "raw": {
+          "tp": 7637432,
+          "fp": 1333422,
+          "fn": 2526814,
+          "iou": 0.664259221957009,
+          "precision": 0.8513606396893763,
+          "recall": 0.7514017271915694,
+          "dice": 0.7982641324058929
+        },
+        "post": {
+          "tp": 7329945,
+          "fp": 1208489,
+          "fn": 2834301,
+          "iou": 0.6445191064418542,
+          "precision": 0.8584647957693413,
+          "recall": 0.7211499013306053,
+          "dice": 0.7838390006138157
+        }
+      },
+      "regions": {
+        "raw/gap": {
+          "numerator": 247348,
+          "denominator": 1380957,
+          "value": 0.17911346986184218
+        },
+        "raw/hidden": {
+          "numerator": 108240,
+          "denominator": 140370,
+          "value": 0.7711049369523403
+        },
+        "raw/markings": {
+          "numerator": 65915,
+          "denominator": 5383230,
+          "value": 0.012244507479710136
+        },
+        "raw/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/gap": {
+          "numerator": 189291,
+          "denominator": 1380957,
+          "value": 0.13707233462012214
+        },
+        "post/hidden": {
+          "numerator": 99584,
+          "denominator": 140370,
+          "value": 0.7094393388900763
+        },
+        "post/markings": {
+          "numerator": 42339,
+          "denominator": 5383230,
+          "value": 0.00786498069003182
+        },
+        "post/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        }
+      },
+      "geometry": {
+        "scenes": 594,
+        "positive_scenes": 594,
+        "measured_scenes": 594,
+        "unmeasured_scenes": 0,
+        "min_measurement_fraction": 0.703125,
+        "min_center_coverage": 0.1640625,
+        "worst_scene_width_p95": 10.899999999999977,
+        "mean_width_error": 0.5774455018246145,
+        "worst_overwidth_fraction": 0.4049586776859504,
+        "bad_width_scenes": 594,
+        "clipped_predictions": 59,
+        "false_joins": 137
+      }
+    },
+    "real": {
+      "samples": 32,
+      "metrics": {
+        "raw": {
+          "tp": 912357,
+          "fp": 114480,
+          "fn": 194156,
+          "iou": 0.7472254140687129,
+          "precision": 0.8885120033656754,
+          "recall": 0.8245334668458482,
+          "dice": 0.855328005249959
+        },
+        "post": {
+          "tp": 900904,
+          "fp": 149474,
+          "fn": 205609,
+          "iou": 0.7172876789329826,
+          "precision": 0.8576950393096581,
+          "recall": 0.8141829332325965,
+          "dice": 0.8353727657076783
+        }
+      },
+      "regions": {
+        "raw/gap": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/hidden": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/markings": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/gap": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/hidden": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/markings": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/empty": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        }
+      },
+      "geometry": {
+        "scenes": 32,
+        "positive_scenes": 32,
+        "measured_scenes": 32,
+        "unmeasured_scenes": 0,
+        "min_measurement_fraction": 0.421875,
+        "min_center_coverage": 0.328125,
+        "worst_scene_width_p95": 3.0,
+        "mean_width_error": 0.5284949696879021,
+        "worst_overwidth_fraction": 0.408,
+        "bad_width_scenes": 32,
+        "clipped_predictions": 0,
+        "false_joins": 15
+      }
+    },
+    "empty": {
+      "samples": 16,
+      "metrics": {
+        "raw": {
+          "tp": 0,
+          "fp": 11301,
+          "fn": 0,
+          "iou": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "dice": 0.0
+        },
+        "post": {
+          "tp": 0,
+          "fp": 5661,
+          "fn": 0,
+          "iou": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "dice": 0.0
+        }
+      },
+      "regions": {
+        "raw/gap": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/hidden": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/markings": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "raw/empty": {
+          "numerator": 11301,
+          "denominator": 6033600,
+          "value": 0.001873011137629276
+        },
+        "post/gap": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/hidden": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/markings": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "post/empty": {
+          "numerator": 5661,
+          "denominator": 6033600,
+          "value": 0.0009382458233890214
+        }
+      },
+      "geometry": {
+        "scenes": 16,
+        "positive_scenes": 0,
+        "measured_scenes": 0,
+        "unmeasured_scenes": 0,
+        "min_measurement_fraction": 0.0,
+        "min_center_coverage": 0.0,
+        "worst_scene_width_p95": null,
+        "mean_width_error": null,
+        "worst_overwidth_fraction": null,
+        "bad_width_scenes": 0,
+        "clipped_predictions": 0,
+        "false_joins": 0
+      }
+    },
+    "objects": {
+      "real": {
+        "1": {
+          "tp": 18,
+          "fp": 7,
+          "fn": 28,
+          "recall": 0.391304347826087,
+          "precision": 0.72,
+          "f1": 0.5070422535211268
+        },
+        "3": {
+          "tp": 33,
+          "fp": 12,
+          "fn": 18,
+          "recall": 0.6470588235294118,
+          "precision": 0.7333333333333333,
+          "f1": 0.6875
+        },
+        "10": {
+          "tp": 16,
+          "fp": 16,
+          "fn": 14,
+          "recall": 0.5333333333333333,
+          "precision": 0.5,
+          "f1": 0.5161290322580645
+        },
+        "91": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 25,
+          "recall": 0.24242424242424243,
+          "precision": 1.0,
+          "f1": 0.3902439024390244
+        }
+      },
+      "unity": {
+        "1": {
+          "tp": 66,
+          "fp": 1,
+          "fn": 3,
+          "recall": 0.9565217391304348,
+          "precision": 0.9850746268656716,
+          "f1": 0.9705882352941176
+        },
+        "3": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "recall": 0.0,
+          "precision": 0.0,
+          "f1": 0.0
+        },
+        "10": {
+          "tp": 100,
+          "fp": 17,
+          "fn": 21,
+          "recall": 0.8264462809917356,
+          "precision": 0.8547008547008547,
+          "f1": 0.8403361344537815
+        },
+        "91": {
+          "tp": 175,
+          "fp": 12,
+          "fn": 102,
+          "recall": 0.631768953068592,
+          "precision": 0.9358288770053476,
+          "f1": 0.7543103448275862
+        }
+      },
+      "sizes": {
+        "real": {
+          "small": {
+            "recall": 0.26506024096385544,
+            "total": 83
+          },
+          "large": {
+            "recall": 0.6883116883116883,
+            "total": 77
+          }
+        },
+        "unity": {
+          "small": {
+            "recall": 0.4,
+            "total": 195
+          },
+          "large": {
+            "recall": 0.9669117647058824,
+            "total": 272
+          }
+        }
+      },
+      "samples": 101
+    }
+  },
+  "raw_summary": {
+    "A1_original": {
+      "real_recall": 0.9785379837381034,
+      "real_iou": 0.5909492552041291,
+      "empty_fp": 0.003983359851498276,
+      "val_gap": 0.07174807035990259,
+      "near_horizontal_gap": 0.02445073518512493,
+      "solid_gap": 0.9060405211748085,
+      "dashed_gap": 0.07174807035990259
+    },
+    "V14_remote_8192": {
+      "real_recall": 0.9465573382328089,
+      "real_iou": 0.6788746544465798,
+      "empty_fp": 0.0004509745425616547,
+      "val_gap": 0.25290794716996984,
+      "near_horizontal_gap": 0.34033630155063144,
+      "solid_gap": 0.852311114683513,
+      "dashed_gap": 0.25290794716996984,
+      "real_objects": {
+        "precision": 0.7857142857142857,
+        "recall": 0.20625,
+        "f1": 0.32673267326732675
+      },
+      "unity_objects": {
+        "precision": 0.805111821086262,
+        "recall": 0.5396145610278372,
+        "f1": 0.6461538461538462
+      }
+    },
+    "V14_local_8192": {
+      "real_recall": 0.8209094696582869,
+      "real_iou": 0.7423713299143903,
+      "empty_fp": 0.0035736542031291436,
+      "val_gap": 0.24516404203751457,
+      "near_horizontal_gap": 0.2539940780268766,
+      "solid_gap": 0.7320010688240112,
+      "dashed_gap": 0.24516404203751457,
+      "real_objects": {
+        "precision": 0.5323741007194245,
+        "recall": 0.4625,
+        "f1": 0.49498327759197325
+      },
+      "unity_objects": {
+        "precision": 0.8694516971279374,
+        "recall": 0.7130620985010707,
+        "f1": 0.7835294117647059
+      }
+    },
+    "V14_local_16384": {
+      "real_recall": 0.8245343705857952,
+      "real_iou": 0.7472262330742273,
+      "empty_fp": 0.001873011137629276,
+      "val_gap": 0.17911274572633326,
+      "near_horizontal_gap": 0.15687444187753302,
+      "solid_gap": 0.7106912090673352,
+      "dashed_gap": 0.17911274572633326,
+      "real_objects": {
+        "precision": 0.6818181818181818,
+        "recall": 0.46875,
+        "f1": 0.5555555555555556
+      },
+      "unity_objects": {
+        "precision": 0.9191374663072777,
+        "recall": 0.7301927194860813,
+        "f1": 0.8138424821002387
+      }
+    }
+  },
+  "deployment_candidate": false,
+  "user_selected_for_publication": true,
+  "input_contract": {
+    "version": 1,
+    "name": "a3_original_native",
+    "min_size": 640,
+    "max_size": 1280,
+    "size_divisible": 32,
+    "resize": "torch_bilinear",
+    "padding": "bottom_right_zero_normalized",
+    "normalize": "imagenet",
+    "restore": "torch_logits_crop_resize_align_corners_false",
+    "threshold": 0.5
+  },
+  "source_checkpoint_sha256": "aad5df29a3a97f959ac7f582b2d45255bd23cb2436c7e0820eb69549ad6d48a9",
+  "cohort_sha256": "fc3c8a22f6ce3d806d2678eccf605f84efd31e5f4be2738df35ecb792e09c7dc",
+  "acceptance": {
+    "real_recall_95": false,
+    "real_iou_vs_original_a1": true,
+    "empty_fp_035": true,
+    "full_legacy_gap_85": "not_retested; different geometry definition",
+    "clean_continuity": false,
+    "object_nonregression": "not_passed",
+    "orin_and_vehicle": "not_tested"
+  },
+  "scope": "32 real/16 empty/594 geometry/101 object diagnostic images; repeated holdouts, not independent final acceptance."
+}
