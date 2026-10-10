@@ -36,10 +36,11 @@ if _GRAPH_NATIVE is not None and (
         getattr(_GRAPH_NATIVE, "LOCAL_SUPPORT_API_VERSION", None) != 1 or
         getattr(_GRAPH_NATIVE, "NEAREST_API_VERSION", None) != 1 or
         getattr(_GRAPH_NATIVE, "CROSS_SECTION_WEIGHTS_API_VERSION", None) != 1 or
-        getattr(_GRAPH_NATIVE, "LOCAL_MOMENTS_API_VERSION", None) != 1 or not all(
+        getattr(_GRAPH_NATIVE, "LOCAL_MOMENTS_API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "LOCAL_GEOMETRY_API_VERSION", None) != 1 or not all(
             callable(getattr(_GRAPH_NATIVE, name, None)) for name in
             ("radius_graph", "local_support", "prepare_graph", "graph_forest", "connected_subsets",
-             "nearest_grouped", "cross_section_weights", "local_moments"))):
+             "nearest_grouped", "cross_section_weights", "local_moments", "local_geometry"))):
     raise RuntimeError("incompatible lane graph native extension; rebuild this package")
 
 
@@ -445,6 +446,17 @@ class _FrozenIndex:
         radii = [cfg["normal_radius_m"]]
         while radii[-1] < cfg["normal_max_radius_m"]:
             radii.append(min(radii[-1] * 2.0, cfg["normal_max_radius_m"]))
+        native_geometry = (_GRAPH_NATIVE is not None and self._native_graph is not None
+                           and anchor.dtype == np.float64 and anchor.ndim == 2
+                           and anchor.shape[1] == 2 and len(anchor) <= 4000
+                           and cfg["max_patch_points"] <= 2048
+                           and np.geterr()["under"] == "ignore"
+                           and np.all(np.isfinite(anchor)) and np.all(np.abs(anchor) <= 1e7))
+        if native_geometry:
+            # One immutable index snapshot serves every radius. The native
+            # routine receives original cells/patches, not a reordered cloud.
+            native_geometry_inputs = (self._native_graph, len(anchor), anchor.tobytes(),
+                                      self.components.tobytes(), self._forest_parents.tobytes())
         # Choose the SMALLEST scale passing the unchanged line-support test.
         # Thin lane marks retain small-scale geometry. A rasterized/accumulated
         # wide band may require a larger neighborhood to reveal its long axis.
@@ -479,41 +491,80 @@ class _FrozenIndex:
                 pending.clear()
                 pending_count = 0
 
-            for key, all_indices in self.cells.items():
-                indices = np.asarray(all_indices, dtype=np.int64)
-                indices = indices[requested[indices] & ~self.normal_valid[indices] & ~cached[indices]]
-                if not len(indices):
-                    continue
-                candidate_indices = self._patch(key, radius)
-                if len(candidate_indices) < cfg["normal_min_points"]:
-                    continue
-                targets = anchor[indices]
-                candidates = anchor[candidate_indices]
-                difference = candidates[None, :, :] - targets[:, None, :]
-                support = ((np.sum(difference * difference, axis=2) <= radius * radius)
-                           & (self.components[indices, None] == self.components[candidate_indices][None, :]))
-                support, counts = self._local_support(indices, candidate_indices, support, return_counts=True)
-                # These rows cannot pass at this radius. Keep them eligible for
-                # the next radius, but do not construct/eigendecompose a PCA
-                # that the unchanged support-count gate necessarily rejects.
-                enough = counts >= cfg["normal_min_points"]
-                if not np.any(enough):
-                    continue
-                indices, difference, support = indices[enough], difference[enough], support[enough]
-                counts = counts[enough].astype(np.float64)
-                means, covariance = _local_pca_moments(difference, support, counts)
-                # The covariance reduction above remains per cell, with its
-                # original candidate order. Only independent 2x2 solves are
-                # combined, in bounded batches; no cross-cell PCA is introduced.
-                start = 0
-                while start < len(indices):
-                    stop = min(len(indices), start + 256 - pending_count)
-                    pending.append((indices[start:stop], means[start:stop],
-                                    counts[start:stop], covariance[start:stop]))
-                    pending_count += stop - start
-                    start = stop
-                    if pending_count == 256:
+            if native_geometry:
+                query_parts, candidate_parts = [], []
+                query_offsets, candidate_offsets = [0], [0]
+                for key, all_indices in self.cells.items():
+                    indices = np.asarray(all_indices, dtype=np.int64)
+                    indices = indices[requested[indices] & ~self.normal_valid[indices] & ~cached[indices]]
+                    if not len(indices):
+                        continue
+                    candidate_indices = self._patch(key, radius)
+                    if len(candidate_indices) < cfg["normal_min_points"]:
+                        continue
+                    query_parts.append(indices)
+                    candidate_parts.append(candidate_indices)
+                    query_offsets.append(query_offsets[-1] + len(indices))
+                    candidate_offsets.append(candidate_offsets[-1] + len(candidate_indices))
+                if query_parts:
+                    indices = np.concatenate(query_parts)
+                    candidates = np.concatenate(candidate_parts)
+                    packed_counts, packed_means, packed_covariance = _GRAPH_NATIVE.local_geometry(
+                        *native_geometry_inputs,
+                        np.asarray(query_offsets, dtype=np.int64).tobytes(), indices.tobytes(),
+                        np.asarray(candidate_offsets, dtype=np.int64).tobytes(), candidates.tobytes(),
+                        float(radius * radius), cfg["normal_min_points"])
+                    counts = np.frombuffer(packed_counts, dtype=np.int64).reshape(len(indices))
+                    means = np.frombuffer(packed_means, dtype=np.float64).reshape(len(indices), 2)
+                    covariance = np.frombuffer(packed_covariance, dtype=np.float64).reshape(len(indices), 2, 2)
+                    enough = counts >= cfg["normal_min_points"]
+                    indices, means, covariance = indices[enough], means[enough], covariance[enough]
+                    counts = counts[enough].astype(np.float64)
+                    # Cells have disjoint targets: deferred application within
+                    # this radius cannot change later cells' eligibility. Keep
+                    # precisely the original ordered 256-row eigh batches.
+                    for start in range(0, len(indices), 256):
+                        stop = min(len(indices), start + 256)
+                        pending.append((indices[start:stop], means[start:stop],
+                                        counts[start:stop], covariance[start:stop]))
+                        pending_count = stop - start
                         flush_pca()
+            else:
+                for key, all_indices in self.cells.items():
+                    indices = np.asarray(all_indices, dtype=np.int64)
+                    indices = indices[requested[indices] & ~self.normal_valid[indices] & ~cached[indices]]
+                    if not len(indices):
+                        continue
+                    candidate_indices = self._patch(key, radius)
+                    if len(candidate_indices) < cfg["normal_min_points"]:
+                        continue
+                    targets = anchor[indices]
+                    candidates = anchor[candidate_indices]
+                    difference = candidates[None, :, :] - targets[:, None, :]
+                    support = ((np.sum(difference * difference, axis=2) <= radius * radius)
+                               & (self.components[indices, None] == self.components[candidate_indices][None, :]))
+                    support, counts = self._local_support(indices, candidate_indices, support, return_counts=True)
+                    # These rows cannot pass at this radius. Keep them eligible for
+                    # the next radius, but do not construct/eigendecompose a PCA
+                    # that the unchanged support-count gate necessarily rejects.
+                    enough = counts >= cfg["normal_min_points"]
+                    if not np.any(enough):
+                        continue
+                    indices, difference, support = indices[enough], difference[enough], support[enough]
+                    counts = counts[enough].astype(np.float64)
+                    means, covariance = _local_pca_moments(difference, support, counts)
+                    # The covariance reduction above remains per cell, with its
+                    # original candidate order. Only independent 2x2 solves are
+                    # combined, in bounded batches; no cross-cell PCA is introduced.
+                    start = 0
+                    while start < len(indices):
+                        stop = min(len(indices), start + 256 - pending_count)
+                        pending.append((indices[start:stop], means[start:stop],
+                                        counts[start:stop], covariance[start:stop]))
+                        pending_count += stop - start
+                        start = stop
+                        if pending_count == 256:
+                            flush_pca()
             # Apply this radius before deciding which rows need a larger one.
             flush_pca()
         if direction_support is not None:

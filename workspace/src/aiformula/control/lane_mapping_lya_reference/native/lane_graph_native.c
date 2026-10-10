@@ -1109,6 +1109,41 @@ fail:
 }
 
 
+/* Original slow-axis NumPy reductions: even zero-weight terms execute, in
+ * candidate order. No contraction, reassociation or projected-variance rewrite. */
+static void moments_row(const char *difference, const unsigned char *support,
+                        int columns, double mean[2], double values[4])
+{
+    int column, count = 0, i, j;
+    volatile double sum_x = 0.0, sum_y = 0.0;
+    double denominator;
+    for (column = 0; column < columns; ++column) {
+        double weight = (double)support[column];
+        volatile double x = nn_f64(difference, (Py_ssize_t)column * 2) * weight;
+        volatile double y = nn_f64(difference, (Py_ssize_t)column * 2 + 1) * weight;
+        sum_x = sum_x + x;
+        sum_y = sum_y + y;
+        count += support[column];
+    }
+    denominator = count > 0 ? (double)count : 1.0;
+    mean[0] = sum_x / denominator;
+    mean[1] = sum_y / denominator;
+    for (i = 0; i < 2; ++i) {
+        for (j = 0; j < 2; ++j) {
+            volatile double sum = 0.0;
+            for (column = 0; column < columns; ++column) {
+                double weight = (double)support[column];
+                volatile double x = nn_f64(difference, (Py_ssize_t)column * 2 + i) - mean[i];
+                volatile double y = nn_f64(difference, (Py_ssize_t)column * 2 + j) - mean[j];
+                volatile double product = x * y;
+                volatile double weighted = product * weight;
+                sum = sum + weighted;
+            }
+            values[i * 2 + j] = sum / denominator;
+        }
+    }
+}
+
 /* Per-row PCA moments only. Eigenvectors, validity gates, cell/candidate order,
  * radius selection and graph connectivity remain owned by the Python caller.
  * Native-endian f64 NxKx2 differences / uint8 NxK support are immutable bytes.
@@ -1160,37 +1195,9 @@ static PyObject *local_moments(PyObject *self, PyObject *args)
     Py_BEGIN_ALLOW_THREADS
     for (row = 0; row < rows; ++row) {
         Py_ssize_t start = (Py_ssize_t)row * columns;
-        int column, count = 0, i, j;
         double mean[2], values[4];
-        volatile double sum_x = 0.0, sum_y = 0.0;
-        double denominator;
-        for (column = 0; column < columns; ++column) {
-            Py_ssize_t at = start + column;
-            double weight = (double)(unsigned char)support[at];
-            volatile double x = nn_f64(difference, at * 2) * weight;
-            volatile double y = nn_f64(difference, at * 2 + 1) * weight;
-            sum_x = sum_x + x;
-            sum_y = sum_y + y;
-            count += (int)(unsigned char)support[at];
-        }
-        denominator = count > 0 ? (double)count : 1.0;
-        mean[0] = sum_x / denominator;
-        mean[1] = sum_y / denominator;
-        for (i = 0; i < 2; ++i) {
-            for (j = 0; j < 2; ++j) {
-                volatile double sum = 0.0;
-                for (column = 0; column < columns; ++column) {
-                    Py_ssize_t at = start + column;
-                    double weight = (double)(unsigned char)support[at];
-                    volatile double x = nn_f64(difference, at * 2 + i) - mean[i];
-                    volatile double y = nn_f64(difference, at * 2 + j) - mean[j];
-                    volatile double product = x * y;
-                    volatile double weighted = product * weight;
-                    sum = sum + weighted;
-                }
-                values[i * 2 + j] = sum / denominator;
-            }
-        }
+        moments_row(difference + start * 16, (const unsigned char *)support + start,
+                    columns, mean, values);
         memcpy(means + (Py_ssize_t)row * 16, mean, 16);
         memcpy(covariance + (Py_ssize_t)row * 32, values, 32);
     }
@@ -1203,7 +1210,185 @@ fail:
 }
 
 
+/* One-radius local geometry. CSR preserves the caller's cell/candidate order;
+ * only one Kx2 scratch row is needed, never a QxK floating-point tensor. All
+ * validation and allocation precede GIL release. The caller still owns the
+ * original 256-row eigensolver batches, smallest-radius selection and gates. */
+typedef struct {
+    SupportWork support;
+    double points[MAX_POINTS * 2];
+    int labels[MAX_POINTS];
+    double differences[MAX_CANDIDATES * 2];
+    unsigned char allowed[MAX_CANDIDATES];
+    unsigned char connected[MAX_CANDIDATES];
+    int seen[MAX_POINTS];
+} GeometryWork;
+
+static PyObject *local_geometry(PyObject *self, PyObject *args)
+{
+    PyObject *capsule, *size, *points_obj, *labels_obj, *parents_obj;
+    PyObject *qo_obj, *qi_obj, *co_obj, *ci_obj, *limit_obj, *minimum_obj;
+    PyObject *counts_obj = NULL, *means_obj = NULL, *covariance_obj = NULL, *result = NULL;
+    const char *qo, *qi, *co, *ci;
+    char *counts, *means, *covariance;
+    Py_ssize_t nqo, nqi, nco, nci, g, k, groups;
+    int64_t previous_q = 0, previous_c = 0;
+    int minimum;
+    double limit;
+    Graph graph;
+    GeometryWork *work = NULL;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOOOOOOO:local_geometry", &capsule, &size,
+            &points_obj, &labels_obj, &parents_obj, &qo_obj, &qi_obj, &co_obj,
+            &ci_obj, &limit_obj, &minimum_obj))
+        return NULL;
+    if (!PyCapsule_CheckExact(capsule)) {
+        PyErr_SetString(PyExc_TypeError, "local_geometry requires a prepared graph capsule");
+        return NULL;
+    }
+    if (!parse_graph(capsule, size, &graph) ||
+        !bounded_int(minimum_obj, "minimum_points", MAX_CANDIDATES, &minimum))
+        return NULL;
+    if (!PyFloat_CheckExact(limit_obj)) {
+        PyErr_SetString(PyExc_TypeError, "radius_squared must be a built-in float");
+        return NULL;
+    }
+    limit = PyFloat_AS_DOUBLE(limit_obj);
+    if (Py_IS_NAN(limit) || limit < 0.0) {
+        PyErr_SetString(PyExc_ValueError, "radius_squared must be nonnegative and not NaN");
+        return NULL;
+    }
+    if (!exact_bytes(points_obj, (Py_ssize_t)graph.size * 16, "points") ||
+        !exact_bytes(labels_obj, (Py_ssize_t)graph.size * 8, "component_labels") ||
+        !exact_bytes(parents_obj, (Py_ssize_t)graph.size * 8, "parents") ||
+        !nn_bytes(qo_obj, 8, &qo, &nqo, "query_offsets") ||
+        !nn_bytes(qi_obj, 8, &qi, &nqi, "query_ids") ||
+        !nn_bytes(co_obj, 8, &co, &nco, "candidate_offsets") ||
+        !nn_bytes(ci_obj, 8, &ci, &nci, "candidate_ids"))
+        return NULL;
+    /* These bounds also keep every byte product inside 32-bit Py_ssize_t. */
+    if (nqo < 1 || nqo > MAX_POINTS + 1 || nco != nqo ||
+        nqi > MAX_QUERIES || nci > (Py_ssize_t)MAX_POINTS * MAX_CANDIDATES) {
+        PyErr_SetString(PyExc_ValueError, "bounded local geometry dimensions violated");
+        return NULL;
+    }
+    groups = nqo - 1;
+    if (nn_i64(qo, 0) != 0 || nn_i64(co, 0) != 0 ||
+        nn_i64(qo, groups) != nqi || nn_i64(co, groups) != nci) {
+        PyErr_SetString(PyExc_ValueError, "CSR offsets must start at zero and end at the ID count");
+        return NULL;
+    }
+    for (g = 0; g < groups; ++g) {
+        int64_t end_q = nn_i64(qo, g + 1), end_c = nn_i64(co, g + 1);
+        if (end_q < previous_q || end_q > nqi || end_c < previous_c ||
+            end_c > nci || end_c - previous_c > MAX_CANDIDATES) {
+            PyErr_SetString(PyExc_ValueError, "CSR offsets must be monotonic and each patch at most 2048");
+            return NULL;
+        }
+        previous_q = end_q;
+        previous_c = end_c;
+    }
+    work = (GeometryWork *)PyMem_Malloc(sizeof(GeometryWork));
+    if (!work) return PyErr_NoMemory();
+    memcpy(work->points, PyBytes_AS_STRING(points_obj), (size_t)graph.size * 16);
+    for (k = 0; k < graph.size * 2; ++k) {
+        if (!Py_IS_FINITE(work->points[k]) || fabs(work->points[k]) > 1e7) {
+            PyErr_SetString(PyExc_ValueError, "points must be finite and bounded by 1e7");
+            goto fail;
+        }
+    }
+    if (!copy_support_ids(labels_obj, graph.size, graph.size, "component_labels", work->labels) ||
+        !validate_support_forest(&graph, parents_obj, &work->support))
+        goto fail;
+    memset(work->seen, 0, sizeof(work->seen));
+    for (k = 0; k < nqi; ++k) {
+        int64_t id = nn_i64(qi, k);
+        if (id < 0 || id >= graph.size || work->seen[id]) {
+            PyErr_SetString(PyExc_ValueError, "query IDs must be in [0, n) and globally unique");
+            goto fail;
+        }
+        work->seen[id] = 1;
+    }
+    /* Epoch marks detect duplicates within each group, permitting reuse across
+       groups, including groups with no queries. No unvalidated IDs survive. */
+    memset(work->seen, 0, sizeof(work->seen));
+    for (g = 0; g < groups; ++g) {
+        for (k = (Py_ssize_t)nn_i64(co, g); k < nn_i64(co, g + 1); ++k) {
+            int64_t id = nn_i64(ci, k);
+            if (id < 0 || id >= graph.size || work->seen[id] == g + 1) {
+                PyErr_SetString(PyExc_ValueError, "candidate IDs must be in [0, n) and unique within each group");
+                goto fail;
+            }
+            work->seen[id] = (int)g + 1;
+        }
+    }
+    counts_obj = PyBytes_FromStringAndSize(NULL, nqi * 8);
+    means_obj = PyBytes_FromStringAndSize(NULL, nqi * 16);
+    covariance_obj = PyBytes_FromStringAndSize(NULL, nqi * 32);
+    if (!counts_obj || !means_obj || !covariance_obj) goto fail;
+    counts = PyBytes_AS_STRING(counts_obj);
+    means = PyBytes_AS_STRING(means_obj);
+    covariance = PyBytes_AS_STRING(covariance_obj);
+    memset(means, 0, (size_t)nqi * 16);
+    memset(covariance, 0, (size_t)nqi * 32);
+    /* args retain every immutable byte object and graph capsule. Pure C only
+       below: no Python API, allocation, borrowed mutable buffers or callbacks. */
+    Py_BEGIN_ALLOW_THREADS
+    for (g = 0; g < groups; ++g) {
+        Py_ssize_t begin = (Py_ssize_t)nn_i64(co, g);
+        int columns = (int)(nn_i64(co, g + 1) - begin), column;
+        for (column = 0; column < columns; ++column) {
+            int id = (int)nn_i64(ci, begin + column);
+            work->support.candidates[column] = id;
+            work->support.positions[id] = column;
+        }
+        for (column = 0; column < columns; ++column) {
+            int parent = work->support.parents[work->support.candidates[column]];
+            work->support.parent_positions[column] = parent < 0 ? -1 : work->support.positions[parent];
+        }
+        for (k = (Py_ssize_t)nn_i64(qo, g); k < nn_i64(qo, g + 1); ++k) {
+            int id = (int)nn_i64(qi, k);
+            int64_t count;
+            work->support.targets[0] = id;
+            for (column = 0; column < columns; ++column) {
+                int candidate = work->support.candidates[column];
+                volatile double dx = work->points[2 * candidate] - work->points[2 * id];
+                volatile double dy = work->points[2 * candidate + 1] - work->points[2 * id + 1];
+                volatile double xx = dx * dx, yy = dy * dy;
+                volatile double squared = xx + yy;
+                work->differences[2 * column] = dx;
+                work->differences[2 * column + 1] = dy;
+                work->allowed[column] = (unsigned char)(squared <= limit &&
+                    work->labels[candidate] == work->labels[id]);
+            }
+            support_rows(&graph, &work->support, columns, 1, work->allowed,
+                         work->connected, (unsigned char *)(counts + k * 8));
+            memcpy(&count, counts + k * 8, 8);
+            if (count >= minimum) {
+                double mean[2], values[4];
+                moments_row((const char *)work->differences, work->connected, columns, mean, values);
+                memcpy(means + k * 16, mean, 16);
+                memcpy(covariance + k * 32, values, 32);
+            }
+        }
+        /* Clear every position, including query-free groups. Otherwise an old
+           candidate could falsely certify a seed or parent in the next group. */
+        for (column = 0; column < columns; ++column)
+            work->support.positions[work->support.candidates[column]] = -1;
+    }
+    Py_END_ALLOW_THREADS
+    result = PyTuple_Pack(3, counts_obj, means_obj, covariance_obj);
+fail:
+    Py_XDECREF(counts_obj);
+    Py_XDECREF(means_obj);
+    Py_XDECREF(covariance_obj);
+    PyMem_Free(work);
+    return result;
+}
+
 static PyMethodDef methods[] = {
+    {"local_geometry", local_geometry, METH_VARARGS,
+     "Bounded CSR local support and original PCA moments; caller owns radii, eigensolver and gates."},
     {"local_moments", local_moments, METH_VARARGS,
      "Bounded per-row mean/covariance (f64 differences, uint8 support, rows, columns); no PCA gates or eigensolver."},
     {"nearest_grouped", nearest_grouped, METH_VARARGS,
@@ -1238,6 +1423,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         PyModule_AddIntConstant(result, "NEAREST_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "CROSS_SECTION_WEIGHTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "LOCAL_MOMENTS_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "LOCAL_GEOMETRY_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||

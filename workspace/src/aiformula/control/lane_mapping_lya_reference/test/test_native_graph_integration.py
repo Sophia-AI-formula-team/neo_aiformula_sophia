@@ -39,6 +39,7 @@ def native():
     assert result.NEAREST_API_VERSION == 1
     assert result.CROSS_SECTION_WEIGHTS_API_VERSION == 1
     assert result.LOCAL_MOMENTS_API_VERSION == 1
+    assert result.LOCAL_GEOMETRY_API_VERSION == 1
     assert callable(result.radius_graph)
     assert callable(result.prepare_graph)
     assert callable(result.graph_forest)
@@ -47,6 +48,7 @@ def native():
     assert callable(result.nearest_grouped)
     assert callable(result.cross_section_weights)
     assert callable(result.local_moments)
+    assert callable(result.local_geometry)
     return result
 
 
@@ -63,6 +65,7 @@ class NativeSpy:
         self.nearest_calls = []
         self.weight_calls = []
         self.moment_calls = []
+        self.geometry_calls = []
 
     def __getattr__(self, name):
         return getattr(self.native, name)
@@ -106,6 +109,10 @@ class NativeSpy:
     def local_moments(self, differences, support, rows, columns):
         self.moment_calls.append((differences, support, rows, columns))
         return self.native.local_moments(differences, support, rows, columns)
+
+    def local_geometry(self, *args):
+        self.geometry_calls.append(args)
+        return self.native.local_geometry(*args)
 
 
 def build(monkeypatch, backend, points, cfg=None, **kwargs):
@@ -759,9 +766,10 @@ def test_mixed_components_cannot_exploit_equal_component_size(monkeypatch, nativ
 
 
 API_VERSIONS = ("API_VERSION", "RADIUS_GRAPH_API_VERSION", "LOCAL_SUPPORT_API_VERSION",
-                "NEAREST_API_VERSION", "CROSS_SECTION_WEIGHTS_API_VERSION", "LOCAL_MOMENTS_API_VERSION")
+                "NEAREST_API_VERSION", "CROSS_SECTION_WEIGHTS_API_VERSION", "LOCAL_MOMENTS_API_VERSION",
+                "LOCAL_GEOMETRY_API_VERSION")
 API_FUNCTIONS = ("radius_graph", "prepare_graph", "graph_forest", "connected_subsets",
-                 "local_support", "nearest_grouped", "cross_section_weights", "local_moments")
+                 "local_support", "nearest_grouped", "cross_section_weights", "local_moments", "local_geometry")
 
 
 def load_with_api_stub(monkeypatch, attribute=None, missing=False):
@@ -812,6 +820,10 @@ class RejectNewKernels:
     def local_moments(self, *args):
         self.calls.append("local_moments")
         raise RuntimeError("injected moments failure")
+
+    def local_geometry(self, *args):
+        self.calls.append("local_geometry")
+        raise RuntimeError("injected geometry failure")
 
 
 def test_source_only_query_ids_use_int64_even_when_flatnonzero_is_int32(monkeypatch):
@@ -1211,17 +1223,244 @@ def test_source_only_moments_kernel_error_is_not_a_silent_numpy_retry(monkeypatc
     assert before == tuple(value.tobytes() for value in (difference, support, counts))
 
 
-def test_actual_index_calls_moments_and_preserves_all_geometry(monkeypatch, native):
+def test_actual_index_calls_radius_geometry_and_preserves_all_geometry(monkeypatch, native):
     points = scene("filled_band")
     before = points.tobytes()
     expected = build(monkeypatch, None, points)
     spy = NativeSpy(native)
     observed = build(monkeypatch, spy, points)
-    assert spy.moment_calls, "index construction must actually execute local_moments"
+    assert spy.geometry_calls, "eligible index construction must execute whole-radius local_geometry"
+    assert not spy.moment_calls, "eligible cells must not retain per-cell moments calls"
     assert_index_exact(observed, expected)
-    for differences, support, rows, columns in spy.moment_calls:
-        assert type(differences) is bytes and type(support) is bytes
-        assert len(differences) == rows * columns * 2 * 8
-        assert len(support) == rows * columns
-        assert 0 < rows <= 4000 and 0 < columns <= 2048
+    for args in spy.geometry_calls:
+        graph, count, cloud, labels, parents, qo, qi, co, ci, squared_radius, minimum = args
+        assert graph is observed._native_graph and count == len(points)
+        assert cloud == points.tobytes() and labels == observed.components.tobytes()
+        assert parents == observed._forest_parents.tobytes()
+        assert all(type(value) is bytes for value in (cloud, labels, parents, qo, qi, co, ci))
+        assert type(squared_radius) is float and minimum == observed.cfg["normal_min_points"]
     assert points.tobytes() == before
+
+
+def observe_index_geometry(monkeypatch, backend, points, cfg=None, **kwargs):
+    """Record the real patch/eigh operations, retaining their actual results."""
+    original_patch, original_eigh = module._FrozenIndex._patch, np.linalg.eigh
+    patches, solves = [], []
+
+    def patch_spy(index, key, radius):
+        result = original_patch(index, key, radius)
+        caller = sys._getframe(1)
+        targets = caller.f_locals.get("indices") if caller.f_code.co_name == "__init__" else None
+        patches.append((tuple(key), radius, result.tobytes(),
+                        None if targets is None else targets.tobytes()))
+        return result
+
+    def eigh_spy(matrix, *args, **keywords):
+        caller = sys._getframe(1).f_locals
+        values, vectors = original_eigh(matrix, *args, **keywords)
+        solves.append((matrix.shape, matrix.tobytes(), caller["radius"],
+                       caller["batch_indices"].tobytes(), caller["batch_means"].tobytes(),
+                       caller["batch_counts"].tobytes(), values.tobytes(), vectors.tobytes()))
+        return values, vectors
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module._FrozenIndex, "_patch", patch_spy)
+        patch.setattr(np.linalg, "eigh", eigh_spy)
+        index = build(monkeypatch, backend, points, cfg, **kwargs)
+    return index, patches, solves
+
+
+@pytest.mark.parametrize("kind", ["row255", "row256", "row257", "multiple_radii", "missing_seed"])
+def test_native_radius_geometry_keeps_patch_order_and_exact_eigh_batches(monkeypatch, native, kind):
+    cfg = None
+    if kind.startswith("row"):
+        count = int(kind[3:])
+        points = np.column_stack((np.arange(count) * .01, np.zeros(count)))
+    elif kind == "multiple_radii":
+        points = np.vstack((np.column_stack((np.arange(9) * .15, np.zeros(9))),
+                            np.column_stack((np.arange(7) * .06, np.full(7, 3.)))))
+    else:
+        points = rectangle(-.4, .4, -.4, .4, step=.1)
+        cfg = {"max_patch_points": 6}
+    before = points.tobytes()
+    expected, old_patches, old_solves = observe_index_geometry(monkeypatch, None, points, cfg)
+    spy = NativeSpy(native)
+    observed, patches, solves = observe_index_geometry(monkeypatch, spy, points, cfg)
+    assert_index_exact(observed, expected)
+    assert patches == old_patches, "original _patch order/cache and candidate/target order are observable"
+    assert solves == old_solves, "matrix, target, mean, counts and eigenvectors must match per original batch"
+    assert spy.geometry_calls and not spy.moment_calls
+    if kind.startswith("row"):
+        assert [row[0][0] for row in solves] == [256] * (count // 256) + ([count % 256] if count % 256 else [])
+        assert len(spy.geometry_calls) == 1
+    elif kind == "multiple_radii":
+        assert len(spy.geometry_calls) > 1
+        assert np.any(observed.normal_radii > observed.cfg["normal_radius_m"])
+    else:
+        assert observed.patch_truncations > 0
+        assert not np.all(observed.normal_valid)
+    assert points.tobytes() == before
+
+
+def test_native_radius_csr_preserves_unsorted_cell_insertion_order(monkeypatch, native):
+    points = scene("filled_band")
+    points = points[np.random.RandomState(731).permutation(len(points))]
+    expected, old_patches, old_solves = observe_index_geometry(monkeypatch, None, points)
+    spy = NativeSpy(native)
+    observed, patches, solves = observe_index_geometry(monkeypatch, spy, points)
+    assert_index_exact(observed, expected)
+    assert patches == old_patches and solves == old_solves
+    assert list(observed.cells) != sorted(observed.cells)
+    grouped = {}
+    for key, radius, candidate_bytes, query_bytes in old_patches:
+        if query_bytes is not None and len(candidate_bytes) // 8 >= observed.cfg["normal_min_points"]:
+            grouped.setdefault(radius, []).append((query_bytes, candidate_bytes))
+    assert len(spy.geometry_calls) == len(grouped)
+    for args, (radius, groups) in zip(spy.geometry_calls, grouped.items()):
+        query_offsets, queries, candidate_offsets, candidates = args[5:9]
+        expected_qo, expected_co = [0], [0]
+        for query_bytes, candidate_bytes in groups:
+            expected_qo.append(expected_qo[-1] + len(query_bytes) // 8)
+            expected_co.append(expected_co[-1] + len(candidate_bytes) // 8)
+        assert query_offsets == np.asarray(expected_qo, dtype=np.int64).tobytes()
+        assert candidate_offsets == np.asarray(expected_co, dtype=np.int64).tobytes()
+        assert queries == b"".join(part[0] for part in groups)
+        assert candidates == b"".join(part[1] for part in groups)
+        assert args[9].hex() == float(radius * radius).hex()
+        ids = np.frombuffer(queries, dtype=np.int64)
+        assert len(ids) == len(np.unique(ids))
+
+
+@pytest.mark.parametrize("mode", ["targets", "queries", "cache", "changed_cache", "hint", "nothing_requested"])
+def test_native_radius_geometry_keeps_requested_cache_and_hint_semantics(monkeypatch, native, mode):
+    points = np.vstack((rectangle(-.16, .16, -.16, .16, step=.08), line(3.)))
+    hint = np.vstack((line(0.), line(3.)))
+    kwargs = {}
+    if mode == "targets":
+        kwargs["normal_targets"] = np.array([0, 0, 4, len(points) - 1], dtype=np.int64)
+    elif mode == "queries":
+        kwargs["normal_queries"] = points[[0, 4, len(points) - 1]].copy()
+    elif mode in ("cache", "changed_cache"):
+        kwargs["reuse_index"] = build(monkeypatch, None, points)
+        if mode == "changed_cache":
+            points[-4:, 1] += .025
+    elif mode == "hint":
+        kwargs["direction_support"] = hint
+    else:
+        kwargs["normal_targets"] = np.empty(0, dtype=np.int64)
+    expected, old_patches, old_solves = observe_index_geometry(monkeypatch, None, points, **kwargs)
+    spy = NativeSpy(native)
+    observed, patches, solves = observe_index_geometry(monkeypatch, spy, points, **kwargs)
+    assert_index_exact(observed, expected)
+    assert observed.reused_geometry_points == expected.reused_geometry_points
+    assert patches == old_patches and solves == old_solves
+    assert not spy.moment_calls
+    if mode == "queries":
+        assert_bytes(observed.query_nearest, expected.query_nearest)
+    if mode in ("cache", "changed_cache"):
+        assert observed.reused_geometry_points > 0
+    if mode in ("cache", "nothing_requested"):
+        assert not spy.geometry_calls
+    else:
+        assert spy.geometry_calls
+    if mode == "hint":
+        assert np.any(observed.direction_borrowed)
+
+
+@pytest.mark.parametrize("kind", ["float32", "swapped_f64", "under_warn", "under_raise", "large_index"])
+def test_native_radius_geometry_unsupported_mode_keeps_legacy_loop(monkeypatch, native, kind):
+    points = line()
+    if kind == "float32":
+        points = points.astype(np.float32)
+    elif kind == "swapped_f64":
+        points = points.astype(np.dtype("float64").newbyteorder("S"))
+    elif kind == "large_index":
+        # Every disjoint seven-point segment has valid local PCA, even though
+        # the full index exceeds the native 4000-point contract.
+        bases = np.repeat(np.arange(572) * 2., 7)
+        points = np.column_stack((bases + np.tile(np.arange(7) * .06, 572), np.zeros(4004)))
+    policy = {"under_warn": "warn", "under_raise": "raise"}.get(kind, "ignore")
+    with np.errstate(under=policy):
+        expected, old_patches, old_solves = observe_index_geometry(monkeypatch, None, points)
+        spy = NativeSpy(native)
+        observed, patches, solves = observe_index_geometry(monkeypatch, spy, points)
+    assert_index_exact(observed, expected)
+    assert patches == old_patches and solves == old_solves
+    assert not spy.geometry_calls
+    assert np.any(observed.normal_valid), "fallback must execute geometry, not only an empty index"
+
+
+def test_source_only_radius_geometry_error_propagates_without_partial_numpy_retry(monkeypatch):
+    # A routing sentinel only, not a numerical native substitute. Construct the
+    # real Python graph, then mark a capsule slot so dispatch reaches the error.
+    original_components = module._FrozenIndex._components
+    sentinel = RejectNewKernels()
+
+    def components(index):
+        with monkeypatch.context() as patch:
+            patch.setattr(module, "_GRAPH_NATIVE", None)
+            labels = original_components(index)
+        index._native_graph = object()
+        return labels
+
+    points = line()
+    before = points.tobytes()
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "_GRAPH_NATIVE", sentinel)
+        patch.setattr(module._FrozenIndex, "_components", components)
+        with pytest.raises(RuntimeError, match="injected geometry failure"):
+            module._FrozenIndex(points, module._configuration(None))
+    assert sentinel.calls == ["local_geometry"]
+    assert points.tobytes() == before
+
+
+@pytest.mark.parametrize("boundary", ["patch_capacity", "coordinate_range"])
+def test_source_only_radius_geometry_private_defensive_bounds_keep_legacy(monkeypatch, boundary):
+    # Public _configuration rejects max_patch=2049; the current native graph
+    # entry separately rejects |anchor|>1e7. Isolate this new private dispatcher
+    # guard rather than pretending those inputs pass public/native validation.
+    # All graph/support/statistical values below come from real original Python
+    # code; the sentinel supplies no numerical or simulated native result.
+    points = line()
+    cfg = module._configuration(None)
+    if boundary == "patch_capacity":
+        cfg["max_patch_points"] = 2049
+    else:
+        points[:, 0] += 1e7 + 3.
+        assert np.all(points[:, 0] > 1e7)
+    original_components = module._FrozenIndex._components
+    original_support = module._FrozenIndex._local_support
+    original_moments = module._local_pca_moments
+    sentinel = RejectNewKernels()
+    calls = {"support": 0, "moments": 0}
+
+    def python_call(function, *args, **kwargs):
+        with monkeypatch.context() as patch:
+            patch.setattr(module, "_GRAPH_NATIVE", None)
+            return function(*args, **kwargs)
+
+    expected = python_call(module._FrozenIndex, points.copy(), cfg)
+
+    def components(index):
+        labels = python_call(original_components, index)
+        index._native_graph = object()  # Routing marker only, never passed to C.
+        return labels
+
+    def support(index, *args, **kwargs):
+        calls["support"] += 1
+        return python_call(original_support, index, *args, **kwargs)
+
+    def moments(*args):
+        calls["moments"] += 1
+        return python_call(original_moments, *args)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "_GRAPH_NATIVE", sentinel)
+        patch.setattr(module._FrozenIndex, "_components", components)
+        patch.setattr(module._FrozenIndex, "_local_support", support)
+        patch.setattr(module, "_local_pca_moments", moments)
+        observed = module._FrozenIndex(points.copy(), cfg)
+    assert not sentinel.calls
+    assert calls["support"] > 0 and calls["moments"] > 0
+    assert_index_exact(observed, expected)
+    assert np.all(observed.normal_valid)
