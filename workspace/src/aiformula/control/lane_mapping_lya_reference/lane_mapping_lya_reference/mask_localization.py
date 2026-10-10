@@ -369,6 +369,35 @@ class _FrozenIndex:
         # wide band may require a larger neighborhood to reveal its long axis.
         # Isotropic patches and intersections are not rescued by relaxing ratio.
         for radius in radii:
+            pending = []
+            pending_count = 0
+
+            def flush_pca():
+                nonlocal pending_count
+                if not pending:
+                    return
+                batch_indices = np.concatenate([part[0] for part in pending])
+                batch_means = np.concatenate([part[1] for part in pending])
+                batch_counts = np.concatenate([part[2] for part in pending])
+                batch_covariance = np.concatenate([part[3] for part in pending])
+                eigenvalues, eigenvectors = np.linalg.eigh(batch_covariance)
+                valid = ((batch_counts >= cfg["normal_min_points"]) &
+                         (eigenvalues[:, 1] > 1e-5) &
+                         (eigenvalues[:, 0] <= cfg["normal_max_thickness_m"] ** 2) &
+                         (eigenvalues[:, 0] <= cfg["normal_max_variance_ratio"] * eigenvalues[:, 1]))
+                chosen = batch_indices[valid]
+                normals = eigenvectors[valid, :, 0]
+                self.normals[chosen] = normals
+                self.normal_valid[chosen] = True
+                self.normal_radii[chosen] = radius
+                self.normal_thickness[chosen] = np.sqrt(np.maximum(eigenvalues[valid, 0], 0.0))
+                self.normal_position_support[chosen] = batch_counts[valid].astype(np.int64)
+                # Keep the original per-row arithmetic and smallest valid scale.
+                offset = np.sum(batch_means[valid] * normals, axis=1)
+                self.line_points[chosen] = anchor[chosen] + normals * offset[:, None]
+                pending.clear()
+                pending_count = 0
+
             for key, all_indices in self.cells.items():
                 indices = np.asarray(all_indices, dtype=np.int64)
                 indices = indices[requested[indices] & ~self.normal_valid[indices] & ~cached[indices]]
@@ -382,29 +411,34 @@ class _FrozenIndex:
                 difference = candidates[None, :, :] - targets[:, None, :]
                 support = ((np.sum(difference * difference, axis=2) <= radius * radius)
                            & (self.components[indices, None] == self.components[candidate_indices][None, :]))
-                support = self._local_support(indices, candidate_indices, support)
+                support, counts = self._local_support(indices, candidate_indices, support, return_counts=True)
+                # These rows cannot pass at this radius. Keep them eligible for
+                # the next radius, but do not construct/eigendecompose a PCA
+                # that the unchanged support-count gate necessarily rejects.
+                enough = counts >= cfg["normal_min_points"]
+                if not np.any(enough):
+                    continue
+                indices, difference, support = indices[enough], difference[enough], support[enough]
+                counts = counts[enough].astype(np.float64)
                 weights = support.astype(np.float64)
-                counts = np.sum(weights, axis=1)
                 safe_count = np.maximum(counts, 1.0)
                 means = np.sum(difference * weights[:, :, None], axis=1) / safe_count[:, None]
                 centered = difference - means[:, None, :]
                 covariance = np.einsum("nki,nkj,nk->nij", centered, centered, weights) / safe_count[:, None, None]
-                eigenvalues, eigenvectors = np.linalg.eigh(covariance)
-                valid = ((counts >= cfg["normal_min_points"]) &
-                         (eigenvalues[:, 1] > 1e-5) &
-                         (eigenvalues[:, 0] <= cfg["normal_max_thickness_m"] ** 2) &
-                         (eigenvalues[:, 0] <= cfg["normal_max_variance_ratio"] * eigenvalues[:, 1]))
-                chosen = indices[valid]
-                normals = eigenvectors[valid, :, 0]
-                self.normals[chosen] = normals
-                self.normal_valid[chosen] = True
-                self.normal_radii[chosen] = radius
-                self.normal_thickness[chosen] = np.sqrt(np.maximum(eigenvalues[valid, 0], 0.0))
-                self.normal_position_support[chosen] = counts[valid].astype(np.int64)
-                # Match the local band center in its normal direction, not any
-                # arbitrarily nearest pixel inside a thick, filled lane ribbon.
-                offset = np.sum(means[valid] * normals, axis=1)
-                self.line_points[chosen] = anchor[chosen] + normals * offset[:, None]
+                # The covariance reduction above remains per cell, with its
+                # original candidate order. Only independent 2x2 solves are
+                # combined, in bounded batches; no cross-cell PCA is introduced.
+                start = 0
+                while start < len(indices):
+                    stop = min(len(indices), start + 256 - pending_count)
+                    pending.append((indices[start:stop], means[start:stop],
+                                    counts[start:stop], covariance[start:stop]))
+                    pending_count += stop - start
+                    start = stop
+                    if pending_count == 256:
+                        flush_pca()
+            # Apply this radius before deciding which rows need a larger one.
+            flush_pca()
         if direction_support is not None:
             self._past_direction_support(direction_support)
         self.normals.flags.writeable = False
@@ -449,8 +483,12 @@ class _FrozenIndex:
             difference = self.anchor[candidates][None, :, :] - self.anchor[indices, None, :]
             support_mask = ((np.sum(difference * difference, axis=2) <= cfg["normal_max_radius_m"] ** 2)
                             & (self.components[indices, None] == self.components[candidates][None, :]))
-            support_mask = self._local_support(indices, candidates, support_mask)
-            counts = np.sum(support_mask, axis=1)
+            support_mask, counts = self._local_support(indices, candidates, support_mask, return_counts=True)
+            enough = counts >= cfg["normal_min_points"]
+            if not np.any(enough):
+                continue
+            indices, difference, support_mask = indices[enough], difference[enough], support_mask[enough]
+            counts = counts[enough]
             normals = hint.normals[nearest[indices]]
             projected = np.einsum("nki,ni->nk", difference, normals)
             mean = np.sum(projected * support_mask, axis=1) / np.maximum(counts, 1)
@@ -467,7 +505,7 @@ class _FrozenIndex:
             self.line_points[selected] = self.anchor[selected] + normals[valid] * mean[valid, None]
             self.direction_supported_points += len(selected)
 
-    def _local_support(self, targets, candidates, allowed):
+    def _local_support(self, targets, candidates, allowed, return_counts=False):
         """Component containing each seed in its own radius-induced graph.
 
         A remote U-shaped bridge must not join two locally separate paint bands.
@@ -475,9 +513,15 @@ class _FrozenIndex:
         only vertices inside each query circle may be traversed. This is exact
         connectivity, not a truncated flood-fill that could invent a thin line.
         """
-        incomplete = np.flatnonzero(np.sum(allowed, axis=1) != self._component_sizes[self.components[targets]])
+        # A connected candidate subset is not support for a seed outside it.
+        # In particular, bounded patch truncation can exclude a target. Check
+        # membership before either whole-component or spanning-tree shortcuts.
+        seed_allowed = np.any(allowed & (targets[:, None] == candidates[None, :]), axis=1)
+        allowed[~seed_allowed] = False
+        counts = np.sum(allowed, axis=1, dtype=np.int64)
+        incomplete = np.flatnonzero(seed_allowed & (counts != self._component_sizes[self.components[targets]]))
         if not len(incomplete):
-            return allowed
+            return (allowed, counts) if return_counts else allowed
         if self._adjacency_bits is not None:
             positions = np.full(len(self.anchor), -1, dtype=np.int64)
             positions[candidates] = np.arange(len(candidates))
@@ -485,12 +529,11 @@ class _FrozenIndex:
             edges = np.flatnonzero(parents >= 0)
             edges = edges[positions[parents[edges]] >= 0]
             parent_positions = positions[parents[edges]]
-            counts = np.sum(allowed[incomplete], axis=1)
             edge_count = np.sum(allowed[incomplete[:, None], edges]
                                 & allowed[incomplete[:, None], parent_positions], axis=1)
-            incomplete = incomplete[edge_count != counts - 1]
+            incomplete = incomplete[edge_count != counts[incomplete] - 1]
             if not len(incomplete):
-                return allowed
+                return (allowed, counts) if return_counts else allowed
             # Live windows are <=4000 points: share their exact sparse graph
             # encoded as at most 2 MB of bitsets across every PCA radius/query.
             # Larger full-map indexes retain the bounded local-patch fallback.
@@ -514,7 +557,8 @@ class _FrozenIndex:
                 bits = np.unpackbits(np.frombuffer(reached.to_bytes((size + 7) // 8, "little"), dtype=np.uint8),
                                      bitorder="little")
                 allowed[row] = bits[candidates]
-            return allowed
+            counts[incomplete] = np.sum(allowed[incomplete], axis=1, dtype=np.int64)
+            return (allowed, counts) if return_counts else allowed
         count = len(candidates)
         positions = {int(index): position for position, index in enumerate(candidates)}
         # Cheap exact certificate for ordinary continuous bands: an induced
@@ -527,10 +571,10 @@ class _FrozenIndex:
             edges = np.asarray(forest, dtype=np.int64)
             connected_count = np.sum(allowed[incomplete[:, None], edges[:, 0]]
                                      & allowed[incomplete[:, None], edges[:, 1]], axis=1)
-            needed = np.sum(allowed[incomplete], axis=1) - 1
+            needed = counts[incomplete] - 1
             incomplete = incomplete[connected_count != needed]
             if not len(incomplete):
-                return allowed
+                return (allowed, counts) if return_counts else allowed
         adjacency = []
         points = self.anchor[candidates]
         for start in range(0, count, 64):
@@ -554,7 +598,8 @@ class _FrozenIndex:
                 frontier |= added
             allowed[row] = np.unpackbits(np.frombuffer(reached.to_bytes(byte_count, "little"), dtype=np.uint8),
                                          bitorder="little")[:count]
-        return allowed
+        counts[incomplete] = np.sum(allowed[incomplete], axis=1, dtype=np.int64)
+        return (allowed, counts) if return_counts else allowed
 
     def _components(self):
         """Keep disconnected paint bands out of each other's PCA support.
