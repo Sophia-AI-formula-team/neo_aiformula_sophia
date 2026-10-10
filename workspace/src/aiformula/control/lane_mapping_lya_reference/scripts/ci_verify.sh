@@ -14,6 +14,10 @@ colcon build --event-handlers console_direct+ --base-paths \
   "$repo/workspace/src/aiformula/control/lane_mapping_fixed" \
   --packages-select vectornav_msgs trajectory_follower lane_mapping_lya_reference lane_mapping_fixed
 source install/setup.bash
+export LANE_REQUIRE_NATIVE=1
+python3 "$repo/workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/verify_native.py" \
+  --source "$repo/workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c" \
+  --install-prefix "$ws/install/lane_mapping_lya_reference" --output "$ws/evidence/native.json"
 colcon test --event-handlers console_direct+ --return-code-on-test-failure \
   --base-paths "$repo/workspace/src/aiformula/control/lane_mapping_lya_reference" \
   "$repo/workspace/src/aiformula/control/lane_mapping_fixed" --packages-select \

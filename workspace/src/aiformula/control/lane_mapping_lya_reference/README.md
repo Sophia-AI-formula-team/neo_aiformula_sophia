@@ -47,10 +47,18 @@
 
 目标环境是 **Ubuntu 20.04 + ROS 2 Foxy / Python 3.8**。先准备好系统 ROS 环境和车上原来的感知、定位、LYA 依赖。下面只编译明确列出的包，不让 colcon 遍历整个车辆项目。依赖安装需先获得车端环境修改授权；已有依赖时跳过 rosdep 安装。
 
+原生连通图版本还需要标准 C 编译环境（Ubuntu 的 `build-essential`）及
+`python3-dev`。后者已声明为构建依赖；前者是构建环境，不伪造不存在的
+rosdep key。经环境修改授权后可用 `sudo apt-get install build-essential python3-dev`
+准备。扩展由 `colcon build` 随本包编译，无 NumPy C ABI、SciPy 或 pybind11 依赖。
+源码直接运行但未编译时保留原 Python 路径和原时限；不得把这种回退称为已启用加速。
+Windows 仿真 `.pyd` 不能带到车上，车端按其 Python/CPU 架构重新构建。
+当前原生版本是 repair 分支的候选，尚不是两圈/实车通过的部署版本。
+
 ```bash
 source /opt/ros/foxy/setup.bash
 mkdir -p ~/lane_learning_ws/src
-git clone --branch feat/causal-lane-teach-repeat \
+git clone --branch repair/lane-keyframe-transaction-20261011 \
   https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git \
   ~/lane_learning_ws/src/neo_aiformula_sophia
 cd ~/lane_learning_ws
@@ -69,6 +77,7 @@ colcon build --symlink-install --base-paths \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --packages-up-to lane_mapping_fixed
 source install/setup.bash
+python3 -c 'import _lane_mapping_lya_native as n; print(n.API_VERSION, n.SOURCE_SHA256, n.__file__)'
 ```
 
 如果 `vectornav_msgs` 已在车上的已 source 工作空间中安装，可以省略上面两处 VectorNav 源码路径。neo 仓库的原生消息源码位于 `dependencies/vectornav/vectornav_msgs`，不是旧仓库的 sensing 目录。

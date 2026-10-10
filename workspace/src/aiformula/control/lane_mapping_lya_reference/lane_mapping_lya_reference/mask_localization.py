@@ -23,6 +23,27 @@ import numpy as np
 
 from .mapping_core import RollingConsensusMap, pack_cell_indices, unpack_cell_keys
 
+try:
+    import _lane_mapping_lya_native as _GRAPH_NATIVE
+except ImportError:
+    # Source-only tools retain the exact Python implementation and deadlines.
+    # ROS builds compile the extension; CI explicitly verifies it is loaded.
+    _GRAPH_NATIVE = None
+
+if _GRAPH_NATIVE is not None and (
+        getattr(_GRAPH_NATIVE, "API_VERSION", None) != 1 or not all(
+            callable(getattr(_GRAPH_NATIVE, name, None)) for name in
+            ("prepare_graph", "graph_forest", "connected_subsets"))):
+    raise RuntimeError("incompatible lane graph native extension; rebuild this package")
+
+
+def graph_backend_info():
+    """Report execution mode without making a real-time acceptance claim."""
+    return ({"backend": "python", "api_version": None, "source_sha256": None}
+            if _GRAPH_NATIVE is None else
+            {"backend": "native", "api_version": _GRAPH_NATIVE.API_VERSION,
+             "source_sha256": _GRAPH_NATIVE.SOURCE_SHA256})
+
 
 DEFAULT_CONFIG = {
     "max_anchor_points": 100000,
@@ -231,6 +252,14 @@ def _line_weights(points, normals, support_index, support_ids, cfg):
         allowed = ((np.abs(along) <= cfg["scan_voxel_m"] * 0.5)
                    & (dx * dx + dy * dy <= cfg["normal_max_radius_m"] ** 2))
         packed = np.packbits(allowed, axis=1, bitorder="little")
+        if _GRAPH_NATIVE is not None and support_index._native_graph is not None:
+            reached = _GRAPH_NATIVE.connected_subsets(
+                support_index._native_graph, len(cloud), packed.tobytes(), seeds.tolist())
+            selected = np.unpackbits(np.frombuffer(reached, dtype=np.uint8).reshape(len(seeds), byte_count),
+                                     axis=1, bitorder="little")[:, :len(cloud)]
+            # Indexing by every reliable ID preserves duplicate multiplicity.
+            weights[start:stop] = 1.0 / np.sum(selected[:, support_ids], axis=1)
+            continue
         for row, seed in enumerate(seeds):
             mask = int.from_bytes(packed[row].tobytes(), "little")
             reached = frontier = 1 << int(seed)
@@ -541,6 +570,14 @@ class _FrozenIndex:
             global_allowed = np.zeros((len(incomplete), size), dtype=bool)
             global_allowed[:, candidates] = allowed[incomplete]
             masks = np.packbits(global_allowed, axis=1, bitorder="little")
+            if _GRAPH_NATIVE is not None and self._native_graph is not None:
+                reached = _GRAPH_NATIVE.connected_subsets(
+                    self._native_graph, size, masks.tobytes(), targets[incomplete].tolist())
+                bits = np.unpackbits(np.frombuffer(reached, dtype=np.uint8).reshape(
+                    len(incomplete), (size + 7) // 8), axis=1, bitorder="little")[:, :size]
+                allowed[incomplete] = bits[:, candidates]
+                counts[incomplete] = np.sum(allowed[incomplete], axis=1, dtype=np.int64)
+                return (allowed, counts) if return_counts else allowed
             for number, row in enumerate(incomplete):
                 seed = int(targets[row])
                 if not global_allowed[number, seed]:
@@ -612,6 +649,8 @@ class _FrozenIndex:
         parent = np.arange(count, dtype=np.int64)
         self._forest_children = [[] for _ in range(count)]
         self._adjacency_bits = [0] * count if count <= 4000 else None
+        self._adjacency_packed = None
+        self._native_graph = None
         self._forest_parents = np.full(count, -1, dtype=np.int64)
         matrix = np.zeros((count, count), dtype=bool) if count <= 4000 else None
         radius = self.cfg["normal_connectivity_m"]
@@ -676,8 +715,14 @@ class _FrozenIndex:
                     self._forest_children[int(left)].append(int(right))
         if matrix is not None:
             flush_pairs()
-            self._adjacency_bits = [int.from_bytes(row.tobytes(), "little") for row in
-                                    np.packbits(matrix, axis=1, bitorder="little")]
+            packed = np.packbits(matrix, axis=1, bitorder="little")
+            self._adjacency_bits = [int.from_bytes(row.tobytes(), "little") for row in packed]
+            self._adjacency_packed = packed.tobytes()
+            if _GRAPH_NATIVE is not None:
+                self._native_graph = _GRAPH_NATIVE.prepare_graph(self._adjacency_packed, count)
+                labels, parents = _GRAPH_NATIVE.graph_forest(self._native_graph, count)
+                self._forest_parents = np.asarray(parents, dtype=np.int64)
+                return np.asarray(labels, dtype=np.int64)
             unseen = (1 << count) - 1
             byte_count = (count + 7) // 8
             while unseen:
@@ -962,7 +1007,7 @@ class LaneMapLocalizer:
         cfg = self.config
         self._pending_result = None
         self._pending_data = None
-        metrics = {"anchor_points": len(self._anchor),
+        metrics = {"graph_backend": graph_backend_info(), "anchor_points": len(self._anchor),
                    "anchor_line_points": int(np.sum(self._index.normal_valid)),
                    "anchor_multiscale_line_points": int(np.sum(
                        self._index.normal_radii > cfg["normal_radius_m"])),
