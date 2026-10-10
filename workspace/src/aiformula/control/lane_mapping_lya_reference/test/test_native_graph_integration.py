@@ -8,6 +8,7 @@ import importlib
 import os
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -35,11 +36,15 @@ def native():
     assert result.API_VERSION == 1
     assert result.RADIUS_GRAPH_API_VERSION == 1
     assert result.LOCAL_SUPPORT_API_VERSION == 1
+    assert result.NEAREST_API_VERSION == 1
+    assert result.CROSS_SECTION_WEIGHTS_API_VERSION == 1
     assert callable(result.radius_graph)
     assert callable(result.prepare_graph)
     assert callable(result.graph_forest)
     assert callable(result.connected_subsets)
     assert callable(result.local_support)
+    assert callable(result.nearest_grouped)
+    assert callable(result.cross_section_weights)
     return result
 
 
@@ -53,6 +58,8 @@ class NativeSpy:
         self.subset_calls = []
         self.subset_graphs = []
         self.local_calls = []
+        self.nearest_calls = []
+        self.weight_calls = []
 
     def __getattr__(self, name):
         return getattr(self.native, name)
@@ -79,6 +86,19 @@ class NativeSpy:
         self.local_calls.append((count, type(graph).__name__, id(graph),
                                  candidates, targets, allowed, parents))
         return self.native.local_support(graph, count, candidates, targets, allowed, parents)
+
+    def nearest_grouped(self, points, anchor, query_offsets, query_ids,
+                        candidate_offsets, candidate_ids, allowed, radius_squared):
+        args = (points, anchor, query_offsets, query_ids, candidate_offsets,
+                candidate_ids, allowed, radius_squared)
+        self.nearest_calls.append(args)
+        return self.native.nearest_grouped(*args)
+
+    def cross_section_weights(self, graph, count, points, normals, ids, half_width, radius_squared):
+        self.weight_calls.append((count, type(graph).__name__, id(graph), points,
+                                  normals, ids, half_width, radius_squared))
+        return self.native.cross_section_weights(graph, count, points, normals, ids,
+                                                 half_width, radius_squared)
 
 
 def build(monkeypatch, backend, points, cfg=None, **kwargs):
@@ -325,10 +345,13 @@ def test_cross_section_weights_use_native_with_exact_multiplicity(monkeypatch, n
     observed = invoke(monkeypatch, spy, module._line_weights, reliable, normals, actual, ids, actual.cfg)
     expected = invoke(monkeypatch, None, module._line_weights, reliable, normals, baseline, ids, baseline.cfg)
     assert_bytes(observed, expected)
-    assert len(spy.subset_calls) == (len(ids) + 63) // 64
+    assert spy.weight_calls == [(len(points), "PyCapsule", id(actual._native_graph),
+                                points.tobytes(), normals.tobytes(), ids.tobytes(),
+                                actual.cfg["scan_voxel_m"] * .5,
+                                actual.cfg["normal_max_radius_m"] ** 2)]
+    assert not spy.subset_calls, "the new kernel owns the complete density operation"
     assert len(spy.prepare_calls) == 1, "one immutable graph must serve every density batch"
-    assert all(call == (len(points), "PyCapsule", id(actual._native_graph))
-               for call in spy.subset_graphs)
+    assert not spy.subset_graphs
     if kind == "duplicates":
         np.testing.assert_array_equal(observed, np.full(len(ids), 1. / len(ids)))
     if kind in ("near_u", "remote_u"):
@@ -726,3 +749,339 @@ def test_mixed_components_cannot_exploit_equal_component_size(monkeypatch, nativ
     np.testing.assert_array_equal(counts, [1])
     if use_native:
         assert len(backend.local_calls) == 1
+
+
+API_VERSIONS = ("API_VERSION", "RADIUS_GRAPH_API_VERSION", "LOCAL_SUPPORT_API_VERSION",
+                "NEAREST_API_VERSION", "CROSS_SECTION_WEIGHTS_API_VERSION")
+API_FUNCTIONS = ("radius_graph", "prepare_graph", "graph_forest", "connected_subsets",
+                 "local_support", "nearest_grouped", "cross_section_weights")
+
+
+def load_with_api_stub(monkeypatch, attribute=None, missing=False):
+    """Source-only import-contract test, never evidence of C execution."""
+    stub = SimpleNamespace(**{name: 1 for name in API_VERSIONS})
+    for name in API_FUNCTIONS:
+        setattr(stub, name, lambda *args: pytest.fail("import must not execute geometry"))
+    if attribute:
+        if missing:
+            delattr(stub, attribute)
+        else:
+            setattr(stub, attribute, 999 if attribute in API_VERSIONS else None)
+    name = "lane_mapping_lya_reference._integration_api_probe"
+    spec = importlib.util.spec_from_file_location(name, module.__file__)
+    probe = importlib.util.module_from_spec(spec)
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "_lane_mapping_lya_native", stub)
+        patch.setitem(sys.modules, name, probe)
+        spec.loader.exec_module(probe)
+    return probe, stub
+
+
+@pytest.mark.parametrize("attribute", API_VERSIONS + API_FUNCTIONS)
+@pytest.mark.parametrize("missing", [False, True])
+def test_source_only_native_api_mismatch_is_not_silent_fallback(monkeypatch, attribute, missing):
+    with pytest.raises(RuntimeError, match="incompatible lane graph native extension"):
+        load_with_api_stub(monkeypatch, attribute, missing)
+
+
+def test_source_only_complete_api_stub_is_only_an_import_contract(monkeypatch):
+    probe, stub = load_with_api_stub(monkeypatch)
+    assert probe._GRAPH_NATIVE is stub
+
+
+class RejectNewKernels:
+    """Only a routing sentinel: no simulated numerical/native implementation."""
+    def __init__(self):
+        self.calls = []
+
+    def nearest_grouped(self, *args):
+        self.calls.append("nearest_grouped")
+        raise RuntimeError("injected nearest failure")
+
+    def cross_section_weights(self, *args):
+        self.calls.append("cross_section_weights")
+        raise RuntimeError("injected weights failure")
+
+
+def test_source_only_query_ids_use_int64_even_when_flatnonzero_is_int32(monkeypatch):
+    points = np.array([[.2, 0.], [-.1, 0.]])
+    index = nearest_index(monkeypatch, points)
+    original = np.flatnonzero
+    seen = []
+
+    def capture(*args):
+        # Serialization-only stub, not a native execution or geometry oracle.
+        seen.append(args)
+        np.testing.assert_array_equal(np.frombuffer(args[3], dtype=np.int64), [1, 0])
+        return np.full(2, -1, dtype=np.int64).tobytes()
+
+    with monkeypatch.context() as patch:
+        patch.setattr(np, "flatnonzero", lambda values: original(values).astype(np.int32))
+        patch.setattr(module, "_GRAPH_NATIVE", SimpleNamespace(nearest_grouped=capture))
+        np.testing.assert_array_equal(index.nearest(points), [-1, -1])
+    assert len(seen) == 1
+
+
+def nearest_index(monkeypatch, points, cfg=None):
+    # Explicit synthetic normals isolate distance routing from PCA behavior;
+    # all-index tests above independently cover real normal construction.
+    index = build(monkeypatch, None, points, cfg, normal_targets=np.empty(0, dtype=np.int64))
+    index.normal_valid = np.ones(len(points), dtype=bool)
+    index.normals = np.tile([0., 1.], (len(points), 1))
+    return index
+
+
+@pytest.mark.parametrize("dtype", [np.dtype("float32"), np.dtype("float64").newbyteorder("S")])
+@pytest.mark.parametrize("changed", ["queries", "anchor"])
+def test_source_only_nearest_non_native_dtype_keeps_numpy(monkeypatch, dtype, changed):
+    anchor = np.array([[0., 0.], [.2, 0.]])
+    points = np.array([[.02, .03], [.19, 0.]])
+    if changed == "anchor":
+        anchor = anchor.astype(dtype)
+    else:
+        points = points.astype(dtype)
+    index = nearest_index(monkeypatch, anchor)
+    expected = invoke(monkeypatch, None, index.nearest, points)
+    sentinel = RejectNewKernels()
+    observed = invoke(monkeypatch, sentinel, index.nearest, points)
+    assert_bytes(observed, expected)
+    assert not sentinel.calls
+
+
+@pytest.mark.parametrize("operation", ["nearest", "weights"])
+def test_source_only_new_kernel_failure_must_propagate(monkeypatch, operation):
+    points = np.array([[0., 0.], [0., .1]])
+    index = nearest_index(monkeypatch, points)
+    sentinel = RejectNewKernels()
+    if operation == "nearest":
+        call, args = index.nearest, (points,)
+    else:
+        # Sentinel capsule never reaches C; tests the dispatch/error boundary.
+        index._native_graph = object()
+        call = module._line_weights
+        args = (points, np.tile([0., 1.], (2, 1)), index,
+                np.arange(2, dtype=np.int64), index.cfg)
+    with pytest.raises(RuntimeError, match="injected .* failure"):
+        invoke(monkeypatch, sentinel, call, *args)
+    assert sentinel.calls == (["nearest_grouped"] if operation == "nearest" else
+                              ["cross_section_weights"])
+
+
+@pytest.mark.parametrize("operation", ["nearest", "weights"])
+def test_source_only_strict_underflow_keeps_original_numpy_error(monkeypatch, operation):
+    points = np.array([[0., 0.], [1e-200, 0.]])
+    index = nearest_index(monkeypatch, points)
+    sentinel = RejectNewKernels()
+    index._native_graph = object()
+    with np.errstate(under="raise"):
+        if operation == "nearest":
+            call, args = index.nearest, (np.array([[.5e-200, 0.]]),)
+        else:
+            call = module._line_weights
+            args = (points, np.tile([0., 1.], (2, 1)), index,
+                    np.arange(2, dtype=np.int64), index.cfg)
+        with pytest.raises(FloatingPointError, match="underflow"):
+            invoke(monkeypatch, None, call, *args)
+        with pytest.raises(FloatingPointError, match="underflow"):
+            invoke(monkeypatch, sentinel, call, *args)
+    assert not sentinel.calls, "native arithmetic must not hide NumPy's strict error policy"
+
+
+def test_source_only_nearest_4001_queries_preserve_bounded_fallback(monkeypatch):
+    index = nearest_index(monkeypatch, np.array([[0., 0.], [.2, 0.]]))
+    queries = np.tile([.04, .01], (4001, 1))
+    sentinel = RejectNewKernels()
+    expected = invoke(monkeypatch, None, index.nearest, queries)
+    observed = invoke(monkeypatch, sentinel, index.nearest, queries)
+    assert_bytes(observed, expected)
+    assert not sentinel.calls
+
+
+def nearest_case(kind):
+    anchor = np.array([[.1, .1], [-.1, .1], [.1, -.1], [1.1, .1], [1.1, -.1]])
+    points = np.array([[1.1, 0.], [0., 0.], [.01, .02], [20., 20.]])
+    cfg = None
+    if kind == "empty_queries":
+        points = np.empty((0, 2), dtype=np.float64)
+    elif kind == "empty_anchor":
+        anchor = np.empty((0, 2), dtype=np.float64)
+    elif kind == "truncated":
+        anchor = rectangle(-.4, .4, -.4, .4, step=.1)
+        points = np.array([[0., 0.], [.1, 0.], [.3, .3]])
+        cfg = {"max_patch_points": 8}
+    elif kind == "strided":
+        anchor = anchor[::-1]
+        backing = np.full((len(points), 4), 123.)
+        backing[:, ::2] = points
+        points = backing[:, ::2]
+        assert not points.flags.c_contiguous
+    elif kind == "random":
+        rng = np.random.RandomState(811)
+        anchor = rng.uniform(-2., 2., (53, 2))
+        points = rng.uniform(-3., 3., (19, 2))
+    return anchor, points, cfg
+
+
+class DotShapeRecorder(np.ndarray):
+    """Record the actual @ batch shapes while retaining NumPy's arithmetic."""
+    def __new__(cls, values, calls):
+        result = np.asarray(values).view(cls)
+        result.calls = calls
+        return result
+
+    def __array_finalize__(self, previous):
+        self.calls = getattr(previous, "calls", None)
+
+    def __matmul__(self, other):
+        self.calls.append((self.shape, other.shape))
+        return np.asarray(self) @ other
+
+
+@pytest.mark.parametrize("kind", ["groups", "empty_queries", "empty_anchor", "all_invalid",
+                                  "truncated", "strided", "random"])
+@pytest.mark.parametrize("valid_only", [False, True])
+@pytest.mark.parametrize("with_normals", [False, True])
+def test_native_nearest_exact_groups_shapes_order_and_ownership(
+        monkeypatch, native, kind, valid_only, with_normals):
+    anchor, points, cfg = nearest_case(kind)
+    baseline = nearest_index(monkeypatch, anchor, cfg)
+    actual = nearest_index(monkeypatch, anchor, cfg)
+    for index in (baseline, actual):
+        index.normal_valid[::2] = False
+        if kind == "all_invalid":
+            index.normal_valid[:] = False
+        index.normals[::2] *= -1.  # sign must not change compatibility
+    expected_shapes, observed_shapes = [], []
+    normals = np.tile([0., 1.], (len(points), 1))
+    if len(normals) > 2:
+        normals[2] = [1., 0.]  # no compatible candidate, not nearest by distance
+    expected = invoke(monkeypatch, None, baseline.nearest, points,
+                      DotShapeRecorder(normals, expected_shapes) if with_normals else None,
+                      valid_only)
+    before = {name: getattr(actual, name).tobytes() for name in ARRAYS}
+    spy = NativeSpy(native)
+    observed = invoke(monkeypatch, spy, actual.nearest, points,
+                      DotShapeRecorder(normals, observed_shapes) if with_normals else None,
+                      valid_only)
+    assert_bytes(observed, expected)
+    assert observed.dtype == np.int64 and observed.flags.writeable
+    assert observed_shapes == expected_shapes
+    assert actual.patch_truncations == baseline.patch_truncations
+    if kind == "truncated":
+        assert actual.patch_truncations > 0
+    assert len(spy.nearest_calls) == 1, "native nearest must actually execute"
+    pb, ab, qo, qi, co, ci, allowed, radius = spy.nearest_calls[0]
+    assert pb == points.tobytes() and ab == actual.anchor.tobytes()
+    keys = np.floor(points / baseline.cell).astype(np.int64)
+    unique, inverse, _ = module._unique_cells(keys)
+    query_ids, candidate_ids, query_offsets, candidate_offsets, masks = [], [], [0], [0], []
+    for group, key in enumerate(unique):
+        targets = np.flatnonzero(inverse == group)
+        candidates = baseline._patch(tuple(int(value) for value in key), baseline.cfg["match_distance_m"])
+        if valid_only:
+            candidates = candidates[baseline.normal_valid[candidates]]
+        query_ids.extend(targets)
+        candidate_ids.extend(candidates)
+        query_offsets.append(len(query_ids))
+        candidate_offsets.append(len(candidate_ids))
+        if with_normals and len(candidates):
+            masks.append((np.abs(normals[targets] @ baseline.normals[candidates].T) >=
+                          module.math.cos(baseline.cfg["normal_max_angle_rad"])).tobytes())
+    # Explicit int64 serialization, never platform-sized int/intp.
+    for raw, values in ((qo, query_offsets), (qi, query_ids),
+                        (co, candidate_offsets), (ci, candidate_ids)):
+        assert raw == np.asarray(values, dtype=np.int64).tobytes()
+    assert allowed == (b"".join(masks) if with_normals else None)
+    assert radius.hex() == float(baseline.cfg["match_distance_m"] ** 2).hex()
+    for name in ARRAYS:
+        assert getattr(actual, name).tobytes() == before[name], name
+    if len(observed):
+        observed[0] = -999
+        again = invoke(monkeypatch, spy, actual.nearest, points, normals if with_normals else None, valid_only)
+        assert_bytes(again, expected)
+
+
+def test_native_nearest_tie_keeps_patch_order_not_global_id(monkeypatch, native):
+    # ID 1 is in the lexicographically earlier cell and ties ID 0 exactly.
+    points = np.array([[0., 0.]])
+    index = nearest_index(monkeypatch, np.array([[.1, 0.], [-.1, 0.]]))
+    spy = NativeSpy(native)
+    expected = invoke(monkeypatch, None, index.nearest, points)
+    observed = invoke(monkeypatch, spy, index.nearest, points)
+    assert_bytes(observed, expected)
+    np.testing.assert_array_equal(observed, [1])
+    np.testing.assert_array_equal(np.frombuffer(spy.nearest_calls[0][5], dtype=np.int64), [1, 0])
+
+
+@pytest.mark.parametrize("edge", ["distance", "normal_dot"])
+@pytest.mark.parametrize("position", ["inside", "on", "outside"])
+def test_native_nearest_inclusive_boundaries_preserve_numpy_decision(
+        monkeypatch, native, edge, position):
+    index = nearest_index(monkeypatch, np.array([[0., 0.]]))
+    if edge == "distance":
+        boundary = index.cfg["match_distance_m"]
+        value = {"inside": np.nextafter(boundary, 0.), "on": boundary,
+                 "outside": np.nextafter(boundary, np.inf)}[position]
+        queries, normals = np.array([[value, 0.]]), None
+    else:
+        boundary = module.math.cos(index.cfg["normal_max_angle_rad"])
+        value = {"inside": np.nextafter(boundary, np.inf), "on": boundary,
+                 "outside": np.nextafter(boundary, 0.)}[position]
+        queries, normals = np.array([[0., 0.]]), np.array([[0., value]])
+    spy = NativeSpy(native)
+    expected = invoke(monkeypatch, None, index.nearest, queries, normals)
+    observed = invoke(monkeypatch, spy, index.nearest, queries, normals)
+    assert_bytes(observed, expected)
+    np.testing.assert_array_equal(observed, [-1 if position == "outside" else 0])
+    assert len(spy.nearest_calls) == 1
+
+
+@pytest.mark.parametrize("layout", ["strided", "reversed", "empty", "float32_normals",
+                                    "swapped_normals", "int32_ids", "swapped_ids",
+                                    "float32_cloud", "swapped_cloud", "large_normals"])
+def test_native_weights_layout_dtype_empty_and_fallback(monkeypatch, native, layout):
+    points = np.column_stack((np.zeros(9), np.arange(9) * .1))
+    ids = np.array([0, 4, 4, 8], dtype=np.int64)
+    normals = np.tile([0., 1.], (len(ids), 1))
+    if layout == "strided":
+        storage = np.zeros((len(ids), 4))
+        storage[:, ::2] = normals
+        normals = storage[:, ::2]
+        ids = np.repeat(ids, 2)[::2]
+        assert not ids.flags.c_contiguous and not normals.flags.c_contiguous
+    elif layout == "reversed":
+        ids, normals = ids[::-1], normals[::-1]
+    elif layout == "empty":
+        ids, normals = np.empty(0, dtype=np.int64), np.empty((0, 2))
+    elif layout == "float32_normals":
+        normals = normals.astype(np.float32)
+    elif layout == "swapped_normals":
+        normals = normals.astype(np.dtype("float64").newbyteorder("S"))
+    elif layout == "int32_ids":
+        ids = ids.astype(np.int32)
+    elif layout == "swapped_ids":
+        ids = ids.astype(np.dtype("int64").newbyteorder("S"))
+    elif layout == "float32_cloud":
+        points = points.astype(np.float32)
+    elif layout == "swapped_cloud":
+        points = points.astype(np.dtype("float64").newbyteorder("S"))
+    elif layout == "large_normals":
+        normals *= 3.
+    baseline = build(monkeypatch, None, points, normal_targets=np.empty(0, dtype=np.int64))
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=np.empty(0, dtype=np.int64))
+    originals = (points.tobytes(), normals.tobytes(), ids.tobytes())
+    expected = invoke(monkeypatch, None, module._line_weights, points[ids], normals, baseline, ids, baseline.cfg)
+    observed = invoke(monkeypatch, spy, module._line_weights, points[ids], normals, actual, ids, actual.cfg)
+    assert_bytes(observed, expected)
+    assert observed.flags.writeable
+    assert originals == (points.tobytes(), normals.tobytes(), ids.tobytes())
+    if layout in ("strided", "reversed"):
+        assert len(spy.weight_calls) == 1
+        assert spy.weight_calls[0][3:6] == originals
+        assert not spy.subset_calls
+    elif layout == "empty":
+        assert not spy.weight_calls and not spy.subset_calls
+    else:
+        assert not spy.weight_calls, "wrong byte order/width must preserve NumPy arithmetic"
+        assert len(spy.subset_calls) == 1, "integer-only connected fallback still executes"

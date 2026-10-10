@@ -33,9 +33,12 @@ except ImportError:
 if _GRAPH_NATIVE is not None and (
         getattr(_GRAPH_NATIVE, "API_VERSION", None) != 1 or
         getattr(_GRAPH_NATIVE, "RADIUS_GRAPH_API_VERSION", None) != 1 or
-        getattr(_GRAPH_NATIVE, "LOCAL_SUPPORT_API_VERSION", None) != 1 or not all(
+        getattr(_GRAPH_NATIVE, "LOCAL_SUPPORT_API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "NEAREST_API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "CROSS_SECTION_WEIGHTS_API_VERSION", None) != 1 or not all(
             callable(getattr(_GRAPH_NATIVE, name, None)) for name in
-            ("radius_graph", "local_support", "prepare_graph", "graph_forest", "connected_subsets"))):
+            ("radius_graph", "local_support", "prepare_graph", "graph_forest", "connected_subsets",
+             "nearest_grouped", "cross_section_weights"))):
     raise RuntimeError("incompatible lane graph native extension; rebuild this package")
 
 
@@ -236,6 +239,23 @@ def _line_weights(points, normals, support_index, support_ids, cfg):
     if not len(points):
         return np.empty(0)
     cloud = support_index.anchor
+    if (_GRAPH_NATIVE is not None and support_index._native_graph is not None
+            and len(cloud) <= 4000 and len(points) <= 4000
+            and cloud.dtype == normals.dtype == np.float64
+            and cloud.ndim == 2 and cloud.shape[1] == 2
+            and normals.shape == (len(points), 2)
+            and support_ids.dtype == np.int64 and support_ids.shape == (len(points),)
+            and np.all(np.isfinite(cloud)) and np.all(np.isfinite(normals))
+            and (not len(cloud) or np.max(np.abs(cloud)) <= 1e7)
+            and np.max(np.abs(normals)) <= 2.0 and np.geterr()["under"] == "ignore"):
+        # Preserve the original slab/radius arithmetic and duplicate reliable
+        # IDs. Finite bounded coordinates/unit-like normals avoid overflow;
+        # unusual numeric inputs or strict underflow keep NumPy's error policy.
+        result = _GRAPH_NATIVE.cross_section_weights(
+            support_index._native_graph, len(cloud), cloud.tobytes(),
+            normals.tobytes(), support_ids.tobytes(), float(cfg["scan_voxel_m"] * 0.5),
+            float(cfg["normal_max_radius_m"] ** 2))
+        return np.frombuffer(result, dtype=np.float64).copy()
     reliable = np.zeros(len(cloud), dtype=bool)
     reliable[support_ids] = True
     unique_ids = int(np.sum(reliable)) == len(support_ids)
@@ -809,6 +829,16 @@ class _FrozenIndex:
         return result
 
     def nearest(self, points, normals=None, valid_only=True):
+        if (_GRAPH_NATIVE is not None and points.dtype == self.anchor.dtype == np.float64
+                and points.ndim == self.anchor.ndim == 2
+                and points.shape[1] == self.anchor.shape[1] == 2
+                and len(points) <= 4000 and len(self.anchor) <= 4000
+                and self.cfg["max_patch_points"] <= 2048
+                and np.all(np.isfinite(points)) and np.all(np.isfinite(self.anchor))
+                and (not len(points) or np.max(np.abs(points)) <= 1e150)
+                and (not len(self.anchor) or np.max(np.abs(self.anchor)) <= 1e150)
+                and np.geterr()["under"] == "ignore"):
+            return self._nearest_grouped(points, normals, valid_only)
         indices = np.full(len(points), -1, dtype=np.int64)
         squared_distance = np.full(len(points), np.inf, dtype=np.float64)
         keys = np.floor(points / self.cell).astype(np.int64)
@@ -834,6 +864,38 @@ class _FrozenIndex:
         valid = squared_distance <= self.cfg["match_distance_m"] ** 2
         indices[~valid] = -1
         return indices
+
+    def _nearest_grouped(self, points, normals, valid_only):
+        """Batch only distance/argmin; keep original patch and NumPy dot calls."""
+        keys = np.floor(points / self.cell).astype(np.int64)
+        unique, inverse, _ = _unique_cells(keys)
+        query_parts, candidate_parts, allowed_parts = [], [], []
+        query_offsets, candidate_offsets = [0], [0]
+        for group, key in enumerate(unique):
+            targets = np.flatnonzero(inverse == group)
+            candidates = self._patch((int(key[0]), int(key[1])), self.cfg["match_distance_m"])
+            if valid_only and len(candidates):
+                candidates = candidates[self.normal_valid[candidates]]
+            query_parts.append(targets)
+            candidate_parts.append(candidates)
+            query_offsets.append(query_offsets[-1] + len(targets))
+            candidate_offsets.append(candidate_offsets[-1] + len(candidates))
+            if normals is not None and len(candidates):
+                # Do not replace this BLAS operation with C multiply/add or a
+                # different batch shape: threshold-adjacent rounding matters.
+                compatible = np.abs(normals[targets] @ self.normals[candidates].T) >= math.cos(
+                    self.cfg["normal_max_angle_rad"])
+                allowed_parts.append(compatible.tobytes())
+        # flatnonzero uses platform intp; the C byte protocol always uses int64.
+        query_ids = (np.concatenate(query_parts).astype(np.int64, copy=False)
+                     if query_parts else np.empty(0, dtype=np.int64))
+        candidate_ids = np.concatenate(candidate_parts) if candidate_parts else np.empty(0, dtype=np.int64)
+        result = _GRAPH_NATIVE.nearest_grouped(
+            points.tobytes(), self.anchor.tobytes(), np.asarray(query_offsets, dtype=np.int64).tobytes(),
+            query_ids.tobytes(), np.asarray(candidate_offsets, dtype=np.int64).tobytes(),
+            candidate_ids.tobytes(), None if normals is None else b"".join(allowed_parts),
+            float(self.cfg["match_distance_m"] ** 2))
+        return np.frombuffer(result, dtype=np.int64).copy()
 
 
 class LaneMapLocalizer:

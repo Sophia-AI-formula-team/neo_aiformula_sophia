@@ -54,6 +54,10 @@ rosdep key。经环境修改授权后可用 `sudo apt-get install build-essentia
 源码直接运行但未编译时保留原 Python 路径和原时限；不得把这种回退称为已启用加速。
 Windows 仿真 `.pyd` 不能带到车上，车端按其 Python/CPU 架构重新构建。
 当前原生版本是 repair 分支的候选，尚不是两圈/实车通过的部署版本。
+原生批处理保留候选点顺序、独立 double 乘加和原门限；法向兼容仍使用原来
+每个 cell 的 NumPy 矩阵运算，不改成不同舍入的 C 点积。超出原生容量或数值
+适用范围时使用原 NumPy 路径，不能悄悄截点。模块 API 或嵌入源 SHA 不匹配
+必须重新构建，不能将旧二进制混入新源码来证明验证通过。
 
 ```bash
 source /opt/ros/foxy/setup.bash

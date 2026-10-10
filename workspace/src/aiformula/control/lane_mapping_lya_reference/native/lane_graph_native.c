@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <float.h>
+#include <math.h>
 #include <stdint.h>
 #include <string.h>
 #if defined(_MSC_VER)
@@ -763,7 +764,356 @@ cleanup:
     return output;
 }
 
+/* Exact cross-section weights.
+ *
+ * Existing RC4 helpers: Graph, parse_graph, exact_bytes, index_bytes_length,
+ * copy_support_ids, flood_subset, MAX_WORDS and MAX_QUERIES.
+ * Register cross_section_weights with METH_VARARGS and expose
+ * CROSS_SECTION_WEIGHTS_API_VERSION=1. No float threshold is recomputed here.
+ *
+ * Numeric scope: native IEEE f64, finite cloud coordinates within +/-1e7,
+ * arbitrary finite normals (not assumed normalized), nonnegative thresholds.
+ * Intermediate overflow follows IEEE Inf/NaN comparison semantics. This C API
+ * does not emit NumPy's seterr warnings/FloatingPointError; callers needing
+ * those side effects must keep the original NumPy path on overflow-risk input.
+ */
+
+static int weights_threshold(PyObject *value, const char *name, double *result)
+{
+    if (!PyFloat_CheckExact(value)) {
+        PyErr_Format(PyExc_TypeError, "%s must be a built-in float", name);
+        return 0;
+    }
+    *result = PyFloat_AS_DOUBLE(value);
+    if (!(*result >= 0.0)) {
+        PyErr_Format(PyExc_ValueError, "%s must be nonnegative and not NaN", name);
+        return 0;
+    }
+    return 1;
+}
+
+static void cross_section_kernel(const Graph *graph, const double *cloud,
+                                 const double *normals, const int *ids, int queries,
+                                 double half_slab, double radius_squared,
+                                 unsigned char *output)
+{
+    int row;
+    for (row = 0; row < queries; ++row) {
+        uint64_t allowed[MAX_WORDS], reached[MAX_WORDS];
+        int vertex, item, count = 0, seed = ids[row];
+        double weight;
+        memset(allowed, 0, (size_t)graph->words * sizeof(uint64_t));
+        for (vertex = 0; vertex < graph->size; ++vertex) {
+            /* Match NumPy's original expression's independent binary64 ufunc
+             * results. Each product has its own volatile store, so the compiler
+             * cannot fuse along into FMA or retain extended intermediates. */
+            volatile double dx, dy, along_x, along_y, along;
+            volatile double squared_x, squared_y, squared;
+            dx = cloud[2 * vertex] - cloud[2 * seed];
+            dy = cloud[2 * vertex + 1] - cloud[2 * seed + 1];
+            along_x = dx * -normals[2 * row + 1];
+            along_y = dy * normals[2 * row];
+            along = along_x + along_y;
+            squared_x = dx * dx;
+            squared_y = dy * dy;
+            squared = squared_x + squared_y;
+            if (fabs(along) <= half_slab && squared <= radius_squared)
+                allowed[vertex / 64] |= UINT64_C(1) << (vertex % 64);
+        }
+        flood_subset(graph, allowed, seed, reached);
+        /* Every ID is counted, not just distinct support vertices. Two reliable
+         * voxels mapped to one full-support seed retain multiplicity exactly. */
+        for (item = 0; item < queries; ++item) {
+            int vertex_id = ids[item];
+            count += (int)((reached[vertex_id / 64] >> (vertex_id % 64)) & 1);
+        }
+        /* Valid finite inputs and nonnegative thresholds always admit the seed:
+         * dx=dy=0, and that same ID occurs in the reliable list. count>=1. */
+        weight = 1.0 / (double)count;
+        memcpy(output + (size_t)row * sizeof(double), &weight, sizeof(weight));
+    }
+}
+
+static PyObject *cross_section_weights(PyObject *self, PyObject *args)
+{
+    PyObject *capsule, *size, *cloud_bytes, *normal_bytes, *id_bytes;
+    PyObject *half_slab_object, *radius_squared_object, *output;
+    Graph graph;
+    double half_slab, radius_squared, *cloud, *normals;
+    int queries, coordinate, *ids;
+    unsigned char *storage, *weights;
+    size_t cloud_size, normal_size, id_size, total_size;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOOO:cross_section_weights", &capsule, &size,
+                         &cloud_bytes, &normal_bytes, &id_bytes,
+                         &half_slab_object, &radius_squared_object))
+        return NULL;
+    if (!PyCapsule_CheckExact(capsule)) {
+        PyErr_SetString(PyExc_TypeError, "cross_section_weights requires a prepared graph capsule");
+        return NULL;
+    }
+    if (!parse_graph(capsule, size, &graph) ||
+        !index_bytes_length(id_bytes, "support_ids", MAX_QUERIES, &queries))
+        return NULL;
+    cloud_size = (size_t)graph.size * 2 * sizeof(double);
+    normal_size = (size_t)queries * 2 * sizeof(double);
+    id_size = (size_t)queries * sizeof(int);
+    if (!exact_bytes(cloud_bytes, (Py_ssize_t)cloud_size, "cloud") ||
+        !exact_bytes(normal_bytes, (Py_ssize_t)normal_size, "normals") ||
+        !weights_threshold(half_slab_object, "half_slab", &half_slab) ||
+        !weights_threshold(radius_squared_object, "radius_squared", &radius_squared))
+        return NULL;
+    /* At most 144 KB. Double blocks start aligned; the int block follows whole
+     * doubles. memcpy accepts unaligned Python bytes and native endian input. */
+    total_size = cloud_size + normal_size + id_size;
+    storage = (unsigned char *)PyMem_Malloc(total_size ? total_size : sizeof(double));
+    if (!storage)
+        return PyErr_NoMemory();
+    cloud = (double *)storage;
+    normals = (double *)(storage + cloud_size);
+    ids = (int *)(storage + cloud_size + normal_size);
+    memcpy(cloud, PyBytes_AS_STRING(cloud_bytes), cloud_size);
+    memcpy(normals, PyBytes_AS_STRING(normal_bytes), normal_size);
+    if (!copy_support_ids(id_bytes, queries, graph.size, "support_ids", ids)) {
+        PyMem_Free(storage);
+        return NULL;
+    }
+    for (coordinate = 0; coordinate < 2 * graph.size; ++coordinate) {
+        if (!(cloud[coordinate] >= -1e7 && cloud[coordinate] <= 1e7)) {
+            PyMem_Free(storage);
+            PyErr_Format(PyExc_ValueError, "cloud[%d] must be finite and inside [-1e7, 1e7]", coordinate);
+            return NULL;
+        }
+    }
+    for (coordinate = 0; coordinate < 2 * queries; ++coordinate) {
+        if (!Py_IS_FINITE(normals[coordinate])) {
+            PyMem_Free(storage);
+            PyErr_Format(PyExc_ValueError, "normals[%d] must be finite", coordinate);
+            return NULL;
+        }
+    }
+    output = PyBytes_FromStringAndSize(NULL, (Py_ssize_t)queries * sizeof(double));
+    if (!output) {
+        PyMem_Free(storage);
+        return NULL;
+    }
+    weights = (unsigned char *)PyBytes_AS_STRING(output);
+    /* args keep the immutable prepared graph alive. Work arrays are owned,
+     * output has not escaped, and no Python API executes without the GIL. */
+    Py_BEGIN_ALLOW_THREADS
+    cross_section_kernel(&graph, cloud, normals, ids, queries,
+                         half_slab, radius_squared, weights);
+    Py_END_ALLOW_THREADS
+    PyMem_Free(storage);
+    return output;
+}
+
+/* Exact grouped distance reduction.
+ * No dot product, geometry generation, sorting, truncation or timing override.
+ * Python supplies the ORIGINAL per-group NumPy @ compatibility result.
+ * Build with strict IEEE semantics: no fast-math, no contraction/FMA.
+ * Inputs are native-endian immutable bytes. No NumPy C API is required.
+ * Bounds: 4000 queries, 4000 anchors, 4000 groups, 2048 candidates/group.
+ * Candidate IDs <=8,192,000 int64 =65,536,000 bytes (not 32 MB).
+ * Allowed masks <=8,192,000 bytes; no pair-distance matrix is allocated.
+ */
+#define NN_MAX_POINTS 4000
+#define NN_MAX_CANDIDATES 2048
+#define NN_MAX_PAIRS ((int64_t)NN_MAX_POINTS * NN_MAX_CANDIDATES)
+
+static int64_t nn_i64(const char *data, Py_ssize_t index) {
+    int64_t value;
+    memcpy(&value, data + index * 8, 8);
+    return value;
+}
+
+static double nn_f64(const char *data, Py_ssize_t index) {
+    double value;
+    memcpy(&value, data + index * 8, 8);
+    return value;
+}
+
+static int nn_bytes(PyObject *object, Py_ssize_t width, const char **data,
+                    Py_ssize_t *count, const char *name) {
+    Py_ssize_t length;
+    if (!PyBytes_CheckExact(object)) {
+        PyErr_Format(PyExc_TypeError, "%s must be immutable bytes", name);
+        return 0;
+    }
+    length = PyBytes_GET_SIZE(object);
+    if (length % width) {
+        PyErr_Format(PyExc_ValueError, "%s has an invalid byte length", name);
+        return 0;
+    }
+    *data = PyBytes_AS_STRING(object);
+    *count = length / width;
+    return 1;
+}
+
+static PyObject *nearest_grouped(PyObject *self, PyObject *args) {
+    PyObject *q_obj, *a_obj, *qo_obj, *qi_obj, *co_obj, *ci_obj, *mask_obj, *limit_obj;
+    PyObject *output = NULL;
+    const char *q, *a, *qo, *qi, *co, *ci, *mask = NULL;
+    Py_ssize_t nq, na, nqo, nqi, nco, nci, nmask = 0, groups, g, k;
+    unsigned char *seen = NULL;
+    char *out;
+    int64_t pair_count = 0, previous_q = 0, previous_c = 0;
+    double limit;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOOOO:nearest_grouped", &q_obj, &a_obj,
+                          &qo_obj, &qi_obj, &co_obj, &ci_obj, &mask_obj, &limit_obj))
+        return NULL;
+    if (sizeof(double) != 8 || sizeof(int64_t) != 8 || FLT_RADIX != 2 ||
+            DBL_MANT_DIG != 53 || DBL_MAX_EXP != 1024) {
+        PyErr_SetString(PyExc_RuntimeError, "native IEEE binary64/int64 required");
+        return NULL;
+    }
+    if (!PyFloat_CheckExact(limit_obj)) {
+        PyErr_SetString(PyExc_TypeError, "squared limit must be a built-in float");
+        return NULL;
+    }
+    limit = PyFloat_AS_DOUBLE(limit_obj);
+    if (Py_IS_NAN(limit) || limit < 0.0) {
+        PyErr_SetString(PyExc_ValueError, "squared limit must be nonnegative and not NaN");
+        return NULL;
+    }
+    if (!nn_bytes(q_obj, 16, &q, &nq, "query_xy") ||
+            !nn_bytes(a_obj, 16, &a, &na, "anchor_xy") ||
+            !nn_bytes(qo_obj, 8, &qo, &nqo, "query_offsets") ||
+            !nn_bytes(qi_obj, 8, &qi, &nqi, "query_ids") ||
+            !nn_bytes(co_obj, 8, &co, &nco, "candidate_offsets") ||
+            !nn_bytes(ci_obj, 8, &ci, &nci, "candidate_ids"))
+        return NULL;
+    if (mask_obj != Py_None && !nn_bytes(mask_obj, 1, &mask, &nmask, "allowed"))
+        return NULL;
+    if (nq > NN_MAX_POINTS || na > NN_MAX_POINTS || nqo < 1 || nco != nqo ||
+            nqo > NN_MAX_POINTS + 1 || nqi != nq || nci > NN_MAX_PAIRS) {
+        PyErr_SetString(PyExc_ValueError, "bounded nearest dimensions violated");
+        return NULL;
+    }
+    groups = nqo - 1;
+    if (groups > nq || nn_i64(qo, 0) != 0 || nn_i64(co, 0) != 0 ||
+            nn_i64(qo, groups) != nqi || nn_i64(co, groups) != nci) {
+        PyErr_SetString(PyExc_ValueError, "CSR offsets or complete query coverage invalid");
+        return NULL;
+    }
+    for (g = 0; g < groups; ++g) {
+        int64_t end_q = nn_i64(qo, g + 1), end_c = nn_i64(co, g + 1);
+        int64_t width, rows;
+        if (end_q < previous_q || end_q > nqi || end_c < previous_c || end_c > nci) {
+            PyErr_SetString(PyExc_ValueError, "CSR offsets must be bounded and monotonic");
+            return NULL;
+        }
+        width = end_c - previous_c;
+        rows = end_q - previous_q;
+        if (width > NN_MAX_CANDIDATES) {
+            PyErr_SetString(PyExc_ValueError, "candidate group exceeds 2048; never truncate in C");
+            return NULL;
+        }
+        pair_count += rows * width; /* bounded by 4000 * 2048 */
+        previous_q = end_q;
+        previous_c = end_c;
+    }
+    if (pair_count > NN_MAX_PAIRS || (mask && nmask != pair_count)) {
+        PyErr_SetString(PyExc_ValueError, "allowed byte length does not match grouped pairs");
+        return NULL;
+    }
+    for (k = 0; k < nq * 2; ++k) {
+        if (!Py_IS_FINITE(nn_f64(q, k))) {
+            PyErr_SetString(PyExc_ValueError, "query coordinates must be finite");
+            return NULL;
+        }
+    }
+    for (k = 0; k < na * 2; ++k) {
+        if (!Py_IS_FINITE(nn_f64(a, k))) {
+            PyErr_SetString(PyExc_ValueError, "anchor coordinates must be finite");
+            return NULL;
+        }
+    }
+    seen = PyMem_Calloc(nq ? nq : 1, 1);
+    if (!seen) return PyErr_NoMemory();
+    for (k = 0; k < nqi; ++k) {
+        int64_t id = nn_i64(qi, k);
+        if (id < 0 || id >= nq || seen[id]) {
+            PyErr_SetString(PyExc_ValueError, "query IDs must cover every query exactly once");
+            goto fail;
+        }
+        seen[id] = 1;
+    }
+    for (k = 0; k < nci; ++k) {
+        int64_t id = nn_i64(ci, k);
+        if (id < 0 || id >= na) {
+            PyErr_SetString(PyExc_ValueError, "candidate ID outside anchor");
+            goto fail;
+        }
+    }
+    for (k = 0; mask && k < nmask; ++k) {
+        if ((unsigned char)mask[k] > 1) {
+            PyErr_SetString(PyExc_ValueError, "allowed values must be 0 or 1");
+            goto fail;
+        }
+    }
+    PyMem_Free(seen);
+    seen = NULL;
+    output = PyBytes_FromStringAndSize(NULL, nq * 8);
+    if (!output) return NULL;
+    out = PyBytes_AS_STRING(output);
+    /* Objects are immutable and retained by args. No Python API/allocation is
+       called while the GIL is released. The new output is not yet exposed. */
+    Py_BEGIN_ALLOW_THREADS
+    {
+        Py_ssize_t pair_offset = 0;
+        for (g = 0; g < groups; ++g) {
+            Py_ssize_t q_start = (Py_ssize_t)nn_i64(qo, g);
+            Py_ssize_t q_end = (Py_ssize_t)nn_i64(qo, g + 1);
+            Py_ssize_t c_start = (Py_ssize_t)nn_i64(co, g);
+            Py_ssize_t c_end = (Py_ssize_t)nn_i64(co, g + 1);
+            Py_ssize_t width = c_end - c_start, row;
+            for (row = q_start; row < q_end; ++row) {
+                int64_t query_id = nn_i64(qi, row), best_id = -1;
+                double best = HUGE_VAL;
+                double x = nn_f64(q, (Py_ssize_t)query_id * 2);
+                double y = nn_f64(q, (Py_ssize_t)query_id * 2 + 1);
+                Py_ssize_t column;
+                for (column = c_start; column < c_end; ++column) {
+                    int64_t candidate_id = nn_i64(ci, column);
+                    double distance = HUGE_VAL;
+                    Py_ssize_t at = pair_offset + (row - q_start) * width + column - c_start;
+                    if (!mask || mask[at]) {
+                        volatile double dx = x - nn_f64(a, (Py_ssize_t)candidate_id * 2);
+                        volatile double dy = y - nn_f64(a, (Py_ssize_t)candidate_id * 2 + 1);
+                        volatile double xx = dx * dx;
+                        volatile double yy = dy * dy;
+                        volatile double sum = xx + yy;
+                        distance = sum;
+                    }
+                    /* np.argmin chooses column zero even for an all-inf row.
+                       Preserve that legacy corner case if limit is +inf. */
+                    if (column == c_start || distance < best) {
+                        best = distance;
+                        best_id = candidate_id;
+                    }
+                }
+                if (!(best <= limit)) best_id = -1;
+                memcpy(out + (Py_ssize_t)query_id * 8, &best_id, 8);
+            }
+            pair_offset += (q_end - q_start) * width;
+        }
+    }
+    Py_END_ALLOW_THREADS
+    return output;
+fail:
+    PyMem_Free(seen);
+    Py_XDECREF(output);
+    return NULL;
+}
+
+
 static PyMethodDef methods[] = {
+    {"nearest_grouped", nearest_grouped, METH_VARARGS,
+     "Exact grouped distance/argmin, retaining caller-provided normal compatibility and candidate order."},
+    {"cross_section_weights", cross_section_weights, METH_VARARGS,
+     "Exact current tangent-slab connectivity weights; duplicate reliable IDs retain multiplicity."},
     {"local_support", local_support, METH_VARARGS,
      "Exact local support (graph, n, int64 candidates, int64 targets, uint8 allowed, int64 parents). Returns uint8 support and native-int64 counts bytes."},
     {"radius_graph", radius_graph, METH_VARARGS,
@@ -789,6 +1139,8 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
     if (PyModule_AddIntConstant(result, "API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "RADIUS_GRAPH_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "LOCAL_SUPPORT_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "NEAREST_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "CROSS_SECTION_WEIGHTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||
