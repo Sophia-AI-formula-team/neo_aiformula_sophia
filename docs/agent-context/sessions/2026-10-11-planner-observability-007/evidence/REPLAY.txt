@@ -1,0 +1,71 @@
+Trial16: reproduce the original R2 failure from captured simulation sensors
+
+Scope
+  observed_prefix.json contains original chronological wheel RPM, body gyro,
+  current ideal-camera binary masks, calibration and comparison digests.
+  It does not contain GNSS, a reference course, Unity global truth, control
+  commands, raw bags or personal paths. Digests are checks, not pose inputs.
+  This is a failed observed prefix, not a completed lap or vehicle approval.
+
+Files
+  observed_prefix.json            Original sanitized sensor fixture, unchanged.
+  causal_default.json             Original R2 causal replay report, unchanged.
+  replay_observed_keyframe.py.txt Portable replay utility, unchanged source content.
+  diagnosis.json                 Concise quantitative diagnosis and limitations.
+  visibility_clipped_stripe.png   Fixed-scale current-mask explanatory figure.
+  evidence_hashes.json            Byte sizes and SHA256 of these payloads.
+
+Prerequisites
+  Use an existing Python environment with NumPy and Pillow, plus Git.
+  No ROS, Unity, cv2, scipy or dataset download is needed for this replay.
+  Do not install packages or execute vehicle commands as part of this evidence.
+  The neo repository must locally contain this immutable R2 commit:
+    751edef54952902783c19ebb148072ccc7f17152
+  Tag: lane-mapping-20261011-r2
+  The utility loads the four production modules from that commit's Git blobs,
+  independent of dirty runtime files in the current worktree.
+
+Command (run from the neo repository root; one line)
+  python docs/agent-context/sessions/2026-10-11-planner-observability-007/evidence/replay_observed_keyframe.py.txt replay --fixture docs/agent-context/sessions/2026-10-11-planner-observability-007/evidence/observed_prefix.json --repo . --revision 751edef54952902783c19ebb148072ccc7f17152 --output trial16-r2-replay-local.json
+
+The .py.txt suffix satisfies the evidence package's text-file whitelist. Python
+executes it directly; renaming or installing it is not required.
+
+The output path must not already exist. The utility refuses overwriting it.
+Keep new rerun outputs separate; do not modify the archived baseline report.
+Use PYTHONDONTWRITEBYTECODE=1 if no interpreter cache files are desired.
+
+Expected geometric result on hardware meeting the unchanged runtime budgets
+  357 sensor batches; 3922 recomputed motion samples.
+  106 mapping frames, sequence 252 through 357; 105 accepted.
+  sequence 357: candidate tracking_innovation_gate, then previous active
+  reference insufficient_final_inliers; final match_insufficient_final_inliers.
+  observed_decisions_reproduced = true
+  all_prefix_frames_accepted = false
+  odometry_reset_count = 0
+  baseline_content_matches_ignoring_only_line_endings = true
+
+The original recording used Windows CRLF, while Git blobs use LF; the report
+explicitly checks both byte forms. baseline_hashes_match may therefore be false
+without a source-content difference. No timestamp, calibration, gate, motion
+sample or mask pixel is rewritten for reproduction.
+
+Real clock budgets remain 40ms per localizer and 80ms per map process. On slower
+or busy hardware, an earlier runtime-budget rejection is legitimate and must
+be recorded; do not disable clocks or widen gates to force the expected result.
+Full report hashes are not expected to match across runs because elapsed
+wall-clock measurements vary. Compare source equivalence, decisions, source
+frontiers, sensor/pose digest checks and terminal geometry instead.
+
+Interpretation
+  The full current image contains long filled stripes. Cropping position
+  measurements to the reliable projection window turns the first visible
+  portion into a transverse thin slice. Multi-scale PCA can additionally merge
+  separated stripes across black gaps and invent an apparently supported line.
+  See diagnosis.json for numerical evidence and explicit counterexamples to
+  treating full Hessian rank or scan/anchor PCA agreement as physical proof.
+
+  No proposed replacement algorithm or new closed-loop trial is certified by
+  these files. This evidence was assembled without rerunning the core while
+  another agent was profiling it; causal_default.json is the prior completed
+  baseline run, preserved byte-for-byte.

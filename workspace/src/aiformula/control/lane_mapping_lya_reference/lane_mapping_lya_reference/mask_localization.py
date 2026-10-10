@@ -28,6 +28,7 @@ DEFAULT_CONFIG = {
     "max_anchor_points": 100000,
     "max_input_scan_points": 200000,
     "max_scan_points": 600,
+    "max_scan_support_points": 4000,
     "min_scan_points": 30,
     "min_inliers": 24,
     "anchor_voxel_m": 0.08,
@@ -36,6 +37,8 @@ DEFAULT_CONFIG = {
     "normal_radius_m": 0.45,
     "normal_max_radius_m": 1.35,
     "normal_min_points": 6,
+    "normal_connectivity_m": 0.22,
+    "normal_max_angle_rad": math.pi / 6.0,
     "normal_max_variance_ratio": 0.15,
     "normal_max_thickness_m": 0.30,
     "max_patch_points": 512,
@@ -77,7 +80,7 @@ def _configuration(config):
             raise ValueError("unknown matcher settings: " + ", ".join(sorted(map(str, unknown))))
         result.update(config)
     integer_keys = {"max_anchor_points", "max_input_scan_points", "max_scan_points",
-                    "min_scan_points", "min_inliers", "normal_min_points",
+                    "min_scan_points", "min_inliers", "normal_min_points", "max_scan_support_points",
                     "max_patch_points", "max_iterations", "refinement_min_frame_votes",
                     "refinement_max_cells", "refinement_max_frames"}
     for key, value in result.items():
@@ -103,6 +106,11 @@ def _configuration(config):
         raise ValueError("need 3 <= min_inliers <= min_scan_points <= max_scan_points")
     if result["max_scan_points"] > result["max_input_scan_points"]:
         raise ValueError("max_scan_points exceeds the input limit")
+    if not result["max_scan_points"] <= result["max_scan_support_points"] <= 4000:
+        raise ValueError("scan normal-support capacity must be between scan and 4000 points")
+    if (result["normal_connectivity_m"] > result["normal_radius_m"]
+            or result["normal_max_angle_rad"] >= math.pi / 2):
+        raise ValueError("normal connectivity or direction bound is invalid")
     if result["normal_min_points"] < 3 or result["max_patch_points"] < result["normal_min_points"]:
         raise ValueError("normal support cannot fit in the patch budget")
     if result["inlier_distance_m"] > result["match_distance_m"]:
@@ -164,14 +172,85 @@ def _points(value, maximum):
     return result
 
 
+def _unique_cells(keys):
+    """Lexicographic integer XY grouping without structured-array sorting.
+
+    The row order, inverse labels and counts match np.unique(axis=0). Keeping
+    inverse labels preserves the original-order floating-point accumulation.
+    """
+    if not len(keys):
+        return keys.copy(), np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64)
+    order = np.lexsort((keys[:, 1], keys[:, 0]))
+    ordered = keys[order]
+    first = np.empty(len(keys), dtype=bool)
+    first[0] = True
+    first[1:] = np.any(ordered[1:] != ordered[:-1], axis=1)
+    starts = np.flatnonzero(first)
+    inverse = np.empty(len(keys), dtype=np.int64)
+    inverse[order] = np.cumsum(first) - 1
+    counts = np.diff(np.append(starts, len(keys)))
+    return ordered[first], inverse, counts
+
+
 def _voxel_means(points, resolution):
     if not len(points):
         return np.empty((0, 2), dtype=np.float64)
     keys = np.floor(points / resolution).astype(np.int64)
-    _, inverse, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+    _, inverse, counts = _unique_cells(keys)
     sums = np.zeros((len(counts), 2), dtype=np.float64)
     np.add.at(sums, inverse, points)
     return sums / counts[:, None]
+
+
+def _line_weights(points, normals, support_index, support_ids, cfg):
+    """Normalize reliable votes within a connected current paint cross-section.
+
+    Connectivity must stay inside the tangent slab, not take a detour through
+    a remote (or nearby) U bridge. Full support defines structure only: the
+    numerator/denominator count ONLY the reliable scan indices. The slab is
+    centered on their full-support seed; the reliable voxel mean can differ.
+    """
+    if not len(points):
+        return np.empty(0)
+    cloud = support_index.anchor
+    reliable = np.zeros(len(cloud), dtype=bool)
+    reliable[support_ids] = True
+    unique_ids = int(np.sum(reliable)) == len(support_ids)
+    reliable_bits = int.from_bytes(np.packbits(reliable, bitorder="little").tobytes(), "little")
+    byte_count = (len(cloud) + 7) // 8
+    adjacency = support_index._adjacency_bits
+    if adjacency is None:
+        raise ValueError("current scan cross-section exceeds bounded graph capacity")
+    weights = np.empty(len(points))
+    for start in range(0, len(points), 64):
+        stop = min(start + 64, len(points))
+        seeds = support_ids[start:stop]
+        dx = cloud[None, :, 0] - cloud[seeds, None, 0]
+        dy = cloud[None, :, 1] - cloud[seeds, None, 1]
+        along = dx * -normals[start:stop, None, 1] + dy * normals[start:stop, None, 0]
+        allowed = ((np.abs(along) <= cfg["scan_voxel_m"] * 0.5)
+                   & (dx * dx + dy * dy <= cfg["normal_max_radius_m"] ** 2))
+        packed = np.packbits(allowed, axis=1, bitorder="little")
+        for row, seed in enumerate(seeds):
+            mask = int.from_bytes(packed[row].tobytes(), "little")
+            reached = frontier = 1 << int(seed)
+            while frontier and reached != mask:
+                bit = frontier & -frontier
+                frontier ^= bit
+                added = adjacency[bit.bit_length() - 1] & mask & ~reached
+                reached |= added
+                frontier |= added
+            if unique_ids:
+                # bin/count also works on ROS Foxy's Python 3.8 (no bit_count).
+                count = bin(reached & reliable_bits).count("1")
+            else:
+                # Preserve multiplicity if rounding associates two reliable
+                # voxel means with the same full-support seed.
+                selected = np.unpackbits(np.frombuffer(reached.to_bytes(byte_count, "little"),
+                                                      dtype=np.uint8), bitorder="little")
+                count = int(np.sum(selected[support_ids]))
+            weights[start + row] = 1.0 / count
+    return weights
 
 
 @dataclass(frozen=True)
@@ -220,7 +299,8 @@ class MatchResult:
 class _FrozenIndex:
     """Spatial-hash batches: no full anchor-by-scan distance matrix per frame."""
 
-    def __init__(self, anchor, cfg):
+    def __init__(self, anchor, cfg, normal_targets=None, normal_queries=None, direction_support=None,
+                 reuse_index=None):
         self.anchor = anchor
         self.cfg = cfg
         self.cell = cfg["hash_cell_m"]
@@ -228,12 +308,58 @@ class _FrozenIndex:
         keys = np.floor(anchor / self.cell).astype(np.int64)
         for index, key in enumerate(keys):
             self.cells.setdefault((int(key[0]), int(key[1])), []).append(index)
+        self._cell_geometry = {key: anchor[indices].tobytes() for key, indices in self.cells.items()}
+        self.components = self._components()
+        self._component_sizes = np.bincount(self.components, minlength=len(anchor))
         self.normals = np.zeros_like(anchor)
         self.line_points = anchor.copy()
         self.normal_valid = np.zeros(len(anchor), dtype=bool)
         self.normal_radii = np.zeros(len(anchor), dtype=np.float64)
         self.normal_thickness = np.zeros(len(anchor), dtype=np.float64)
+        self.normal_position_support = np.zeros(len(anchor), dtype=np.int64)
+        self.direction_supported_points = 0
+        self.direction_borrowed = np.zeros(len(anchor), dtype=bool)
+        self.reused_geometry_points = 0
         self.patch_truncations = 0
+        self._patch_cache = {}
+        self.query_nearest = None
+        if normal_queries is not None:
+            found = self.nearest(normal_queries, valid_only=False)
+            self.query_nearest = found
+            normal_targets = np.unique(found[found >= 0])
+        requested = np.ones(len(anchor), dtype=bool)
+        if normal_targets is not None:
+            requested[:] = False
+            requested[np.asarray(normal_targets, dtype=np.int64)] = True
+        cached = np.zeros(len(anchor), dtype=bool)
+        if reuse_index is not None and reuse_index.cfg == cfg:
+            for key, all_indices in self.cells.items():
+                if self._cell_geometry[key] != reuse_index._cell_geometry.get(key):
+                    continue
+                current = np.asarray(all_indices, dtype=np.int64)
+                previous = np.asarray(reuse_index.cells[key], dtype=np.int64)
+                eligible = (~self.direction_borrowed[current] & ~reuse_index.direction_borrowed[previous]
+                            & reuse_index.computed_normals[previous])
+                dependencies = np.where(reuse_index.normal_valid[previous],
+                                        reuse_index.normal_radii[previous], cfg["normal_max_radius_m"])
+                for radius in np.unique(dependencies[eligible]):
+                    reach = int(math.ceil(radius / self.cell))
+                    # A previously valid smallest-scale fit depends only on
+                    # that radius and all smaller attempted radii. Invalid
+                    # geometry depends on the entire maximum neighborhood.
+                    # Compare complete cells, including patch-truncation input.
+                    same = all(self._cell_geometry.get((key[0] + dx, key[1] + dy))
+                               == reuse_index._cell_geometry.get((key[0] + dx, key[1] + dy))
+                               for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1))
+                    if not same:
+                        continue
+                    subset = eligible & (dependencies == radius)
+                    new, old = current[subset], previous[subset]
+                    for name in ("normals", "line_points", "normal_valid", "normal_radii",
+                                 "normal_thickness", "normal_position_support"):
+                        getattr(self, name)[new] = getattr(reuse_index, name)[old]
+                    cached[new] = True
+                    self.reused_geometry_points += len(new)
         radii = [cfg["normal_radius_m"]]
         while radii[-1] < cfg["normal_max_radius_m"]:
             radii.append(min(radii[-1] * 2.0, cfg["normal_max_radius_m"]))
@@ -244,7 +370,7 @@ class _FrozenIndex:
         for radius in radii:
             for key, all_indices in self.cells.items():
                 indices = np.asarray(all_indices, dtype=np.int64)
-                indices = indices[~self.normal_valid[indices]]
+                indices = indices[requested[indices] & ~self.normal_valid[indices] & ~cached[indices]]
                 if not len(indices):
                     continue
                 candidate_indices = self._patch(key, radius)
@@ -253,7 +379,9 @@ class _FrozenIndex:
                 targets = anchor[indices]
                 candidates = anchor[candidate_indices]
                 difference = candidates[None, :, :] - targets[:, None, :]
-                support = np.sum(difference * difference, axis=2) <= radius * radius
+                support = ((np.sum(difference * difference, axis=2) <= radius * radius)
+                           & (self.components[indices, None] == self.components[candidate_indices][None, :]))
+                support = self._local_support(indices, candidate_indices, support)
                 weights = support.astype(np.float64)
                 counts = np.sum(weights, axis=1)
                 safe_count = np.maximum(counts, 1.0)
@@ -271,19 +399,240 @@ class _FrozenIndex:
                 self.normal_valid[chosen] = True
                 self.normal_radii[chosen] = radius
                 self.normal_thickness[chosen] = np.sqrt(np.maximum(eigenvalues[valid, 0], 0.0))
+                self.normal_position_support[chosen] = counts[valid].astype(np.int64)
                 # Match the local band center in its normal direction, not any
                 # arbitrarily nearest pixel inside a thick, filled lane ribbon.
                 offset = np.sum(means[valid] * normals, axis=1)
                 self.line_points[chosen] = anchor[chosen] + normals * offset[:, None]
+        if direction_support is not None:
+            self._past_direction_support(direction_support)
         self.normals.flags.writeable = False
         self.normal_valid.flags.writeable = False
         self.line_points.flags.writeable = False
         self.normal_radii.flags.writeable = False
         self.normal_thickness.flags.writeable = False
+        self.normal_position_support.flags.writeable = False
+        self.direction_borrowed.flags.writeable = False
+        self.computed_normals = requested | self.direction_borrowed | cached
+        self.computed_normals.flags.writeable = False
         self.thickness_p95_m = (float(np.percentile(self.normal_thickness[self.normal_valid], 95))
                                 if np.any(self.normal_valid) else None)
 
+    def _past_direction_support(self, support):
+        """Use past paint direction without importing its unconfirmed position.
+
+        The caller owns the strictly-past source frontier. Only normals may be
+        borrowed. Line centers/thickness and all matching positions remain
+        calculated from the original CONFIRMED anchor, within its own component.
+        """
+        cfg = self.cfg
+        unresolved = np.flatnonzero(~self.normal_valid)
+        if not len(unresolved):
+            return
+        # Past low-reliability paint may fill a missing direction, never replace
+        # geometry already observable from confirmed map points. Unconditional
+        # replacement caused self-reinforcing heading/lateral drift in replay.
+        hint = _FrozenIndex(support, cfg, normal_queries=self.anchor[unresolved])
+        nearest = np.full(len(self.anchor), -1, dtype=np.int64)
+        nearest[unresolved] = hint.query_nearest
+        covered = nearest >= 0
+        covered[covered] &= hint.normal_valid[nearest[covered]]
+        covered[covered] &= np.linalg.norm(self.anchor[covered] - support[nearest[covered]], axis=1) <= cfg["normal_connectivity_m"]
+        self.direction_supported_points = 0
+        for key, all_indices in self.cells.items():
+            indices = np.asarray(all_indices, dtype=np.int64)
+            indices = indices[covered[indices]]
+            if not len(indices):
+                continue
+            candidates = self._patch(key, cfg["normal_max_radius_m"])
+            difference = self.anchor[candidates][None, :, :] - self.anchor[indices, None, :]
+            support_mask = ((np.sum(difference * difference, axis=2) <= cfg["normal_max_radius_m"] ** 2)
+                            & (self.components[indices, None] == self.components[candidates][None, :]))
+            support_mask = self._local_support(indices, candidates, support_mask)
+            counts = np.sum(support_mask, axis=1)
+            normals = hint.normals[nearest[indices]]
+            projected = np.einsum("nki,ni->nk", difference, normals)
+            mean = np.sum(projected * support_mask, axis=1) / np.maximum(counts, 1)
+            variance = np.sum((projected - mean[:, None]) ** 2 * support_mask, axis=1) / np.maximum(counts, 1)
+            valid = ((counts >= cfg["normal_min_points"])
+                     & (variance <= cfg["normal_max_thickness_m"] ** 2))
+            selected = indices[valid]
+            self.normals[selected] = normals[valid]
+            self.direction_borrowed[selected] = True
+            self.normal_valid[selected] = True
+            self.normal_thickness[selected] = np.sqrt(np.maximum(variance[valid], 0.))
+            self.normal_position_support[selected] = counts[valid]
+            self.normal_radii[selected] = cfg["normal_max_radius_m"]
+            self.line_points[selected] = self.anchor[selected] + normals[valid] * mean[valid, None]
+            self.direction_supported_points += len(selected)
+
+    def _local_support(self, targets, candidates, allowed):
+        """Component containing each seed in its own radius-induced graph.
+
+        A remote U-shaped bridge must not join two locally separate paint bands.
+        Compact Python integer bitsets bound memory to the existing patch cap;
+        only vertices inside each query circle may be traversed. This is exact
+        connectivity, not a truncated flood-fill that could invent a thin line.
+        """
+        incomplete = np.flatnonzero(np.sum(allowed, axis=1) != self._component_sizes[self.components[targets]])
+        if not len(incomplete):
+            return allowed
+        if self._adjacency_bits is not None:
+            positions = np.full(len(self.anchor), -1, dtype=np.int64)
+            positions[candidates] = np.arange(len(candidates))
+            parents = self._forest_parents[candidates]
+            edges = np.flatnonzero(parents >= 0)
+            edges = edges[positions[parents[edges]] >= 0]
+            parent_positions = positions[parents[edges]]
+            counts = np.sum(allowed[incomplete], axis=1)
+            edge_count = np.sum(allowed[incomplete[:, None], edges]
+                                & allowed[incomplete[:, None], parent_positions], axis=1)
+            incomplete = incomplete[edge_count != counts - 1]
+            if not len(incomplete):
+                return allowed
+            # Live windows are <=4000 points: share their exact sparse graph
+            # encoded as at most 2 MB of bitsets across every PCA radius/query.
+            # Larger full-map indexes retain the bounded local-patch fallback.
+            size = len(self.anchor)
+            global_allowed = np.zeros((len(incomplete), size), dtype=bool)
+            global_allowed[:, candidates] = allowed[incomplete]
+            masks = np.packbits(global_allowed, axis=1, bitorder="little")
+            for number, row in enumerate(incomplete):
+                seed = int(targets[row])
+                if not global_allowed[number, seed]:
+                    allowed[row] = False
+                    continue
+                mask = int.from_bytes(masks[number].tobytes(), "little")
+                reached = frontier = 1 << seed
+                while frontier and reached != mask:
+                    bit = frontier & -frontier
+                    frontier ^= bit
+                    added = self._adjacency_bits[bit.bit_length() - 1] & mask & ~reached
+                    reached |= added
+                    frontier |= added
+                bits = np.unpackbits(np.frombuffer(reached.to_bytes((size + 7) // 8, "little"), dtype=np.uint8),
+                                     bitorder="little")
+                allowed[row] = bits[candidates]
+            return allowed
+        count = len(candidates)
+        positions = {int(index): position for position, index in enumerate(candidates)}
+        # Cheap exact certificate for ordinary continuous bands: an induced
+        # subset of a spanning forest is connected iff it retains n-1 edges.
+        # Only uncertified rows need flood-fill; this cannot admit a U bridge
+        # outside the query circle, since both endpoints must be allowed.
+        forest = [(position, positions[other]) for position, index in enumerate(candidates)
+                  for other in self._forest_children[int(index)] if other in positions]
+        if forest:
+            edges = np.asarray(forest, dtype=np.int64)
+            connected_count = np.sum(allowed[incomplete[:, None], edges[:, 0]]
+                                     & allowed[incomplete[:, None], edges[:, 1]], axis=1)
+            needed = np.sum(allowed[incomplete], axis=1) - 1
+            incomplete = incomplete[connected_count != needed]
+            if not len(incomplete):
+                return allowed
+        adjacency = []
+        points = self.anchor[candidates]
+        for start in range(0, count, 64):
+            delta = points[start:start + 64, None, :] - points[None, :, :]
+            connected = np.sum(delta * delta, axis=2) <= self.cfg["normal_connectivity_m"] ** 2
+            adjacency.extend(int.from_bytes(row.tobytes(), "little") for row in
+                             np.packbits(connected, axis=1, bitorder="little"))
+        byte_count = (count + 7) // 8
+        for row in incomplete:
+            seed = positions.get(int(targets[row]))
+            if seed is None or not allowed[row, seed]:
+                allowed[row] = False
+                continue
+            mask = int.from_bytes(np.packbits(allowed[row], bitorder="little").tobytes(), "little")
+            reached = frontier = 1 << seed
+            while frontier and reached != mask:
+                bit = frontier & -frontier
+                frontier ^= bit
+                added = adjacency[bit.bit_length() - 1] & mask & ~reached
+                reached |= added
+                frontier |= added
+            allowed[row] = np.unpackbits(np.frombuffer(reached.to_bytes(byte_count, "little"), dtype=np.uint8),
+                                         bitorder="little")[:count]
+        return allowed
+
+    def _components(self):
+        """Keep disconnected paint bands out of each other's PCA support.
+
+        Radius growth may reveal one thick connected ribbon, but must never
+        invent a transverse line through separate crosswalk bars. Connectivity
+        is determined from this observation/reference alone, before matching.
+        """
+        count = len(self.anchor)
+        parent = np.arange(count, dtype=np.int64)
+        self._forest_children = [[] for _ in range(count)]
+        self._adjacency_bits = [0] * count if count <= 4000 else None
+        self._forest_parents = np.full(count, -1, dtype=np.int64)
+        matrix = np.zeros((count, count), dtype=bool) if count <= 4000 else None
+        radius = self.cfg["normal_connectivity_m"]
+        buckets = {}
+        keys = np.floor(self.anchor / radius).astype(np.int64)
+
+        def root(index):
+            while parent[index] != index:
+                parent[index] = parent[parent[index]]
+                index = parent[index]
+            return index
+
+        for index, key in enumerate(keys):
+            buckets.setdefault((int(key[0]), int(key[1])), []).append(index)
+        # Batch the bounded distance queries by small occupied cell, not one
+        # Python/NumPy allocation per pixel. Visit each cell-pair just once.
+        for key, members in buckets.items():
+            candidates = list(members)
+            for dx, dy in ((-1, -1), (-1, 0), (-1, 1), (0, -1)):
+                candidates.extend(buckets.get((key[0] + dx, key[1] + dy), ()))
+            members = np.asarray(members, dtype=np.int64)
+            candidates = np.asarray(candidates, dtype=np.int64)
+            if len(members) > 512 or len(candidates) > 2048:
+                raise ValueError("normal connectivity bucket capacity exceeded")
+            difference = self.anchor[members, None, :] - self.anchor[candidates][None, :, :]
+            connected = np.sum(difference * difference, axis=2) <= radius ** 2
+            if matrix is not None:
+                matrix[members[:, None], candidates] = connected
+                matrix[candidates[:, None], members] = connected.T
+                continue
+            rows, cols = np.nonzero(connected)
+            for left, right in zip(members[rows], candidates[cols]):
+                a, b = root(int(left)), root(int(right))
+                if a != b:
+                    parent[b] = a
+                    self._forest_children[int(left)].append(int(right))
+        if matrix is not None:
+            self._adjacency_bits = [int.from_bytes(row.tobytes(), "little") for row in
+                                    np.packbits(matrix, axis=1, bitorder="little")]
+            unseen = (1 << count) - 1
+            byte_count = (count + 7) // 8
+            while unseen:
+                seed = unseen & -unseen
+                reached = frontier = seed
+                while frontier:
+                    bit = frontier & -frontier
+                    frontier ^= bit
+                    added = self._adjacency_bits[bit.bit_length() - 1] & ~reached
+                    children = added
+                    while children:
+                        child = children & -children
+                        children ^= child
+                        self._forest_parents[child.bit_length() - 1] = bit.bit_length() - 1
+                    reached |= added
+                    frontier |= added
+                chosen = np.unpackbits(np.frombuffer(reached.to_bytes(byte_count, "little"), dtype=np.uint8),
+                                       bitorder="little")[:count].astype(bool)
+                parent[chosen] = seed.bit_length() - 1
+                unseen &= ~reached
+            return parent
+        return np.asarray([root(index) for index in range(count)], dtype=np.int64)
+
     def _patch(self, key, radius):
+        cache_key = (key, radius)
+        cached = self._patch_cache.get(cache_key)
+        if cached is not None:
+            return cached
         reach = int(math.ceil(radius / self.cell))
         indices = []
         for dx in range(-reach, reach + 1):
@@ -295,23 +644,35 @@ class _FrozenIndex:
             order = np.argsort(distance, kind="stable")[:self.cfg["max_patch_points"]]
             indices = np.asarray(indices, dtype=np.int64)[order].tolist()
             self.patch_truncations += 1
-        return np.asarray(indices, dtype=np.int64)
+        result = np.asarray(indices, dtype=np.int64)
+        result.flags.writeable = False
+        # Pure memoization of an immutable index, bounded even for long-lived
+        # repeat sessions whose query centers keep moving through the map.
+        if len(self._patch_cache) >= 512:
+            self._patch_cache.clear()
+        self._patch_cache[cache_key] = result
+        return result
 
-    def nearest(self, points):
+    def nearest(self, points, normals=None, valid_only=True):
         indices = np.full(len(points), -1, dtype=np.int64)
         squared_distance = np.full(len(points), np.inf, dtype=np.float64)
         keys = np.floor(points / self.cell).astype(np.int64)
-        unique, inverse = np.unique(keys, axis=0, return_inverse=True)
+        unique, inverse, _ = _unique_cells(keys)
         for group, key in enumerate(unique):
             targets = np.flatnonzero(inverse == group)
             candidates = self._patch((int(key[0]), int(key[1])), self.cfg["match_distance_m"])
             if not len(candidates):
                 continue
-            candidates = candidates[self.normal_valid[candidates]]
+            if valid_only:
+                candidates = candidates[self.normal_valid[candidates]]
             if not len(candidates):
                 continue
             difference = points[targets, None, :] - self.anchor[candidates][None, :, :]
             distances = np.sum(difference * difference, axis=2)
+            if normals is not None:
+                compatible = np.abs(normals[targets] @ self.normals[candidates].T) >= math.cos(
+                    self.cfg["normal_max_angle_rad"])
+                distances[~compatible] = np.inf
             choices = np.argmin(distances, axis=1)
             indices[targets] = candidates[choices]
             squared_distance[targets] = distances[np.arange(len(targets)), choices]
@@ -329,11 +690,26 @@ class LaneMapLocalizer:
     larger bound; the caller must only acquire initially while held stationary.
     """
 
-    def __init__(self, anchor_xy, config=None):
+    def __init__(self, anchor_xy, config=None, anchor_support_xy=None, anchor_support_stamp_ns=None,
+                 _reuse_index=None):
         self.config = _configuration(config)
         anchors = _points(anchor_xy, self.config["max_anchor_points"])
         self._anchor = _readonly(_voxel_means(anchors, self.config["anchor_voxel_m"]))
-        self._index = _FrozenIndex(self._anchor, self.config)
+        support = None
+        if anchor_support_xy is not None and anchor_support_stamp_ns is None:
+            raise ValueError("past anchor direction requires its source stamp")
+        if anchor_support_stamp_ns is not None and (
+                anchor_support_xy is None or isinstance(anchor_support_stamp_ns, bool)
+                or not isinstance(anchor_support_stamp_ns, Integral)
+                or not 0 < anchor_support_stamp_ns < 2 ** 63):
+            raise ValueError("invalid anchor direction source stamp")
+        self.anchor_direction_source_stamp_ns = anchor_support_stamp_ns
+        if anchor_support_xy is not None:
+            support = _voxel_means(_points(anchor_support_xy, self.config["max_input_scan_points"]),
+                                   self.config["scan_voxel_m"])
+            if len(support) > self.config["max_scan_support_points"]:
+                raise ValueError("past direction-support capacity exceeded")
+        self._index = _FrozenIndex(self._anchor, self.config, direction_support=support, reuse_index=_reuse_index)
         self.reset()
 
     @property
@@ -369,7 +745,7 @@ class LaneMapLocalizer:
         corrected[2] = _wrap(prior[2] + self._correction[2])
         return corrected
 
-    def fork_with_anchor(self, anchor_xy):
+    def fork_with_anchor(self, anchor_xy, anchor_support_xy=None, anchor_support_stamp_ns=None):
         """Prepare a same-frame keyframe without resetting tracking admission.
 
         The caller owns promotion of this independent candidate. Only committed
@@ -377,7 +753,13 @@ class LaneMapLocalizer:
         anchor-specific refinement layer never do. Both anchors must be in the
         same map frame. This is not a coordinate-system reset or full clone.
         """
-        return self.from_tracking_state(anchor_xy, self.capture_tracking_state())
+        state = self.capture_tracking_state()
+        candidate = type(self)(anchor_xy, state.config, anchor_support_xy, anchor_support_stamp_ns,
+                               _reuse_index=self._index)
+        candidate._correction = np.array(state.correction_se2, dtype=np.float64)
+        candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
+        candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
+        return candidate
 
     def capture_tracking_state(self):
         """Copy only constant-size committed tracking state, with no index work."""
@@ -386,7 +768,7 @@ class LaneMapLocalizer:
             self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
 
     @classmethod
-    def from_tracking_state(cls, anchor_xy, state):
+    def from_tracking_state(cls, anchor_xy, state, anchor_support_xy=None, anchor_support_stamp_ns=None):
         """Build an independent index from an immutable same-frame handoff.
 
         The expensive anchor/index construction may run on a background worker.
@@ -394,7 +776,7 @@ class LaneMapLocalizer:
         """
         if not isinstance(state, CommittedLocalizationState):
             raise ValueError("immutable committed localization state required")
-        candidate = cls(anchor_xy, state.config)
+        candidate = cls(anchor_xy, state.config, anchor_support_xy, anchor_support_stamp_ns)
         candidate._correction = np.array(state.correction_se2, dtype=np.float64)
         candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
         candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
@@ -475,23 +857,28 @@ class LaneMapLocalizer:
         self._pending_result = None
         return True
 
-    def _correspondences(self, local, estimate):
+    def _correspondences(self, local, estimate, scan_normals=None):
         rotated = local @ _rotation(estimate[2]).T
         world = rotated + estimate[:2]
-        nearest = self._index.nearest(world)
+        world_normals = None if scan_normals is None else scan_normals @ _rotation(estimate[2]).T
+        nearest = self._index.nearest(world, world_normals)
         selected = np.flatnonzero(nearest >= 0)
         anchor_indices = nearest[selected]
         normals = self._index.normals[anchor_indices]
         residual = np.sum((world[selected] - self._index.line_points[anchor_indices]) * normals, axis=1)
         return world, rotated, selected, normals, residual
 
-    def match(self, local_xy, prior_xyyaw, stamp_ns, prior_stamp_ns=None, commit=True):
+    def match(self, local_xy, prior_xyyaw, stamp_ns, prior_stamp_ns=None, commit=True,
+              scan_support_xy=None, scan_sensitivity=None):
         """Propose a point-to-line fit using only this mask and the frozen anchor.
 
         Strictly increasing mask stamps prevent frame-vote replay.  Optional
         ``prior_stamp_ns`` verifies the supplied prior is not from the future.
         ``commit=False`` is REQUIRED for a worker whose result may miss a deadline.
         A rejected fit never changes the last committed pose correction or map.
+        ``scan_support_xy`` is optional SAME-current-mask geometry before the
+        reliable-sensitivity cut. It defines local line directions only; those
+        extra points are never fit, voted as inliers or used as old-map evidence.
         """
         started = time.perf_counter_ns()
         cfg = self.config
@@ -503,8 +890,15 @@ class LaneMapLocalizer:
                        self._index.normal_radii > cfg["normal_radius_m"])),
                    "normal_max_radius_m": cfg["normal_max_radius_m"],
                    "anchor_line_thickness_p95_m": self._index.thickness_p95_m,
-                   "line_reference": "frozen_multiscale_pca_band_center",
+                   "anchor_past_direction_supported_points": getattr(self._index, "direction_supported_points", 0),
+                   "anchor_reused_identical_geometry_points": self._index.reused_geometry_points,
+                   "anchor_direction_source_stamp_ns": self.anchor_direction_source_stamp_ns,
+                   "anchor_min_confirmed_position_support": (int(np.min(self._index.normal_position_support[
+                       self._index.normal_valid])) if np.any(self._index.normal_valid) else 0),
+                   "line_reference": "confirmed_position_with_optional_strictly_past_paint_direction",
                    "input_scan_points": 0, "scan_points": 0, "inliers": 0,
+                   "scan_support_points": 0, "scan_geometric_rejections": 0,
+                   "overlap_denominator": "connected_current_cross_section_density_not_sensitivity",
                    "inlier_ratio": 0.0, "overlap_ratio": 0.0,
                    "rmse_before_m": None, "rmse_after_m": None,
                    "observable_rank": 0, "longitudinal_observable": False,
@@ -544,6 +938,9 @@ class LaneMapLocalizer:
 
         if not 0 < source_stamp < 2 ** 63:
             return finish("invalid_mask_stamp")
+        if (self.anchor_direction_source_stamp_ns is not None
+                and self.anchor_direction_source_stamp_ns >= source_stamp):
+            return finish("future_or_current_anchor_direction")
         if self.last_seen_stamp_ns is not None and source_stamp <= self.last_seen_stamp_ns:
             return finish("nonincreasing_mask_stamp")
         self.last_seen_stamp_ns = source_stamp
@@ -551,6 +948,12 @@ class LaneMapLocalizer:
             prior = _pose(prior_xyyaw)
             predicted = self.correct(prior)
             scan = _points(local_xy, cfg["max_input_scan_points"])
+            support = scan if scan_support_xy is None else _points(
+                scan_support_xy, cfg["max_input_scan_points"])
+            sensitivity = (None if scan_sensitivity is None else np.asarray(scan_sensitivity, dtype=float))
+            if sensitivity is not None and (sensitivity.shape != (len(scan),)
+                    or not np.all(np.isfinite(sensitivity)) or np.any(sensitivity < 0)):
+                raise ValueError("scan sensitivity must be finite nonnegative aligned values")
         except (ValueError, TypeError, OverflowError):
             return finish("invalid_input")
         if prior_stamp_ns is not None:
@@ -564,21 +967,57 @@ class LaneMapLocalizer:
             return finish("insufficient_anchor_line_support")
         in_range = np.linalg.norm(scan, axis=1) <= cfg["max_scan_range_m"]
         metrics["range_rejected_points"] = int(np.sum(~in_range))
-        scan = _voxel_means(scan[in_range], cfg["scan_voxel_m"])
+        scan = scan[in_range]
+        scan = _voxel_means(scan, cfg["scan_voxel_m"])
         if len(scan) > cfg["max_scan_points"]:
             indices = np.linspace(0, len(scan) - 1, cfg["max_scan_points"]).astype(np.int64)
             scan = scan[indices]
         metrics["scan_points"] = len(scan)
         if len(scan) < cfg["min_scan_points"]:
             return finish("insufficient_scan_points")
+        # Compute features BEFORE consulting the old anchor. A filled stripe
+        # clipped by the reliability window must not acquire a new transverse
+        # normal merely because its currently reliable segment is very short.
+        support = _voxel_means(support[np.linalg.norm(support, axis=1) <= cfg["max_scan_range_m"]],
+                               cfg["scan_voxel_m"])
+        metrics["scan_support_points"] = len(support)
+        if len(support) > cfg["max_scan_support_points"]:
+            return finish("scan_geometry_capacity")
+        support_cells = {tuple(key): index for index, key in enumerate(
+            np.floor(support / cfg["scan_voxel_m"]).astype(np.int64))}
+        indices = np.asarray([support_cells.get(tuple(key), -1) for key in
+                              np.floor(scan / cfg["scan_voxel_m"]).astype(np.int64)], dtype=np.int64)
+        eligible = indices >= 0
+        try:
+            support_index = _FrozenIndex(support, cfg, normal_targets=indices[eligible])
+        except ValueError:
+            return finish("scan_geometry_capacity")
+        eligible[eligible] &= support_index.normal_valid[indices[eligible]]
+        metrics["scan_geometric_rejections"] = int(np.sum(~eligible))
+        scan_normals = support_index.normals[indices[eligible]]
+        scan = scan[eligible]
+        metrics["scan_eligible_pixels"] = len(scan)
+        feature_weight = _line_weights(scan, scan_normals, support_index, indices[eligible], cfg)
+        fit_weight = feature_weight
+        # J4 screens projection stability in the caller; it is not a calibrated
+        # point-to-line covariance. Inverse-J weighting suppressed useful heading
+        # leverage and changed drift direction, so it is NOT a fitting weight.
+        weight_sum = float(np.sum(feature_weight))
+        metrics["scan_feature_weight_sum"] = weight_sum
+        metrics["sensitivity_weighting"] = "screen_only_not_fit_covariance" if sensitivity is not None else "not_supplied"
+        metrics["sensitivity_is_calibrated_covariance"] = False
+        metrics["scan_line_points"] = len(scan)
+        if len(scan) < cfg["min_scan_points"]:
+            return finish("unobservable_geometry")
         estimate = predicted.copy()
         basis = None
         dominant_normal = None
         observable_rank = 0
         for iteration in range(cfg["max_iterations"]):
             metrics["iterations"] = iteration + 1
-            world, rotated, selected, normals, residual = self._correspondences(scan, estimate)
-            metrics["overlap_ratio"] = float(len(selected) / len(scan))
+            world, rotated, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
+            metrics["overlap_ratio"] = float(np.sum(feature_weight[selected]) / weight_sum)
+            metrics["unweighted_overlap_ratio"] = float(len(selected) / len(scan))
             if len(selected) < cfg["min_inliers"] or metrics["overlap_ratio"] < cfg["min_overlap_ratio"]:
                 return finish("insufficient_overlap")
             if iteration == 0:
@@ -603,14 +1042,15 @@ class LaneMapLocalizer:
                     basis[2, 1] = 1.0
                     estimate[:2] = prior[:2] + dominant_normal * float(
                         (predicted[:2] - prior[:2]) @ dominant_normal)
-                    world, rotated, selected, normals, residual = self._correspondences(scan, estimate)
+                    world, rotated, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
                     if (len(selected) < cfg["min_inliers"] or
-                            len(selected) / len(scan) < cfg["min_overlap_ratio"]):
+                            np.sum(feature_weight[selected]) / weight_sum < cfg["min_overlap_ratio"]):
                         return finish("insufficient_overlap_after_raw_prior_anchor")
             lever = rotated[selected]
             derivative = normals[:, 0] * -lever[:, 1] + normals[:, 1] * lever[:, 0]
             jacobian = np.column_stack((normals, derivative / cfg["rotation_scale_m"])) @ basis
-            weight = np.minimum(1.0, cfg["huber_delta_m"] / np.maximum(np.abs(residual), 1e-12))
+            weight = fit_weight[selected] * np.minimum(
+                1.0, cfg["huber_delta_m"] / np.maximum(np.abs(residual), 1e-12))
             hessian = jacobian.T @ (jacobian * weight[:, None])
             gradient = jacobian.T @ (residual * weight)
             eigenvalues, eigenvectors = np.linalg.eigh(hessian)
@@ -644,12 +1084,14 @@ class LaneMapLocalizer:
                 break
             if (time.perf_counter_ns() - started) / 1e6 > cfg["runtime_budget_ms"]:
                 return finish("runtime_budget_exceeded")
-        world, _, selected, normals, residual = self._correspondences(scan, estimate)
+        world, _, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
         inlier = np.abs(residual) <= cfg["inlier_distance_m"]
         count = int(np.sum(inlier))
         metrics["inliers"] = count
-        metrics["inlier_ratio"] = float(count / len(scan))
-        metrics["overlap_ratio"] = float(len(selected) / len(scan))
+        metrics["inlier_ratio"] = float(np.sum(feature_weight[selected[inlier]]) / weight_sum)
+        metrics["overlap_ratio"] = float(np.sum(feature_weight[selected]) / weight_sum)
+        metrics["unweighted_inlier_ratio"] = float(count / len(scan))
+        metrics["unweighted_overlap_ratio"] = float(len(selected) / len(scan))
         if count < cfg["min_inliers"] or metrics["inlier_ratio"] < cfg["min_overlap_ratio"]:
             return finish("insufficient_final_inliers")
         rmse = float(np.sqrt(np.mean(residual[inlier] ** 2)))

@@ -19,7 +19,7 @@ from types import MappingProxyType
 import numpy as np
 
 from lane_mapping_lya_reference.mapping_core import SparseConsensusMap, transform_local_points
-from lane_mapping_lya_reference.mask_localization import LaneMapLocalizer
+from lane_mapping_lya_reference.mask_localization import LaneMapLocalizer, _configuration, _voxel_means
 
 
 DEFAULT_CONFIG = {
@@ -85,6 +85,8 @@ class _PreparedKeyframe:
     prior_xyyaw: np.ndarray
     tracking_owner: object
     tracking_stamp_ns: object
+    direction_owner: object
+    direction_source_stamp_ns: object
 
 
 class TeachMapEngine:
@@ -113,6 +115,7 @@ class TeachMapEngine:
                 or cfg["max_input_points"] > 200000):
             raise ValueError("inconsistent or unbounded teach-map configuration")
         self.matcher_config = dict(matcher_config or {})
+        self._geometry_config = _configuration(self.matcher_config)
         self._clock = clock or time.perf_counter
         self._map = SparseConsensusMap(cfg["grid_resolution_m"], cfg["minimum_frame_votes"],
                                        cfg["minimum_reliable_votes"], cfg["max_candidate_cells"],
@@ -128,6 +131,8 @@ class TeachMapEngine:
         self._last_seen_stamp = None
         self._tracking_started = False
         self._snapshot = None
+        self._past_direction_support = None
+        self._past_direction_support_stamp_ns = None
         self._fault = None
         self.counts = Counter()
 
@@ -157,12 +162,18 @@ class TeachMapEngine:
         frontier = self._map.last_stamp_ns
         if frontier is None or frontier >= stamp:
             raise ValueError("keyframe contains current or future evidence")
+        if self._past_direction_support is not None and not (
+                self._past_direction_support_stamp_ns is not None
+                and self._past_direction_support_stamp_ns <= frontier):
+            raise ValueError("keyframe direction contains uncommitted evidence")
         tracking_stamp = None if self._matcher is None else self._matcher.last_accepted_stamp_ns
         # Index preparation can exceed a deadline. Cache only an inactive
         # candidate, and never reuse one seeded from a different committed pose.
         if (self._candidate is not None and self._candidate.frontier_ns == frontier
                 and self._candidate.tracking_owner is self._matcher
-                and self._candidate.tracking_stamp_ns == tracking_stamp):
+                and self._candidate.tracking_stamp_ns == tracking_stamp
+                and self._candidate.direction_owner is self._past_direction_support
+                and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns):
             return self._candidate
         points, _ = self._map.confirmed_points_and_votes()
         distance = np.sum((points - prior[:2]) ** 2, axis=1)
@@ -171,16 +182,20 @@ class TeachMapEngine:
             return None
         order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
         anchor = points[available[order]].copy()
-        matcher = (LaneMapLocalizer(anchor, self.matcher_config) if self._matcher is None
-                   else self._matcher.fork_with_anchor(anchor))
-        self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher, tracking_stamp)
+        matcher = (LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
+                                   self._past_direction_support_stamp_ns) if self._matcher is None
+                   else self._matcher.fork_with_anchor(anchor, self._past_direction_support,
+                                                       self._past_direction_support_stamp_ns))
+        self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher,
+                                            tracking_stamp, self._past_direction_support,
+                                            self._past_direction_support_stamp_ns)
         self.counts["keyframes_prepared"] += 1
         return self._candidate
 
     def _deadline(self, started):
         return (self._clock() - started) * 1000.0 > self.config["max_processing_ms"]
 
-    def _match_reference(self, scan, prior, stamp, started):
+    def _match_reference(self, scan, prior, stamp, started, scan_support, scan_sensitivity):
         refresh = (self._matcher is None or (
             self._map.last_stamp_ns != self._anchor_frontier and (
                 stamp - self._keyframe_stamp >= self.config["keyframe_refresh_s"] * 1e9
@@ -194,7 +209,8 @@ class TeachMapEngine:
         if self._deadline(started):
             selected.discard_pending()
             return None, None, None, {}, "processing_deadline"
-        result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False)
+        result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
+                                scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
         attempts.append({"reference": "candidate" if candidate is not None else "active",
                          "frontier_ns": frontier, "accepted": result.accepted,
                          "reason": result.reason, "metrics": dict(result.metrics)})
@@ -203,7 +219,8 @@ class TeachMapEngine:
             if self._deadline(started):
                 return None, None, None, {"reference_attempts": attempts}, "processing_deadline"
             selected, frontier = self._matcher, self._anchor_frontier
-            result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False)
+            result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
+                                    scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
             attempts.append({"reference": "active", "frontier_ns": frontier,
                              "accepted": result.accepted, "reason": result.reason,
                              "metrics": dict(result.metrics)})
@@ -268,7 +285,8 @@ class TeachMapEngine:
         pose, reason = prior, "bootstrap_odometry"
         if self._tracking_started:
             selected, result, candidate, metrics, failure = self._match_reference(
-                points[sensitivity <= self.config["reliable_sensitivity"]], prior, stamp, started)
+                points[sensitivity <= self.config["reliable_sensitivity"]], prior, stamp, started, points,
+                sensitivity[sensitivity <= self.config["reliable_sensitivity"]])
             if failure is not None:
                 return self._result(False, failure, prior, stamp, started, metrics)
             pose, reason = result.pose_xyyaw, "matched_past_consensus"
@@ -278,6 +296,16 @@ class TeachMapEngine:
             self._latch("bootstrap_anchor_not_established")
             return self._result(False, self._fault, prior, stamp, started)
         world = transform_local_points(points, *pose)
+        # Prepare the bounded immutable context before admission. Commit only
+        # swaps this pointer; never allocate/copy the full image under its lock.
+        geometry = self._geometry_config
+        support = _voxel_means(world[np.linalg.norm(points, axis=1) <= geometry["max_scan_range_m"]],
+                               geometry["scan_voxel_m"])
+        if len(support) > geometry["max_scan_support_points"]:
+            if selected is not None:
+                selected.discard_pending()
+            return self._result(False, "past_direction_capacity", prior, stamp, started, metrics)
+        prepared_support = _readonly(support, 2)
         keys = self._map.points_to_unique_keys(world)
         reliable = self._map.points_to_unique_keys(world[sensitivity <= self.config["reliable_sensitivity"]])
         if not self._capacity_allows(keys, reliable):
@@ -302,6 +330,12 @@ class TeachMapEngine:
                 self._latch("unexpected_map_capacity")
                 return self._result(False, self._fault, prior, stamp, started, metrics)
             self._trace.append(np.asarray(pose, dtype=float).copy())
+            # The entire preceding stable observation supplies paint direction
+            # only, never an unconfirmed reference position. Publish it in the
+            # same guarded transaction; a rejected/current frame cannot help
+            # construct the anchor used to validate itself.
+            self._past_direction_support = prepared_support
+            self._past_direction_support_stamp_ns = stamp
             if candidate is not None:
                 # Promotion shares the same generation/deadline guard as the
                 # sole map vote and trace append. Failed candidates stay inert.

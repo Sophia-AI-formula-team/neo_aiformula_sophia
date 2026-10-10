@@ -25,7 +25,7 @@ class FakeMatcher:
     created = []
     accept = True
 
-    def __init__(self, anchor, config=None):
+    def __init__(self, anchor, config=None, anchor_support_xy=None, anchor_support_stamp_ns=None):
         self.anchor = anchor.copy()
         self.config = dict(config or {})
         self.correction_se2 = (0., 0., 0.)
@@ -34,8 +34,9 @@ class FakeMatcher:
         self.last_seen_stamp_ns = None
         self.created.append(self)
 
-    def fork_with_anchor(self, anchor):
-        return self.from_tracking_state(anchor, self.capture_tracking_state())
+    def fork_with_anchor(self, anchor, anchor_support_xy=None, anchor_support_stamp_ns=None):
+        return self.from_tracking_state(anchor, self.capture_tracking_state(), anchor_support_xy,
+                                        anchor_support_stamp_ns)
 
     def capture_tracking_state(self):
         # The test double follows the same immutable handoff protocol; the
@@ -44,7 +45,7 @@ class FakeMatcher:
                                           self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
 
     @classmethod
-    def from_tracking_state(cls, anchor, state):
+    def from_tracking_state(cls, anchor, state, anchor_support_xy=None, anchor_support_stamp_ns=None):
         assert isinstance(state, CommittedLocalizationState)
         other = cls(anchor, state.config)
         other.correction_se2 = state.correction_se2
@@ -55,8 +56,10 @@ class FakeMatcher:
     def discard_pending(self):
         pass
 
-    def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True):
+    def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True,
+              scan_support_xy=None, scan_sensitivity=None):
         assert commit is False
+        assert scan_support_xy is not None and scan_sensitivity is not None
         self.last_seen_stamp_ns = stamp
         return SimpleNamespace(accepted=self.accept, reason="no_overlap" if not self.accept else "matched",
                                pose_xyyaw=np.asarray(prior).copy(), metrics={}, stamp_ns=stamp)

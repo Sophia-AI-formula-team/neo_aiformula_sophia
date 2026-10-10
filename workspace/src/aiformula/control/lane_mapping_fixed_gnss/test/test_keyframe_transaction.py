@@ -154,11 +154,13 @@ class Harness:
         self.monkeypatch.setattr(matcher, "commit", spy)
         return spy
 
-    def prepare(self, anchor):
+    def prepare(self, anchor, anchor_support_xy=None, anchor_support_stamp_ns=None):
         self.calls.append("prepare")
-        candidate = self.original_fork(anchor)
+        candidate = self.original_fork(anchor, anchor_support_xy, anchor_support_stamp_ns)
         self.clock.now += self.prepare_seconds
         record = {"matcher": candidate, "anchor": np.asarray(anchor).copy(),
+                  "anchor_support": None if anchor_support_xy is None else np.asarray(anchor_support_xy).copy(),
+                  "anchor_support_stamp_ns": anchor_support_stamp_ns,
                   "inherited_correction": candidate.correction_se2.copy(),
                   "inherited_accepted": candidate.last_accepted_stamp_ns,
                   "inherited_seen": candidate.last_seen_stamp_ns}
@@ -222,8 +224,11 @@ def test_candidate_promotes_only_after_guard_commit_and_map_update(harness):
     assert h.engine._keyframe_stamp == row["stamp_ns"]
     assert h.engine._map.last_stamp_ns == row["stamp_ns"]
     assert candidate["inherited_accepted"] == 600000000
+    assert candidate["anchor_support_stamp_ns"] == 600000000 < row["stamp_ns"]
+    assert candidate["matcher"].anchor_direction_source_stamp_ns == candidate["anchor_support_stamp_ns"]
     np.testing.assert_array_equal(candidate["inherited_correction"], h.before["correction"])
     assert not np.any(np.all(candidate["anchor"] == [15., 4.], axis=1))
+    assert not np.any(np.all(candidate["anchor_support"] == [15., 4.], axis=1))
     candidate["match"].assert_called_once()
     candidate["commit"].assert_called_once()
     h.active_match.assert_not_called()
@@ -512,8 +517,8 @@ def test_no_previous_active_means_rejected_first_candidate_cannot_fall_back_to_o
     real_class = mapping.LaneMapLocalizer
     created = []
 
-    def factory(anchor, config=None):
-        candidate = real_class(anchor, config)
+    def factory(anchor, config=None, anchor_support_xy=None, anchor_support_stamp_ns=None):
+        candidate = real_class(anchor, config, anchor_support_xy, anchor_support_stamp_ns)
         original = candidate.match
 
         def reject(*args, **kwargs):
@@ -532,6 +537,7 @@ def test_no_previous_active_means_rejected_first_candidate_cannot_fall_back_to_o
     assert_unchanged(engine, before)
     assert engine._matcher is None
     assert len(created) == 1
+    assert created[0].anchor_direction_source_stamp_ns == 500000000 < row["stamp_ns"]
     created[0].match.assert_called_once()
     created[0].commit.assert_not_called()
     assert created[0]._pending_result is None

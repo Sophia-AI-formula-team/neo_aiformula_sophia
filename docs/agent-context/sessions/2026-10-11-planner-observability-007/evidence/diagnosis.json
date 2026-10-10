@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "kind": "trial16_visibility_clipped_filled_band_diagnosis",
+  "evidence_level": "causal replay of captured simulation sensor prefix; not a completed lap or physical vehicle acceptance",
+  "baseline_revision": "751edef54952902783c19ebb148072ccc7f17152",
+  "baseline_tag": "lane-mapping-20261011-r2",
+  "fixture": "observed_prefix.json",
+  "baseline_report": "causal_default.json",
+  "explanatory_figure": "visibility_clipped_stripe.png",
+  "replay_tool": "replay_observed_keyframe.py.txt",
+  "source_equivalence": "The original Windows source hashes differ from Git blobs only by CRLF versus LF. The baseline report records both forms and verifies content equivalence.",
+  "causality": {
+    "sensor_batches": 357,
+    "motion_samples_recomputed": 3922,
+    "mapping_frames": 106,
+    "first_mapping_sequence": 252,
+    "last_mapping_sequence": 357,
+    "accepted_mapping_frames": 105,
+    "all_recorded_decisions_reproduced": true,
+    "raw_odometry_digest_checks": 357,
+    "map_prior_digest_checks": 106,
+    "uses_world_truth": false,
+    "uses_gnss": false,
+    "uses_future_sensor_input": false,
+    "odometry_resets": 0,
+    "scope": "Motion is recomputed from each original past wheel/gyro batch. Recorded pose digests verify recomputation and are not solver pose inputs. All map reference frontiers precede their scan. The original failure is retained."
+  },
+  "unchanged_baseline_configuration": {
+    "keyframe_refresh_s": 0.25,
+    "keyframe_refresh_distance_m": 0.25,
+    "stable_projection_sensitivity_m_per_px": 0.5,
+    "matching_projection_sensitivity_m_per_px": 0.1,
+    "tracking_translation_gate_m": 0.12,
+    "tracking_yaw_gate_rad": 0.04,
+    "normal_variance_ratio_gate": 0.15,
+    "matcher_runtime_budget_ms": 40.0,
+    "engine_runtime_budget_ms": 80.0,
+    "allow_longitudinal_correction": false,
+    "note": "Keyframe refresh overrides already belonged to the recorded adapter. No parameter was changed for the R2 reproduction. Sensitivity J is not calibrated measurement variance."
+  },
+  "terminal_failure": {
+    "sequence": 357,
+    "candidate_reason": "tracking_innovation_gate",
+    "candidate_translation_innovation_m": 0.109558888,
+    "candidate_yaw_innovation_rad": 0.043014169,
+    "fallback_reason": "insufficient_final_inliers",
+    "fallback_inliers": 111,
+    "fallback_scan_points": 218,
+    "fallback_inlier_ratio": 0.5091743119,
+    "required_inlier_ratio": 0.55,
+    "confirmed_map_cells_unchanged_on_rejection": 1060,
+    "trace_points_unchanged_on_rejection": 105
+  },
+  "current_mask_component_evidence": {
+    "selection": "The same visible central filled stripe is inspected separately in each current image. These measurements do not use its future appearance or a reference course.",
+    "frames": [
+      {
+        "sequence": 355,
+        "stable_length_x_m": 2.3171789385,
+        "stable_width_y_m": 0.4174739469,
+        "stable_tangent_abs_deg": 0.3816444597,
+        "stable_pca_eigen_ratio": 0.0306970387,
+        "reliable_length_x_m": 0.0929159957,
+        "reliable_width_y_m": 0.4127153523,
+        "reliable_tangent_abs_deg": 89.9867771308,
+        "reliable_pca_eigen_ratio": 0.1482436161,
+        "front_edge_x_under_recomputed_raw_prior_m": 32.2561081128
+      },
+      {
+        "sequence": 356,
+        "stable_length_x_m": 2.3487841921,
+        "stable_width_y_m": 0.4185948902,
+        "stable_tangent_abs_deg": 0.3413007417,
+        "stable_pca_eigen_ratio": 0.0307996289,
+        "reliable_length_x_m": 0.3473459180,
+        "reliable_width_y_m": 0.4142824927,
+        "reliable_tangent_abs_deg": 2.5892676832,
+        "reliable_pca_eigen_ratio": 0.9706198905,
+        "front_edge_x_under_recomputed_raw_prior_m": 32.3005060726
+      },
+      {
+        "sequence": 357,
+        "stable_length_x_m": 2.4330101921,
+        "stable_width_y_m": 0.4195781548,
+        "stable_tangent_abs_deg": 0.2817192437,
+        "stable_pca_eigen_ratio": 0.0297593753,
+        "reliable_length_x_m": 0.6389496602,
+        "reliable_width_y_m": 0.4156571506,
+        "reliable_tangent_abs_deg": 0.1165833335,
+        "reliable_pca_eigen_ratio": 0.3483288314,
+        "front_edge_x_under_recomputed_raw_prior_m": 32.3076855680
+      }
+    ],
+    "interpretation": "A long filled stripe becomes a transverse thin slice when restricted to the reliable visibility window, then becomes an approximately isotropic patch as more pixels enter. Whole-component direction and local-window PCA are different evidence. The approximately stable observed front edge does not justify interpreting the growing band-center residual as true longitudinal odometry drift."
+  },
+  "past_anchor_neighborhood_evidence": {
+    "sequence": 357,
+    "candidate_anchor_points": 499,
+    "candidate_valid_normal_points": 490,
+    "candidate_forward_normal_points": 60,
+    "forward_normals_using_multiple_disconnected_stripes": 60,
+    "forward_normal_radius_0_9_m_count": 49,
+    "forward_normal_radius_1_35_m_count": 11,
+    "correspondences_assigned_to_these_normals": 132,
+    "total_correspondences": 211,
+    "diagnostic_connectivity_radii_m": [0.15, 0.17, 0.2, 0.25, 0.3],
+    "cross_component_forward_normal_count_at_each_radius": [60, 60, 60, 60, 60],
+    "examples": [
+      {
+        "anchor_local_map_xy_m": [32.6, 0.6],
+        "own_component_eigen_ratio": 0.6197973670,
+        "mixed_patch_component_count": 3,
+        "mixed_patch_eigen_ratio": 0.0440694942,
+        "mixed_patch_line_x_m": 32.4357741297
+      },
+      {
+        "anchor_local_map_xy_m": [32.7, -0.5],
+        "own_component_eigen_ratio": 1.0,
+        "mixed_patch_component_count": 3,
+        "mixed_patch_eigen_ratio": 0.0562897062,
+        "mixed_patch_line_x_m": 32.4108747655
+      }
+    ],
+    "normal_agreement_caveat": "208 of 211 assigned scan/anchor pairs had comparable PCA normals and none disagreed by over 30 degrees. This is not independent validation: both scan and anchor neighborhoods can merge the same disconnected stripe pattern.",
+    "same_radius_component_only_inspection": {
+      "candidate_valid_normals_before_after": [490, 430],
+      "candidate_forward_normals_before_after": [60, 0],
+      "scan_valid_normals_before_after": [215, 88],
+      "scan_forward_normals_before_after": [136, 9],
+      "note": "Inspection-only restriction at the original selected radii and unchanged line-support thresholds; no replacement match was accepted. The remaining nine scan forward normals still require visibility-truncation handling."
+    }
+  },
+  "full3_math_diagnostic_not_an_accepted_run": {
+    "candidate_full_hessian_eigenvalues": [4.74621, 79.67824, 103.49432],
+    "candidate_full_hessian_min_max_ratio": 0.0458596,
+    "candidate_unrestricted_translation_innovation_m": 0.212338,
+    "active_unrestricted_translation_innovation_m": 0.270549,
+    "unchanged_translation_gate_m": 0.12,
+    "interpretation": "Mathematical full rank is induced by these reference normals and does not establish physically correct longitudinal observability. Merely enabling longitudinal correction would still exceed the original translation gate. The diagnostic did not modify production state or configuration."
+  },
+  "repair_direction_not_acceptance": [
+    "Estimate local line support without merging disconnected paint components across black gaps.",
+    "Independently identify visibility-clipped filled patches before matching; a connected thin crop alone can still produce a false normal.",
+    "Use current full-mask geometry only as structural evidence where justified; retain reliable points for accurate positional matching and do not reinterpret high-J samples as precise positions.",
+    "Define eligible geometry and overlap denominator before correspondence success or residual selection; retain all original admission thresholds and report original, eligible and rejected point counts.",
+    "Regress both the observed failure prefix and independent adversarial geometries, then run a new closed-loop trial. A fixed observed prefix does not predict future control-induced observations."
+  ],
+  "privacy_review": {
+    "fixture_fields_checked_against_explicit_whitelist": true,
+    "all_png_payload_hashes_verified": true,
+    "png_count": 106,
+    "png_dimensions": [640, 360],
+    "png_modes": ["RGB"],
+    "all_png_colors": [[0, 0, 0], [255, 255, 255]],
+    "png_metadata_keys": [],
+    "source_image_type": "anonymous synthetic ideal-camera mask, not a camera photograph",
+    "personal_absolute_paths_present": false,
+    "raw_bag_present": false,
+    "gnss_measurements_present": false,
+    "world_truth_measurements_present": false,
+    "source_paths_are_repository_relative": true,
+    "note": "The explanatory plot was visually inspected. Machine field, path-pattern and PNG checks complement but do not replace human publication review of the complete session."
+  },
+  "limits": [
+    "No physical vehicle or geographic coordinates are part of this fixture.",
+    "The original 105 accepted mapping frames are not an independently measured mapping-accuracy result.",
+    "No frozen route, stopped reacquisition, second lap, emergency-stop or full runtime transport acceptance is demonstrated.",
+    "The rejected terminal frame was not fused. Earlier accepted correspondences can still have biased poses; this diagnosis does not quantify absolute map accuracy.",
+    "The R2 baseline uses real wall-clock budgets. Slower or busy hardware may reject earlier on a runtime budget, which must be reported rather than bypassed."
+  ]
+}

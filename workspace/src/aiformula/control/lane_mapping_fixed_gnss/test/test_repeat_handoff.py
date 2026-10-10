@@ -192,14 +192,17 @@ def test_bootstrap_capture_only_constructs_empty_index(monkeypatch):
     engine.freeze()
     original_index = localization._FrozenIndex
     anchor_sizes = []
+    index_options = []
 
-    def record(anchor, config):
+    def record(anchor, config, **kwargs):
         anchor_sizes.append(len(anchor))
-        return original_index(anchor, config)
+        index_options.append(dict(kwargs))
+        return original_index(anchor, config, **kwargs)
 
     monkeypatch.setattr(localization, "_FrozenIndex", record)
     state = engine.capture_repeat_state()
     assert anchor_sizes == [0]
+    assert index_options == [{"direction_support": None, "reuse_index": None}]
     assert state.correction_se2 == (0., 0., 0.)
     assert state.last_accepted_stamp_ns is None and state.last_seen_stamp_ns is None
 

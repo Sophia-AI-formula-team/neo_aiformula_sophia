@@ -99,12 +99,17 @@ class MapWorker:
                 if self.matcher is None:
                     raise ValueError("repeat map is not loaded")
                 result = self.matcher.match(local[sensitivity <= 0.1], job["prior"],
-                    job["stamp_ns"], prior_stamp_ns=job["prior_stamp_ns"], commit=False)
+                    job["stamp_ns"], prior_stamp_ns=job["prior_stamp_ns"], commit=False,
+                    scan_support_xy=local, scan_sensitivity=sensitivity[sensitivity <= 0.1])
                 job["proposal_correction"] = tuple(float(v) for v in result.correction_se2)
                 committed = False
-                with self.guard(job) as admitted:
-                    if admitted and result.accepted:
-                        committed = bool(self.matcher.commit(result))
+                try:
+                    with self.guard(job) as admitted:
+                        if admitted and result.accepted:
+                            committed = bool(self.matcher.commit(result))
+                finally:
+                    if not committed:
+                        self.matcher.discard_pending()
                 envelope["compute_ms"] = (time.monotonic_ns() - started) * 1e-6
                 envelope.update(result=result, committed=committed)
                 if committed and time.monotonic_ns() - self.last_export_ns > 500000000:

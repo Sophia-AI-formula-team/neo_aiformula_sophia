@@ -158,6 +158,9 @@ def test_post_projection_revocation_or_expiration_cannot_mutate_geometry(running
         assert result["kind"] == kind, result
         if kind == "repeat":
             assert result["result"].accepted and result["committed"] is False
+            assert worker.matcher._pending_result is None
+            assert worker.matcher._pending_data is None
+            assert not worker.matcher.commit(result["result"])
             assert worker.matcher.committed_frames == old_commits
             assert worker.matcher.refinement_metrics() == old_metrics
             np.testing.assert_array_equal(worker.matcher.correction_se2, old_correction)
@@ -181,6 +184,65 @@ def test_post_projection_revocation_or_expiration_cannot_mutate_geometry(running
         np.testing.assert_array_equal(new_votes, old_votes)
     finally:
         release.set()
+
+
+@pytest.mark.parametrize("failure", ["commit_false", "guard_enter_raises", "guard_exit_raises"])
+def test_repeat_failed_commit_or_guard_exception_revokes_real_proposal(running, monkeypatch, failure):
+    worker, _ = running
+    matcher = worker.matcher = LaneMapLocalizer(lanes(), {"runtime_budget_ms": 2000.0})
+    for stamp in (100, 200, 300):
+        assert matcher.match(lanes(), [0., .1, 0.], stamp).accepted
+    old_correction = matcher.correction_se2.copy()
+    old_metrics = matcher.refinement_metrics()
+    old_points, old_votes = matcher.refined_points_and_votes()
+    old_commits = matcher.committed_frames
+    old_accepted_stamp = matcher.last_accepted_stamp_ns
+    captured = []
+    real_match = matcher.match
+
+    def observe_real_proposal(*args, **kwargs):
+        proposal = real_match(*args, **kwargs)
+        assert proposal.accepted, proposal.metrics
+        assert matcher._pending_result is proposal
+        captured.append(proposal)
+        return proposal
+
+    @contextmanager
+    def broken_guard(_):
+        if failure == "guard_enter_raises":
+            raise RuntimeError("injected guard entry failure")
+        # Reject admission before raising on exit: no geometry should commit.
+        yield False
+        raise RuntimeError("injected guard exit failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(matcher, "match", observe_real_proposal)
+        if failure == "commit_false":
+            # Fault injection replaces commit only, never the real fit or its
+            # pending protocol. Restore it before testing delayed submission.
+            patch.setattr(matcher, "commit", lambda _: False)
+        else:
+            patch.setattr(worker, "guard", broken_guard)
+        value = job(1, "repeat")
+        value["prior"] = [0., .15, 0.]
+        worker.submit(value)
+        envelope = take(worker)
+    assert len(captured) == 1
+    if failure == "commit_false":
+        assert envelope["kind"] == "repeat" and not envelope["committed"]
+        assert envelope["result"] is captured[0]
+    else:
+        assert envelope["kind"] == "error" and "injected guard" in envelope["error"]
+    assert matcher._pending_result is None and matcher._pending_data is None
+    # This now invokes the unpatched real commit implementation.
+    assert not matcher.commit(captured[0])
+    assert matcher.committed_frames == old_commits
+    assert matcher.last_accepted_stamp_ns == old_accepted_stamp
+    assert matcher.refinement_metrics() == old_metrics
+    np.testing.assert_array_equal(matcher.correction_se2, old_correction)
+    points, votes = matcher.refined_points_and_votes()
+    np.testing.assert_array_equal(points, old_points)
+    np.testing.assert_array_equal(votes, old_votes)
 
 
 def test_valid_repeat_commits_and_refinement_is_a_separate_map(running):
