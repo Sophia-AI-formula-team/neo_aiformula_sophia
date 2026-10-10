@@ -206,9 +206,14 @@ class TeachMapEngine:
         frontier = candidate.frontier_ns if candidate is not None else self._anchor_frontier
         if selected is None:
             return None, None, None, {}, "insufficient_past_local_anchor"
-        if self._deadline(started):
+        # Reuse the existing pre-match deadline read for diagnostics. This is
+        # elapsed engine time (including keyframe preparation), not match time
+        # and not proof that a reference was actually attempted.
+        pre_match_ms = (self._clock() - started) * 1000.0
+        timing = {"pre_match_engine_ms": pre_match_ms}
+        if pre_match_ms > self.config["max_processing_ms"]:
             selected.discard_pending()
-            return None, None, None, {}, "processing_deadline"
+            return None, None, None, timing, "processing_deadline"
         result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
                                 scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
         attempts.append({"reference": "candidate" if candidate is not None else "active",
@@ -217,14 +222,14 @@ class TeachMapEngine:
         if (not result.accepted and candidate is not None and self._matcher is not None
                 and result.reason in _REFERENCE_REJECTIONS):
             if self._deadline(started):
-                return None, None, None, {"reference_attempts": attempts}, "processing_deadline"
+                return None, None, None, dict(timing, reference_attempts=attempts), "processing_deadline"
             selected, frontier = self._matcher, self._anchor_frontier
             result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False,
                                     scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity)
             attempts.append({"reference": "active", "frontier_ns": frontier,
                              "accepted": result.accepted, "reason": result.reason,
                              "metrics": dict(result.metrics)})
-        metrics = dict(result.metrics, reference_attempts=attempts,
+        metrics = dict(result.metrics, **timing, reference_attempts=attempts,
                        selected_anchor_frontier_ns=frontier,
                        selected_reference="candidate" if candidate is not None and selected is candidate.matcher else "active")
         failure = None if result.accepted else "match_" + result.reason

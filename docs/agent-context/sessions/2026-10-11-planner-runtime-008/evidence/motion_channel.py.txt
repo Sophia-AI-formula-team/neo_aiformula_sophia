@@ -1,0 +1,343 @@
+"""Local Windows sensor transport, independent of the synchronous image owner.
+
+Only clock data cross the read-only shared mapping. No pose, map, route or
+physics setting is accepted. The historical batch adapter remains separate.
+"""
+from __future__ import annotations
+
+from collections import deque
+from contextlib import contextmanager
+import ctypes
+from dataclasses import dataclass
+import math
+import os
+import struct
+import threading
+import time
+import uuid
+
+
+PROTOCOL = "independent-motion-v1"
+CLOCK_MAGIC = b"LNCLK001"
+CLOCK_STRUCT = struct.Struct("<q8s16sq dqq")
+SOURCE_EPOCH_NS = 1_000_000_000
+
+
+def source_ns(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= 86400:
+        raise ValueError("invalid motion source time")
+    return SOURCE_EPOCH_NS + round(value * 1e9)
+
+
+def integer(value, name, minimum=0):
+    if type(value) is not int or value < minimum:
+        raise ValueError(name + " must be an integer >= " + str(minimum))
+    return value
+
+
+def qpc_frequency():
+    if os.name != "nt":
+        raise OSError("runtime motion protocol requires same-host Windows QPC")
+    value = ctypes.c_longlong()
+    if not ctypes.windll.kernel32.QueryPerformanceFrequency(ctypes.byref(value)):
+        raise OSError("QueryPerformanceFrequency failed")
+    return value.value
+
+
+def qpc_ticks():
+    value = ctypes.c_longlong()
+    if not ctypes.windll.kernel32.QueryPerformanceCounter(ctypes.byref(value)):
+        raise OSError("QueryPerformanceCounter failed")
+    return value.value
+
+
+def ticks_ns(ticks, frequency):
+    return ticks * 1_000_000_000 // frequency
+
+
+@dataclass(frozen=True)
+class ClockSnapshot:
+    epoch: str
+    generation: int
+    source_ns: int
+    published_qpc: int
+    frequency: int
+
+
+def decode_clock(data, epoch, generation, now_qpc, frequency):
+    version, magic, raw_epoch, observed_generation, seconds, published, observed_frequency = CLOCK_STRUCT.unpack(data)
+    if version <= 0 or version % 2 or magic != CLOCK_MAGIC:
+        raise ValueError("clock snapshot is incomplete")
+    if uuid.UUID(bytes_le=raw_epoch).hex != epoch or observed_generation != generation:
+        raise ValueError("clock epoch/generation changed")
+    if observed_frequency != frequency or not 0 < published <= now_qpc:
+        raise ValueError("clock is not in the same local QPC domain")
+    if ticks_ns(now_qpc - published, frequency) > 200_000_000:
+        raise ValueError("clock publication stale beyond 200 ms")
+    return ClockSnapshot(epoch, generation, source_ns(seconds), published, frequency)
+
+
+class WindowsSourceClock:
+    """Open an existing map READ ONLY; never silently create a missing publisher."""
+    def __init__(self, epoch, generation, frequency):
+        if uuid.UUID(hex=epoch).hex != epoch or frequency != qpc_frequency():
+            raise ValueError("invalid epoch or local QPC frequency")
+        self.epoch, self.generation, self.frequency = epoch, generation, frequency
+        self.last_snapshot = None
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.OpenFileMappingW.argtypes = [ctypes.c_uint, ctypes.c_int, ctypes.c_wchar_p]
+        kernel.OpenFileMappingW.restype = ctypes.c_void_p
+        kernel.MapViewOfFile.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint, ctypes.c_size_t]
+        kernel.MapViewOfFile.restype = ctypes.c_void_p
+        kernel.UnmapViewOfFile.argtypes = [ctypes.c_void_p]
+        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+        self.kernel = kernel
+        self.handle = kernel.OpenFileMappingW(4, 0, "Local\\AIFormulaLaneClock_" + epoch)
+        if not self.handle:
+            raise OSError(ctypes.get_last_error(), "source clock mapping is unavailable")
+        self.address = kernel.MapViewOfFile(self.handle, 4, 0, 0, CLOCK_STRUCT.size)
+        if not self.address:
+            self.close()
+            raise OSError(ctypes.get_last_error(), "source clock read-only view failed")
+
+    def read(self, now_qpc):
+        # The sole C# writer brackets all fields with aligned 64-bit sequence
+        # writes and memory barriers. A torn/odd snapshot is retried, never used.
+        deadline = time.perf_counter_ns() + 2_000_000
+        while time.perf_counter_ns() <= deadline:
+            before = ctypes.c_longlong.from_address(self.address).value
+            data = ctypes.string_at(self.address, CLOCK_STRUCT.size)
+            after = ctypes.c_longlong.from_address(self.address).value
+            if before == after == struct.unpack_from("<q", data)[0] and before > 0 and not before % 2:
+                # Publisher may advance between the caller's timestamp and the
+                # copy; compare to a real QPC reading AFTER the atomic snapshot.
+                current = decode_clock(data, self.epoch, self.generation, qpc_ticks(), self.frequency)
+                if self.last_snapshot is not None and (current.source_ns < self.last_snapshot.source_ns or
+                        current.published_qpc < self.last_snapshot.published_qpc):
+                    raise ValueError("source clock publication regressed")
+                self.last_snapshot = current
+                return current
+            time.sleep(0)  # Let an in-progress publisher finish; never consume a torn snapshot.
+        raise ValueError("clock snapshot remained torn")
+
+    def close(self):
+        if getattr(self, "address", None):
+            self.kernel.UnmapViewOfFile(self.address)
+            self.address = None
+        if getattr(self, "handle", None):
+            self.kernel.CloseHandle(self.handle)
+            self.handle = None
+
+
+class Admission:
+    """A fault is terminal. Short commits share this lock; heavy vision never does."""
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.generation = 0
+        self.reason = None
+
+    def revoke(self, reason):
+        with self.lock:
+            if self.reason is None:
+                self.reason = str(reason)
+                self.generation += 1
+
+    @contextmanager
+    def guard(self, generation):
+        with self.lock:
+            if self.reason is not None or generation != self.generation:
+                raise RuntimeError("motion admission revoked: " + str(self.reason))
+            yield
+
+
+@dataclass(frozen=True)
+class PoseEntry:
+    sequence: int
+    sample: object
+    sensor_qpc: int
+    arrival_qpc: int
+    consumed_qpc: int
+    committed_qpc: int
+    stopped_since_ns: int | None
+
+
+class MotionChannel:
+    """One serialized odometer owner plus immutable, exact-sequence image poses."""
+    def __init__(self, core, journal, admission, *, clock_factory=WindowsSourceClock,
+                 counter=qpc_ticks, frequency=None, watchdog=True):
+        self.core, self.journal, self.admission = core, journal, admission
+        self.clock_factory, self.counter = clock_factory, counter
+        self.frequency = qpc_frequency() if frequency is None else frequency
+        self.lock = threading.Lock()
+        self.epoch = self.publisher_generation = self.source_clock = None
+        self.odometry = None
+        self.sensor = None
+        self.sequence = 0
+        self.last_sensor_qpc = -1
+        self.stopped_since_ns = None
+        self.poses = deque(maxlen=512)
+        self.closed = threading.Event()
+        self.watchdog = None
+        if watchdog:
+            self.watchdog = threading.Thread(target=self._watch, name="lane-motion-watchdog", daemon=True)
+            self.watchdog.start()
+
+    def _watch(self):
+        while not self.closed.wait(.02):
+            try:
+                self.check_health()
+            except (ValueError, OSError, RuntimeError) as error:
+                self.admission.revoke("motion watchdog: " + str(error))
+                try:
+                    self.journal(dict(event="motion_watchdog_rejected", reason=str(error),
+                        epoch=self.epoch, motion_sequence=self.sequence, observed_qpc=self.counter()))
+                except (ValueError, OSError) as log_error:
+                    with self.admission.lock:
+                        self.admission.reason += "; watchdog journal failure: " + str(log_error)
+                return
+
+    def check_health(self):
+        # Entries are immutable and appended only under admission. Reading the
+        # committed tail here must not acquire the odometer-owner lock: a motion
+        # request can itself be waiting for admission while holding that lock.
+        with self.admission.lock:
+            if self.admission.reason is not None:
+                raise RuntimeError("motion admission revoked: " + self.admission.reason)
+            if not self.poses:
+                return
+            now = self.counter()
+            current = self.source_clock.read(now)
+            now = self.counter()
+            latest = self.poses[-1]
+            if not 0 <= current.source_ns - latest.sample.stamp_ns <= 150_000_000:
+                raise ValueError("motion stream gyro source age exceeded 150 ms")
+            if not 0 <= ticks_ns(now - latest.sensor_qpc, self.frequency) <= 200_000_000:
+                raise ValueError("motion stream receipt age exceeded 200 ms")
+
+    def ingest(self, request, *, arrival_qpc=None):
+        arrival = self.counter() if arrival_qpc is None else arrival_qpc
+        try:
+            with self.lock:
+                # A retired request must not reopen an MMF after close() has
+                # already released this session's resources.
+                if self.admission.reason is not None:
+                    raise RuntimeError("motion admission revoked: " + self.admission.reason)
+                return self._ingest(request, arrival)
+        except (ValueError, TypeError, KeyError, OSError, RuntimeError) as error:
+            self.admission.revoke("motion rejected: " + str(error))
+            self.journal(dict(event="motion_rejected", reason=type(error).__name__ + ": " + str(error),
+                request=request, arrival_qpc=arrival, rejected_qpc=self.counter(),
+                last_committed_motion_sequence=self.sequence, action="terminal HOLD; no retry"))
+            raise
+
+    def _ingest(self, request, arrival):
+        expected = {"protocol", "epoch", "generation", "qpc_frequency", "sent_qpc", "sensor_calibration", "samples"}
+        if not isinstance(request, dict) or set(request) != expected or request["protocol"] != PROTOCOL:
+            raise ValueError("invalid independent motion fields")
+        epoch = request["epoch"]
+        if not isinstance(epoch, str) or uuid.UUID(hex=epoch).hex != epoch:
+            raise ValueError("motion epoch must be a canonical UUID hex")
+        generation = integer(request["generation"], "generation")
+        if generation != 0:
+            raise ValueError("motion publisher generation was revoked; new epoch required")
+        if integer(request["qpc_frequency"], "QPC frequency", 1) != self.frequency:
+            raise ValueError("QPC frequency does not match this host")
+        sent = integer(request["sent_qpc"], "send QPC", 1)
+        if sent > arrival:
+            raise ValueError("motion send is in the future")
+        sensor = request["sensor_calibration"]
+        expected_sensor = {"wheel_diameter_m": .254, "motor_to_wheel_ratio": 1.}
+        if not isinstance(sensor, dict) or set(sensor) != set(expected_sensor):
+            raise ValueError("invalid motion sensor calibration")
+        for key, value in sensor.items():
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or abs(value - expected_sensor[key]) > 1e-6:
+                raise ValueError("motion calibration differs from existing wheel sensor")
+        if self.epoch is None:
+            self.source_clock = self.clock_factory(epoch, generation, self.frequency)
+            self.epoch, self.publisher_generation, self.sensor = epoch, generation, dict(sensor)
+            self.odometry = self.core.Odometry({"wheel_diameter_m": sensor["wheel_diameter_m"]})
+        if (epoch, generation, sensor) != (self.epoch, self.publisher_generation, self.sensor):
+            raise ValueError("motion epoch/generation/calibration changed")
+        rows = request["samples"]
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 200:
+            raise ValueError("motion batch must contain 1..200 samples")
+        timing = []
+        for row in rows:
+            if not isinstance(row, dict) or set(row) != {"sequence", "stamp", "received_qpc", "left_rpm", "right_rpm", "gyro_z"}:
+                raise ValueError("invalid motion sample fields")
+            for field in ("left_rpm", "right_rpm", "gyro_z"):
+                value = row[field]
+                if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value):
+                    raise ValueError(field + " must be a finite sensor number")
+            sequence = integer(row["sequence"], "motion sequence", 1)
+            sensor_qpc = integer(row["received_qpc"], "sensor QPC", 1)
+            if sequence != self.sequence + 1:
+                raise ValueError("motion sequence repeated, regressed or skipped")
+            if not self.last_sensor_qpc <= sensor_qpc <= sent:
+                raise ValueError("sensor receipt regressed or follows send")
+            stamp = source_ns(row["stamp"])
+            receipt_ns = ticks_ns(sensor_qpc, self.frequency)
+            with self.admission.guard(0):
+                # Waiting for another short commit is real queue time. Never
+                # carry a pre-lock now into the odometer freshness gates.
+                current = self.source_clock.read(self.counter())
+                consumed = self.counter()
+                if consumed < arrival:
+                    raise ValueError("motion arrival is in the future of consumption")
+                consumed_ns = ticks_ns(consumed, self.frequency)
+                self.odometry.accept_gyro(stamp, receipt_ns, row["gyro_z"])
+                sample = self.odometry.accept_wheels(stamp, receipt_ns, row["left_rpm"], row["right_rpm"],
+                                                     current.source_ns, consumed_ns)
+                if sample.speed < .05 and abs(sample.yaw_rate) < .05:
+                    if self.stopped_since_ns is None:
+                        self.stopped_since_ns = stamp
+                else:
+                    self.stopped_since_ns = None
+                committed = self.counter()
+                self.poses.append(PoseEntry(sequence, sample, sensor_qpc, arrival, consumed, committed, self.stopped_since_ns))
+                self.sequence, self.last_sensor_qpc = sequence, sensor_qpc
+            timing.append(dict(sequence=sequence, source_ns=stamp, source_now_ns=current.source_ns,
+                source_clock_published_qpc=current.published_qpc,
+                sensor_received_qpc=sensor_qpc, sent_qpc=sent, arrival_qpc=arrival, consumed_qpc=consumed,
+                committed_qpc=committed,
+                source_age_ms=(current.source_ns-stamp)*1e-6,
+                arrival_age_ms=ticks_ns(arrival-sensor_qpc, self.frequency)*1e-6,
+                receipt_age_ms=(consumed_ns-receipt_ns)*1e-6,
+                queue_age_ms=ticks_ns(consumed-arrival, self.frequency)*1e-6,
+                processing_ms=ticks_ns(self.counter()-consumed, self.frequency)*1e-6))
+        self.journal(dict(event="motion", protocol=PROTOCOL, epoch=epoch, generation=generation,
+                          qpc_frequency=self.frequency, sensor_calibration=dict(self.sensor),
+                          samples=rows, timing=timing, truth_pose_used=False))
+        return dict(protocol=PROTOCOL, epoch=epoch, generation=generation, sequence=self.sequence,
+                    phase="HOLD" if self.admission.reason else "MOTION", reason=self.admission.reason)
+
+    def pose_for_image(self, request, image_stamp, *, arrival_qpc=None):
+        with self.lock:
+            if self.admission.reason:
+                raise ValueError("motion fault: " + self.admission.reason)
+            if request.get("protocol") != PROTOCOL or request.get("epoch") != self.epoch or request.get("generation") != self.publisher_generation:
+                raise ValueError("image does not belong to this motion epoch")
+            capture = integer(request.get("capture_qpc"), "image capture QPC", 1)
+            arrival = self.counter() if arrival_qpc is None else arrival_qpc
+            if capture > arrival or ticks_ns(arrival-capture, self.frequency) > 200_000_000:
+                raise ValueError("image capture receipt is stale or future")
+            tail = integer(request.get("motion_tail_sequence"), "image motion tail", 1)
+            found = next((entry for entry in reversed(self.poses) if entry.sequence == tail), None)
+            if found is None:
+                raise ValueError("image motion tail is unavailable; no latest-pose substitution")
+            # Bridge captures only an acknowledged tail. Both the sensor and the
+            # actual backend arrival therefore precede the camera capture.
+            if found.sensor_qpc > capture or found.arrival_qpc > capture or found.committed_qpc > capture:
+                raise ValueError("image pose had not arrived and committed at capture")
+            if not 0 <= image_stamp-found.sample.stamp_ns <= 100_000_000:
+                raise ValueError("mask has no past motion within 100 ms")
+            return found
+
+    def close(self):
+        self.admission.revoke("motion channel closed; new run required")
+        self.closed.set()
+        if self.watchdog is not None and self.watchdog is not threading.current_thread():
+            self.watchdog.join(.1)
+        with self.lock:
+            if self.source_clock is not None:
+                self.source_clock.close()

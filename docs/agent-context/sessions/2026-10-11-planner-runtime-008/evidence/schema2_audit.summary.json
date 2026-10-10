@@ -1,0 +1,75 @@
+{
+  "kind": "schema2_independent_motion_replay_audit",
+  "tests": {
+    "python": "3.13.13",
+    "command": "python -B -m unittest test_replay_observed_keyframe test_replay_independent_motion -v",
+    "count": 16,
+    "passed": 16,
+    "duration_s": 0.278,
+    "exit_code": 0,
+    "raw_log_included": false,
+    "raw_log_source": {
+      "filename": "replay_tests_01.txt",
+      "bytes": 3289,
+      "sha256": "75a344ba6d83c8d1c6a2e94d532d200e1e807b3ecfeff2071ef5edfa2aebca0e"
+    },
+    "redaction_note": "Raw test log contains a personal LANE_TEST_REPO path; preserved locally, not copied."
+  },
+  "hashes": {
+    "fixture": "ade7b16987374e874358f9ac88babd1b42f8c9e4f92317933debaf1d4aa3ec2b",
+    "replay_observed_keyframe_py": "874fa54b6bde4b8584b5447ba0c998a00b9899e2c4211f0b07a88aa7254a40e1",
+    "test_replay_observed_keyframe_py": "eed9f8cd1a10161fa9ebbcd50312ff89190e05b90dc86ba785cc305d2d88a1dc",
+    "test_replay_independent_motion_py": "eeed3f8ec7a4b72c19aa76b13ef94e00e6f00df90deee6ca5ac2f6724c1a9bbe"
+  },
+  "recording": {
+    "protocol": "independent-motion-v1",
+    "epoch": "167d828afd034246bd323ff95e137db7",
+    "unity": "unity_639272510807532742",
+    "backend": "backend_18",
+    "image_frames": 410,
+    "motion_samples": 4505,
+    "mapping_frames": 107,
+    "first_mapping_sequence": 304,
+    "terminal_sequence": 410,
+    "raw_pose_digest_checks": 410,
+    "teach_prior_digest_checks": 107,
+    "odometry_origin_resets": 0
+  },
+  "review": {
+    "causal_inputs": "Only each recorded image's exact acknowledged motion prefix is integrated; later arrivals/latest poses cannot substitute. Sensor, arrival and committed QPC must precede capture, and source pose must precede image within the original100ms tail gate.",
+    "odometer_semantics": "The original recorded sensor receipt is converted using integer ticks_ns; recorded source_now_ns and consumed_qpc feed the same real core accept_gyro/accept_wheels calls as MotionChannel. A direct runtime-channel/oracle test compares every call argument and resulting sample. No image time is substituted as motion consumption now.",
+    "pose_verification": "All raw odometry and teach-frame priors were recomputed and match recording digests. Raw recorded poses are hashed for checks only, not fed to the estimator.",
+    "image_semantics": "Exact PNG bytes and original camera calibration are retained; digest validation occurs during export and replay. The first rejected recorded map ends the fixture; no future recovery frames are synthesized.",
+    "core_timing": "Mapping replay uses normal TeachMapEngine.process with its original clocks/default budgets. No commit guard or transport scheduler is invented.",
+    "transport_missing": "Original image HTTP arrival_qpc and every individual MMF read/commit-guard time are absent. The fixture explicitly stores arrival_qpc=null, original step receipt/processing, capture and HTTP delivery timestamps. It cannot reproduce arrival200ms, commit-time200ms, continuous watchdog checks, generation-lock interleavings, or prove a changed algorithm satisfies runtime freshness.",
+    "delivery": "Prepared computation is paired with the same epoch/sequence HTTP-write-completed record. Delivery is not Unity acknowledgement or successful actuation.",
+    "partial_failure": "If fixture validation raises after a prior valid motion sample, that partial offline object is discarded; it is not a live runtime recovery path.",
+    "generalization": "This is schema2 support for the recorded independent protocol, not a conversion to legacy batches. Legacy schema1 behavior remains separate and its five existing helper tests pass."
+  },
+  "observed_timing_ms": {
+    "tail_age_min": 19.999999,
+    "tail_age_max": 69.999998,
+    "motion_source_age_max": 59.999998,
+    "motion_receipt_age_max": 50.7314,
+    "capture_to_http_write_max": 108.4111
+  },
+  "constraints": {
+    "neo_modified": false,
+    "assets_modified": false,
+    "unity_called": false,
+    "truth_read": false,
+    "timeout_or_plant_changed": false,
+    "existing_sealed_script_modified": false,
+    "output_overwritten": false
+  },
+  "source": {
+    "filename": "schema2_audit_01.json",
+    "bytes": 3832,
+    "sha256": "aabd5ec1fffbec32e6eee4ca5abf940920347b32bc6fb69ab83ca5b0cf2ca89f"
+  },
+  "portable_dependencies": [
+    "replay_observed_keyframe.py.txt",
+    "motion_channel.py.txt"
+  ],
+  "source_is_not_modified": true
+}

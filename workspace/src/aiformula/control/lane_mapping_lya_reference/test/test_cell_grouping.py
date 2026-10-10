@@ -23,7 +23,14 @@ def assert_same_array_bytes(actual, expected):
 
 def assert_grouping_matches_numpy(keys):
     before = keys.copy()
-    expected = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+    if len(keys):
+        expected = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+    else:
+        # Focal's NumPy 1.17.4 raises in reshape(0, -1) for axis=0 on
+        # an empty (0, 2) input. Keep testing the full empty contract without
+        # depending on that old oracle bug; nonempty cases use NumPy unchanged.
+        expected = (np.empty((0, 2), dtype=np.int64),
+                    np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64))
     actual = _unique_cells(keys)
     for observed, reference in zip(actual, expected):
         assert_same_array_bytes(observed, reference)

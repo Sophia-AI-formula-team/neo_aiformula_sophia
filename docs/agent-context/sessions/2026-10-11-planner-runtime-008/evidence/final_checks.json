@@ -1,0 +1,100 @@
+{
+  "kind": "R4_local_test_checkpoint_not_full_lap_acceptance",
+  "schema_version": 1,
+  "predecessor": "6cec83368c1bad1b4c5df5e2444ccc27df0f295b",
+  "planned_tag": "lane-mapping-20261011-r4",
+  "runtime_gate_change": false,
+  "new_dependencies": false,
+  "source_files": [
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "bytes": 64926,
+      "sha256": "ddc1a027378246d643f65de60636a95e7e51b21a4cb064369d1d9183c35cc58a",
+      "lf_sha256": "2d05c55cdc9f012c628a07d2025784906f5d89b82ab0e2ff6171cdd212a31dd0"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py",
+      "bytes": 22768,
+      "sha256": "3a068907890debf6abef3f180236e8131e03e7f7af9a4afad5083e88acdeb2c2",
+      "lf_sha256": "14c1379c8402c95bf69f80185655101fac10d190f1d48010edcf5457b86569ef"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_cell_grouping.py",
+      "bytes": 5883,
+      "sha256": "b13fe79212b4079e55ba217fcc1c012e3bf1cd1552c9a19de37ce53cb0ca2b1d",
+      "lf_sha256": "b13fe79212b4079e55ba217fcc1c012e3bf1cd1552c9a19de37ce53cb0ca2b1d"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_scan_geometry_cache.py",
+      "bytes": 14076,
+      "sha256": "5f092e9767c5c86707ab5b8e29b7671ea339b331c709317863e231f5c314bfb3",
+      "lf_sha256": "5f092e9767c5c86707ab5b8e29b7671ea339b331c709317863e231f5c314bfb3"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_components_batch.py",
+      "bytes": 9791,
+      "sha256": "e2ca0859d3c13ea80f16f151834244f4b618b9ae0fdea5025db38d3a26c4835a",
+      "lf_sha256": "e2ca0859d3c13ea80f16f151834244f4b618b9ae0fdea5025db38d3a26c4835a"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_fixed_gnss/test/test_keyframe_transaction.py",
+      "bytes": 27479,
+      "sha256": "b5b4afb927542eef2e2da6bf2b9f7a48a1e91df453992dce0fe6213569b38c14",
+      "lf_sha256": "b5b4afb927542eef2e2da6bf2b9f7a48a1e91df453992dce0fe6213569b38c14"
+    }
+  ],
+  "core_tests": {
+    "command": "PYTHONPATH=<four control package roots> python -B -m pytest workspace/src/aiformula/control/lane_mapping_lya_reference/test workspace/src/aiformula/control/lane_mapping_fixed_gnss/test workspace/src/aiformula/control/lane_mapping_fixed -q --junitxml=<new local report>",
+    "tests": 927,
+    "passed": 926,
+    "skipped": 1,
+    "seconds": 46.258,
+    "exit_code": 0,
+    "skipped_scope": "existing Linux-only process-group integration on Windows",
+    "source_xml_sha256": "4b05761aff350cde5bba933a4240edf71bec6905ccdec603f96c8b01199d5b80",
+    "included_xml_sha256": "f6917f473b7351b41f370dc802057588974fa27adae2e6c3fbc61a74a9f58d19",
+    "sanitization": "Removed hostname attribute and replaced checkout-root prefix in skipped-test text; XML serializer may change formatting",
+    "hostname_fields_removed": 1
+  },
+  "simulator_tests": {
+    "command": "python -B Tools/LaneTeachRepeat/verify_local.py --repo <neo> --evidence <original diagnostics root> --output <new r4_sim_offline_01.json>",
+    "passed": 208,
+    "tests": 208,
+    "seconds": 20.743,
+    "unittest_exit_code": 0,
+    "aggregate_exit_code": 1,
+    "aggregate_passed": false,
+    "preserved_baseline_files": 878,
+    "peer_attributed_differences": 12,
+    "report_sha256": "13abdb6fa1436986c7f982d7c90a8ed1a98691532191aeae9dc0a55f37b10a85",
+    "preservation_sha256": "c4d38fe154f566f0cab0091361049044441710ed6cd42acaa407fe26b211606b"
+  },
+  "narrow_tests": [
+    {
+      "name": "cache_and_tracking_state",
+      "passed": 34,
+      "seconds": 1.46
+    },
+    {
+      "name": "graph_batch",
+      "passed": 30,
+      "seconds": 0.73
+    },
+    {
+      "name": "mapping_transaction",
+      "passed": 59,
+      "seconds": 1.42
+    }
+  ],
+  "historical_failures": [
+    "First cache audit: 15 passed/1 failed, then bytes-backed repair. Only contemporaneous tool/conversation output retained; no recreated raw failure log.",
+    "First graph test draft: 28 passed/2 failed because test-only object.__new__ fixture omitted _component_sizes. Fixture bookkeeping corrected, then30/30; production unchanged. Only tool/conversation output retained.",
+    "R3 Foxy empty-array oracle failure preserved separately; R4 CI pending at seal.",
+    "Early R4 cache replay03 and profiled capture exceeded unchanged deadlines; retained in evidence summaries."
+  ],
+  "limits": [
+    "Not a full teach lap, frozen route, second lap, ROS runtime, motor or physical stop acceptance.",
+    "No vehicle/camera/physics parameter edits; host-load-dependent timing is not hard realtime.",
+    "Three107-frame replays keep all poses exact but several p95 timings worsen; full comparison included."
+  ]
+}

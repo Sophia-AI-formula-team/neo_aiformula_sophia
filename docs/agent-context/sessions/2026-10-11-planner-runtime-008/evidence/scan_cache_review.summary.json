@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "kind": "scan_cache_development_record_not_final_test_receipt",
+  "historical_tests": [
+    {
+      "result": "15 passed, 1 failed",
+      "failure": "Readonly array could be made writable again via setflags(write=True).",
+      "evidence_level": "Parent and test agent contemporaneous tool output reported in conversation; no separately saved original failure report exists.",
+      "raw_log_reconstructed": false
+    },
+    {
+      "result": "16 passed",
+      "seconds": 1.02,
+      "exit_code": 0,
+      "change": "Parent replaced reversible WRITEABLE flag protection with immutable bytes-backed arrays.",
+      "evidence_level": "Test agent confirmed contemporaneous tool output only; no separately saved original passing report exists."
+    }
+  ],
+  "intended_equivalence_scope": "Current scan geometry cache is a memoization of identical complete dependencies, not a gate, fit or map-data change. Source remains under optimization and final equivalence/performance evidence must be appended by planner.",
+  "replay_sequence": [
+    {
+      "file": "r4_scan_cache_01.json",
+      "all_prefix_frames_accepted": true,
+      "accepted": 107,
+      "attempted": 107,
+      "last_sequence": 410,
+      "last_reason": "matched_past_consensus",
+      "last_engine_ms": 66.40640000114217,
+      "sha256": "df5198df36ea77cdcc55740eb050789392760c48e778251fc3986107a808265c",
+      "bytes": 497584,
+      "full_report_included": false,
+      "full_report_retained_locally": true
+    },
+    {
+      "file": "r4_scan_cache_02.json",
+      "all_prefix_frames_accepted": true,
+      "accepted": 107,
+      "attempted": 107,
+      "last_sequence": 410,
+      "last_reason": "matched_past_consensus",
+      "last_engine_ms": 68.90370001201518,
+      "sha256": "e368414ff917df72abc57f401d812ba9dd1f1b094362a9b4161e1d4319641144",
+      "bytes": 497958,
+      "full_report_included": false,
+      "full_report_retained_locally": true
+    },
+    {
+      "file": "r4_scan_cache_03.json",
+      "all_prefix_frames_accepted": false,
+      "accepted": 106,
+      "attempted": 107,
+      "last_sequence": 410,
+      "last_reason": "processing_deadline",
+      "last_engine_ms": 81.8919999874197,
+      "sha256": "64f4a43d480f704b527b9258997543c3fe2d76b5b6e91f303cc065648c1a6a8a",
+      "bytes": 493580,
+      "full_report_included": false,
+      "full_report_retained_locally": true
+    }
+  ],
+  "limits": [
+    "R4 replay01/02 pass 107/107, but replay03 rejects sequence410 before matching on the unchanged 80 ms processing deadline (81.892 ms). Do not select only passing runs.",
+    "All three reports record matcher source SHA 0424943d4f078ffb0b2078df3218a5fe0de05e36410f6e3a03f125c080c4053e, not necessarily final R4.",
+    "Early replay01 lacks the later explicit transport-timing-limit fields; preserve it as historical evidence, not proof of identical replay-tool provenance.",
+    "No R4 closed-loop Unity run or vehicle acceptance is demonstrated."
+  ],
+  "later_batched_replays": [
+    {
+      "file": "r4_batched_01.json",
+      "sha256": "df3b71f659140b5a6408915f5ad83ebac44349346ed98aa8a2f155d47f0905d0",
+      "bytes": 501926,
+      "accepted": 107,
+      "attempted": 107,
+      "terminal_matcher_ms": 35.1754,
+      "terminal_engine_ms": 65.130400005728,
+      "all_107_poses_exactly_equal_to_pinned_R3_report": true,
+      "matcher_sha256": "ddc1a027378246d643f65de60636a95e7e51b21a4cb064369d1d9183c35cc58a",
+      "mapping_sha256": "3a068907890debf6abef3f180236e8131e03e7f7af9a4afad5083e88acdeb2c2"
+    },
+    {
+      "file": "r4_batched_02.json",
+      "sha256": "ff929e48e6e4d634d94913d8a9342e08d19a3ae4e0b66abddb3138328d8ccb98",
+      "bytes": 501947,
+      "accepted": 107,
+      "attempted": 107,
+      "terminal_matcher_ms": 35.6026,
+      "terminal_engine_ms": 66.89439999172464,
+      "all_107_poses_exactly_equal_to_pinned_R3_report": true,
+      "matcher_sha256": "ddc1a027378246d643f65de60636a95e7e51b21a4cb064369d1d9183c35cc58a",
+      "mapping_sha256": "3a068907890debf6abef3f180236e8131e03e7f7af9a4afad5083e88acdeb2c2"
+    },
+    {
+      "file": "r4_batched_03.json",
+      "sha256": "b60ff2f45c028cd355bf29472a9363483ad4552e42a575c1eeb56e6eac2d6fa5",
+      "bytes": 501941,
+      "accepted": 107,
+      "attempted": 107,
+      "terminal_matcher_ms": 37.0453,
+      "terminal_engine_ms": 70.74550000834279,
+      "all_107_poses_exactly_equal_to_pinned_R3_report": true,
+      "matcher_sha256": "ddc1a027378246d643f65de60636a95e7e51b21a4cb064369d1d9183c35cc58a",
+      "mapping_sha256": "3a068907890debf6abef3f180236e8131e03e7f7af9a4afad5083e88acdeb2c2"
+    }
+  ],
+  "later_changes": {
+    "source_is_final": false,
+    "planner_report": "Bounded bucket-pair batch preserves operations/order/graph. Index stores a configuration snapshot while public config remains mutable; alias regression suite now18 tests. Final suite and source acceptance are pending.",
+    "test_artifact_status": "No new18-test output independently recorded by this evidence preparation.",
+    "benchmark_artifact": "components_batch_01.json",
+    "benchmark_limits": "21 adversarial cases, two retained capacity errors and three actual index calls are microbenchmark/equivalence evidence, not a full runtime pass."
+  },
+  "all_frame_comparison": [
+    {
+      "file": "r3_causal_01.json",
+      "sha256": "aeb5d10390f6a5b88d57f507dfa68dcf457cce950d9adb57e02eacc1f724fad0",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.723299991805106,
+        "p95": 27.56218999566044,
+        "max": 70.17279998399317
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.6401,
+        "p95": 11.41403,
+        "max": 37.9617
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_scan_cache_01.json",
+      "sha256": "df5198df36ea77cdcc55740eb050789392760c48e778251fc3986107a808265c",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.293400007067248,
+        "p95": 28.890050013433186,
+        "max": 66.40640000114217
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.5521,
+        "p95": 12.56144999999999,
+        "max": 35.3562
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_scan_cache_02.json",
+      "sha256": "e368414ff917df72abc57f401d812ba9dd1f1b094362a9b4161e1d4319641144",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.772800019476563,
+        "p95": 26.986669993493702,
+        "max": 68.90370001201518
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.4032,
+        "p95": 12.518919999999987,
+        "max": 36.4776
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_scan_cache_03.json",
+      "sha256": "64f4a43d480f704b527b9258997543c3fe2d76b5b6e91f303cc065648c1a6a8a",
+      "all_frame_count": 107,
+      "accepted": 106,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.780300018377602,
+        "p95": 27.322380000259724,
+        "max": 81.8919999874197
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 98,
+        "p50": 7.64705,
+        "p95": 12.06282999999998,
+        "max": 29.4618
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": false,
+      "all_frame_pose_bytes_equal_to_pinned_R3": false,
+      "all_frame_pose_little_endian_f64_sha256": "73e95a25f28f622ec49205dfe2037bee1e041d4e560d61f33af7e92f8254b255",
+      "common_accepted_pose_count": 106,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_batched_01.json",
+      "sha256": "df3b71f659140b5a6408915f5ad83ebac44349346ed98aa8a2f155d47f0905d0",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.028399997390807,
+        "p95": 30.824139987816995,
+        "max": 65.130400005728
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.4682,
+        "p95": 15.381769999999992,
+        "max": 35.1754
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.529000024078414,
+        "p95": 16.43322998424991,
+        "max": 26.887400017585605
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_batched_02.json",
+      "sha256": "ff929e48e6e4d634d94913d8a9342e08d19a3ae4e0b66abddb3138328d8ccb98",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 15.711499989265576,
+        "p95": 33.68504999962167,
+        "max": 66.89439999172464
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.5808,
+        "p95": 13.279339999999992,
+        "max": 35.6026
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.741200010059401,
+        "p95": 20.56876001879573,
+        "max": 28.650599997490644
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    },
+    {
+      "file": "r4_batched_03.json",
+      "sha256": "b60ff2f45c028cd355bf29472a9363483ad4552e42a575c1eeb56e6eac2d6fa5",
+      "all_frame_count": 107,
+      "accepted": 107,
+      "engine_all_attempts_ms": {
+        "count": 107,
+        "p50": 16.139499988639727,
+        "p95": 27.516479999758293,
+        "max": 70.74550000834279
+      },
+      "matcher_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.4886,
+        "p95": 13.727319999999985,
+        "max": 37.0453
+      },
+      "pre_match_engine_elapsed_present_only_ms": {
+        "count": 99,
+        "p50": 7.152600010158494,
+        "p95": 14.701280006556768,
+        "max": 30.91060000588186
+      },
+      "all_frame_pose_numeric_equal_to_pinned_R3": true,
+      "all_frame_pose_bytes_equal_to_pinned_R3": true,
+      "all_frame_pose_little_endian_f64_sha256": "2e09aa39cabb1b5d58cd7c8a589dcd69771356a81f7d4171dade26419acd398c",
+      "common_accepted_pose_count": 107,
+      "common_accepted_pose_numeric_equal": true,
+      "common_accepted_pose_bytes_equal": true
+    }
+  ],
+  "statistics_note": "Engine processing_ms covers every attempted mapping frame including bootstrap and rejection. Matcher elapsed_ms and pre_match_engine_ms are counted only where logged, with no zero imputation. pre_match_engine_ms is total elapsed engine time before matching, not a pure preparation subroutine duration. Percentiles use NumPy linear interpolation. Pose bytes use original reported float values materialized as little-endian float64; no alignment, rounding or tolerance. Rejected outputs are not committed poses and are distinguished by common-accepted comparison.",
+  "engine_p95_change_from_pinned_R3_ms": {
+    "r4_scan_cache_01.json": 1.3278600177727462,
+    "r4_scan_cache_02.json": -0.575520002166737,
+    "r4_scan_cache_03.json": -0.2398099954007158,
+    "r4_batched_01.json": 3.2619499921565556,
+    "r4_batched_02.json": 6.122860003961229,
+    "r4_batched_03.json": -0.04570999590214697
+  },
+  "performance_warning": "All early cache attempts are included even where p95 worsened; three later passes are still a small offline sample. No local ROS environment or new full Unity loop is covered; Foxy communication validation remains pending."
+}

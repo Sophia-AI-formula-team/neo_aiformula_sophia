@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "kind": "draft008_selected_payload_privacy_inventory_not_seal",
+  "reviewed_utc": "2026-10-10T18:06:20.976846+00:00",
+  "state": "DRAFT: final planner source/test/performance additions and complete publication review are pending.",
+  "payload_file_count": 15,
+  "payload_bytes": 5492209,
+  "files": [
+    {
+      "path": "evidence/components_batch_01.json",
+      "bytes": 4014,
+      "sha256": "362cc5f12eb6d75c08c9c5b7f88b95e3934cd6f9d5eb6ae4d486a6dc2885baaf",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/motion_channel.py.txt",
+      "bytes": 17763,
+      "sha256": "5c1b45920153daf3e04756f1bf303e5bfa611b378dd4d718ec576b6bc595286d",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/observed_prefix.json",
+      "bytes": 3397276,
+      "sha256": "ade7b16987374e874358f9ac88babd1b42f8c9e4f92317933debaf1d4aa3ec2b",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/profile_r4_01.summary.json",
+      "bytes": 5111,
+      "sha256": "e9949ca4c17d1a07212be9627543538a47f9926e60cfe994224f2193d6b883ae",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/r3_causal_01.json",
+      "bytes": 489220,
+      "sha256": "aeb5d10390f6a5b88d57f507dfa68dcf457cce950d9adb57e02eacc1f724fad0",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/r3_ci_readback_01.json",
+      "bytes": 9893,
+      "sha256": "d57608c0aaf8378155d8f218a1e0a4dd3c092f781c4ca71378e079da2503474e",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/r4_batched_01.json",
+      "bytes": 501926,
+      "sha256": "df3b71f659140b5a6408915f5ad83ebac44349346ed98aa8a2f155d47f0905d0",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/r4_batched_02.json",
+      "bytes": 501947,
+      "sha256": "ff929e48e6e4d634d94913d8a9342e08d19a3ae4e0b66abddb3138328d8ccb98",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/r4_batched_03.json",
+      "bytes": 501941,
+      "sha256": "b60ff2f45c028cd355bf29472a9363483ad4552e42a575c1eeb56e6eac2d6fa5",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/REPLAY.txt",
+      "bytes": 4752,
+      "sha256": "518e2eacd4e0bf97e0c4948cc9ccf44a3413631e1747626fa47ddbb93d403870",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/replay_observed_keyframe.py.txt",
+      "bytes": 31516,
+      "sha256": "874fa54b6bde4b8584b5447ba0c998a00b9899e2c4211f0b07a88aa7254a40e1",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/scan_cache_review.summary.json",
+      "bytes": 13681,
+      "sha256": "d0a83be06f59c7d7852b302ac366a92be4631950200008bb4c9a5add5aeadfc7",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/schema2_audit.summary.json",
+      "bytes": 4405,
+      "sha256": "2f2c4b9b4d43ff9b61dbeca3b6d5169c8f3bb957b349bb21d013acf18af99c0d",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/trial17_clock_probe_01.json",
+      "bytes": 281,
+      "sha256": "4ddcea13022fce6eee1940dc335dab5fae64c566d495a7ad255194e42ca4dc96",
+      "private_path_secret_scan_hits": 0
+    },
+    {
+      "path": "evidence/trials17_18.summary.json",
+      "bytes": 8483,
+      "sha256": "31865945c7989d5da787346269290282d12465ed22c268244d1199d01396ee15",
+      "private_path_secret_scan_hits": 0
+    }
+  ],
+  "review": {
+    "exact_copies": [
+      "trial17_clock_probe_01.json",
+      "r3_ci_readback_01.json",
+      "observed_prefix.json",
+      "r3_causal_01.json",
+      "replay_observed_keyframe.py.txt",
+      "motion_channel.py.txt",
+      "r4_batched_01.json",
+      "r4_batched_02.json",
+      "r4_batched_03.json",
+      "components_batch_01.json"
+    ],
+    "selected_summaries": [
+      "trials17_18.summary.json",
+      "schema2_audit.summary.json",
+      "profile_r4_01.summary.json",
+      "scan_cache_review.summary.json"
+    ],
+    "fixture": {
+      "schema": 2,
+      "image_bindings": 410,
+      "motion_samples": 4505,
+      "binary_mask_pngs": 107,
+      "png_dimensions": [
+        640,
+        360
+      ],
+      "png_channels_equal": true,
+      "pixel_values": [
+        0,
+        255
+      ],
+      "png_chunk_types": [
+        "IHDR",
+        "IDAT",
+        "IEND"
+      ],
+      "no_metadata_or_trailing_payload": true,
+      "mask_hashes_checked": 107,
+      "no_raw_pose_input": true,
+      "pose_digests_are_checks_only": true
+    },
+    "no_personal_absolute_paths": true,
+    "no_email_tokens_or_private_keys_found": true,
+    "no_raw_truth_course_gnss_or_controller_input": true,
+    "replay_outputs_contain_estimated_local_map_poses": true,
+    "public_ci_urls": "Six verified-repository run URLs from the existing readback, no credential query strings. No new external request was made by this preparation.",
+    "withheld": [
+      "Raw world-pose/truth streams and terminal body snapshots",
+      "Original videos, RGB images and raw backend/Unity logs",
+      "Profiler absolute paths and complete raw hotspot list",
+      "Raw schema2 test log containing personal environment path"
+    ],
+    "historical_readonly_test_log": "No separately saved failure/pass artifact exists; conversation provenance is disclosed. No historical output file was reconstructed.",
+    "raw_input_files_modified": false,
+    "sealed007_modified": false,
+    "production_or_unity_modified": false,
+    "draft_compaction": "Removed only the three newly copied early-cache draft duplicates at planner request; intact originals remain local. Their hashes, sizes, outcomes and all-frame statistics are retained in scan_cache_review.summary.json. No sealed session or source recording was changed.",
+    "later_replay_equivalence": "All107 reported poses in each batched run independently compared to pinned R3: exact numeric and little-endian float64 byte equality. Statistics include worsened p95 and the earlier pre-match80ms rejection.",
+    "portable_help_check": "Copied helper and replay source loaded in memory under Python -B; --help exited0 without Unity, MMF/thread creation, filesystem cache or full-prefix execution."
+  },
+  "reproducibility_limits": [
+    "Portable replay requires both copied utility files restored to .py names in a fresh local directory; see REPLAY.txt.",
+    "No new full-prefix replay or final R4 suite was run for this inventory.",
+    "Final source, tag, CI, runtime timing and closed-loop results are deliberately pending.",
+    "Inventory excludes its own hash and will need regeneration after planner additions; it is not a bundle hashmanifest or publication approval."
+  ]
+}

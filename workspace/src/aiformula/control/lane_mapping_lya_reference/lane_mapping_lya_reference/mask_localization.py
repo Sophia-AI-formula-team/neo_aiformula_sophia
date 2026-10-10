@@ -302,7 +302,8 @@ class _FrozenIndex:
     def __init__(self, anchor, cfg, normal_targets=None, normal_queries=None, direction_support=None,
                  reuse_index=None):
         self.anchor = anchor
-        self.cfg = cfg
+        # Cache equality must compare construction-time settings, not a caller's mutable alias.
+        self.cfg = MappingProxyType(dict(cfg))
         self.cell = cfg["hash_cell_m"]
         self.cells = {}
         keys = np.floor(anchor / self.cell).astype(np.int64)
@@ -580,6 +581,22 @@ class _FrozenIndex:
 
         for index, key in enumerate(keys):
             buckets.setdefault((int(key[0]), int(key[1])), []).append(index)
+        left_parts, right_parts = [], []
+        pending = 0
+
+        def flush_pairs():
+            nonlocal pending
+            if not pending:
+                return
+            left, right = np.concatenate(left_parts), np.concatenate(right_parts)
+            difference = self.anchor[left] - self.anchor[right]
+            connected = np.sum(difference * difference, axis=1) <= radius ** 2
+            matrix[left, right] = connected
+            matrix[right, left] = connected
+            left_parts.clear()
+            right_parts.clear()
+            pending = 0
+
         # Batch the bounded distance queries by small occupied cell, not one
         # Python/NumPy allocation per pixel. Visit each cell-pair just once.
         for key, members in buckets.items():
@@ -590,12 +607,22 @@ class _FrozenIndex:
             candidates = np.asarray(candidates, dtype=np.int64)
             if len(members) > 512 or len(candidates) > 2048:
                 raise ValueError("normal connectivity bucket capacity exceeded")
+            if matrix is not None:
+                # Combine small cells without a dense floating-point N x N
+                # distance array. Preserve every original pair and its order;
+                # at most 65536 pairs occupy the temporary distance buffers.
+                rows = max(1, 65536 // len(candidates))
+                for start in range(0, len(members), rows):
+                    chosen = members[start:start + rows]
+                    size = len(chosen) * len(candidates)
+                    if pending and pending + size > 65536:
+                        flush_pairs()
+                    left_parts.append(np.repeat(chosen, len(candidates)))
+                    right_parts.append(np.tile(candidates, len(chosen)))
+                    pending += size
+                continue
             difference = self.anchor[members, None, :] - self.anchor[candidates][None, :, :]
             connected = np.sum(difference * difference, axis=2) <= radius ** 2
-            if matrix is not None:
-                matrix[members[:, None], candidates] = connected
-                matrix[candidates[:, None], members] = connected.T
-                continue
             rows, cols = np.nonzero(connected)
             for left, right in zip(members[rows], candidates[cols]):
                 a, b = root(int(left)), root(int(right))
@@ -603,6 +630,7 @@ class _FrozenIndex:
                     parent[b] = a
                     self._forest_children[int(left)].append(int(right))
         if matrix is not None:
+            flush_pairs()
             self._adjacency_bits = [int.from_bytes(row.tobytes(), "little") for row in
                                     np.packbits(matrix, axis=1, bitorder="little")]
             unseen = (1 << count) - 1
@@ -721,6 +749,7 @@ class LaneMapLocalizer:
         return _readonly(self._correction)
 
     def reset(self):
+        self._scan_geometry_index = None
         self._correction = np.zeros(3, dtype=np.float64)
         self.last_seen_stamp_ns = None
         self.last_accepted_stamp_ns = None
@@ -759,6 +788,10 @@ class LaneMapLocalizer:
         candidate._correction = np.array(state.correction_se2, dtype=np.float64)
         candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
         candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
+        # Pure current-mask geometry memoization, not pose/map evidence. The
+        # next index rechecks every dependency against its own current points.
+        # Sharing this immutable source does not inherit a pending match.
+        candidate._scan_geometry_index = self._scan_geometry_index
         return candidate
 
     def capture_tracking_state(self):
@@ -983,15 +1016,24 @@ class LaneMapLocalizer:
         metrics["scan_support_points"] = len(support)
         if len(support) > cfg["max_scan_support_points"]:
             return finish("scan_geometry_capacity")
+        # Forks may share this memoization source. A bytes-backed view cannot
+        # have its writeable flag re-enabled, unlike an owning read-only array.
+        support = np.frombuffer(support.tobytes(), dtype=np.float64).reshape(support.shape)
         support_cells = {tuple(key): index for index, key in enumerate(
             np.floor(support / cfg["scan_voxel_m"]).astype(np.int64))}
         indices = np.asarray([support_cells.get(tuple(key), -1) for key in
                               np.floor(scan / cfg["scan_voxel_m"]).astype(np.int64)], dtype=np.int64)
         eligible = indices >= 0
         try:
-            support_index = _FrozenIndex(support, cfg, normal_targets=indices[eligible])
+            support_index = _FrozenIndex(support, cfg, normal_targets=indices[eligible],
+                                         reuse_index=self._scan_geometry_index)
         except ValueError:
             return finish("scan_geometry_capacity")
+        # A rejected fit may leave an exact geometry cache, never accepted pose
+        # or map votes. Cache hits require current full-cell dependency equality;
+        # stale/different observations cannot become current measurement support.
+        self._scan_geometry_index = support_index
+        metrics["scan_reused_identical_geometry_points"] = support_index.reused_geometry_points
         eligible[eligible] &= support_index.normal_valid[indices[eligible]]
         metrics["scan_geometric_rejections"] = int(np.sum(~eligible))
         scan_normals = support_index.normals[indices[eligible]]

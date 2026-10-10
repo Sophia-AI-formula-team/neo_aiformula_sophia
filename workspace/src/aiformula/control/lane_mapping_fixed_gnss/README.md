@@ -117,6 +117,8 @@ guard、预算和提交全部通过，才投一次地图票、追加一次轨迹
 日志 `reference_attempts` 保留每次尝试及其严格过去的 frontier；
 `matched_against_frontier_ns` 表示本帧实际尝试的最后/所选参考，无尝试时为 null，
 `active_anchor_frontier_ns` 则表示提交后仍生效的参考，两者在拒绝帧可以不同。
+`pre_match_engine_ms` 是原提交预算时钟在首次匹配前的累计耗时（包括关键帧准备），
+不是纯匹配时间；准备阶段已经超时的帧也保留这个值，并且实际参考仍为 null。
 详见 [关键帧修复记录](../../../../../docs/agent-context/sessions/2026-10-11-planner-keyframe-005/SESSION.md)。
 
 teach → repeat 不重置原始里程计，因此必须保留已提交的地图修正和源时间边界。

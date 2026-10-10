@@ -302,6 +302,9 @@ def test_preparation_budget_is_charged_before_any_match_or_promotion(harness):
     row = h.process()
     h.assert_aborted(row)
     assert row["reason"] == "processing_deadline"
+    assert row["metrics"]["pre_match_engine_ms"] == pytest.approx(81.)
+    assert not row["metrics"].get("reference_attempts")
+    assert row["matched_against_frontier_ns"] is None
     h.candidates[0]["match"].assert_not_called()
     h.active_match.assert_not_called()
 
