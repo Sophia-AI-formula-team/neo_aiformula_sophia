@@ -27,6 +27,9 @@ def dense_graph(points, radius):
 
 def reference_components(self):
     count = len(self.anchor)
+    # This independent set-based oracle intentionally never invokes native code.
+    self._native_graph = None
+    self._adjacency_packed = None
     self._forest_children = [[] for _ in range(count)]
     self._forest_parents = np.full(count, -1, dtype=np.int64)
     parent = np.arange(count, dtype=np.int64)

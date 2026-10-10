@@ -33,6 +33,8 @@ def native():
     else:
         result = pytest.importorskip("_lane_mapping_lya_native")
     assert result.API_VERSION == 1
+    assert result.RADIUS_GRAPH_API_VERSION == 1
+    assert callable(result.radius_graph)
     assert callable(result.prepare_graph)
     assert callable(result.graph_forest)
     assert callable(result.connected_subsets)
@@ -43,6 +45,7 @@ class NativeSpy:
     """Forward to the real extension; record calls without replacing results."""
     def __init__(self, native):
         self.native = native
+        self.radius_calls = []
         self.prepare_calls = []
         self.graph_calls = []
         self.subset_calls = []
@@ -50,6 +53,10 @@ class NativeSpy:
 
     def __getattr__(self, name):
         return getattr(self.native, name)
+
+    def radius_graph(self, points, keys, count, radius_squared):
+        self.radius_calls.append((points, keys, count, radius_squared))
+        return self.native.radius_graph(points, keys, count, radius_squared)
 
     def prepare_graph(self, packed, count):
         result = self.native.prepare_graph(packed, count)
@@ -94,6 +101,41 @@ def assert_index_exact(actual, expected):
     assert actual.patch_truncations == expected.patch_truncations
     assert actual.direction_supported_points == expected.direction_supported_points
     assert actual.thickness_p95_m == expected.thickness_p95_m
+
+
+def assert_one_radius_call(spy, points, cfg):
+    """The C path receives original native-width bytes and Python's threshold."""
+    assert len(spy.radius_calls) == 1, "float64 geometry must not quietly use the NumPy radius fallback"
+    point_bytes, key_bytes, count, threshold = spy.radius_calls[0]
+    assert type(point_bytes) is bytes
+    assert type(key_bytes) is bytes
+    assert points.dtype == np.float64
+    assert point_bytes == points.tobytes()
+    keys = np.floor(points / cfg["normal_connectivity_m"]).astype(np.int64)
+    assert key_bytes == keys.tobytes()
+    assert count == len(points)
+    assert type(threshold) is float
+    # The original empty graph performs no radius-square arithmetic; preserve
+    # that behavior even for a finite radius whose square would overflow.
+    expected_threshold = float(cfg["normal_connectivity_m"] ** 2) if len(points) else 0.0
+    assert threshold.hex() == expected_threshold.hex()
+
+
+def independent_radius_oracle(points, keys, radius_squared):
+    """All pairs, no production buckets/batching/native oracles.
+
+    The explicit key check is important: the original five-cell enumeration
+    permits the symmetric 3x3 key neighborhood, not arbitrary close pairs.
+    Python integers avoid overflow at signed int64 key endpoints.
+    """
+    difference = points[:, None, :] - points[None, :, :]
+    connected = np.sum(difference * difference, axis=2) <= radius_squared
+    for left in range(len(points)):
+        for right in range(len(points)):
+            if (abs(int(keys[left, 0]) - int(keys[right, 0])) > 1 or
+                    abs(int(keys[left, 1]) - int(keys[right, 1])) > 1):
+                connected[left, right] = False
+    return np.packbits(connected, axis=1, bitorder="little").tobytes()
 
 
 def line(y=0., start=-2., stop=2., step=.1):
@@ -149,6 +191,7 @@ def test_all_index_arrays_are_bit_exact(monkeypatch, native, name):
     spy = NativeSpy(native)
     actual = build(monkeypatch, spy, points)
     assert_index_exact(actual, expected)
+    assert_one_radius_call(spy, points, actual.cfg)
     assert type(actual._native_graph).__name__ == "PyCapsule"
     assert spy.prepare_calls == [(len(points), len(actual._adjacency_packed),
                                    id(actual._native_graph))]
@@ -199,10 +242,12 @@ def test_graph_capacity_boundary_preserves_large_index_python_fallback(monkeypat
     actual = build(monkeypatch, spy, points, normal_targets=targets)
     assert_index_exact(actual, baseline)
     if count == 4000:
+        assert_one_radius_call(spy, points, actual.cfg)
         assert len(spy.graph_calls) == 1
         assert spy.prepare_calls == [(count, len(actual._adjacency_packed),
                                       id(actual._native_graph))]
     else:
+        assert not spy.radius_calls
         assert not spy.graph_calls
         assert not spy.prepare_calls
         assert actual._adjacency_bits is None
@@ -343,3 +388,150 @@ def test_direction_hint_and_changed_context_match_across_backends(monkeypatch, n
         assert np.max(np.abs(cached.line_points[:, normal_axis])) < 1e-12
     for name in ARRAYS:
         assert getattr(previous, name).tobytes() == before[name], name
+
+
+@pytest.mark.parametrize("count", [0, 1, 7, 8, 9, 63, 64, 65, 129])
+def test_production_radius_bytes_match_independent_oracle_and_python_graph(monkeypatch, native, count):
+    rng = np.random.RandomState(730 + count)
+    points = rng.uniform(-.7, .7, (count, 2)).astype(np.float64)
+    if count > 8:
+        points[::7] = points[0]  # exact duplicates and non-byte-aligned rows
+    points = points[::-1].copy()
+    before = points.tobytes()
+    no_normals = np.empty(0, dtype=np.int64)
+    expected = build(monkeypatch, None, points, normal_targets=no_normals)
+    spy = NativeSpy(native)
+    observed = build(monkeypatch, spy, points, normal_targets=no_normals)
+    assert_one_radius_call(spy, points, observed.cfg)
+    assert_index_exact(observed, expected)
+    keys = np.floor(points / observed.cfg["normal_connectivity_m"]).astype(np.int64)
+    assert observed._adjacency_packed == independent_radius_oracle(
+        points, keys, observed.cfg["normal_connectivity_m"] ** 2)
+    assert points.tobytes() == before
+
+
+@pytest.mark.parametrize("position", ["inside", "on", "outside"])
+@pytest.mark.parametrize("axis", [0, 1])
+def test_radius_threshold_uses_original_square_and_two_term_sum(monkeypatch, native, position, axis):
+    radius = .22
+    value = {"inside": np.nextafter(radius, 0.), "on": radius,
+             "outside": np.nextafter(radius, np.inf)}[position]
+    endpoint = [0., 0.]
+    endpoint[axis] = -value
+    # These diagonal coordinates straddle the same rounded squared threshold;
+    # the native kernel must not replace dx*dx + dy*dy with hypot/FMA/epsilon.
+    points = np.array([[0., 0.], endpoint, [.132, .176],
+                       [np.nextafter(.132, np.inf), .176],
+                       [.132, np.nextafter(.176, 0.)]], dtype=np.float64)
+    spy = NativeSpy(native)
+    result = build(monkeypatch, spy, points, normal_targets=np.empty(0, dtype=np.int64))
+    assert_one_radius_call(spy, points, result.cfg)
+    keys = np.floor(points / radius).astype(np.int64)
+    assert result._adjacency_packed == independent_radius_oracle(points, keys, radius ** 2)
+    assert_index_exact(result, build(monkeypatch, None, points,
+                                    normal_targets=np.empty(0, dtype=np.int64)))
+
+
+def test_native_radius_keeps_key_neighborhood_even_for_identical_positions(native):
+    low, high = -(1 << 63), (1 << 63) - 1
+    keys = np.array([[low, low], [low + 1, low], [high, high], [high - 1, high],
+                     [0, 0], [1, 1], [2, 0]], dtype=np.int64)
+    points = np.zeros((len(keys), 2), dtype=np.float64)
+    actual = native.radius_graph(points.tobytes(), keys.tobytes(), len(points), .22 ** 2)
+    assert type(actual) is bytes
+    assert actual == independent_radius_oracle(points, keys, .22 ** 2)
+
+
+def test_integer_connectivity_configuration_preserves_python_geometry(monkeypatch, native):
+    points = scene("thin")
+    cfg = {"normal_connectivity_m": 1, "normal_radius_m": 1.0}
+    baseline = build(monkeypatch, None, points, cfg=cfg)
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, cfg=cfg)
+    assert_one_radius_call(spy, points, actual.cfg)
+    assert_index_exact(actual, baseline)
+
+
+def bucket_capacity_points(kind, accepted):
+    if kind == "single":
+        return np.zeros((512 if accepted else 513, 2), dtype=np.float64)
+    # The current cell plus its four preceding neighbor cells contains exactly
+    # 2048 or 2049 candidates. Every individual bucket remains <=512 points.
+    cells = [(0, 0), (-1, -1), (-1, 0), (-1, 1), (0, -1)]
+    counts = [408 if accepted else 409, 410, 410, 410, 410]
+    return np.vstack([np.tile((np.asarray(key, dtype=np.float64) + .25) * .22, (count, 1))
+                      for key, count in zip(cells, counts)])
+
+
+@pytest.mark.parametrize("kind", ["single", "five_neighbors"])
+def test_native_radius_retains_inclusive_python_bucket_cap(monkeypatch, native, kind):
+    points = bucket_capacity_points(kind, accepted=True)
+    no_normals = np.empty(0, dtype=np.int64)
+    expected = build(monkeypatch, None, points, normal_targets=no_normals)
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=no_normals)
+    assert_one_radius_call(spy, points, actual.cfg)
+    assert_index_exact(actual, expected)
+
+
+@pytest.mark.parametrize("kind", ["single", "five_neighbors"])
+def test_python_bucket_capacity_rejects_before_any_native_graph_work(monkeypatch, native, kind):
+    points = bucket_capacity_points(kind, accepted=False)
+    spy = NativeSpy(native)
+    for backend in (None, spy):
+        with pytest.raises(ValueError, match="normal connectivity bucket capacity exceeded"):
+            build(monkeypatch, backend, points, normal_targets=np.empty(0, dtype=np.int64))
+    assert not spy.radius_calls
+    assert not spy.prepare_calls
+    assert not spy.graph_calls
+    assert not spy.subset_calls
+
+
+@pytest.mark.parametrize("dtype", [np.dtype("float32"), np.dtype("float16"),
+                                  np.dtype("float64").newbyteorder("S")])
+def test_non_native_float64_arrays_keep_numpy_distance_semantics(monkeypatch, native, dtype):
+    points = np.array([[0., 0.], [.22, 0.], [.132, .176], [-.22, 0.],
+                       [-.132, -.176], [.44, .22]], dtype=dtype)
+    assert points.dtype != np.float64
+    before = points.tobytes()
+    no_normals = np.empty(0, dtype=np.int64)
+    expected = build(monkeypatch, None, points, normal_targets=no_normals)
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=no_normals)
+    assert_index_exact(actual, expected)
+    assert not spy.radius_calls, "do not silently cast different arithmetic to native float64"
+    # Topology acceleration may still run after Python has computed its edges.
+    assert len(spy.prepare_calls) == 1
+    assert len(spy.graph_calls) == 1
+    assert points.tobytes() == before
+
+
+def test_radius_kernel_exception_cannot_quietly_become_python_success(monkeypatch, native):
+    class RejectingRadius(NativeSpy):
+        def radius_graph(self, points, keys, count, radius_squared):
+            self.radius_calls.append((points, keys, count, radius_squared))
+            raise RuntimeError("injected native radius failure")
+
+    spy = RejectingRadius(native)
+    with pytest.raises(RuntimeError, match="injected native radius failure"):
+        build(monkeypatch, spy, line(), normal_targets=np.empty(0, dtype=np.int64))
+    assert len(spy.radius_calls) == 1
+    assert not spy.prepare_calls
+    assert not spy.graph_calls
+
+
+def test_3999_padding_and_direct_api_reject_4001(monkeypatch, native):
+    count = 3999
+    points = np.column_stack((np.arange(count) * .75, np.zeros(count)))
+    spy = NativeSpy(native)
+    actual = build(monkeypatch, spy, points, normal_targets=np.empty(0, dtype=np.int64))
+    assert_one_radius_call(spy, points, actual.cfg)
+    row_bytes = (count + 7) // 8
+    assert actual._adjacency_packed == b"".join((1 << i).to_bytes(row_bytes, "little") for i in range(count))
+    # Existing 4000/4001 integration tests also compare full geometry and prove
+    # that 4001 uses the unchanged Python path. The public C API itself rejects
+    # this size even with otherwise correctly shaped byte buffers.
+    larger = np.column_stack((np.arange(4001) * .75, np.zeros(4001)))
+    keys = np.floor(larger / .22).astype(np.int64)
+    with pytest.raises(ValueError):
+        native.radius_graph(larger.tobytes(), keys.tobytes(), len(larger), .22 ** 2)

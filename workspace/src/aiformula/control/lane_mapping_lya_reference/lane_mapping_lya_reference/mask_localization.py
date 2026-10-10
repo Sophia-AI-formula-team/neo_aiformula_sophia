@@ -31,9 +31,10 @@ except ImportError:
     _GRAPH_NATIVE = None
 
 if _GRAPH_NATIVE is not None and (
-        getattr(_GRAPH_NATIVE, "API_VERSION", None) != 1 or not all(
+        getattr(_GRAPH_NATIVE, "API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "RADIUS_GRAPH_API_VERSION", None) != 1 or not all(
             callable(getattr(_GRAPH_NATIVE, name, None)) for name in
-            ("prepare_graph", "graph_forest", "connected_subsets"))):
+            ("radius_graph", "prepare_graph", "graph_forest", "connected_subsets"))):
     raise RuntimeError("incompatible lane graph native extension; rebuild this package")
 
 
@@ -652,7 +653,6 @@ class _FrozenIndex:
         self._adjacency_packed = None
         self._native_graph = None
         self._forest_parents = np.full(count, -1, dtype=np.int64)
-        matrix = np.zeros((count, count), dtype=bool) if count <= 4000 else None
         radius = self.cfg["normal_connectivity_m"]
         buckets = {}
         keys = np.floor(self.anchor / radius).astype(np.int64)
@@ -665,6 +665,26 @@ class _FrozenIndex:
 
         for index, key in enumerate(keys):
             buckets.setdefault((int(key[0]), int(key[1])), []).append(index)
+        if _GRAPH_NATIVE is not None and count <= 4000 and self.anchor.dtype == np.float64:
+            # Keep the original Python floor keys and exactly the same five-cell
+            # capacity check. Only the bounded pair arithmetic moves to C.
+            for key, members in buckets.items():
+                candidate_count = len(members) + sum(
+                    len(buckets.get((key[0] + dx, key[1] + dy), ()))
+                    for dx, dy in ((-1, -1), (-1, 0), (-1, 1), (0, -1)))
+                if len(members) > 512 or candidate_count > 2048:
+                    raise ValueError("normal connectivity bucket capacity exceeded")
+            self._adjacency_packed = _GRAPH_NATIVE.radius_graph(
+                self.anchor.tobytes(), keys.tobytes(), count, float(radius ** 2) if count else 0.0)
+            row_bytes = (count + 7) // 8
+            self._adjacency_bits = [
+                int.from_bytes(self._adjacency_packed[i * row_bytes:(i + 1) * row_bytes], "little")
+                for i in range(count)]
+            self._native_graph = _GRAPH_NATIVE.prepare_graph(self._adjacency_packed, count)
+            labels, parents = _GRAPH_NATIVE.graph_forest(self._native_graph, count)
+            self._forest_parents = np.asarray(parents, dtype=np.int64)
+            return np.asarray(labels, dtype=np.int64)
+        matrix = np.zeros((count, count), dtype=bool) if count <= 4000 else None
         left_parts, right_parts = [], []
         pending = 0
 

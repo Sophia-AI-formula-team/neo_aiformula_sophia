@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <float.h>
 #include <stdint.h>
 #include <string.h>
 #if defined(_MSC_VER)
@@ -15,8 +16,12 @@
 #define MAX_WORDS ((MAX_POINTS + 63) / 64)
 #define GRAPH_CAPSULE "lane_mapping_lya_native.Graph.v1"
 
-/* Diagnostic prototype: packed rows use little-endian bit order, independently
- * of host alignment/endianness. No geometry or floating-point gate lives here. */
+#if DBL_MANT_DIG != 53 || DBL_MAX_EXP != 1024
+#error "radius_graph requires native IEEE-754 binary64 doubles"
+#endif
+
+/* Bounded exact graph: packed rows use little-endian bit order, independently
+ * of host alignment/endianness. Python supplies the unchanged distance gate. */
 typedef struct {
     int size;
     int words;
@@ -434,7 +439,103 @@ static PyObject *graph_forest(PyObject *self, PyObject *args)
     return output;
 }
 
+static int adjacent_key(int64_t first, int64_t second)
+{
+    if (first == second)
+        return 1;
+    /* The smaller signed value cannot be INT64_MAX. This avoids abs(a-b),
+     * whose subtraction can overflow for perfectly valid int64 endpoints. */
+    return first < second ? first + INT64_C(1) == second : second + INT64_C(1) == first;
+}
+
+static PyObject *radius_graph(PyObject *self, PyObject *args)
+{
+    PyObject *point_bytes, *key_bytes, *size, *threshold_object, *output;
+    double *points, radius_squared;
+    int64_t *keys;
+    unsigned char *packed;
+    int count, row_bytes, coordinate, left;
+    size_t input_bytes;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOO:radius_graph", &point_bytes, &key_bytes, &size, &threshold_object))
+        return NULL;
+    if (!bounded_int(size, "n", MAX_POINTS, &count))
+        return NULL;
+    input_bytes = (size_t)count * 2 * sizeof(double);
+    if (!exact_bytes(point_bytes, (Py_ssize_t)input_bytes, "points") ||
+        !exact_bytes(key_bytes, (Py_ssize_t)count * 2 * sizeof(int64_t), "keys"))
+        return NULL;
+    if (!PyFloat_CheckExact(threshold_object)) {
+        PyErr_SetString(PyExc_TypeError, "radius_squared must be a built-in float");
+        return NULL;
+    }
+    radius_squared = PyFloat_AS_DOUBLE(threshold_object);
+    if (!(radius_squared >= 0.0)) {
+        PyErr_SetString(PyExc_ValueError, "radius_squared must be nonnegative and not NaN");
+        return NULL;
+    }
+    points = (double *)PyMem_Malloc(input_bytes ? input_bytes : sizeof(double));
+    keys = (int64_t *)PyMem_Malloc(input_bytes ? input_bytes : sizeof(int64_t));
+    if (!points || !keys) {
+        PyMem_Free(points);
+        PyMem_Free(keys);
+        return PyErr_NoMemory();
+    }
+    /* Input has native f64/int64 byte order. memcpy permits unaligned byte
+     * storage; the owned arrays remain valid throughout the GIL-free loop. */
+    memcpy(points, PyBytes_AS_STRING(point_bytes), input_bytes);
+    memcpy(keys, PyBytes_AS_STRING(key_bytes), input_bytes);
+    for (coordinate = 0; coordinate < 2 * count; ++coordinate) {
+        if (!(points[coordinate] >= -1e7 && points[coordinate] <= 1e7)) {
+            PyMem_Free(points);
+            PyMem_Free(keys);
+            PyErr_Format(PyExc_ValueError, "points[%d] must be finite and inside [-1e7, 1e7]", coordinate);
+            return NULL;
+        }
+    }
+    row_bytes = (count + 7) / 8;
+    output = PyBytes_FromStringAndSize(NULL, (Py_ssize_t)count * row_bytes);
+    if (!output) {
+        PyMem_Free(points);
+        PyMem_Free(keys);
+        return NULL;
+    }
+    packed = (unsigned char *)PyBytes_AS_STRING(output);
+    memset(packed, 0, (size_t)count * row_bytes);
+    Py_BEGIN_ALLOW_THREADS
+    /* Deliberately preserve separate binary64 subtraction, square and sum.
+     * Volatile stores forbid contraction into FMA or extended intermediates.
+     * The caller supplies the original Python radius ** 2 threshold, preserving
+     * its rounding/overflow before this function. No pow or radius arithmetic
+     * is performed here. Zero (underflow) and positive infinity are valid
+     * explicit thresholds; Python decides whether a source radius is valid. */
+    for (left = 0; left < count; ++left) {
+        int right;
+        for (right = left; right < count; ++right) {
+            volatile double dx, dy, dx_squared, dy_squared, squared;
+            if (!adjacent_key(keys[2 * left], keys[2 * right]) ||
+                !adjacent_key(keys[2 * left + 1], keys[2 * right + 1]))
+                continue;
+            dx = points[2 * left] - points[2 * right];
+            dy = points[2 * left + 1] - points[2 * right + 1];
+            dx_squared = dx * dx;
+            dy_squared = dy * dy;
+            squared = dx_squared + dy_squared;
+            if (squared <= radius_squared) {
+                packed[(size_t)left * row_bytes + right / 8] |= (unsigned char)(1u << (right % 8));
+                packed[(size_t)right * row_bytes + left / 8] |= (unsigned char)(1u << (left % 8));
+            }
+        }
+    }
+    Py_END_ALLOW_THREADS
+    PyMem_Free(points);
+    PyMem_Free(keys);
+    return output;
+}
+
 static PyMethodDef methods[] = {
+    {"radius_graph", radius_graph, METH_VARARGS,
+     "Exact adjacent-key graph (f64 points, int64 keys, n, radius_squared float)."},
     {"prepare_graph", prepare_graph, METH_VARARGS,
      "Copy packed bytes into an immutable owned graph capsule (n<=4000)."},
     {"connected_subsets", connected_subsets, METH_VARARGS,
@@ -445,7 +546,7 @@ static PyMethodDef methods[] = {
 };
 
 static struct PyModuleDef module = {
-    PyModuleDef_HEAD_INIT, "_lane_mapping_lya_native", "Isolated exact topology prototype.", -1, methods
+    PyModuleDef_HEAD_INIT, "_lane_mapping_lya_native", "Bounded exact lane graph kernels.", -1, methods
 };
 
 PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
@@ -454,6 +555,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
     if (!result)
         return NULL;
     if (PyModule_AddIntConstant(result, "API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "RADIUS_GRAPH_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||
         PyModule_AddStringConstant(result, "SOURCE_SHA256", SOURCE_SHA256) < 0) {
