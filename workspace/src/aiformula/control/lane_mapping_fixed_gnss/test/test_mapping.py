@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 sys.path.insert(0, str(Path(__file__).parents[2] / "lane_mapping_lya_reference"))
 
 from lane_mapping_fixed_gnss import mapping
+from lane_mapping_lya_reference.mask_localization import CommittedLocalizationState
 
 
 def scan():
@@ -26,13 +27,29 @@ class FakeMatcher:
 
     def __init__(self, anchor, config=None):
         self.anchor = anchor.copy()
+        self.config = dict(config or {})
+        self.correction_se2 = (0., 0., 0.)
         self.commits = 0
         self.last_accepted_stamp_ns = None
+        self.last_seen_stamp_ns = None
         self.created.append(self)
 
     def fork_with_anchor(self, anchor):
-        other = FakeMatcher(anchor)
-        other.last_accepted_stamp_ns = self.last_accepted_stamp_ns
+        return self.from_tracking_state(anchor, self.capture_tracking_state())
+
+    def capture_tracking_state(self):
+        # The test double follows the same immutable handoff protocol; the
+        # geometry/commit tests below still execute the real engine transition.
+        return CommittedLocalizationState(self.config, self.correction_se2,
+                                          self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
+
+    @classmethod
+    def from_tracking_state(cls, anchor, state):
+        assert isinstance(state, CommittedLocalizationState)
+        other = cls(anchor, state.config)
+        other.correction_se2 = state.correction_se2
+        other.last_accepted_stamp_ns = state.last_accepted_stamp_ns
+        other.last_seen_stamp_ns = state.last_seen_stamp_ns
         return other
 
     def discard_pending(self):
@@ -40,6 +57,7 @@ class FakeMatcher:
 
     def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True):
         assert commit is False
+        self.last_seen_stamp_ns = stamp
         return SimpleNamespace(accepted=self.accept, reason="no_overlap" if not self.accept else "matched",
                                pose_xyyaw=np.asarray(prior).copy(), metrics={}, stamp_ns=stamp)
 

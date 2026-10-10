@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import math
 from numbers import Integral
 import time
+from types import MappingProxyType
 
 import numpy as np
 
@@ -171,6 +172,39 @@ def _voxel_means(points, resolution):
     sums = np.zeros((len(counts), 2), dtype=np.float64)
     np.add.at(sums, inverse, points)
     return sums / counts[:, None]
+
+
+@dataclass(frozen=True)
+class CommittedLocalizationState:
+    """Small immutable same-session tracking handoff, never map evidence.
+
+    Capturing this state does not traverse an anchor or build a spatial index.
+    It is valid only while raw odometry and the map coordinate frame remain
+    continuous; it is not a relocalization seed for a restarted session.
+    """
+
+    config: Mapping
+    correction_se2: tuple
+    last_accepted_stamp_ns: object
+    last_seen_stamp_ns: object
+
+    def __post_init__(self):
+        config = MappingProxyType(_configuration(self.config))
+        correction = np.asarray(self.correction_se2, dtype=np.float64)
+        if correction.shape != (3,) or not np.all(np.isfinite(correction)):
+            raise ValueError("tracking correction must contain three finite values")
+        for name in ("last_accepted_stamp_ns", "last_seen_stamp_ns"):
+            stamp = getattr(self, name)
+            if stamp is not None:
+                if isinstance(stamp, bool) or not isinstance(stamp, Integral) or stamp < 0:
+                    raise ValueError("tracking timestamp must be a nonnegative integer or None")
+                object.__setattr__(self, name, int(stamp))
+        if self.last_accepted_stamp_ns is not None and (
+                self.last_seen_stamp_ns is None
+                or self.last_accepted_stamp_ns > self.last_seen_stamp_ns):
+            raise ValueError("committed tracking timestamp cannot be newer than seen timestamp")
+        object.__setattr__(self, "config", config)
+        object.__setattr__(self, "correction_se2", tuple(float(value) for value in correction))
 
 
 @dataclass(frozen=True)
@@ -343,11 +377,41 @@ class LaneMapLocalizer:
         anchor-specific refinement layer never do. Both anchors must be in the
         same map frame. This is not a coordinate-system reset or full clone.
         """
-        candidate = LaneMapLocalizer(anchor_xy, self.config)
-        candidate._correction = self._correction.copy()
-        candidate.last_accepted_stamp_ns = self.last_accepted_stamp_ns
-        candidate.last_seen_stamp_ns = self.last_seen_stamp_ns
+        return self.from_tracking_state(anchor_xy, self.capture_tracking_state())
+
+    def capture_tracking_state(self):
+        """Copy only constant-size committed tracking state, with no index work."""
+        return CommittedLocalizationState(
+            self.config, tuple(self._correction),
+            self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
+
+    @classmethod
+    def from_tracking_state(cls, anchor_xy, state):
+        """Build an independent index from an immutable same-frame handoff.
+
+        The expensive anchor/index construction may run on a background worker.
+        No pending proposal, counters or anchor-specific refinement is restored.
+        """
+        if not isinstance(state, CommittedLocalizationState):
+            raise ValueError("immutable committed localization state required")
+        candidate = cls(anchor_xy, state.config)
+        candidate._correction = np.array(state.correction_se2, dtype=np.float64)
+        candidate.last_accepted_stamp_ns = state.last_accepted_stamp_ns
+        candidate.last_seen_stamp_ns = state.last_seen_stamp_ns
         return candidate
+
+    def matches_anchor_source(self, anchor_xy):
+        """Exactly compare source geometry using this class's own voxelization.
+
+        This does not rebuild an index or permit approximate geometric matching.
+        It verifies normalized geometry, not ownership of an external session.
+        """
+        try:
+            points = _points(anchor_xy, self.config["max_anchor_points"])
+            normalized = _voxel_means(points, self.config["anchor_voxel_m"])
+        except (TypeError, ValueError, OverflowError):
+            return False
+        return bool(np.array_equal(self._anchor, normalized))
 
     def discard_pending(self):
         """Revoke an uncommitted proposal after a caller's deadline/guard fails."""

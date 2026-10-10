@@ -11,9 +11,8 @@ import time
 import numpy as np
 
 from lane_mapping_lya_reference.mapping_core import GroundLookup
-from lane_mapping_lya_reference.mask_localization import LaneMapLocalizer
 from .mapping import TeachMapEngine
-from .bundle import build_bundle, load_bundle
+from .bundle import build_bundle, geometry_sha256, load_bundle
 
 
 class MapWorker:
@@ -72,10 +71,19 @@ class MapWorker:
         elif kind == "bundle":
             if self.snapshot is None:
                 raise ValueError("map must be frozen before endpoint sampling")
+            if self.snapshot is not self.engine.freeze():
+                raise ValueError("bundle snapshot is not this continuous teach session")
             path = build_bundle(job["root"], self.snapshot, self.calibration,
                                 route_config=job.get("route_config"))
             manifest, route, metadata, anchor, calibration = load_bundle(path)
-            self.matcher = LaneMapLocalizer(anchor, config=self.matcher_config)
+            # Hash-valid files may still describe a different map. The live
+            # correction belongs only to this exact frozen geometry/frontier,
+            # never to an arbitrary loaded bundle or a restarted motion frame.
+            if (not np.array_equal(anchor, self.snapshot.consensus_xy)
+                    or metadata.get("snapshot_geometry_sha256") != geometry_sha256(self.snapshot)
+                    or metadata.get("source_frontier_ns") != self.snapshot.source_frontier_ns):
+                raise ValueError("loaded bundle does not match this frozen teach snapshot")
+            self.matcher = self.engine.repeat_localizer()
             envelope.update(path=str(path), route=route, manifest=manifest)
         elif kind in ("teach", "repeat"):
             local, sensitivity = self._project(job)

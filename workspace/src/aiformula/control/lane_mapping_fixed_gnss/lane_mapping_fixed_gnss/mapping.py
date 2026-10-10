@@ -328,7 +328,26 @@ class TeachMapEngine:
                                          int(self._map.last_stamp_ns), dict(self.counts))
         return self._snapshot
 
+    def capture_repeat_state(self):
+        """Freeze and capture a small immutable continuous-session handoff.
+
+        Call freeze first when even the one-time snapshot copy must be scheduled
+        outside a control callback. No full-map localization index is built here.
+        """
+        self.freeze()
+        if self._matcher is not None:
+            return self._matcher.capture_tracking_state()
+        # Bootstrap has no committed visual correction or timestamp fence to
+        # transfer. An empty matcher preserves the original fresh semantics.
+        return LaneMapLocalizer(np.empty((0, 2)), self.matcher_config).capture_tracking_state()
+
     def repeat_localizer(self):
-        """Create an independent frozen-map matcher; refinement cannot edit teach geometry."""
+        """Hand off this continuous session to an independent frozen-map matcher.
+
+        The raw odometry frame does not reset between teach and repeat. Preserve
+        only the active matcher's committed correction and timestamp fences;
+        an unpromoted candidate, pending proposal or refinement is not evidence
+        for the handoff. This is not an API for seeding another session's map.
+        """
         snapshot = self.freeze()
-        return LaneMapLocalizer(snapshot.consensus_xy.copy(), self.matcher_config)
+        return LaneMapLocalizer.from_tracking_state(snapshot.consensus_xy, self.capture_repeat_state())

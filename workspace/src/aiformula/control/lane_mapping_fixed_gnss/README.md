@@ -119,6 +119,15 @@ guard、预算和提交全部通过，才投一次地图票、追加一次轨迹
 `active_anchor_frontier_ns` 则表示提交后仍生效的参考，两者在拒绝帧可以不同。
 详见 [关键帧修复记录](../../../../../docs/agent-context/sessions/2026-10-11-planner-keyframe-005/SESSION.md)。
 
+teach → repeat 不重置原始里程计，因此必须保留已提交的地图修正和源时间边界。
+`TeachMapEngine.capture_repeat_state()` 冻结后仅捕获小型不可变状态；全图索引可由
+`LaneMapLocalizer.from_tracking_state()` 在后台建立。同步便利接口
+`repeat_localizer()` 使用同一契约。候选关键帧、未提交匹配、计数和降噪层不继承。
+这不是对任意旧地图或新里程计 epoch 的重定位授权。
+worker 仅为当前 engine 所有的冻结快照交接，并在加载 bundle 后核对精确几何和
+来源前沿。已有修正不等于新定位确认：停稳、三条新 mask、原始准入门限和人工启动
+要求仍保留。无 active matcher 的 bootstrap 状态保留原来的首次定位语义。
+
 独立 bounded worker：一个运行任务、一个最新待处理 mask。控制为 20 Hz steady timer；过期结果、失效 generation、输入断流、移动中的首次定位均不能提交。图像、栅格、轨迹、队列、会话时长有界；预算是软实时保护，不是硬实时证明。`begin_teach` 后原始运动链异常锁存本次会话无效，不允许补造漏掉的运动继续驾驶；此限制不是由 GNSS 质量决定的。
 
 `~/.ros/lane_learning_gnss/follower-<unique>/` 保存轮速/gyro源时间、GNSS起点参考/结束定位、状态转移、每帧匹配拒绝原因、输出命令和旋转 JSONL。日志写入失败 HOLD。成功地图只包含 route、consensus、trace、calibration、metadata 和逐文件 SHA256，**不含 GNSS 坐标或 anchors 文件**；构建前后的冻结几何 hash 必须一致。旧结果不覆盖。

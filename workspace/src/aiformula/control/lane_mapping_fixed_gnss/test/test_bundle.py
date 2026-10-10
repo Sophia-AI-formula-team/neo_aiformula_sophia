@@ -195,6 +195,9 @@ def test_fixed_reference_build_load_and_actual_worker_bundle_job(tmp_path, snaps
     try:
         # This is an explicit analytic frozen-map fixture, not a claimed camera
         # lap. The real background bundle branch performs all subsequent work.
+        # Both owners refer to the same frozen fixture; an unrelated worker
+        # snapshot must not receive this engine's continuous-session correction.
+        worker.engine._snapshot = snapshot
         worker.snapshot = snapshot
         worker.calibration = calibration
         worker.submit({"kind": "bundle", "root": str(tmp_path / "worker"), "route_config": config})
