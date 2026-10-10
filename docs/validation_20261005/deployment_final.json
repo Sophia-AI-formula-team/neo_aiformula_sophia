@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-10-05T17:11:23.413388+09:00",
+  "files": {
+    "/home/workspace/src/aiformula/launchers/launch/allnodes.launch.py": "b399ad26a1de18bb0d5014648c32768c3caf7c2e8dcd51b26a254e739b0d5388",
+    "/home/workspace/src/aiformula/launchers/launch/yolop_a2.launch.py": "2e5ba9a89724a7cecb0e96bc60b98bfb5c3825b06234e7b8b1031651d6757b53",
+    "/home/workspace/src/aiformula/launchers/launch/obstacle_avoidance.launch.py": "87cd035fbd96ad6515a01a7d049677d1c05a20aeb4e4286838c4a66c028689d2",
+    "/home/workspace/src/aiformula/launchers/shellscript/run_obstacle_avoidance.py": "67f16d76c4f4258e547e0bbdd4f7e7edbf997c97a1f75f725dfdd01d9ba6e799",
+    "/home/control/aiformula_runtime/yolop_a2_20261005/tools/verify_live_perception.py": "90929a255d6926b571d572383ac4bc53d998434de6696af2da2709e82c7f689a",
+    "/home/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A2_Deploy/AGENTS.md": "e38b77ad69504a32040185eb8d88357e9ab39b676a7659cbac333cda8d4cb372"
+  },
+  "running": {
+    "18215": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers allnodes.launch.py launch_rviz:=false ",
+    "18216": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers yolop_a2.launch.py "
+  },
+  "oa_stopped": true,
+  "live_mask_image_verified": true,
+  "live_object_overlay_and_json_verified": true,
+  "physical_obstacle_triggered_bspline_verified": false,
+  "reason_pending": "Indoor bench scene, obstacle ROI stayed zero. Awaiting user placement of a real cone.",
+  "bag_used": false
+}

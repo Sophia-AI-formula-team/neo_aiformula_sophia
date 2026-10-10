@@ -1,0 +1,71 @@
+"""Lane-points bridge with manually controlled traffic-light state.
+
+This is the same three-point bridge as semantic_lane_points_bridge.launch.py,
+except it intentionally does not start red_pixel_traffic_light_adapter_node.
+Publish /traffic_light/state manually as red or green when testing.
+"""
+
+from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+
+
+def generate_launch_description():
+    config = PathJoinSubstitution(
+        [FindPackageShare("semantic_bringup"), "config", "semantic_vehicle_live.yaml"]
+    )
+
+    return LaunchDescription(
+        [
+            Node(
+                package="semantic_costmap_ros",
+                executable="color_semantic_mask_node",
+                name="color_semantic_mask_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_gate_ros",
+                executable="traffic_light_gate_node",
+                name="traffic_light_gate_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_costmap_ros",
+                executable="local_costmap_node",
+                name="local_costmap_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_local_planner_ros",
+                executable="local_primitive_planner_node",
+                name="local_primitive_planner_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_local_planner_ros",
+                executable="planned_lane_points_adapter_node",
+                name="planned_lane_points_adapter_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_local_planner_ros",
+                executable="lane_points_mux_node",
+                name="lane_points_mux_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
+                package="semantic_lane_recovery_ros",
+                executable="lane_recovery_gate_node",
+                name="lane_recovery_gate_node",
+                parameters=[config],
+                output="screen",
+            ),
+        ]
+    )

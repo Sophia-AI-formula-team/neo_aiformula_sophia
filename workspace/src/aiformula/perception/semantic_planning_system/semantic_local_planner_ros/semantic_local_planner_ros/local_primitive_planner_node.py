@@ -34,6 +34,8 @@ class LocalPrimitivePlannerNode(Node):
             ("curvature_weight", 0.3),
             ("semantic_cost_weight", 1.0),
             ("progress_weight", 0.25),
+            ("left_preference_bonus", 0.12),
+            ("right_preference_penalty", 0.0),
             ("local_costmap_topic", "/local_semantic_costmap"),
             ("semantic_constraints_topic", "/semantic_constraints"),
             ("theta_ref_topic", "/theta_ref"),
@@ -82,7 +84,12 @@ class LocalPrimitivePlannerNode(Node):
             semantic_cost=float(self.get_parameter("semantic_cost_weight").value),
             progress=float(self.get_parameter("progress_weight").value),
         )
-        return LocalPrimitivePlanner(weights=weights, primitives=self._primitives())
+        return LocalPrimitivePlanner(
+            weights=weights,
+            primitives=self._primitives(),
+            left_preference_bonus=float(self.get_parameter("left_preference_bonus").value),
+            right_preference_penalty=float(self.get_parameter("right_preference_penalty").value),
+        )
 
     def _primitives(self) -> list[Primitive]:
         return default_primitives(

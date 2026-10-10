@@ -1,0 +1,462 @@
+上车运行步骤：semantic planning + 原 withoutkalman / LYA 控制链
+============================================================
+
+本文档只写上车后需要执行的步骤。
+当前推荐方案是方案 C：
+
+  原 lane_points 继续运行，但输出 remap 到 original_processed_point_a/b/c。
+  semantic planner 生成 semantic_planner/processed_point_a/b/c。
+  lane_points_mux_node 统一选择 original 或 semantic。
+  withoutkalman 和 LYA 继续订阅原来的 processed_point_a/b/c。
+  红灯后不是立刻强制停车，而是先进入低速找路：
+    有合法 semantic 路径 -> 输出 semantic 三点，/lane_stop_flag=false。
+    找不到路或输入失效 -> 输出零点，/lane_stop_flag=true。
+
+最终链路：
+
+  原 lane_points
+    -> /original_processed_point_a
+    -> /original_processed_point_b
+    -> /original_processed_point_c
+       \
+        -> lane_points_mux_node
+          -> /processed_point_a
+          -> /processed_point_b
+          -> /processed_point_c
+          -> withoutkalman -> LYA -> cmd_vel
+       /
+  semantic planner
+    -> /semantic_planner/processed_point_a
+    -> /semantic_planner/processed_point_b
+    -> /semantic_planner/processed_point_c
+
+
+一、把代码放到车上
+----------------
+
+推荐放置位置：
+
+  <AIFormula workspace>/src/aiformula/perception/semantic_planning_system/
+
+也可以放在 ROS2 workspace 的 src 下，只要 colcon 能递归发现里面的 package.xml 即可。
+
+semantic_planning_system 本身只是外层收纳文件夹，不需要 package.xml。
+里面的每个子包才是 ROS2 package。
+
+
+二、编译
+--------
+
+进入车上的 ROS2 workspace 根目录：
+
+  cd <AIFormula workspace>
+
+编译：
+
+  colcon build --symlink-install --packages-up-to semantic_bringup
+
+source：
+
+  source install/setup.bash
+
+确认包能找到：
+
+  ros2 pkg list | grep semantic
+
+应该能看到：
+
+  semantic_planner_core
+  semantic_gate_ros
+  semantic_costmap_ros
+  semantic_local_planner_ros
+  semantic_lane_recovery_ros
+  semantic_safety_ros
+  semantic_bringup
+  semantic_test_tools
+
+
+三、上车前必须确认的输入话题
+--------------------------
+
+至少需要这些话题正常：
+
+相机图像：
+
+  /aiformula_sensing/zed_node/left_image/undistorted
+
+里程计：
+
+  /aiformula_sensing/gyro_odometry_publisher/odom
+
+红色像素计数：
+
+  /red_pixels_count
+
+原 lane_points 输入来源：
+
+  lane_line_center
+  lane_line_left
+  lane_line_right
+
+检查命令：
+
+  ros2 topic hz /aiformula_sensing/zed_node/left_image/undistorted
+  ros2 topic hz /aiformula_sensing/gyro_odometry_publisher/odom
+  ros2 topic hz /red_pixels_count
+  ros2 topic hz /lane_line_center
+
+
+四、不要启动 semantic_vehicle_live.launch.py
+-----------------------------------------
+
+如果要继续使用原 withoutkalman / LYA 控制链，不要启动：
+
+  ros2 launch semantic_bringup semantic_vehicle_live.launch.py
+
+原因：
+
+  semantic_vehicle_live.launch.py 会启动 safety_supervisor_node，
+  并直接发布到底盘 cmd_vel。
+
+方案 C 中，真实底盘速度应该仍然由 LYA controller 发布。
+
+
+五、启动原 lane_points，但 remap 三个输出话题
+------------------------------------------
+
+原 lane_points 仍然要启动，因为它保留了原来的车道线点处理逻辑。
+
+但是它不能再直接发布：
+
+  /processed_point_a
+  /processed_point_b
+  /processed_point_c
+
+否则会和 lane_points_mux_node 抢同一个话题。
+
+启动时 remap 到：
+
+  /original_processed_point_a
+  /original_processed_point_b
+  /original_processed_point_c
+
+如果原节点发布的是绝对话题名，使用：
+
+  ros2 run lane_points lane_0529oa --ros-args \
+    -r /processed_point_a:=/original_processed_point_a \
+    -r /processed_point_b:=/original_processed_point_b \
+    -r /processed_point_c:=/original_processed_point_c
+
+如果原节点发布的是相对话题名，使用：
+
+  ros2 run lane_points lane_0529oa --ros-args \
+    -r processed_point_a:=/original_processed_point_a \
+    -r processed_point_b:=/original_processed_point_b \
+    -r processed_point_c:=/original_processed_point_c
+
+实际用哪一种，以 ros2 node info 的结果为准。
+
+检查：
+
+  ros2 topic echo /original_processed_point_a
+  ros2 topic echo /original_processed_point_b
+  ros2 topic echo /original_processed_point_c
+
+
+六、启动 semantic bridge
+-----------------------
+
+另开终端，source 后启动：
+
+  source install/setup.bash
+  ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+
+这个 launch 会启动：
+
+  color_semantic_mask_node
+  red_pixel_traffic_light_adapter_node
+  traffic_light_gate_node
+  local_costmap_node
+  local_primitive_planner_node
+  planned_lane_points_adapter_node
+  lane_points_mux_node
+  lane_recovery_gate_node
+
+这个 launch 不会启动 safety_supervisor_node。
+它不会直接发布真实 cmd_vel。
+
+
+七、确认 semantic bridge 输出正常
+-------------------------------
+
+看语义约束：
+
+  ros2 topic echo /semantic_constraints
+
+看 planner 选择：
+
+  ros2 topic echo /selected_primitive
+
+看 planner 分数：
+
+  ros2 topic echo /planner_score_debug
+
+看 semantic 生成的三点：
+
+  ros2 topic echo /semantic_planner/processed_point_a
+  ros2 topic echo /semantic_planner/processed_point_b
+  ros2 topic echo /semantic_planner/processed_point_c
+
+看 mux 最终输出给 withoutkalman 的三点：
+
+  ros2 topic echo /processed_point_a
+  ros2 topic echo /processed_point_b
+  ros2 topic echo /processed_point_c
+
+看 mux 当前选择哪一路：
+
+  ros2 topic echo /semantic_planner/lane_points_mux_state
+
+看 costmap 输入是否健康：
+
+  ros2 topic echo /local_semantic_costmap_health
+
+看停车标志：
+
+  ros2 topic echo /lane_stop_flag
+
+看建议速度限制：
+
+  ros2 topic echo /semantic_planner/speed_limit
+
+正常无红灯绕行时，mux_state 里 source 应该是：
+
+  original
+
+红灯 gate 打开并且 semantic planner 有可用路径时，source 应该是：
+
+  semantic
+
+STOP 或 semantic 缺失时，source 可能是：
+
+  zero
+
+红灯低速找路时：
+
+  /lane_stop_flag 应该是 false
+  /semantic_planner/speed_limit 应该是 search_speed_limit_mps
+
+找不到路、costmap stale、semantic 三点异常时：
+
+  /lane_stop_flag 应该是 true
+  /semantic_planner/speed_limit 应该是 0.0
+
+
+八、确认 processed_point_a/b/c 只有 mux 一个发布者
+-----------------------------------------------
+
+执行：
+
+  ros2 topic info /processed_point_a
+  ros2 topic info /processed_point_b
+  ros2 topic info /processed_point_c
+
+每个话题应该只有一个 publisher：
+
+  lane_points_mux_node
+
+如果看到原 lane_points 节点也在发布 /processed_point_a/b/c，
+说明 remap 没成功，必须先修正。
+
+
+九、启动 withoutkalman 和 LYA
+---------------------------
+
+确认 /processed_point_a/b/c 已经由 mux 正常发布后，
+再启动原来的 withoutkalman 和 LYA controller。
+
+withoutkalman 和 LYA 的话题关系保持原来的：
+
+  /processed_point_a/b/c -> withoutkalman -> LYA -> cmd_vel
+
+注意：
+
+  真实底盘 cmd_vel 只能有一个最终发布者。
+  方案 C 下应该是 LYA controller 发布。
+  不要同时启动 semantic_vehicle_live.launch.py。
+
+
+十、RViz2 可视化建议
+-------------------
+
+启动 RViz2：
+
+  rviz2
+
+建议添加：
+
+  Image:
+    /semantic_perception/color_mask_debug
+
+  Image:
+    /local_semantic_costmap_debug
+
+  MarkerArray:
+    /semantic_planner/primitive_markers
+
+MarkerArray 颜色含义：
+
+  绿色：当前 selected primitive
+  蓝色：valid 但未选中 primitive
+  红色：invalid primitive
+
+固定坐标系建议：
+
+  base_footprint
+
+
+十一、手动红灯 gate 测试
+----------------------
+
+如果 /red_pixels_count 暂时不可靠，可以手动发布红灯状态做测试：
+
+  ros2 topic pub /traffic_light/state std_msgs/msg/String "{data: red}" -r 5
+
+观察：
+
+  ros2 topic echo /semantic_constraints
+  ros2 topic echo /selected_primitive
+  ros2 topic echo /semantic_planner/lane_points_mux_state
+
+红灯稳定后应看到：
+
+  red_forward_forbidden: true
+  diversion_active: true
+  selected_primitive 不是 SLOW_FORWARD
+
+如果左侧不可行，应选择 STOP，mux 输出 zero。
+如果左侧可行，应选择左侧 primitive，mux 输出 semantic 三点。
+
+恢复 green：
+
+  ros2 topic pub /traffic_light/state std_msgs/msg/String "{data: green}" -r 5
+
+
+十二、重要参数位置
+----------------
+
+主要配置文件：
+
+  semantic_bringup/config/semantic_vehicle_live.yaml
+
+semantic 三点车辆坐标近似参数：
+
+  vehicle_forward_scale_m: 5.0
+  vehicle_lateral_scale_m: 3.0
+  point_a_path_fraction: 0.0
+  point_b_path_fraction: 0.5
+  point_c_path_fraction: 1.0
+  theta_mode: zero
+  min_semantic_point_x_m: 0.05
+  max_semantic_point_x_m: 5.5
+  max_abs_semantic_point_y_m: 2.2
+
+含义：
+
+  vehicle_forward_scale_m 越大，semantic 三点的 x 越远。
+  vehicle_lateral_scale_m 越大，semantic 三点的 y 偏移越大。
+  theta_mode 默认 zero，保持和原 lane_points 一样 theta=0.0。
+
+planner 速度参数：
+
+  slow_forward_v: 0.45
+  diversion_v: 0.28
+
+mux 建议速度参数：
+
+  normal_speed_limit_mps: 0.45
+  search_speed_limit_mps: 0.18
+  stop_speed_limit_mps: 0.0
+
+注意：
+
+  /semantic_planner/speed_limit 是建议速度限制接口。
+  如果 LYA 或下层控制器没有订阅这个话题，它不会自动减速。
+  真正要实现“红灯后先减速找路”，需要让 LYA 或速度控制节点使用这个 speed_limit。
+
+红灯禁行区域：
+
+  red_forward_center_x_ratio: 0.5
+  red_forward_width_ratio: 0.20
+  red_forward_top_y_ratio: 0.25
+  red_forward_bottom_y_ratio: 0.62
+
+
+十三、常见问题
+--------------
+
+问题：/processed_point_a/b/c 没有数据
+  检查：
+    ros2 topic echo /original_processed_point_a
+    ros2 topic echo /semantic_planner/processed_point_a
+    ros2 topic echo /semantic_planner/lane_points_mux_state
+
+问题：mux 一直输出 zero
+  检查：
+    selected_primitive 是否为 STOP。
+    semantic 三点是否超时。
+    /local_semantic_costmap_health 是否为 stale。
+    semantic_constraints 是否 allow_lane_follow=false。
+    lane_recovery_state 是否还没有 recoverable。
+
+问题：车往反方向偏
+  优先检查：
+    Pose2D.y 正方向是否和原 lane_points 一致。
+    vehicle_lateral_scale_m 是否太大。
+    semantic primitive 在 RViz 中是否方向正确。
+
+问题：车辆点太近或太远
+  调整：
+    vehicle_forward_scale_m
+    point_a_path_fraction / point_b_path_fraction / point_c_path_fraction
+
+问题：红灯时仍走原 lane_points
+  检查：
+    /semantic_constraints 中 diversion_active 是否为 true。
+    /semantic_planner/lane_points_mux_state 的 source 是否为 semantic。
+
+问题：红灯时没有减速
+  检查：
+    /semantic_planner/speed_limit 是否变为 search_speed_limit_mps。
+    LYA 或下层速度控制器是否实际订阅并使用 /semantic_planner/speed_limit。
+    如果没有接这个话题，当前系统只能切换路径点，不能强制 LYA 减速。
+
+
+十四、最小推荐启动顺序
+--------------------
+
+1. 启动相机、odom、lane_line、红色像素计数等基础节点。
+
+2. 启动原 lane_points，并 remap 三个输出：
+
+     ros2 run lane_points lane_0529oa --ros-args \
+       -r /processed_point_a:=/original_processed_point_a \
+       -r /processed_point_b:=/original_processed_point_b \
+       -r /processed_point_c:=/original_processed_point_c
+
+3. 启动 semantic bridge：
+
+     ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+
+4. 确认：
+
+     ros2 topic info /processed_point_a
+     ros2 topic echo /semantic_planner/lane_points_mux_state
+     ros2 topic echo /lane_stop_flag
+     ros2 topic echo /semantic_planner/speed_limit
+
+5. 启动 withoutkalman。
+
+6. 启动 LYA controller。
+
+7. 保持急停可用，低速测试。

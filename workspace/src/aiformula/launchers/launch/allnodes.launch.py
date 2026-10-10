@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 import time
 from pathlib import Path
@@ -19,7 +20,7 @@ from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.logging import get_logger
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import EnvironmentVariable, LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
@@ -92,6 +93,8 @@ def create_zed_node(context: LaunchContext) -> Tuple[Node]:
 
 
 def create_road_detector_node(context: LaunchContext) -> Tuple[Node]:
+    if LaunchConfiguration("launch_legacy_road_detector").perform(context).lower() not in ("true", "1", "yes"):
+        return ()
     _, topic_names = get_frame_ids_and_topic_names()
     road_detector_dir = get_package_share_directory("road_detector")
 
@@ -99,9 +102,16 @@ def create_road_detector_node(context: LaunchContext) -> Tuple[Node]:
         Node(
             package="road_detector",
             executable="road_detector",
-            name="road_detector",
+            name="road_detector_legacy",
             namespace="/aiformula_perception",
             output="screen",
+            additional_env={
+                "PYTHONPATH": [
+                    LaunchConfiguration("legacy_yolop_path"),
+                    os.pathsep,
+                    EnvironmentVariable("PYTHONPATH", default_value=""),
+                ],
+            },
             parameters=[
                 osp.join(road_detector_dir, "config", "normalization.yaml"),
                 {
@@ -261,6 +271,18 @@ def generate_launch_description():
     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
 
     launch_args = (
+        DeclareLaunchArgument(
+            "launch_legacy_road_detector",
+            default_value="false",
+            description="Enable the archived lane-only detector instead of a separately launched YOLOP detector.",
+        ),
+        DeclareLaunchArgument(
+            "legacy_yolop_path",
+            default_value=(
+                "/home/workspace/src/aiformula/perception/road_detector/"
+                "road_detector/yolop_legacy_20261005"
+            ),
+        ),
         DeclareLaunchArgument(
             "weight_path",
             default_value="/home/workspace/src/aiformula/perception/road_detector/weights/123.pth",

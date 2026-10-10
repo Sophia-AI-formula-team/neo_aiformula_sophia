@@ -21,12 +21,14 @@ local_costmap_node:
     publish_rate_hz: 10.0
     fallback_height: 120
     fallback_width: 160
+    fallback_cost: 255
     road_mask_topic: /aiformula_perception/road_detector/mask_image
     offroad_mask_topic: /semantic_perception/offroad_mask
     lane_guidance_mask_topic: /lane_guidance_mask
     semantic_constraints_topic: /semantic_constraints
     local_costmap_topic: /local_semantic_costmap
     local_costmap_debug_topic: /local_semantic_costmap_debug
+    costmap_health_topic: /local_semantic_costmap_health
 
 local_primitive_planner_node:
   ros__parameters:
@@ -42,6 +44,8 @@ local_primitive_planner_node:
     curvature_weight: 0.3
     semantic_cost_weight: 1.0
     progress_weight: 0.25
+    left_preference_bonus: 0.12
+    right_preference_penalty: 0.0
     local_costmap_topic: /local_semantic_costmap
     semantic_constraints_topic: /semantic_constraints
     theta_ref_topic: /theta_ref
@@ -54,6 +58,55 @@ local_primitive_planner_node:
     marker_frame_id: base_footprint
     marker_forward_scale_m: 5.0
     marker_lateral_scale_m: 3.0
+
+planned_lane_points_adapter_node:
+  ros__parameters:
+    selected_path_debug_topic: /selected_path_debug
+    selected_primitive_topic: /selected_primitive
+    semantic_constraints_topic: /semantic_constraints
+    semantic_point_a_topic: /semantic_planner/processed_point_a
+    semantic_point_b_topic: /semantic_planner/processed_point_b
+    semantic_point_c_topic: /semantic_planner/processed_point_c
+    publish_rate_hz: 10.0
+    stale_timeout_sec: 0.5
+    publish_only_when_diversion_active: false
+    publish_zero_when_stop: true
+    vehicle_forward_scale_m: 5.0
+    vehicle_lateral_scale_m: 3.0
+    point_a_path_fraction: 0.0
+    point_b_path_fraction: 0.5
+    point_c_path_fraction: 1.0
+    theta_mode: zero
+
+lane_points_mux_node:
+  ros__parameters:
+    original_point_a_topic: /original_processed_point_a
+    original_point_b_topic: /original_processed_point_b
+    original_point_c_topic: /original_processed_point_c
+    semantic_point_a_topic: /semantic_planner/processed_point_a
+    semantic_point_b_topic: /semantic_planner/processed_point_b
+    semantic_point_c_topic: /semantic_planner/processed_point_c
+    output_point_a_topic: /processed_point_a
+    output_point_b_topic: /processed_point_b
+    output_point_c_topic: /processed_point_c
+    semantic_constraints_topic: /semantic_constraints
+    costmap_health_topic: /local_semantic_costmap_health
+    lane_recovery_state_topic: /lane_recovery_state
+    selected_primitive_topic: /selected_primitive
+    mux_state_topic: /semantic_planner/lane_points_mux_state
+    lane_stop_flag_topic: /lane_stop_flag
+    speed_limit_topic: /semantic_planner/speed_limit
+    publish_rate_hz: 10.0
+    stale_timeout_sec: 0.5
+    require_recoverable_after_diversion: true
+    publish_zero_when_blocked: true
+    publish_speed_limit: true
+    normal_speed_limit_mps: 0.15
+    search_speed_limit_mps: 0.08
+    stop_speed_limit_mps: 0.0
+    min_semantic_point_x_m: 0.05
+    max_semantic_point_x_m: 5.5
+    max_abs_semantic_point_y_m: 2.2
 
 lane_recovery_gate_node:
   ros__parameters:
