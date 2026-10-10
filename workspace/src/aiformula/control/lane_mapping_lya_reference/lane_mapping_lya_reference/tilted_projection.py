@@ -1,7 +1,9 @@
-"""Ground projection with a measured up direction, without changing calibration.
+"""Ground projection with a measured up direction and explicit static plane.
 
-The plane is ``normal_body @ point_body == 0``: its offset is STILL the old
-body-origin ground-plane assumption, not a measured suspension/road height.
+The plane is ``normal_body @ point_body == plane_offset_m``. The default zero
+preserves the old body-origin assumption. A nonzero offset is separate static
+observation-surface calibration, not measured suspension/road height or an
+adjustment of the fixed camera K/T.
 The caller must supply one healthy, causal raw-IMU normal for the entire image
 and use a compatible horizontal-heading frame for motion. This geometry class
 does not infer attitude, check clocks, consume INS/GNSS, or compensate road bank.
@@ -9,7 +11,7 @@ J4 is pixel sensitivity only; it is not an attitude-uncertainty estimate.
 """
 
 import math
-from numbers import Integral
+from numbers import Integral, Real
 from typing import Sequence, Tuple
 
 import numpy as np
@@ -26,9 +28,11 @@ class TiltedGroundLookup:
     forward axis projected onto the plane; y is ``normal cross x``. A nearly
     vertical forward axis has no numerically defined heading and is rejected.
 
-    EXACT [0, 0, 1] delegates to the original GroundLookup, including its metric
-    threshold, four-neighbour convention, stable gate, counts and float bits.
-    Any nonzero tilt uses the dynamic path; there is no near-level shortcut.
+    EXACT [0, 0, 1] with zero plane offset delegates to the original GroundLookup,
+    including its metric threshold, four-neighbour convention, stable gate,
+    counts and float bits. This includes its empty result for a camera on/below
+    the zero plane. Any nonzero tilt OR offset uses the active-pixel path and
+    rejects a camera on/below the selected plane; no near-level shortcut exists.
     No frame normal, projected cloud or attitude-dependent result is cached.
     """
 
@@ -39,7 +43,10 @@ class TiltedGroundLookup:
         camera_matrix: Sequence[float],
         base_from_camera: np.ndarray,
         max_sensitivity_m_per_px: float,
+        *,
+        plane_offset_m: float = 0.0,
     ) -> None:
+        self._plane_offset_m = self._checked_plane_offset(plane_offset_m)
         if any(isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral)
                or value <= 1 for value in (width, height)):
             raise ValueError("Image dimensions must be integers exceeding one pixel")
@@ -86,10 +93,30 @@ class TiltedGroundLookup:
     def max_sensitivity_m_per_px(self):
         return self._level.max_sensitivity_m_per_px
 
+    @property
+    def plane_offset_m(self):
+        return self._plane_offset_m
+
+    @staticmethod
+    def _checked_plane_offset(value):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+            raise ValueError("plane_offset_m must be a finite signed real number")
+        try:
+            offset = float(value)
+        except (ValueError, TypeError, OverflowError) as error:
+            raise ValueError("plane_offset_m must be a finite signed real number") from error
+        if not math.isfinite(offset):
+            raise ValueError("plane_offset_m must be a finite signed real number")
+        return offset
+
     def matches(self, width, height, camera_matrix, base_from_camera,
-                max_sensitivity_m_per_px):
+                max_sensitivity_m_per_px, *, plane_offset_m=0.0):
         """Match static calibration only; a normal never changes the cache key."""
-        return self._level.matches(
+        try:
+            offset = self._checked_plane_offset(plane_offset_m)
+        except ValueError:
+            return False
+        return self._plane_offset_m == offset and self._level.matches(
             width, height, camera_matrix, base_from_camera, max_sensitivity_m_per_px)
 
     @staticmethod
@@ -142,16 +169,17 @@ class TiltedGroundLookup:
         metric-invalid neighbours contribute zero, exactly as in GroundLookup.
         There is no spatial ROI. Temporary work is bounded by five pixel
         references per active pixel, and at most one intersection per pixel.
-        Invalid normal/calibration geometry raises; it NEVER falls back to flat.
+        Invalid normals and dynamic-path calibration geometry raise; they NEVER
+        fall back to flat. The exact level/zero branch retains legacy behavior.
         """
         normal, heading_basis, level = self._normal_and_basis(normal_body)
-        if level:
+        if level and self._plane_offset_m == 0.0:
             return self._level.project_mask_with_sensitivity(mask, threshold)
         if mask.shape != (self.height, self.width):
             raise ValueError("Mask shape does not match lookup calibration")
-        camera_height = float(normal @ self._origin)
+        camera_height = float(normal @ self._origin) - self._plane_offset_m
         if not math.isfinite(camera_height) or camera_height <= 0.0:
-            raise ValueError("Camera must be above the body-origin ground plane")
+            raise ValueError("Camera must be above the selected observation plane")
         active = np.flatnonzero(np.asarray(mask) > int(threshold))
         raw_pixels = len(active)
         if raw_pixels == 0:
