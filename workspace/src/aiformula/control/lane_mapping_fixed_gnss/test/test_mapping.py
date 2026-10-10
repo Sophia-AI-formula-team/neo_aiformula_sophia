@@ -27,15 +27,25 @@ class FakeMatcher:
     def __init__(self, anchor, config=None):
         self.anchor = anchor.copy()
         self.commits = 0
+        self.last_accepted_stamp_ns = None
         self.created.append(self)
+
+    def fork_with_anchor(self, anchor):
+        other = FakeMatcher(anchor)
+        other.last_accepted_stamp_ns = self.last_accepted_stamp_ns
+        return other
+
+    def discard_pending(self):
+        pass
 
     def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True):
         assert commit is False
         return SimpleNamespace(accepted=self.accept, reason="no_overlap" if not self.accept else "matched",
-                               pose_xyyaw=np.asarray(prior).copy(), metrics={})
+                               pose_xyyaw=np.asarray(prior).copy(), metrics={}, stamp_ns=stamp)
 
     def commit(self, result):
         self.commits += 1
+        self.last_accepted_stamp_ns = result.stamp_ns
         return True
 
 

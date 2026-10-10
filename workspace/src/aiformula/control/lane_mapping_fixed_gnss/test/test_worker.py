@@ -167,7 +167,15 @@ def test_post_projection_revocation_or_expiration_cannot_mutate_geometry(running
             assert not result["result"]["accepted"]
             assert worker.engine._map.candidate_votes == old_candidates
             np.testing.assert_array_equal(worker.engine._trace, old_trace)
-            assert worker.engine._matcher.committed_frames == 0
+            # The first real match is only a prepared candidate. A revoked
+            # transaction must neither promote it nor leave a committable pose.
+            assert worker.engine._matcher is None
+            assert worker.engine._anchor_frontier is None
+            assert worker.engine._candidate is not None
+            candidate_matcher = worker.engine._candidate.matcher
+            assert candidate_matcher.committed_frames == 0
+            assert candidate_matcher._pending_result is None
+            assert candidate_matcher._pending_data is None
             new_points, new_votes = worker.engine.consensus_points_and_votes()
         np.testing.assert_array_equal(new_points, old_points)
         np.testing.assert_array_equal(new_votes, old_votes)

@@ -3,6 +3,8 @@
 /AGENT_CONTEXT.md text eol=lf
 /docs/agent-context/** text eol=lf
 /docs/agent-context/bundles/*.zip binary
+# Preserve sealed sensor/report bytes and their published SHA256, including CRLF.
+/docs/agent-context/sessions/2026-10-11-planner-keyframe-005/evidence/*.json -text
 /tools/agent_handoff.py text eol=lf
 /tools/tests/*.py text eol=lf
 /.github/workflows/agent-handoff.yml text eol=lf

@@ -35,6 +35,16 @@ DEFAULT_CONFIG = {
     "keyframe_refresh_distance_m": 1.0, "max_processing_ms": 80.0,
 }
 
+# A different valid, strictly past anchor may resolve these geometry failures.
+# Invalid data, time faults, nonfinite fits and deadlines must never be retried
+# through another reference. Only the one current active reference is eligible.
+_REFERENCE_REJECTIONS = frozenset({
+    "empty_anchor", "insufficient_anchor_line_support", "insufficient_overlap",
+    "insufficient_overlap_after_raw_prior_anchor", "unobservable_geometry",
+    "insufficient_final_inliers", "residual_gate", "residual_worsened",
+    "tracking_innovation_gate", "total_correction_gate",
+})
+
 
 def _readonly(values, columns=None):
     array = np.asarray(values, dtype=np.float64)
@@ -65,6 +75,16 @@ class MapSnapshot:
             raise ValueError("snapshot must have a positive source frontier")
         copied = json.loads(json.dumps(dict(self.stats), allow_nan=False))
         object.__setattr__(self, "stats", MappingProxyType(copied))
+
+
+@dataclass(frozen=True)
+class _PreparedKeyframe:
+    matcher: object
+    frontier_ns: int
+    prepared_stamp_ns: int
+    prior_xyyaw: np.ndarray
+    tracking_owner: object
+    tracking_stamp_ns: object
 
 
 class TeachMapEngine:
@@ -102,6 +122,7 @@ class TeachMapEngine:
         self._anchor_frontier = None
         self._keyframe_stamp = None
         self._keyframe_pose = None
+        self._candidate = None
         self._first_stamp = None
         self._first_pose = None
         self._last_seen_stamp = None
@@ -117,32 +138,81 @@ class TeachMapEngine:
     def _result(self, accepted, reason, pose, stamp, started, metrics=None):
         self.counts["accepted" if accepted else "rejected"] += 1
         self.counts[reason] += 1
+        details = dict(metrics or {})
+        attempts = details.get("reference_attempts", [])
+        matched_frontier = details.get("selected_anchor_frontier_ns",
+                                       attempts[-1]["frontier_ns"] if attempts else None)
         return {"accepted": bool(accepted), "reason": reason, "phase": self.phase,
                 "pose_xyyaw": np.asarray(pose, dtype=float).copy(), "stamp_ns": int(stamp),
-                "matched_against_frontier_ns": self._anchor_frontier,
+                "matched_against_frontier_ns": matched_frontier,
+                "active_anchor_frontier_ns": self._anchor_frontier,
                 "confirmed_cells": len(self._map.confirmed_keys), "trace_points": len(self._trace),
                 "processing_ms": (self._clock() - started) * 1000.0,
-                "metrics": dict(metrics or {}), "counts": dict(self.counts)}
+                "metrics": details, "counts": dict(self.counts)}
 
     def _latch(self, reason):
         self._fault = str(reason)
 
-    def _refresh_matcher(self, prior, stamp):
+    def _prepare_matcher(self, prior, stamp):
+        frontier = self._map.last_stamp_ns
+        if frontier is None or frontier >= stamp:
+            raise ValueError("keyframe contains current or future evidence")
+        tracking_stamp = None if self._matcher is None else self._matcher.last_accepted_stamp_ns
+        # Index preparation can exceed a deadline. Cache only an inactive
+        # candidate, and never reuse one seeded from a different committed pose.
+        if (self._candidate is not None and self._candidate.frontier_ns == frontier
+                and self._candidate.tracking_owner is self._matcher
+                and self._candidate.tracking_stamp_ns == tracking_stamp):
+            return self._candidate
         points, _ = self._map.confirmed_points_and_votes()
         distance = np.sum((points - prior[:2]) ** 2, axis=1)
         available = np.flatnonzero(distance <= self.config["keyframe_radius_m"] ** 2)
         if len(available) < self.config["bootstrap_min_anchor_points"]:
-            return False
+            return None
         order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
         anchor = points[available[order]].copy()
-        frontier = self._map.last_stamp_ns
-        if frontier is None or frontier >= stamp:
-            raise ValueError("keyframe contains current or future evidence")
-        self._matcher = LaneMapLocalizer(anchor, self.matcher_config)
-        self._anchor_frontier = int(frontier)
-        self._keyframe_stamp, self._keyframe_pose = stamp, prior.copy()
+        matcher = (LaneMapLocalizer(anchor, self.matcher_config) if self._matcher is None
+                   else self._matcher.fork_with_anchor(anchor))
+        self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher, tracking_stamp)
         self.counts["keyframes_prepared"] += 1
-        return True
+        return self._candidate
+
+    def _deadline(self, started):
+        return (self._clock() - started) * 1000.0 > self.config["max_processing_ms"]
+
+    def _match_reference(self, scan, prior, stamp, started):
+        refresh = (self._matcher is None or (
+            self._map.last_stamp_ns != self._anchor_frontier and (
+                stamp - self._keyframe_stamp >= self.config["keyframe_refresh_s"] * 1e9
+                or np.linalg.norm(prior[:2] - self._keyframe_pose[:2]) >= self.config["keyframe_refresh_distance_m"])))
+        candidate = self._prepare_matcher(prior, stamp) if refresh else None
+        attempts = []
+        selected = candidate.matcher if candidate is not None else self._matcher
+        frontier = candidate.frontier_ns if candidate is not None else self._anchor_frontier
+        if selected is None:
+            return None, None, None, {}, "insufficient_past_local_anchor"
+        if self._deadline(started):
+            selected.discard_pending()
+            return None, None, None, {}, "processing_deadline"
+        result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False)
+        attempts.append({"reference": "candidate" if candidate is not None else "active",
+                         "frontier_ns": frontier, "accepted": result.accepted,
+                         "reason": result.reason, "metrics": dict(result.metrics)})
+        if (not result.accepted and candidate is not None and self._matcher is not None
+                and result.reason in _REFERENCE_REJECTIONS):
+            if self._deadline(started):
+                return None, None, None, {"reference_attempts": attempts}, "processing_deadline"
+            selected, frontier = self._matcher, self._anchor_frontier
+            result = selected.match(scan, prior, stamp, prior_stamp_ns=stamp, commit=False)
+            attempts.append({"reference": "active", "frontier_ns": frontier,
+                             "accepted": result.accepted, "reason": result.reason,
+                             "metrics": dict(result.metrics)})
+        metrics = dict(result.metrics, reference_attempts=attempts,
+                       selected_anchor_frontier_ns=frontier,
+                       selected_reference="candidate" if candidate is not None and selected is candidate.matcher else "active")
+        failure = None if result.accepted else "match_" + result.reason
+        promoted = candidate if candidate is not None and selected is candidate.matcher else None
+        return selected, result, promoted, metrics, failure
 
     def _capacity_allows(self, keys, reliable):
         # Conservative preflight: expiry may free space, but never depend on it
@@ -193,22 +263,14 @@ class TeachMapEngine:
         if established:
             self._tracking_started = True
         result = None
+        selected = candidate = None
+        metrics = {}
         pose, reason = prior, "bootstrap_odometry"
         if self._tracking_started:
-            # A prepared index remains useful after a deadline-rejected frame.
-            # Do not repeatedly rebuild the SAME unchanged map if preparation
-            # itself exceeded one frame's budget; the next fresh mask can match
-            # against it cheaply. Newly admitted geometry makes refresh eligible.
-            refresh = (self._matcher is None or (
-                self._map.last_stamp_ns != self._anchor_frontier and (
-                    stamp - self._keyframe_stamp >= self.config["keyframe_refresh_s"] * 1e9
-                    or np.linalg.norm(prior[:2] - self._keyframe_pose[:2]) >= self.config["keyframe_refresh_distance_m"])))
-            if refresh and not self._refresh_matcher(prior, stamp):
-                return self._result(False, "insufficient_past_local_anchor", prior, stamp, started)
-            result = self._matcher.match(points[sensitivity <= self.config["reliable_sensitivity"]],
-                                         prior, stamp, prior_stamp_ns=stamp, commit=False)
-            if not result.accepted:
-                return self._result(False, "match_" + result.reason, prior, stamp, started, result.metrics)
+            selected, result, candidate, metrics, failure = self._match_reference(
+                points[sensitivity <= self.config["reliable_sensitivity"]], prior, stamp, started)
+            if failure is not None:
+                return self._result(False, failure, prior, stamp, started, metrics)
             pose, reason = result.pose_xyyaw, "matched_past_consensus"
         elif (self.counts["accepted"] >= self.config["bootstrap_max_frames"]
               or stamp - self._first_stamp > self.config["bootstrap_max_duration_s"] * 1e9
@@ -219,21 +281,35 @@ class TeachMapEngine:
         keys = self._map.points_to_unique_keys(world)
         reliable = self._map.points_to_unique_keys(world[sensitivity <= self.config["reliable_sensitivity"]])
         if not self._capacity_allows(keys, reliable):
+            if selected is not None:
+                selected.discard_pending()
             self._latch("map_capacity")
-            return self._result(False, self._fault, prior, stamp, started)
+            return self._result(False, self._fault, prior, stamp, started, metrics)
         with (commit_guard() if commit_guard is not None else nullcontext(True)) as admitted:
             if admitted is False:
-                return self._result(False, "commit_guard_rejected", prior, stamp, started)
-            if (self._clock() - started) * 1000.0 > self.config["max_processing_ms"]:
-                return self._result(False, "processing_deadline", prior, stamp, started)
-            if result is not None and not self._matcher.commit(result):
-                return self._result(False, "matcher_commit_rejected", prior, stamp, started)
+                if selected is not None:
+                    selected.discard_pending()
+                return self._result(False, "commit_guard_rejected", prior, stamp, started, metrics)
+            if self._deadline(started):
+                if selected is not None:
+                    selected.discard_pending()
+                return self._result(False, "processing_deadline", prior, stamp, started, metrics)
+            if result is not None and not selected.commit(result):
+                selected.discard_pending()
+                return self._result(False, "matcher_commit_rejected", prior, stamp, started, metrics)
             self._map.update(keys, reliable, stamp_ns=stamp)
             if self._map.capacity_rejected_cells or self._map.confirmation_capacity_rejections:
                 self._latch("unexpected_map_capacity")
-                return self._result(False, self._fault, prior, stamp, started)
+                return self._result(False, self._fault, prior, stamp, started, metrics)
             self._trace.append(np.asarray(pose, dtype=float).copy())
-        return self._result(True, reason, pose, stamp, started, None if result is None else result.metrics)
+            if candidate is not None:
+                # Promotion shares the same generation/deadline guard as the
+                # sole map vote and trace append. Failed candidates stay inert.
+                self._matcher, self._anchor_frontier = candidate.matcher, candidate.frontier_ns
+                self._keyframe_stamp, self._keyframe_pose = candidate.prepared_stamp_ns, candidate.prior_xyyaw
+                self._candidate = None
+                self.counts["keyframes_promoted"] += 1
+        return self._result(True, reason, pose, stamp, started, metrics)
 
     def points_and_votes(self):
         """Return owned copies for logging/visualization, not a writable map view."""

@@ -335,6 +335,25 @@ class LaneMapLocalizer:
         corrected[2] = _wrap(prior[2] + self._correction[2])
         return corrected
 
+    def fork_with_anchor(self, anchor_xy):
+        """Prepare a same-frame keyframe without resetting tracking admission.
+
+        The caller owns promotion of this independent candidate. Only committed
+        correction and timestamp fences cross over; pending proposals and the
+        anchor-specific refinement layer never do. Both anchors must be in the
+        same map frame. This is not a coordinate-system reset or full clone.
+        """
+        candidate = LaneMapLocalizer(anchor_xy, self.config)
+        candidate._correction = self._correction.copy()
+        candidate.last_accepted_stamp_ns = self.last_accepted_stamp_ns
+        candidate.last_seen_stamp_ns = self.last_seen_stamp_ns
+        return candidate
+
+    def discard_pending(self):
+        """Revoke an uncommitted proposal after a caller's deadline/guard fails."""
+        self._pending_result = None
+        self._pending_data = None
+
     def refined_points_and_votes(self):
         if not self._refined_votes:
             return np.empty((0, 2), dtype=np.float64), np.empty(0, dtype=np.float64)
