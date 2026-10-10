@@ -23,7 +23,7 @@ GNSS **只用于定轨迹起点的粗定位，不用于建图**。只在 LYA **�
 | 输入 | 默认话题 / 实际使用字段 |
 |---|---|
 | CAN | `/aiformula_sensing/vehicle_info`，`can_msgs/Frame`，ID 1809 (0x711)，左 `data[4]`、右 `data[0]`；轮径 0.254 m |
-| 原始陀螺仪 | `/aiformula_sensing/zed_node/imu/data_raw`，只读取 `angular_velocity`，经已标定安装旋转转入车体系 |
+| 原始 IMU | `/aiformula_sensing/zed_node/imu/data_raw`；默认只读 `angular_velocity`，下述显式三轴模式另读原始 specific force，均经同一已标定安装旋转转入车体系 |
 | 完整 mask | `/aiformula_perception/road_detector/mask_image`，mono8；不是 lane publisher ROI |
 | 内参 / 外参 | CameraInfo + 已到达的固定相机安装 TF |
 | GNSS，仅端点 | `/aiformula_sensing/vectornav/raw/gps`，`vectornav_msgs/GpsGroup` 的 `fix`、`poslla`、`posu` |
@@ -31,6 +31,64 @@ GNSS **只用于定轨迹起点的粗定位，不用于建图**。只在 LYA **�
 轮速协议只证实无符号低 8 位前进 RPM；高字节非零、倒车、不认识的协议不能偷偷按有符号解析。本包不依赖旧 `gyro_odometry_publisher`：旧实现使用 ZED 姿态和前后 IMU 插值，不符合本包“仅角速度、只用过去”的契约。
 
 ZED 可能在带时间戳的 `/tf` 发布固定 IMU 安装标定。本包启动时验证至少三个不同时间戳的相同矩阵后锁定；它不是运行姿态。也可设置 `gyro_mount_quaternion: [x,y,z,w]` 为实测 `base_from_imu` 单位四元数，默认全零表示从 TF 标定，**不能猜旋转轴**。`gyro_bias_radps` 应由停稳测量标定，默认 0 不等于确认无偏置。
+
+### 实验性、显式启用的原始三轴倾角模式
+
+默认 `motion_attitude_mode: legacy_flat` 保留原平面链。`raw_imu_tilt` 是新增的
+仿真可验证算法路径，**不是实车 IMU 校准或部署放行**；不改变车辆、相机或仿真参数。
+启用前必须核对实际 `gyro_topic` 的发布者、单位、轴向、安装旋转及时间来源，再明确设置：
+
+```yaml
+lane_endpoint_follower:
+  ros__parameters:
+    motion_attitude_mode: raw_imu_tilt
+    imu_specific_force_verified: true
+    imu_source_stamp_semantics: driver_receipt_ros  # 或经核验的 hardware_sample
+    gyro_bias_radps: 0.0
+```
+
+这些声明没有默认“已核验”值；漏填/未知值或非零标量 bias 会拒绝启动。
+`true` 表示调用方已确认 `linear_acceleration` 是包含重力的原始 specific force，
+静止、正确车体系下方向向上、单位 m/s²；它不是程序自动测得的证明。模式不会换话题，
+不会把 VectorNav 重命名成 ZED，也不会将 ZED 挂载外参用于另一颗 IMU。
+如使用 VectorNav，须另核对原始字段有效标志、converter 的 ENU 轴变换、消息 frame
+以及真实 `base_from_imu`；不会读取任何 `orientation`、INS 位置/速度或 GNSS 建图。
+
+`hardware_sample` 要求 header 已按经验证的时钟关系表示 ROS 时间域内的采样时刻；
+`driver_receipt_ros` 则明确只表示驱动接收时刻，不能声称硬件同步。当前 VectorNav
+驱动默认 `adjust_ros_timestamp=false` 时属于后一种，需要现场确认实际配置。
+节点的 monotonic receipt 是**串行 ROS 回调取得所有权时刻**，不是 DDS 入队或传感器
+采样时刻；上游延迟仍须测量，不能靠此声明证明相机/IMU 已同步。
+
+启动必须持续停稳并发布零输出。初始化同时要求过去轮速、当前原始 IMU 稳定性和
+本节点 DISARMED/HOLD/ESTOP 下已发布的零命令。零命令仅是命令证据，不证明车没动，
+更不能证明本节点拥有外部电机控制权。新增初始化门槛均是**未实测工程假设**：
+
+| 初始化检查 | 默认值 |
+|---|---:|
+| 连续窗口 / 最少样本 / 最大保存样本 | 1.0 s / 20 / 512 |
+| specific force 模长 | 9.80665 ± 0.5 m/s² |
+| 单样本相对窗口均值的最大加速度偏差 | 0.05 m/s² |
+| 单样本角速度模长 / 对均值最大偏差 | 0.02 / 0.002 rad/s |
+| 车头水平投影平方模最小值 | 0.25 |
+
+不满足静止/稳定窗口就丢弃候选窗口并继续等待，不回填早期姿态。
+窗口合格才估计 up 方向和三轴静止 bias；常值旋转与陀螺 bias、水平加速度偏置与
+倾角本身不可仅靠该窗口区分。初始化后只用**上一次**原始角速度减 bias 作因果
+Rodrigues 传播，不用行驶中的加速度低通作“重力修正”，加速度仍检查格式/有限性。
+角速度积分会漂移，初始化不是无偏或无限时长有效性的保证。
+
+每条 wheel 绑定同一过去 gyro 的原始 source/receipt 与不可变倾角快照；每张 mask
+只能从选中的过去 wheel/gyro 快照传播，不能拿随后到达的姿态替换。原 150 ms gyro、
+200 ms receipt/断流及 500 ms mask 门限不变；重复预测不会刷新原始样本年龄。
+`begin_teach`、arm、prepare/start repeat 和地图提交都要求对应倾角已就绪。
+置零局部原点不重置 bias/倾角或源时间前沿；就绪后传感器/时间错误锁定 HOLD，
+必须重启并重建图，绝不自动退回平面模式。GNSS 两个端点窗口保持原语义。
+
+投影使用同一完整 mask、固定 K/安装外参及捕获时倾角，输出车头水平投影坐标；
+仍假设地面经过 base 原点。未知底盘离地偏移、道路坡度/横坡、安装/时钟误差不能
+靠重力方向消除。像素 J4 仍只是像素扰动敏感度，不包含倾角不确定度。
+理想仿真 IMU 和纯 Python/回调测试不等于真实传感器、DDS、实车或整圈验收。
 
 ### 必须修正传感器输出配置，不能换名冒充 GPS
 

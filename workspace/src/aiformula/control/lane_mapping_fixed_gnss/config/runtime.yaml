@@ -20,4 +20,10 @@ lane_endpoint_follower:
     mask_max_age_s: 0.5
     pose_mask_gap_s: 0.15
     gyro_bias_radps: 0.0
+    # Explicit opt-in only; no real-vehicle IMU calibration is implied.
+    motion_attitude_mode: legacy_flat
+    imu_specific_force_verified: false
+    # raw_imu_tilt requires hardware_sample or driver_receipt_ros, as verified
+    # for the ACTUAL gyro_topic publisher. Empty means no provenance declared.
+    imu_source_stamp_semantics: ""
     log_directory: ~/.ros/lane_learning_gnss

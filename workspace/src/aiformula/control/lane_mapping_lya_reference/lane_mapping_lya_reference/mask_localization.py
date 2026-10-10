@@ -491,6 +491,10 @@ class _FrozenIndex:
         self.reused_geometry_points = 0
         self.patch_truncations = 0
         self._patch_cache = {}
+        # Geometry memoization only: an entry belongs to this immutable index,
+        # never to a pose proposal or another keyframe. Compute on demand so a
+        # large frozen map does not add work for anchors this scan never uses.
+        self._line_support_bounds_cache = {}
         self.query_nearest = None
         if normal_queries is not None:
             found = self.nearest(normal_queries, valid_only=False)
@@ -991,6 +995,56 @@ class _FrozenIndex:
         self._patch_cache[cache_key] = result
         return result
 
+    def line_support_bounds(self, anchor_ids):
+        """Observed tangent extent of each target's exact PCA position support.
+
+        A short fitted line is not an infinitely observed lane. In particular,
+        a five-frame consensus frontier lags a current scan: extrapolating its
+        endpoint tangent on a bend creates systematic yaw error. Use only the
+        confirmed seed-connected points inside the originally selected radius.
+        A borrowed past direction never supplies additional position extent.
+        Empty/invalid support is the inverted interval [inf, -inf].
+        """
+        ids = np.asarray(anchor_ids)
+        if (ids.ndim != 1 or (ids.size and (
+                ids.dtype.kind not in "iu" or np.any(ids < 0) or np.any(ids >= len(self.anchor))))):
+            raise ValueError("anchor IDs must be a one-dimensional in-range integer array")
+        if not ids.size:
+            return np.empty((0, 2), dtype=np.float64)
+        ids = ids.astype(np.int64, copy=False)
+        cache = self._line_support_bounds_cache
+        missing = np.asarray([int(i) for i in np.unique(ids) if int(i) not in cache], dtype=np.int64)
+        invalid = missing[~self.normal_valid[missing]]
+        for index in invalid:
+            cache[int(index)] = (np.inf, -np.inf)
+        pending = missing[self.normal_valid[missing]]
+        for radius in np.unique(self.normal_radii[pending]):
+            if not np.isfinite(radius) or radius <= 0:
+                raise ValueError("valid normal has no finite positive support radius")
+            at_radius = pending[self.normal_radii[pending] == radius]
+            keys = np.floor(self.anchor[at_radius] / self.cell).astype(np.int64)
+            unique, inverse, _ = _unique_cells(keys)
+            for group, key in enumerate(unique):
+                targets = at_radius[inverse == group]
+                candidates = self._patch((int(key[0]), int(key[1])), float(radius))
+                if not len(candidates):
+                    for index in targets:
+                        cache[int(index)] = (np.inf, -np.inf)
+                    continue
+                difference = self.anchor[candidates][None, :, :] - self.anchor[targets, None, :]
+                allowed = ((np.sum(difference * difference, axis=2) <= radius * radius)
+                           & (self.components[targets, None] == self.components[candidates][None, :]))
+                allowed = self._local_support(targets, candidates, allowed)
+                tangent = np.column_stack((-self.normals[targets, 1], self.normals[targets, 0]))
+                centered = self.anchor[candidates][None, :, :] - self.line_points[targets, None, :]
+                coordinate = np.sum(centered * tangent[:, None, :], axis=2)
+                lower = np.min(np.where(allowed, coordinate, np.inf), axis=1)
+                upper = np.max(np.where(allowed, coordinate, -np.inf), axis=1)
+                for index, low, high in zip(targets, lower, upper):
+                    cache[int(index)] = (float(low), float(high))
+        # Owned result: callers cannot modify the memoized support.
+        return np.asarray([cache[int(i)] for i in ids], dtype=np.float64)
+
     def nearest(self, points, normals=None, valid_only=True):
         if (_GRAPH_NATIVE is not None and points.dtype == self.anchor.dtype == np.float64
                 and points.ndim == self.anchor.ndim == 2
@@ -1256,6 +1310,19 @@ class LaneMapLocalizer:
         nearest = self._index.nearest(world, world_normals)
         selected = np.flatnonzero(nearest >= 0)
         anchor_indices = nearest[selected]
+        bounds = self._index.line_support_bounds(anchor_indices)
+        tangent = np.column_stack((-self._index.normals[anchor_indices, 1],
+                                   self._index.normals[anchor_indices, 0]))
+        along = np.sum((world[selected] - self._index.line_points[anchor_indices]) * tangent, axis=1)
+        covered = (along >= bounds[:, 0]) & (along <= bounds[:, 1])
+        self._last_correspondence_support_metrics = {
+            "nearest_correspondences_before_support": int(len(selected)),
+            "finite_support_rejected_correspondences": int(np.count_nonzero(~covered)),
+            "finite_support_covered_correspondences": int(np.count_nonzero(covered)),
+        }
+        # Do not replace a rejected nearest point with a farther convenient
+        # reference. Original overlap/inlier gates retain the full denominator.
+        selected, anchor_indices = selected[covered], anchor_indices[covered]
         normals = self._index.normals[anchor_indices]
         residual = np.sum((world[selected] - self._index.line_points[anchor_indices]) * normals, axis=1)
         return world, rotated, selected, normals, residual
@@ -1278,6 +1345,7 @@ class LaneMapLocalizer:
         """
         started = time.perf_counter_ns()
         cfg = self.config
+        self._last_correspondence_support_metrics = None
         self._pending_result = None
         self._pending_data = None
         self._pending_motion_information = None
@@ -1293,6 +1361,7 @@ class LaneMapLocalizer:
                    "anchor_min_confirmed_position_support": (int(np.min(self._index.normal_position_support[
                        self._index.normal_valid])) if np.any(self._index.normal_valid) else 0),
                    "line_reference": "confirmed_position_with_optional_strictly_past_paint_direction",
+                   "correspondence_extent": "finite_confirmed_pca_tangent_support_no_extrapolation",
                    "input_scan_points": 0, "scan_points": 0, "inliers": 0,
                    "scan_support_points": 0, "scan_geometric_rejections": 0,
                    "overlap_denominator": "connected_current_cross_section_density_not_sensitivity",
@@ -1319,6 +1388,8 @@ class LaneMapLocalizer:
                        motion_source_stamp_ns=None, motion_source_stamp_invalid=False)
 
         def finish(reason, accepted=False, estimate=None, world=None):
+            if self._last_correspondence_support_metrics is not None:
+                metrics.update(self._last_correspondence_support_metrics)
             elapsed = (time.perf_counter_ns() - started) / 1e6
             metrics["elapsed_ms"] = float(elapsed)
             metrics["budget_exceeded"] = bool(elapsed > cfg["runtime_budget_ms"])

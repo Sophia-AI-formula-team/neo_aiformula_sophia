@@ -11,12 +11,18 @@ import time
 import numpy as np
 
 from lane_mapping_lya_reference.mapping_core import GroundLookup
+from lane_mapping_lya_reference.tilted_projection import TiltedGroundLookup
+from .attitude import AttitudeSnapshot
 from .mapping import TeachMapEngine
 from .bundle import build_bundle, geometry_sha256, load_bundle
 
 
 class MapWorker:
-    def __init__(self, guard, mapping_config=None, matcher_config=None):
+    def __init__(self, guard, mapping_config=None, matcher_config=None,
+                 motion_attitude_mode="legacy_flat"):
+        if motion_attitude_mode not in ("legacy_flat", "raw_imu_tilt"):
+            raise ValueError("unknown motion attitude mode")
+        self.motion_attitude_mode = motion_attitude_mode
         self.guard = guard
         self.engine = TeachMapEngine(config=mapping_config, matcher_config=matcher_config)
         self.matcher_config = matcher_config
@@ -52,12 +58,26 @@ class MapWorker:
     def _project(self, job):
         calibration = job["calibration"]
         if self.lookup is None:
-            self.lookup = GroundLookup(calibration["width"], calibration["height"],
+            lookup_type = TiltedGroundLookup if self.motion_attitude_mode == "raw_imu_tilt" else GroundLookup
+            self.lookup = lookup_type(calibration["width"], calibration["height"],
                 calibration["camera_matrix"], np.asarray(calibration["base_from_camera"]), 0.5)
             self.calibration = calibration
         elif calibration != self.calibration:
             raise ValueError("calibration changed within session")
-        local, sensitivity, _ = self.lookup.project_mask_with_sensitivity(job["mask"], 127)
+        if self.motion_attitude_mode == "raw_imu_tilt":
+            attitude = job.get("attitude")
+            if (not isinstance(attitude, AttitudeSnapshot)
+                    or attitude.stamp_ns != job["stamp_ns"]
+                    or attitude.source_stamp_ns != job.get("prior_gyro_stamp_ns")
+                    or not attitude.source_stamp_ns <= job["prior_stamp_ns"] <= job["stamp_ns"]
+                    or attitude.received_steady_ns > job.get("prior_receipt_ns", -1)
+                    or attitude.wheel_receipt_ns != job.get("prior_receipt_ns")
+                    or not attitude.wheel_receipt_ns <= job["receipt_ns"]):
+                raise ValueError("raw-IMU projection requires the selected causal wheel attitude snapshot")
+            local, sensitivity, _ = self.lookup.project_mask_with_sensitivity(
+                job["mask"], 127, attitude.up_body)
+        else:
+            local, sensitivity, _ = self.lookup.project_mask_with_sensitivity(job["mask"], 127)
         return local, sensitivity
 
     def _compute(self, job):
