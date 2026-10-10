@@ -1,0 +1,36 @@
+{
+  "tag": "a3-v14",
+  "version": "0.3.0",
+  "tests_passed": 26,
+  "tests_failed": 0,
+  "model_sha256": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+  "baseline_tests_passed": 20,
+  "wheel_built": true,
+  "wheel_license_notices": true,
+  "wheel_sha256": "276875a9a9b2f72d289fc953ff99b86905f4cf77d14ed67ed503e407a3f21ced",
+  "isolated_install": true,
+  "installed_exact_parity": {
+    "passed": true,
+    "cases": 18,
+    "exact_outputs": true
+  },
+  "default_cli_smoke": true,
+  "default_cli_vs_deterministic": {
+    "different_pixels": {
+      "lane_mask": 8,
+      "obstacle_mask": 0,
+      "lane_overlay": 24,
+      "object_overlay": 226,
+      "combined_overlay": 250
+    },
+    "detections": 4,
+    "semantic_labels_equal": true,
+    "max_box_coordinate_delta_px": 0.02972412109375,
+    "max_score_delta": 0.002063751220703125,
+    "note": "Default Torch backend is not forced deterministic; these measured rounding differences are disclosed, not exact parity."
+  },
+  "live_ros2": false,
+  "orin_tested": false,
+  "training_or_optimizer_in_package": false,
+  "limitation": "Structural/packaging smoke only; failed accuracy gates remain in handoff. ROS callback uses stubs, not DDS."
+}

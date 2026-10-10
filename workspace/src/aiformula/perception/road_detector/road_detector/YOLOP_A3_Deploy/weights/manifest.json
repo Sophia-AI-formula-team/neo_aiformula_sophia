@@ -1,0 +1,45 @@
+{
+  "file": "weights/shared_best.pth",
+  "sha256": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+  "bytes": 79763687,
+  "architecture": "a3_mobilenet_shared_fpn_contract_v14",
+  "input_contract": {
+    "version": 1,
+    "name": "a3_original_native",
+    "min_size": 640,
+    "max_size": 1280,
+    "size_divisible": 32,
+    "resize": "torch_bilinear",
+    "padding": "bottom_right_zero_normalized",
+    "normalize": "imagenet",
+    "restore": "torch_logits_crop_resize_align_corners_false",
+    "threshold": 0.5
+  },
+  "provenance": {
+    "tag": "a3-v14",
+    "previous_tag": "a3-v6",
+    "run": "contract_v14/local/a3",
+    "step": 16384,
+    "arm": "a3",
+    "source_architecture": "a3_shared_contract_v14",
+    "source_checkpoint_sha256": "aad5df29a3a97f959ac7f582b2d45255bd23cb2436c7e0820eb69549ad6d48a9",
+    "source_deployment_candidate": false,
+    "selection": "User-selected local final snapshot, not automatically qualified best",
+    "status": "research_snapshot_not_vehicle_accepted"
+  },
+  "dtype": "float32",
+  "inference_only": true,
+  "tensors": 328,
+  "exact_source_tensor_match": true,
+  "encoder_passes_per_frame": 1,
+  "score_threshold": 0.5,
+  "lane_postprocess_enabled": false,
+  "lane_mask_values": [
+    0,
+    255
+  ],
+  "obstacle_mask_values": [
+    0,
+    255
+  ]
+}
