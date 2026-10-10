@@ -35,10 +35,11 @@ if _GRAPH_NATIVE is not None and (
         getattr(_GRAPH_NATIVE, "RADIUS_GRAPH_API_VERSION", None) != 1 or
         getattr(_GRAPH_NATIVE, "LOCAL_SUPPORT_API_VERSION", None) != 1 or
         getattr(_GRAPH_NATIVE, "NEAREST_API_VERSION", None) != 1 or
-        getattr(_GRAPH_NATIVE, "CROSS_SECTION_WEIGHTS_API_VERSION", None) != 1 or not all(
+        getattr(_GRAPH_NATIVE, "CROSS_SECTION_WEIGHTS_API_VERSION", None) != 1 or
+        getattr(_GRAPH_NATIVE, "LOCAL_MOMENTS_API_VERSION", None) != 1 or not all(
             callable(getattr(_GRAPH_NATIVE, name, None)) for name in
             ("radius_graph", "local_support", "prepare_graph", "graph_forest", "connected_subsets",
-             "nearest_grouped", "cross_section_weights"))):
+             "nearest_grouped", "cross_section_weights", "local_moments"))):
     raise RuntimeError("incompatible lane graph native extension; rebuild this package")
 
 
@@ -347,6 +348,35 @@ class MatchResult:
     metrics: dict
 
 
+def _local_pca_moments(difference, support, counts):
+    """Statistics of canonical 0/1 connected support and its exact row counts.
+
+    Only the same native-f64 arithmetic takes the bounded kernel. NumPy keeps
+    ownership of eigenvectors/gates and all other dtypes or strict underflow
+    behavior. The sole production caller receives paired support/counts from
+    _local_support; arbitrary inconsistent counts or noncanonical bool bytes
+    are not this private helper's input contract. Native errors propagate.
+    """
+    if (_GRAPH_NATIVE is not None and difference.dtype == np.float64
+            and difference.ndim == 3 and difference.shape[2] == 2
+            and support.dtype == np.bool_ and support.shape == difference.shape[:2]
+            and difference.shape[0] <= 4000 and difference.shape[1] <= 2048
+            and np.geterr()["under"] == "ignore"
+            and np.all(np.isfinite(difference)) and np.all(np.abs(difference) <= 2e7)):
+        means, covariance = _GRAPH_NATIVE.local_moments(
+            difference.tobytes(), support.tobytes(), difference.shape[0], difference.shape[1])
+        # Bytes retain immutable ownership; pending concatenation below creates
+        # its own storage. No writable view can corrupt these kernel results.
+        return (np.frombuffer(means, dtype=np.float64).reshape(-1, 2),
+                np.frombuffer(covariance, dtype=np.float64).reshape(-1, 2, 2))
+    weights = support.astype(np.float64)
+    safe_count = np.maximum(counts, 1.0)
+    means = np.sum(difference * weights[:, :, None], axis=1) / safe_count[:, None]
+    centered = difference - means[:, None, :]
+    covariance = np.einsum("nki,nkj,nk->nij", centered, centered, weights) / safe_count[:, None, None]
+    return means, covariance
+
+
 class _FrozenIndex:
     """Spatial-hash batches: no full anchor-by-scan distance matrix per frame."""
 
@@ -471,11 +501,7 @@ class _FrozenIndex:
                     continue
                 indices, difference, support = indices[enough], difference[enough], support[enough]
                 counts = counts[enough].astype(np.float64)
-                weights = support.astype(np.float64)
-                safe_count = np.maximum(counts, 1.0)
-                means = np.sum(difference * weights[:, :, None], axis=1) / safe_count[:, None]
-                centered = difference - means[:, None, :]
-                covariance = np.einsum("nki,nkj,nk->nij", centered, centered, weights) / safe_count[:, None, None]
+                means, covariance = _local_pca_moments(difference, support, counts)
                 # The covariance reduction above remains per cell, with its
                 # original candidate order. Only independent 2x2 solves are
                 # combined, in bounded batches; no cross-cell PCA is introduced.

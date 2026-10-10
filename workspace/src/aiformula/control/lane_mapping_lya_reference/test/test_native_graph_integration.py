@@ -38,6 +38,7 @@ def native():
     assert result.LOCAL_SUPPORT_API_VERSION == 1
     assert result.NEAREST_API_VERSION == 1
     assert result.CROSS_SECTION_WEIGHTS_API_VERSION == 1
+    assert result.LOCAL_MOMENTS_API_VERSION == 1
     assert callable(result.radius_graph)
     assert callable(result.prepare_graph)
     assert callable(result.graph_forest)
@@ -45,6 +46,7 @@ def native():
     assert callable(result.local_support)
     assert callable(result.nearest_grouped)
     assert callable(result.cross_section_weights)
+    assert callable(result.local_moments)
     return result
 
 
@@ -60,6 +62,7 @@ class NativeSpy:
         self.local_calls = []
         self.nearest_calls = []
         self.weight_calls = []
+        self.moment_calls = []
 
     def __getattr__(self, name):
         return getattr(self.native, name)
@@ -99,6 +102,10 @@ class NativeSpy:
                                   normals, ids, half_width, radius_squared))
         return self.native.cross_section_weights(graph, count, points, normals, ids,
                                                  half_width, radius_squared)
+
+    def local_moments(self, differences, support, rows, columns):
+        self.moment_calls.append((differences, support, rows, columns))
+        return self.native.local_moments(differences, support, rows, columns)
 
 
 def build(monkeypatch, backend, points, cfg=None, **kwargs):
@@ -752,9 +759,9 @@ def test_mixed_components_cannot_exploit_equal_component_size(monkeypatch, nativ
 
 
 API_VERSIONS = ("API_VERSION", "RADIUS_GRAPH_API_VERSION", "LOCAL_SUPPORT_API_VERSION",
-                "NEAREST_API_VERSION", "CROSS_SECTION_WEIGHTS_API_VERSION")
+                "NEAREST_API_VERSION", "CROSS_SECTION_WEIGHTS_API_VERSION", "LOCAL_MOMENTS_API_VERSION")
 API_FUNCTIONS = ("radius_graph", "prepare_graph", "graph_forest", "connected_subsets",
-                 "local_support", "nearest_grouped", "cross_section_weights")
+                 "local_support", "nearest_grouped", "cross_section_weights", "local_moments")
 
 
 def load_with_api_stub(monkeypatch, attribute=None, missing=False):
@@ -801,6 +808,10 @@ class RejectNewKernels:
     def cross_section_weights(self, *args):
         self.calls.append("cross_section_weights")
         raise RuntimeError("injected weights failure")
+
+    def local_moments(self, *args):
+        self.calls.append("local_moments")
+        raise RuntimeError("injected moments failure")
 
 
 def test_source_only_query_ids_use_int64_even_when_flatnonzero_is_int32(monkeypatch):
@@ -1085,3 +1096,132 @@ def test_native_weights_layout_dtype_empty_and_fallback(monkeypatch, native, lay
     else:
         assert not spy.weight_calls, "wrong byte order/width must preserve NumPy arithmetic"
         assert len(spy.subset_calls) == 1, "integer-only connected fallback still executes"
+
+
+def original_pca_moments(difference, support, counts):
+    """Literal pre-kernel NumPy expressions, independent of the dispatcher."""
+    weights = support.astype(np.float64)
+    safe_count = np.maximum(counts, 1.0)
+    means = np.sum(difference * weights[:, :, None], axis=1) / safe_count[:, None]
+    centered = difference - means[:, None, :]
+    covariance = np.einsum("nki,nkj,nk->nij", centered, centered, weights) / safe_count[:, None, None]
+    return means, covariance
+
+
+def moment_inputs(rows=7, columns=19):
+    rng = np.random.RandomState(2610116)
+    difference = rng.uniform(-2., 2., (rows, columns, 2))
+    support = rng.uniform(size=(rows, columns)) > .3
+    if rows:
+        support[0] = False  # Exact zero-count behavior is also part of the kernel.
+    return difference, support, support.sum(axis=1).astype(np.float64)
+
+
+@pytest.mark.parametrize("layout", ["ordinary", "strided", "reversed", "zero_rows",
+                                    "zero_columns", "rows_limit", "columns_limit"])
+def test_native_moments_exact_shapes_immutable_output_and_input_ownership(monkeypatch, native, layout):
+    dimensions = {"zero_rows": (0, 19), "zero_columns": (7, 0),
+                  "rows_limit": (4000, 1), "columns_limit": (1, 2048)}
+    difference, support, counts = moment_inputs(*dimensions.get(layout, (7, 19)))
+    if layout == "strided":
+        backing = np.full(difference.shape[:2] + (4,), 123.)
+        backing[:, :, ::2] = difference
+        difference = backing[:, :, ::2]
+        mask_backing = np.zeros((len(support), support.shape[1] * 2), dtype=bool)
+        mask_backing[:, ::2] = support
+        support = mask_backing[:, ::2]
+        assert not difference.flags.c_contiguous and not support.flags.c_contiguous
+    elif layout == "reversed":
+        difference, support, counts = difference[::-1, ::-1], support[::-1, ::-1], counts[::-1]
+    before = tuple(value.tobytes() for value in (difference, support, counts))
+    expected = original_pca_moments(difference, support, counts)
+    spy = NativeSpy(native)
+    observed = invoke(monkeypatch, spy, module._local_pca_moments, difference, support, counts)
+    assert spy.moment_calls == [(before[0], before[1], len(difference), difference.shape[1])]
+    assert before == tuple(value.tobytes() for value in (difference, support, counts))
+    for actual, baseline in zip(observed, expected):
+        assert_bytes(actual, baseline)
+        assert not actual.flags.writeable
+        with pytest.raises(ValueError):
+            actual.setflags(write=True)
+        for source in (difference, support, counts):
+            assert not np.shares_memory(actual, source)
+    # Changing every mutable input after return cannot alter owned result bytes.
+    difference[...] = 3.
+    support[...] = ~support
+    counts[...] = support.sum(axis=1)
+    for actual, baseline in zip(observed, expected):
+        assert_bytes(actual, baseline)
+
+
+@pytest.mark.parametrize("kind", ["float32", "swapped_f64", "nonboolean_support",
+                                  "rows_over_limit", "columns_over_limit", "range_over_limit"])
+def test_source_only_moments_unsupported_inputs_keep_original_numpy(monkeypatch, kind):
+    dimensions = {"rows_over_limit": (4001, 1), "columns_over_limit": (1, 2049)}
+    difference, support, counts = moment_inputs(*dimensions.get(kind, (7, 19)))
+    if kind == "float32":
+        difference = difference.astype(np.float32)
+    elif kind == "swapped_f64":
+        difference = difference.astype(np.dtype("float64").newbyteorder("S"))
+    elif kind == "nonboolean_support":
+        support = support.astype(np.uint8)
+    elif kind == "range_over_limit":
+        difference[0, 0, 0] = np.nextafter(2e7, np.inf)
+    sentinel = RejectNewKernels()
+    before = tuple(value.tobytes() for value in (difference, support, counts))
+    expected = original_pca_moments(difference, support, counts)
+    observed = invoke(monkeypatch, sentinel, module._local_pca_moments, difference, support, counts)
+    assert not sentinel.calls, "unsupported arithmetic must not be coerced into the native kernel"
+    for actual, baseline in zip(observed, expected):
+        assert_bytes(actual, baseline)
+    assert before == tuple(value.tobytes() for value in (difference, support, counts))
+
+
+@pytest.mark.parametrize("policy", ["warn", "raise"])
+def test_source_only_moments_preserve_numpy_underflow_policy(monkeypatch, policy):
+    difference = np.zeros((1, 3, 2))
+    difference[0, 0, 0] = 1e-310
+    support = np.ones((1, 3), dtype=bool)
+    counts = np.array([3.])
+    sentinel = RejectNewKernels()
+    with np.errstate(under=policy):
+        if policy == "raise":
+            with pytest.raises(FloatingPointError, match="underflow"):
+                original_pca_moments(difference, support, counts)
+            with pytest.raises(FloatingPointError, match="underflow"):
+                invoke(monkeypatch, sentinel, module._local_pca_moments, difference, support, counts)
+        else:
+            with pytest.warns(RuntimeWarning, match="underflow"):
+                expected = original_pca_moments(difference, support, counts)
+            with pytest.warns(RuntimeWarning, match="underflow"):
+                observed = invoke(monkeypatch, sentinel, module._local_pca_moments,
+                                  difference, support, counts)
+            for actual, baseline in zip(observed, expected):
+                assert_bytes(actual, baseline)
+    assert not sentinel.calls, "native execution cannot hide NumPy warnings or exceptions"
+
+
+def test_source_only_moments_kernel_error_is_not_a_silent_numpy_retry(monkeypatch):
+    difference, support, counts = moment_inputs()
+    before = tuple(value.tobytes() for value in (difference, support, counts))
+    sentinel = RejectNewKernels()
+    with pytest.raises(RuntimeError, match="injected moments failure"):
+        invoke(monkeypatch, sentinel, module._local_pca_moments, difference, support, counts)
+    assert sentinel.calls == ["local_moments"]
+    assert before == tuple(value.tobytes() for value in (difference, support, counts))
+
+
+def test_actual_index_calls_moments_and_preserves_all_geometry(monkeypatch, native):
+    points = scene("filled_band")
+    before = points.tobytes()
+    expected = build(monkeypatch, None, points)
+    spy = NativeSpy(native)
+    observed = build(monkeypatch, spy, points)
+    assert spy.moment_calls, "index construction must actually execute local_moments"
+    assert_index_exact(observed, expected)
+    for differences, support, rows, columns in spy.moment_calls:
+        assert type(differences) is bytes and type(support) is bytes
+        assert len(differences) == rows * columns * 2 * 8
+        assert len(support) == rows * columns
+        assert 0 < rows <= 4000 and 0 < columns <= 2048
+    assert points.tobytes() == before

@@ -1109,7 +1109,103 @@ fail:
 }
 
 
+/* Per-row PCA moments only. Eigenvectors, validity gates, cell/candidate order,
+ * radius selection and graph connectivity remain owned by the Python caller.
+ * Native-endian f64 NxKx2 differences / uint8 NxK support are immutable bytes.
+ * Capacity bounds imply at most 139,264,000 input bytes and 192,000 output
+ * bytes. No dense centered/weighted floating-point temporaries are allocated. */
+static PyObject *local_moments(PyObject *self, PyObject *args)
+{
+    PyObject *difference_obj, *support_obj, *rows_obj, *columns_obj;
+    PyObject *means_obj = NULL, *covariance_obj = NULL, *result = NULL;
+    const char *difference, *support;
+    char *means, *covariance;
+    int rows, columns, row;
+    Py_ssize_t pairs, position;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOO", &difference_obj, &support_obj, &rows_obj, &columns_obj))
+        return NULL;
+    /* Bounds precede every product, including zero-dimension inputs. Products
+       fit even a 32-bit Py_ssize_t; bool and arbitrarily large ints reject. */
+    if (!bounded_int(rows_obj, "rows", MAX_QUERIES, &rows) ||
+        !bounded_int(columns_obj, "columns", MAX_CANDIDATES, &columns))
+        return NULL;
+    pairs = (Py_ssize_t)rows * columns;
+    if (!exact_bytes(difference_obj, pairs * 16, "differences") ||
+        !exact_bytes(support_obj, pairs, "support"))
+        return NULL;
+    difference = PyBytes_AS_STRING(difference_obj);
+    support = PyBytes_AS_STRING(support_obj);
+    for (position = 0; position < pairs; ++position) {
+        double x = nn_f64(difference, position * 2);
+        double y = nn_f64(difference, position * 2 + 1);
+        if (!isfinite(x) || !isfinite(y) || fabs(x) > 2e7 || fabs(y) > 2e7) {
+            PyErr_SetString(PyExc_ValueError, "differences must be finite and bounded by 2e7");
+            return NULL;
+        }
+        if ((unsigned char)support[position] > 1) {
+            PyErr_SetString(PyExc_ValueError, "support values must be 0 or 1");
+            return NULL;
+        }
+    }
+    means_obj = PyBytes_FromStringAndSize(NULL, (Py_ssize_t)rows * 16);
+    if (!means_obj) goto fail;
+    covariance_obj = PyBytes_FromStringAndSize(NULL, (Py_ssize_t)rows * 32);
+    if (!covariance_obj) goto fail;
+    means = PyBytes_AS_STRING(means_obj);
+    covariance = PyBytes_AS_STRING(covariance_obj);
+    /* Input references are retained by args; outputs are not exposed. Separate
+       volatile operations forbid contraction/reassociation. Even zero-weight
+       terms execute in original candidate order, including signed zeros. */
+    Py_BEGIN_ALLOW_THREADS
+    for (row = 0; row < rows; ++row) {
+        Py_ssize_t start = (Py_ssize_t)row * columns;
+        int column, count = 0, i, j;
+        double mean[2], values[4];
+        volatile double sum_x = 0.0, sum_y = 0.0;
+        double denominator;
+        for (column = 0; column < columns; ++column) {
+            Py_ssize_t at = start + column;
+            double weight = (double)(unsigned char)support[at];
+            volatile double x = nn_f64(difference, at * 2) * weight;
+            volatile double y = nn_f64(difference, at * 2 + 1) * weight;
+            sum_x = sum_x + x;
+            sum_y = sum_y + y;
+            count += (int)(unsigned char)support[at];
+        }
+        denominator = count > 0 ? (double)count : 1.0;
+        mean[0] = sum_x / denominator;
+        mean[1] = sum_y / denominator;
+        for (i = 0; i < 2; ++i) {
+            for (j = 0; j < 2; ++j) {
+                volatile double sum = 0.0;
+                for (column = 0; column < columns; ++column) {
+                    Py_ssize_t at = start + column;
+                    double weight = (double)(unsigned char)support[at];
+                    volatile double x = nn_f64(difference, at * 2 + i) - mean[i];
+                    volatile double y = nn_f64(difference, at * 2 + j) - mean[j];
+                    volatile double product = x * y;
+                    volatile double weighted = product * weight;
+                    sum = sum + weighted;
+                }
+                values[i * 2 + j] = sum / denominator;
+            }
+        }
+        memcpy(means + (Py_ssize_t)row * 16, mean, 16);
+        memcpy(covariance + (Py_ssize_t)row * 32, values, 32);
+    }
+    Py_END_ALLOW_THREADS
+    result = PyTuple_Pack(2, means_obj, covariance_obj);
+fail:
+    Py_XDECREF(means_obj);
+    Py_XDECREF(covariance_obj);
+    return result;
+}
+
+
 static PyMethodDef methods[] = {
+    {"local_moments", local_moments, METH_VARARGS,
+     "Bounded per-row mean/covariance (f64 differences, uint8 support, rows, columns); no PCA gates or eigensolver."},
     {"nearest_grouped", nearest_grouped, METH_VARARGS,
      "Exact grouped distance/argmin, retaining caller-provided normal compatibility and candidate order."},
     {"cross_section_weights", cross_section_weights, METH_VARARGS,
@@ -1141,6 +1237,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         PyModule_AddIntConstant(result, "LOCAL_SUPPORT_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "NEAREST_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "CROSS_SECTION_WEIGHTS_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "LOCAL_MOMENTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||

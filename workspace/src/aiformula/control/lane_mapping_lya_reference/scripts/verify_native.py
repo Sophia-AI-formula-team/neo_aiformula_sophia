@@ -25,6 +25,7 @@ def main():
     assert native.LOCAL_SUPPORT_API_VERSION == 1, "incompatible local support API"
     assert native.NEAREST_API_VERSION == 1, "incompatible nearest API"
     assert native.CROSS_SECTION_WEIGHTS_API_VERSION == 1, "incompatible cross-section API"
+    assert native.LOCAL_MOMENTS_API_VERSION == 1, "incompatible local moments API"
     assert native.SOURCE_SHA256 == expected, "loaded extension does not match the C source"
     assert native.graph_forest(b"\x03\x03\x04", 3) == ([0, 0, 2], [-1, 0, -1])
     assert native.connected_subsets(b"\x03\x03\x04", 3, b"\x07\x05", [0, 1]) == b"\x03\x00"
@@ -46,11 +47,16 @@ def main():
         struct.pack("=dddddd", 0., 1., 0., 1., 0., 1.),
         struct.pack("=qqq", 0, 0, 1), .05, 1.35 ** 2)
     assert struct.unpack("=ddd", weights) == (1.0 / 3.0,) * 3
+    means, covariance = native.local_moments(
+        struct.pack("=dddddd", -1., 0., 0., 1., 1., 0.), b"\x01\x00\x01", 1, 3)
+    assert struct.unpack("=dd", means) == (0., 0.)
+    assert struct.unpack("=dddd", covariance) == (1., 0., 0., 0.)
     result = dict(backend="native", api_version=native.API_VERSION,
         radius_graph_api_version=native.RADIUS_GRAPH_API_VERSION,
         local_support_api_version=native.LOCAL_SUPPORT_API_VERSION,
         nearest_api_version=native.NEAREST_API_VERSION,
         cross_section_weights_api_version=native.CROSS_SECTION_WEIGHTS_API_VERSION,
+        local_moments_api_version=native.LOCAL_MOMENTS_API_VERSION,
         source_sha256=expected, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
         binary_name=binary.name, python=sys.version, platform=platform.platform(),
         installed_prefix_verified=args.install_prefix is not None, real_calls_passed=True)
