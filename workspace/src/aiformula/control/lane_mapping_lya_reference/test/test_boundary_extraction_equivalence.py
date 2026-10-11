@@ -8,6 +8,10 @@ literal old numerical functions remain unchanged; a wrapper supplies the SAME
 new contour partition to old and optimized fits. These are arithmetic/copy
 equivalence tests, not a claim of equivalence to R12 geometry. Independent
 corner-path tests check the new partition itself.
+R15 also supplies the same observed-face domain to both fits. The literal old
+fit arithmetic and its centre bounds remain unchanged; this wrapper's domain
+is NOT an independent domain oracle. test_boundary_fit_domains covers that
+separately from the six original numerical direction/curve fields.
 These bounded geometry tests are NOT runtime/full-lap acceptance evidence.
 """
 from dataclasses import fields
@@ -19,6 +23,7 @@ import pytest
 
 from lane_mapping_lya_reference import paint_geometry as paint
 
+_optimized_directions = paint._directions
 
 def _old_fit_quadratic_patches(delta, weights, normals):
     """Local y=a+b*x+c*x^2 in the measured PCA frame, not a tangent line.
@@ -385,5 +390,9 @@ def _old_directions_with_partition(points,segments,white,black,pixel_outward,sta
     usable=(stable & np.isfinite(length) & (length>0.)
             & np.isfinite(crossing) & (crossing>0.))
     pieces=paint._direction_paths(points,segments,usable,paths,cfg,white_xy=white,black_xy=black)
-    return _old_directions(points,segments,white,black,pixel_outward,stable,pieces,cfg)
+    result = list(_old_directions(points,segments,white,black,pixel_outward,stable,pieces,cfg))
+    # Shared measurement domain only; all original fit arithmetic/outputs above
+    # remain the literal old oracle. Independent domain tests check this field.
+    result[-1] = _optimized_directions(points,segments,white,black,pixel_outward,stable,paths,cfg)[-1]
+    return tuple(result)
 

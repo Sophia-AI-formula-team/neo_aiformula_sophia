@@ -1091,12 +1091,85 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
                 normals[indices] = fitted[accepted]
                 coefficients, scales, bounds = _fit_quadratic_patches(
                     delta[accepted], weights[accepted], fitted[accepted])
+                # Fit samples are pixel-face centres, not the ends of the
+                # observed finite faces. Keep the same fit and arc radius;
+                # certify its finite domain from those selected actual faces.
+                # This explicitly permits evaluation outside the centre hull,
+                # but never beyond the observed, radius-clipped face domain.
+                member_ids = candidates[enough][accepted]
+                observed_bounds = _finite_face_fit_bounds(
+                    points[indices], fitted[accepted], scales, points[member_ids],
+                    segments[member_ids],
+                    (arc_candidate-arc[positions, None])[enough][accepted],
+                    weights[accepted], radius)
+                certified = np.all(np.isfinite(observed_bounds), axis=1)
+                bounds[certified] = observed_bounds[certified]
                 curve_coefficients[indices], curve_scale[indices] = coefficients, scales
                 curve_bounds[indices] = bounds
                 valid[indices] = True
                 support_count[indices] = counts[enough][accepted]
                 used_radius[indices] = radius
     return normals, valid, support_count, used_radius, curve_coefficients, curve_scale, curve_bounds
+
+
+def _finite_face_fit_bounds(origins, normals, scales, centers, segments,
+                            arc_offsets, weights, radius):
+    """Finite observed-face domain, without new fit samples or radius padding.
+
+    Q rows contain K faces in original directed order. Every selected centre
+    must be inside the original signed arc radius, and all selected faces must
+    form ONE exactly connected run. Clip each original straight face on both
+    sides of its own projected centre before projecting into the fit chart.
+    Perspective means that centre need not bisect the metric face.
+
+    Invalid/disconnected rows return NaN: the caller retains its old centre
+    domain and does not expand it. W/B label endpoints are deliberately NOT
+    used: their hull would make an in-bracket-root domain check tautological.
+    A connected run has a connected scalar projection, so min/max here is its
+    union, not a hull filling an unobserved gap. This is a measurement-domain
+    change, not a claim of polynomial interpolation inside the sample hull.
+    """
+    count = len(origins)
+    answer = np.full((count, 2), np.nan)
+    if not count or not weights.shape[1]:
+        return answer
+    selected = np.asarray(weights, dtype=bool)
+    nonempty = np.any(selected, axis=1)
+    first = np.argmax(selected, axis=1)
+    last = selected.shape[1]-1-np.argmax(selected[:, ::-1], axis=1)
+    contiguous = np.sum(selected, axis=1) == last-first+1
+    adjacent = selected[:, :-1] & selected[:, 1:]
+    linked = np.all(segments[:, :-1, 1] == segments[:, 1:, 0], axis=2)
+    connected = np.all(~adjacent | linked, axis=1)
+    finite = (np.all(np.isfinite(centers), axis=2)
+              & np.all(np.isfinite(segments), axis=(2, 3))
+              & np.isfinite(arc_offsets) & (np.abs(arc_offsets) <= radius))
+    delta = segments-centers[:, :, None, :]
+    lengths = np.linalg.norm(delta, axis=3)
+    finite &= (np.all(lengths > 0., axis=2)
+               & (np.linalg.norm(segments[:, :, 1]-segments[:, :, 0], axis=2) > 0.))
+    good = (nonempty & contiguous & connected & np.all(~selected | finite, axis=1)
+            & np.all(np.isfinite(origins), axis=1)
+            & np.all(np.isfinite(normals), axis=1)
+            & np.isfinite(scales) & (scales > 0.))
+    if not np.any(good):
+        return answer
+    # Distances from this face's centre to the original arc interval ends.
+    remaining = np.stack((radius+arc_offsets, radius-arc_offsets), axis=2)
+    with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
+        fraction = np.minimum(1., remaining/lengths)
+        clipped = centers[:, :, None, :] + fraction[:, :, :, None]*delta
+        # Keep original endpoint bytes when clipping is not necessary.
+        clipped = np.where((fraction == 1.)[:, :, :, None], segments, clipped)
+        tangents = np.column_stack((normals[:, 1], -normals[:, 0]))
+        values = np.sum((clipped-origins[:, None, None, :])
+                        * tangents[:, None, None, :], axis=3)/scales[:, None, None]
+    finite_projection = np.all(np.isfinite(values), axis=2)
+    good &= np.all(~selected | finite_projection, axis=1)
+    lower = np.min(np.where(selected[:, :, None], values, np.inf), axis=(1, 2))
+    upper = np.max(np.where(selected[:, :, None], values, -np.inf), axis=(1, 2))
+    answer[good, 0], answer[good, 1] = lower[good], upper[good]
+    return answer
 
 
 def _weighted_patch_products(left, right, weights):
