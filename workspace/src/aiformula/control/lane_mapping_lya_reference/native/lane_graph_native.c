@@ -3,6 +3,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -1449,7 +1450,351 @@ static PyObject *finite_projection_bounds(PyObject *self, PyObject *args)
     return Py_BuildValue("(dd)", lower, upper);
 }
 
+/* Stateless current-frame union. Python retains signed-normal admission,
+ * source/vote/state validation; this kernel preserves exact endpoint identity
+ * and the existing outward IEEE projection arithmetic. */
+#define CU_MAX_SEGMENTS 200000
+#define CU_COORDINATE 1.0e7
+
+typedef struct {
+    double x, y, lower, upper;
+} CuVertex;
+
+typedef struct {
+    int first, second;
+    unsigned char reliable;
+} CuEdge;
+
+typedef struct {
+    double value;
+    int total, reliable;
+    unsigned int ordinal;
+} CuEvent;
+
+typedef struct {
+    double lower, upper;
+    unsigned char reliable;
+} CuPiece;
+
+/* Hash equality is numeric equality for finite doubles, like Python tuples.
+ * Normalize zero ONLY for hashing; the first admitted coordinate's original
+ * double is retained and used for projection. No spatial quantization. */
+static uint64_t cu_bits(double value)
+{
+    uint64_t bits;
+    if (value == 0.0)
+        return UINT64_C(0);
+    memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}
+
+static uint64_t cu_mix(uint64_t value)
+{
+    value ^= value >> 30;
+    value *= UINT64_C(0xbf58476d1ce4e5b9);
+    value ^= value >> 27;
+    value *= UINT64_C(0x94d049bb133111eb);
+    return value ^ (value >> 31);
+}
+
+/* Exactly the existing eight-API projection arithmetic, without constructing
+ * a per-vertex Python tuple. This helper MUST run with the GIL: existing
+ * finite_projection_part/finite_outward set Python exceptions on failure. */
+static int cu_projection(double x, double y, double ox, double oy,
+                         double tx, double ty, double *lower, double *upper)
+{
+    double al, au, bl, bu, discard;
+    volatile double first, second;
+    if (!finite_projection_part(x, ox, tx, &al, &au) ||
+            !finite_projection_part(y, oy, ty, &bl, &bu))
+        return 0;
+    if (al == 0.0 && au == 0.0) {
+        *lower = bl; *upper = bu;
+        return 1;
+    }
+    if (bl == 0.0 && bu == 0.0) {
+        *lower = al; *upper = au;
+        return 1;
+    }
+    first = al + bl;
+    second = au + bu;
+    return finite_outward(first, lower, &discard) &&
+           finite_outward(second, &discard, upper);
+}
+
+static int cu_root(int *parents, int vertex)
+{
+    while (parents[vertex] != vertex) {
+        parents[vertex] = parents[parents[vertex]];
+        vertex = parents[vertex];
+    }
+    return vertex;
+}
+
+static void cu_join(int *parents, unsigned char *ranks, int first, int second)
+{
+    int a = cu_root(parents, first), b = cu_root(parents, second), swap;
+    if (a == b)
+        return;
+    if (ranks[a] < ranks[b]) {
+        swap = a; a = b; b = swap;
+    }
+    parents[b] = a;
+    if (ranks[a] == ranks[b])
+        ++ranks[a];
+}
+
+/* Preserve Python dict insertion order for component creation, and Python
+ * min/max's first-value behavior on equal values, including signed zero. */
+static void cu_events(const CuVertex *vertices, int *parents, const int *order,
+                      int count, int trusted, double *lower, double *upper,
+                      unsigned char *seen, int *root_order,
+                      CuEvent *events, int *event_count)
+{
+    int index, vertex, owner, roots = 0;
+    for (index = 0; index < count; ++index) {
+        vertex = order ? order[index] : index;
+        owner = cu_root(parents, vertex);
+        if (!seen[owner]) {
+            seen[owner] = 1;
+            root_order[roots++] = owner;
+            lower[owner] = vertices[vertex].upper;
+            upper[owner] = vertices[vertex].lower;
+        } else {
+            if (vertices[vertex].upper < lower[owner])
+                lower[owner] = vertices[vertex].upper;
+            if (vertices[vertex].lower > upper[owner])
+                upper[owner] = vertices[vertex].lower;
+        }
+    }
+    for (index = 0; index < roots; ++index) {
+        owner = root_order[index];
+        if (lower[owner] < upper[owner]) {
+            CuEvent *start = &events[*event_count];
+            start->value = lower[owner];
+            start->total = 1; start->reliable = trusted;
+            start->ordinal = (unsigned int)(*event_count);
+            ++*event_count;
+            start = &events[*event_count];
+            start->value = upper[owner];
+            start->total = -1; start->reliable = -trusted;
+            start->ordinal = (unsigned int)(*event_count);
+            ++*event_count;
+        }
+        seen[owner] = 0;
+    }
+}
+
+static int cu_event_compare(const void *first, const void *second)
+{
+    const CuEvent *a = (const CuEvent *)first, *b = (const CuEvent *)second;
+    if (a->value < b->value) return -1;
+    if (a->value > b->value) return 1;
+    /* qsort itself is not stable. Explicit ordinal keeps the first Python
+     * event-key representative when -0.0 and +0.0 compare equal. */
+    return a->ordinal < b->ordinal ? -1 : a->ordinal > b->ordinal ? 1 : 0;
+}
+
+static PyObject *finite_current_union(PyObject *self, PyObject *args)
+{
+    PyObject *segments_obj, *admitted_obj, *reliable_obj, *count_obj;
+    PyObject *ox_obj, *oy_obj, *tx_obj, *ty_obj, *output = NULL;
+    PyObject *scalars[4];
+    const char *segments;
+    const unsigned char *admitted, *reliable;
+    CuVertex *vertices = NULL;
+    CuEdge *edges = NULL;
+    CuEvent *events = NULL;
+    CuPiece *pieces = NULL;
+    int *table = NULL, *base_parents = NULL, *trusted_parents = NULL;
+    int *trusted_order = NULL, *root_order = NULL;
+    unsigned char *base_ranks = NULL, *trusted_ranks = NULL, *seen = NULL;
+    double *lower = NULL, *upper = NULL;
+    double values[4], ox, oy, tx, ty;
+    int count, admitted_count = 0, capacity, vertex_count = 0, edge_count = 0, trusted_count = 0;
+    int trusted_vertices = 0, event_count = 0, piece_count = 0;
+    int index, endpoint, slot, vertex, first, stop, active, trusted_active;
+    size_t table_size = 1, table_mask;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOOOO:finite_current_union",
+            &segments_obj, &admitted_obj, &reliable_obj, &count_obj,
+            &ox_obj, &oy_obj, &tx_obj, &ty_obj))
+        return NULL;
+    if (!bounded_int(count_obj, "count", CU_MAX_SEGMENTS, &count) ||
+            !exact_bytes(segments_obj, (Py_ssize_t)count * 32, "segments") ||
+            !exact_bytes(admitted_obj, count, "admitted") ||
+            !exact_bytes(reliable_obj, count, "reliable"))
+        return NULL;
+    scalars[0] = ox_obj; scalars[1] = oy_obj;
+    scalars[2] = tx_obj; scalars[3] = ty_obj;
+    for (index = 0; index < 4; ++index) {
+        if (!PyFloat_CheckExact(scalars[index])) {
+            PyErr_SetString(PyExc_TypeError, "chart scalars must be built-in floats");
+            return NULL;
+        }
+        values[index] = PyFloat_AS_DOUBLE(scalars[index]);
+        if (!isfinite(values[index])) {
+            PyErr_SetString(PyExc_ValueError, "chart scalars must be finite");
+            return NULL;
+        }
+    }
+    ox = values[0]; oy = values[1]; tx = values[2]; ty = values[3];
+    /* Public Python owns the exact unit-norm admission. This FFI guard is a
+     * necessary coordinate bound, not a second platform-specific hypot gate. */
+    if (fabs(ox) > CU_COORDINATE || fabs(oy) > CU_COORDINATE ||
+            fabs(tx) > 1.0 + 64.0 * DBL_EPSILON ||
+            fabs(ty) > 1.0 + 64.0 * DBL_EPSILON) {
+        PyErr_SetString(PyExc_ValueError, "chart scalars exceed validated bounds");
+        return NULL;
+    }
+    segments = PyBytes_AS_STRING(segments_obj);
+    admitted = (const unsigned char *)PyBytes_AS_STRING(admitted_obj);
+    reliable = (const unsigned char *)PyBytes_AS_STRING(reliable_obj);
+    /* Validate all input bytes, even for a non-admitted segment, before work.
+     * No mutable buffer/view, unaligned cast or external owner is retained. */
+    for (index = 0; index < count; ++index) {
+        for (endpoint = 0; endpoint < 4; ++endpoint) {
+            double coordinate = nn_f64(segments, (Py_ssize_t)index * 4 + endpoint);
+            if (!isfinite(coordinate) || fabs(coordinate) > CU_COORDINATE) {
+                PyErr_SetString(PyExc_ValueError, "segments must be finite and bounded");
+                return NULL;
+            }
+        }
+        if (admitted[index] > 1 || reliable[index] > 1) {
+            PyErr_SetString(PyExc_ValueError, "admission/reliability bytes must be zero or one");
+            return NULL;
+        }
+        admitted_count += admitted[index];
+    }
+    /* Every declared coordinate and both masks have now been checked.
+     * In particular, rejected rows cannot hide malformed input. Size private
+     * graph/event scratch from admitted rows only, preserving their order. */
+    if (!admitted_count)
+        return PyTuple_New(0);
+    capacity = admitted_count * 2;
+    while (table_size < (size_t)capacity * 2)
+        table_size <<= 1;
+    table_mask = table_size - 1;
+    vertices = (CuVertex *)PyMem_Malloc((size_t)capacity * sizeof(*vertices));
+    edges = (CuEdge *)PyMem_Malloc((size_t)admitted_count * sizeof(*edges));
+    events = (CuEvent *)PyMem_Malloc((size_t)admitted_count * 4 * sizeof(*events));
+    pieces = (CuPiece *)PyMem_Malloc((size_t)admitted_count * 4 * sizeof(*pieces));
+    table = (int *)PyMem_Malloc(table_size * sizeof(*table));
+    base_parents = (int *)PyMem_Malloc((size_t)capacity * sizeof(*base_parents));
+    trusted_parents = (int *)PyMem_Malloc((size_t)capacity * sizeof(*trusted_parents));
+    trusted_order = (int *)PyMem_Malloc((size_t)capacity * sizeof(*trusted_order));
+    root_order = (int *)PyMem_Malloc((size_t)capacity * sizeof(*root_order));
+    base_ranks = (unsigned char *)PyMem_Calloc((size_t)capacity, 1);
+    trusted_ranks = (unsigned char *)PyMem_Calloc((size_t)capacity, 1);
+    seen = (unsigned char *)PyMem_Calloc((size_t)capacity, 1);
+    lower = (double *)PyMem_Malloc((size_t)capacity * sizeof(*lower));
+    upper = (double *)PyMem_Malloc((size_t)capacity * sizeof(*upper));
+    if (!vertices || !edges || !events || !pieces || !table || !base_parents ||
+            !trusted_parents || !trusted_order || !root_order || !base_ranks ||
+            !trusted_ranks || !seen || !lower || !upper) {
+        PyErr_NoMemory();
+        goto cleanup;
+    }
+    for (slot = 0; slot < (int)table_size; ++slot)
+        table[slot] = -1;
+    for (index = 0; index < capacity; ++index)
+        trusted_parents[index] = -1;
+    /* Keep the GIL for projection helpers which use PyErr on arithmetic error. */
+    for (index = 0; index < count; ++index) {
+        int ids[2];
+        if (!admitted[index])
+            continue;
+        for (endpoint = 0; endpoint < 2; ++endpoint) {
+            double x = nn_f64(segments, (Py_ssize_t)index * 4 + endpoint * 2);
+            double y = nn_f64(segments, (Py_ssize_t)index * 4 + endpoint * 2 + 1);
+            uint64_t hash = cu_mix(cu_bits(x)) ^ cu_mix(cu_bits(y) + UINT64_C(0x9e3779b97f4a7c15));
+            slot = (int)(hash & table_mask);
+            while ((vertex = table[slot]) >= 0 &&
+                    !(vertices[vertex].x == x && vertices[vertex].y == y))
+                slot = (int)(((size_t)slot + 1) & table_mask);
+            if (vertex < 0) {
+                vertex = vertex_count++;
+                vertices[vertex].x = x; vertices[vertex].y = y;
+                if (!cu_projection(x, y, ox, oy, tx, ty,
+                        &vertices[vertex].lower, &vertices[vertex].upper))
+                    goto cleanup;
+                table[slot] = vertex;
+                base_parents[vertex] = vertex;
+            }
+            ids[endpoint] = vertex;
+            if (reliable[index] && trusted_parents[vertex] < 0) {
+                trusted_parents[vertex] = vertex;
+                trusted_order[trusted_vertices++] = vertex;
+            }
+        }
+        edges[edge_count].first = ids[0]; edges[edge_count].second = ids[1];
+        edges[edge_count].reliable = reliable[index];
+        ++edge_count;
+        trusted_count += reliable[index];
+    }
+    /* Everything below is bounded private memory and has no Python callbacks,
+     * allocation, projection error path or mutable input access. */
+    Py_BEGIN_ALLOW_THREADS
+    for (index = 0; index < edge_count; ++index) {
+        cu_join(base_parents, base_ranks, edges[index].first, edges[index].second);
+        if (edges[index].reliable)
+            cu_join(trusted_parents, trusted_ranks, edges[index].first, edges[index].second);
+    }
+    cu_events(vertices, base_parents, NULL, vertex_count,
+              edge_count == trusted_count, lower, upper, seen, root_order, events, &event_count);
+    if (trusted_count && trusted_count != edge_count)
+        cu_events(vertices, trusted_parents, trusted_order, trusted_vertices,
+                  1, lower, upper, seen, root_order, events, &event_count);
+    qsort(events, (size_t)event_count, sizeof(*events), cu_event_compare);
+    active = trusted_active = 0;
+    for (first = 0; first < event_count; first = stop) {
+        int total_delta = 0, reliable_delta = 0;
+        double lo = events[first].value, hi;
+        unsigned char trusted;
+        stop = first;
+        while (stop < event_count && events[stop].value == lo) {
+            total_delta += events[stop].total;
+            reliable_delta += events[stop].reliable;
+            ++stop;
+        }
+        active += total_delta; trusted_active += reliable_delta;
+        if (stop == event_count || !active)
+            continue;
+        hi = events[stop].value;
+        trusted = trusted_active > 0;
+        if (piece_count && pieces[piece_count - 1].upper == lo &&
+                pieces[piece_count - 1].reliable == trusted) {
+            pieces[piece_count - 1].upper = hi;
+        } else {
+            pieces[piece_count].lower = lo; pieces[piece_count].upper = hi;
+            pieces[piece_count].reliable = trusted;
+            ++piece_count;
+        }
+    }
+    Py_END_ALLOW_THREADS
+    output = PyTuple_New(piece_count);
+    if (!output)
+        goto cleanup;
+    for (index = 0; index < piece_count; ++index) {
+        PyObject *piece = Py_BuildValue("(ddO)", pieces[index].lower, pieces[index].upper,
+                                       pieces[index].reliable ? Py_True : Py_False);
+        if (!piece) {
+            Py_CLEAR(output);
+            goto cleanup;
+        }
+        PyTuple_SET_ITEM(output, index, piece);
+    }
+cleanup:
+    PyMem_Free(vertices); PyMem_Free(edges); PyMem_Free(events); PyMem_Free(pieces);
+    PyMem_Free(table); PyMem_Free(base_parents); PyMem_Free(trusted_parents);
+    PyMem_Free(trusted_order); PyMem_Free(root_order); PyMem_Free(base_ranks);
+    PyMem_Free(trusted_ranks); PyMem_Free(seen); PyMem_Free(lower); PyMem_Free(upper);
+    return output;
+}
+
 static PyMethodDef methods[] = {
+    {"finite_current_union", finite_current_union, METH_VARARGS,
+     "Exact current-frame finite union from immutable f64 segments and caller-admitted masks."},
     {"finite_projection_bounds", finite_projection_bounds, METH_VARARGS,
      "Exact outward projection enclosure for six finite f64 scalars, ordered px,ox,tx,py,oy,ty."},
     {"local_geometry", local_geometry, METH_VARARGS,
@@ -1490,6 +1835,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         PyModule_AddIntConstant(result, "LOCAL_MOMENTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "LOCAL_GEOMETRY_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "FINITE_PROJECTION_BOUNDS_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "FINITE_CURRENT_UNION_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||

@@ -2,6 +2,17 @@
 
 最后整理：2026-10-12。这里是索引，不是代替不可覆盖的原始记录。
 
+## R23 RC1：原生有限线段合并候选，尚待编译验证
+
+新增 stateless native9 合并 kernel，保留原端点连接、投影、可靠性、票数和准入。
+本地357通过/122项native9缺失跳过；required-native明确拒绝旧binary。
+跳过不等于原生成功；目前没有native9速度或整链200ms通过证据。
+见[session020](sessions/2026-10-12-planner-native-union-r23-020/SESSION.md)。
+R22提交baba879468b8674e7044dadebe2363baae378238及tag已回读，见
+[发布回执](receipts/2026-10-12-planner-r22-rc1-published.md)。
+R22 CI终态6/8成功，两个GNSS流程失败，具体阶段另行记录。
+仍无新实跑一圈/第二圈/视频。下一步精确SHA原生构建验证及原窗口几何修复。
+
 ## R22 RC1：部分几何修复，运行时及两圈仍未通过
 
 `lane-mapping-20261012-r22-rc1` 是开发检查点，不是部署/驾驶版本。

@@ -28,6 +28,8 @@ def main():
     assert native.LOCAL_MOMENTS_API_VERSION == 1, "incompatible local moments API"
     assert native.LOCAL_GEOMETRY_API_VERSION == 1, "incompatible local geometry API"
     assert native.FINITE_PROJECTION_BOUNDS_API_VERSION == 1, "incompatible finite projection API"
+    assert native.FINITE_CURRENT_UNION_API_VERSION == 1, "incompatible finite current union API"
+    assert callable(native.finite_current_union), "missing finite current union kernel"
     assert native.SOURCE_SHA256 == expected, "loaded extension does not match the C source"
     assert native.graph_forest(b"\x03\x03\x04", 3) == ([0, 0, 2], [-1, 0, -1])
     assert native.connected_subsets(b"\x03\x03\x04", 3, b"\x07\x05", [0, 1]) == b"\x03\x00"
@@ -66,6 +68,17 @@ def main():
     projection = native.finite_projection_bounds(1., 0., 1., 0., 0., 0.)
     assert projection == (float.fromhex("0x1.ffffffffffffep-1"),
                           float.fromhex("0x1.0000000000002p+0"))
+    union_segments = struct.pack("=8d", 0., 0., 1., 0., 0., 0., 1., 0.)
+    pieces = native.finite_current_union(
+        union_segments, bytes((1, 1)), bytes((0, 1)), 2, 0., 0., 1., 0.)
+    assert type(pieces) is tuple and len(pieces) == 1
+    assert type(pieces[0]) is tuple and len(pieces[0]) == 3
+    assert all(type(value) is float for value in pieces[0][:2])
+    assert type(pieces[0][2]) is bool and pieces[0][2] is True
+    assert struct.pack("=2d", *pieces[0][:2]) == struct.pack(
+        "=2d", 0., float.fromhex("0x1.ffffffffffffep-1"))
+    assert native.finite_current_union(
+        union_segments, bytes((0, 0)), bytes((0, 1)), 2, 0., 0., 1., 0.) == ()
     result = dict(backend="native", api_version=native.API_VERSION,
         radius_graph_api_version=native.RADIUS_GRAPH_API_VERSION,
         local_support_api_version=native.LOCAL_SUPPORT_API_VERSION,
@@ -74,6 +87,8 @@ def main():
         local_moments_api_version=native.LOCAL_MOMENTS_API_VERSION,
         local_geometry_api_version=native.LOCAL_GEOMETRY_API_VERSION,
         finite_projection_bounds_api_version=native.FINITE_PROJECTION_BOUNDS_API_VERSION,
+        finite_current_union_api_version=native.FINITE_CURRENT_UNION_API_VERSION,
+        finite_current_union_real_call_passed=True,
         source_sha256=expected, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
         binary_name=binary.name, python=sys.version, platform=platform.platform(),
         installed_prefix_verified=args.install_prefix is not None, real_calls_passed=True)

@@ -22,6 +22,8 @@ except ImportError:
 # This additional optional kernel is selected only by its own exact API.
 _NATIVE_PROJECTION = (getattr(_FINITE_NATIVE, 'finite_projection_bounds', None)
     if getattr(_FINITE_NATIVE, 'FINITE_PROJECTION_BOUNDS_API_VERSION', None) == 1 else None)
+_NATIVE_CURRENT_UNION = (getattr(_FINITE_NATIVE, 'finite_current_union', None)
+    if getattr(_FINITE_NATIVE, 'FINITE_CURRENT_UNION_API_VERSION', None) == 1 else None)
 
 MAX_ITEMS = 200000
 MAX_COORDINATE = 1.e7
@@ -324,6 +326,37 @@ def _connected_spans(edges, projected):
 
 
 def _current_union(segments, normals, reliable, origin, tangent, cosine):
+    # Both callers retain their original scalar/array/frontier validations.
+    # Keep the entire old route for unsupported representations/error policy.
+    if (_NATIVE_CURRENT_UNION is None
+            or type(segments) is not np.ndarray
+            or type(normals) is not np.ndarray
+            or type(reliable) is not np.ndarray
+            or segments.dtype != np.dtype(np.float64)
+            or normals.dtype != np.dtype(np.float64)
+            or reliable.dtype != np.dtype(np.bool_)
+            or not all(a.flags.c_contiguous for a in (segments, normals, reliable))
+            or segments.ndim != 3 or segments.shape[1:] != (2, 2)
+            or normals.shape != segments.shape or reliable.shape != (len(segments),)
+            or np.geterr()['under'] != 'ignore'):
+        return _current_union_python(segments, normals, reliable, origin, tangent, cosine)
+    normal = np.asarray((-tangent[1], tangent[0]), dtype=np.float64)
+    admitted = bytearray(len(segments))
+    for index, directions in enumerate(normals):
+        # Preserve the two separate NumPy dots and OR short circuit exactly.
+        if (float(np.dot(directions[0], normal)) < cosine or
+                float(np.dot(directions[1], normal)) < cosine):
+            continue
+        admitted[index] = 1
+    # Legal bool views can contain backing bytes 2/255: preserve scalar truth.
+    trusted = bytes(bool(value) for value in reliable)
+    # Native failures propagate, without a catch-and-retry through old code.
+    return list(_NATIVE_CURRENT_UNION(
+        segments.tobytes(order='C'), bytes(admitted), trusted, len(segments),
+        float(origin[0]), float(origin[1]), float(tangent[0]), float(tangent[1])))
+
+
+def _current_union_python(segments, normals, reliable, origin, tangent, cosine):
     # The validated chart is binary64. Reuse the same two-element conversion
     # that np.dot previously made for every endpoint; keep each dot separate.
     normal = np.asarray((-tangent[1], tangent[0]), dtype=np.float64)
