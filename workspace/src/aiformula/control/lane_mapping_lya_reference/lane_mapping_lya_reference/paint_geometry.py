@@ -23,6 +23,7 @@ REPRESENTATION = "paint_boundary_v1"
 BOUNDARY_VERSION = 3
 TOPOLOGY_REPRESENTATION = "confirmed_contour_node_chords_v1"
 CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
+FOOTPRINT_MODEL_REPRESENTATION = "wb_pixel_footprint_local_tangent_v1"
 CERTIFIED_MODEL_FIELDS = ("certified_model_segments", "certified_model_owner",
                           "certified_model_frame_votes", "certified_model_reliable_votes",
                           "certified_model_last_stamp_ns")
@@ -95,6 +96,10 @@ class BoundaryObservation:
     position_sensitivity: object = None
     position_reliable: object = None
     position_normals: object = None
+    position_segments: object = None
+    position_segment_valid: object = None
+    position_segment_sensitivity: object = None
+    position_segment_reliable: object = None
 
     def __post_init__(self):
         count = len(np.asarray(self.points))
@@ -151,6 +156,25 @@ class BoundaryObservation:
                     or np.any(~np.isfinite(self.position_normals[self.position_valid]))
                     or np.any(np.abs(np.linalg.norm(self.position_normals[self.position_valid], axis=1)-1.) > 1.e-6)):
                 raise ValueError("invalid quantization-constrained position evidence")
+        fragments = (self.position_segments, self.position_segment_valid,
+                     self.position_segment_sensitivity, self.position_segment_reliable)
+        if any(value is not None for value in fragments):
+            if not all(value is not None for value in fragments) or self.position_estimates is None:
+                raise ValueError("finite position fragments require the full position model")
+            for name, dtype, shape in (("position_segments", np.float64, (count, 2, 2)),
+                    ("position_segment_valid", np.bool_, (count,)),
+                    ("position_segment_sensitivity", np.float64, (count,)),
+                    ("position_segment_reliable", np.bool_, (count,))):
+                object.__setattr__(self, name, _frozen(getattr(self, name), dtype, shape, name,
+                                                    finite=dtype == np.bool_))
+            good = self.position_segment_valid
+            if (np.any(good & ~self.position_valid)
+                    or np.any(good & ~np.all(np.isfinite(self.position_segments), axis=(1, 2)))
+                    or np.any(good & ~np.any(self.position_segments[:, 0] != self.position_segments[:, 1], axis=1))
+                    or np.any(good & ~np.isfinite(self.position_segment_sensitivity))
+                    or np.any(np.isfinite(self.position_segment_sensitivity) & (self.position_segment_sensitivity < 0.))
+                    or np.any(self.position_segment_reliable & ~(good & self.position_reliable))):
+                raise ValueError("invalid pixel-footprint position fragment")
 
     @property
     def model_points(self):
@@ -191,6 +215,8 @@ class BoundaryObservation:
             if self.position_estimates is not None:
                 values["position_estimates"] = self.position_estimates @ rotation.T + pose[:2]
                 values["position_normals"] = self.position_normals @ rotation.T
+                if self.position_segments is not None:
+                    values["position_segments"] = self.position_segments @ rotation.T + pose[:2]
         return BoundaryObservation(**values)
 
 
@@ -817,6 +843,26 @@ class BoundaryConsensus:
         packed = np.concatenate(pair_groups) if pair_groups else np.empty((0, 2), dtype=np.int64)
         packed_segments, packed_normals = model_points[packed], model_normals[packed]
         packed_reliable = face_reliable[packed[:, 0]] & face_reliable[packed[:, 1]]
+        if obs.position_segments is not None:
+            # A valid root need not have a valid next root. Its own one-pixel
+            # local model supplies only its clipped footprint, never a graph
+            # edge. Union ALL evidence before the original one-vote/frame
+            # update; no fragment count can increase node or inlier counts.
+            segment_groups, normal_groups, reliability_groups = [], [], []
+            for index, (_, _, _, _, _, _, members) in enumerate(updates):
+                start, stop = offsets[index:index+2]
+                own = members[obs.position_segment_valid[members]
+                    & (obs.position_segment_sensitivity[members] <= cfg["max_sensitivity"])]
+                own_normals = np.repeat(model_normals[own, None, :], 2, axis=1)
+                own_reliable = (face_reliable[own] & obs.position_segment_reliable[own]
+                    & (obs.position_segment_sensitivity[own] <= cfg["reliable_sensitivity"]))
+                segment_groups.append(np.concatenate((packed_segments[start:stop], obs.position_segments[own])))
+                normal_groups.append(np.concatenate((packed_normals[start:stop], own_normals)))
+                reliability_groups.append(np.r_[packed_reliable[start:stop], own_reliable])
+            if segment_groups:
+                offsets = np.r_[0, np.cumsum([len(group) for group in segment_groups], dtype=np.int64)]
+                packed_segments, packed_normals = np.concatenate(segment_groups), np.concatenate(normal_groups)
+                packed_reliable = np.concatenate(reliability_groups)
         batch = _validate_frame_batch(packed_segments, packed_normals, packed_reliable, offsets)
         for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
             old_domain = self._domains.get(record_id)
@@ -853,7 +899,9 @@ class BoundaryConsensus:
                                   "topology_updated_edges": len(edge_updates),
                                   "topology_expired_edges": len(expired_edges),
                                   "certified_domain_intervals": domain_count,
-                                  "finite_domain_support_policy": "direct_incident_model_next_v1",
+                                  "finite_domain_support_policy": ("direct_incident_model_next_v1"
+                                      if obs.position_segments is None else
+                                      "direct_incident_next_plus_wb_pixel_tangent_v1"),
                                   "topology_representation": TOPOLOGY_REPRESENTATION})
         return PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records), expired,
                                       next_id, segments, tuple(edge_updates), expired_edges, stats,
@@ -1146,6 +1194,10 @@ def _projector(lookup, normal_body):
         uv = np.full((len(base), 2), np.nan)
         np.divide(homogeneous[:, :2], homogeneous[:, 2, None], out=uv, where=good[:, None])
         return uv, good
+    # Same already-rounded calibration data, original denominator scale/sign.
+    # Used only for the new whole-footprint sensitivity model, not to replace
+    # or re-associate the existing per-query projection arithmetic.
+    project.homography_components = (ray_transform, normal, basis, origin, height)
     return project, unproject
 
 
@@ -1678,6 +1730,22 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
         model_j = np.max(np.linalg.norm(probe_xy.reshape(n, 4, 2)-model_base[:, None, :], axis=2), axis=1)
     model_j[~good_j] = np.inf
     model_valid &= good_j & np.isfinite(model_j) & (model_j <= maximum_j)
+    from .footprint_geometry import (pixel_footprints, projector_homography_bounds,
+                                     quad_j4_upper_bound, clip_local_lines)
+    fragment_segments = np.full((n, 2, 2), np.nan)
+    fragment_valid, fragment_j = np.zeros(n, dtype=bool), np.full(n, np.inf)
+    ids = np.flatnonzero(model_valid)
+    if len(ids):
+        footprint_uv = pixel_footprints(white[ids], black[ids])
+        # Independent whole-domain J, not merely J at the fitted root/corners.
+        homography = projector_homography_bounds(*project.homography_components)
+        upper_j, whole_good = quad_j4_upper_bound(homography, footprint_uv, width, height)
+        footprint_xy, quad_good = project(footprint_uv)
+        clipped, clip_good = clip_local_lines(footprint_xy.reshape(-1, 4, 2),
+                                              model_points[ids], model_normals[ids])
+        admitted = whole_good & (upper_j <= maximum_j) & np.all(quad_good.reshape(-1, 4), axis=1) & clip_good
+        fragment_segments[ids], fragment_j[ids] = clipped, upper_j
+        fragment_valid[ids] = admitted
     reasons = ((~metric).astype(np.int64) * REASON_METRIC
                | (~stable).astype(np.int64) * REASON_SENSITIVITY
                | (~normal_valid).astype(np.int64) * REASON_DIRECTION
@@ -1686,4 +1754,7 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
                                valid, reliable, stamp, pixel_segments, white, black, previous,
                                following, contour_ids, reasons, support_count, radii,
                                model_points, model_valid, model_j,
-                               model_valid & (model_j <= cfg["reliable_sensitivity"]), model_normals)
+                               model_valid & (model_j <= cfg["reliable_sensitivity"]), model_normals,
+                               fragment_segments, fragment_valid, fragment_j,
+                               fragment_valid & (fragment_j <= cfg["reliable_sensitivity"])
+                               & (model_j <= cfg["reliable_sensitivity"]))

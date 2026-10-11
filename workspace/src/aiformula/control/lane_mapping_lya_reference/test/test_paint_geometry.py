@@ -861,6 +861,8 @@ def test_real_pixel_contours_confirm_only_their_actual_directed_adjacency(kind):
                               reliable=observation.reliable & ~cut,
                               position_valid=observation.position_valid & ~cut,
                               position_reliable=observation.position_reliable & ~cut,
+                              position_segment_valid=observation.position_segment_valid & ~cut,
+                              position_segment_reliable=observation.position_segment_reliable & ~cut,
                               sensitivity=np.where(cut, 1., observation.sensitivity))
     consensus = BoundaryConsensus()
     first = consensus.prepare(observation)

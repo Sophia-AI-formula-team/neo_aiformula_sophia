@@ -324,23 +324,29 @@ def _connected_spans(edges, projected):
 
 
 def _current_union(segments, normals, reliable, origin, tangent, cosine):
-    normal = (-tangent[1], tangent[0])
+    # The validated chart is binary64. Reuse the same two-element conversion
+    # that np.dot previously made for every endpoint; keep each dot separate.
+    normal = np.asarray((-tangent[1], tangent[0]), dtype=np.float64)
     vertices, projected, edges, trusted_edges = {}, [], [], []
     for segment, directions, trusted in zip(segments, normals, reliable):
-        if any(float(np.dot(direction, normal)) < cosine for direction in directions):
+        if (float(np.dot(directions[0], normal)) < cosine or
+                float(np.dot(directions[1], normal)) < cosine):
             continue
         pair = []
         for point in segment:
             # Numeric equality of both finite binary64 coordinates, never a
             # rounded spatial bin. Signed zeros denote the same physical point.
-            key = tuple(map(float, point))
-            if key not in vertices:
-                vertices[key] = len(projected)
+            key = (float(point[0]), float(point[1]))
+            vertex = vertices.get(key)
+            if vertex is None:
+                vertex = len(projected)
+                vertices[key] = vertex
                 projected.append(_validated_projection_bounds(point, origin, tangent))
-            pair.append(vertices[key])
-        edges.append(tuple(pair))
+            pair.append(vertex)
+        edge = tuple(pair)
+        edges.append(edge)
         if trusted:
-            trusted_edges.append(tuple(pair))
+            trusted_edges.append(edge)
     # Reliability has its OWN connectivity: an unreliable A-B bridge must not
     # join two otherwise separated trusted domains. All frame counts still
     # reduce to a boolean union before the one-per-source-frame vote below.

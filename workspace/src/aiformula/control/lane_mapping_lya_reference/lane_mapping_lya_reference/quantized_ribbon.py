@@ -75,8 +75,15 @@ def fit_label_curve(inside, outside, *, max_iterations=128):
             margin = np.r_[lo[:len(inside)]-h[:len(inside)],
                            h[len(inside):]-hi[len(inside):]]
             if np.all(np.isfinite(margin)) and np.all(margin > 0.):
-                frozen = np.frombuffer(coefficients.tobytes(), dtype=np.float64)
-                return LabelCurve(frozen, iteration, 'strict_label_proposal', float(np.min(margin)))
+                # Horner's enclosure does not cover the subsequent rounded
+                # subtraction. Round that final operation outward as well;
+                # keep the finite check above so +inf cannot become finite.
+                with np.errstate(under='ignore'):
+                    certified_margin = np.nextafter(margin, -np.inf)
+                if np.all(certified_margin > 0.):
+                    frozen = np.frombuffer(coefficients.tobytes(), dtype=np.float64)
+                    return LabelCurve(frozen, iteration, 'strict_label_proposal',
+                                      float(np.min(certified_margin)))
         inverse = 1./slack
         gradient = weight*objective+matrix.T@inverse
         scaled_rows = matrix*inverse[:, None]

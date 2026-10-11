@@ -1,0 +1,278 @@
+"""Source-identity plumbing only: no mapping solver, vehicle or lap claims."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+from types import ModuleType, SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+import lane_backend as backend
+import replay_observed_keyframe as replay
+import test_boundary_replay as boundary_tests
+import test_replay_plane_calibration as plane_tests
+
+
+PAINT = 'lane_mapping_lya_reference.paint_geometry'
+HELPER = replay.CORNER_HELPER_NAME
+MAPPING = 'lane_mapping_fixed_gnss.mapping'
+LAZY_PAINT = b'def invoke():\n    from .corner_brackets import value\n    return value\n'
+
+
+def isolate_modules(test):
+    modules = patch.dict(sys.modules)
+    modules.start()
+    test.addCleanup(modules.stop)
+    paths = patch.object(sys, 'path', list(sys.path))
+    paths.start()
+    test.addCleanup(paths.stop)
+    for name in tuple(sys.modules):
+        if name.split('.')[0] in ('lane_mapping_lya_reference', 'lane_mapping_fixed_gnss', 'trajectory_follower'):
+            del sys.modules[name]
+
+
+class SelectedDependencyTests(unittest.TestCase):
+    def setUp(self):
+        isolate_modules(self)
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.repo = Path(temporary.name)
+        self.sources = {replay.source_path(name): b'\n' for name in replay.BOUNDARY_CORE_NAMES}
+        self.sources[replay.source_path(MAPPING)] = b'from lane_mapping_lya_reference.paint_geometry import invoke\n'
+        self.sources[replay.source_path(PAINT)] = LAZY_PAINT
+        self.sources[replay.source_path(HELPER)] = b'value = 42\n'
+        for relative, data in self.sources.items():
+            self.put(relative, data)
+
+    def put(self, relative, data):
+        path = self.repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def assert_helper(self, loaded, value=42):
+        modules, hashes, text_hashes, _ = loaded
+        self.assertEqual(tuple(modules), replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES))
+        self.assertLess(tuple(modules).index(HELPER), tuple(modules).index(PAINT))
+        self.assertEqual(modules[PAINT].invoke(), value)
+        self.assertEqual(tuple(hashes), tuple(replay.source_path(name) for name in modules))
+        self.assertEqual(tuple(text_hashes), tuple(hashes))
+        for name, module in modules.items():
+            relative = replay.source_path(name)
+            self.assertEqual(hashes[relative], hashlib.sha256(self.sources[relative]).hexdigest())
+            self.assertEqual(text_hashes[relative]['raw'], hashes[relative])
+            self.assertIs(sys.modules[name], module)
+        return modules, hashes
+
+    def test_clean_package_lazy_import_is_loaded_and_hashed_before_paint(self):
+        self.assert_helper(replay.load_core(self.repo, raw_imu=True))
+        self.assertEqual(sys.modules['lane_mapping_lya_reference'].__path__, [])
+
+    def test_foreign_preloaded_helper_cannot_supply_unpinned_value(self):
+        foreign = ModuleType(HELPER)
+        foreign.value = 'unrecorded'
+        sys.modules[HELPER] = foreign
+        modules, _ = self.assert_helper(replay.load_core(self.repo, raw_imu=True))
+        self.assertIsNot(modules[HELPER], foreign)
+
+    def test_selected_git_ast_and_helper_override_different_worktree(self):
+        self.put(replay.source_path(PAINT), b'def invoke(): return "dirty paint"\n')
+        self.put(replay.source_path(HELPER), b'value = "dirty helper"\n')
+        revision = 'a' * 40
+        calls = []
+
+        def git(command, **kwargs):
+            calls.append(command)
+            if command[3] == 'rev-parse':
+                self.assertTrue(kwargs['text'])
+                return revision + '\n'
+            self.assertEqual(command[3], 'show')
+            selected, relative = command[4].split(':', 1)
+            self.assertEqual(selected, revision)
+            return self.sources[relative]
+
+        with patch.object(replay.subprocess, 'check_output', side_effect=git):
+            loaded = replay.load_core(self.repo, 'selected-tag', raw_imu=True)
+        modules, _ = self.assert_helper(loaded)
+        self.assertEqual(loaded[3], revision)
+        for name, module in modules.items():
+            self.assertEqual(module.__file__, 'git:' + revision + ':' + replay.source_path(name))
+        self.assertEqual(sum(c[3] == 'show' and c[4].endswith('/paint_geometry.py') for c in calls), 1)
+
+    def test_missing_declared_helper_fails_instead_of_foreign_fallback(self):
+        (self.repo / replay.source_path(HELPER)).unlink()
+        sys.modules[HELPER] = SimpleNamespace(value='foreign')
+        with self.assertRaises(FileNotFoundError):
+            replay.load_core(self.repo, raw_imu=True)
+
+    def test_comment_and_string_are_not_ast_dependency(self):
+        source = b'# from .corner_brackets import value\ntext="from .corner_brackets import value"\ndef invoke(): return 1\n'
+        self.put(replay.source_path(PAINT), source)
+        for raw, expected in ((False, replay.BOUNDARY_CORE_NAMES[:-2]), (True, replay.BOUNDARY_CORE_NAMES)):
+            with self.subTest(raw_imu=raw):
+                modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=raw)
+                self.assertEqual(tuple(modules), expected)
+                self.assertNotIn(replay.source_path(HELPER), hashes)
+
+    def test_nonboundary_mapping_keeps_original_four_and_seven(self):
+        self.put(replay.source_path(MAPPING), b'value = 1\n')
+        for raw, expected in ((False, replay.CORE_NAMES), (True, replay.IMU_CORE_NAMES)):
+            with self.subTest(raw_imu=raw):
+                modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=raw)
+                self.assertEqual(tuple(modules), expected)
+                self.assertNotIn(replay.source_path(HELPER), hashes)
+
+    def test_helper_change_changes_exact_source_hash(self):
+        first = replay.load_core(self.repo, raw_imu=True)[1]
+        relative = replay.source_path(HELPER)
+        self.put(relative, b'value = 43\n')
+        modules, second, _, _ = replay.load_core(self.repo, raw_imu=True)
+        self.assertEqual(modules[PAINT].invoke(), 43)
+        self.assertNotEqual(first[relative], second[relative])
+        self.assertEqual({k: v for k, v in first.items() if k != relative},
+                         {k: v for k, v in second.items() if k != relative})
+
+    def test_native_source_guard_still_rejects_wrong_binary_identity(self):
+        native = ModuleType('_source_test_native')
+        native_path = self.repo / replay.CONTROL / 'lane_mapping_lya_reference/test_native.pyd'
+        native_path.write_bytes(b'not executed')
+        native.__file__ = str(native_path)
+        native.SOURCE_SHA256 = '0' * 64
+        sys.modules[native.__name__] = native
+        self.put(replay.source_path('lane_mapping_lya_reference.mask_localization'),
+                 b'import _source_test_native as _GRAPH_NATIVE\n')
+        self.put(replay.CONTROL + 'lane_mapping_lya_reference/native/lane_graph_native.c', b'actual C source')
+        with self.assertRaisesRegex(ValueError, 'selected C source'):
+            replay.load_core(self.repo, raw_imu=True)
+
+
+class RecordedNamesTests(unittest.TestCase):
+    def test_recorded_manifest_selects_only_explicit_dependency(self):
+        for raw, boundary, expected in ((False, False, replay.CORE_NAMES),
+                                       (True, False, replay.IMU_CORE_NAMES),
+                                       (True, True, replay.BOUNDARY_CORE_NAMES)):
+            provenance = {'source_sha256': {replay.source_path(name): 'hash' for name in expected}}
+            provenance['source_sha256'][replay.source_path('lane_mapping_lya_reference.quantized_curve_fit')] = 'unused'
+            self.assertEqual(replay.recorded_core_names(provenance, raw_imu=raw, boundary=boundary), expected)
+        provenance['source_sha256'][replay.source_path(HELPER)] = 'helper-hash'
+        self.assertEqual(replay.recorded_core_names(provenance, raw_imu=True, boundary=True),
+                         replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES))
+
+
+class ExportDependencyTests(unittest.TestCase):
+    setUp = plane_tests.PlaneReplayRouting.setUp
+    extractor = boundary_tests.BoundaryReplayRouting.extractor
+
+    def export_new_helper(self, *, recorded=True, selected=True, selected_hash='helper-source'):
+        plane_tests.PlaneReplayRouting.export_camera(self, True)
+        events = self.directory / 'events.jsonl'
+        rows = [json.loads(line) for line in events.read_text().splitlines()]
+        recorded_hashes = {replay.source_path(name): 'unchanged-source' for name in replay.BOUNDARY_CORE_NAMES}
+        if recorded:
+            recorded_hashes[replay.source_path(HELPER)] = 'helper-source'
+        rows[0]['provenance'].update(feature_representation=replay.BOUNDARY_REPRESENTATION,
+                                    boundary_version=2, source_sha256=recorded_hashes)
+        events.write_text('\n'.join(map(json.dumps, rows)))
+        selected_hashes = dict(recorded_hashes)
+        if selected:
+            selected_hashes[replay.source_path(HELPER)] = selected_hash
+        else:
+            selected_hashes.pop(replay.source_path(HELPER), None)
+        self.extractor()
+        output = self.directory / 'new_helper_export.json'
+        with patch.object(replay, 'load_core', return_value=(self.modules, selected_hashes, {}, None)), \
+             patch.object(replay, 'RecordedIndependentMotion', return_value=SimpleNamespace(consume=lambda _: self.sample)), \
+             patch.object(replay, 'verify_raw_imu_frame'):
+            replay.export_fixture(self.directory, self.directory, output, self.directory)
+        return json.loads(output.read_text()), recorded_hashes
+
+    def test_new_recording_exports_ten_exact_hashes(self):
+        fixture, expected = self.export_new_helper()
+        self.assertEqual(fixture['recorded_source_sha256'], expected)
+        self.assertEqual(len(expected), 10)
+        self.assertEqual(fixture['camera'], plane_tests.camera(True))
+
+    def test_absent_changed_or_unrecorded_helper_rejects_export(self):
+        for options in ({'selected': False}, {'selected_hash': 'changed'}, {'recorded': False}):
+            with self.subTest(options=options):
+                # Each attempt owns a separate output; delete only the synthetic
+                # initial exporter artifact so its exclusive-write check remains.
+                initial = self.directory / 'export.json'
+                if initial.exists():
+                    initial.unlink()
+                with self.assertRaisesRegex(ValueError, 'source differs'):
+                    self.export_new_helper(**options)
+                self.assertFalse((self.directory / 'new_helper_export.json').exists())
+
+
+class CoreArchiveTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.directory = Path(temporary.name)
+        self.repo = self.directory / 'repo'
+        self.repo.mkdir()
+        self.snapshot = self.directory / 'snapshot'
+        self.core = SimpleNamespace(repo=self.repo, provenance={'source_sha256': {}})
+        for name in (PAINT, HELPER):
+            relative = replay.source_path(name)
+            data = ('# ' + name + '\n').encode()
+            path = self.repo / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+            self.core.provenance['source_sha256'][relative] = hashlib.sha256(data).hexdigest()
+
+    def test_archive_exact_manifest_and_bytes_excludes_unused_prototype(self):
+        prototype = self.repo / replay.source_path('lane_mapping_lya_reference.quantized_curve_fit')
+        prototype.write_bytes(b'not imported')
+        archived = backend.archive_core_sources(self.core, self.snapshot)
+        expected = {'core/' + k: v for k, v in self.core.provenance['source_sha256'].items()}
+        self.assertEqual(archived, expected)
+        self.assertEqual({p.relative_to(self.snapshot).as_posix() for p in self.snapshot.rglob('*') if p.is_file()}, set(expected))
+        for relative, digest in archived.items():
+            self.assertEqual(hashlib.sha256((self.snapshot / relative).read_bytes()).hexdigest(), digest)
+            self.assertEqual((self.snapshot / relative).read_bytes(), (self.repo / relative[5:]).read_bytes())
+
+    def test_changed_source_fails_before_any_archive_write(self):
+        (self.repo / replay.source_path(HELPER)).write_bytes(b'changed after manifest')
+        with self.assertRaisesRegex(ValueError, 'changed before snapshot'):
+            backend.archive_core_sources(self.core, self.snapshot)
+        self.assertFalse(self.snapshot.exists())
+
+    def test_archive_does_not_overwrite_previous_snapshot(self):
+        before = backend.archive_core_sources(self.core, self.snapshot)
+        with self.assertRaises(FileExistsError):
+            backend.archive_core_sources(self.core, self.snapshot)
+        for relative, digest in before.items():
+            self.assertEqual(hashlib.sha256((self.snapshot / relative).read_bytes()).hexdigest(), digest)
+
+    def test_absolute_and_parent_paths_are_not_archive_member_names(self):
+        for relative in ('../repo/value.py', str(self.repo / 'absolute.py')):
+            with self.subTest(relative=relative):
+                self.core.provenance['source_sha256'] = {relative: '0' * 64}
+                with self.assertRaisesRegex(ValueError, 'repository-relative'):
+                    backend.archive_core_sources(self.core, self.snapshot)
+                self.assertFalse(self.snapshot.exists())
+
+
+class ActualCoreManifestTests(unittest.TestCase):
+    def test_current_manifest_archive_includes_exact_loaded_helper(self):
+        if not os.environ.get('LANE_TEST_REPO'):
+            self.skipTest('set LANE_TEST_REPO')
+        isolate_modules(self)
+        core = backend.ProductionCore(Path(os.environ['LANE_TEST_REPO']))
+        relative = replay.source_path(HELPER)
+        self.assertEqual(core.provenance['source_sha256'][relative],
+                         hashlib.sha256((core.repo / relative).read_bytes()).hexdigest())
+        self.assertNotIn(replay.source_path('lane_mapping_lya_reference.quantized_curve_fit'),
+                         core.provenance['source_sha256'])
+        with tempfile.TemporaryDirectory() as directory:
+            archived = backend.archive_core_sources(core, Path(directory))
+            self.assertEqual(archived, {'core/' + k: v for k, v in core.provenance['source_sha256'].items()})
+            for path, digest in archived.items():
+                self.assertEqual(hashlib.sha256((Path(directory) / path).read_bytes()).hexdigest(), digest)
+
+
+if __name__ == '__main__':
+    unittest.main()

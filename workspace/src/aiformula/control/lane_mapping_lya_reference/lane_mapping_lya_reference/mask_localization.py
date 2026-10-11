@@ -1586,6 +1586,17 @@ class LaneMapLocalizer:
                     world, rotated, selected, normals, residual = self._correspondences(scan, estimate, scan_normals)
                     if (len(selected) < cfg["min_inliers"] or
                             np.sum(feature_weight[selected]) / weight_sum < cfg["min_overlap_ratio"]):
+                        # The raw-prior anchor changes correspondences. Report
+                        # this rejected query, not the preceding query's ratio.
+                        overlap_weight = np.sum(feature_weight[selected])
+                        metrics.update(
+                            overlap_ratio=float(overlap_weight / weight_sum),
+                            unweighted_overlap_ratio=float(len(selected) / len(scan)),
+                            overlap_weight_numerator=float(overlap_weight),
+                            overlap_weight_denominator=float(weight_sum),
+                            overlap_correspondence_count=len(selected),
+                            overlap_scan_point_count=len(scan),
+                            overlap_evaluation_stage="after_raw_prior_anchor")
                         return finish("insufficient_overlap_after_raw_prior_anchor")
             lever = rotated[selected]
             derivative = normals[:, 0] * -lever[:, 1] + normals[:, 1] * lever[:, 0]

@@ -1,0 +1,167 @@
+"""Exact footprint source closure and archival; no geometry/engine validation."""
+import hashlib
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from types import ModuleType
+import unittest
+from unittest.mock import patch
+
+import lane_backend as backend
+import replay_observed_keyframe as replay
+import test_replay_corner_dependencies as corner
+
+
+PAINT = 'lane_mapping_lya_reference.paint_geometry'
+FOOTPRINT = 'lane_mapping_lya_reference.footprint_geometry'
+FINITE = 'lane_mapping_lya_reference.finite_support'
+PAINT_SOURCE = (
+    b'BOUNDARY_VERSION=3\n'
+    b'TOPOLOGY_REPRESENTATION="confirmed_contour_node_chords_v1"\n'
+    b'CERTIFIED_MODEL_REPRESENTATION="confirmed_creation_chart_domains_v1"\n'
+    b'FOOTPRINT_MODEL_REPRESENTATION="wb_pixel_footprint_local_tangent_v1"\n'
+    b'def invoke():\n    from .footprint_geometry import value\n    return value\n')
+
+
+class FootprintDependencies(unittest.TestCase):
+    setUp = corner.SelectedDependencyTests.setUp
+    put = corner.SelectedDependencyTests.put
+
+    def prepare(self):
+        self.sources[replay.source_path(PAINT)] = PAINT_SOURCE
+        self.sources[replay.source_path(FOOTPRINT)] = b'value = 97\n'
+        for relative, data in self.sources.items():
+            self.put(relative, data)
+
+    def check(self, loaded, raw=True):
+        modules, hashes, text_hashes, _ = loaded
+        expected = replay.BOUNDARY_CORE_NAMES if raw else replay.BOUNDARY_CORE_NAMES[:-2]
+        expected = replay._with_paint_helper(expected, FOOTPRINT)
+        self.assertEqual(tuple(modules), expected)
+        self.assertEqual(modules[PAINT].invoke(), 97)
+        self.assertEqual(replay.boundary_source_version(modules), 3)
+        self.assertEqual(modules[PAINT].FOOTPRINT_MODEL_REPRESENTATION,
+                         'wb_pixel_footprint_local_tangent_v1')
+        for name in expected:
+            relative = replay.source_path(name)
+            self.assertEqual(hashes[relative], hashlib.sha256(self.sources[relative]).hexdigest())
+            self.assertEqual(text_hashes[relative]['raw'], hashes[relative])
+        return modules
+
+    def test_lazy_helper_is_loaded_hashed_before_paint_without_bumping_v3(self):
+        self.prepare()
+        for raw in (False, True):
+            self.check(replay.load_core(self.repo, raw_imu=raw), raw)
+
+    def test_selected_git_closure_ignores_different_worktree_bytes(self):
+        self.prepare()
+        for name in (PAINT, FOOTPRINT):
+            self.put(replay.source_path(name), b'raise RuntimeError("unselected worktree")\n')
+        revision, reads = 'e' * 40, []
+        def git(command, **kwargs):
+            if command[3] == 'rev-parse':
+                return revision + '\n'
+            self.assertEqual(command[3], 'show')
+            selected, relative = command[4].split(':', 1)
+            self.assertEqual(selected, revision)
+            reads.append(relative)
+            return self.sources[relative]
+        with patch.object(replay.subprocess, 'check_output', side_effect=git):
+            self.check(replay.load_core(self.repo, 'old-selected', raw_imu=True))
+        for name in (PAINT, FOOTPRINT):
+            self.assertEqual(reads.count(replay.source_path(name)), 1)
+
+    def test_cached_foreign_footprint_cannot_supply_unrecorded_value(self):
+        self.prepare()
+        foreign = ModuleType(FOOTPRINT)
+        foreign.value = -1
+        sys.modules[FOOTPRINT] = foreign
+        modules = self.check(replay.load_core(self.repo, raw_imu=True))
+        self.assertIsNot(modules[FOOTPRINT], foreign)
+
+    def test_missing_declared_footprint_rejects_even_when_cached(self):
+        self.prepare()
+        (self.repo / replay.source_path(FOOTPRINT)).unlink()
+        foreign = ModuleType(FOOTPRINT)
+        foreign.value = 97
+        sys.modules[FOOTPRINT] = foreign
+        with self.assertRaises(FileNotFoundError):
+            replay.load_core(self.repo, raw_imu=True)
+
+    def test_existing_but_unimported_footprint_is_not_a_historical_dependency(self):
+        self.prepare()
+        self.put(replay.source_path(PAINT), corner.LAZY_PAINT +
+                 b'# from .footprint_geometry import value\ntext="from .footprint_geometry import value"\n')
+        modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=True)
+        self.assertEqual(tuple(modules), replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES))
+        self.assertNotIn(FOOTPRINT, modules)
+        self.assertNotIn(replay.source_path(FOOTPRINT), hashes)
+
+    def test_footprint_own_known_dependency_is_pinned_before_it(self):
+        self.prepare()
+        self.put(replay.source_path(FOOTPRINT), b'from .finite_support import support\nvalue=support\n')
+        self.put(replay.source_path(FINITE), b'support=97\n')
+        modules, _, _, _ = replay.load_core(self.repo, raw_imu=True)
+        names = tuple(modules)
+        self.assertLess(names.index(FINITE), names.index(FOOTPRINT))
+        self.assertLess(names.index(FOOTPRINT), names.index(PAINT))
+        self.assertEqual(modules[PAINT].invoke(), 97)
+
+    def test_recorded_names_require_explicit_recorded_helper_hash(self):
+        for present in (False, True):
+            names = replay.BOUNDARY_CORE_NAMES
+            if present:
+                names = replay._with_paint_helper(names, FOOTPRINT)
+            provenance = {'source_sha256': {replay.source_path(name): 'hash' for name in names}}
+            self.assertEqual(replay.recorded_core_names(provenance, raw_imu=True, boundary=True), names)
+
+
+class ActualFootprintManifest(unittest.TestCase):
+    def setUp(self):
+        if not os.environ.get('LANE_TEST_REPO'):
+            self.skipTest('set LANE_TEST_REPO')
+        corner.isolate_modules(self)
+        self.repo = Path(os.environ['LANE_TEST_REPO'])
+
+    def test_runtime_and_replay_archive_exact_new_source_and_preserve_v3(self):
+        core = backend.ProductionCore(self.repo)
+        relative = replay.source_path(FOOTPRINT)
+        digest = hashlib.sha256((self.repo / relative).read_bytes()).hexdigest()
+        self.assertEqual(core.provenance['source_sha256'][relative], digest)
+        self.assertEqual(core.provenance['boundary_version'], 3)
+        self.assertEqual(core.provenance['certified_model_representation'],
+                         'confirmed_creation_chart_domains_v1')
+        with tempfile.TemporaryDirectory() as directory:
+            archived = backend.archive_core_sources(core, Path(directory))
+            self.assertEqual(archived, {'core/' + key: value
+                                       for key, value in core.provenance['source_sha256'].items()})
+            self.assertEqual((Path(directory) / 'core' / relative).read_bytes(),
+                             (self.repo / relative).read_bytes())
+        for raw, count in ((False, 12), (True, 14)):
+            modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=raw, boundary=True)
+            self.assertEqual(len(modules), count)
+            self.assertEqual(replay.boundary_source_version(modules), 3)
+            self.assertEqual(hashes[relative], digest)
+            self.assertEqual(modules[PAINT].FOOTPRINT_MODEL_REPRESENTATION,
+                             'wb_pixel_footprint_local_tangent_v1')
+            self.assertNotIn('lane_mapping_lya_reference.quantized_curve_fit', modules)
+
+    def test_exact_r19_revision_keeps_thirteen_sources_without_footprint(self):
+        revision = '01442bbf75cb68213dff3c05b88f3bef8639a877'
+        modules, hashes, _, selected = replay.load_core(self.repo, revision, raw_imu=True, boundary=True)
+        self.assertEqual(selected, revision)
+        self.assertEqual(len(modules), 13)
+        self.assertNotIn(FOOTPRINT, modules)
+        self.assertNotIn(replay.source_path(FOOTPRINT), hashes)
+        self.assertFalse(hasattr(modules[PAINT], 'FOOTPRINT_MODEL_REPRESENTATION'))
+        self.assertEqual(replay.boundary_source_version(modules), 3)
+        for name in modules:
+            relative = replay.source_path(name)
+            raw = subprocess.check_output(['git', '-C', str(self.repo), 'show', revision + ':' + relative])
+            self.assertEqual(hashes[relative], hashlib.sha256(raw).hexdigest())
+
+
+if __name__ == '__main__':
+    unittest.main()
