@@ -14,7 +14,9 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .finite_support import DomainState, advance_domain, certified_segments, _compact_confirmed_domain
+from .finite_support import (DomainState, advance_domain, certified_segments,
+                             _compact_confirmed_domain, _validate_frame_batch,
+                             _advance_domain_validated)
 
 
 REPRESENTATION = "paint_boundary_v1"
@@ -801,7 +803,8 @@ class BoundaryConsensus:
                     or piece.reliable_votes < cfg["minimum_reliable_votes"])))
                 domains.append((record_id, DomainState(old_domain.origin, old_domain.tangent, retained, stamp)))
                 domain_count += len(retained)-len(old_domain.intervals)
-        for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
+        pair_groups = []
+        for record_id, _, _, _, _, _, members in updates:
             following = obs.next[members]
             selected = following >= 0
             selected[selected] &= face_owner[following[selected]] == record_id
@@ -809,13 +812,26 @@ class BoundaryConsensus:
             pairs = np.column_stack((first, second))
             if record_id in incident_pairs:
                 pairs = np.concatenate((pairs, np.asarray(incident_pairs[record_id], dtype=np.int64)))
-                first, second = pairs[:, 0], pairs[:, 1]
+            pair_groups.append(pairs)
+        offsets = np.r_[0, np.cumsum([len(pairs) for pairs in pair_groups], dtype=np.int64)]
+        packed = np.concatenate(pair_groups) if pair_groups else np.empty((0, 2), dtype=np.int64)
+        packed_segments, packed_normals = model_points[packed], model_normals[packed]
+        packed_reliable = face_reliable[packed[:, 0]] & face_reliable[packed[:, 1]]
+        batch = _validate_frame_batch(packed_segments, packed_normals, packed_reliable, offsets)
+        for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
             old_domain = self._domains.get(record_id)
             # Even an empty creation frame fixes the chart. Later incident
             # evidence must not choose a more convenient new origin/direction.
-            domain = advance_domain(old_domain, origin=frame_points[index],
-                current_frame_normal=frame_normals[index], segments=model_points[pairs],
-                normals=model_normals[pairs], reliable=face_reliable[first] & face_reliable[second],
+            if batch is None:
+                start, stop = offsets[index:index+2]
+                advance = advance_domain
+                arrays = dict(segments=packed_segments[start:stop], normals=packed_normals[start:stop],
+                              reliable=packed_reliable[start:stop])
+            else:
+                advance = _advance_domain_validated
+                arrays = dict(batch=batch, group_index=index)
+            domain = advance(old_domain, origin=frame_points[index],
+                current_frame_normal=frame_normals[index], **arrays,
                 stamp_ns=stamp, minimum_frame_votes=cfg["minimum_frame_votes"],
                 minimum_reliable_votes=cfg["minimum_reliable_votes"], candidate_ttl_ns=ttl,
                 normal_cosine=cosine, max_intervals=cfg["max_support_segments"])
@@ -1636,9 +1652,19 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
     normals, normal_valid, support_count, radii, coefficients, scales, bounds = _directions(
         points, segments, white_xy, black_xy, black - white, stable, paths, cfg)
     valid = stable & normal_valid
-    reliable = valid & (sensitivity <= cfg["reliable_sensitivity"])
     model_points, model_normals, model_valid = _quantized_curve_positions(
         white_xy, black_xy, points, normals, coefficients, scales, bounds, valid)
+    from .ribbon_observation import island_ribbon_proposals
+    proposals = island_ribbon_proposals(raw > threshold, project, points, segments,
+        white, black, white_xy, black_xy, stable, contour_ids, normal_valid, cfg,
+        math.cos(CONSENSUS_DEFAULT_CONFIG['normal_max_angle_rad']), _quantized_curve_positions)
+    for ids, fitted, positions, position_normals, admitted, counts, radius in proposals:
+        normals[ids] = fitted
+        normal_valid[ids] = admitted
+        support_count[ids], radii[ids] = counts, radius
+        model_points[ids], model_normals[ids], model_valid[ids] = positions, position_normals, admitted
+    valid = stable & normal_valid
+    reliable = valid & (sensitivity <= cfg["reliable_sensitivity"])
     # Projective metric fraction is NOT the image fraction. Reproject the
     # actual estimate before evaluating its own J4; raw-face J is insufficient.
     model_uv, uv_valid = unproject(model_points)

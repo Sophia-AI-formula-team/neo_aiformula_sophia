@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "status": "development_checkpoint_failed_runtime_and_quality",
+  "privacy_review": "This summary contains only relative artifact names, aggregate results, source hashes and limitations. Raw logs, paths, images and truth coordinates are excluded.",
+  "full_core": {
+    "scope": ["reference/test", "fixed package directory", "gnss/test"],
+    "fixed_has_separate_test_directory": false,
+    "excluded": ["reference/test/test_quantized_curve_fit.py"],
+    "exclusion_reason": "Previously unintegrated prototype explicitly excluded by task; no other test exclusion.",
+    "passed": 3277,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "exit_code": 0,
+    "pytest_stdout_elapsed_s": 94.57,
+    "junit_elapsed_s": 94.558,
+    "process_elapsed_s": 95.7342423000373,
+    "skip_reason": "Target Linux process-group test on Windows",
+    "source_manifest_entries": 175,
+    "source_changes": 0,
+    "quality_runtime_sources_compared": 17,
+    "quality_runtime_source_differences": 0,
+    "native_required": true,
+    "native_real_calls_passed": true,
+    "native_api_count": 8,
+    "installed_colcon_prefix_verified_this_run": false,
+    "native_source_sha256": "0c54086e66554c8e9c96b48893e4b19c076c8a747b8f2cf08d6ad216fdeca12d",
+    "native_binary_sha256": "690e7b900844f44f0d21cf1ba41dd903c437a36ac8053a41ea0f9f44a87a7f83"
+  },
+  "loader_focused": {
+    "passed": 43,
+    "failed": 2,
+    "skipped": 0,
+    "exit_code": 1,
+    "failure_scope": "Real historical R8 and R12 loads are rejected by the unchanged native-source identity gate because the currently installed R18 binary has a different C source hash. The failures were retained, not skipped or bypassed.",
+    "current_recursive_helpers": ["ribbon_observation", "quantized_ribbon"],
+    "new_dependency_tests_passed": 9,
+    "current_boundary_source_count_without_raw_imu": 11,
+    "current_boundary_source_count_with_raw_imu": 13,
+    "historical_dependency_discovery": "Old revision AST selects only its own imports; current unused files are not automatically added.",
+    "scope_limit": "No claim that historical native replay passed with the current binary. No full adapter rerun in this task."
+  },
+  "development_quality": {
+    "cases_passed": 0,
+    "cases_total": 4,
+    "planned_frames_per_case": 509,
+    "offline_geometry_budget_ms": 2000,
+    "case_results": [
+      {"case": "left_0", "accepted": 14, "first_failed_frame": 14, "reason": "match_insufficient_overlap"},
+      {"case": "left_0.35", "accepted": 11, "first_failed_frame": 11, "reason": "match_insufficient_overlap"},
+      {"case": "right_0", "accepted": 13, "first_failed_frame": 13, "reason": "match_insufficient_overlap"},
+      {"case": "right_0.35", "accepted": 11, "first_failed_frame": 11, "reason": "match_insufficient_overlap_after_raw_prior_anchor"}
+    ],
+    "inputs_and_numeric_gates_unchanged": true,
+    "source_changes": 0,
+    "scope_limit": "Original full-mask development cases, stopped at first failure; not complete-circle quality or runtime proof."
+  },
+  "recorded_prefix": {
+    "artifact": "r19_observed_01/r19_observed_01.json",
+    "available": 111,
+    "attempted": 14,
+    "accepted": 13,
+    "first_failed_sequence": 164,
+    "reason": "processing_deadline",
+    "engine_ms": 86.2259999849,
+    "engine_gate_ms": 80,
+    "matcher_ms": 26.6116,
+    "matcher_gate_ms": 40,
+    "overlap": 0.8283333333,
+    "observable_rank": 2,
+    "failed_frame_committed": false,
+    "integrity_checks_passed": 16,
+    "integrity_checks_total": 16,
+    "source_changes": 0,
+    "scope_limit": "Recorded fixed trial28 input only, not a new controlled trajectory, Unity drive, route or repeat lap."
+  },
+  "failure_analysis": {
+    "summary": "Direction-label evidence improves assigned current mass and confirmed reference size. The four cases still fail finite reference coverage/association with fresh strictly-past references and the full foreground denominator retained.",
+    "limits": [
+      "Early rank=0 defaults do not establish Hessian degeneracy.",
+      "right_0.35 logged overlap is stale from before the raw-prior reanchor; the final rejected numerator is not logged and must not be invented.",
+      "Per-query owner/segment arrays are absent from quality JSON, so genuine frontier versus representation loss is not resolved by aggregate counts alone."
+    ]
+  },
+  "evidence": [
+    {"artifact": "r19_full_regression_01/summary_01.json", "sha256": "2fee8c4fa74e0e148b7fd1140a1d0d13137c3c5f432230242b01d82d8ee0c112"},
+    {"artifact": "r19_full_regression_01/pytest_01.xml", "sha256": "20041b428032aac93b51e3e02d5d5dbee7df6cd04b66528f08d684b5831f3819"},
+    {"artifact": "r19_full_regression_01/native_actual_01.json", "sha256": "bd13ca597a41fbc58392cf09f6934a0eebf937192e8076e6561e60c5ace3e54f"},
+    {"artifact": "r19_loader_validation_01/summary_01.json", "sha256": "1c49073c2060f9d57095b3cbad08e9d3f4ca29f7d80ff173e39cbb74cc465845"},
+    {"artifact": "r19_quality_validation_01/r19_development_01.json", "sha256": "a9363354cc332b29fd3e0c309afb41600d493120bc961273210b57e522a210fd"},
+    {"artifact": "r19_quality_failure_audit_01/summary_01.json", "sha256": "6eb411b5244a74a028fb1fc228eed4fd7c1f38437228f91ba591e03023f1d8a2"},
+    {"artifact": "r19_quality_failure_audit_01/REPORT.md", "sha256": "573bcbd0dcd3dd80041cbb5ff33c3420f42a29ce8a9fab3f18a911e676b1e8fe"},
+    {"artifact": "r19_observed_01/r19_observed_01.json", "sha256": "1e936d3bdb2cae9efaf65c6474b0ece5c41bb4728160b15f1308a6d5f718b858"}
+  ],
+  "not_claimed": ["ROS build or DDS acceptance by this local run", "complete first lap", "frozen route", "repeat lap", "real-vehicle acceptance", "new Unity drive", "parameter or gate relaxation"]
+}

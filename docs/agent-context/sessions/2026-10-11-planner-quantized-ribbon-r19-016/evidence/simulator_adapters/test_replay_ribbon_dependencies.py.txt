@@ -1,0 +1,149 @@
+"""Selected transitive source identity only; no mapping or timing acceptance."""
+import hashlib
+import os
+from pathlib import Path
+import sys
+import tempfile
+from types import ModuleType
+import unittest
+from unittest.mock import patch
+
+import lane_backend as backend
+import replay_observed_keyframe as replay
+import test_replay_corner_dependencies as corner
+
+
+PAINT = 'lane_mapping_lya_reference.paint_geometry'
+RIBBON = 'lane_mapping_lya_reference.ribbon_observation'
+SOLVER = 'lane_mapping_lya_reference.quantized_ribbon'
+PAINT_SOURCE = b'def invoke():\n    from .ribbon_observation import value\n    return value\n'
+RIBBON_SOURCE = b'from .quantized_ribbon import answer\nvalue = answer + 1\n'
+
+
+class RibbonDependencies(unittest.TestCase):
+    setUp = corner.SelectedDependencyTests.setUp
+    put = corner.SelectedDependencyTests.put
+
+    def prepare(self):
+        self.sources[replay.source_path(PAINT)] = PAINT_SOURCE
+        self.sources[replay.source_path(RIBBON)] = RIBBON_SOURCE
+        self.sources[replay.source_path(SOLVER)] = b'answer = 72\n'
+        for relative, data in self.sources.items():
+            self.put(relative, data)
+
+    def check(self, loaded, raw=True):
+        modules, hashes, text_hashes, _ = loaded
+        names = replay.BOUNDARY_CORE_NAMES if raw else replay.BOUNDARY_CORE_NAMES[:-2]
+        for helper in (SOLVER, RIBBON):
+            names = replay._with_paint_helper(names, helper)
+        self.assertEqual(tuple(modules), names)
+        self.assertEqual(modules[PAINT].invoke(), 73)
+        self.assertLess(names.index(SOLVER), names.index(RIBBON))
+        self.assertLess(names.index(RIBBON), names.index(PAINT))
+        for name in names:
+            relative = replay.source_path(name)
+            self.assertEqual(hashes[relative], hashlib.sha256(self.sources[relative]).hexdigest())
+            self.assertEqual(text_hashes[relative]['raw'], hashes[relative])
+        return modules
+
+    def test_lazy_ribbon_recursively_pins_solver_before_execution(self):
+        self.prepare()
+        for raw in (False, True):
+            self.check(replay.load_core(self.repo, raw_imu=raw), raw)
+
+    def test_selected_revision_recurses_into_its_own_not_worktree_sources(self):
+        self.prepare()
+        for name in (PAINT, RIBBON, SOLVER):
+            self.put(replay.source_path(name), b'raise RuntimeError("dirty source")\n')
+        revision, reads = 'd' * 40, []
+        def git(command, **kwargs):
+            if command[3] == 'rev-parse':
+                return revision + '\n'
+            self.assertEqual(command[3], 'show')
+            selected, relative = command[4].split(':', 1)
+            self.assertEqual(selected, revision)
+            reads.append(relative)
+            return self.sources[relative]
+        with patch.object(replay.subprocess, 'check_output', side_effect=git):
+            self.check(replay.load_core(self.repo, 'selected', raw_imu=True))
+        for name in (PAINT, RIBBON, SOLVER):
+            self.assertEqual(reads.count(replay.source_path(name)), 1)
+
+    def test_foreign_transitive_solver_is_replaced_before_ribbon_import(self):
+        self.prepare()
+        foreign = ModuleType(SOLVER)
+        foreign.answer = -99
+        sys.modules[SOLVER] = foreign
+        modules = self.check(replay.load_core(self.repo, raw_imu=True))
+        self.assertIsNot(modules[SOLVER], foreign)
+
+    def test_missing_transitive_source_does_not_use_foreign_module(self):
+        self.prepare()
+        (self.repo / replay.source_path(SOLVER)).unlink()
+        foreign = ModuleType(SOLVER)
+        foreign.answer = 72
+        sys.modules[SOLVER] = foreign
+        with self.assertRaises(FileNotFoundError):
+            replay.load_core(self.repo, raw_imu=True)
+
+    def test_cycle_is_rejected_before_any_source_exec(self):
+        self.prepare()
+        self.put(replay.source_path(SOLVER), b'from .ribbon_observation import value\n')
+        with self.assertRaisesRegex(ValueError, 'cyclic paint helper'):
+            replay.load_core(self.repo, raw_imu=True)
+        self.assertNotIn(RIBBON, sys.modules)
+
+    def test_old_paint_does_not_acquire_new_existing_helpers(self):
+        self.prepare()
+        self.put(replay.source_path(PAINT), corner.LAZY_PAINT +
+                 b'# from .ribbon_observation import value\ntext="from .quantized_ribbon import answer"\n')
+        modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=True)
+        self.assertEqual(tuple(modules), replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES))
+        for name in (RIBBON, SOLVER):
+            self.assertNotIn(replay.source_path(name), hashes)
+
+    def test_direct_and_transitive_dependency_loaded_once(self):
+        self.prepare()
+        self.put(replay.source_path(PAINT), b'from .quantized_ribbon import answer\n' + PAINT_SOURCE)
+        modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=True)
+        self.assertEqual(tuple(modules).count(SOLVER), 1)
+        self.assertEqual(len(modules), len(replay.BOUNDARY_CORE_NAMES) + 2)
+        self.assertEqual(len(hashes), len(modules))
+
+    def test_recorded_names_only_add_recorded_new_helpers(self):
+        for helpers in ((), (SOLVER,), (RIBBON,), (SOLVER, RIBBON)):
+            expected = replay.BOUNDARY_CORE_NAMES
+            for helper in helpers:
+                expected = replay._with_paint_helper(expected, helper)
+            provenance = {'source_sha256': {replay.source_path(name): 'hash' for name in expected}}
+            self.assertEqual(replay.recorded_core_names(provenance, raw_imu=True, boundary=True), expected)
+
+
+class ActualRibbonManifest(unittest.TestCase):
+    def test_runtime_and_replay_both_pin_and_archive_two_real_helpers(self):
+        if not os.environ.get('LANE_TEST_REPO'):
+            self.skipTest('set LANE_TEST_REPO')
+        corner.isolate_modules(self)
+        repo = Path(os.environ['LANE_TEST_REPO'])
+        core = backend.ProductionCore(repo)
+        for name in (RIBBON, SOLVER):
+            relative = replay.source_path(name)
+            self.assertEqual(core.provenance['source_sha256'][relative],
+                             hashlib.sha256((repo / relative).read_bytes()).hexdigest())
+        self.assertNotIn(replay.source_path('lane_mapping_lya_reference.quantized_curve_fit'),
+                         core.provenance['source_sha256'])
+        with tempfile.TemporaryDirectory() as directory:
+            archived = backend.archive_core_sources(core, Path(directory))
+            self.assertEqual(archived, {'core/' + k: v for k, v in core.provenance['source_sha256'].items()})
+            for name in (RIBBON, SOLVER):
+                relative = replay.source_path(name)
+                self.assertEqual((Path(directory) / 'core' / relative).read_bytes(), (repo / relative).read_bytes())
+        modules, hashes, _, _ = replay.load_core(repo, raw_imu=True, boundary=True)
+        self.assertLess(tuple(modules).index(SOLVER), tuple(modules).index(RIBBON))
+        for name in (RIBBON, SOLVER):
+            relative = replay.source_path(name)
+            self.assertEqual(hashes[relative], core.provenance['source_sha256'][relative])
+
+
+if __name__ == '__main__':
+    unittest.main()

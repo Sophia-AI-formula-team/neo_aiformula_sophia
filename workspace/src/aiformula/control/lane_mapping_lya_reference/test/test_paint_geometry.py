@@ -725,7 +725,10 @@ def test_graph_prepare_discard_wrong_owner_and_generation_are_atomic():
 
 def test_graph_capacity_rejection_leaves_node_edge_and_frontier_unchanged():
     consensus = BoundaryConsensus({'max_support_segments': 4})
-    points = [[.01, .01], [.11, .01], [.21, .01], [.31, .01]]
+    # Isolate the graph cap with zero projected tangent extent. Direct incident
+    # support now legitimately consumes the SAME shared capacity for a real
+    # horizontal span; that refusal has its own test below. No cap is raised.
+    points = [[.01, .01], [.01, .11], [.01, .21], [.01, .31]]
     for stamp in range(1, 6):
         consensus.commit(consensus.prepare(graph_observation(points, stamp)))
     consensus.commit(consensus.prepare(graph_observation(points, 6, order=[0, 1, 2, 3])))
@@ -735,6 +738,21 @@ def test_graph_capacity_rejection_leaves_node_edge_and_frontier_unchanged():
     assert all(consensus._records[k] is v for k, v in before[0].items())
     assert consensus._edges == before[1]
     assert (consensus._generation, consensus.last_stamp_ns) == before[2:]
+
+
+def test_direct_incident_shared_capacity_rejects_original_horizontal_fixture():
+    consensus = BoundaryConsensus({'max_support_segments': 4})
+    points = [[.01, .01], [.11, .01], [.21, .01], [.31, .01]]
+    for stamp in range(1, 6):
+        assert consensus.commit(consensus.prepare(graph_observation(points, stamp)))
+    before = (dict(consensus._records), dict(consensus._edges),
+              dict(consensus._domains), consensus._generation, consensus.last_stamp_ns)
+    with pytest.raises(ValueError, match='combined boundary finite-domain capacity'):
+        consensus.prepare(graph_observation(points, 6, order=[0, 1, 2, 3]))
+    assert all(consensus._records[k] is v for k, v in before[0].items())
+    assert consensus._edges == before[1] and consensus._domains == before[2]
+    assert (consensus._generation, consensus.last_stamp_ns) == before[3:]
+    assert consensus.config['max_support_segments'] == 4
 
 
 def test_graph_ttl_expires_only_unconfirmed_links_without_expiring_confirmed_nodes():

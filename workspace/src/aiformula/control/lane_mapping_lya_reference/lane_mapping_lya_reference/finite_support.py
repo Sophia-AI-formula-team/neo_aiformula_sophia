@@ -223,6 +223,66 @@ def _arrays(segments, normals, reliable):
     return segments, normals, reliable
 
 
+_BATCH_SEAL = object()
+
+
+@dataclass(frozen=True)
+class _ValidatedFrameBatch:
+    """Private, independently owned immutable buffers, not a public bypass."""
+    segments: object
+    normals: object
+    reliable: object
+    offsets: object
+    seal: object
+
+
+def _validate_frame_batch(segments, normals, reliable, offsets):
+    """Validate packed owner groups once, or return None for the original path.
+
+    No malformed input is raised here: the caller must retain its original
+    owner order and call public advance_domain on an ineligible batch. This
+    preserves which owner's scalar/array/state error is raised first. Only
+    exact native contiguous arrays participate; no user conversion protocol
+    or ndarray subclass is invoked by this optional preflight. Each group
+    keeps the public MAX_ITEMS limit. Direct incident pairs can be present
+    twice in a whole frame, whose separate bounded limit is 2*MAX_ITEMS.
+
+    Norms use the unchanged last two-coordinate np.linalg.norm reduction.
+    Strict/warning underflow modes retain the original per-owner operation
+    order, including any floating-point exception or warning. All accepted
+    buffers have immutable byte backing and cannot alias mutable callers.
+    """
+    arrays = (segments, normals, reliable, offsets)
+    if (any(type(value) is not np.ndarray for value in arrays)
+            or any(not value.flags.c_contiguous for value in arrays)
+            or segments.dtype != np.dtype(np.float64)
+            or normals.dtype != np.dtype(np.float64)
+            or reliable.dtype != np.dtype(np.bool_)
+            or offsets.dtype != np.dtype(np.int64)
+            or np.geterr()['under'] != 'ignore'):
+        return None
+    if (segments.ndim != 3 or segments.shape[1:] != (2, 2)
+            or len(segments) > 2*MAX_ITEMS
+            or normals.shape != segments.shape or reliable.shape != (len(segments),)
+            or offsets.ndim != 1 or not 1 <= len(offsets) <= MAX_ITEMS+1):
+        return None
+    if (offsets[0] != 0 or offsets[-1] != len(segments)
+            or np.any(offsets < 0) or np.any(offsets > len(segments))):
+        return None
+    lengths = offsets[1:]-offsets[:-1]
+    if np.any(lengths < 0) or np.any(lengths > MAX_ITEMS):
+        return None
+    if (not np.all(np.isfinite(segments)) or np.any(np.abs(segments) > MAX_COORDINATE)
+            or not np.all(np.isfinite(normals))
+            or np.any(np.abs(normals) > 1.+UNIT_TOLERANCE)
+            or np.any(np.abs(np.linalg.norm(normals, axis=2)-1.) > UNIT_TOLERANCE)):
+        return None
+    # Freeze once per frame, not once per owner; preserve every original bit.
+    frozen = tuple(np.frombuffer(value.tobytes(), dtype=value.dtype).reshape(value.shape)
+                   for value in arrays)
+    return _ValidatedFrameBatch(*frozen, _BATCH_SEAL)
+
+
 def _connected_spans(edges, projected):
     """Inner projection of each EXACT physical-endpoint connected component.
 
@@ -322,6 +382,40 @@ def advance_domain(previous, *, origin, current_frame_normal, segments, normals,
     cosine = _cosine(normal_cosine)
     capacity = _integer(max_intervals, 'max_intervals', maximum=MAX_ITEMS)
     segments, normals, reliable = _arrays(segments, normals, reliable)
+    return _advance_domain_arrays(previous, origin, frame_normal, segments, normals, reliable,
+                                  stamp, minimum, minimum_reliable, ttl, cosine, capacity)
+
+
+def _advance_domain_validated(previous, *, batch, group_index, origin, current_frame_normal,
+                              stamp_ns, minimum_frame_votes, minimum_reliable_votes,
+                              candidate_ttl_ns, normal_cosine, max_intervals):
+    """Private equivalent entry for one group of _validate_frame_batch output.
+
+    Scalars are still checked in public order BEFORE selecting the already
+    validated arrays, and previous state is still checked AFTER them. There
+    is no catch/retry, mutation, cached state or change to the advance logic.
+    An ineligible batch must use the public entry, never this method.
+    """
+    origin = _vector(origin, 'origin')
+    frame_normal = _vector(current_frame_normal, 'current_frame_normal', unit=True)
+    stamp = _integer(stamp_ns, 'stamp_ns')
+    minimum, minimum_reliable = _thresholds(minimum_frame_votes, minimum_reliable_votes)
+    ttl = _integer(candidate_ttl_ns, 'candidate_ttl_ns', minimum=0)
+    cosine = _cosine(normal_cosine)
+    capacity = _integer(max_intervals, 'max_intervals', maximum=MAX_ITEMS)
+    if type(batch) is not _ValidatedFrameBatch or batch.seal is not _BATCH_SEAL:
+        raise ValueError('expected private validated frame batch')
+    index = _integer(group_index, 'group_index', minimum=0, maximum=len(batch.offsets)-2)
+    first, stop = int(batch.offsets[index]), int(batch.offsets[index+1])
+    return _advance_domain_arrays(previous, origin, frame_normal,
+                                  batch.segments[first:stop], batch.normals[first:stop],
+                                  batch.reliable[first:stop], stamp, minimum,
+                                  minimum_reliable, ttl, cosine, capacity)
+
+
+def _advance_domain_arrays(previous, origin, frame_normal, segments, normals, reliable,
+                           stamp, minimum, minimum_reliable, ttl, cosine, capacity):
+    """Original advance body; entry points above own all input validation."""
     if previous is not None and type(previous) is not DomainState:
         raise ValueError('previous must be DomainState or None')
     if previous is None:
