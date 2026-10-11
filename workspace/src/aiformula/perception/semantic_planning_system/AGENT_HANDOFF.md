@@ -59,3 +59,19 @@ These are reported gaps, not claims that the current shadow package completes
 physical deployment. Keep model/LYA/core algorithm changes separately reported
 and reviewed, preserve immutable baseline artifacts, and update documentation
 with actual evidence when each gap is closed.
+
+## Left-turn follow-up: candidate only
+
+The separate [left-turn investigation](../../../../../codexws/unity_semantic_left_turn_20261012/README.md)
+preserves failed genuine inner/outer trials and a default-disabled simulator
+adapter candidate. The outer trial learned a real lap and stopped 8.643219 m
+before red, but original map fusion failed (RMSE 3.404463 m > 3.0 m), so no
+junction detour was validated. The inner exact trial lost lane support before
+learning. The earlier four-case video does not prove left-turn functionality.
+
+Core63eec2d and native ROS versions/wiring remain unchanged. The candidate
+uses explicit scene calibration, continuous detour preview and an optional
+strictly verified saved real reference; it is not automatic junction learning.
+It has not been installed or compiled and has no calibrated closed-loop
+acceptance. Map-mode authorization remains pending. Read that archive's agent,
+problem and deployment instructions before continuing; do not overwrite final63.

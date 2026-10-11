@@ -1,0 +1,394 @@
+{
+  "schema": "actual_recorded_reference_transport_check/v1",
+  "passed": true,
+  "evidence": "Original captured real candidate verified/replayed before ready; one supplied protocol tick. No measured vehicle motion or perception inference.",
+  "actual_vehicle_validation": false,
+  "model_inference": false,
+  "source_files": 238,
+  "source_unchanged": true,
+  "elapsed_seconds": 0.39532189996680245,
+  "ready_adapter": {
+    "enabled": true,
+    "mode": "calibrated_map",
+    "reference_mode": "warm_start",
+    "metric_source": "explicit_simulation_calibration",
+    "configuration_file_sha256": "b746690c931a6c3fbf229e467f9baae2d768bc2679be9ba06f58c42ba253afc5",
+    "available": true,
+    "reason": "explicit_calibration_validated",
+    "source": "explicit_calibrated_prior",
+    "calibration_id": "unity-east-detour-outer-v1",
+    "configuration_sha256": "5bb498da117a733b6e4a9fa97ec2b2083c103f520dd457f8b9db0ec423945af3",
+    "osm_sha256": "9a515361f3e897a3b929a69f75568938a879ffcb4a14cb7535a8ac1e344ae083",
+    "frame": "odom",
+    "axes": "x=unity_z,y=-unity_x",
+    "direction": 1,
+    "direction_evidence": "cyclic_order_of_reference_projections",
+    "reference_length_m": 286.4885465825291,
+    "cyclic_gaps_m": [
+      53.06853196144033,
+      93.49007683401291,
+      60.73785799309102,
+      22.829519363073928,
+      56.362560430910946
+    ],
+    "max_projection_distance_m": 1.0,
+    "trusted_neighborhood_m": 0.5,
+    "automatic_similarity_supplied": false,
+    "road_clearance_validated": false,
+    "directed_geometry_count": 2,
+    "original_auto_result": {
+      "status": {
+        "available": false,
+        "mode": "odom_only",
+        "metric_source": "odometry",
+        "recorded_length_m": 286.5017321447541,
+        "official_size_used": false,
+        "field_validation_required": true,
+        "reason": "rmse_exceeds_limit",
+        "final_length_m": 286.4885465825291
+      },
+      "alignment": {
+        "scale": 0.717722886690017,
+        "rotation_rad": 2.4874365232984568,
+        "translation_x": 29.365559132685963,
+        "translation_y": -19.17921368399526,
+        "rmse_m": 3.404463140369931,
+        "phase_fraction": 0.5803058594995599,
+        "direction": 1,
+        "available": false,
+        "reason": "rmse_exceeds_limit",
+        "alternative_rmse_m": 4.408826786038456,
+        "alternative_phase_fraction": 0.05713494731724622,
+        "alternative_direction": 1,
+        "ambiguity_gap_m": 1.004363645668525,
+        "ambiguity_phase_separation_fraction": 0.125,
+        "closure_gap_m": 0.19990657307635776,
+        "recorded_closed_length_m": 286.5014466420779,
+        "official_chord_length_m": 215.73047338474703,
+        "sample_count": 128,
+        "transform_direction": "recorded_odom_to_official_xy",
+        "automatic_estimate": true,
+        "quality_gated": true,
+        "field_validation_required": true,
+        "assumption": "similar outer shape; turn features refine local node correspondence",
+        "normalization_official_to_odom": 1.3280540651008967,
+        "error_units": "odom_metres"
+      },
+      "node_positions": {},
+      "node_progress": {},
+      "reference_summary": {
+        "length_m": 286.4885465825291,
+        "spacing_m": 0.1999325279546446,
+        "point_count": 1433,
+        "trusted_count": 1423,
+        "sha256": "37e3a7ebdfb273a328f989d0c46bb150a62bac7ca8dc84b822c80af91c1aa397",
+        "unchanged_reference_object": true
+      }
+    },
+    "configuration_canonical_sha256": "5bb498da117a733b6e4a9fa97ec2b2083c103f520dd457f8b9db0ec423945af3",
+    "automatic_estimate": false,
+    "fresh_learning_proof": false,
+    "recorded_snapshot_sha256": "c0639a94bdc1dac1bbd52947fedd1acb839215dbbe913a9417feb6495ee01338",
+    "recorded_source_tree_hash": "90a152c885fad6104c50dabd76041baddd31137a67050d2b23fad87d29729b68",
+    "recorded_candidate_count": 1014,
+    "original_result_verified": true,
+    "original_result_comparison": {
+      "absolute_tolerance": 1e-09,
+      "relative_tolerance": 1e-12
+    },
+    "recorded_epoch": 1,
+    "recorded_tick_sequence": 2181,
+    "active_in_current_chain": false
+  },
+  "first_reply": {
+    "type": "tick",
+    "sequence": 1,
+    "sim_time": 1.05,
+    "valid": true,
+    "v": 2.5249971495412145,
+    "w": -0.0008715845688903557,
+    "status": {
+      "phase": "guarding",
+      "reason": "unavailable",
+      "lap": 2,
+      "recorded_samples": 0,
+      "recorded_distance_m": 0.0,
+      "reference_length_m": 286.4885465825291,
+      "route_matched": true,
+      "progress_m": -8.495406841610431e-05,
+      "use_sim_time": true,
+      "ros_time_sec": 1.05,
+      "odom_age_sec": 0.0,
+      "point_age_sec": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 0.0
+      },
+      "recording_points_valid": true,
+      "odom_covariance_available": false,
+      "correction_deg": 0.0,
+      "violation_frames": 0,
+      "avoidance_active": false,
+      "branch_active": false,
+      "path_output_allowed": true,
+      "enable_correction": true,
+      "official_route_node_ids": [
+        "10000000000",
+        "10000000001",
+        "10000000002",
+        "10000000003",
+        "10000000004",
+        "10000000000"
+      ],
+      "approximate_official_edge": [
+        "10000000001",
+        "10000000002"
+      ],
+      "official_alignment_diagnostic_only": {
+        "diagnostic_only": true,
+        "superseded_by": "explicit_calibrated_prior"
+      },
+      "map_fusion": {
+        "enabled": true,
+        "mode": "calibrated_map",
+        "reference_mode": "warm_start",
+        "metric_source": "explicit_simulation_calibration",
+        "configuration_file_sha256": "b746690c931a6c3fbf229e467f9baae2d768bc2679be9ba06f58c42ba253afc5",
+        "available": true,
+        "reason": "explicit_calibration_validated",
+        "source": "explicit_calibrated_prior",
+        "calibration_id": "unity-east-detour-outer-v1",
+        "configuration_sha256": "5bb498da117a733b6e4a9fa97ec2b2083c103f520dd457f8b9db0ec423945af3",
+        "osm_sha256": "9a515361f3e897a3b929a69f75568938a879ffcb4a14cb7535a8ac1e344ae083",
+        "frame": "odom",
+        "axes": "x=unity_z,y=-unity_x",
+        "direction": 1,
+        "direction_evidence": "cyclic_order_of_reference_projections",
+        "reference_length_m": 286.4885465825291,
+        "cyclic_gaps_m": [
+          53.06853196144033,
+          93.49007683401291,
+          60.73785799309102,
+          22.829519363073928,
+          56.362560430910946
+        ],
+        "max_projection_distance_m": 1.0,
+        "trusted_neighborhood_m": 0.5,
+        "automatic_similarity_supplied": false,
+        "road_clearance_validated": false,
+        "directed_geometry_count": 2,
+        "original_auto_result": {
+          "status": {
+            "available": false,
+            "mode": "odom_only",
+            "metric_source": "odometry",
+            "recorded_length_m": 286.5017321447541,
+            "official_size_used": false,
+            "field_validation_required": true,
+            "reason": "rmse_exceeds_limit",
+            "final_length_m": 286.4885465825291
+          },
+          "alignment": {
+            "scale": 0.717722886690017,
+            "rotation_rad": 2.4874365232984568,
+            "translation_x": 29.365559132685963,
+            "translation_y": -19.17921368399526,
+            "rmse_m": 3.404463140369931,
+            "phase_fraction": 0.5803058594995599,
+            "direction": 1,
+            "available": false,
+            "reason": "rmse_exceeds_limit",
+            "alternative_rmse_m": 4.408826786038456,
+            "alternative_phase_fraction": 0.05713494731724622,
+            "alternative_direction": 1,
+            "ambiguity_gap_m": 1.004363645668525,
+            "ambiguity_phase_separation_fraction": 0.125,
+            "closure_gap_m": 0.19990657307635776,
+            "recorded_closed_length_m": 286.5014466420779,
+            "official_chord_length_m": 215.73047338474703,
+            "sample_count": 128,
+            "transform_direction": "recorded_odom_to_official_xy",
+            "automatic_estimate": true,
+            "quality_gated": true,
+            "field_validation_required": true,
+            "assumption": "similar outer shape; turn features refine local node correspondence",
+            "normalization_official_to_odom": 1.3280540651008967,
+            "error_units": "odom_metres"
+          },
+          "node_positions": {},
+          "node_progress": {},
+          "reference_summary": {
+            "length_m": 286.4885465825291,
+            "spacing_m": 0.1999325279546446,
+            "point_count": 1433,
+            "trusted_count": 1423,
+            "sha256": "37e3a7ebdfb273a328f989d0c46bb150a62bac7ca8dc84b822c80af91c1aa397",
+            "unchanged_reference_object": true
+          }
+        },
+        "configuration_canonical_sha256": "5bb498da117a733b6e4a9fa97ec2b2083c103f520dd457f8b9db0ec423945af3",
+        "automatic_estimate": false,
+        "fresh_learning_proof": false,
+        "recorded_snapshot_sha256": "c0639a94bdc1dac1bbd52947fedd1acb839215dbbe913a9417feb6495ee01338",
+        "recorded_source_tree_hash": "90a152c885fad6104c50dabd76041baddd31137a67050d2b23fad87d29729b68",
+        "recorded_candidate_count": 1014,
+        "original_result_verified": true,
+        "original_result_comparison": {
+          "absolute_tolerance": 1e-09,
+          "relative_tolerance": 1e-12
+        },
+        "recorded_epoch": 1,
+        "recorded_tick_sequence": 2181
+      },
+      "official_node_positions_odom": {
+        "10000000000": [
+          9.004001869303025,
+          14.548338262758504
+        ],
+        "10000000001": [
+          -26.208862843870214,
+          -17.11603798477947
+        ],
+        "10000000002": [
+          6.200469527659718,
+          -72.46742923206119
+        ],
+        "10000000003": [
+          43.007613201128486,
+          -39.934893625428174
+        ],
+        "10000000004": [
+          43.01972787827948,
+          -17.107401518495227
+        ]
+      },
+      "official_node_progress_m": {
+        "10000000000": 156.13078576074415,
+        "10000000001": 209.19931772218447,
+        "10000000002": 16.200847973668253,
+        "10000000003": 76.93870596675927,
+        "10000000004": 99.7682253298332
+      },
+      "topology_mapping": {
+        "available": true,
+        "reason": "explicit_calibration_validated",
+        "source": "explicit_calibrated_prior",
+        "calibration_id": "unity-east-detour-outer-v1",
+        "configuration_sha256": "5bb498da117a733b6e4a9fa97ec2b2083c103f520dd457f8b9db0ec423945af3",
+        "osm_sha256": "9a515361f3e897a3b929a69f75568938a879ffcb4a14cb7535a8ac1e344ae083",
+        "frame": "odom",
+        "axes": "x=unity_z,y=-unity_x",
+        "direction": 1,
+        "direction_evidence": "cyclic_order_of_reference_projections",
+        "reference_length_m": 286.4885465825291,
+        "cyclic_gaps_m": [
+          53.06853196144033,
+          93.49007683401291,
+          60.73785799309102,
+          22.829519363073928,
+          56.362560430910946
+        ],
+        "max_projection_distance_m": 1.0,
+        "trusted_neighborhood_m": 0.5,
+        "automatic_similarity_supplied": false,
+        "road_clearance_validated": false,
+        "directed_geometry_count": 2,
+        "automatic_estimate": false
+      },
+      "traffic_light_raw": "red",
+      "traffic_light": "unknown",
+      "traffic_vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": false,
+        "sample_count": 1,
+        "red_count": 1,
+        "green_count": 0,
+        "unknown_count": 0,
+        "last_message_age_sec": 0.0
+      },
+      "traffic_mode": "normal",
+      "traffic_reason": "traffic_idle",
+      "signal_approach": {
+        "enabled": true,
+        "target_stop_distance_m": 8.0,
+        "observation_sequence": 1,
+        "wait_latched": false,
+        "fault_sequence": -1,
+        "distance_m": 25.0,
+        "uncertainty_m": 0.5,
+        "profile": {
+          "distance_lower_m": 24.5,
+          "remaining_m": 16.5,
+          "speed_limit_mps": 3.0,
+          "braking_distance_m": 0.0,
+          "braking_required": false,
+          "valid": true,
+          "reason": "ok",
+          "age_sec": 0.050000000000000044
+        },
+        "recovery_eligible": false,
+        "recovery_reason": "reset",
+        "recovery_age_sec": null,
+        "recovery_vote": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": false,
+          "sample_count": 0,
+          "red_count": 0,
+          "green_count": 0,
+          "unknown_count": 0,
+          "last_message_age_sec": null
+        }
+      },
+      "topology_alignment": {
+        "mode": "explicit_calibrated_prior",
+        "direction": 1,
+        "automatic_estimate": false
+      },
+      "blocked_edge": null,
+      "detour_node_ids": [],
+      "velocity_gate_reason": "forwarding_controller"
+    },
+    "semantic_v": 2.5249971495412145,
+    "semantic_w": -0.0008715845688903557,
+    "corridor_guard": null,
+    "selected_points": [
+      [
+        3.5,
+        9.669006976764649e-05
+      ],
+      [
+        4.5,
+        0.00181242183316499
+      ],
+      [
+        5.5,
+        0.0035281535238027573
+      ]
+    ],
+    "selected_points_new": true,
+    "target": [
+      3.5,
+      9.669006976764649e-05,
+      0.0017157300798468261
+    ],
+    "controller_v": 2.5249971495412145,
+    "controller_w": -0.0008715845688903557,
+    "command_new": true,
+    "vision_result": "accepted",
+    "vision_votes_total": 1,
+    "last_vision_sequence": 1,
+    "epoch": 1,
+    "source_hash": "7a348b05dca212018d72ecbdf27feae0816320303747986ae168a939804ec8ba",
+    "source_tree_hash": "90a152c885fad6104c50dabd76041baddd31137a67050d2b23fad87d29729b68",
+    "vision_commit": "05f1651c8a14d56ab9a86a9767c52793403dcfdc"
+  },
+  "tested_file_hashes": {
+    "semantic_worker.py": "06010aff91d46a4bb238d611d56038c3d367f93426894546c3e6c85aaa324e70",
+    "calibrated_transport.py": "371b46bd112772203efb0b9379905282ee70a22f1eecef8b90edd236cfa30b5c",
+    "calibrated_topology.py": "3a7b692f470288228460f02fe2a7faabb1463c186b57edec792f7a918e46fc7b",
+    "continuous_detour_tracker.py": "a2d2d78c5978e5b669a1848aca2b603ba52a694c0968f987f8251d4719dd3b29",
+    "unity_east_detour_outer_v1.json": "b746690c931a6c3fbf229e467f9baae2d768bc2679be9ba06f58c42ba253afc5"
+  }
+}

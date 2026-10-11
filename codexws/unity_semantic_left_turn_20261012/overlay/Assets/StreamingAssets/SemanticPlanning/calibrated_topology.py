@@ -1,0 +1,337 @@
+"""Explicit, disabled-by-default simulator topology calibration.
+
+This adapter does not infer junctions, fit a similarity, alter a reference, or
+certify road clearance. Coordinates are declared control priors. Callers must
+keep the original automatic-fusion failure visible and provide their own
+fresh-localization, traffic, ownership and command watchdogs.
+"""
+from dataclasses import dataclass, field
+import hashlib
+import json
+import math
+from pathlib import Path
+from types import MappingProxyType
+
+
+SCHEMA = "semantic_calibrated_topology/v1"
+FRAME = "odom"
+AXES = "x=unity_z,y=-unity_x"
+_EPS = 1e-7
+
+
+class CalibrationError(ValueError):
+    pass
+
+
+def _number(value, name, minimum=None, maximum=None):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise CalibrationError(name + " must be a finite JSON number")
+    value = float(value)
+    if not math.isfinite(value):
+        raise CalibrationError(name + " must be finite")
+    if minimum is not None and value < minimum:
+        raise CalibrationError(name + " below minimum")
+    if maximum is not None and value > maximum:
+        raise CalibrationError(name + " above maximum")
+    return value
+
+
+def _point(value, name):
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise CalibrationError(name + " must contain exactly two coordinates")
+    return tuple(_number(item, name) for item in value)
+
+
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise CalibrationError("Duplicate JSON key: " + key)
+        result[key] = value
+    return result
+
+
+def _configuration(value):
+    if isinstance(value, (str, Path)):
+        raw = Path(value).read_bytes()
+        if len(raw) > 4 * 1024 * 1024:
+            raise CalibrationError("Calibration JSON exceeds 4 MiB")
+        result = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_unique_object)
+    elif isinstance(value, dict):
+        # A private JSON copy prevents a caller from changing configuration
+        # after checks. JSON forbids opaque runtime objects and nonfinite data.
+        raw = json.dumps(value, allow_nan=False, sort_keys=True).encode("utf-8")
+        result = json.loads(raw, object_pairs_hook=_unique_object)
+    else:
+        raise CalibrationError("Calibration must be an explicit JSON file or object")
+    if not isinstance(result, dict):
+        raise CalibrationError("Calibration root must be an object")
+    return result, hashlib.sha256(raw).hexdigest()
+
+
+def _reference_geometry(reference):
+    from semantic_planner_core.rough_route import RouteReference
+    if not isinstance(reference, RouteReference):
+        raise CalibrationError("An actual core RouteReference is required")
+    points = tuple(_point(item, "reference point") for item in reference.points)
+    flags = tuple(reference.trusted)
+    if len(points) < 3 or len(flags) != len(points):
+        raise CalibrationError("Reference geometry/trust size mismatch")
+    if any(type(flag) is not bool for flag in flags):
+        raise CalibrationError("Reference trust mask must contain booleans")
+    cumulative = tuple(_number(item, "reference progress") for item in reference.cumulative_m)
+    if len(cumulative) != len(points) + 1 or abs(cumulative[0]) > _EPS:
+        raise CalibrationError("Reference cumulative progress invalid")
+    length = _number(reference.length_m, "reference length", _EPS)
+    if abs(cumulative[-1] - length) > _EPS:
+        raise CalibrationError("Reference length mismatch")
+    for index, start in enumerate(points):
+        actual = math.dist(start, points[(index + 1) % len(points)])
+        if actual <= _EPS or abs(cumulative[index + 1] - cumulative[index] - actual) > _EPS:
+            raise CalibrationError("Reference segment/progress mismatch")
+    return points, flags, cumulative, length
+
+
+def _trusted_interval(progress, radius, flags, cumulative, length):
+    start, end = progress - radius, progress + radius
+    if end - start >= length:
+        return False
+    for index, trusted in enumerate(flags):
+        if trusted and flags[(index + 1) % len(flags)]:
+            continue
+        first = math.ceil((start - cumulative[index + 1]) / length)
+        last = math.floor((end - cumulative[index]) / length)
+        if first <= last:
+            return False
+    return True
+
+
+def _project_portal(point, geometry, maximum, trusted_radius):
+    points, flags, cumulative, length = geometry
+    candidates = []
+    size = len(points)
+    for index, start in enumerate(points):
+        end = points[(index + 1) % size]
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        segment = cumulative[index + 1] - cumulative[index]
+        fraction = max(0.0, min(1.0, ((point[0] - start[0]) * dx
+                                   + (point[1] - start[1]) * dy) / segment ** 2))
+        projected = (start[0] + fraction * dx, start[1] + fraction * dy)
+        error = math.dist(point, projected)
+        if error <= maximum + _EPS:
+            candidates.append((error, (cumulative[index] + fraction * segment) % length,
+                               index, projected))
+    if not candidates:
+        raise CalibrationError("portal_projection_outside_limit")
+    # Test all geometric branches before consulting trust: an excluded nearby
+    # branch must not make an otherwise ambiguous portal look unique.
+    indices = {item[2] for item in candidates}
+    starts = sum(1 for index in indices if (index - 1) % size not in indices)
+    if starts != 1:
+        raise CalibrationError("portal_projection_ambiguous")
+    error, progress, index, projected = min(candidates, key=lambda item: (item[0], item[1]))
+    if not _trusted_interval(progress, trusted_radius, flags, cumulative, length):
+        raise CalibrationError("portal_projection_untrusted_neighborhood")
+    return {"prior_point": list(point), "projected_point": list(projected),
+            "progress_m": progress, "error_m": error, "segment_index": index,
+            "trusted_neighborhood_m": trusted_radius,
+            "candidate_branch_count": starts}
+
+
+def _inferred_direction(outer, progress, length):
+    ordered = sorted(outer, key=progress.__getitem__)
+    anchor = ordered.index(outer[0])
+    ordered = ordered[anchor:] + ordered[:anchor]
+    if ordered == outer:
+        direction = 1
+    elif ordered == [outer[0]] + list(reversed(outer[1:])):
+        direction = -1
+    else:
+        raise CalibrationError("portal_cyclic_order_inconsistent")
+    gaps = [(direction * (progress[b] - progress[a])) % length
+            for a, b in zip(outer, outer[1:] + outer[:1])]
+    if min(gaps) < 0.2 or abs(sum(gaps) - length) > max(_EPS, length * 1e-8):
+        raise CalibrationError("portal_progress_not_one_distinct_cycle")
+    return direction, gaps
+
+
+@dataclass(frozen=True)
+class ExpandedRoute:
+    """Logical route IDs and dense metric points deliberately have different sizes."""
+    node_ids: list
+    points: list
+    edge_node_ids: list
+    source: str = "explicit_calibrated_prior"
+
+
+class CalibratedGraph:
+    def __init__(self, original, prior_nodes, projected_nodes, edges, outer):
+        self._original = original
+        self.prior_nodes = MappingProxyType(dict(prior_nodes))
+        self.nodes = MappingProxyType(dict(prior_nodes, **projected_nodes))
+        self._edges = MappingProxyType(dict(edges))
+        self._outer = frozenset(outer)
+        self.last_route_status = {"available": False, "reason": "not_requested"}
+
+    def _expand(self, logical):
+        if logical is None:
+            self.last_route_status = {"available": False, "reason": "no_logical_alternative"}
+            return None
+        edge_ids, points = [], []
+        for start, end in zip(logical.node_ids, logical.node_ids[1:]):
+            geometry = self._edges.get((start, end))
+            if geometry is None:
+                self.last_route_status = {"available": False,
+                                          "reason": "missing_directed_edge_geometry",
+                                          "edge": [start, end], "node_ids": list(logical.node_ids)}
+                return None
+            for node, endpoint in ((start, geometry[0]), (end, geometry[-1])):
+                if node in self._outer and math.dist(endpoint, self.nodes[node]) > 1.0 + _EPS:
+                    self.last_route_status = {"available": False,
+                                              "reason": "edge_endpoint_far_from_projection",
+                                              "node_id": node}
+                    return None
+            # Endpoints equal declared portals by construction; never snap or
+            # translate a configured edge to a projected reference point.
+            if points and math.dist(points[-1], geometry[0]) > _EPS:
+                self.last_route_status = {"available": False, "reason": "edge_join_discontinuous"}
+                return None
+            points.extend(geometry[1:] if points else geometry)
+            edge_ids.append([start, end])
+        self.last_route_status = {"available": True, "reason": "explicit_calibrated_geometry",
+                                  "node_ids": list(logical.node_ids),
+                                  "dense_point_count": len(points),
+                                  "road_clearance_validated": False}
+        return ExpandedRoute(list(logical.node_ids), list(points), edge_ids)
+
+    def route(self, node_ids):
+        return self._expand(self._original.route(node_ids))
+
+    def alternative_route(self, start_id, blocked_next_id, require_internal=True,
+                          outer_node_ids=None):
+        # Keep the original official positive-weight Dijkstra and its blocked
+        # undirected edge, internal-node and no-spur-return semantics. Geometry
+        # availability must not silently substitute a different logical path.
+        logical = self._original.alternative_route(
+            start_id, blocked_next_id, require_internal=require_internal,
+            outer_node_ids=outer_node_ids)
+        return self._expand(logical)
+
+
+@dataclass
+class CalibrationResult:
+    available: bool
+    status: dict
+    graph: object = None
+    node_positions: dict = field(default_factory=dict)
+    node_progress: dict = field(default_factory=dict)
+    prior_nodes: dict = field(default_factory=dict)
+    projections: dict = field(default_factory=dict)
+    direction: object = None
+
+
+def load_calibrated_topology(configuration, reference, osm_path, *, enabled=False):
+    """Validate an explicit calibration without changing any core or reference.
+
+    Disabled calls do not read arguments/files or import core. An enabled
+    invalid calibration returns unavailable, never a fallback chord. A valid
+    graph can still reject a requested bypass lacking directed geometry.
+    """
+    if enabled is False:
+        return CalibrationResult(False, {"available": False, "reason": "disabled"})
+    if enabled is not True:
+        return CalibrationResult(False, {"available": False, "reason": "enabled_must_be_bool"})
+    try:
+        return _load(configuration, reference, osm_path)
+    except (CalibrationError, ValueError, TypeError, KeyError, OSError, ImportError,
+            AttributeError, OverflowError) as exc:
+        return CalibrationResult(False, {"available": False, "reason": str(exc),
+                                         "source": "explicit_calibrated_prior"})
+
+
+def _load(configuration, reference, osm_path):
+    from semantic_planner_core.traffic_route import TopologyGraph
+    config, config_hash = _configuration(configuration)
+    required = {"schema", "calibration_id", "frame", "axes", "osm_sha256",
+                "outer_node_ids", "direction", "logical_nodes", "edges"}
+    optional = {"max_projection_distance_m", "trusted_neighborhood_m", "description"}
+    if set(config) - required - optional or required - set(config):
+        raise CalibrationError("Unknown or missing calibration fields")
+    if config["schema"] != SCHEMA or config["frame"] != FRAME or config["axes"] != AXES:
+        raise CalibrationError("Unsupported calibration schema/frame/axes")
+    if not isinstance(config["calibration_id"], str) or not config["calibration_id"].strip():
+        raise CalibrationError("An explicit calibration_id is required")
+    expected_hash = config["osm_sha256"]
+    actual_hash = hashlib.sha256(Path(osm_path).read_bytes()).hexdigest()
+    if not isinstance(expected_hash, str) or expected_hash != actual_hash:
+        raise CalibrationError("official_osm_sha256_mismatch")
+    official = TopologyGraph.from_osm(osm_path)
+    outer = config["outer_node_ids"]
+    if (not isinstance(outer, list) or len(outer) < 4 or outer[0] != outer[-1]
+            or any(not isinstance(item, str) or item not in official.nodes for item in outer)
+            or len(set(outer[:-1])) != len(outer) - 1):
+        raise CalibrationError("outer_node_ids must be a simple explicit closed official cycle")
+    for a, b in zip(outer, outer[1:]):
+        if b not in official.adjacency[a]:
+            raise CalibrationError("Outer cycle contains a nonofficial edge")
+    outer = outer[:-1]
+    if type(config["direction"]) is not int or config["direction"] not in (-1, 1):
+        raise CalibrationError("Configured direction must be integer -1 or 1")
+    configured_nodes = config["logical_nodes"]
+    if (not isinstance(configured_nodes, dict) or set(configured_nodes) != set(official.nodes)):
+        raise CalibrationError("logical_nodes must declare exactly the official node IDs")
+    nodes = {key: _point(value, "logical node " + key) for key, value in configured_nodes.items()}
+    maximum = _number(config.get("max_projection_distance_m", 1.0),
+                      "max_projection_distance_m", 0.0, 2.0)
+    trusted_radius = _number(config.get("trusted_neighborhood_m", 0.5),
+                             "trusted_neighborhood_m", 0.2, 2.0)
+    geometry = _reference_geometry(reference)
+    projections = {key: _project_portal(nodes[key], geometry, maximum, trusted_radius)
+                   for key in outer}
+    progress = {key: value["progress_m"] for key, value in projections.items()}
+    positions = {key: tuple(value["projected_point"]) for key, value in projections.items()}
+    direction, gaps = _inferred_direction(outer, progress, geometry[3])
+    if direction != config["direction"]:
+        raise CalibrationError("configured_direction_disagrees_with_reference")
+    edges = {}
+    if not isinstance(config["edges"], list):
+        raise CalibrationError("edges must be a list")
+    for edge in config["edges"]:
+        if not isinstance(edge, dict) or set(edge) != {"node_ids", "points", "bidirectional"}:
+            raise CalibrationError("Each edge needs node_ids, points, bidirectional only")
+        ids = edge["node_ids"]
+        if (not isinstance(ids, list) or len(ids) != 2
+                or any(not isinstance(item, str) or item not in official.nodes for item in ids)
+                or ids[1] not in official.adjacency[ids[0]]):
+            raise CalibrationError("Configured geometry must join official adjacent IDs")
+        if type(edge["bidirectional"]) is not bool:
+            raise CalibrationError("bidirectional must be an explicit boolean")
+        raw = edge["points"]
+        if not isinstance(raw, list) or len(raw) < 2:
+            raise CalibrationError("Edge needs explicit dense points")
+        points = tuple(_point(item, "edge point") for item in raw)
+        if math.dist(points[0], nodes[ids[0]]) > _EPS or math.dist(points[-1], nodes[ids[1]]) > _EPS:
+            raise CalibrationError("edge_endpoints_do_not_equal_declared_portals")
+        lengths = [math.dist(a, b) for a, b in zip(points, points[1:])]
+        if any(distance <= _EPS or distance > 1.0 + _EPS for distance in lengths):
+            raise CalibrationError("Dense edge segments must be nonzero and at most 1 m")
+        directed = [((ids[0], ids[1]), points)]
+        if edge["bidirectional"]:
+            directed.append(((ids[1], ids[0]), tuple(reversed(points))))
+        for pair, values in directed:
+            if pair in edges:
+                raise CalibrationError("Duplicate directed edge geometry")
+            edges[pair] = values
+    graph = CalibratedGraph(official, nodes, positions, edges, outer)
+    return CalibrationResult(
+        True,
+        {"available": True, "reason": "explicit_calibration_validated",
+         "source": "explicit_calibrated_prior", "calibration_id": config["calibration_id"],
+         "configuration_sha256": config_hash, "osm_sha256": actual_hash,
+         "frame": FRAME, "axes": AXES, "direction": direction,
+         "direction_evidence": "cyclic_order_of_reference_projections",
+         "reference_length_m": geometry[3], "cyclic_gaps_m": gaps,
+         "max_projection_distance_m": maximum, "trusted_neighborhood_m": trusted_radius,
+         "automatic_similarity_supplied": False, "road_clearance_validated": False,
+         "directed_geometry_count": len(edges)},
+        graph, positions, progress, nodes, projections, direction)

@@ -1,0 +1,14 @@
+--- final63/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs
++++ candidate/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs
+@@ -148,7 +148,10 @@
+             }
+             // Upstream's default-straight output remains observable, but is not a
+             // substitute for perception. Do not drive blind beyond this watchdog.
+-            if ((bool?)value["supported"] != true && now-lastSupport > MaximumCommandAge)
++            // A declared calibrated detour owns fresh map ABC. Fresh RGB,
++            // odom/command ages and every E-STOP/ownership guard still apply.
++            bool mapOwnsPoints = semanticRequired && semantic.HasFreshCalibratedDetourPoints;
++            if ((bool?)value["supported"] != true && now-lastSupport > MaximumCommandAge && !mapOwnsPoints)
+             { Stop("Lost predicted lanes; upstream default-straight rejected"); return; }
+             if (!driver.AllowInput(true, true, false, false)) { drive.SetInput(0, 0, true); return; }
+             if (semanticRequired) {

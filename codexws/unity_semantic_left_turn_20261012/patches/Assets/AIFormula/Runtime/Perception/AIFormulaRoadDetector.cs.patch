@@ -1,0 +1,20 @@
+--- final63/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs
++++ candidate/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs
+@@ -50,6 +50,7 @@
+         public bool LaneControlEnabled { get; private set; }
+         // Explicit trial-only adapter option; not persisted in user settings.
+         public bool RecoverProjectedComponents { get; set; }
++        public bool UseCurrentCorridor { get; set; } = true;
+         public int LaneEpoch { get; private set; }
+         public bool CanProjectLanes => feed && feed.useRepositoryIntrinsics;
+         public bool LanePreviewRequested => Configuration.showVisualization && Configuration.showLanePlot;
+@@ -188,7 +189,8 @@
+                 requestedLaneLastFrame = requestLane;
+                 if (requestLane) message["lane_control"] = new JObject {
+                     ["camera"] = CameraCalibration(), ["sim_time"] = pendingSimulationTime, ["epoch"] = LaneEpoch,
+-                    ["recover_projected_components"] = RecoverProjectedComponents
++                    ["recover_projected_components"] = RecoverProjectedComponents,
++                    ["use_current_corridor"] = UseCurrentCorridor
+                 };
+                 var request = message.ToString(Formatting.None);
+                 requestAt = now; nextCapture = now + 1 / Configuration.frequency;

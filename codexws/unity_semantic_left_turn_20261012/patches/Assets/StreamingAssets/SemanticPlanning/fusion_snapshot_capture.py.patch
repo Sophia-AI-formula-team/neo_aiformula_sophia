@@ -1,0 +1,191 @@
+--- final63/Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py
++++ candidate/Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py
+@@ -0,0 +1,188 @@
++"""Opt-in read-only fusion diagnostics; no input to vehicle control.
++
++Wrap only the MapAssist module's imported build_fused_route symbol. Original
++arguments and result are unchanged and the original function runs exactly once.
++The capture hook writes no files, clocks, points, commands or controller state.
++The caller invokes the separate sidecar writer AFTER sending a normal command
++response. An export failure is not a control signal.
++"""
++from functools import wraps
++import json
++import math
++import os
++from pathlib import Path
++import sys
++import tempfile
++
++
++def _report(message):
++    try:
++        print("[route_diagnostic] " + message, file=sys.stderr)
++    except Exception:
++        pass
++
++
++def _number(value):
++    value = float(value)
++    if not math.isfinite(value):
++        raise ValueError("Nonfinite diagnostic input")
++    return value
++
++
++def _json_copy(value):
++    if value is None or isinstance(value, (str, bool, int)):
++        return value
++    if isinstance(value, float):
++        return _number(value)
++    if isinstance(value, (list, tuple)):
++        return [_json_copy(v) for v in value]
++    if isinstance(value, dict):
++        return {str(k): _json_copy(v) for k, v in value.items()}
++    raise TypeError("Unsupported diagnostic value: " + type(value).__name__)
++
++
++def reference_snapshot(reference):
++    if reference is None:
++        return None
++    return dict(points=[[_number(x), _number(y)] for x,y in reference.points],
++                trusted=[bool(v) for v in reference.trusted],
++                cumulative_m=[_number(v) for v in reference.cumulative_m],
++                length_m=_number(reference.length_m), spacing_m=_number(reference.spacing_m))
++
++
++class FusionSnapshotCapture:
++    """Explicit install only; bounded capture, no source-code modification.
++
++    context_provider should return scalar identity metadata: tick sequence,
++    sim_time, epoch, worker PID, source_tree_hash/source files, official OSM
++    hash, and active approach/transport configuration. It must not control.
++    """
++    def __init__(self, map_module, context_provider, maximum_snapshots=4):
++        if type(maximum_snapshots) is not int or maximum_snapshots < 1:
++            raise ValueError("A positive bounded snapshot count is required")
++        self.module = map_module
++        self.original = map_module.build_fused_route
++        self.context_provider = context_provider
++        self.maximum_snapshots = maximum_snapshots
++        self.captured = 0
++        self.pending = []
++        self.installed = False
++
++        @wraps(self.original)
++        def capture(samples, official, *args, **kwargs):
++            item = None
++            if self.captured < self.maximum_snapshots:
++                self.captured += 1
++                try:
++                    # The real MapAssist caller passes a list. Never consume a
++                    # general iterable, which could change the original call.
++                    if not isinstance(samples, (list, tuple)):
++                        raise TypeError("Capture requires the actual materialized sample list")
++                    item = dict(schema="semantic_fusion_snapshot/v1",
++                        snapshot_number=self.captured,
++                        context=_json_copy(self.context_provider()),
++                        candidate_samples=[dict(x=_number(p.x), y=_number(p.y),
++                                                yaw=_number(p.yaw), excluded=bool(p.excluded))
++                                           for p in samples],
++                        official=dict(node_ids=list(official.node_ids),
++                                      points=[[_number(x), _number(y)] for x,y in official.points],
++                                      chord_length_m=_number(official.chord_length_m)),
++                        positional_options=_json_copy(args), keyword_options=_json_copy(kwargs))
++                except Exception as exc:
++                    item = dict(schema="semantic_fusion_snapshot/v1", capture_error=repr(exc))
++            try:
++                result = self.original(samples, official, *args, **kwargs)
++            except Exception as exc:
++                if item is not None:
++                    item["original_exception"] = repr(exc)
++                    self.pending.append(item)
++                raise  # Preserve the original error and traceback.
++            if item is not None:
++                try:
++                    item["result"] = dict(
++                        status=_json_copy(result.status), alignment=_json_copy(result.alignment),
++                        node_positions=_json_copy(result.node_positions),
++                        node_progress=_json_copy(result.node_progress),
++                        reference=reference_snapshot(result.reference))
++                except Exception as exc:
++                    item["capture_error"] = repr(exc)
++                item["exact_capture"] = "capture_error" not in item
++                self.pending.append(item)
++            return result  # Exact same object; no mutation or recomputation.
++
++        self.wrapper = capture
++
++    def install(self):
++        if self.installed or self.module.build_fused_route is not self.original:
++            raise RuntimeError("Snapshot hook ownership changed or already installed")
++        self.module.build_fused_route = self.wrapper
++        self.installed = True
++
++    def drain(self):
++        pending, self.pending = self.pending, []
++        return pending
++
++    def restore(self):
++        if self.installed and self.module.build_fused_route is self.wrapper:
++            self.module.build_fused_route = self.original
++            self.installed = False
++            return True
++        return False
++
++
++class RouteDiagnosticWriter:
++    """Bounded atomic sidecar export, called only after command response send.
++
++    Never overwrite a pre-existing output that this writer did not create.
++    All copy/write failures are diagnostics; no exception escapes into control.
++    """
++    def __init__(self, capture, output):
++        self.capture = capture
++        self.output = Path(output)
++        self.snapshots = []
++        self.last_error = None
++        self.written_count = 0
++        self.owned_output = False
++
++    def status(self):
++        return dict(enabled=True, output=str(self.output), captured_count=self.capture.captured,
++                    written_count=self.written_count, error=self.last_error,
++                    exact_capture=bool(self.snapshots) and self.last_error is None
++                        and all(s.get("exact_capture") is True for s in self.snapshots))
++
++    def flush(self):
++        temporary = None
++        try:
++            pending = self.capture.drain()
++            if not pending:
++                return
++            self.snapshots.extend(pending)
++            errors = [s.get("capture_error") or s.get("original_exception") for s in pending
++                      if s.get("capture_error") or s.get("original_exception")]
++            if errors:
++                self.last_error = "; ".join(errors)
++                _report("capture error: " + self.last_error)
++            if self.output.exists() and not self.owned_output:
++                raise FileExistsError("Refusing to overwrite pre-existing route diagnostic: " + str(self.output))
++            self.output.parent.mkdir(parents=True, exist_ok=True)
++            payload = dict(schema="semantic_route_diagnostics/v1", control_input=False,
++                           exact_capture=self.last_error is None and all(s.get("exact_capture") is True for s in self.snapshots),
++                           error=self.last_error, snapshots=self.snapshots)
++            text = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
++            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=str(self.output.parent),
++                                             prefix=self.output.name + ".", suffix=".tmp", delete=False) as stream:
++                temporary = stream.name
++                stream.write(text + "\n")
++            os.replace(temporary, self.output)
++            temporary = None
++            self.owned_output = True
++            self.written_count = len(self.snapshots)
++        except Exception as exc:
++            self.last_error = repr(exc)
++            _report("export error: " + self.last_error)
++        finally:
++            if temporary is not None:
++                try:
++                    os.unlink(temporary)
++                except OSError:
++                    pass
