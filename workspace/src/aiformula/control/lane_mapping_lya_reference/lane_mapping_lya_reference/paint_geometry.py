@@ -540,6 +540,44 @@ def _finite_tangent_overlap(first, second, normal, other_normal):
     return False
 
 
+def _pack_footprint_support(obs, updates, offsets, packed_segments, packed_normals,
+                            packed_reliable, face_reliable, cfg):
+    """Keep pair-then-own ordering in one frame allocation, not per owner.
+
+    Private prepared inputs only. This changes buffer construction, not which
+    finite observations or reliability flags reach each owner's domain vote.
+    Every gathered float is copied without arithmetic, including signed zeros.
+    """
+    if not updates:
+        return offsets, packed_segments, packed_normals, packed_reliable
+    sizes = np.fromiter((len(update[-1]) for update in updates), dtype=np.int64,
+                        count=len(updates))
+    members = np.concatenate([update[-1] for update in updates])
+    owners = np.repeat(np.arange(len(updates)), sizes)
+    selected = (obs.position_segment_valid[members]
+                & (obs.position_segment_sensitivity[members] <= cfg["max_sensitivity"]))
+    own = members[selected]
+    counts = np.bincount(owners[selected], minlength=len(updates))
+    pair_counts = offsets[1:]-offsets[:-1]
+    output_offsets = np.r_[0, np.cumsum(pair_counts+counts, dtype=np.int64)]
+    total = int(output_offsets[-1])
+    segments = np.empty((total, 2, 2), dtype=np.float64)
+    normals = np.empty((total, 2, 2), dtype=np.float64)
+    reliable = np.empty(total, dtype=np.bool_)
+    pair_slots = np.arange(len(packed_segments)) + np.repeat(
+        output_offsets[:-1]-offsets[:-1], pair_counts)
+    own_offsets = np.r_[0, np.cumsum(counts, dtype=np.int64)]
+    own_slots = np.arange(len(own)) + np.repeat(
+        output_offsets[:-1]+pair_counts-own_offsets[:-1], counts)
+    segments[pair_slots], normals[pair_slots] = packed_segments, packed_normals
+    reliable[pair_slots] = packed_reliable
+    segments[own_slots] = obs.position_segments[own]
+    normals[own_slots] = obs.model_normals[own, None, :]
+    reliable[own_slots] = (face_reliable[own] & obs.position_segment_reliable[own]
+        & (obs.position_segment_sensitivity[own] <= cfg["reliable_sensitivity"]))
+    return output_offsets, segments, normals, reliable
+
+
 class BoundaryConsensus:
     """One vote per directed record per frame; filled consensus is untouched.
 
@@ -848,21 +886,9 @@ class BoundaryConsensus:
             # local model supplies only its clipped footprint, never a graph
             # edge. Union ALL evidence before the original one-vote/frame
             # update; no fragment count can increase node or inlier counts.
-            segment_groups, normal_groups, reliability_groups = [], [], []
-            for index, (_, _, _, _, _, _, members) in enumerate(updates):
-                start, stop = offsets[index:index+2]
-                own = members[obs.position_segment_valid[members]
-                    & (obs.position_segment_sensitivity[members] <= cfg["max_sensitivity"])]
-                own_normals = np.repeat(model_normals[own, None, :], 2, axis=1)
-                own_reliable = (face_reliable[own] & obs.position_segment_reliable[own]
-                    & (obs.position_segment_sensitivity[own] <= cfg["reliable_sensitivity"]))
-                segment_groups.append(np.concatenate((packed_segments[start:stop], obs.position_segments[own])))
-                normal_groups.append(np.concatenate((packed_normals[start:stop], own_normals)))
-                reliability_groups.append(np.r_[packed_reliable[start:stop], own_reliable])
-            if segment_groups:
-                offsets = np.r_[0, np.cumsum([len(group) for group in segment_groups], dtype=np.int64)]
-                packed_segments, packed_normals = np.concatenate(segment_groups), np.concatenate(normal_groups)
-                packed_reliable = np.concatenate(reliability_groups)
+            offsets, packed_segments, packed_normals, packed_reliable = _pack_footprint_support(
+                obs, updates, offsets, packed_segments, packed_normals, packed_reliable,
+                face_reliable, cfg)
         batch = _validate_frame_batch(packed_segments, packed_normals, packed_reliable, offsets)
         for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
             old_domain = self._domains.get(record_id)

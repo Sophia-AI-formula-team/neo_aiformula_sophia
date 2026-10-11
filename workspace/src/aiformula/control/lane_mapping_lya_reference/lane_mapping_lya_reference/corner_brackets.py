@@ -100,6 +100,43 @@ def _original_certificate(point, vertex, axes, normals, whites, blacks):
     return uv
 
 
+def _dot_enclosure(first, second):
+    """Outward enclosure of the exact two-component binary64 dot product."""
+    products = first*second
+    lower = np.nextafter(products, -np.inf)
+    upper = np.nextafter(products, np.inf)
+    return (np.nextafter(lower[..., 0]+lower[..., 1], -np.inf),
+            np.nextafter(upper[..., 0]+upper[..., 1], np.inf))
+
+
+def _definitely_disjoint(vertex, axes, normals, whites, blacks):
+    """Cheap negative certificate; uncertainty always falls through to exact.
+
+    Necessary conditions only: each side's signed label band must be nonempty
+    and meet the original half-face parallelogram. No approximate positive
+    witness, polygon clipping, label slack or geometry tolerance is used. The
+    exact solver below still decides every case not proved impossible here.
+    Inputs are the unchanged validated binary64 arrays, before Fraction work.
+    """
+    with np.errstate(all='ignore'):
+        white_lower, _ = _dot_enclosure(normals[:, None, :], whites)
+        _, black_upper = _dot_enclosure(normals[:, None, :], blacks)
+        origin_lower, origin_upper = _dot_enclosure(normals, vertex)
+        axes_lower, axes_upper = _dot_enclosure(normals[:, None, :], axes[None, :, :])
+        # q = vertex + u*axis0 + v*axis1, |u|, |v| <= 1/2. All
+        # magnitudes/radii are upper bounds, giving an OUTER footprint range.
+        magnitudes = np.maximum(np.abs(axes_lower), np.abs(axes_upper))
+        radius = np.nextafter(.5*np.nextafter(magnitudes[:, 0]+magnitudes[:, 1], np.inf), np.inf)
+        footprint_lower = np.nextafter(origin_lower-radius, -np.inf)
+        footprint_upper = np.nextafter(origin_upper+radius, np.inf)
+        lower = np.max(white_lower, axis=1)
+        upper = np.min(black_upper, axis=1)
+    if not all(np.all(np.isfinite(value)) for value in (
+            lower, upper, footprint_lower, footprint_upper)):
+        return False
+    return bool(np.any((lower > upper) | (lower > footprint_upper) | (upper < footprint_lower)))
+
+
 def certify_corner_brackets(vertex, face_axes, side_normals, whites, blacks):
     """Return an exact CornerBracketCertificate or None, without input writes.
 
@@ -131,6 +168,8 @@ def certify_corner_brackets(vertex, face_axes, side_normals, whites, blacks):
     except (TypeError, ValueError, OverflowError):
         return None
     if any(value is None for value in (vertex, face_axes, side_normals, whites, blacks)):
+        return None
+    if _definitely_disjoint(vertex, face_axes, side_normals, whites, blacks):
         return None
     vertex = _pair(vertex)
     axes = tuple(_pair(row) for row in face_axes)
