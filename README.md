@@ -54,3 +54,19 @@ The launch controls real CAN-connected hardware. Verify the vehicle is safely su
 ## 2026-07-17 lane fix
 
 The deployed lane-line publisher scales its 1920-pixel `min_component_pixels` threshold to the incoming image width. At 640 pixels the threshold is 60 instead of 180. The test image produced 9 finite, non-zero points in each left, center, and right cloud. Details are in `codexws/DEBUG_REPORT_2026-07-17.md` and its Chinese version.
+
+## Semantic integration (2026-10-12)
+
+The existing vehicle launch remains unchanged. The new semantic wiring has a
+dedicated native ROS **shadow** entry, with private intermediate topics and a
+signal capture receiver/command watchdog under `control/semantic_drive_bridge`.
+It does not launch motor control or teleop. Native perception calibration and
+stamped lane/controller provenance still need target commissioning.
+
+- [Semantic deployment and agent handoff](workspace/src/aiformula/perception/semantic_planning_system/README.md)
+- [Native shadow launch guide](workspace/src/aiformula/launchers/SEMANTIC_DEPLOYMENT.md)
+- [Verified Unity source overlay, installation and rollback](codexws/unity_semantic_integration/README.md)
+
+The Unity archive preserves four final63 red/green inner/outer runs; red stop
+distances were 8.636 m and 8.603 m with the original camera. It is an explicitly
+separate simulation delivery, not ROS DDS or physical vehicle acceptance.
