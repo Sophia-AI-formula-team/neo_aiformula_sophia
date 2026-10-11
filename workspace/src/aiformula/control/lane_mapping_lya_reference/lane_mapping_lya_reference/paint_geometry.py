@@ -1799,9 +1799,9 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
                 # This explicitly permits evaluation outside the centre hull,
                 # but never beyond the observed, radius-clipped face domain.
                 member_ids = candidates[enough][accepted]
-                observed_bounds = _finite_face_fit_bounds(
-                    points[indices], fitted[accepted], scales, points[member_ids],
-                    segments[member_ids],
+                observed_bounds = _finite_face_fit_bounds_indexed(
+                    points[indices], fitted[accepted], scales, points,
+                    segments, member_ids,
                     (arc_candidate-arc[positions, None])[enough][accepted],
                     weights[accepted], radius)
                 certified = np.all(np.isfinite(observed_bounds), axis=1)
@@ -2170,3 +2170,72 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
                                fragment_segments, fragment_valid, fragment_j,
                                fragment_valid & (fragment_j <= cfg["reliable_sensitivity"])
                                & (model_j <= cfg["reliable_sensitivity"]), footprint_quads)
+
+
+def _finite_face_fit_bounds_indexed(origins, normals, scales, points, segments,
+                                    member_ids, arc_offsets, weights, radius):
+    """Original bounds arithmetic with selected-only source geometry gather.
+
+    Private canonical _directions inputs: member_ids are its valid integer
+    contour-window IDs. This is not a general replacement for dense callers.
+    Keep every original row/member slot, including K for signed-zero ties.
+    No selected support is removed, reordered, refitted or normalized.
+    """
+    count = len(origins)
+    answer = np.full((count, 2), np.nan)
+    if not count or not weights.shape[1]:
+        return answer
+    selected = np.asarray(weights, dtype=bool)
+    nonempty = np.any(selected, axis=1)
+    first = np.argmax(selected, axis=1)
+    last = selected.shape[1]-1-np.argmax(selected[:, ::-1], axis=1)
+    contiguous = np.sum(selected, axis=1) == last-first+1
+    rows, columns = np.nonzero(selected)
+    if not len(rows):
+        return answer
+    face_ids = member_ids[rows, columns]
+    face_centers, faces = points[face_ids], segments[face_ids]
+    offsets = arc_offsets[rows, columns]
+    connected = np.ones(count, dtype=bool)
+    adjacent = (rows[:-1] == rows[1:]) & (columns[1:] == columns[:-1]+1)
+    linked = np.all(faces[:-1, 1] == faces[1:, 0], axis=1)
+    np.logical_and.at(connected, rows[1:][adjacent], linked[adjacent])
+    finite = (np.all(np.isfinite(face_centers), axis=1)
+              & np.all(np.isfinite(faces), axis=(1, 2))
+              & np.isfinite(offsets) & (np.abs(offsets) <= radius))
+    delta = faces-face_centers[:, None, :]
+    lengths = np.linalg.norm(delta, axis=2)
+    finite &= (np.all(lengths > 0., axis=1)
+               & (np.linalg.norm(faces[:, 1]-faces[:, 0], axis=1) > 0.))
+    row_finite = np.ones(count, dtype=bool)
+    np.logical_and.at(row_finite, rows, finite)
+    good = (nonempty & contiguous & connected & row_finite
+            & np.all(np.isfinite(origins), axis=1)
+            & np.all(np.isfinite(normals), axis=1)
+            & np.isfinite(scales) & (scales > 0.))
+    if not np.any(good):
+        return answer
+    remaining = np.stack((radius+offsets, radius-offsets), axis=1)
+    with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
+        fraction = np.minimum(1., remaining/lengths)
+        clipped = face_centers[:, None, :] + fraction[:, :, None]*delta
+        clipped = np.where((fraction == 1.)[:, :, None], faces, clipped)
+        tangents = np.column_stack((normals[:, 1], -normals[:, 0]))
+        values = np.sum((clipped-origins[rows, None, :])
+                        * tangents[rows, None, :], axis=2)/scales[rows, None]
+    np.logical_and.at(good, rows, np.all(np.isfinite(values), axis=1))
+    lower, upper = np.full(count, np.inf), np.full(count, -np.inf)
+    np.minimum.at(lower, rows, np.min(values, axis=1))
+    np.maximum.at(upper, rows, np.max(values, axis=1))
+    zero_rows = np.flatnonzero(good & ((lower == 0.) | (upper == 0.)))
+    if len(zero_rows):
+        slots = np.full(count, -1, dtype=np.int64)
+        slots[zero_rows] = np.arange(len(zero_rows))
+        keep = slots[rows] >= 0
+        padded = np.full((len(zero_rows), selected.shape[1], 2), np.inf)
+        padded[slots[rows[keep]], columns[keep]] = values[keep]
+        lower[zero_rows] = np.min(padded, axis=(1, 2))
+        padded[~selected[zero_rows]] = -np.inf
+        upper[zero_rows] = np.max(padded, axis=(1, 2))
+    answer[good, 0], answer[good, 1] = lower[good], upper[good]
+    return answer

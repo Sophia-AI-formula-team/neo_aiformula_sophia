@@ -275,7 +275,7 @@ def test_direction_fit_values_counts_and_scales_do_not_change(monkeypatch):
     arguments = (points, segments, white, black, polarity, stable, paths, dict(paint.DEFAULT_CONFIG))
     actual = paint._directions(*arguments)
     with monkeypatch.context() as context:
-        context.setattr(paint, '_finite_face_fit_bounds',
+        context.setattr(paint, '_finite_face_fit_bounds_indexed',
                         lambda origins, *args: np.full((len(origins), 2), np.nan))
         center_domain = paint._directions(*arguments)
     assert np.all(actual[1]) and np.all(actual[2] >= paint.DEFAULT_CONFIG['normal_min_points'])

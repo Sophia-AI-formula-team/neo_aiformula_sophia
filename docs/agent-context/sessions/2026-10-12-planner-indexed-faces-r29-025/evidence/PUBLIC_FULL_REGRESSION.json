@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "kind": "reviewed redacted summary of root-owned R29 offline production regression",
+  "result": "unit_pass_with_original_linux_skip; overall_task_partial",
+  "reviewer_actions": {
+    "powershell_json_xml_and_hash_reads": true,
+    "existing_independent_reviews_read": true,
+    "python_or_tests_executed": false,
+    "unity_or_build_install_replay_executed": false,
+    "repository_or_adapter_changed": false,
+    "stage_commit_tag_push_executed": false,
+    "new_files_only_in_diagnostic_publication_preparation": true
+  },
+  "baseline": {
+    "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "repository_id": 1303517209,
+    "branch": "repair/lane-keyframe-transaction-20261011",
+    "document_head_at_execution": "f8a2732a2763e97382f430fe2998808198e8b864",
+    "inherited_code_checkpoint": "8fcd4c0533a13d95400b9f377959733ed798f744",
+    "dirty_hash_pinned_r29_source_not_new_committed_r29_sha": true,
+    "inherited_pin_count": 196,
+    "actual_pin_count": 197,
+    "inherited_pins_unchanged": 193,
+    "inherited_pins_changed": 3,
+    "added_pins": 1,
+    "removed_pins": 0,
+    "live_pins_verified_by_independent_static_review": 197,
+    "independent_live_hash_mismatches": 0,
+    "source_changes_during_execution": {},
+    "snapshot_before_after_identical": true,
+    "snapshot_before_after_sha256": "6bc7afe4de4f0cf69996c4759b604237102feed548f258c9a5b3a0aabecc2782"
+  },
+  "changed_or_added_source_bindings": [
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py",
+      "before_sha256": "0d41317e52643cfe9606976d801ec949ecd8d3d9ca7fbe456258c8b7ad4e5180",
+      "executed_sha256": "c57c1d53da9f66844b5477d4cd9848cb724ed0632e35054a1d93f252655251d3"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_fit_domain_equivalence.py",
+      "before_sha256": "20d7855cdc5ce98871a2e41af9a3b8976f054e206f0613949b052ddf99ef1184",
+      "executed_sha256": "9ae0b69f5297ca9652c194cfacc14fd691b37ec842862e32b931fb8229354e8d"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_fit_domains.py",
+      "before_sha256": "db05d47617b1f6e05640ba8fbf3490887a242d5b3c38c2a29e76814a979e243f",
+      "executed_sha256": "b818474692e6538c59f4af142daa93e42db1224c2366616300e55f4f8580cdf1"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_fit_indexed.py",
+      "before_sha256": null,
+      "executed_sha256": "d27915f353ef40c43fd612f3a9e1089fe4ee2ec40001ad868376825f0721a6c5"
+    }
+  ],
+  "selection": {
+    "r28_selected_file_count": 107,
+    "actual_r29_selected_file_count": 108,
+    "retained_original_files": 107,
+    "added_files": 1,
+    "missing_original_files": 0,
+    "unexpected_inherited_files": 0,
+    "duplicate_selected_paths": 0,
+    "selected_files_without_pins": 0,
+    "original_set_preserved": true,
+    "original_argv_order_preserved": false,
+    "excluded_prototype_pair_read_hashed_imported_tested_or_staged": false,
+    "four_adjacent_swaps_after_removing_new_file": [
+      {
+        "zero_based_positions": [30, 31],
+        "r28": ["test_corner_direction.py", "test_corner_direction_integration.py"],
+        "r29": ["test_corner_direction_integration.py", "test_corner_direction.py"]
+      },
+      {
+        "zero_based_positions": [50, 51],
+        "r28": ["test_mask_localization.py", "test_mask_localization_replay.py"],
+        "r29": ["test_mask_localization_replay.py", "test_mask_localization.py"]
+      },
+      {
+        "zero_based_positions": [56, 57],
+        "r28": ["test_native_current_union.py", "test_native_current_union_dispatch.py"],
+        "r29": ["test_native_current_union_dispatch.py", "test_native_current_union.py"]
+      },
+      {
+        "zero_based_positions": [70, 71],
+        "r28": ["test_quantized_ribbon.py", "test_quantized_ribbon_margin.py"],
+        "r29": ["test_quantized_ribbon_margin.py", "test_quantized_ribbon.py"]
+      }
+    ],
+    "pair_repository_directory": "workspace/src/aiformula/control/lane_mapping_lya_reference/test",
+    "culture_dependent_sort_cause": "plausible_not_proved"
+  },
+  "execution": {
+    "run_id": "r29_full_regression_01/run_01",
+    "owner": "root_planner",
+    "started_utc": "2026-10-11T20:43:30.410181+00:00",
+    "finished_utc": "2026-10-11T20:45:02.300091+00:00",
+    "exit_code": 0,
+    "exception": null,
+    "retries": 0,
+    "native_verifier_invocations": 1,
+    "pytest_invocations": 1,
+    "unity_calls": 0,
+    "python_version": "3.13.13",
+    "bytecode_writes_disabled": true,
+    "native_required": true,
+    "original_native9_arguments_retained": true,
+    "original_four_package_roots_and_real_frame_selection_retained": true,
+    "personal_paths_not_reproduced": true,
+    "timing_scopes_seconds": {
+      "junit_suite": 89.802,
+      "pytest_process": 91.37270060001174,
+      "native_verification": 0.18546930002048612,
+      "root_bounded_command_wall": 92.01783020002767
+    },
+    "timings_are_single_diagnostic_not_speed_ratio_or_frame_wcet": true
+  },
+  "junit": {
+    "total": 4305,
+    "passed": 4304,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skip": {
+      "repository_path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_supervisor.py",
+      "test": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+      "reason": "Target Linux process-group test"
+    },
+    "new_indexed_suite": {
+      "total": 25,
+      "passed": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "ast_controls": 2,
+      "numerical_methods": 23
+    }
+  },
+  "native": {
+    "exit_code": 0,
+    "backend": "native",
+    "all_nine_api_values_equal_one": true,
+    "actual_calls_passed": true,
+    "finite_current_union_real_call_passed": true,
+    "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+    "binary_sha256": "f2f9712754f8cecaae379af5355c8aa82b3a28855fa2da2d0ce949ddf339ef45",
+    "binary_name": "_lane_mapping_lya_native.cp313-win_amd64.pyd",
+    "installed_prefix_verified": false,
+    "new_build_install_or_ros_prefix_acceptance": false
+  },
+  "earlier_22_mask_binding": {
+    "separate_run_id": "r29_indexed_masks_01/run_01",
+    "result_sha256": "b75360b6fec6954018a4fdb0d89cc3503fa2dd96d4c3e928275c8bb644c8da3e",
+    "candidate_paint_sha256": "c57c1d53da9f66844b5477d4cd9848cb724ed0632e35054a1d93f252655251d3",
+    "production_paint_sha_exactly_same": true,
+    "cases": 22,
+    "all_cases_byte_readonly_exact": true,
+    "observation_fields_per_case": 29,
+    "derived_arrays_per_case": 5,
+    "actual_native_moments_calls": 248,
+    "actual_indexed_bounds_calls": 120,
+    "engine_match_unity_calls": 0,
+    "truth_scoring": false,
+    "not_rerun_by_reviewer": true
+  },
+  "retained_limitations": {
+    "frozen_manifest_top_level_source_count": 196,
+    "actual_snapshot_file_dictionary_count": 197,
+    "count_error_corrected_here_not_by_rewriting_originals": true,
+    "driver_iterated_all_actual_keys": true,
+    "shared_inner_deadline_s": 105,
+    "outer_primary_wait_s": 110,
+    "requested_cpu_lease_s": 120,
+    "outer_cleanup_independently_bounded": false,
+    "strict_future_wall_wcet_proved": false,
+    "outer_wrapper_snapshot_pinned": false,
+    "outer_wrapper_sha_is_separately_observed": true,
+    "driver_AST_valid_at_static_preparation": null,
+    "static_preparation_python_ast_check_executed": false,
+    "actual_driver_subsequently_executed": true,
+    "approval_staged_scope_wording_not_fresh_cached_diff_review": true,
+    "root_reported_own_children_stopped_and_cpu_returned": true,
+    "process_state_independently_rechecked_by_this_reviewer": false,
+    "original_failures_and_frozen_evidence_preserved": true,
+    "preparation_refusal_not_pytest_or_estimator_retry": true
+  },
+  "evidence_hashes": {
+    "r28_approved_manifest": "b351224c1e666e3b7ba04045baa260f2456fe3685c5e28728f1530bc9aaaf545",
+    "r29_pending_manifest": "f5c6b065bf00c43d91ab940c2cc249a4de4e845a953c3881a4dbc9e1e2e025f4",
+    "r29_approved_manifest": "2b201436ea79a97c6241a027eae4170d8b4971ea1deb6d165b4866c00a1f48e9",
+    "inner_driver": "c89c03bde5d8c9012224b1e42d9766b12a09cad97e5968045f70694330796546",
+    "outer_wrapper_separately_observed": "e97fadbf506836054c76ca87e196d9b174a9056242337e9b43c998b34cbbe3e1",
+    "plan": "a6669266595dfc7e38235d0f88442cfb3ddebc747420d1a94033e601c6def28a",
+    "root_execution_01.json": "5b59448636dac5ed42ee9b7e62405646cb3b0da08ddf1009e5f562821d315de5",
+    "summary_01.json": "d0379e3b8cc3e606e8c562ed76d854db1971511c5a0a51626f8c416b9ec22054",
+    "native_actual_01.json": "286231e8f872fd271b9fbe15b18e1e616814d19c72bf5c9bf27c735d5368bd1c",
+    "pytest_01.xml": "c87e3e34245f4a0b43614590eb5936aece4332d73d26df712c5d52945060d30b",
+    "sources_before_01.json": "6bc7afe4de4f0cf69996c4759b604237102feed548f258c9a5b3a0aabecc2782",
+    "sources_after_01.json": "6bc7afe4de4f0cf69996c4759b604237102feed548f258c9a5b3a0aabecc2782",
+    "native_stdout_01.txt": "283a8ffe88dd706b7dab67373a30cd0531cbd51c82331cd073880b10f6362424",
+    "native_stderr_01.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pytest_stdout_01.txt": "f07d6f919e275a5ada398833ab2849bd9ee122923cdea38a1b741be61fc40497",
+    "pytest_stderr_01.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "start_01.json": "cd93e1d6633ebc4688c5a31474688fa85f44929164dc4f8e1455bd74a2ca0e51",
+    "independent_production_port_review": "366e4a6909c411776068fba5cf32403bac651d1ec637467365ab4eeb7992d712",
+    "independent_full_regression_review": "dc04c18a3f5481fb2f0a80b378515856e4ef0db550000ee6109697c7d060ac9e"
+  },
+  "privacy_review": {
+    "only_repository_relative_source_paths_and_report_ids_hashes": true,
+    "absolute_user_paths_hostnames_and_precise_gnss_removed": true,
+    "raw_bags_images_credentials_or_private_coordinates_included": false,
+    "nine_summary_output_hashes_recomputed_all_match": true,
+    "raw_artifacts_direct_upload_approved_by_this_summary": false,
+    "root_publication_review_still_required": true
+  },
+  "unproved_acceptance": [
+    "corner_side_attribution_geometry_repair",
+    "original_111_frame_strict_engine_replay",
+    "full_200ms_runtime_chain_and_stable_DDS_timing",
+    "geometry_truth_or_end_to_end_speedup",
+    "valid_first_lap_map_and_closure",
+    "frozen_route_and_second_lap_fixed_route_localization_control",
+    "driving_error_metrics_or_new_video",
+    "vehicle_motor_remote_emergency_stop_or_deployment_release"
+  ],
+  "unchanged_boundaries": [
+    "vehicle_simulator_camera_and_LYA_reference_parameters",
+    "motion_sources_full_masks_and_causal_order",
+    "original_matcher40_engine80_full_adapter200ms_gates",
+    "all_geometry_and_safety_gates"
+  ],
+  "planner_next_steps": [
+    "root_review_and_append_summary_to_session025_keep_partial",
+    "new_append_only_count_correction_receipt_preserve_originals",
+    "review_every_scoped_source_document_and_evidence_for_privacy",
+    "set_publication_flags_only_after_review_validate_and_pack_new_bundle",
+    "explicit_stage_and_complete_cached_diff_hash_review",
+    "scoped_repair_branch_commit_and_unique_annotated_checkpoint_tag",
+    "verify_actual_push_url_and_canonical_repository_id_before_push",
+    "read_back_uploaded_branch_tag_exact_SHA_and_exact_SHA_CI",
+    "separate_published_receipt_with_real_commit_bundle_links",
+    "fresh_CPU_Unity_ownership_before_further_runtime_geometry_lap_runs"
+  ]
+}

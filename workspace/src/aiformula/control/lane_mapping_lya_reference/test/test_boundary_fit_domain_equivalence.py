@@ -211,11 +211,15 @@ def test_literal_dds_full_extractor_all_observation_fields_byte_exact(monkeypatc
     actual = paint.extract_boundary_observation(mask, lookup, (0., 0., 1.),
                                                 1_000_000_000, threshold=127)
     calls = []
-    def counted_literal(*args, **kwargs):
+    def counted_literal(origins, normals, scales, points, segments, member_ids,
+                        arc_offsets, weights, radius):
         calls.append(1)
-        return _literal_bounds(*args, **kwargs)
+        # Restore the frozen dense caller's original geometry gather. This
+        # oracle must run on the indexed seam, not an unused retained helper.
+        return _literal_bounds(origins, normals, scales, points[member_ids],
+                               segments[member_ids], arc_offsets, weights, radius)
     with monkeypatch.context() as patch:
-        patch.setattr(paint, '_finite_face_fit_bounds', counted_literal)
+        patch.setattr(paint, '_finite_face_fit_bounds_indexed', counted_literal)
         expected = paint.extract_boundary_observation(mask, lookup, (0., 0., 1.),
                                                       1_000_000_000, threshold=127)
     assert calls and np.count_nonzero(actual.model_valid) > 0

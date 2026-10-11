@@ -1,0 +1,1583 @@
+{
+  "schema": 1,
+  "kind": "Independent read-only R28 Endpoint GNSS artifact review; no stability or deployment acceptance",
+  "review_method": "PowerShell JSON/log/XML reading and SHA-256; no Python/tests/models/encoding/Unity or remote mutation",
+  "reported_ci_identity": {
+    "provenance": "Parent exact-SHA CI readback; this reviewer independently examined only the two downloaded Endpoint artifacts",
+    "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "repository_id": 1303517209,
+    "code_commit": "8fcd4c0533a13d95400b9f377959733ed798f744",
+    "overall_workflow_runs": 8,
+    "overall_successful_runs": 7,
+    "branch": {
+      "run_id": 38171022797,
+      "conclusion": "success"
+    },
+    "tag": {
+      "run_id": 38171022715,
+      "conclusion": "failure",
+      "failed_job_id": 114563478846,
+      "failed_step": 6
+    }
+  },
+  "runs": {
+    "branch": {
+      "runtime_passed": true,
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "cases_count": 9,
+      "passed_cases": 9,
+      "recorded_checks": 151,
+      "all_recorded_checks_passed": true,
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "native": {
+        "backend": "native",
+        "api_version": 1,
+        "radius_graph_api_version": 1,
+        "local_support_api_version": 1,
+        "nearest_api_version": 1,
+        "cross_section_weights_api_version": 1,
+        "local_moments_api_version": 1,
+        "local_geometry_api_version": 1,
+        "finite_projection_bounds_api_version": 1,
+        "finite_current_union_api_version": 1,
+        "finite_current_union_real_call_passed": true,
+        "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+        "binary_sha256": "472a3316cfeefd8514b59a9d2306ad92fb26f5edb26e024118ce7236cf81a948",
+        "binary_name": "_lane_mapping_lya_native.cpython-38-x86_64-linux-gnu.so",
+        "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.29",
+        "installed_prefix_verified": true,
+        "real_calls_passed": true
+      },
+      "cases": [
+        {
+          "case": "default_guard",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 11,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "default_hardware_proof_cannot_arm",
+            "unverified_hardware_never_actuates"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH_READY",
+          "final_reason": "physical emergency stop has not been verified",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 0,
+            "accepted_rows": 0,
+            "reason_counts": []
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "normal",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 25,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "manual_estop_zero_output",
+            "asserted_manual_estop_cannot_reset",
+            "manual_release_stays_latched",
+            "released_estop_resets_disarmed",
+            "estop_reset_never_rearms",
+            "explicit_arm_after_estop_reset",
+            "explicit_stop_before_end_window",
+            "finish_freezes_before_end_gnss_window",
+            "two_endpoint_windows_only",
+            "stationary_scene_cannot_be_claimed_as_a_driven_route",
+            "incomplete_lap_never_starts_repeat"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "END_ANCHOR_PENDING",
+          "final_reason": "map worker: trajectory must have shape N x 3 with N >= 8",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 10,
+            "accepted_rows": 5,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              },
+              {
+                "reason": "matched_past_consensus",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 5
+              }
+            ],
+            "engine_ms": {
+              "min": 43.984302000012576,
+              "max": 114.60271899997565,
+              "mean": 78.87156789999779
+            },
+            "worker_compute_ms": {
+              "min": 164.931334,
+              "max": 251.973087,
+              "mean": 209.9503819
+            },
+            "worker_minus_engine_ms": {
+              "min": 120.94703199998742,
+              "max": 155.66414199999454,
+              "mean": 131.07881400000218
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "accepted": 6,
+              "bootstrap_odometry": 5,
+              "keyframes_prepared": 2,
+              "rejected": 7,
+              "commit_guard_rejected": 2,
+              "processing_deadline": 5,
+              "keyframes_promoted": 1,
+              "matched_past_consensus": 1
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "no_gnss_build",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 12,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "teaching_can_skip_gnss_capture_entirely",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 4,
+            "accepted_rows": 4,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              }
+            ],
+            "engine_ms": {
+              "min": 43.34382799999048,
+              "max": 67.62753300000668,
+              "mean": 53.46098524999121
+            },
+            "worker_compute_ms": {
+              "min": 182.610899,
+              "max": 226.681505,
+              "mean": 197.57437449999998
+            },
+            "worker_minus_engine_ms": {
+              "min": 133.87354800001864,
+              "max": 159.0539719999933,
+              "mean": 144.11338925000877
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 4,
+              "bootstrap_odometry": 4
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "startup_gap",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 16,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "origin_reset_waits_for_first_native_motion",
+            "missing_first_motion_latches_session_invalid",
+            "post_begin_startup_gap_never_actuates",
+            "restored_raw_stream_cannot_revive_invalid_session",
+            "startup_gap_requires_restart_and_new_lap",
+            "startup_gap_cannot_reset_same_session",
+            "startup_gap_recovery_stays_zero"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH_READY",
+          "final_reason": "motion continuity lost; restart and teach new lap: no post-begin motion arrived before startup deadline",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 0,
+            "accepted_rows": 0,
+            "reason_counts": []
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "future_gps",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 17,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 5,
+            "accepted_rows": 5,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 5
+              }
+            ],
+            "engine_ms": {
+              "min": 43.067352999997865,
+              "max": 51.02800499997784,
+              "mean": 46.71655199999236
+            },
+            "worker_compute_ms": {
+              "min": 165.899523,
+              "max": 187.024792,
+              "mean": 176.2691754
+            },
+            "worker_minus_engine_ms": {
+              "min": 114.87151800002215,
+              "max": 142.4877579999989,
+              "mean": 129.5526234000076
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 5,
+              "bootstrap_odometry": 5
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "missing_bits",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 17,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 4,
+            "accepted_rows": 4,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              }
+            ],
+            "engine_ms": {
+              "min": 42.9371839999817,
+              "max": 67.8502519999995,
+              "mean": 53.45892749998882
+            },
+            "worker_compute_ms": {
+              "min": 172.394266,
+              "max": 227.63683799999998,
+              "mean": 193.375132
+            },
+            "worker_minus_engine_ms": {
+              "min": 126.63512700001658,
+              "max": 159.78658600000048,
+              "mean": 139.9162045000112
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 4,
+              "bootstrap_odometry": 4
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "uncertainty",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 17,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 4,
+            "accepted_rows": 4,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              }
+            ],
+            "engine_ms": {
+              "min": 45.838989000003494,
+              "max": 61.76806400000601,
+              "mean": 52.13071850000972
+            },
+            "worker_compute_ms": {
+              "min": 176.869916,
+              "max": 208.127267,
+              "mean": 187.78392575
+            },
+            "worker_minus_engine_ms": {
+              "min": 128.74072499998476,
+              "max": 146.35920299999398,
+              "mean": 135.65320724999026
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 4,
+              "bootstrap_odometry": 4
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "future_wheel",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 18,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "future_wheel_not_fused",
+            "motion_recovery_does_not_autoarm",
+            "raw_fault_requires_new_mapping_session",
+            "invalid_motion_never_actuates"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH",
+          "final_reason": "motion continuity lost; restart and teach new lap: wheel/gyro rejected: wheel_source_stale_or_future",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 4,
+            "accepted_rows": 4,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              }
+            ],
+            "engine_ms": {
+              "min": 42.43469499999719,
+              "max": 57.582489999987274,
+              "mean": 52.12716924999228
+            },
+            "worker_compute_ms": {
+              "min": 169.43476099999998,
+              "max": 199.641305,
+              "mean": 183.63397174999997
+            },
+            "worker_minus_engine_ms": {
+              "min": 122.2697330000127,
+              "max": 146.95553399999983,
+              "mean": 131.50680250000772
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 4,
+              "bootstrap_odometry": 4
+            }
+          },
+          "wait_diagnostics": null
+        },
+        {
+          "case": "future_gyro",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 18,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading",
+            "full_masks_build_runtime_consensus",
+            "future_gyro_not_fused",
+            "motion_recovery_does_not_autoarm",
+            "raw_fault_requires_new_mapping_session",
+            "invalid_motion_never_actuates"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH",
+          "final_reason": "motion continuity lost; restart and teach new lap: raw gyro rejected: raw gyro source stale/future",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 4,
+            "accepted_rows": 4,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 4
+              }
+            ],
+            "engine_ms": {
+              "min": 40.931575000001885,
+              "max": 59.31765399998312,
+              "mean": 47.08717974999388
+            },
+            "worker_compute_ms": {
+              "min": 167.55451,
+              "max": 184.293859,
+              "mean": 176.500375
+            },
+            "worker_minus_engine_ms": {
+              "min": 122.18538100001686,
+              "max": 140.24857099999338,
+              "mean": 129.4131952500061
+            },
+            "last_journal_reason": "bootstrap_odometry",
+            "last_journal_counts": {
+              "accepted": 4,
+              "bootstrap_odometry": 4
+            }
+          },
+          "wait_diagnostics": null
+        }
+      ],
+      "journal_aggregate": {
+        "rows": 35,
+        "accepted_rows": 30,
+        "processing_deadline_rows": 5,
+        "engine_ms": {
+          "min": 40.931575000001885,
+          "max": 114.60271899997565
+        },
+        "worker_compute_ms": {
+          "min": 164.931334,
+          "max": 251.973087
+        },
+        "worker_minus_engine_ms": {
+          "min": 114.87151800002215,
+          "max": 159.78658600000048
+        }
+      },
+      "build": {
+        "package_jobs": 5,
+        "all_job_rc_zero": true,
+        "packages": [
+          "trajectory_follower",
+          "vectornav_msgs",
+          "lane_mapping_lya_reference",
+          "lane_mapping_fixed",
+          "lane_mapping_fixed_gnss"
+        ]
+      },
+      "unit_tests": {
+        "lane_mapping_lya_reference": 3340,
+        "lane_mapping_fixed_gnss": 940,
+        "lane_mapping_fixed": 0,
+        "total": 4280,
+        "all_collected_passed": true,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "fixed_empty_pytest_command_returncode": 5,
+        "fixed_colcon_job_returncode": 0,
+        "header_tests": {
+          "tests": 4,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      }
+    },
+    "tag": {
+      "runtime_passed": false,
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "cases_count": 9,
+      "passed_cases": 2,
+      "recorded_checks": 121,
+      "all_recorded_checks_passed": true,
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "native": {
+        "backend": "native",
+        "api_version": 1,
+        "radius_graph_api_version": 1,
+        "local_support_api_version": 1,
+        "nearest_api_version": 1,
+        "cross_section_weights_api_version": 1,
+        "local_moments_api_version": 1,
+        "local_geometry_api_version": 1,
+        "finite_projection_bounds_api_version": 1,
+        "finite_current_union_api_version": 1,
+        "finite_current_union_real_call_passed": true,
+        "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+        "binary_sha256": "472a3316cfeefd8514b59a9d2306ad92fb26f5edb26e024118ce7236cf81a948",
+        "binary_name": "_lane_mapping_lya_native.cpython-38-x86_64-linux-gnu.so",
+        "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.29",
+        "installed_prefix_verified": true,
+        "real_calls_passed": true
+      },
+      "cases": [
+        {
+          "case": "default_guard",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 11,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "default_hardware_proof_cannot_arm",
+            "unverified_hardware_never_actuates"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH_READY",
+          "final_reason": "physical emergency stop has not been verified",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 0,
+            "accepted_rows": 0,
+            "reason_counts": []
+          },
+          "wait_diagnostics": null,
+          "later_branch_checks_not_reached": []
+        },
+        {
+          "case": "normal",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 13,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 15,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 14
+              }
+            ],
+            "engine_ms": {
+              "min": 67.18558099998972,
+              "max": 114.28560199999538,
+              "mean": 101.5167553333337
+            },
+            "worker_compute_ms": {
+              "min": 313.56953599999997,
+              "max": 380.59968399999997,
+              "mean": 346.29208673333335
+            },
+            "worker_minus_engine_ms": {
+              "min": 229.256335999986,
+              "max": 274.7478029999649,
+              "mean": 244.77533139999963
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "rejected": 14,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 89.59427699999999,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 343.908757,
+              "engine_processing_ms": 108.46000800000866,
+              "counts_at_result": {
+                "rejected": 14,
+                "processing_deadline": 14,
+                "accepted": 1,
+                "bootstrap_odometry": 1
+              },
+              "source_age_at_diagnostic_ms": 618.3633249999999
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "manual_estop_zero_output",
+            "asserted_manual_estop_cannot_reset",
+            "manual_release_stays_latched",
+            "released_estop_resets_disarmed",
+            "estop_reset_never_rearms",
+            "explicit_arm_after_estop_reset",
+            "explicit_stop_before_end_window",
+            "finish_freezes_before_end_gnss_window",
+            "two_endpoint_windows_only",
+            "stationary_scene_cannot_be_claimed_as_a_driven_route",
+            "incomplete_lap_never_starts_repeat"
+          ]
+        },
+        {
+          "case": "no_gnss_build",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 10,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "teaching_can_skip_gnss_capture_entirely",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 15,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 14
+              }
+            ],
+            "engine_ms": {
+              "min": 73.00526400001672,
+              "max": 139.23305600002323,
+              "mean": 111.16902326667362
+            },
+            "worker_compute_ms": {
+              "min": 328.26985099999996,
+              "max": 380.731468,
+              "mean": 356.86937846666666
+            },
+            "worker_minus_engine_ms": {
+              "min": 229.37209299997676,
+              "max": 267.3050670000446,
+              "mean": 245.700355199993
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "rejected": 14,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 57.600963,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 342.27444399999996,
+              "engine_processing_ms": 109.21856199996682,
+              "counts_at_result": {
+                "rejected": 14,
+                "processing_deadline": 14,
+                "accepted": 1,
+                "bootstrap_odometry": 1
+              },
+              "source_age_at_diagnostic_ms": 670.939368
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ]
+        },
+        {
+          "case": "startup_gap",
+          "passed": true,
+          "exit_code": 0,
+          "recorded_checks": 16,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "origin_reset_waits_for_first_native_motion",
+            "missing_first_motion_latches_session_invalid",
+            "post_begin_startup_gap_never_actuates",
+            "restored_raw_stream_cannot_revive_invalid_session",
+            "startup_gap_requires_restart_and_new_lap",
+            "startup_gap_cannot_reset_same_session",
+            "startup_gap_recovery_stays_zero"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "HOLD",
+          "final_phase": "TEACH_READY",
+          "final_reason": "motion continuity lost; restart and teach new lap: no post-begin motion arrived before startup deadline",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 0,
+            "accepted_rows": 0,
+            "reason_counts": []
+          },
+          "wait_diagnostics": null,
+          "later_branch_checks_not_reached": []
+        },
+        {
+          "case": "future_gps",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 15,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 14,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 13
+              }
+            ],
+            "engine_ms": {
+              "min": 67.18014000000494,
+              "max": 172.41100600000436,
+              "mean": 114.97388792857676
+            },
+            "worker_compute_ms": {
+              "min": 331.141506,
+              "max": 411.318896,
+              "mean": 369.4892175714286
+            },
+            "worker_minus_engine_ms": {
+              "min": 234.64076600001164,
+              "max": 275.7425429999925,
+              "mean": 254.5153296428518
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "rejected": 13,
+              "processing_deadline": 13,
+              "accepted": 1,
+              "bootstrap_odometry": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 14,
+              "processing_deadline": 13,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 98.635972,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 383.77901299999996,
+              "engine_processing_ms": 116.86743799998567,
+              "counts_at_result": {
+                "rejected": 13,
+                "processing_deadline": 13,
+                "accepted": 1,
+                "bootstrap_odometry": 1
+              },
+              "source_age_at_diagnostic_ms": 714.163331
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ]
+        },
+        {
+          "case": "missing_bits",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 15,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 16,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_anchor_not_established",
+                "rows": 1
+              },
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 14
+              }
+            ],
+            "engine_ms": {
+              "min": 0.0906980000081603,
+              "max": 134.87324099997977,
+              "mean": 93.35846156249872
+            },
+            "worker_compute_ms": {
+              "min": 260.113704,
+              "max": 398.77176,
+              "mean": 347.0948645625
+            },
+            "worker_minus_engine_ms": {
+              "min": 234.3251739999822,
+              "max": 277.77304300002476,
+              "mean": 253.73640300000127
+            },
+            "last_journal_reason": "bootstrap_anchor_not_established",
+            "last_journal_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 34.122276,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "bootstrap_anchor_not_established",
+              "compute_ms": 260.113704,
+              "engine_processing_ms": 0.0906980000081603,
+              "counts_at_result": {
+                "rejected": 15,
+                "processing_deadline": 14,
+                "accepted": 1,
+                "bootstrap_odometry": 1,
+                "bootstrap_anchor_not_established": 1
+              },
+              "source_age_at_diagnostic_ms": 342.636774
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ]
+        },
+        {
+          "case": "uncertainty",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 15,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "invalid_fix_never_establishes_start_anchor",
+            "invalid_optional_fix_does_not_arm",
+            "invalid_gnss_never_actuates",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 15,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 14
+              }
+            ],
+            "engine_ms": {
+              "min": 69.92404300001454,
+              "max": 136.25398300001734,
+              "mean": 109.22719206666518
+            },
+            "worker_compute_ms": {
+              "min": 329.467677,
+              "max": 386.642267,
+              "mean": 358.95139800000004
+            },
+            "worker_minus_engine_ms": {
+              "min": 234.97237900000295,
+              "max": 274.71137600001197,
+              "mean": 249.7242059333348
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "rejected": 14,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 91.987837,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 386.642267,
+              "engine_processing_ms": 125.99983100000145,
+              "counts_at_result": {
+                "rejected": 14,
+                "processing_deadline": 14,
+                "accepted": 1,
+                "bootstrap_odometry": 1
+              },
+              "source_age_at_diagnostic_ms": 704.091781
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "missing_or_failed_gnss_does_not_block_native_mask_mapping"
+          ]
+        },
+        {
+          "case": "future_wheel",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 13,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 14,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 13
+              }
+            ],
+            "engine_ms": {
+              "min": 79.52149400000508,
+              "max": 160.91410199999245,
+              "mean": 121.09159407143417
+            },
+            "worker_compute_ms": {
+              "min": 346.73364799999996,
+              "max": 398.476905,
+              "mean": 373.2113683571429
+            },
+            "worker_minus_engine_ms": {
+              "min": 236.8465549999819,
+              "max": 300.9829619999949,
+              "mean": 252.11977428570864
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "rejected": 13,
+              "processing_deadline": 13
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "rejected": 14,
+              "processing_deadline": 13,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 37.98209,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 380.62825799999996,
+              "engine_processing_ms": 117.32700300001397,
+              "counts_at_result": {
+                "accepted": 1,
+                "bootstrap_odometry": 1,
+                "rejected": 13,
+                "processing_deadline": 13
+              },
+              "source_age_at_diagnostic_ms": 758.213341
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "future_wheel_not_fused",
+            "motion_recovery_does_not_autoarm",
+            "raw_fault_requires_new_mapping_session",
+            "invalid_motion_never_actuates"
+          ]
+        },
+        {
+          "case": "future_gyro",
+          "passed": false,
+          "exit_code": 1,
+          "recorded_checks": 13,
+          "all_recorded_checks_passed": true,
+          "check_names": [
+            "default_disarmed",
+            "no_gnss_subscription_before_capture",
+            "private_command_bus_only",
+            "disarmed_outputs_only_zero",
+            "explicit_capture_start_after_stopped_settle",
+            "exactly_one_gnss_subscriber_during_window",
+            "valid_0x230_gps_anchor_accepted",
+            "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+            "explicit_local_origin_boundary_independent_of_gnss",
+            "explicit_synthetic_private_arm",
+            "bounded_teach_command",
+            "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+            "orientation_not_used_as_heading"
+          ],
+          "individual_report_matches_runtime": true,
+          "final_state": "TEACH",
+          "final_phase": "TEACH",
+          "final_reason": "teacher command selected",
+          "bundle_created": false,
+          "worker_journal": {
+            "journal_teach_mask_rows": 15,
+            "accepted_rows": 1,
+            "reason_counts": [
+              {
+                "reason": "bootstrap_odometry",
+                "rows": 1
+              },
+              {
+                "reason": "processing_deadline",
+                "rows": 14
+              }
+            ],
+            "engine_ms": {
+              "min": 66.94827799998393,
+              "max": 148.97081200001594,
+              "mean": 110.31131466666011
+            },
+            "worker_compute_ms": {
+              "min": 325.48670599999997,
+              "max": 391.50521599999996,
+              "mean": 359.7796606
+            },
+            "worker_minus_engine_ms": {
+              "min": 234.39548100002605,
+              "max": 278.2853829999786,
+              "mean": 249.4683459333399
+            },
+            "last_journal_reason": "processing_deadline",
+            "last_journal_counts": {
+              "rejected": 14,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1
+            }
+          },
+          "wait_diagnostics": {
+            "engine_phase": "invalid",
+            "engine_terminal_reason": "bootstrap_anchor_not_established",
+            "engine_counts": {
+              "rejected": 15,
+              "processing_deadline": 14,
+              "accepted": 1,
+              "bootstrap_odometry": 1,
+              "bootstrap_anchor_not_established": 1
+            },
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "latest_received_mask_age_ms": 79.493579,
+            "last_completed_camera": {
+              "event": "teach_mask",
+              "reason": "processing_deadline",
+              "compute_ms": 373.663937,
+              "engine_processing_ms": 110.23528499998747,
+              "counts_at_result": {
+                "rejected": 14,
+                "processing_deadline": 14,
+                "accepted": 1,
+                "bootstrap_odometry": 1
+              },
+              "source_age_at_diagnostic_ms": 695.1932419999999
+            },
+            "safety_state": "TEACH",
+            "safety_phase": "TEACH",
+            "safety_reason": "teacher command selected",
+            "evidence_semantics": "independent read-only samples; journal may lag; ages are not commit-time ages"
+          },
+          "later_branch_checks_not_reached": [
+            "full_masks_build_runtime_consensus",
+            "future_gyro_not_fused",
+            "motion_recovery_does_not_autoarm",
+            "raw_fault_requires_new_mapping_session",
+            "invalid_motion_never_actuates"
+          ]
+        }
+      ],
+      "journal_aggregate": {
+        "rows": 104,
+        "accepted_rows": 7,
+        "processing_deadline_rows": 96,
+        "engine_ms": {
+          "min": 0.0906980000081603,
+          "max": 172.41100600000436
+        },
+        "worker_compute_ms": {
+          "min": 260.113704,
+          "max": 411.318896
+        },
+        "worker_minus_engine_ms": {
+          "min": 229.256335999986,
+          "max": 300.9829619999949
+        }
+      },
+      "build": {
+        "package_jobs": 5,
+        "all_job_rc_zero": true,
+        "packages": [
+          "trajectory_follower",
+          "vectornav_msgs",
+          "lane_mapping_lya_reference",
+          "lane_mapping_fixed",
+          "lane_mapping_fixed_gnss"
+        ]
+      },
+      "unit_tests": {
+        "lane_mapping_lya_reference": 3340,
+        "lane_mapping_fixed_gnss": 940,
+        "lane_mapping_fixed": 0,
+        "total": 4280,
+        "all_collected_passed": true,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "fixed_empty_pytest_command_returncode": 5,
+        "fixed_colcon_job_returncode": 0,
+        "header_tests": {
+          "tests": 4,
+          "errors": 0,
+          "failures": 0,
+          "skipped": 0
+        }
+      }
+    }
+  },
+  "evidence_sha256": {
+    "branch/evidence/runtime.json": "74c3a8ef0010ac268c61419a8055fb04c7edcafef942a9614c0670b7c44b3419",
+    "branch/evidence/native.json": "1c1f35ac8520541c5447d299cc7e86fd486be2e5fc3e3a8982891e162682a1df",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/default_guard_logs/follower-20261011T201249-a6af24f5/commands-0.jsonl": "5cfb027871b03ff2f7d702287ba51a5a1e1eba4110c4bf93ead6e484fcb79aaa",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/default_guard.json": "2eeb7ebac947607f58a12c8c3a4e7a15422392a84175167b2b1327498c53b53c",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/default_guard.log": "9a37c59a2eacfa0e039b6199aa1954d5f248d7ca6f64bd7831a86ff7a67142f5",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/normal_logs/follower-20261011T201252-7f52ce1c/commands-0.jsonl": "af1c87e0751909c69a0694c835240ba816a613a4fdfe29d12a048b97e9670b74",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/normal.json": "d2cba0a4806a596de22fedd2182cf90e6de21579a6f321df96dff9f0e255180f",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/normal.log": "0885c20f7dd7c3f59ea7e959b575c641ca9b08a2271e1eb7502889830ba1be50",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/no_gnss_build_logs/follower-20261011T201259-8a9b4cb4/commands-0.jsonl": "1675efc50f0abebf1861f0d2a3d3260dac639f1e46bf0708e05109e56b980e84",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/no_gnss_build.json": "45f4bc03a511c58d419fd79f09b33c6251ed673fbd53e6fabfc1405647ebe30a",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/no_gnss_build.log": "baa546f34b01a8079141dac19cfcb43cde4cdccabc22e668b5fdfcb9fe0bd935",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/startup_gap_logs/follower-20261011T201303-b27daf6e/commands-0.jsonl": "29efefad07ca40b3910c65cfacac2e2fbc704bfc3f80dc9362840e3d99237020",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/startup_gap.json": "bd03fc9085b33edb13cc9394f1c3f6d180eab1b228b0ed29c28f2196b5e63645",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/startup_gap.log": "680f9c2f076d53274eec3fdd44958763a69e73595ce14224d3b11ef3da40b277",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gps_logs/follower-20261011T201307-c6902a3a/commands-0.jsonl": "4609a906fc7df0fc6cbf192b7fb39fccc3ff36423dd1ef856656eb09880cd776",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gps.json": "cd4dff2470694d463ad7ab70c930c42ee1450579fcf8a45569d4ad5210d2c833",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gps.log": "fe8455f9c642de582a6b042b78e0862e782be9c36a4b7c8fede0da1dab587ee2",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/missing_bits_logs/follower-20261011T201312-eb695f88/commands-0.jsonl": "32708c674009225b711541eb5ca00e4e0f108769ecb9d7ecb1df3de155924130",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/missing_bits.json": "076e540aa138795d458fc0c38580cccca93897f0d82a4f2854b0cf26c09023d1",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/missing_bits.log": "4d063e583d544ab0ceab4b2e6c378b895042c3b9541c4b43ae99f08b6e4d76dc",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/uncertainty_logs/follower-20261011T201316-ebb0fe01/commands-0.jsonl": "f5b565cad218d2a37f129e536ee626dbea72e767b09df2ef4fc3459bf698d1ab",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/uncertainty.json": "79da23b57a247954efbfe0c7603fa5457ec59c228d21299c41af11d45ff6cfe5",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/uncertainty.log": "4c1233b1e81715582c36594ca98418d57e5cc03ec259d2676975634913fbf2c1",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_wheel_logs/follower-20261011T201321-d6529b1d/commands-0.jsonl": "7d9bd661d1970857b894e8c332d3b1cbce679854066b152d73e7542045951cb0",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_wheel.json": "73c61cee432bae6fd634960412d0a29e6d7a86876175d9db1dde255397ff4b72",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_wheel.log": "0b3a6a3ccfa18772272efc22a123300e2b67a827fd2b4e5923f2ce6fc0314757",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gyro_logs/follower-20261011T201326-5f5b5e99/commands-0.jsonl": "4660650f1751e8ef238a7c9d2a00dbae704485217434a3cd8b400edb17aca25c",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gyro.json": "e76eda2de5d0aa8d51004b14a995c900684a0d4c96498fd20d7be749f3801f00",
+    "branch/evidence/gnss-native-smoke-iu1ppnru/future_gyro.log": "7c6b4f4b6958a014095beff3fb40b2940495c011f635317692375278264d2d76",
+    "tag/evidence/runtime.json": "110ffff9d97d39bc1a32c5dbd226ff66be38d2a935817d4456b62bd69afc94fe",
+    "tag/evidence/native.json": "1c1f35ac8520541c5447d299cc7e86fd486be2e5fc3e3a8982891e162682a1df",
+    "tag/evidence/gnss-native-smoke-g9i483ux/default_guard_logs/follower-20261011T201413-8cca73c8/commands-0.jsonl": "43bb7b9d290cdd5ca07c5fb50190d731baa5fe3baca6dedf9b33afc3aa8f97e6",
+    "tag/evidence/gnss-native-smoke-g9i483ux/default_guard.json": "3931ace18d95fbe0fdbfec86df25d8e91604a2c0addcba0f59308d417fc0a586",
+    "tag/evidence/gnss-native-smoke-g9i483ux/default_guard.log": "3a2ed83513dd9931b6182fb43efd77d10428bf324fee4cf7b15d19e055c56178",
+    "tag/evidence/gnss-native-smoke-g9i483ux/normal_logs/follower-20261011T201416-099a2eef/commands-0.jsonl": "f5f1839010f9c387a8a97cbbb2ce0e53f2211a9f75359be0cc211bd11b8fd15b",
+    "tag/evidence/gnss-native-smoke-g9i483ux/normal.json": "6529a553f48b8328c97d99bbc88af3d7e956fa457e165c7bbb732e39d6c37a8c",
+    "tag/evidence/gnss-native-smoke-g9i483ux/normal.log": "bbecd84563fd64da1d19b8127987b519edefd548e90eb49d03abbc08572635e6",
+    "tag/evidence/gnss-native-smoke-g9i483ux/no_gnss_build_logs/follower-20261011T201425-31dd0b3a/commands-0.jsonl": "5b67781cd2965f309c378908f35e496e26a4075afebbb7f5710c4a907dfe7421",
+    "tag/evidence/gnss-native-smoke-g9i483ux/no_gnss_build.json": "c481cbd4101c75e1bfe2cdf6a929051bc35fc060696feea5ef5e668b0cc982c0",
+    "tag/evidence/gnss-native-smoke-g9i483ux/no_gnss_build.log": "ed49c316632e1e0bb28273309d50707f710cfb2b09b199ef31e19b10d3044bb0",
+    "tag/evidence/gnss-native-smoke-g9i483ux/startup_gap_logs/follower-20261011T201434-7f472623/commands-0.jsonl": "7af95f57b41d5cf18012d3135be5927551a3b7dc8f825601b2cc10caa8299910",
+    "tag/evidence/gnss-native-smoke-g9i483ux/startup_gap.json": "092b9b202e3dd578783a942afc4c0e233932a17598f42f1e275b1ee12d6eef3d",
+    "tag/evidence/gnss-native-smoke-g9i483ux/startup_gap.log": "a9a0c8fa220dcc927c610d513bb4ba0f76a3725d6de90ff38a524d88796db7ac",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gps_logs/follower-20261011T201438-40b20fd1/commands-0.jsonl": "9928b942543d64e40da94c37810ce469e85508e75a34fc8178f9d56027a79079",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gps.json": "d94c49361798fb57ddc589594a3c217a5dd7d44f6d5b21badb4ff5dd391c56b8",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gps.log": "c90842c857d7183927bdde20b6f5a9611aa6573f9d266ad28484351169d6979e",
+    "tag/evidence/gnss-native-smoke-g9i483ux/missing_bits_logs/follower-20261011T201447-c8395d68/commands-0.jsonl": "7fc8cf1d7228475dad9cba3f5d248b7f6e0132767cde76a7753972da6a22fbfd",
+    "tag/evidence/gnss-native-smoke-g9i483ux/missing_bits.json": "af88f9843b85056d65ecea90336629314b5990fc8d56a0371f4420ec2fa786e5",
+    "tag/evidence/gnss-native-smoke-g9i483ux/missing_bits.log": "a3e38bc7c91e62afd16d4ba521ce988ae1d69ea17199bc12828ab4dde0ff5a2f",
+    "tag/evidence/gnss-native-smoke-g9i483ux/uncertainty_logs/follower-20261011T201457-dc0d8222/commands-0.jsonl": "41816e9286f275ba64a6d6f02731080dd9ecb840fa52bdc31f6afd38179c1557",
+    "tag/evidence/gnss-native-smoke-g9i483ux/uncertainty.json": "b95db995c72ffe4c590078aeb792fa54d60db444f642fe941615e4ed7c325812",
+    "tag/evidence/gnss-native-smoke-g9i483ux/uncertainty.log": "18bb6e4b91a4f8eb9feb750d3314c4c8bd8724aa9c1acdc3ba76ef1f7f9f827d",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_wheel_logs/follower-20261011T201506-c289a949/commands-0.jsonl": "c139b737563a77994dd60f55cf294339aa643b2faa6b820ff3ff898307be0906",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_wheel.json": "2713e9bab2867c210f93d50bbd75f7c8335060e0baaab7fad5f3f7efd7da76af",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_wheel.log": "476e6e575b42274dfbd51e9c827d7835464b47d82e57993fd6f4395568a43914",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gyro_logs/follower-20261011T201515-1b0b2752/commands-0.jsonl": "a163f141c1d92dba57f4a54b03d5375fdf4e912e1c361bf65301a0e77affdfd4",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gyro.json": "dfc91f0274738be683cdb70ee58d94bf8d94dd89fe9501bc487f3735f1f0aa63",
+    "tag/evidence/gnss-native-smoke-g9i483ux/future_gyro.log": "d3c0948d3179faba95d6902f4114fec787f3c40dd354583237461bdb6b9523ec",
+    "branch/log/build_2026-10-11_20-10-58/events.log": "cdbc9cc474fa97a61a743a89fbe3d93c88209d7162ae489d7f78d288afc9bd69",
+    "tag/log/build_2026-10-11_20-11-20/events.log": "0a17a60707acf7c4d860702fb630eb85d8398e2000dd86d1abb6b2e320576aaf",
+    "branch/log/test_2026-10-11_20-11-23/events.log": "342612d7041045bb207527d0abeecb25df9a591803d34c8ae68db490cd801b18",
+    "tag/log/test_2026-10-11_20-11-44/events.log": "cea750725977a88fc46872020a6a9add48b11197c896e48a6e30b9bab52b92aa",
+    "branch/log/test_2026-10-11_20-11-23/lane_mapping_lya_reference/stdout_stderr.log": "1be3e64262e011223d3073372b87b6884ef5ae88adaa43df642aceaab258393f",
+    "tag/log/test_2026-10-11_20-11-44/lane_mapping_lya_reference/stdout_stderr.log": "16431f38322abe9cb90439b4ac5adcd4d6b270a943d373fb1ea588df917e3de0",
+    "branch/log/test_2026-10-11_20-11-23/lane_mapping_fixed_gnss/stdout_stderr.log": "50e70e7d6618f2a62f841499bde38ee44dd703fee4f3ac0a1cd2939f009a91b3",
+    "tag/log/test_2026-10-11_20-11-44/lane_mapping_fixed_gnss/stdout_stderr.log": "fc6cbe25d97d78632eb003d149ddcefd5ffef4d966be58936672bb3a85e71a16",
+    "branch/log/test_2026-10-11_20-11-23/lane_mapping_fixed/stdout_stderr.log": "f38a40c77022ec0fdf71324c9b3adf189ae3ef50e399e392fe50d9a820b2d77e",
+    "tag/log/test_2026-10-11_20-11-44/lane_mapping_fixed/stdout_stderr.log": "f38a40c77022ec0fdf71324c9b3adf189ae3ef50e399e392fe50d9a820b2d77e",
+    "branch/evidence/road_detector_header_unit.xml": "d094a7a0ea8f373fd3d61fa1750a5bb94e2214db970dc2e36577441a1cc75952",
+    "tag/evidence/road_detector_header_unit.xml": "31653f7004e3bf0a12562ed3e6662576f4657e8ae40243a4566bf99b8b3a2402",
+    "branch/evidence/road_detector_header_unit.log": "88654a98bfe24d81e78303d9c06e87b778651188971dda2cc68847e691ff2f9b",
+    "tag/evidence/road_detector_header_unit.log": "a63176ce52999ab1b718a2ee018e120436f77dfc894418d6e9e6e1b00ab48869"
+  },
+  "timing_semantics_code": {
+    "current_source_sha256": {
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/worker.py": "0500ce1954cac34ebc7860e913d752d9954bf3a80cf894f568864004ac043f2a",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/node.py": "979c089491cf8e4455e4da78c9adbb43a0201febe0c2812798f79c5f7b265147",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "a2171210d68c1d3d55e67cf2e826914f109f382280a7dbdc67a05571da574b88",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/test/runtime_smoke.py": "04d56739d9da2efa4da8289f7f25c65002a5a4a88e16399b810d7198867a2247"
+    },
+    "scoped_git_diff_against_reported_commit_empty": true,
+    "worker_compute_ms": "Worker _compute execution: projection/extraction plus engine and optional consensus export; excludes job queue wait, receipt/transport and callback-journal delay. It is NOT the full simulator LaneSession200ms scope.",
+    "engine_processing_ms": "Nested engine process duration, not complete image pipeline.",
+    "ages": "wait_diagnostics independent samples at diagnostic read, not commit-time ages. No input/commit causal age was reconstructed.",
+    "journal": "Asynchronous node journal can lag engine, including terminal event. Journal row count is not final engine count and is not a transaction-atomic snapshot.",
+    "zero_terminal": "missing_bits last completed event is a fast latched engine return (0.090698ms), not a fast healthy mapping sample; worker still260.113704ms."
+  },
+  "boundaries": [
+    "One success and one failure at the same reported code/gates is not stable acceptance; do not discard failed tag evidence or rerun until success.",
+    "Branch runtime151 recorded checks complete the nine stationary DDS scenarios only, not a driven loop, valid route or REPEAT.",
+    "Tag121 recorded true checks occur in nine attempted cases with seven failures; not complete121-check DDS acceptance.",
+    "Both reports use synthetic actual ROS messages, private output and fixture teacher speed0.2m/s; physical_stop_tested=false and production_speed_default_tested=false.",
+    "Tag invalid endpoint GNSS checks and runtime GNSS/orientation no-influence checks were reached before bootstrap; later consensus/route/estop and future-wheel/gyro tests were not all reached.",
+    "Native installed-prefix/API real-call verification is separate from stable runtime, full image pipeline timing and lap acceptance.",
+    "No raw masks, precise GNSS coordinates, raw source timestamps, hostname, domain ID, personal or CI absolute paths copied into this review.",
+    "Original artifacts/logs retained unchanged; production receipt/source/session/STATUS were not written."
+  ]
+}

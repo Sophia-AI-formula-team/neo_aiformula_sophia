@@ -6,7 +6,38 @@
 
 代码/封包提交`8fcd4c0533a13d95400b9f377959733ed798f744`，tag
 `lane-mapping-20261012-r28-rc1`已在唯一neo仓库回读；见
-[发布回执](receipts/2026-10-12-planner-r28-rc1-published.md)。新SHA八个CI已启动，终态待回读。
+[发布回执](receipts/2026-10-12-planner-r28-rc1-published.md)。新SHA CI终态7/8工作流通过；
+Endpoint branch9/9 stationary DDS通过、tag仅2/9，七例bootstrap因engine deadline失败。
+构建4280 Linux单测与4 Header检查通过不等于runtime通过，见
+[完整CI结果回执](receipts/2026-10-12-planner-r28-rc1-result.md)。
+
+R29部分开发检查点：25索引oracle与22固定mask29+5字段全部字节等价；已合入完全相同源码，
+新单次生产回归4304通过/1 Linux限定跳过，108显式测试文件、197实际pins前后不变；
+冻结manifest的数量元数据196错误与4对测试排序变化用新记录纠正，原证据不改。
+R28原111帧严格重放仍13/14接受，seq164 engine80.4982ms>80，
+失败不提交；新历史依赖隔离52/52通过，原50通过/2error保留。见
+[session025](sessions/2026-10-12-planner-indexed-faces-r29-025/SESSION.md)。
+
+后续只读来源采集03单次失败：22帧在on提取前同一函数代码身份检查拒绝，
+不是22帧模型不合格；没有完成的真实模型packet，也没有新的off/on通过证据。
+57 bindings前后不变，子进程已停且CPU归还。原失败与审批/源码快照保留，
+见[采集失败回执](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/provenance_capture03_failure.md)。
+D-only新采集/固定模型工具已单次通过88项独立测试（30+36+22），零失败/跳过；
+44源码指纹前后不变。整模块编译而不执行模块解决已确认的采集身份上下文问题，
+严格身份检查未放宽。后续capture04已单次通过22/22原合成开发输入29+5字节/可写性对照，
+104 bindings不变，40计算切分/80 incident primary模型/0 incident ribbon模型真实导出，
+此采集本身没有consumer结论，后续审计见下一段；未集成修复，见
+[来源04摘要](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/provenance_capture04_summary.json)。
+新consumer53人工诊断测试已单次全通过，9pins及child实际执行字节一致；
+随后原22-packet已单次审计，83pins不变；80模型nominal全标签69yes/11no，
+40cut的P为4yes/31no/5unknown，Q及PQ各0yes/1no/39unknown。
+这是旧固定模型诊断，尚未拟合修复或通过几何/驾驶验收，见
+[实际模型审计摘要](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/actual_consumer01_summary.json)和
+[consumer窄测试摘要](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/consumer_units01_summary.json)。
+独立审阅确认1528支持/3056标签完整保留，48违反中至少26在有限chart范围内；
+只属nominal合同，不是物理不可能或删点理由，见
+[审阅摘要](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/actual_consumer01_review.md)。
+见[工具04窄验证](sessions/2026-10-12-planner-indexed-faces-r29-025/evidence/provenance_tools04_units.md)。
 
 主修改直接在neo：仅复用已存在的native9 moments，不改原窗口/拟合/准入。
 完整Windows4279通过、1 Linux限定跳过，107显式测试文件/196源码pins一致。
