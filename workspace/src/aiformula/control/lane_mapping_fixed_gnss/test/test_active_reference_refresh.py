@@ -3,7 +3,7 @@
 Real localizers produce proposals; injected rejections explicitly revoke them.
 The fake engine clock tests the unchanged 80ms admission boundary without sleeps.
 Only the two boundary-geometry cases use explicit 2s unit budgets: they test
-ownership/18-array identity, not runtime acceptance. No simulator or ROS needed.
+ownership/23-array identity, not runtime acceptance. No simulator or ROS needed.
 """
 from collections.abc import Mapping
 from contextlib import contextmanager
@@ -29,6 +29,8 @@ REFERENCE_FIELDS = (
     "edge_reliable_votes", "edge_last_stamp_ns", "full_in_degree", "full_out_degree",
     "certified_model_segments", "certified_model_owner", "certified_model_frame_votes",
     "certified_model_reliable_votes", "certified_model_last_stamp_ns",
+    "continuation_intervals", "continuation_primitive", "continuation_frame_votes",
+    "continuation_reliable_votes", "continuation_last_stamp_ns",
 )
 NEXT_STAMP = 1600000000
 
@@ -60,7 +62,9 @@ def committed_engine(engine):
         boundary.source_frontier_ns, boundary._generation, boundary._next_record_id,
         boundary._segment_count, boundary._confirmed_count, boundary._records,
         boundary._edges, boundary._cell_records, boundary._domains,
-        boundary._domain_interval_count, boundary._domain_expiry, boundary.snapshot())
+        boundary._domain_interval_count, boundary._domain_expiry,
+        boundary._continuations, boundary._continuation_storage_count,
+        boundary._permission_bounds, boundary._permission_bound_count, boundary.snapshot())
     return value((grid.last_stamp_ns, grid._geometry_generation, grid.candidate_votes,
                   grid.candidate_reliable_votes, grid.confirmed_keys, grid._cell_means,
                   grid.capacity_rejected_cells, grid.confirmation_capacity_rejections,
@@ -413,7 +417,7 @@ def test_override_rebuilds_inactive_candidate_from_before_current_seen_fence(har
 
 
 @pytest.mark.parametrize("deny", [False, True])
-def test_boundary_refresh_keeps_eighteen_field_past_identity_and_hidden_votes(
+def test_boundary_refresh_keeps_twenty_three_field_past_identity_and_hidden_votes(
         monkeypatch, projected_boundary, deny):
     h = Harness(monkeypatch, projected_boundary)
     past = h.engine._boundary_map.snapshot_near(np.zeros(2), 12., 3000)
@@ -430,7 +434,7 @@ def test_boundary_refresh_keeps_eighteen_field_past_identity_and_hidden_votes(
         yield not deny
 
     result = h.process(guard=guard)
-    assert len(REFERENCE_FIELDS) == 18
+    assert len(REFERENCE_FIELDS) == 23
     assert tuple(value(getattr(past, name)) for name in REFERENCE_FIELDS) == past_bytes
     if deny:
         h.assert_aborted(result)
@@ -441,4 +445,4 @@ def test_boundary_refresh_keeps_eighteen_field_past_identity_and_hidden_votes(
         assert h.engine._boundary_map._generation == generation+1
         assert h.engine._boundary_map.source_frontier_ns == NEXT_STAMP
         assert h.engine._matcher._index.reference.source_frontier_ns == 1500000000
-        assert h.engine._matcher._index.reference.boundary_version == 3
+        assert h.engine._matcher._index.reference.boundary_version == 4

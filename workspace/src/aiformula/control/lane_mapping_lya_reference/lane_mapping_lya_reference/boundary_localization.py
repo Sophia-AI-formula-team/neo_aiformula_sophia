@@ -11,6 +11,7 @@ import numpy as np
 
 from .mask_localization import LaneMapLocalizer, _configuration, _rotation, _unique_cells
 from .paint_geometry import BoundaryObservation, BoundaryReference
+from .continuation_support import projection_alpha_bounds
 
 
 def _cross(a, b):
@@ -200,8 +201,16 @@ class _FrozenBoundaryGraph:
             owners = reference.certified_model_owner
             # Retain ambiguous geometry in nearest competition; rejecting it
             # must not expose a farther certificate or graph edge as fallback.
-            self.direction_valid[self.graph_primitive_count:] &= (
-                (reference.full_in_degree[owners] <= 1) & (reference.full_out_degree[owners] <= 1))
+            self.unambiguous_model = ((reference.full_in_degree[owners] <= 1)
+                                      & (reference.full_out_degree[owners] <= 1))
+            self.continuation_permissions = {}
+            if reference.continuation_intervals is not None:
+                for primitive, interval in zip(reference.continuation_primitive, reference.continuation_intervals):
+                    self.continuation_permissions.setdefault(int(primitive), []).append(interval)
+            permitted = self.unambiguous_model.copy()
+            if self.continuation_permissions:
+                permitted[list(self.continuation_permissions)] = True
+            self.direction_valid[self.graph_primitive_count:] &= permitted
 
     def query(self, points, normals):
         count = len(points)
@@ -252,6 +261,18 @@ class _FrozenBoundaryGraph:
             targets[rows] = self.starts[ids] + fraction[:, None]*self.delta[ids]
             directions[rows] = self.normals[ids]
             covered[rows] = self.direction_valid[ids] & (alpha >= 0.) & (alpha <= 1.)
+            # Select globally FIRST, then consult the unchanged primitive's
+            # query-independent permission. Never crop it out of competition
+            # or retry a farther line when the nearest foot lies in a hole.
+            model_rows = np.flatnonzero(~graph_primitive)
+            checked = model_rows[~self.unambiguous_model[ids[model_rows]-self.graph_primitive_count]] if len(model_rows) else model_rows
+            alpha_lower, alpha_upper, alpha_valid = projection_alpha_bounds(points[rows[checked]],
+                np.stack((self.starts[ids[checked]], self.ends[ids[checked]]), axis=1))
+            for check, local in enumerate(checked):
+                primitive = int(ids[local]-self.graph_primitive_count)
+                permitted = self.continuation_permissions.get(primitive, ())
+                covered[rows[local]] &= bool(alpha_valid[check]) and any(
+                    lower <= alpha_lower[check] and alpha_upper[check] <= upper for lower, upper in permitted)
             start_dot, near_start, start_valid = _endpoint_dot_uncertainty(points[rows], self.starts[ids],
                 self.delta[ids], self.starts[ids], self.ends[ids])
             end_dot, near_end, end_valid = _endpoint_dot_uncertainty(points[rows], self.ends[ids],
@@ -446,6 +467,12 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
                 line_reference="confirmed_graph_and_creation_chart_finite_models_v3",
                 correspondence_extent="globally_nearest_confirmed_chords_or_certified_finite_domain",
                 certified_model_representation=self._index.reference.certified_model_representation)
+        if self._index.reference.continuation_intervals is not None:
+            metrics.update(boundary_version=4,
+                line_reference="confirmed_graph_and_all_continuation_finite_models_v4",
+                continuation_representation=self._index.reference.continuation_representation,
+                continuation_permission_intervals=len(self._index.reference.continuation_intervals),
+                continuation_policy="original_global_nearest_then_all_hypotheses_alpha_permission")
         if len(points) > self.config["max_scan_points"]:
             return None, "boundary_scan_capacity"
         return (points, directions, weights, denominator), None
@@ -488,4 +515,6 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
              "reliable_votes", "record_ids", "directed_edges", "edge_frame_votes",
              "edge_reliable_votes", "edge_last_stamp_ns", "full_in_degree", "full_out_degree",
              "certified_model_segments", "certified_model_owner", "certified_model_frame_votes",
-             "certified_model_reliable_votes", "certified_model_last_stamp_ns")))
+             "certified_model_reliable_votes", "certified_model_last_stamp_ns",
+             "continuation_intervals", "continuation_primitive", "continuation_frame_votes",
+             "continuation_reliable_votes", "continuation_last_stamp_ns")))

@@ -384,12 +384,14 @@ def test_old_direction_oracle_does_not_call_optimized_fit(monkeypatch):
     assert result[1].any()
 
 
-def _old_directions_with_partition(points,segments,white,black,pixel_outward,stable,paths,cfg):
+def _old_directions_with_partition(points,segments,white,black,pixel_outward,stable,paths,cfg,
+                                   *, cut_evidence=None):
     length=np.linalg.norm(segments[:,1]-segments[:,0],axis=1)
     crossing=np.linalg.norm(black-white,axis=1)
     usable=(stable & np.isfinite(length) & (length>0.)
             & np.isfinite(crossing) & (crossing>0.))
-    pieces=paint._direction_paths(points,segments,usable,paths,cfg,white_xy=white,black_xy=black)
+    pieces=paint._direction_paths(points,segments,usable,paths,cfg,white_xy=white,black_xy=black,
+                                 cut_evidence=cut_evidence)
     result = list(_old_directions(points,segments,white,black,pixel_outward,stable,pieces,cfg))
     # Shared measurement domain only; all original fit arithmetic/outputs above
     # remain the literal old oracle. Independent domain tests check this field.

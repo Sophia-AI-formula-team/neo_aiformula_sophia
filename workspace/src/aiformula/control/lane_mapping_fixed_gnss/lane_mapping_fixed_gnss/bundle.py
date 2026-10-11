@@ -31,7 +31,9 @@ BOUNDARY_REPRESENTATION = "paint_boundary_v1"
 BOUNDARY_VERSION = 1
 BOUNDARY_GRAPH_VERSION = 2
 BOUNDARY_CERTIFIED_VERSION = 3
+BOUNDARY_CONTINUATION_VERSION = 4
 CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
+CONTINUATION_REPRESENTATION = "all_continuations_owned_quad_support_v1"
 BOUNDARY_ARRAYS = {"points_xy": ("<f8", (2,)), "normals": ("<f8", (2,)),
                    "support_segments": ("<f8", (2, 2)), "segment_owner": ("<i8", ()),
                    "votes": ("<i8", ()), "reliable_votes": ("<i8", ()),
@@ -48,6 +50,12 @@ BOUNDARY_CERTIFIED_ARRAYS = {
     "certified_model_frame_votes": ("<i8", ()),
     "certified_model_reliable_votes": ("<i8", ()),
     "certified_model_last_stamp_ns": ("<i8", ())}
+BOUNDARY_CONTINUATION_ARRAYS = {
+    "continuation_intervals": ("<f8", (2,)),
+    "continuation_primitive": ("<i8", ()),
+    "continuation_frame_votes": ("<i8", ()),
+    "continuation_reliable_votes": ("<i8", ()),
+    "continuation_last_stamp_ns": ("<i8", ())}
 LOCALIZATION_KIND = "wheel_rawgyro_mask"
 COORDINATE_CONVENTION = "start-relative local metres; x initial vehicle forward, y left; yaw CCW; not ENU"
 MAX_PAYLOAD_BYTES = 16 * 1024 * 1024
@@ -99,11 +107,22 @@ def _boundary_payload(reference):
         if reference.certified_model_representation != CERTIFIED_MODEL_REPRESENTATION:
             raise ValueError("unsupported certified model representation")
         version = BOUNDARY_CERTIFIED_VERSION
+    continuations = [getattr(reference, name, None) for name in BOUNDARY_CONTINUATION_ARRAYS]
+    if any(value is None for value in continuations) and not all(value is None for value in continuations):
+        raise ValueError("continuation members must all be present or all absent")
+    if continuations[0] is not None:
+        if version != BOUNDARY_CERTIFIED_VERSION:
+            raise ValueError("continuation permissions require certified boundary geometry")
+        if reference.continuation_representation != CONTINUATION_REPRESENTATION:
+            raise ValueError("unsupported continuation representation")
+        version = BOUNDARY_CONTINUATION_VERSION
     specs = dict(BOUNDARY_ARRAYS)
     if version >= BOUNDARY_GRAPH_VERSION:
         specs.update(BOUNDARY_GRAPH_ARRAYS)
-    if version == BOUNDARY_CERTIFIED_VERSION:
+    if version >= BOUNDARY_CERTIFIED_VERSION:
         specs.update(BOUNDARY_CERTIFIED_ARRAYS)
+    if version == BOUNDARY_CONTINUATION_VERSION:
+        specs.update(BOUNDARY_CONTINUATION_ARRAYS)
     arrays = {}
     for name, (dtype, suffix) in specs.items():
         value = np.asarray(getattr(reference, name), dtype=dtype)
@@ -114,15 +133,18 @@ def _boundary_payload(reference):
                         "sha256": _digest(value.tobytes()), "data": value.tolist()}
     result = {"representation": BOUNDARY_REPRESENTATION, "version": version,
               "source_frontier_ns": int(reference.source_frontier_ns), "arrays": arrays}
-    # Do not add even a null marker to v1/v2: their serialized identity is frozen.
-    if version == BOUNDARY_CERTIFIED_VERSION:
+    # Do not add new null markers to older versions: their identity is frozen.
+    if version >= BOUNDARY_CERTIFIED_VERSION:
         result["certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
+    if version == BOUNDARY_CONTINUATION_VERSION:
+        result["continuation_representation"] = CONTINUATION_REPRESENTATION
     return result
 
 
 def _boundary_capacity(name):
     return (200000 if name in ("support_segments", "segment_owner")
             or name in BOUNDARY_EDGE_ARRAYS or name in BOUNDARY_CERTIFIED_ARRAYS
+            or name in BOUNDARY_CONTINUATION_ARRAYS
             else MAX_GEOMETRY_POINTS)
 
 
@@ -130,8 +152,10 @@ def _load_boundary(data, source_frontier_ns, expected_version):
     value = _decode_json(data)
     _require_local_only(value)
     fields = {"representation", "version", "source_frontier_ns", "arrays"}
-    if expected_version == BOUNDARY_CERTIFIED_VERSION:
+    if expected_version >= BOUNDARY_CERTIFIED_VERSION:
         fields.add("certified_model_representation")
+    if expected_version == BOUNDARY_CONTINUATION_VERSION:
+        fields.add("continuation_representation")
     if (set(value) != fields
             or value["representation"] != BOUNDARY_REPRESENTATION
             or type(value["version"]) is not int or value["version"] != expected_version
@@ -139,16 +163,21 @@ def _load_boundary(data, source_frontier_ns, expected_version):
             or value["source_frontier_ns"] != source_frontier_ns
             or not isinstance(value["arrays"], dict)):
         raise ValueError("boundary representation/frontier mismatch")
-    if (expected_version == BOUNDARY_CERTIFIED_VERSION
+    if (expected_version >= BOUNDARY_CERTIFIED_VERSION
             and value["certified_model_representation"] != CERTIFIED_MODEL_REPRESENTATION):
         raise ValueError("unsupported certified model representation")
+    if (expected_version == BOUNDARY_CONTINUATION_VERSION
+            and value["continuation_representation"] != CONTINUATION_REPRESENTATION):
+        raise ValueError("unsupported continuation representation")
     specs = dict(BOUNDARY_ARRAYS)
-    if expected_version in (BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
+    if expected_version in (BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION, BOUNDARY_CONTINUATION_VERSION):
         specs.update(BOUNDARY_GRAPH_ARRAYS)
     elif expected_version != BOUNDARY_VERSION:
         raise ValueError("unsupported boundary geometry version")
-    if expected_version == BOUNDARY_CERTIFIED_VERSION:
+    if expected_version >= BOUNDARY_CERTIFIED_VERSION:
         specs.update(BOUNDARY_CERTIFIED_ARRAYS)
+    if expected_version == BOUNDARY_CONTINUATION_VERSION:
+        specs.update(BOUNDARY_CONTINUATION_ARRAYS)
     if set(value["arrays"]) != set(specs):
         raise ValueError("boundary member set differs from explicit geometry version")
     arrays = {}
@@ -191,14 +220,20 @@ def _boundary_schema(payload, schema):
     if schema == BOUNDARY_SCHEMA_VERSION:
         if (payload.get("feature_representation") != BOUNDARY_REPRESENTATION
                 or type(payload.get("boundary_version")) is not int
-                or payload["boundary_version"] not in (BOUNDARY_VERSION, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION)):
+                or payload["boundary_version"] not in (BOUNDARY_VERSION, BOUNDARY_GRAPH_VERSION,
+                                                       BOUNDARY_CERTIFIED_VERSION, BOUNDARY_CONTINUATION_VERSION)):
             raise ValueError("boundary schema requires explicit representation/version")
-        if payload["boundary_version"] == BOUNDARY_CERTIFIED_VERSION:
+        if payload["boundary_version"] >= BOUNDARY_CERTIFIED_VERSION:
             if payload.get("certified_model_representation") != CERTIFIED_MODEL_REPRESENTATION:
                 raise ValueError("boundary v3 requires explicit certified model representation")
         elif "certified_model_representation" in payload:
             raise ValueError("legacy boundary cannot claim certified model geometry")
-    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference", "certified_model_representation")):
+        if payload["boundary_version"] == BOUNDARY_CONTINUATION_VERSION:
+            if payload.get("continuation_representation") != CONTINUATION_REPRESENTATION:
+                raise ValueError("boundary v4 requires explicit continuation representation")
+        elif "continuation_representation" in payload:
+            raise ValueError("legacy boundary cannot claim continuation permissions")
+    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference", "certified_model_representation", "continuation_representation")):
         raise ValueError("legacy bundle cannot claim boundary geometry")
 
 
@@ -281,8 +316,10 @@ def build_bundle(outputroot, snapshot, calibration, route_config=None, session_i
         boundary_payload = _boundary_payload(snapshot.boundary_reference)
         shared.update(feature_representation=BOUNDARY_REPRESENTATION,
                       boundary_version=boundary_payload["version"])
-        if boundary_payload["version"] == BOUNDARY_CERTIFIED_VERSION:
+        if boundary_payload["version"] >= BOUNDARY_CERTIFIED_VERSION:
             shared["certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
+        if boundary_payload["version"] == BOUNDARY_CONTINUATION_VERSION:
+            shared["continuation_representation"] = CONTINUATION_REPRESENTATION
     route.update(shared)
     metadata = dict(shared, schema_version=schema, session_id=session_id,
                     finished=True, model_type="causal_odometry_mask_consensus",

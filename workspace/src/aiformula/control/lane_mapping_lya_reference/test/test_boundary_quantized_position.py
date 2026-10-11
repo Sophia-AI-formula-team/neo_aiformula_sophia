@@ -185,7 +185,12 @@ def test_only_explicit_legacy_none_uses_raw_positions_not_invalid_models():
     calibration=camera();observed=observe(diagonal_mask(calibration),calibration)
     legacy=replace(observed,position_estimates=None,position_valid=None,position_sensitivity=None,position_reliable=None,
                    position_normals=None, position_segments=None, position_segment_valid=None,
-                   position_segment_sensitivity=None, position_segment_reliable=None)
+                   position_segment_sensitivity=None, position_segment_reliable=None,
+                   position_footprints=None)
+    # An explicit legacy fixture clears every model sidecar. Keeping the new
+    # footprint without its parent model remains malformed, never a fallback.
+    with pytest.raises(ValueError, match='position footprints require finite position fragments'):
+        replace(legacy, position_footprints=observed.position_footprints)
     assert legacy.model_points is legacy.points and legacy.model_valid is legacy.valid
     assert legacy.model_sensitivity is legacy.sensitivity and legacy.model_reliable is legacy.reliable
     assert legacy.model_normals is legacy.normals

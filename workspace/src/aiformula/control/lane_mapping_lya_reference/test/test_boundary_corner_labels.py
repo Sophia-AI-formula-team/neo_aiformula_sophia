@@ -56,12 +56,13 @@ def _extract_with_domains(mask, monkeypatch, *, degrees=0.):
     calls = []
     mask_before = mask.tobytes()
     config_before = dict(paint.DEFAULT_CONFIG)
-    def traced(points, segments, stable, paths, cfg, *, white_xy=None, black_xy=None):
+    def traced(points, segments, stable, paths, cfg, *, white_xy=None, black_xy=None,
+               cut_evidence=None):
         assert white_xy is not None and black_xy is not None
         arrays = [points, segments, stable, white_xy, black_xy] + [path for path, _ in paths]
         before = [(value.dtype.str, value.shape, value.tobytes()) for value in arrays]
         result = original(points, segments, stable, paths, cfg,
-                          white_xy=white_xy, black_xy=black_xy)
+                          white_xy=white_xy, black_xy=black_xy, cut_evidence=cut_evidence)
         assert before == [(value.dtype.str, value.shape, value.tobytes()) for value in arrays]
         # A cut changes only fitting domains, never ownership or raw adjacency.
         expected_ids = sorted(int(index) for path, _ in paths for index in path)

@@ -17,10 +17,13 @@ import numpy as np
 from .finite_support import (DomainState, advance_domain, certified_segments,
                              _compact_confirmed_domain, _validate_frame_batch,
                              _advance_domain_validated)
+from .continuation_support import (ContinuationFrame, retain_frames, common_intervals,
+                                   FIELDS as CONTINUATION_FIELDS,
+                                   REPRESENTATION as CONTINUATION_REPRESENTATION)
 
 
 REPRESENTATION = "paint_boundary_v1"
-BOUNDARY_VERSION = 3
+BOUNDARY_VERSION = 4
 TOPOLOGY_REPRESENTATION = "confirmed_contour_node_chords_v1"
 CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
 FOOTPRINT_MODEL_REPRESENTATION = "wb_pixel_footprint_local_tangent_v1"
@@ -37,6 +40,8 @@ REASON_METRIC = 1
 REASON_SENSITIVITY = 2
 REASON_DIRECTION = 4
 REASON_J4_UNOBSERVED = 8
+REASON_COMPETING_DIRECTION = 16
+REASON_DIRECTION_UNCERTAIN = 32
 
 
 def _integer(value, name, minimum=0, maximum=2 ** 63 - 1):
@@ -100,6 +105,7 @@ class BoundaryObservation:
     position_segment_valid: object = None
     position_segment_sensitivity: object = None
     position_segment_reliable: object = None
+    position_footprints: object = None
 
     def __post_init__(self):
         count = len(np.asarray(self.points))
@@ -175,6 +181,13 @@ class BoundaryObservation:
                     or np.any(np.isfinite(self.position_segment_sensitivity) & (self.position_segment_sensitivity < 0.))
                     or np.any(self.position_segment_reliable & ~(good & self.position_reliable))):
                 raise ValueError("invalid pixel-footprint position fragment")
+        if self.position_footprints is not None:
+            if self.position_segments is None:
+                raise ValueError("position footprints require finite position fragments")
+            object.__setattr__(self, "position_footprints", _frozen(
+                self.position_footprints, np.float64, (count, 4, 2), "position footprints", finite=False))
+            if np.any(self.position_segment_valid & ~np.all(np.isfinite(self.position_footprints), axis=(1, 2))):
+                raise ValueError("invalid position footprint geometry")
 
     @property
     def model_points(self):
@@ -217,6 +230,8 @@ class BoundaryObservation:
                 values["position_normals"] = self.position_normals @ rotation.T
                 if self.position_segments is not None:
                     values["position_segments"] = self.position_segments @ rotation.T + pose[:2]
+                if self.position_footprints is not None:
+                    values["position_footprints"] = self.position_footprints @ rotation.T + pose[:2]
         return BoundaryObservation(**values)
 
 
@@ -241,6 +256,11 @@ class BoundaryReference:
     certified_model_frame_votes: object = None
     certified_model_reliable_votes: object = None
     certified_model_last_stamp_ns: object = None
+    continuation_intervals: object = None
+    continuation_primitive: object = None
+    continuation_frame_votes: object = None
+    continuation_reliable_votes: object = None
+    continuation_last_stamp_ns: object = None
 
     def __post_init__(self):
         n, m = len(np.asarray(self.points_xy)), len(np.asarray(self.support_segments))
@@ -332,6 +352,35 @@ class BoundaryReference:
                 lengths = np.sum(delta*delta, axis=1)
             if np.any(~np.isfinite(lengths)) or np.any(lengths <= 0.):
                 raise ValueError("certified model must have finite positive length")
+        supplied_continuations = [getattr(self, name) is not None for name in CONTINUATION_FIELDS]
+        if any(supplied_continuations):
+            if not all(supplied_continuations) or not all(supplied_model):
+                raise ValueError("continuation evidence requires all arrays and certified geometry")
+            count = len(self.continuation_primitive)
+            if max(m, len(self.directed_edges)) + len(self.certified_model_segments) + count > 200000:
+                raise ValueError("combined continuation model capacity")
+            for name in CONTINUATION_FIELDS:
+                shape = (count, 2) if name == "continuation_intervals" else (count,)
+                dtype = np.float64 if name == "continuation_intervals" else np.int64
+                object.__setattr__(self, name, _frozen(getattr(self, name), dtype, shape, name))
+            ids, spans = self.continuation_primitive, self.continuation_intervals
+            if (np.any(ids < 0) or np.any(ids >= len(self.certified_model_segments))
+                    or np.any(spans[:, 0] < 0.) or np.any(spans[:, 1] > 1.)
+                    or np.any(spans[:, 0] >= spans[:, 1])
+                    or np.any(self.continuation_frame_votes < 1)
+                    or np.any(self.continuation_reliable_votes < 1)
+                    or np.any(self.continuation_reliable_votes > self.continuation_frame_votes)
+                    or np.any(self.continuation_last_stamp_ns <= 0)
+                    or (count and np.any(self.continuation_last_stamp_ns > self.source_frontier_ns))):
+                raise ValueError("invalid continuation permission")
+            if count:
+                owners = self.certified_model_owner[ids]
+                if (np.any(self.continuation_frame_votes > self.votes[owners])
+                        or np.any(self.continuation_reliable_votes > self.reliable_votes[owners])):
+                    raise ValueError("continuation votes exceed owner evidence")
+                same = ids[1:] == ids[:-1]
+                if np.any(ids[1:] < ids[:-1]) or np.any(same & (spans[1:, 0] <= spans[:-1, 1])):
+                    raise ValueError("continuation intervals must be ordered and disjoint")
 
     @property
     def representation(self):
@@ -343,11 +392,17 @@ class BoundaryReference:
 
     @property
     def boundary_version(self):
+        if self.continuation_intervals is not None:
+            return 4
         return 3 if self.certified_model_segments is not None else (2 if self.directed_edges is not None else 1)
 
     @property
     def certified_model_representation(self):
         return None if self.certified_model_segments is None else CERTIFIED_MODEL_REPRESENTATION
+
+    @property
+    def continuation_representation(self):
+        return None if self.continuation_intervals is None else CONTINUATION_REPRESENTATION
 
     def subset(self, indices):
         raw = np.asarray(indices)
@@ -375,6 +430,13 @@ class BoundaryReference:
             retained = model_owners >= 0
             graph.update({name: getattr(self, name)[retained] for name in CERTIFIED_MODEL_FIELDS})
             graph["certified_model_owner"] = model_owners[retained]
+            if self.continuation_intervals is not None:
+                primitive_map = np.full(len(retained), -1, dtype=np.int64)
+                primitive_map[retained] = np.arange(np.sum(retained))
+                primitives = primitive_map[self.continuation_primitive]
+                keep_permission = primitives >= 0
+                graph.update({name: getattr(self, name)[keep_permission] for name in CONTINUATION_FIELDS})
+                graph["continuation_primitive"] = primitives[keep_permission]
         return BoundaryReference(self.points_xy[ids], self.normals[ids], self.support_segments[keep],
                                  owners[keep], self.votes[ids], self.reliable_votes[ids],
                                  self.record_ids[ids], self.source_frontier_ns, **graph)
@@ -426,6 +488,10 @@ class PreparedBoundaryUpdate:
     stats: object
     domain_updates: tuple = ()
     domain_interval_count: int = 0
+    continuation_updates: tuple = ()
+    continuation_storage_count: int = 0
+    permission_bound_updates: tuple = ()
+    permission_bound_count: int = 0
 
 
 def _contiguous_cell_runs(obs, eligible, cells, cosine):
@@ -622,6 +688,10 @@ class BoundaryConsensus:
         self._domains = {}
         self._domain_expiry = {}
         self._domain_interval_count = 0
+        self._continuations = {}
+        self._continuation_storage_count = 0
+        self._permission_bounds = {}
+        self._permission_bound_count = 0
         self._generation = 0
         self._next_record_id = 0
         self._segment_count = 0
@@ -916,6 +986,13 @@ class BoundaryConsensus:
             domains.append((record_id, domain))
         if max(segments, edge_count) + domain_count > cfg["max_support_segments"]:
             raise ValueError("combined boundary finite-domain capacity")
+        continuation_updates, continuation_count = self._prepare_continuations(
+            obs, updates, face_owner, expired, cosine)
+        if max(segments, edge_count) + domain_count + continuation_count > cfg["max_support_segments"]:
+            raise ValueError("combined boundary continuation capacity")
+        permission_bounds, permission_count = self._prepare_permission_capacity(
+            records, expired, edge_updates, expired_edges, domains, continuation_updates,
+            segments, edge_count, domain_count, continuation_count)
         stats = MappingProxyType({"input_edges": len(obs.points), "eligible_edges": len(eligible),
                                   "invalid_edges": len(obs.points) - len(eligible), "updated_records": len(records),
                                   "ambiguous_groups": ambiguous_groups, "expired_candidates": len(expired),
@@ -925,13 +1002,120 @@ class BoundaryConsensus:
                                   "topology_updated_edges": len(edge_updates),
                                   "topology_expired_edges": len(expired_edges),
                                   "certified_domain_intervals": domain_count,
+                                  **({"continuation_storage_units": continuation_count}
+                                     if continuation_updates or self._continuations else {}),
                                   "finite_domain_support_policy": ("direct_incident_model_next_v1"
                                       if obs.position_segments is None else
                                       "direct_incident_next_plus_wb_pixel_tangent_v1"),
                                   "topology_representation": TOPOLOGY_REPRESENTATION})
         return PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records), expired,
                                       next_id, segments, tuple(edge_updates), expired_edges, stats,
-                                      tuple(domains), domain_count)
+                                      tuple(domains), domain_count,
+                                      continuation_updates, continuation_count,
+                                      permission_bounds, permission_count)
+
+    def _prepare_permission_capacity(self, records, expired, edges, expired_edges,
+                                     domains, continuations, segment_count, edge_count,
+                                     domain_count, continuation_count):
+        """Guarantee capacity before publication, not at the next snapshot.
+
+        An inward clip of one convex quad is one interval. Union/voting and
+        intersection cannot produce more components than the input intervals;
+        an owner exports at most one primitive per domain piece. Thus
+        domain_piece_count * retained_quad_count bounds its permission count.
+        Cache only this integer bound, updated transactionally with the same
+        owner delta; do not re-clip the whole map at every prepare.
+
+        If this conservative bound reaches capacity, use an unpublished view
+        to count EXACT exported permissions. A bound is never itself a reason
+        to reject, evict evidence or enlarge the configured capacity.
+        """
+        if not continuations and not self._continuations:
+            return (), 0
+        new_domains, new_continuations = dict(domains), dict(continuations)
+        count = self._permission_bound_count-sum(self._permission_bounds.get(key, 0) for key in expired)
+        updates = []
+        for key in sorted(new_domains.keys() | new_continuations.keys()):
+            domain = new_domains.get(key, self._domains.get(key))
+            hypotheses = new_continuations.get(key, self._continuations.get(key, {}))
+            quads = sum(len(frame.quads) for frames in hypotheses.values() for frame in frames)
+            bound = 0 if domain is None else len(domain.intervals)*quads
+            count += bound-self._permission_bounds.get(key, 0)
+            updates.append((key, bound))
+        base = max(segment_count, edge_count)+domain_count+continuation_count
+        if base+count > self.config['max_support_segments']:
+            # New dictionaries, immutable values: no public state/frontier or
+            # token owner is changed while checking the prospective export.
+            view = BoundaryConsensus(self.config)
+            expired_set, expired_edge_set = set(expired), set(expired_edges)
+            view._records = {key: value for key, value in self._records.items() if key not in expired_set}
+            view._records.update((record.record_id, record) for record in records)
+            view._domains = {key: value for key, value in self._domains.items() if key not in expired_set}
+            view._domains.update(new_domains)
+            view._continuations = {key: value for key, value in self._continuations.items() if key not in expired_set}
+            view._continuations.update(new_continuations)
+            view._edges = {key: value for key, value in self._edges.items() if key not in expired_edge_set}
+            view._edges.update(((edge.source_id, edge.target_id), edge) for edge in edges)
+            view._segment_count, view._domain_interval_count = segment_count, domain_count
+            view._continuation_storage_count = continuation_count
+            confirmed = [record for record in view._records.values() if view._confirmed(record)]
+            view._certified_model(confirmed, {record.record_id: index for index, record in enumerate(confirmed)})
+        return tuple(updates), count
+
+    @staticmethod
+    def _continuation_size(hypotheses):
+        return sum(1 + sum(frame.storage_units for frame in frames) for frames in hypotheses.values())
+
+    def _prepare_continuations(self, obs, updates, face_owner, expired, cosine):
+        """Immutable per-frame identity alternatives, including missing data.
+
+        One final record owns one actual contiguous run in this frame. Its two
+        immediate observed neighbours define the hypothesis; there is no graph
+        traversal, synthetic subdivision, gap bridging, or edge-vote copying.
+        Only the owner's own qualified pixel quads supply geometric evidence.
+        """
+        # Legacy/manual observations contain no pixel-area evidence. They
+        # retain the old branch rejection and need no empty sidecar inventory.
+        if obs.position_footprints is None and not self._continuations:
+            return (), 0
+        count = self._continuation_storage_count - sum(
+            self._continuation_size(self._continuations.get(key, {})) for key in expired)
+        result, cfg = [], self.config
+        for record_id, _, _, _, _, _, faces in updates:
+            previous, following = int(obs.previous[faces[0]]), int(obs.next[faces[-1]])
+            signature = (int(face_owner[previous]) if previous >= 0 else -1,
+                         int(face_owner[following]) if following >= 0 else -1)
+            old = self._continuations.get(record_id, {})
+            hypotheses = dict(old)
+            selected = np.empty(0, dtype=np.int64)
+            if obs.position_footprints is not None:
+                admitted = (obs.model_valid[faces] & obs.position_segment_valid[faces]
+                    & (obs.model_sensitivity[faces] <= cfg['max_sensitivity'])
+                    & (obs.position_segment_sensitivity[faces] <= cfg['max_sensitivity']))
+                selected = faces[admitted]
+            quads = (np.empty((0, 4, 2)) if not len(selected)
+                     else obs.position_footprints[selected])
+            trusted = np.zeros(len(selected), dtype=bool)
+            if len(selected):
+                trusted = (obs.model_reliable[selected] & obs.position_segment_reliable[selected]
+                    & (obs.model_sensitivity[selected] <= cfg['reliable_sensitivity'])
+                    & (obs.position_segment_sensitivity[selected] <= cfg['reliable_sensitivity']))
+            # Neighbour validity/normal agreement is part of the observed run
+            # identity, not just a direction at the public mean. A broken end
+            # remains inventoried but contributes no permission this frame.
+            endpoints = (int(faces[0]), int(faces[-1]))
+            if min(signature) < 0 or any(float(np.dot(obs.model_normals[own], obs.model_normals[other])) < cosine
+                    for own, other in zip(endpoints, (previous, following)) if other >= 0):
+                selected, quads, trusted = np.empty(0, dtype=np.int64), np.empty((0, 4, 2)), np.empty(0, dtype=bool)
+            elif not np.all(obs.model_reliable[[*endpoints, previous, following]] &
+                            (obs.model_sensitivity[[*endpoints, previous, following]] <= cfg['reliable_sensitivity'])):
+                trusted[:] = False
+            frame = ContinuationFrame(obs.source_stamp_ns, quads, obs.model_normals[selected], trusted)
+            hypotheses[signature] = retain_frames(old.get(signature, ()), frame,
+                cfg['minimum_frame_votes'], cfg['minimum_reliable_votes'])
+            count += self._continuation_size(hypotheses)-self._continuation_size(old)
+            result.append((record_id, MappingProxyType(hypotheses)))
+        return tuple(result), count
 
     def can_commit(self, prepared):
         return (isinstance(prepared, PreparedBoundaryUpdate) and prepared.owner is self
@@ -949,6 +1133,8 @@ class BoundaryConsensus:
             del self._records[record_id]
             self._domains.pop(record_id, None)
             self._domain_expiry.pop(record_id, None)
+            self._continuations.pop(record_id, None)
+            self._permission_bounds.pop(record_id, None)
         for record in prepared.updates:
             old = self._records.get(record.record_id)
             if old is not None and old.cell != record.cell:
@@ -974,6 +1160,10 @@ class BoundaryConsensus:
             else:
                 self._domain_expiry.pop(record_id, None)
         self._domain_interval_count = prepared.domain_interval_count
+        self._continuations.update(prepared.continuation_updates)
+        self._continuation_storage_count = prepared.continuation_storage_count
+        self._permission_bounds.update(prepared.permission_bound_updates)
+        self._permission_bound_count = prepared.permission_bound_count
         self._next_record_id = prepared.next_record_id
         self._segment_count = prepared.segment_count
         self._confirmed_count = prepared.stats["confirmed_records"]
@@ -1004,7 +1194,55 @@ class BoundaryConsensus:
         values = (np.concatenate(pieces) if pieces else np.empty((0, 2, 2)),)
         values += tuple(np.concatenate(items) if items else np.empty(0, dtype=np.int64)
                         for items in (owners, votes, reliable, stamps))
-        return dict(zip(CERTIFIED_MODEL_FIELDS, values))
+        result = dict(zip(CERTIFIED_MODEL_FIELDS, values))
+        if self._continuations:
+            result.update(self._continuation_permissions(records, slots, result))
+        return result
+
+    def _continuation_permissions(self, records, slots, model):
+        """Export alpha permissions without modifying nearest geometry/order."""
+        cfg = self.config
+        incoming, outgoing = {}, {}
+        # GLOBAL inventory: a local crop cannot hide a competing continuation.
+        for edge in self._edges.values():
+            if (self._confirmed(edge) and self._confirmed(self._records[edge.source_id])
+                    and self._confirmed(self._records[edge.target_id])):
+                outgoing.setdefault(edge.source_id, set()).add(edge.target_id)
+                incoming.setdefault(edge.target_id, set()).add(edge.source_id)
+        by_slot = {slots[record.record_id]: record for record in records}
+        spans, primitives, stamps = [], [], []
+        cosine = math.cos(cfg['normal_max_angle_rad'])
+        for index, (segment, slot) in enumerate(zip(model['certified_model_segments'], model['certified_model_owner'])):
+            record = by_slot[int(slot)]
+            before, after = incoming.get(record.record_id, set()), outgoing.get(record.record_id, set())
+            if len(before) <= 1 and len(after) <= 1:
+                continue
+            hypotheses = self._continuations.get(record.record_id, {})
+            if (not hypotheses or not before.issubset({key[0] for key in hypotheses})
+                    or not after.issubset({key[1] for key in hypotheses})):
+                continue
+            delta = segment[1]-segment[0]
+            normal = np.array([delta[1], -delta[0]]) / np.linalg.norm(delta)
+            if float(np.dot(normal, record.normal)) < 0.:
+                normal *= -1.
+            permitted = common_intervals(segment, normal, hypotheses,
+                minimum_frames=cfg['minimum_frame_votes'], minimum_reliable=cfg['minimum_reliable_votes'],
+                cosine=cosine)
+            if permitted:
+                spans.extend(permitted)
+                primitives.extend([index]*len(permitted))
+                frontier = max(frame.stamp_ns for frames in hypotheses.values() for frame in frames)
+                stamps.extend([frontier]*len(permitted))
+        count = len(spans)
+        if (max(self._segment_count, len(self._edges)) + self._domain_interval_count
+                + self._continuation_storage_count + count > cfg['max_support_segments']):
+            raise ValueError('combined boundary permission capacity')
+        values = (np.asarray(spans, dtype=np.float64).reshape(-1, 2),
+                  np.asarray(primitives, dtype=np.int64),
+                  np.full(count, cfg['minimum_frame_votes'], dtype=np.int64),
+                  np.full(count, cfg['minimum_reliable_votes'], dtype=np.int64),
+                  np.asarray(stamps, dtype=np.int64))
+        return dict(zip(CONTINUATION_FIELDS, values))
 
     def snapshot_near(self, center_xy, radius_m, maximum_points):
         """Exact full-snapshot/filter/stable-sort/subset without full packaging.
@@ -1227,7 +1465,8 @@ def _projector(lookup, normal_body):
     return project, unproject
 
 
-def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, black_xy=None):
+def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, black_xy=None,
+                     cut_evidence=None):
     """Partition fitting domains where independent local directions turn.
 
     A cardinal image turn may be a staircase, not a physical corner. Compare
@@ -1262,6 +1501,7 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
         junctions = np.arange(count if closed else count-1)
         score = np.full(len(junctions), -np.inf)
         quality = np.full(len(junctions), np.inf)
+        corner_normals = {}
         # Bounded temporary blocks independent of total contour length.
         for start in range(0, len(junctions), 128):
             rows = junctions[start:start+128]
@@ -1328,6 +1568,8 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
                     normals[np.sum(normals*outward, axis=1) < 0.] *= -1.
                     accepted[slot] = certify_corner_brackets(junction[slot],
                         np.stack((first[slot], second[slot])), normals, white, black) is not None
+                    if cut_evidence is not None and accepted[slot]:
+                        corner_normals[int(rows[slot])] = normals.copy()
             score[rows[accepted]] = 1.-agreement[accepted]
             ratio = eigenvalues[:, 0]/eigenvalues[:, 1]
             quality[rows[accepted]] = np.sum(ratio.reshape(-1, 2), axis=1)[accepted]
@@ -1349,6 +1591,10 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
             result.append((path, closed))
             continue
         cuts.sort()
+        if cut_evidence is not None and white_xy is not None:
+            for cut in cuts:
+                side_ids = path[(cut+np.arange(-k+1, k+1)) % count].reshape(2, k)
+                cut_evidence.append((side_ids.copy(), corner_normals[cut]))
         if closed:
             for start, stop in zip(cuts, cuts[1:]+[cuts[0]+count]):
                 result.append((path[np.arange(start+1, stop+1) % count], False))
@@ -1359,7 +1605,8 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
     return result
 
 
-def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, paths, cfg):
+def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, paths, cfg,
+                *, cut_evidence=None):
     """Batched contour-only windows. Stops at missing/J-cut/opposite faces.
 
     Limiting arc distance (rather than Euclidean distance alone) also prevents
@@ -1390,7 +1637,8 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
         radius = min(radius * 2., cfg["normal_max_radius_m"])
     radii.append(cfg["normal_max_radius_m"])
     for path, closed in _direction_paths(points, segments, ok, paths, cfg,
-                                        white_xy=white_xy, black_xy=black_xy):
+                                        white_xy=white_xy, black_xy=black_xy,
+                                        cut_evidence=cut_evidence):
         count = len(path)
         if count < cfg["normal_min_points"]:
             continue
@@ -1675,6 +1923,51 @@ def _quantized_positions(white_xy, black_xy, normals, line_points, valid):
     return positions, good
 
 
+def _competing_endpoint_directions(cuts, points, segments, white_xy, black_xy,
+                                    pixel_outward, stable, radii, model_normals,
+                                    model_valid, cfg):
+    """Do not publish an endpoint's direction when its labels admit the other side.
+
+    Only endpoints of ACTUAL selected fitting cuts are tested. Both original
+    k-face corner windows already passed the old PCA/stability gates. The
+    competitor additionally needs the seed's original contiguous arc radius
+    and pixel-polarity gates. No new window, graph link or substitute fit is
+    created. This is a limited ambiguity veto, not proof of a unique curve.
+    """
+    from .corner_direction import competing_line_direction
+    decisions = np.zeros(len(points), dtype=np.int64)
+    cosine = math.cos(CONSENSUS_DEFAULT_CONFIG['normal_max_angle_rad'])
+    for side_ids, normals in cuts:
+        for side in (0, 1):
+            seed = int(side_ids[side, -1 if side == 0 else 0])
+            if not model_valid[seed]:
+                continue
+            other = side_ids[1-side]
+            if len(other) != cfg['normal_min_points'] or not np.all(stable[other]) or not stable[seed]:
+                continue
+            if np.any(pixel_outward[other] @ pixel_outward[seed] < 0):
+                continue
+            run = np.r_[seed, other] if side == 0 else np.r_[other, seed]
+            # Do not cross an unobserved face, J gap, or a different cut.
+            if not np.all(segments[run[:-1], 1] == segments[run[1:], 0]):
+                continue
+            step = (np.linalg.norm(segments[run[:-1], 1]-points[run[:-1]], axis=1)
+                    + np.linalg.norm(points[run[1:]]-segments[run[:-1], 1], axis=1))
+            # Original radius is an arc distance, not an easier Euclidean test.
+            if not np.all(np.isfinite(step)) or np.sum(step) > radii[seed]:
+                continue
+            labels = np.r_[other, seed]
+            try:
+                status = competing_line_direction(white_xy[labels], black_xy[labels],
+                    normals[1-side], model_normals[seed], cosine).status
+            except ValueError:
+                status = 'indeterminate'
+            if status != 'clear':
+                decisions[seed] |= (REASON_COMPETING_DIRECTION if status == 'ambiguous'
+                                    else REASON_DIRECTION_UNCERTAIN)
+    return decisions
+
+
 def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, threshold=127, config=None):
     """Extract all internal faces, retaining invalid evidence and its reasons.
 
@@ -1727,8 +2020,10 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
         sensitivity[start:stop] = np.where(all_good, values, np.inf)
         j_observed[start:stop] = all_good
     stable = metric & j_observed & np.isfinite(sensitivity) & (sensitivity <= maximum_j)
+    cut_evidence = []
     normals, normal_valid, support_count, radii, coefficients, scales, bounds = _directions(
-        points, segments, white_xy, black_xy, black - white, stable, paths, cfg)
+        points, segments, white_xy, black_xy, black - white, stable, paths, cfg,
+        cut_evidence=cut_evidence)
     valid = stable & normal_valid
     model_points, model_normals, model_valid = _quantized_curve_positions(
         white_xy, black_xy, points, normals, coefficients, scales, bounds, valid)
@@ -1741,6 +2036,11 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
         normal_valid[ids] = admitted
         support_count[ids], radii[ids] = counts, radius
         model_points[ids], model_normals[ids], model_valid[ids] = positions, position_normals, admitted
+    # Run after ALL proposals: an island fallback cannot restore this rejected
+    # direction. Retain proposed coordinates for audit, but never map/match them.
+    model_direction_reasons = _competing_endpoint_directions(cut_evidence, points,
+        segments, white_xy, black_xy, black-white, stable, radii, model_normals, model_valid, cfg)
+    model_valid &= model_direction_reasons == 0
     valid = stable & normal_valid
     reliable = valid & (sensitivity <= cfg["reliable_sensitivity"])
     # Projective metric fraction is NOT the image fraction. Reproject the
@@ -1759,6 +2059,7 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
     from .footprint_geometry import (pixel_footprints, projector_homography_bounds,
                                      quad_j4_upper_bound, clip_local_lines)
     fragment_segments = np.full((n, 2, 2), np.nan)
+    footprint_quads = np.full((n, 4, 2), np.nan)
     fragment_valid, fragment_j = np.zeros(n, dtype=bool), np.full(n, np.inf)
     ids = np.flatnonzero(model_valid)
     if len(ids):
@@ -1767,6 +2068,7 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
         homography = projector_homography_bounds(*project.homography_components)
         upper_j, whole_good = quad_j4_upper_bound(homography, footprint_uv, width, height)
         footprint_xy, quad_good = project(footprint_uv)
+        footprint_quads[ids] = footprint_xy.reshape(-1, 4, 2)
         clipped, clip_good = clip_local_lines(footprint_xy.reshape(-1, 4, 2),
                                               model_points[ids], model_normals[ids])
         admitted = whole_good & (upper_j <= maximum_j) & np.all(quad_good.reshape(-1, 4), axis=1) & clip_good
@@ -1775,7 +2077,8 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
     reasons = ((~metric).astype(np.int64) * REASON_METRIC
                | (~stable).astype(np.int64) * REASON_SENSITIVITY
                | (~normal_valid).astype(np.int64) * REASON_DIRECTION
-               | (~j_observed).astype(np.int64) * REASON_J4_UNOBSERVED)
+               | (~j_observed).astype(np.int64) * REASON_J4_UNOBSERVED
+               | model_direction_reasons)
     return BoundaryObservation(points, normals, segments, sensitivity, metric, stable, normal_valid,
                                valid, reliable, stamp, pixel_segments, white, black, previous,
                                following, contour_ids, reasons, support_count, radii,
@@ -1783,4 +2086,4 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *, 
                                model_valid & (model_j <= cfg["reliable_sensitivity"]), model_normals,
                                fragment_segments, fragment_valid, fragment_j,
                                fragment_valid & (fragment_j <= cfg["reliable_sensitivity"])
-                               & (model_j <= cfg["reliable_sensitivity"]))
+                               & (model_j <= cfg["reliable_sensitivity"]), footprint_quads)
