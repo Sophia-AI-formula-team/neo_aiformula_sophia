@@ -18,4 +18,9 @@ install(
     DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+    FILES SEMANTIC_DEPLOYMENT.md SEMANTIC_HANDOFF.md
+    DESTINATION share/${PROJECT_NAME}
+)
+
 ament_package()

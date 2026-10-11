@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>launchers</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>TODO: Package description</description>
   <maintainer email="masayaokada@jp.honda">masayaokada</maintainer>
   <license>TODO: License declaration</license>
@@ -14,9 +14,16 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>lane_line_publisher</exec_depend>
+  <exec_depend>lane_points</exec_depend>
+  <exec_depend>kalman_filter</exec_depend>
+  <exec_depend>trajectory_follower</exec_depend>
+  <exec_depend>semantic_local_planner_ros</exec_depend>
+  <exec_depend>semantic_drive_bridge</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
