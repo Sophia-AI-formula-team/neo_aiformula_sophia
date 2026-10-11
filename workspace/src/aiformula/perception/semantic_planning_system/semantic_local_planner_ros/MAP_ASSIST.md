@@ -275,7 +275,7 @@ ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 
 `target_stop_distance_m`（默认 8.5 米）作用于**保守距离下界**，不是对真实停车距离的无误差保证；加上测距不确定度后，实际停车可能更远。余量低于 `approach_stop_tolerance_m`（默认 0.1 米）时进入等待。实际车速超出剩余距离的制动包络时先发零命令并报告 `approach_braking`，仍保留接近状态；只有后续可靠距离及新控制命令才能恢复减速接近，防止普通制动滞后被误当成永久停车。
 
-接近过程中，当前真实灯色 `traffic_light_raw=unknown` 立即停止视觉控制，进入 `traffic_mode=perception_suspended`；unknown 自然没有距离时不伪造距离，也不直接当成结构故障。持续收到新鲜 unknown 时保持零速度，不输出视觉三点。仅在已经 approach 后发生的这种暂时颜色丢失具有恢复资格；它不适用于目标等待或已锁存故障。
+接近过程中，当前真实灯色 `traffic_light_raw=unknown` 立即停止视觉控制，进入 `traffic_mode=perception_suspended`；unknown 自然没有距离时不伪造距离，也不直接当成结构故障。持续收到新鲜 unknown 时保持零速度，不输出视觉三点。首次在 normal 状态确认红灯时也先检查当前原子观测：历史红票可能刚好达到完整窗口，而最新帧已经是 unknown；只要该帧的元数据及 odom 新鲜有效，就同样进入 perception_suspended，清空独立恢复窗口并立即输出零速度。下一帧 red 不能借用此前红票直接放行，必须满足下述完整重获门槛。首次确认时损坏/过期观测或无效/过期 odom 直接锁存故障；当前 red 缺失/无效距离也锁存故障，已到停车目标则正常等待。首次确认时当前 green 仍等待原多数绿灯确认。这个入口只处理 normal 中已确认的红灯意图，不把所有无信号 unknown 改成新的红灯，也不会重开已有目标等待或已锁存故障。
 
 颜色恢复必须使用丢失之后新收到的、连续 raw red 原子观测，每帧距离与 odom 均新鲜有效。独立恢复窗口必须完整经过 `traffic_vote_window_sec`（默认 0.5 秒），且窗口内至少 `traffic_vote_min_samples`（默认 3）个真实新帧；不能复用丢失前的红票，定时器、重复/倒序 sequence 都不补票。任何新 unknown 或 green 清空红色恢复窗口。只有新红帧到达时、仍在停车目标之外且实际车速满足制动包络，才重入 approach。重入先丢弃旧 ABC 和旧控制命令，并重新执行原来的延迟、新完整 ABC、新 LYA 命令门槛。重新看到目标已到达则进入正常目标等待；新红框突然变远不能解除目标等待。重获时实际车速超出包络仍保持零速度，等待后续安全的新观测。
 

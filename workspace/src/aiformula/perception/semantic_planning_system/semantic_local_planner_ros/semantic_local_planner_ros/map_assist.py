@@ -415,10 +415,26 @@ class MapAssist(Node):
             self.traffic_mode = "wait"
             self.traffic_reason = "red_wait_first_lap" if self.reference is None else "red_planning"
             if self.p["enable_signal_approach"]:
-                profile = self._signal_approach_profile(now)
-                if profile["valid"] and self.traffic_light_raw == "red" and profile["remaining_m"] > self.p["approach_stop_tolerance_m"]:
-                    self.traffic_mode = "approach"
-                    self.traffic_reason = "red_approach_signal"
+                # The first complete vote window can confirm older red frames
+                # while the current frame is unknown. Classify that input just
+                # like approach color loss; never strand it in legacy wait or
+                # use historical votes/range to authorize motion.
+                fault = self._signal_input_fault(now)
+                if fault:
+                    self._wait_for_signal(fault, fault=True)
+                elif self.traffic_light_raw == "unknown":
+                    self._wait_for_signal("signal_color_unknown")
+                    self.traffic_mode = "perception_suspended"
+                    self._clear_signal_recovery("waiting_current_red")
+                elif self.traffic_light_raw == "red":
+                    profile = self._signal_approach_profile(now)
+                    if not profile["valid"]:
+                        self._wait_for_signal(profile["reason"], fault=True)
+                    elif profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
+                        self._wait_for_signal("signal_target_reached")
+                    else:
+                        self.traffic_mode = "approach"
+                        self.traffic_reason = "red_approach_signal"
             self.guard.reset()
             self.last_correction = 0.0
             self.visual_motion_ready = False
