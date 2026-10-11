@@ -413,12 +413,56 @@ def _group_frame_means(points, normals, member_groups):
     return point_means, normal_means
 
 
+def _finite_tangent_overlap(first, second, normal, other_normal):
+    """Strict overlap of actual projected face intervals, not their hull.
+
+    This is an identity witness only: it cannot confirm a node/edge or create
+    localization support. Endpoint contact and zero-length projected faces do
+    not count. The SAME pair must overlap in both tangent charts. Sorting the
+    second interval set prunes candidates without an all-pairs allocation.
+    """
+    if not len(first) or not len(second):
+        return False
+    tangent = np.asarray((normal[1], -normal[0]))
+    origin = first[0, 0]
+    a = (first-origin) @ tangent
+    b = (second-origin) @ tangent
+    lo_a, hi_a = np.min(a, axis=1), np.max(a, axis=1)
+    lo_b, hi_b = np.min(b, axis=1), np.max(b, axis=1)
+    live_a, live_b = lo_a < hi_a, lo_b < hi_b
+    if not np.any(live_a) or not np.any(live_b):
+        return False
+    tangential_a = (first-origin) @ np.asarray((other_normal[1], -other_normal[0]))
+    tangential_b = (second-origin) @ np.asarray((other_normal[1], -other_normal[0]))
+    lo_a, hi_a = lo_a[live_a], hi_a[live_a]
+    other_lo_a, other_hi_a = np.min(tangential_a[live_a], axis=1), np.max(tangential_a[live_a], axis=1)
+    order = np.argsort(lo_b[live_b], kind="stable")
+    lo_b = lo_b[live_b][order]
+    hi_b = hi_b[live_b][order]
+    other_lo_b = np.min(tangential_b[live_b], axis=1)[order]
+    other_hi_b = np.max(tangential_b[live_b], axis=1)[order]
+    last = np.searchsorted(lo_b, hi_a, side="left")-1
+    available = last >= 0
+    available &= np.maximum.accumulate(hi_b)[np.maximum(last, 0)] > lo_a
+    for index in np.flatnonzero(available & (other_lo_a < other_hi_a)):
+        stop = last[index]+1
+        if np.any((hi_b[:stop] > lo_a[index])
+                  & (other_lo_b[:stop] < other_hi_a[index])
+                  & (other_hi_b[:stop] > other_lo_a[index])
+                  & (other_lo_b[:stop] < other_hi_b[:stop])):
+            return True
+    return False
+
+
 class BoundaryConsensus:
     """One vote per directed record per frame; filled consensus is untouched.
 
     Spatial cells are buckets, not unique keys: opposite normals and distinct
-    same-frame contours can occupy the same cell. Only unambiguous same-cell,
-    signed-direction associations can advance an old record. A rejected prepare
+    same-frame contours can occupy the same cell. Same-cell association is
+    primary. An unmatched run can cross one cell boundary only with unique,
+    finite geometry and repeated directed topology to independently matched
+    neighbours. Grid cells index means; they are not immutable identities.
+    A rejected prepare
     or an unused token cannot advance votes, geometry, expiry or source frontier.
 
     Records come from contiguous cell-runs, never disconnected re-entries.
@@ -446,7 +490,7 @@ class BoundaryConsensus:
             raise ValueError("inconsistent boundary consensus settings")
         self.config = MappingProxyType(cfg)
         self._records = {}
-        # Candidate association only needs records in the observed cell. This
+        # Candidate association uses the observed cell and its neighbours. This
         # ordered secondary index is published with successful map commits;
         # prepare/rejected tokens never mutate it or retain stale record objects.
         self._cell_records = {}
@@ -495,7 +539,7 @@ class BoundaryConsensus:
         groups = _contiguous_cell_runs(obs, eligible, cells, cosine)
         frame_points, frame_normals = _group_frame_means(
             model_points, model_normals, [members for _, _, members in groups])
-        prepared_groups, claims = [], {}
+        prepared_groups, claims, unmatched, reserved_ids = [], {}, [], set()
         for group_index, (cell, _, members) in enumerate(groups):
             faces = np.asarray(members, dtype=np.int64)
             point = frame_points[group_index]
@@ -509,14 +553,75 @@ class BoundaryConsensus:
                                  if record_id not in expired_set]
             choices = [record for record in buckets.get(cell, ())
                        if float(np.dot(normal, record.normal)) >= cosine]
+            # A same-cell tie/conflict must NOT gain an adjacent-cell escape.
+            if not choices:
+                unmatched.append(group_index)
             chosen = None
             if choices:
                 distances = np.asarray([np.sum((point - record.point) ** 2) for record in choices])
                 best = np.flatnonzero(distances == np.min(distances))
+                # Equal nearest candidates are claimed ambiguously, not free
+                # for another run's cross-cell association to take away.
+                reserved_ids.update(choices[int(index)].record_id for index in best)
                 if len(best) == 1:
                     chosen = choices[int(best[0])]
                     claims.setdefault(chosen.record_id, []).append(len(prepared_groups))
             prepared_groups.append((cell, faces, point, normal, chosen))
+        # Cross-cell identity is witnessed by the PAST graph and original
+        # unique same-cell matches. Never propagate a newly inferred identity
+        # through the current frame, or use current edges to certify themselves.
+        group_owner = np.full(len(obs.points), -1, dtype=np.int64)
+        for group_index, (_, faces, _, _, _) in enumerate(prepared_groups):
+            group_owner[faces] = group_index
+        seeds = {index: group[4].record_id for index, group in enumerate(prepared_groups)
+                 if group[4] is not None and len(claims[group[4].record_id]) == 1}
+        proposals, cross_claims = {}, {}
+        for group_index in unmatched:
+            cell, faces, _, normal, _ = prepared_groups[group_index]
+            witnesses = []
+            for is_previous, face in ((True, int(obs.previous[faces[0]])),
+                                      (False, int(obs.next[faces[-1]]))):
+                if face >= 0 and int(group_owner[face]) in seeds:
+                    witnesses.append((is_previous, seeds[int(group_owner[face])]))
+            if not witnesses:
+                continue
+            choices = []
+            raw_faces = obs.segments[faces]
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    if dx == 0 and dy == 0:
+                        continue
+                    for record_id in self._cell_records.get((cell[0]+dx, cell[1]+dy), ()):
+                        if record_id in expired_set or record_id in reserved_ids:
+                            continue
+                        record = self._records[record_id]
+                        if float(np.dot(normal, record.normal)) < cosine:
+                            continue
+                        compatible = True
+                        for is_previous, seed_id in witnesses:
+                            key = (seed_id, record_id) if is_previous else (record_id, seed_id)
+                            edge = self._edges.get(key)
+                            if (edge is None or edge.votes < cfg["minimum_frame_votes"]
+                                    or (ttl and not self._confirmed(edge)
+                                        and stamp-edge.last_stamp_ns > ttl)):
+                                compatible = False
+                                break
+                        if (compatible
+                                and _finite_tangent_overlap(raw_faces, record.segments, record.normal, normal)):
+                            choices.append(record)
+            # No nearest-choice shortcut here: two feasible physical histories
+            # are ambiguous even if one mean happens to be slightly closer.
+            for record in choices:
+                cross_claims.setdefault(record.record_id, []).append(group_index)
+            if len(choices) == 1:
+                proposals[group_index] = choices[0]
+        cross_associations = 0
+        for group_index, record in proposals.items():
+            if len(cross_claims[record.record_id]) == 1:
+                cell, faces, point, normal, _ = prepared_groups[group_index]
+                prepared_groups[group_index] = (cell, faces, point, normal, record)
+                claims[record.record_id] = [group_index]
+                cross_associations += 1
         next_id, face_owner, updates = self._next_record_id, np.full(len(obs.points), -1, dtype=np.int64), []
         ambiguous_groups = 0
         for cell, faces, point, normal, old in prepared_groups:
@@ -533,9 +638,11 @@ class BoundaryConsensus:
                 normal = np.asarray(old.normal) + (normal - old.normal) / votes
                 normal /= np.linalg.norm(normal)
             reliable_votes += int(np.any(model_reliable[faces] & (model_j[faces] <= cfg["reliable_sensitivity"])))
-            if (not np.all(np.isfinite(point)) or not np.all(np.isfinite(normal))
-                    or not np.all(np.abs(point / cfg["grid_resolution_m"] - np.asarray(cell)) <= .5 + 1.e-7)):
-                raise ValueError("boundary mean left original cell")
+            if not np.all(np.isfinite(point)) or not np.all(np.isfinite(normal)):
+                raise ValueError("nonfinite boundary mean")
+            # Publish an index for the fused mean, not the latest observation
+            # bucket. Re-indexing takes effect ONLY at successful commit.
+            cell = tuple(map(int, np.rint(point / cfg["grid_resolution_m"])))
             face_owner[faces] = record_id
             updates.append((record_id, cell, tuple(point), tuple(normal), votes, reliable_votes, faces))
         # Owners are final before any neighbour lookup. Integer gathering once
@@ -604,6 +711,7 @@ class BoundaryConsensus:
         stats = MappingProxyType({"input_edges": len(obs.points), "eligible_edges": len(eligible),
                                   "invalid_edges": len(obs.points) - len(eligible), "updated_records": len(records),
                                   "ambiguous_groups": ambiguous_groups, "expired_candidates": len(expired),
+                                  "adjacent_cell_associations": cross_associations,
                                   "candidate_records": final_count, "confirmed_records": old_confirmed + added_confirmed,
                                   "retained_segments": segments, "topology_candidate_edges": edge_count,
                                   "topology_updated_edges": len(edge_updates),
@@ -627,7 +735,15 @@ class BoundaryConsensus:
                 del self._cell_records[cell]
             del self._records[record_id]
         for record in prepared.updates:
+            old = self._records.get(record.record_id)
+            if old is not None and old.cell != record.cell:
+                del self._cell_records[old.cell][record.record_id]
+                if not self._cell_records[old.cell]:
+                    del self._cell_records[old.cell]
             self._cell_records.setdefault(record.cell, {})[record.record_id] = None
+            if old is not None and old.cell != record.cell:
+                # Preserve the original record-ID iteration order in a bucket.
+                self._cell_records[record.cell] = dict.fromkeys(sorted(self._cell_records[record.cell]))
             self._records[record.record_id] = record
         for key in prepared.expired_edge_keys:
             del self._edges[key]
@@ -1138,36 +1254,61 @@ def _finite_face_fit_bounds(origins, normals, scales, centers, segments,
     first = np.argmax(selected, axis=1)
     last = selected.shape[1]-1-np.argmax(selected[:, ::-1], axis=1)
     contiguous = np.sum(selected, axis=1) == last-first+1
-    adjacent = selected[:, :-1] & selected[:, 1:]
-    linked = np.all(segments[:, :-1, 1] == segments[:, 1:, 0], axis=2)
-    connected = np.all(~adjacent | linked, axis=1)
-    finite = (np.all(np.isfinite(centers), axis=2)
-              & np.all(np.isfinite(segments), axis=(2, 3))
-              & np.isfinite(arc_offsets) & (np.abs(arc_offsets) <= radius))
-    delta = segments-centers[:, :, None, :]
-    lengths = np.linalg.norm(delta, axis=3)
-    finite &= (np.all(lengths > 0., axis=2)
-               & (np.linalg.norm(segments[:, :, 1]-segments[:, :, 0], axis=2) > 0.))
-    good = (nonempty & contiguous & connected & np.all(~selected | finite, axis=1)
+    # Padded contour windows can have hundreds of unselected faces. They do
+    # not participate in this certificate. Pack selected faces in their SAME
+    # row/member order before the expensive endpoint arithmetic, rather than
+    # allocating Q x K x 2 x 2 temporary arrays for unused padding.
+    rows, columns = np.nonzero(selected)
+    if not len(rows):
+        return answer
+    face_centers, faces = centers[rows, columns], segments[rows, columns]
+    offsets = arc_offsets[rows, columns]
+    connected = np.ones(count, dtype=bool)
+    adjacent = (rows[:-1] == rows[1:]) & (columns[1:] == columns[:-1]+1)
+    linked = np.all(faces[:-1, 1] == faces[1:, 0], axis=1)
+    np.logical_and.at(connected, rows[1:][adjacent], linked[adjacent])
+    finite = (np.all(np.isfinite(face_centers), axis=1)
+              & np.all(np.isfinite(faces), axis=(1, 2))
+              & np.isfinite(offsets) & (np.abs(offsets) <= radius))
+    delta = faces-face_centers[:, None, :]
+    lengths = np.linalg.norm(delta, axis=2)
+    finite &= (np.all(lengths > 0., axis=1)
+               & (np.linalg.norm(faces[:, 1]-faces[:, 0], axis=1) > 0.))
+    row_finite = np.ones(count, dtype=bool)
+    np.logical_and.at(row_finite, rows, finite)
+    good = (nonempty & contiguous & connected & row_finite
             & np.all(np.isfinite(origins), axis=1)
             & np.all(np.isfinite(normals), axis=1)
             & np.isfinite(scales) & (scales > 0.))
     if not np.any(good):
         return answer
     # Distances from this face's centre to the original arc interval ends.
-    remaining = np.stack((radius+arc_offsets, radius-arc_offsets), axis=2)
+    remaining = np.stack((radius+offsets, radius-offsets), axis=1)
     with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
         fraction = np.minimum(1., remaining/lengths)
-        clipped = centers[:, :, None, :] + fraction[:, :, :, None]*delta
+        clipped = face_centers[:, None, :] + fraction[:, :, None]*delta
         # Keep original endpoint bytes when clipping is not necessary.
-        clipped = np.where((fraction == 1.)[:, :, :, None], segments, clipped)
+        clipped = np.where((fraction == 1.)[:, :, None], faces, clipped)
         tangents = np.column_stack((normals[:, 1], -normals[:, 0]))
-        values = np.sum((clipped-origins[:, None, None, :])
-                        * tangents[:, None, None, :], axis=3)/scales[:, None, None]
-    finite_projection = np.all(np.isfinite(values), axis=2)
-    good &= np.all(~selected | finite_projection, axis=1)
-    lower = np.min(np.where(selected[:, :, None], values, np.inf), axis=(1, 2))
-    upper = np.max(np.where(selected[:, :, None], values, -np.inf), axis=(1, 2))
+        values = np.sum((clipped-origins[rows, None, :])
+                        * tangents[rows, None, :], axis=2)/scales[rows, None]
+    np.logical_and.at(good, rows, np.all(np.isfinite(values), axis=1))
+    lower, upper = np.full(count, np.inf), np.full(count, -np.inf)
+    np.minimum.at(lower, rows, np.min(values, axis=1))
+    np.maximum.at(upper, rows, np.max(values, axis=1))
+    # Equal signed zeros can depend on NumPy's padded reduction grouping.
+    # Preserve the original reduction exactly for this uncommon tie, without
+    # restoring the endpoint-arithmetic padding for ordinary nonzero bounds.
+    zero_rows = np.flatnonzero(good & ((lower == 0.) | (upper == 0.)))
+    if len(zero_rows):
+        slots = np.full(count, -1, dtype=np.int64)
+        slots[zero_rows] = np.arange(len(zero_rows))
+        keep = slots[rows] >= 0
+        padded = np.full((len(zero_rows), selected.shape[1], 2), np.inf)
+        padded[slots[rows[keep]], columns[keep]] = values[keep]
+        lower[zero_rows] = np.min(padded, axis=(1, 2))
+        padded[~selected[zero_rows]] = -np.inf
+        upper[zero_rows] = np.max(padded, axis=(1, 2))
     answer[good, 0], answer[good, 1] = lower[good], upper[good]
     return answer
 

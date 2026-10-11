@@ -4,8 +4,12 @@ Oracle copied BEFORE optimization from paint source SHA
 4218dd97941cd24babc65ed31c4db25b59314c7c0b06a62a3e16f7fc70fda350.
 No runtime Git/history/diagnostic paths are needed. Geometry calculations,
 capacity checks, and reduction order remain the old literal implementation.
+R16 adds topology-witnessed adjacent-cell identity as an explicitly new domain.
+These unchanged fixtures stay inside the legacy domain: every step must report
+zero adjacent-cell associations. Only that new diagnostic key is supplied to
+the old token comparator; the literal algorithm below remains unchanged.
 """
-from dataclasses import fields
+from dataclasses import fields, replace
 import math
 from types import MappingProxyType
 
@@ -253,6 +257,9 @@ def compare_step(fast, oracle, obs, commit=True):
     before_old=(oracle._generation,oracle.last_stamp_ns,tuple(oracle._records.items()),tuple(oracle._edges.items()))
     result=fast.prepare(obs)
     expected=_literal_prepare(oracle,obs)
+    assert result.stats['adjacent_cell_associations'] == 0
+    expected=replace(expected,stats=MappingProxyType(dict(expected.stats,
+                                                       adjacent_cell_associations=0)))
     same_value(result,expected)
     # Structural identities ensure preparing either token cannot mutate state.
     assert fast._generation==before_fast[0] and fast.last_stamp_ns==before_fast[1]
