@@ -195,23 +195,26 @@ class TeachMapEngine:
                 and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns
                 and self._candidate.bootstrap_motion_owner is bootstrap_motion):
             return self._candidate
-        boundary = None if self._boundary_map is None else self._boundary_map.snapshot()
-        points = (self._map.confirmed_points_and_votes()[0] if boundary is None else boundary.points_xy)
-        distance = np.sum((points - prior[:2]) ** 2, axis=1)
-        available = np.flatnonzero(distance <= self.config["keyframe_radius_m"] ** 2)
-        if len(available) < self.config["bootstrap_min_anchor_points"]:
-            return None
-        order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
-        if boundary is None:
+        if self._boundary_map is None:
+            points = self._map.confirmed_points_and_votes()[0]
+            distance = np.sum((points - prior[:2]) ** 2, axis=1)
+            available = np.flatnonzero(distance <= self.config["keyframe_radius_m"] ** 2)
+            if len(available) < self.config["bootstrap_min_anchor_points"]:
+                return None
+            order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
             anchor = points[available[order]].copy()
             matcher = (LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
                                        self._past_direction_support_stamp_ns) if self._matcher is None
                        else self._matcher.fork_with_anchor(anchor, self._past_direction_support,
                                                            self._past_direction_support_stamp_ns))
         else:
+            boundary = self._boundary_map.snapshot_near(
+                prior[:2], self.config["keyframe_radius_m"], self.config["keyframe_max_points"])
             if boundary.source_frontier_ns != frontier:
                 raise ValueError("boundary and filled map frontiers differ")
-            anchor = boundary.subset(available[order])
+            if len(boundary.points_xy) < self.config["bootstrap_min_anchor_points"]:
+                return None
+            anchor = boundary
             matcher = (BoundaryLaneLocalizer(anchor, self.matcher_config) if self._matcher is None
                        else self._matcher.fork_with_anchor(anchor))
         self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher,

@@ -446,6 +446,10 @@ class BoundaryConsensus:
             raise ValueError("inconsistent boundary consensus settings")
         self.config = MappingProxyType(cfg)
         self._records = {}
+        # Candidate association only needs records in the observed cell. This
+        # ordered secondary index is published with successful map commits;
+        # prepare/rejected tokens never mutate it or retain stale record objects.
+        self._cell_records = {}
         self._edges = {}
         self._generation = 0
         self._next_record_id = 0
@@ -477,9 +481,6 @@ class BoundaryConsensus:
                         if ttl and not self._confirmed(record) and stamp - record.last_stamp_ns > ttl)
         expired_set = set(expired)
         buckets = {}
-        for record_id, record in self._records.items():
-            if record_id not in expired_set:
-                buckets.setdefault(record.cell, []).append(record)
         model_points, model_j, model_reliable = obs.model_points, obs.model_sensitivity, obs.model_reliable
         model_normals = obs.model_normals
         eligible = np.flatnonzero(obs.model_valid & (model_j <= cfg["max_sensitivity"]))
@@ -502,6 +503,10 @@ class BoundaryConsensus:
             normal /= np.linalg.norm(normal)
             if not np.all(np.isfinite(point)) or not np.all(np.isfinite(normal)):
                 raise ValueError("nonfinite boundary frame mean")
+            if cell not in buckets:
+                buckets[cell] = [self._records[record_id]
+                                 for record_id in self._cell_records.get(cell, ())
+                                 if record_id not in expired_set]
             choices = [record for record in buckets.get(cell, ())
                        if float(np.dot(normal, record.normal)) >= cosine]
             chosen = None
@@ -616,8 +621,13 @@ class BoundaryConsensus:
         if not self.can_commit(prepared):
             return False
         for record_id in prepared.expired_ids:
+            cell = self._records[record_id].cell
+            del self._cell_records[cell][record_id]
+            if not self._cell_records[cell]:
+                del self._cell_records[cell]
             del self._records[record_id]
         for record in prepared.updates:
+            self._cell_records.setdefault(record.cell, {})[record.record_id] = None
             self._records[record.record_id] = record
         for key in prepared.expired_edge_keys:
             del self._edges[key]
@@ -629,6 +639,72 @@ class BoundaryConsensus:
         self.source_frontier_ns = prepared.source_stamp_ns
         self._generation += 1
         return True
+
+    def snapshot_near(self, center_xy, radius_m, maximum_points):
+        """Exact full-snapshot/filter/stable-sort/subset without full packaging.
+
+        Only the selected records' face arrays are copied/validated. Global
+        confirmation and graph degrees still determine support: a neighbour
+        outside this local window is not the same as an unconfirmed neighbour.
+        The record/edge metadata scan remains O(map); this is not a claim of
+        constant-time full-map indexing or an altered geometric selection rule.
+        """
+        center = np.asarray(center_xy, dtype=np.float64)
+        if center.shape != (2,) or not np.all(np.isfinite(center)):
+            raise ValueError("invalid boundary snapshot center")
+        radius = _positive(radius_m, "boundary snapshot radius")
+        try:
+            radius_squared = radius ** 2
+        except OverflowError as error:
+            raise ValueError("boundary snapshot radius square overflow") from error
+        if not math.isfinite(radius_squared):
+            raise ValueError("boundary snapshot radius square overflow")
+        maximum = _integer(maximum_points, "boundary snapshot maximum", 1, 100000)
+        records = [record for _, record in sorted(self._records.items()) if self._confirmed(record)]
+        global_ids = {record.record_id for record in records}
+        points = np.asarray([record.point for record in records], dtype=np.float64).reshape(-1, 2)
+        with np.errstate(over="ignore", invalid="ignore"):
+            distance = np.sum((points-center) ** 2, axis=1)
+        available = np.flatnonzero(distance <= radius_squared)
+        selected = available[np.argsort(distance[available], kind="stable")[:maximum]]
+        local = [records[int(index)] for index in selected]
+        slots = {record.record_id: slot for slot, record in enumerate(local)}
+        # subset() preserves global record-ID order for segments even though
+        # its node arrays are in distance order. Preserve both orders exactly.
+        by_id = sorted(local, key=lambda item: item.record_id)
+        if by_id:
+            all_segments = np.concatenate([record.segments for record in by_id])
+            all_neighbours = np.concatenate([record.neighbours for record in by_id])
+            all_owners = np.repeat(np.asarray([slots[r.record_id] for r in by_id], dtype=np.int64),
+                                   [len(record.segments) for record in by_id])
+            known = np.all(np.isin(all_neighbours,
+                                  np.asarray([r.record_id for r in records], dtype=np.int64)), axis=1)
+            segments, owners = all_segments[known], all_owners[known]
+        else:
+            segments, owners = np.empty((0, 2, 2)), np.empty(0, dtype=np.int64)
+        incoming, outgoing, links = {}, {}, []
+        for _, edge in sorted(self._edges.items()):
+            if (not self._confirmed(edge) or edge.source_id not in global_ids
+                    or edge.target_id not in global_ids):
+                continue
+            if edge.target_id in slots:
+                incoming[edge.target_id] = incoming.get(edge.target_id, 0) + 1
+            if edge.source_id in slots:
+                outgoing[edge.source_id] = outgoing.get(edge.source_id, 0) + 1
+            if edge.source_id in slots and edge.target_id in slots:
+                links.append(edge)
+        return BoundaryReference(
+            points[selected], np.asarray([r.normal for r in local], dtype=np.float64).reshape(-1, 2),
+            segments, owners, np.asarray([r.votes for r in local], dtype=np.int64),
+            np.asarray([r.reliable_votes for r in local], dtype=np.int64),
+            np.asarray([r.record_id for r in local], dtype=np.int64), self.source_frontier_ns,
+            directed_edges=np.asarray([[slots[e.source_id], slots[e.target_id]] for e in links],
+                                      dtype=np.int64).reshape(-1, 2),
+            edge_frame_votes=np.asarray([e.votes for e in links], dtype=np.int64),
+            edge_reliable_votes=np.asarray([e.reliable_votes for e in links], dtype=np.int64),
+            edge_last_stamp_ns=np.asarray([e.last_stamp_ns for e in links], dtype=np.int64),
+            full_in_degree=np.asarray([incoming.get(r.record_id, 0) for r in local], dtype=np.int64),
+            full_out_degree=np.asarray([outgoing.get(r.record_id, 0) for r in local], dtype=np.int64))
 
     def snapshot(self):
         records = [record for _, record in sorted(self._records.items()) if self._confirmed(record)]
@@ -780,6 +856,138 @@ def _projector(lookup, normal_body):
     return project, unproject
 
 
+def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, black_xy=None):
+    """Partition fitting domains where independent local directions turn.
+
+    A cardinal image turn may be a staircase, not a physical corner. Compare
+    independently fitted metric directions on BOTH sides of each real contour
+    junction. Each window needs the unchanged minimum support, spread, thickness
+    and PCA quality. Only a local maximum exceeding the existing signed
+    direction angle splits the path. No mask face, pixel label or original
+    contour adjacency is removed, and no invalid face can supply support.
+
+    Quantized labels do not uniquely distinguish a hard corner from a smooth
+    bend. These are computational fit domains, NOT certified physical corners
+    or claims that either window consists of a single physical straight side.
+    Every final direction and model point still needs independent admission.
+    Splitting limits a smooth fit's domain; it does not create a new measured
+    endpoint or authorize extrapolation at that cut. In particular the original
+    white/black brackets and model-position validity tests remain mandatory.
+    """
+    if (white_xy is None) != (black_xy is None):
+        raise ValueError("corner domains require both white and black labels")
+    if white_xy is not None:
+        from .corner_brackets import certify_corner_brackets
+    result = []
+    k = cfg["normal_min_points"]
+    cosine = math.cos(CONSENSUS_DEFAULT_CONFIG["normal_max_angle_rad"])
+    for path, closed in paths:
+        count = len(path)
+        if count < 2*k:
+            result.append((path, closed))
+            continue
+        # One row is the candidate junction AFTER face i. Separate left/right
+        # windows never share a face, including across a closed contour's seam.
+        junctions = np.arange(count if closed else count-1)
+        score = np.full(len(junctions), -np.inf)
+        quality = np.full(len(junctions), np.inf)
+        # Bounded temporary blocks independent of total contour length.
+        for start in range(0, len(junctions), 128):
+            rows = junctions[start:start+128]
+            slots = rows[:, None]+np.arange(-k+1, k+1)
+            inside = np.ones(len(rows), dtype=bool) if closed else np.all(
+                (slots >= 0) & (slots < count), axis=1)
+            members = path[slots % count]
+            usable = inside & np.all(stable[members], axis=1)
+            rows, ids = rows[usable], members[usable].reshape(-1, k)
+            if not len(rows):
+                continue
+            coordinates = points[ids]
+            delta = coordinates-coordinates[:, :1]
+            centered = delta-np.mean(delta, axis=1)[:, None]
+            covariance = np.einsum('nki,nkj->nij', centered, centered)/k
+            eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+            good = ((eigenvalues[:, 1] > 1.e-5)
+                & (eigenvalues[:, 0] <= cfg["normal_max_thickness_m"]**2)
+                & (eigenvalues[:, 0] <= cfg["normal_max_variance_ratio"]*eigenvalues[:, 1]))
+            tangents = eigenvectors[:, :, 1]
+            observed_direction = segments[ids[:, -1], 1]-segments[ids[:, 0], 0]
+            sign = np.sum(tangents*observed_direction, axis=1)
+            good &= np.isfinite(sign) & (sign != 0.)
+            tangents[sign < 0.] *= -1.
+            pair = tangents.reshape(-1, 2, 2)
+            agreement = np.sum(pair[:, 0]*pair[:, 1], axis=1)
+            accepted = np.all(good.reshape(-1, 2), axis=1) & (agreement < cosine)
+            # A turn somewhere in these windows is not necessarily AT their
+            # shared junction. Locate the two independently measured lines'
+            # intersection in the adjacent half-face footprint. In particular,
+            # five cap faces plus one side face cannot move a corner one pixel
+            # backwards just to manufacture six cap-support samples. This is
+            # only a conservative fit-domain check, never new map support.
+            means = np.mean(coordinates, axis=1).reshape(-1, 2, 2)
+            cross = lambda a, b: a[..., 0]*b[..., 1]-a[..., 1]*b[..., 0]
+            determinant = cross(pair[:, 0], pair[:, 1])
+            junction = segments[path[rows], 1]
+            first = segments[path[rows], 1]-segments[path[rows], 0]
+            next_ids = path[(rows+1) % count]
+            second = segments[next_ids, 1]-segments[next_ids, 0]
+            footprint_determinant = cross(first, second)
+            with np.errstate(divide='ignore', invalid='ignore', over='ignore'):
+                along = cross(means[:, 1]-means[:, 0], pair[:, 1])/determinant
+                intersection = means[:, 0]+along[:, None]*pair[:, 0]
+                offset = intersection-junction
+                u = cross(offset, second)/footprint_determinant
+                v = cross(first, offset)/footprint_determinant
+            if white_xy is None:
+                # Analytic path-only callers have no binary-mask brackets.
+                # Retain the conservative literal mean-line footprint check.
+                accepted &= (np.isfinite(u) & np.isfinite(v) & (np.abs(u) <= .5)
+                             & (np.abs(v) <= .5))
+            else:
+                # TLS means are not subpixel truth. Require a point inside the
+                # SAME footprint consistent with ALL white/black labels on
+                # both sides. The exact witness is used only as a boolean;
+                # it is never a corner observation or a new map coordinate.
+                side_ids = ids.reshape(-1, 2, k)
+                for slot in np.flatnonzero(accepted):
+                    normals = np.column_stack((pair[slot, :, 1], -pair[slot, :, 0]))
+                    white = white_xy[side_ids[slot]]
+                    black = black_xy[side_ids[slot]]
+                    outward = np.sum(black-white, axis=1)
+                    normals[np.sum(normals*outward, axis=1) < 0.] *= -1.
+                    accepted[slot] = certify_corner_brackets(junction[slot],
+                        np.stack((first[slot], second[slot])), normals, white, black) is not None
+            score[rows[accepted]] = 1.-agreement[accepted]
+            ratio = eigenvalues[:, 0]/eigenvalues[:, 1]
+            quality[rows[accepted]] = np.sum(ratio.reshape(-1, 2), axis=1)[accepted]
+        # A unique local peak localizes the turn rather than repeatedly cutting
+        # a broad curvature plateau. Ambiguous equal peaks are NOT broken by a
+        # world axis or the arbitrary starting index of a closed contour.
+        peaks = np.flatnonzero(np.isfinite(score))
+        extended = np.r_[peaks-count, peaks, peaks+count] if closed else peaks
+        cuts = []
+        for index in peaks:
+            left = np.searchsorted(extended, index-k, side='right')
+            right = np.searchsorted(extended, index+k, side='left')
+            neighbours = extended[left:right] % count
+            best = neighbours[score[neighbours] == np.max(score[neighbours])]
+            best = best[quality[best] == np.min(quality[best])]
+            if len(best) == 1 and best[0] == index:
+                cuts.append(int(index))
+        if not cuts:
+            result.append((path, closed))
+            continue
+        cuts.sort()
+        if closed:
+            for start, stop in zip(cuts, cuts[1:]+[cuts[0]+count]):
+                result.append((path[np.arange(start+1, stop+1) % count], False))
+        else:
+            starts = [0]+[cut+1 for cut in cuts]
+            stops = [cut+1 for cut in cuts]+[count]
+            result.extend((path[a:b], False) for a, b in zip(starts, stops))
+    return result
+
+
 def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, paths, cfg):
     """Batched contour-only windows. Stops at missing/J-cut/opposite faces.
 
@@ -810,7 +1018,8 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
         radii.append(radius)
         radius = min(radius * 2., cfg["normal_max_radius_m"])
     radii.append(cfg["normal_max_radius_m"])
-    for path, closed in paths:
+    for path, closed in _direction_paths(points, segments, ok, paths, cfg,
+                                        white_xy=white_xy, black_xy=black_xy):
         count = len(path)
         if count < cfg["normal_min_points"]:
             continue

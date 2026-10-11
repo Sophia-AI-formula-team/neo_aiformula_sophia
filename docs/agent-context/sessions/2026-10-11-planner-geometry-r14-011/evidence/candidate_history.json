@@ -1,0 +1,498 @@
+{
+  "schema_version": 1,
+  "session_id": "2026-10-11-planner-geometry-r14-011",
+  "status": "draft",
+  "result": "partial",
+  "sealed": false,
+  "handed_off": false,
+  "publication_review": {
+    "privacy_reviewed": false,
+    "content_reviewed": false
+  },
+  "pack_created": false,
+  "git_commit_created": false,
+  "diagnostic_root_alias": "lane_teach_repeat_20261011",
+  "artifact_policy": "Names are relative local diagnostic references. No raw images, truth trajectories, GNSS, bags, binary modules or full logs are copied into this draft.",
+  "published_baseline": {
+    "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "repository_id": 1303517209,
+    "branch": "repair/lane-keyframe-transaction-20261011",
+    "commit": "37119203ff84f1fcda71222b292d1edd3756008b",
+    "tag": "lane-mapping-20261011-r12-rc1",
+    "annotated_tag_object": "950d755bb57803ee7c5a4c6dd324fb6ed01854fb"
+  },
+  "runtime_source_checkpoints": {
+    "R13_complete_core_paint": "4799e867b415fcd1848d1b67eb243d35208083ce8839af11350a677de4d4fd1b",
+    "R13_replay_paint": "cb5ab446eb1acf83b20acde6056d4a9e04aab8a1779079d249edce7b705fcfab",
+    "R14_replay_paint": "eef83c0b580223c02349272eaf86bf28dd49e9377eaa2f02837df438de06618b",
+    "R13_R14_replay_mapping": "7b7f5dd190b1cab125aadeb845355d783e4a931096309e0a331646716cd5c7c3",
+    "boundary_localization": "8c3dbd9818dba8acb4c3c02466c12a69ed8fbfe75d83cf79bea9385ee849acbe",
+    "mask_localization": "2a18da367e4d9ff5e48d4539b77e078856425ae400ecbba40f5cd6f9f4b588e5",
+    "scope_warning": "Different paint hashes are not implicitly covered by the earlier complete-core pass. R13/R14 are uncommitted candidates, not release tags."
+  },
+  "evidence": [
+    {
+      "name": "r13_local_snapshot_03.xml",
+      "sha256": "cbb3edbb89034f2f21a1e2e0ed4e6c377123f3b87ddafbba6a94259e4f6aa21d",
+      "passed": 25,
+      "failed": 0,
+      "duration_s": 0.365,
+      "scope": "Exact local snapshot/index unit tests"
+    },
+    {
+      "name": "r13_full_native_01_summary.json",
+      "sha256": "a6c12c830fcac209959136f7cbe832a6a14e50008dcf83b56793e6b5c3e1a850",
+      "passed": 2421,
+      "skipped": 1,
+      "failed": 0,
+      "source_count": 150,
+      "changed_sources": 0,
+      "excluded_unintegrated_test": "test_quantized_curve_fit.py"
+    },
+    {
+      "name": "r13_full_native_01.xml",
+      "sha256": "54a9c99b0512752a635491a2ee57b5b95753a020625419a875c8a43caec8b925",
+      "tests": 2422,
+      "duration_s": 76.745,
+      "skip_reason": "Target Linux process-group test on Windows"
+    },
+    {
+      "name": "r13_native_identity_01.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "real_calls_passed": true,
+      "api_count": 7,
+      "native_source_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+      "native_binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+      "installed_prefix_verified": false
+    },
+    {
+      "name": "r13_adapter_full_01.json",
+      "sha256": "bb2322f93a91e6c8829ed3dfb249405983b1cb1cd06d74da49b6685cb9af5bcb",
+      "tests": 322,
+      "passed": 318,
+      "failed": 4,
+      "errors": 0,
+      "skipped": 0,
+      "duration_s": 120.768,
+      "exit_code": 1,
+      "monitored_sources": 191,
+      "changed_sources": 0,
+      "failure_scope": "test_lane_closure_frontier.py: missing frozen boundary reference prevents intended assertions"
+    },
+    {
+      "name": "r13_adapter_full_01.preservation.json",
+      "sha256": "2a42032da8faa44be9962696133dc4039fae1ac0578c9673fab43a824432458e",
+      "original_files": 878,
+      "known_peer_changes": 14,
+      "aggregate_passed": false,
+      "baseline_reset": false
+    },
+    {
+      "name": "r13_closure_fixture_01.json",
+      "sha256": "a622ecfe7416250d752d7568dbd41c0276192c906a5b3febfb36add904af3809",
+      "passed": 5,
+      "failed": 0,
+      "duration_s": 1.79,
+      "exit_code": 0,
+      "scope": "One repaired fixture file only; does not turn the prior full adapter attempt into a pass"
+    },
+    {
+      "name": "r14_corner_paths_01.xml",
+      "sha256": "8970de2dd6219e68c1f7d7cece696341d5a655851dda4410a14c0109ff81015a",
+      "tests": 49,
+      "passed": 48,
+      "failed": 1,
+      "failure": "Short cap with five faces was incorrectly split"
+    },
+    {
+      "name": "r14_corner_paths_03.xml",
+      "sha256": "c725ddee1d61b5777f0079caa311ca3e2841907021c336620853790b36ecbc10",
+      "passed": 49,
+      "failed": 0,
+      "duration_s": 0.27
+    },
+    {
+      "name": "r14_geometry_initial_01.xml",
+      "sha256": "ceb414d339155c995cd83f44651247a3e9e7dee0d89584886ae9c4a9ef59eeeb",
+      "tests": 236,
+      "passed": 234,
+      "failed": 2,
+      "failure_scope": "Previous support-count fixtures expected unsplit windows"
+    },
+    {
+      "name": "r14_geometry_initial_02.xml",
+      "sha256": "088f3f91ec2502604c9baf6eecae0914617f798325eb1352827f209f90dfb32c",
+      "passed": 294,
+      "failed": 0,
+      "duration_s": 4.388,
+      "scope": "Focused corner/boundary combination, not complete core or adapter suite"
+    },
+    {
+      "name": "r13_boundary_observed_01.json",
+      "sha256": "6a50ee7a6811d6d166f51d3eb407771b30b5de16cbbd36f272dfc9f29d1af4bb",
+      "accepted": 105,
+      "attempted": 106,
+      "first_sequence": 151,
+      "last_accepted_sequence": 255,
+      "failed_sequence": 256,
+      "failed_reason": "match_insufficient_overlap",
+      "engine_ms": 58.83190000895411
+    },
+    {
+      "name": "r14_boundary_observed_01.json",
+      "sha256": "e7462add50420b3df8c147a25fa3292a06b9720c3655665659badca174d26f81",
+      "accepted": 105,
+      "attempted": 106,
+      "first_sequence": 151,
+      "last_accepted_sequence": 255,
+      "failed_sequence": 256,
+      "failed_reason": "match_insufficient_overlap",
+      "engine_ms": 58.73059999430552
+    },
+    {
+      "name": "r14_recorded_accuracy_01/accuracy_01.json",
+      "sha256": "2ce84b54a5ed02a4bacebfd6829470e5d6e4d0753e7749a9711e3f1e37544909",
+      "common_latest_count": 104,
+      "historical_count": 97,
+      "R13_R14_only_count": 105,
+      "first_TEACH_origin_sequence": 151,
+      "historical_metrics_reproduced_exactly": true,
+      "gt_used_only_for_scoring": true,
+      "estimator_executed": false
+    },
+    {
+      "name": "r14_recorded_accuracy_01/attempt_01_failure.json",
+      "failure": "Whole plane provenance dictionary comparison rejected an explicit same-value .007 override",
+      "truth_read": false,
+      "preserved": true
+    },
+    {
+      "name": "r12_publication_readback_01.json",
+      "sha256": "25d24b416729c975088021acfc8258dc5b629a6d1634768c611e7e8a873c321b",
+      "workflow_runs": 8,
+      "successful_runs": 8,
+      "jobs": 16,
+      "successful_jobs": 16,
+      "remote_testcases_recounted": false
+    }
+  ],
+  "publication_receipt": {
+    "repository_relative_path": "docs/agent-context/receipts/2026-10-11-planner-r12-publication-ci.md",
+    "sha256": "3a86640b839dc916ce9f67559cd41ce5d5dc54070e5e86b60623535190cae61b",
+    "scope": "R12 commit only, not later dirty candidates",
+    "run_ids": {
+      "native": [
+        38120338208,
+        38120338239
+      ],
+      "lane_foxy": [
+        38120338144,
+        38120338227
+      ],
+      "gnss_foxy": [
+        38120338175,
+        38120338221
+      ],
+      "handoff": [
+        38120338148,
+        38120338230
+      ]
+    }
+  },
+  "future_unintegrated_helper": {
+    "historical_checkpoint_only": true,
+    "superseded_by": "latest_R14_checkpoint; old false integration fields apply only to the eef replay",
+    "repository_relative_path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py",
+    "observed_sha256": "2daa5e14a7a4f7455d455473de71ec1b50e356bb91b11f8d97afd3a725ab55b8",
+    "imported_by_eef_paint": false,
+    "included_in_R14_replay": false,
+    "integrated_validation_passed": false,
+    "standalone_test_artifact": "r14_corner_brackets_01/tests_01.xml",
+    "standalone_test_sha256": "9cbac4a3100f59ce0a4e9af92b9d44409c0863d8ffadb5a3cc0d729ac92b3d7f",
+    "standalone_passed": 69,
+    "warning": "Standalone certificate tests do not establish a correct corner, fitted position, estimator integration or permission to extend geometry. Any future integration needs a new source baseline and tests."
+  },
+  "latest_R14_checkpoint": {
+    "status": "unpublished worktree baseline; validation incomplete",
+    "supersedes_candidate_descriptions_not_original_evidence": [
+      "eef83c0b",
+      "2dcfbf3a"
+    ],
+    "paint_geometry_sha256": "a0e34451229f21a8a1c2a5ba12a0d1f307a3ba5aa030d83c23047a13f50df7a8",
+    "corner_brackets_sha256": "2daa5e14a7a4f7455d455473de71ec1b50e356bb91b11f8d97afd3a725ab55b8",
+    "corner_helper_integrated": true,
+    "mapping_sha256": "7b7f5dd190b1cab125aadeb845355d783e4a931096309e0a331646716cd5c7c3",
+    "native_source_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+    "historical_accuracy_table_not_reassigned": true,
+    "new_actual_lap": false,
+    "new_complete_adapter_pass": false,
+    "evidence": [
+      {
+        "name": "r14_full_native_01_summary.json",
+        "sha256": "dd2a5324499f0e7524d865d87fb38a78114a057173984371a185164882f77ed7",
+        "passed": 2577,
+        "skipped": 1,
+        "failed": 0,
+        "errors": 0,
+        "exit_code": 0,
+        "source_count": 154,
+        "changed_sources": 0,
+        "process_elapsed_s": 68.10619819996646,
+        "scope": "Windows offline core, not ROS DDS/runtime acceptance",
+        "excluded_unintegrated_test": "test_quantized_curve_fit.py"
+      },
+      {
+        "name": "r14_full_native_01.xml",
+        "sha256": "276c76365f73349e2e243d022187315da59a48eb6c33573e8d25caaa5a6a95c6",
+        "tests": 2578,
+        "passed": 2577,
+        "skipped": 1,
+        "failed": 0,
+        "errors": 0,
+        "duration_s": 67.336,
+        "skip_reason": "Target Linux process-group test on Windows"
+      },
+      {
+        "name": "r14_full_native_01_sources_before.json",
+        "sha256": "b5d2f52b5a8c079b6189a0cc3aed161505da900c2f37072e9eeab40bb1426c4e",
+        "scope": "Identifies exact a0e baseline and monitored tests"
+      },
+      {
+        "name": "r14_native_identity_01.json",
+        "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+        "real_calls_passed": true,
+        "api_count": 7,
+        "native_binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+        "installed_prefix_verified": false
+      },
+      {
+        "name": "r14_boundary_observed_02.json",
+        "sha256": "43bc66214211af0a878333836981129e4b3b5d7d8dd763240704d60ec07e7d61",
+        "accepted": 105,
+        "attempted": 106,
+        "expected_full_fixture": 111,
+        "last_accepted_sequence": 255,
+        "failed_sequence": 256,
+        "failed_reason": "match_insufficient_overlap",
+        "candidate_overlap_ratio": 0.5307820299500832,
+        "active_overlap_ratio": 0.4209650582362729,
+        "required_overlap_ratio": 0.55,
+        "candidate_finite_rejections": 14,
+        "engine_ms": 57.15270002838224,
+        "matcher_budget_ms": 40,
+        "engine_budget_ms": 80,
+        "gates_unchanged": true,
+        "scope": "Recorded-input candidate evaluation, not a new drive or historical-state equivalence"
+      },
+      {
+        "name": "r14_quality_validation_01/development_01.json",
+        "sha256": "a16d5291a8f1c0327c9339e07a9eb06e6fd55326956aa2840acbab81894a4d38",
+        "case_ids": [
+          "left_0",
+          "left_0.35",
+          "right_0",
+          "right_0.35"
+        ],
+        "passed_cases": 0,
+        "failed_cases": 4,
+        "per_case_planned_frames": 509,
+        "per_case_attempted_frames": 8,
+        "per_case_accepted_frames": 7,
+        "per_case_failure_frame": 7,
+        "failure_reason": "match_insufficient_overlap",
+        "matcher_geometry_unit_budget_ms": 2000,
+        "runtime_proof": false,
+        "source_hashes_unchanged": true
+      }
+    ]
+  },
+  "corner_contract_and_rejected_variant": {
+    "original_failures_preserved": true,
+    "contract_followup_is_not_seven_algorithm_fixes": true,
+    "interpretation": "Fit-domain partition counts alone do not establish false physical corners. Reviewed follow-up checks raw ownership, finite brackets, usable coverage, quantitative position/direction error and cap validity; no geometry gate was relaxed.",
+    "rejected_variant_paint_sha256": "f0379f3da2907ba44f6159502f88d5db42148588592567709035da872e81ea04",
+    "rejected_variant_adopted": false,
+    "evidence": [
+      {
+        "name": "r14_corner_labels_01/receipt_01.json",
+        "sha256": "a767cba8aa77e03307b4a272646434afa8d1f1be99a0098e86583d2e40e9c866",
+        "scope": "Original failing interpretation retained, not silently rewritten"
+      },
+      {
+        "name": "r14_corner_labels_01/tests_01.xml",
+        "sha256": "6062cd4450a3ff988d2629b5b927a8c224b6fe6bb6b0fe43a42f8efc5cd718b8",
+        "tests": 29,
+        "passed": 22,
+        "failed": 7,
+        "errors": 0,
+        "duration_s": 0.907
+      },
+      {
+        "name": "r14_corner_labels_contract_02.xml",
+        "sha256": "4136318de675ef8aa2aee2ea3cbd12a41f16959381d9a742ba4d2845ff7b3868",
+        "tests": 29,
+        "passed": 29,
+        "failed": 0,
+        "duration_s": 0.729,
+        "scope": "Corrected test contract; not an algorithm repair of original seven failures"
+      },
+      {
+        "name": "r14_corner_tangent_01.xml",
+        "sha256": "79a88acaf1c00585bdbf51566ae028de0b02a3066f3c19b03f897c3572f0b0f1",
+        "tests": 87,
+        "passed": 82,
+        "failed": 5,
+        "duration_s": 0.997,
+        "scope": "Rejected one-sided tangent variant"
+      },
+      {
+        "name": "r14_corner_quality_01/REPORT.md",
+        "sha256": "69af95153de829ac64fb1cdee0250a5aca6d435e90cab12ab6cb646777c1446e",
+        "scope": "Independent extraction-only audit; no solver/map/Unity"
+      },
+      {
+        "name": "r14_corner_quality_01/results_01.json",
+        "sha256": "06891f024bb52c116c21627ec5e68e28d41f2b2a41ec07d09a23b24109cb96ae",
+        "input_masks": 9,
+        "paths_per_input": 3,
+        "executions": 1,
+        "scope": "Includes all valid-set metrics, losses and benefits; synthetic geometry used only for post-extraction scoring"
+      },
+      {
+        "name": "r14_corner_quality_01/comparison_01.json",
+        "sha256": "552b8681b08c2da1c1dbff1ecf4a91336a9d5a7949ed0e1d617f124404d49d2c",
+        "radius6_phase0_old_new_valid": [
+          72,
+          0
+        ],
+        "radius9_phase0_old_new_valid": [
+          112,
+          8
+        ],
+        "radius9_phase0_common_faces": 8,
+        "common_normal_rmse_old_new_rad": [
+          0.01868,
+          0.108
+        ],
+        "common_position_rmse_old_new_mm": [
+          2.483,
+          1.774
+        ],
+        "empty_geometry_is_zero_error": false
+      }
+    ]
+  },
+  "incomplete_past_support_capture": {
+    "target_sequence": 256,
+    "target_reached": false,
+    "target_queries_captured": 0,
+    "committed_observations_captured": 99,
+    "attempted_frames": 100,
+    "stopped_sequence": 250,
+    "reason": "processing_deadline",
+    "engine_ms": 114.38469996210188,
+    "match_ms": 24.762,
+    "engine_budget_ms": 80,
+    "matcher_budget_ms": 40,
+    "prior_accepted_non_timing_results_exact": true,
+    "postprocessing_failed": true,
+    "missing_metadata": [
+      "commit metadata",
+      "record-chart manifest"
+    ],
+    "conclusion": "Saved arrays do not answer the 14 target finite-rejection questions; missing provenance is not reconstructed or invented. Earlier audit01/02 zero-engine setup failures remain preserved.",
+    "evidence": [
+      {
+        "name": "r14_past_support_audit_03/failure_summary_01.json",
+        "sha256": "d9401306aedb19949828f1e4ff8b5e75c62053ec05e3017463a7d8a7dfc79a59",
+        "scope": "Read-only postprocessing recovery, not another replay"
+      },
+      {
+        "name": "r14_past_support_audit_03/execution_01.json",
+        "sha256": "5bff5b2b899f31935c1092a33519bc32e42603491c1377ac311aecfcddc962fa",
+        "exit_code": 1,
+        "failure": "Postprocessing ndarray equality raised ambiguous truth value after replay/arrays were saved"
+      },
+      {
+        "name": "r14_past_support_audit_03/replay_01.json",
+        "sha256": "39b24b66c136ccf95d2f077d23499dc716f0ed0ae383e0ce802900dd6df49f7a",
+        "scope": "Instrumented diagnostic with original budgets; not a successful runtime retry"
+      }
+    ]
+  },
+  "isolated_repeated_support_prototype": {
+    "production_integrated": false,
+    "actual_query_support_proven": false,
+    "runtime_proof": false,
+    "source_sha256": "20e096cfa4f991ba7d34b2ab153352c5a84f966b461465e56a967ab041cb3070",
+    "test_sha256": "2052d707b9e345ba1103f74d1f994194cf2cd28f1e248d9980a82ba221eea888",
+    "semantics": "Immutable fixed chart; exact Fraction arithmetic; same-frame overlap union contributes one vote; conflicting values reject; per-location five distinct frames plus one reliable vote; preserve gaps; transactional capacity rejection.",
+    "growth_example": {
+      "knots_before_after": [
+        2,
+        4
+      ],
+      "pieces_before_after": [
+        1,
+        3
+      ]
+    },
+    "limitation": "Bounded piece count does not bound Fraction bit width or execution time. This independent prototype does not change production geometry/bundle or establish recorded-prefix quality.",
+    "evidence": [
+      {
+        "name": "r15_repeated_support_prototype_01/focused_01.json",
+        "sha256": "24963f6b953011546463cb6956fe1245046e79da6eec381fbe3605cdee30f19f",
+        "passed": 32,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "exit_code": 0,
+        "process_elapsed_s": 0.758953400014434,
+        "source_hashes_unchanged": true
+      },
+      {
+        "name": "r15_repeated_support_prototype_01/focused_01.xml",
+        "sha256": "21c9062e46aa92c679eb20ada78cbd2e68cd6f009cdea443562ae55c7e1edf1b",
+        "tests": 32,
+        "passed": 32,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "duration_s": 0.068
+      }
+    ]
+  },
+  "draft_update_scope": "Existing evidence read/hash and these two draft files only; no tests, replay, source edits, publication, packing or new drive. Historical candidate evidence remains retained and separately scoped.",
+  "unmet": [
+    "Final source review and source-specific complete regression",
+    "Complete adapter rerun after closure fixture change",
+    "Fixed full-mask quality acceptance; earlier development failures not erased",
+    "Recorded prefix beyond seq256 without weakening gates",
+    "New actual first lap, frozen route and REPEAT lap",
+    "ROS/device/vehicle acceptance and human driving authorization",
+    "Privacy/content review and formal session sealing/publication"
+  ],
+  "archival_copy_note": "Reviewed historical draft copied into formal session011. Its nested draft/publication flags describe the draft at capture, not the containing session's later package/publication status.",
+  "completed_nonintrusive_capture": {
+    "artifact": "r14_past_support_audit_04/capture_summary_01.json",
+    "sha256": "a65a7899801c67f7ccc3ba1aa9ded4a29ee5ecc4947de861b7432f64b66de73b",
+    "committed": 105,
+    "attempted": 106,
+    "non_timing_exact_count": 106,
+    "failed_sequence": 256,
+    "reason": "match_insufficient_overlap",
+    "fresh_finite_rejected": 14,
+    "active_finite_rejected": 13,
+    "no_global_trace": true,
+    "query_copy_ms": [
+      0.0164,
+      0.0127
+    ],
+    "runtime_budgets_unchanged": [
+      40,
+      80
+    ],
+    "actual_new_drive": false,
+    "note": "Saved immutable observations, tokens and target geometry; repeated support analysis remains separate."
+  }
+}

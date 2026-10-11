@@ -3,6 +3,11 @@
 Literal old functions below were copied from pre-optimization paint source
 SHA256 4218dd97941cd24babc65ed31c4db25b59314c7c0b06a62a3e16f7fc70fda350.
 There is no runtime dependency on diagnostics, Git blobs or a local path.
+R14 intentionally partitions observed sharp turns before smooth fitting. The
+literal old numerical functions remain unchanged; a wrapper supplies the SAME
+new contour partition to old and optimized fits. These are arithmetic/copy
+equivalence tests, not a claim of equivalence to R12 geometry. Independent
+corner-path tests check the new partition itself.
 These bounded geometry tests are NOT runtime/full-lap acceptance evidence.
 """
 from dataclasses import fields
@@ -224,7 +229,7 @@ def test_complete_observation_every_field_matches_old_whole_extraction(monkeypat
     mask_before=mask.tobytes()
     current=paint.extract_boundary_observation(mask,calibration,up,123456789)
     with monkeypatch.context() as scope:
-        scope.setattr(paint,'_directions',_old_directions)
+        scope.setattr(paint,'_directions',_old_directions_with_partition)
         scope.setattr(paint,'_fit_quadratic_patches',_old_fit_quadratic_patches)
         expected=paint.extract_boundary_observation(mask,calibration,up,123456789)
     assert mask.tobytes()==mask_before
@@ -242,7 +247,7 @@ def test_perspective_tilt_j_gaps_and_original_fov_are_not_bridged(monkeypatch,ma
     cfg={'max_patch_points':cap,'reliable_sensitivity':min(.1,max_j)}
     current=paint.extract_boundary_observation(mask,calibration,up,17,config=cfg)
     with monkeypatch.context() as scope:
-        scope.setattr(paint,'_directions',_old_directions)
+        scope.setattr(paint,'_directions',_old_directions_with_partition)
         scope.setattr(paint,'_fit_quadratic_patches',_old_fit_quadratic_patches)
         expected=paint.extract_boundary_observation(mask,calibration,up,17,config=cfg)
     assert_all_fields(current,expected)
@@ -360,7 +365,7 @@ def test_original_batch_targets_and_unusable_rows_keep_all_direction_outputs(clo
     cfg=dict(paint.DEFAULT_CONFIG,max_patch_points=cap)
     with np.errstate(invalid='ignore',over='ignore'):
         actual=paint._directions(*args,cfg)
-        expected=_old_directions(*args,cfg)
+        expected=_old_directions_with_partition(*args,cfg)
     for name,a,b in zip(('normals','valid','support_count','radius','coefficients','scale','bounds'),actual,expected):
         assert_array_bytes(a,b,name)
 
@@ -372,4 +377,13 @@ def test_old_direction_oracle_does_not_call_optimized_fit(monkeypatch):
     monkeypatch.setattr(paint,'_fit_quadratic_patches',forbidden)
     result=_old_directions(*args,dict(paint.DEFAULT_CONFIG))
     assert result[1].any()
+
+
+def _old_directions_with_partition(points,segments,white,black,pixel_outward,stable,paths,cfg):
+    length=np.linalg.norm(segments[:,1]-segments[:,0],axis=1)
+    crossing=np.linalg.norm(black-white,axis=1)
+    usable=(stable & np.isfinite(length) & (length>0.)
+            & np.isfinite(crossing) & (crossing>0.))
+    pieces=paint._direction_paths(points,segments,usable,paths,cfg,white_xy=white,black_xy=black)
+    return _old_directions(points,segments,white,black,pixel_outward,stable,pieces,cfg)
 

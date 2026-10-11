@@ -384,17 +384,21 @@ def perspective_paint(side, width=.12, truncated=False):
     return active.astype(np.uint8) * 255
 
 
-def literal_contour_fit(observation, target):
+def literal_contour_fit(observation, target, domain=None):
     """Linked-face oracle: image topology admission, metric arc/PCA evidence.
 
-    No production grouping, window constructor, eigensolver helper or fitted
-    normal is reused. It records IDs as well as a fitted normal, so a short cap
-    cannot silently cross to an opposite side while still passing direction.
+    No smooth-fit grouping, window constructor, eigensolver helper or fitted
+    normal is reused. R14 can supply an explicitly partitioned domain; corner
+    partitions have separate analytic tests. This oracle then checks EVERY
+    admitted ID, arc radius and PCA value inside that same domain.
     """
     outward = observation.black_pixels - observation.white_pixels
     cid = observation.contour_ids[target]
     path_ids = np.flatnonzero(observation.contour_ids == cid)
     closed = np.all(observation.previous[path_ids] >= 0) and np.all(observation.next[path_ids] >= 0)
+    if domain is not None:
+        path_ids, closed = domain
+    admitted = set(map(int, path_ids))
     left = min(255, (len(path_ids) - 1) // 2) if closed else min(255, len(path_ids) - 1)
     right = min(256, len(path_ids) - 1 - left) if closed else min(256, len(path_ids) - 1)
     samples = [(int(target), 0.)]
@@ -403,7 +407,8 @@ def literal_contour_fit(observation, target):
         direction_samples = []
         for _ in range(cap):
             nxt = int(links[current])
-            if nxt < 0 or not observation.stable[nxt] or np.dot(outward[target], outward[nxt]) < 0:
+            if (nxt < 0 or nxt not in admitted or not observation.stable[nxt]
+                    or np.dot(outward[target], outward[nxt]) < 0):
                 break
             corner = observation.segments[current, vertex]
             arc += float(np.linalg.norm(observation.points[current] - corner)
@@ -472,9 +477,31 @@ def test_projective_short_cap_cannot_import_opposite_side_support(side):
     targets = np.flatnonzero(observation.stable & (uv[:, 1] > 131.) & (uv[:, 1] < 139.))
     assert len(targets) >= 10
     outward = observation.black_pixels - observation.white_pixels
+    # Reconstruct only the explicit fit-domain boundary. The literal walk/PCA
+    # below remains independent and must match all admitted IDs and values;
+    # it must not expect the old smooth fit to cross a newly separated turn.
+    from lane_mapping_lya_reference.paint_geometry import _direction_paths, DEFAULT_CONFIG
+    paths, visited = [], set()
+    for seed in list(np.flatnonzero(observation.previous < 0))+list(range(len(observation.points))):
+        if seed in visited:
+            continue
+        current, path = int(seed), []
+        while current >= 0 and current not in visited:
+            visited.add(current)
+            path.append(current)
+            current = int(observation.next[current])
+        paths.append((np.asarray(path, dtype=np.int64), current == seed))
+    def actual_ray(uv):
+        return np.column_stack((.65*180./(uv[:,1]-100.),
+                                -.65*(uv[:,0]-160.)/(uv[:,1]-100.)))
+    pieces = _direction_paths(observation.points, observation.segments,
+                              observation.stable, paths, dict(DEFAULT_CONFIG),
+                              white_xy=actual_ray(observation.white_pixels),
+                              black_xy=actual_ray(observation.black_pixels))
+    domains = {int(index): (path, closed) for path, closed in pieces for index in path}
     checked = 0
     for target in targets:
-        ids, radius, normal = literal_contour_fit(observation, int(target))
+        ids, radius, normal = literal_contour_fit(observation, int(target), domains[int(target)])
         if not ids:
             continue
         assert np.all(outward[ids] @ outward[target] >= 0)
