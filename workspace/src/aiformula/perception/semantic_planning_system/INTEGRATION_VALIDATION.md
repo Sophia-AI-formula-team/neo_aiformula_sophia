@@ -5,7 +5,7 @@ rename the earlier Unity runs as native ROS evidence.
 
 | Check on the Windows authoring host | Result |
 | --- | --- |
-| `pytest` bridge pure policies + real-launch test module | 77 passed; 1 module skipped, 0.09 s |
+| `pytest` bridge pure policies + real-launch test module | Final rerun: 78 passed; 1 module skipped, 0.10 s |
 | Real-launch imports | Skipped because ROS launch/ament are not installed |
 | Native new Python syntax parsed with Python 3.8 grammar | 7 files passed |
 | Protected source diff against 63eec2d | Empty for core/local planner, LLP, points, target filter, LYA, motor and allnodes |
@@ -17,6 +17,10 @@ clock rollback, command and status timeouts, stale permitting status, and shadow
 topic restrictions. They import no rclpy stub. They do not execute a ROS graph.
 
 Authoring interpreter: Python 3.12.10. Command from the repository root:
+
+Static review corrected the ClockType import to Foxy's `rclpy.clock` export and
+the real-launch test to the public ExecuteProcess `cmd` substitution. This was
+checked against the official Foxy source; it is not a native startup test.
 
 ```bash
 PYTHONPATH=workspace/src/aiformula/control/semantic_drive_bridge python -m pytest \

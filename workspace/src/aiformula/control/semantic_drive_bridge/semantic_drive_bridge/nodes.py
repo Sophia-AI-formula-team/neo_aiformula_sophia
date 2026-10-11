@@ -5,8 +5,7 @@ import time
 import rclpy
 from geometry_msgs.msg import Twist
 from rcl_interfaces.msg import ParameterDescriptor
-from rclpy.clock import Clock
-from rclpy.clock_type import ClockType
+from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 from std_msgs.msg import String

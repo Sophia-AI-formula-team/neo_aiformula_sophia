@@ -117,8 +117,10 @@ def test_installed_ros_graph_constructs_exact_seven_shadow_nodes(context):
     nodes = ENTRY_MODULE._launch_nodes(context)
     assert len(nodes) == 7
     assert all(isinstance(node, Node) for node in nodes)
-    actual = [(_substitution_text(context, node.node_package),
-               _substitution_text(context, node.node_executable)) for node in nodes]
+    # Foxy exposes ExecuteProcess.cmd, not Node.node_package/node_executable.
+    # Resolve the real ExecutableInPackage substitution without starting it.
+    executables = [Path(_substitution_text(context, node.cmd[0])) for node in nodes]
+    actual = [(path.parent.name, path.name) for path in executables]
     assert actual == expected
     # This entry constructs only the enumerated perception/control/bridge
     # nodes. No motor, teleop, CAN, lifecycle auto-arm or shell actions occur.
