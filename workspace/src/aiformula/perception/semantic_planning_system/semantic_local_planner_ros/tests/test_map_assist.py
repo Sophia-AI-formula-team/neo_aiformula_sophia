@@ -313,7 +313,7 @@ class MapAssistTests(unittest.TestCase):
             self.node._point_cb(label)(point)
         return points
 
-    def odom(self, x=0.0, y=0.0, yaw=0.0, stamp=None):
+    def odom(self, x=0.0, y=0.0, yaw=0.0, stamp=None, speed=None):
         message = Odometry()
         message.header.frame_id = "odom"
         stamp = self.now if stamp is None else stamp
@@ -322,6 +322,8 @@ class MapAssistTests(unittest.TestCase):
         message.pose.pose.position.x, message.pose.pose.position.y = x, y
         message.pose.pose.orientation.z = math.sin(yaw * 0.5)
         message.pose.pose.orientation.w = math.cos(yaw * 0.5)
+        if speed is not None:
+            message.twist = types.SimpleNamespace(twist=self.command(speed))
         self.node._on_odom(message)
         return message
 
@@ -1334,6 +1336,222 @@ class MapAssistTests(unittest.TestCase):
                 self.assertIsNone(self.node.reference)
                 self.node._on_controller_cmd(self.command())
                 self.assert_stopped()
+
+    def approach_node(self):
+        self.parameter_overrides["enable_signal_approach"] = True
+        self.traffic_node()
+        self.signal_sequence = 0
+        self.odom(speed=0.2)
+        self.triplet()
+        self.node._tick()
+
+    def signal_frame(self, state="red", distance=20.0, speed=0.2, **fields):
+        self.advance(0.1)
+        self.odom(speed=speed)
+        self.signal_sequence += 1
+        observation = dict(state=state, sequence=self.signal_sequence, age_sec=0.0,
+                           distance_m=distance, uncertainty_m=0.0)
+        observation.update(fields)
+        self.node._on_signal_observation(DataMessage(json.dumps(observation)))
+        self.triplet()
+        self.node._tick()
+        return observation
+
+    def confirm_signal(self, state="red", **kwargs):
+        for _ in range(7):
+            self.signal_frame(state, **kwargs)
+
+    def test_approach_is_opt_in_and_legacy_color_never_reuses_range(self):
+        self.traffic_node()
+        self.signal_sequence = 0
+        self.confirm_signal()
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assert_stopped()
+        self.approach_node()
+        self.confirm_signal()
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.node._on_light_state(DataMessage("red"))
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertTrue(self.node.signal_wait_latched)
+        self.assert_stopped()
+
+    def test_approach_scales_curvature_and_does_not_mutate_lya_or_reverse(self):
+        self.approach_node()
+        self.confirm_signal()
+        original = self.command(2.0, 0.4)
+        self.node._on_controller_cmd(original)
+        limited = self.node.cmd_pub.messages[-1]
+        self.assertAlmostEqual(limited.linear.x, 0.8)
+        self.assertAlmostEqual(limited.angular.z, 0.16)
+        self.assertEqual((original.linear.x, original.angular.z), (2.0, 0.4))
+        for speed in (-0.4, 0.0):
+            self.node._on_controller_cmd(self.command(speed, 0.4))
+            self.assert_stopped()
+
+    def test_approach_requires_new_complete_visual_group(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.node.visual_motion_ready = False
+        self.node.used_seq = dict(self.node.point_seq)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.node._point_cb("a")(Pose2D(0.4, 0.0))
+        self.node._tick()
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.triplet()
+        self.node._tick()
+        self.node._on_controller_cmd(self.command())
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+
+    def test_approach_does_not_override_actual_oa_command_ownership(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.node._on_avoidance(DataMessage(True))
+        moving = self.command(1.5, -0.4)
+        self.node._on_controller_cmd(moving)
+        self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
+        self.node._on_avoidance(DataMessage(False))
+        self.node._on_controller_cmd(moving)
+        self.assert_stopped()
+
+    def test_approach_target_wait_is_latched_until_confirmed_green_and_new_control(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.signal_frame(distance=8.58, speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertEqual(self.node.traffic_reason, "signal_target_reached")
+        self.assert_stopped()
+        self.confirm_signal(distance=25.0, speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "wait", "A farther later box cannot resume a red wait")
+        self.signal_frame("green", speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        # Do not provide any new path after the exact green transition.
+        for _ in range(6):
+            self.advance(0.1)
+            self.odom(speed=0.0)
+            self.signal_sequence += 1
+            self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                state="green", sequence=self.signal_sequence, age_sec=0.0, distance_m=8.58))))
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.node._tick()
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.triplet()
+        self.node._tick()
+        self.assert_stopped()  # A new path is not a new controller command.
+        self.node._on_controller_cmd(self.command())
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+
+    def test_approach_unknown_missing_invalid_and_stale_range_lock_wait(self):
+        cases = [("unknown", {}), ("missing", {"distance_m": None}),
+                 ("nan", {"distance_m": float("nan")}),
+                 ("uncertainty", {"uncertainty_m": -1.0}),
+                 ("stale", {"age_sec": 0.51})]
+        for label, fields in cases:
+            with self.subTest(case=label):
+                self.approach_node()
+                self.confirm_signal()
+                self.signal_frame("unknown" if label == "unknown" else "red", **fields)
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.assert_stopped()
+                self.confirm_signal()
+                self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_approach_duplicates_do_not_vote_refresh_range_or_release_a_wait(self):
+        self.approach_node()
+        self.confirm_signal()
+        count = self.node.light_filter.snapshot(self.now)["sample_count"]
+        received = self.node.signal_observation_time
+        for seq in (self.signal_sequence, self.signal_sequence - 1):
+            self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                state="green", sequence=seq, age_sec=0.0, distance_m=100.0))))
+        self.assertEqual(self.node.light_filter.snapshot(self.now)["sample_count"], count)
+        self.assertEqual(self.node.signal_observation_time, received)
+        self.assertEqual(self.node.signal_observation.state, "red")
+        self.advance(0.51)
+        self.odom(speed=0.2)
+        self.triplet()
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertTrue(self.node.signal_wait_latched)
+        self.assert_stopped()
+
+    def test_approach_malformed_frame_cannot_cast_a_green_vote(self):
+        for payload in ('{', '[]', '{"state":"green","sequence":true,"age_sec":0}',
+                        '{"state":"green","sequence":999,"age_sec":-1}'):
+            with self.subTest(payload=payload):
+                self.approach_node()
+                self.confirm_signal()
+                before = self.node.light_filter.snapshot(self.now)["sample_count"]
+                self.node._on_signal_observation(DataMessage(payload))
+                self.assertEqual(self.node.light_filter.snapshot(self.now)["sample_count"], before)
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.assert_stopped()
+
+    def test_approach_actual_overspeed_brakes_without_permanently_latching(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.signal_frame(distance=9.0, speed=1.5)
+        self.node._on_controller_cmd(self.command(0.1, 0.02))
+        self.assert_stopped()
+        self.assertEqual(self.node.velocity_gate_reason, "approach_braking")
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.signal_frame(distance=9.0, speed=0.2)
+        self.node._on_controller_cmd(self.command(2.0, 0.4))
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+        self.assertLessEqual(self.node.cmd_pub.messages[-1].linear.x, 0.8)
+
+    def test_approach_ages_range_using_capture_interval_speed_and_uncertainty(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.signal_frame(distance=12.0, speed=2.0)
+        self.signal_frame(distance=12.0, speed=0.3, age_sec=0.15, uncertainty_m=0.4)
+        profile = self.node._signal_approach_profile(self.now)
+        self.assertAlmostEqual(profile["distance_lower_m"], 12.0 - 0.4 - 2.0 * 0.15)
+        self.advance(0.05)
+        self.assertAlmostEqual(self.node._signal_approach_profile(self.now)["distance_lower_m"],
+                               12.0 - 0.4 - 2.0 * 0.2)
+
+    def test_approach_invalid_odom_and_reset_revoke_distance_authority(self):
+        for fault in ("odom", "reset"):
+            with self.subTest(fault=fault):
+                self.approach_node()
+                self.confirm_signal()
+                if fault == "odom":
+                    self.advance(0.01)
+                    self.odom(x=float("nan"), speed=0.2)
+                    self.node._tick()
+                else:
+                    self.node._on_reset(DataMessage(True))
+                    self.node._tick()
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.node._on_controller_cmd(self.command())
+                self.assert_stopped()
+
+    def test_approach_fault_wait_cannot_enter_mapped_detour(self):
+        self.learned_official_loop()
+        self.node.p["enable_signal_approach"] = True
+        self.node.signal_wait_latched = True
+        self.confirm_light("red")
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertIsNone(self.node.detour_tracker)
+
+    def test_approach_rejects_unsafe_parameters(self):
+        for name, value in (("enable_traffic_control", False), ("target_stop_distance_m", 0),
+                            ("approach_deceleration_mps2", 0), ("approach_latency_sec", -0.1),
+                            ("signal_observation_timeout_sec", float("nan"))):
+            with self.subTest(name=name):
+                self.parameter_overrides.update(enable_signal_approach=True,
+                                                enable_traffic_control=True, enable_velocity_gate=True)
+                self.parameter_overrides[name] = value
+                with self.assertRaises(ValueError):
+                    self.module.MapAssist()
+                self.parameter_overrides.pop(name, None)
 
     def test_status_reports_expired_vote_without_changing_control_state(self):
         self.traffic_node()
