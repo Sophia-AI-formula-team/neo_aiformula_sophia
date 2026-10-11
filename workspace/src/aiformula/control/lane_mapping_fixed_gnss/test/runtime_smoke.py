@@ -26,7 +26,79 @@ import uuid
 
 
 class SmokeFailure(RuntimeError):
-    pass
+    def __init__(self, message, diagnostics=None):
+        super().__init__(message)
+        self.diagnostics = diagnostics
+
+
+def _last_completed_camera(directory):
+    """Read only on failure; never intercept worker results or flush its logger.
+
+    The asynchronous journal may lag the engine. Missing evidence stays None,
+    and its source age below is observation-time age, not commit-time age.
+    Read at most two 256 KiB tails, including across numeric log rotation.
+    """
+    paths = sorted(Path(directory).glob("commands-*.jsonl"),
+                   key=lambda path: int(path.stem.split("-")[-1]), reverse=True)
+    for path in paths[:2]:
+        with path.open("rb") as stream:
+            end = stream.seek(0, os.SEEK_END)
+            start = max(0, end - 262144)
+            stream.seek(start)
+            data = stream.read(262144)
+        if start:
+            data = data.partition(b"\n")[2]  # Discard a possibly partial first line.
+        for line in reversed(data.splitlines()):
+            try:
+                row = json.loads(line)
+            except (ValueError, UnicodeDecodeError):
+                continue  # A concurrent final write is not invented evidence.
+            if row.get("event") in ("teach_mask", "repeat_mask"):
+                result = row.get("result", {})
+                return dict(event=row["event"], journal_file=path.name,
+                            source_ns=row.get("source_ns"),
+                            reason=result.get("reason", row.get("reason")),
+                            compute_ms=row.get("compute_ms"),
+                            engine_processing_ms=result.get("processing_ms"),
+                            counts_at_result=result.get("counts"))
+    return None
+
+
+def _runtime_diagnostics(node):
+    """Non-atomic read-only evidence, not a new control or acceptance check."""
+    engine, worker = node.worker.engine, node.worker
+    now = node.get_clock().now().nanoseconds
+    camera = _last_completed_camera(node.journal.directory)
+    if camera is not None:
+        stamp = camera["source_ns"]
+        camera["source_age_at_diagnostic_ms"] = None if stamp is None else (now - stamp) * 1.e-6
+    received = node.last_mask_ns
+    return dict(observed_source_ns=now, engine_phase=engine.phase,
+                engine_terminal_reason=engine._fault, engine_counts=dict(engine.counts),
+                worker_failure=worker.failure, worker_thread_alive=worker.thread.is_alive(),
+                latest_received_mask_source_ns=received or None,
+                latest_received_mask_age_ms=None if not received else (now - received) * 1.e-6,
+                last_completed_camera=camera,
+                evidence_semantics="independent read-only samples; journal may lag; ages are not commit-time ages",
+                safety=node.safety.snapshot())
+
+
+def _wait_for(predicate, label, pump, diagnostics, timeout=6.,
+              bootstrap_terminal_reason=None, clock=time.monotonic):
+    """Original predicate, timeout and pump cadence; earlier FAILURE only."""
+    until = clock() + timeout
+    while not predicate():
+        reason = bootstrap_terminal_reason() if bootstrap_terminal_reason is not None else None
+        failure = ("terminal engine: " + reason + "; waiting for " + label) if reason else None
+        if failure is None and clock() >= until:
+            failure = "timeout: " + label
+        if failure is not None:
+            try:
+                details = diagnostics()
+            except Exception as error:
+                details = {"diagnostics_unavailable": str(error)}
+            raise SmokeFailure(failure + "; " + repr(details), diagnostics=details)
+        pump(.01)
 
 
 def run_case(name, output):
@@ -188,12 +260,12 @@ def run_case(name, output):
                 publish()
                 executor.spin_once(timeout_sec=.005)
 
-        def wait(predicate, label, timeout=6.):
-            until = time.monotonic() + timeout
-            while not predicate():
-                if time.monotonic() >= until:
-                    raise SmokeFailure("timeout: " + label + "; " + repr(node.safety.snapshot()))
-                pump(.01)
+        def wait(predicate, label, timeout=6., bootstrap_terminal=False):
+            def terminal_reason():
+                reason = node.worker.engine._fault
+                return reason if reason == "bootstrap_anchor_not_established" else None
+            _wait_for(predicate, label, pump, lambda: _runtime_diagnostics(node), timeout,
+                      bootstrap_terminal_reason=terminal_reason if bootstrap_terminal else None)
 
         def call(service, pause_motion=False):
             client = probe.create_client(Trigger, "/lane_endpoint_follower/" + service)
@@ -297,7 +369,8 @@ def run_case(name, output):
               before == pose_bits() and node.gnss_subscription is None,
               orientation_contains_nan=True, gnss_coordinates_jump=True)
         check("orientation_not_used_as_heading", node.safety.state == "TEACH")
-        wait(lambda: node.worker.engine.counts["accepted"] >= 5, "five actual stationary camera commits")
+        wait(lambda: node.worker.engine.counts["accepted"] >= 5, "five actual stationary camera commits",
+             bootstrap_terminal=True)
         check("full_masks_build_runtime_consensus", node.worker.engine.counts["accepted"] >= 5)
         active["gps"] = False
         if name in ("no_gnss_build", "future_gps", "missing_bits", "uncertainty"):
@@ -361,6 +434,8 @@ def run_case(name, output):
     except Exception as error:
         report["error"] = str(error)
         report["traceback"] = traceback.format_exc()
+        if isinstance(error, SmokeFailure) and error.diagnostics is not None:
+            report["wait_diagnostics"] = error.diagnostics
         return report
     finally:
         if node is not None:

@@ -14,6 +14,8 @@ from types import MappingProxyType
 
 import numpy as np
 
+from .local_moments import _moments, _NATIVE_MOMENTS
+
 from .finite_support import (DomainState, advance_domain, certified_segments,
                              _compact_confirmed_domain, _validate_frame_batch,
                              _advance_domain_validated)
@@ -1771,9 +1773,8 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
                 if not np.any(enough):
                     continue
                 delta, weights = differences[enough], selected[enough]
-                means = np.sum(delta * weights[:, :, None], axis=1) / counts[enough, None]
-                centered = delta - means[:, None, :]
-                cov = _weighted_patch_products(centered, centered, weights) / counts[enough, None, None]
+                means, cov = _moments(delta, weights, counts[enough],
+                    _weighted_patch_products, _NATIVE_MOMENTS)
                 eigenvalues, eigenvectors = np.linalg.eigh(cov)
                 accepted = ((eigenvalues[:, 1] > 1.e-5)
                             & (eigenvalues[:, 0] <= cfg["normal_max_thickness_m"] ** 2)

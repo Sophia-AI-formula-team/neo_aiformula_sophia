@@ -1,0 +1,25 @@
+{
+  "kind": "Diagnostic-only fixed-straight-arm necessary joint constraint, not production",
+  "first_attempt": {
+    "tests": 33,
+    "passed": 32,
+    "failures": 1,
+    "exit_code": 1,
+    "root_wall_s": 0.3133580000139773,
+    "sources_unchanged": true,
+    "retries": 0,
+    "loader_tests_started": false,
+    "packaging_started_in_that_window": false,
+    "failed_test": "test_oblique_normal_and_skew_footprint_exact_vertices",
+    "stderr_sha256": "4e4883e4ce89b1a4bc774c6b3ed1361092a54f0346e57ce462ffe184e8c7707c"
+  },
+  "diagnosis": "Independent oracle and helper both correctly report empty. Only additional expected vertex-count assertion is wrong.",
+  "exact_original_binary64_band": {"lower": "1/2**55", "upper": "-1/2**55"},
+  "independent_hand_calculation": "0.8_f64=3602879701896397/2**52; 0.6_f64=5404319552844595/2**53. Their products with 3/8 and 1/2 differ by 1/2**55.",
+  "new_preparation": "Keep original input as an explicit empty-band counterexample; add distinct positive oblique low/high=-1/+1 fixture; remaining32 methods/oracle/helper unchanged. New34-test version has not run.",
+  "original_failed_files_preserved": true,
+  "rejected_holdout_changed": false,
+  "production_callsite_exists": false,
+  "runtime_acceptance": false,
+  "limits": "An empty fixed straight arm does not exclude a refitted or curved arm. Two feasible joints do not certify a shared closure."
+}
