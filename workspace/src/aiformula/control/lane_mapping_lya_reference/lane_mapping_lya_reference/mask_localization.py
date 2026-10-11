@@ -1328,7 +1328,8 @@ class LaneMapLocalizer:
         return world, rotated, selected, normals, residual
 
     def match(self, local_xy, prior_xyyaw, stamp_ns, prior_stamp_ns=None, commit=True,
-              scan_support_xy=None, scan_sensitivity=None, motion_source_stamp_ns=None):
+              scan_support_xy=None, scan_sensitivity=None, motion_source_stamp_ns=None,
+              *, bootstrap_motion_information=None):
         """Propose a point-to-line fit using only this mask and the frozen anchor.
 
         Strictly increasing mask stamps prevent frame-vote replay.  Optional
@@ -1342,6 +1343,11 @@ class LaneMapLocalizer:
         factor. It is the source of this raw prior, not the mask/receipt clock.
         Once committed, omitting it is an error, including after keyframe or
         repeat handoff. The first motion-aware acquisition remains visual-only.
+        The sole exception is an explicit same-session TEACH bootstrap prior:
+        its immutable, strictly past motion state was committed with the raw
+        bootstrap map. It regularizes the first match without claiming a past
+        visual acceptance or changing initial-acquisition admission. Ordinary
+        fresh localization against an external map has no such implied prior.
         """
         started = time.perf_counter_ns()
         cfg = self.config
@@ -1437,6 +1443,15 @@ class LaneMapLocalizer:
             if (not isinstance(prior_stamp_ns, Integral) or isinstance(prior_stamp_ns, bool)
                     or not 0 < prior_stamp_ns <= source_stamp):
                 return finish("future_or_invalid_prior_stamp")
+        motion_reference = self._motion_information
+        if bootstrap_motion_information is not None:
+            if (not isinstance(bootstrap_motion_information, MotionInformationState)
+                    or motion_source_stamp_ns is None or motion_reference is not None
+                    or self.last_accepted_stamp_ns is not None
+                    or np.any(self._correction != 0.)):
+                return finish("invalid_bootstrap_motion_information")
+            motion_reference = bootstrap_motion_information
+        metrics["bootstrap_motion_prior_used"] = bootstrap_motion_information is not None
         if motion_source_stamp_ns is None:
             if self._motion_information is not None:
                 return finish("missing_motion_source_stamp")
@@ -1451,21 +1466,23 @@ class LaneMapLocalizer:
             metrics["motion_source_stamp_ns"] = motion_source_stamp_ns
             if cfg["allow_longitudinal_correction"]:
                 return finish("motion_information_requires_lateral_mode")
-            if self._motion_information is None:
+            if motion_reference is None:
                 motion_posterior = np.diag([cfg["motion_initial_lateral_sigma_m"] ** 2,
                                            cfg["motion_initial_yaw_sigma_rad"] ** 2])
                 metrics["motion_factor_initialization"] = True
             else:
-                if motion_source_stamp_ns <= self._motion_information.source_stamp_ns:
+                if motion_source_stamp_ns <= motion_reference.source_stamp_ns:
                     return finish("nonincreasing_motion_source_stamp")
                 try:
                     motion_covariance, motion_dt = _motion_prediction(
-                        self._motion_information, prior, self._correction[2], motion_source_stamp_ns, cfg)
+                        motion_reference, prior, self._correction[2], motion_source_stamp_ns, cfg)
                     motion_precision = np.linalg.inv(motion_covariance)
                 except (ValueError, FloatingPointError, np.linalg.LinAlgError):
                     return finish("invalid_motion_information")
                 metrics.update(motion_factor_initialization=False, motion_interval_s=motion_dt,
                                motion_predicted_covariance=motion_covariance.tolist())
+                if bootstrap_motion_information is not None:
+                    metrics["bootstrap_motion_source_stamp_ns"] = motion_reference.source_stamp_ns
         metrics["input_scan_points"] = len(scan)
         if not len(self._anchor):
             return finish("empty_anchor")

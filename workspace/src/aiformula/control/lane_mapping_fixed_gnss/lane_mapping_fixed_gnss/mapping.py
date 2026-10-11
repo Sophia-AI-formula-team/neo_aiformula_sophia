@@ -19,7 +19,8 @@ from types import MappingProxyType
 import numpy as np
 
 from lane_mapping_lya_reference.mapping_core import SparseConsensusMap, transform_local_points
-from lane_mapping_lya_reference.mask_localization import LaneMapLocalizer, _configuration, _voxel_means
+from lane_mapping_lya_reference.mask_localization import (
+    LaneMapLocalizer, MotionInformationState, _configuration, _motion_prediction, _voxel_means)
 
 
 DEFAULT_CONFIG = {
@@ -87,6 +88,7 @@ class _PreparedKeyframe:
     tracking_stamp_ns: object
     direction_owner: object
     direction_source_stamp_ns: object
+    bootstrap_motion_owner: object = None
 
 
 class TeachMapEngine:
@@ -131,6 +133,9 @@ class TeachMapEngine:
         self._first_pose = None
         self._last_seen_stamp = None
         self._last_motion_source_stamp = None
+        # Same-session raw bootstrap evidence, not a visual localization or a
+        # general external-map seed. Advance only with the guarded map commit.
+        self._bootstrap_motion_information = None
         self._tracking_started = False
         self._snapshot = None
         self._past_direction_support = None
@@ -169,13 +174,17 @@ class TeachMapEngine:
                 and self._past_direction_support_stamp_ns <= frontier):
             raise ValueError("keyframe direction contains uncommitted evidence")
         tracking_stamp = None if self._matcher is None else self._matcher.last_accepted_stamp_ns
+        bootstrap_motion = self._bootstrap_motion_information if self._matcher is None else None
+        if bootstrap_motion is not None and bootstrap_motion.source_stamp_ns > frontier:
+            raise ValueError("bootstrap motion contains uncommitted or future map evidence")
         # Index preparation can exceed a deadline. Cache only an inactive
         # candidate, and never reuse one seeded from a different committed pose.
         if (self._candidate is not None and self._candidate.frontier_ns == frontier
                 and self._candidate.tracking_owner is self._matcher
                 and self._candidate.tracking_stamp_ns == tracking_stamp
                 and self._candidate.direction_owner is self._past_direction_support
-                and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns):
+                and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns
+                and self._candidate.bootstrap_motion_owner is bootstrap_motion):
             return self._candidate
         points, _ = self._map.confirmed_points_and_votes()
         distance = np.sum((points - prior[:2]) ** 2, axis=1)
@@ -190,7 +199,7 @@ class TeachMapEngine:
                                                        self._past_direction_support_stamp_ns))
         self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher,
                                             tracking_stamp, self._past_direction_support,
-                                            self._past_direction_support_stamp_ns)
+                                            self._past_direction_support_stamp_ns, bootstrap_motion)
         self.counts["keyframes_prepared"] += 1
         return self._candidate
 
@@ -219,6 +228,11 @@ class TeachMapEngine:
             return None, None, None, timing, "processing_deadline"
         motion_kwargs = ({} if motion_source_stamp_ns is None else
                          {"motion_source_stamp_ns": motion_source_stamp_ns})
+        if self._matcher is None and motion_source_stamp_ns is not None:
+            if (candidate is None or candidate.bootstrap_motion_owner is None
+                    or candidate.bootstrap_motion_owner is not self._bootstrap_motion_information):
+                return None, None, None, timing, "missing_bootstrap_motion_information"
+            motion_kwargs["bootstrap_motion_information"] = candidate.bootstrap_motion_owner
         prior_stamp = stamp if motion_source_stamp_ns is None else motion_source_stamp_ns
         result = selected.match(scan, prior, stamp, prior_stamp_ns=prior_stamp, commit=False,
                                 scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity, **motion_kwargs)
@@ -286,6 +300,10 @@ class TeachMapEngine:
             return self._result(False, "invalid_or_nonincreasing_motion_source_stamp", prior, stamp, started)
         if motion_source_stamp_ns is not None:
             motion_source_stamp_ns = int(motion_source_stamp_ns)
+            if self._trace and self._last_motion_source_stamp is None:
+                # Already-voted legacy geometry has no committed motion prior.
+                # Do not invent its starting covariance partway through TEACH.
+                return self._result(False, "missing_bootstrap_motion_information", prior, stamp, started)
         if self._first_stamp is None:
             self._first_stamp, self._first_pose = stamp, prior.copy()
         if stamp - self._first_stamp > self.config["max_duration_s"] * 1e9:
@@ -317,6 +335,32 @@ class TeachMapEngine:
               or np.linalg.norm(prior[:2] - self._first_pose[:2]) > self.config["bootstrap_max_distance_m"]):
             self._latch("bootstrap_anchor_not_established")
             return self._result(False, self._fault, prior, stamp, started)
+        prepared_bootstrap_motion = None
+        if result is None and motion_source_stamp_ns is not None:
+            try:
+                if self._bootstrap_motion_information is None:
+                    bootstrap_dt = None
+                    covariance = np.diag([
+                        self._geometry_config["motion_initial_lateral_sigma_m"] ** 2,
+                        self._geometry_config["motion_initial_yaw_sigma_rad"] ** 2])
+                else:
+                    covariance, bootstrap_dt = _motion_prediction(
+                        self._bootstrap_motion_information, prior, 0.,
+                        motion_source_stamp_ns, self._geometry_config)
+                prepared_bootstrap_motion = MotionInformationState(
+                    motion_source_stamp_ns, tuple(prior), tuple(map(tuple, covariance)))
+            except (ValueError, FloatingPointError, np.linalg.LinAlgError):
+                return self._result(False, "invalid_bootstrap_motion_information", prior, stamp, started)
+            metrics["bootstrap_motion_proposal"] = {
+                "initialization": self._bootstrap_motion_information is None,
+                "previous_source_stamp_ns": (None if self._bootstrap_motion_information is None else
+                                              self._bootstrap_motion_information.source_stamp_ns),
+                "source_stamp_ns": motion_source_stamp_ns,
+                "interval_s": bootstrap_dt,
+                "covariance": covariance.tolist(),
+                "raw_prior_xyyaw": list(prepared_bootstrap_motion.raw_prior_xyyaw),
+                "publication": "only_with_accepted_guarded_map_commit",
+            }
         world = transform_local_points(points, *pose)
         # Prepare the bounded immutable context before admission. Commit only
         # swaps this pointer; never allocate/copy the full image under its lock.
@@ -354,6 +398,8 @@ class TeachMapEngine:
                 return self._result(False, self._fault, prior, stamp, started, metrics)
             self._trace.append(np.asarray(pose, dtype=float).copy())
             self._last_motion_source_stamp = motion_source_stamp_ns
+            if prepared_bootstrap_motion is not None:
+                self._bootstrap_motion_information = prepared_bootstrap_motion
             # The entire preceding stable observation supplies paint direction
             # only, never an unconfirmed reference position. Publish it in the
             # same guarded transaction; a rejected/current frame cannot help
