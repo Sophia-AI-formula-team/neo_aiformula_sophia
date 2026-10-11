@@ -18,6 +18,7 @@ from .finite_support import (DomainState, advance_domain, certified_segments,
                              _compact_confirmed_domain, _validate_frame_batch,
                              _advance_domain_validated)
 from .continuation_support import (ContinuationFrame, retain_frames, common_intervals,
+                                   _validate_continuation_batch, _continuation_frame_from_batch,
                                    FIELDS as CONTINUATION_FIELDS,
                                    REPRESENTATION as CONTINUATION_REPRESENTATION)
 
@@ -1088,12 +1089,24 @@ class BoundaryConsensus:
         # order and every per-frame/normal/reliability check below.
         model_valid, model_j = obs.model_valid, obs.model_sensitivity
         model_reliable, model_normals = obs.model_reliable, obs.model_normals
-        for record_id, _, _, _, _, _, faces in updates:
+        batch = self._continuation_frame_batch(obs, updates, face_owner, cosine,
+            model_valid, model_j, model_reliable, model_normals)
+        for group_index, (record_id, _, _, _, _, _, faces) in enumerate(updates):
             previous, following = int(obs.previous[faces[0]]), int(obs.next[faces[-1]])
             signature = (int(face_owner[previous]) if previous >= 0 else -1,
                          int(face_owner[following]) if following >= 0 else -1)
             old = self._continuations.get(record_id, {})
             hypotheses = dict(old)
+            if batch is not None:
+                frame = _continuation_frame_from_batch(batch, group_index)
+                previous_frames = old.get(signature, ())
+                hypotheses[signature] = retain_frames(previous_frames, frame,
+                    cfg['minimum_frame_votes'], cfg['minimum_reliable_votes'])
+                count += (int(signature not in old)
+                    + sum(item.storage_units for item in hypotheses[signature])
+                    - sum(item.storage_units for item in previous_frames))
+                result.append((record_id, MappingProxyType(hypotheses)))
+                continue
             selected = np.empty(0, dtype=np.int64)
             if obs.position_footprints is not None:
                 admitted = (model_valid[faces] & obs.position_segment_valid[faces]
@@ -1129,6 +1142,62 @@ class BoundaryConsensus:
                 - sum(item.storage_units for item in previous_frames))
             result.append((record_id, MappingProxyType(hypotheses)))
         return tuple(result), count
+
+    def _continuation_frame_batch(self, obs, updates, face_owner, cosine,
+                                  model_valid, model_j, model_reliable, model_normals):
+        """Ordered CSR preparation for immutable production observations.
+
+        The scalar two-endpoint dot checks deliberately retain their original
+        arithmetic/short circuit. All face-local Boolean gathers, the four
+        endpoint reliability test, and finite/unit checks are frame-wide.
+        Missing ends still produce empty frames, not omitted hypotheses.
+        """
+        if (type(obs) is not BoundaryObservation or obs.position_footprints is None
+                or not updates or np.geterr()['under'] != 'ignore'):
+            return None
+        faces = [item[6] for item in updates]
+        if (any(type(ids) is not np.ndarray or ids.dtype != np.dtype(np.int64)
+                or ids.ndim != 1 or not len(ids) for ids in faces)
+                or type(face_owner) is not np.ndarray
+                or face_owner.dtype != np.dtype(np.int64)
+                or face_owner.shape != (len(obs.points),)):
+            return None
+        lengths = np.asarray([len(ids) for ids in faces], dtype=np.int64)
+        if np.sum(lengths) > 200000:
+            return None
+        packed = np.concatenate(faces)
+        if np.any(packed < 0) or np.any(packed >= len(obs.points)):
+            return None
+        starts = np.r_[0, np.cumsum(lengths)]
+        endpoints = np.column_stack((packed[starts[:-1]], packed[starts[1:]-1]))
+        neighbours = np.column_stack((obs.previous[endpoints[:, 0]], obs.next[endpoints[:, 1]]))
+        known = neighbours >= 0
+        signatures = np.full(neighbours.shape, -1, dtype=np.int64)
+        signatures[known] = face_owner[neighbours[known]]
+        complete = np.all(signatures >= 0, axis=1)
+        for index in np.flatnonzero(complete):
+            if any(float(np.dot(model_normals[own], model_normals[other])) < cosine
+                    for own, other in zip(endpoints[index], neighbours[index])):
+                complete[index] = False
+        endpoint_trusted = np.zeros(len(faces), dtype=bool)
+        groups = np.flatnonzero(complete)
+        if len(groups):
+            endpoint_ids = np.column_stack((endpoints[groups], neighbours[groups]))
+            endpoint_trusted[groups] = np.all(model_reliable[endpoint_ids] &
+                (model_j[endpoint_ids] <= self.config['reliable_sensitivity']), axis=1)
+        owner_slots = np.repeat(np.arange(len(faces)), lengths)
+        admitted = (model_valid[packed] & obs.position_segment_valid[packed]
+            & (model_j[packed] <= self.config['max_sensitivity'])
+            & (obs.position_segment_sensitivity[packed] <= self.config['max_sensitivity']))
+        admitted &= complete[owner_slots]
+        selected, selected_owners = packed[admitted], owner_slots[admitted]
+        trusted = (model_reliable[selected] & obs.position_segment_reliable[selected]
+            & (model_j[selected] <= self.config['reliable_sensitivity'])
+            & (obs.position_segment_sensitivity[selected] <= self.config['reliable_sensitivity']))
+        trusted[~endpoint_trusted[selected_owners]] = False
+        offsets = np.r_[0, np.cumsum(np.bincount(selected_owners, minlength=len(faces)), dtype=np.int64)]
+        return _validate_continuation_batch(obs.source_stamp_ns,
+            obs.position_footprints[selected], model_normals[selected], trusted, offsets)
 
     def can_commit(self, prepared):
         return (isinstance(prepared, PreparedBoundaryUpdate) and prepared.owner is self

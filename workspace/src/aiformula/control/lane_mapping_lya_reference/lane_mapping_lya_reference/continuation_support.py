@@ -58,6 +58,85 @@ class ContinuationFrame:
         return 1 + len(self.quads)
 
 
+_FRAME_BATCH_SEAL = object()
+
+
+@dataclass(frozen=True)
+class _ContinuationFrameBatch:
+    stamp_ns: int
+    quads: np.ndarray
+    normals: np.ndarray
+    reliable: np.ndarray
+    offsets: np.ndarray
+    seal: object
+
+
+def _validate_continuation_batch(stamp_ns, quads, normals, reliable, offsets):
+    """Optional frame-wide preflight; unsupported input keeps the public route.
+
+    Use the SAME unit-normal reduction/tolerance as ContinuationFrame, once
+    for all owner groups. No validation exception is raised by an ineligible
+    batch: original owner construction/retention determines the first error.
+    Only native exact arrays participate, with ordinary underflow handling;
+    subclasses, conversion hooks and strict FP modes are not reordered.
+    This temporary token never becomes retained historical evidence.
+    """
+    arrays = (quads, normals, reliable, offsets)
+    if (type(stamp_ns) is not int or stamp_ns <= 0
+            or any(type(value) is not np.ndarray for value in arrays)
+            or any(not value.flags.c_contiguous for value in arrays)
+            or quads.dtype != np.dtype(np.float64)
+            or normals.dtype != np.dtype(np.float64)
+            or reliable.dtype != np.dtype(np.bool_)
+            or offsets.dtype != np.dtype(np.int64)
+            or np.geterr()['under'] != 'ignore'):
+        return None
+    if (quads.ndim != 3 or quads.shape[1:] != (4, 2) or len(quads) > 200000
+            or normals.shape != (len(quads), 2) or reliable.shape != (len(quads),)
+            or offsets.ndim != 1 or not 1 <= len(offsets) <= 200001):
+        return None
+    if (offsets[0] != 0 or offsets[-1] != len(quads)
+            or np.any(offsets < 0) or np.any(offsets > len(quads))
+            or np.any(offsets[1:] < offsets[:-1])):
+        return None
+    if (not np.all(np.isfinite(quads)) or not np.all(np.isfinite(normals))):
+        return None
+    # Check this cheap safe bound before norm so an invalid late group cannot
+    # trigger overflow before the original earlier owner's error is reached.
+    if np.any(np.abs(normals) > 1. + 1.e-6):
+        return None
+    if np.any(np.abs(np.linalg.norm(normals, axis=1)-1.) > 1.e-6):
+        return None
+    frozen = tuple(np.frombuffer(value.tobytes(), dtype=value.dtype).reshape(value.shape)
+                   for value in arrays)
+    return _ContinuationFrameBatch(stamp_ns, *frozen, _FRAME_BATCH_SEAL)
+
+
+def _continuation_frame_from_batch(batch, group_index):
+    """Independently own one prevalidated group; no whole-frame retention."""
+    if (type(batch) is not _ContinuationFrameBatch or batch.seal is not _FRAME_BATCH_SEAL
+            or type(group_index) is not int or not 0 <= group_index < len(batch.offsets)-1):
+        raise ValueError('expected private continuation frame batch/group')
+    first, stop = int(batch.offsets[group_index]), int(batch.offsets[group_index+1])
+    frame = object.__new__(ContinuationFrame)
+    object.__setattr__(frame, 'stamp_ns', batch.stamp_ns)
+    for name in ('quads', 'normals', 'reliable'):
+        array = getattr(batch, name)[first:stop]
+        # Each group gets its own immutable bytes. A retained tiny group must
+        # not pin all other owners' data outside the existing capacity count.
+        value = np.frombuffer(array.tobytes(), dtype=array.dtype).reshape(array.shape)
+        object.__setattr__(frame, name, value)
+    object.__setattr__(frame, '_reliable_present', bool(np.any(frame.reliable)))
+    return frame
+
+
+def _has_reliable(frame):
+    # Not a dataclass field or an external input. Public/legacy objects retain
+    # the original truth reduction; only our immutable private groups cache it.
+    cached = getattr(frame, '_reliable_present', None)
+    return bool(np.any(frame.reliable)) if cached is None else cached
+
+
 def retain_frames(previous, current, minimum_frames, minimum_reliable):
     """Bound witnesses, not confirmation thresholds, without inventing votes.
 
@@ -73,7 +152,7 @@ def retain_frames(previous, current, minimum_frames, minimum_reliable):
         raise ValueError('invalid continuation witness order/count')
     frames = ordered
     keep = {frame.stamp_ns for frame in frames[-minimum_frames:]}
-    reliable = [frame for frame in frames if np.any(frame.reliable)]
+    reliable = [frame for frame in frames if _has_reliable(frame)]
     keep.update(frame.stamp_ns for frame in reliable[-minimum_reliable:])
     return tuple(frame for frame in frames if frame.stamp_ns in keep)
 
