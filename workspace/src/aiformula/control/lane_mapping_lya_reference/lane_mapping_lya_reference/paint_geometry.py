@@ -14,7 +14,7 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .finite_support import DomainState, advance_domain, certified_segments
+from .finite_support import DomainState, advance_domain, certified_segments, _compact_confirmed_domain
 
 
 REPRESENTATION = "paint_boundary_v1"
@@ -769,9 +769,20 @@ class BoundaryConsensus:
             key not in self._edges or key in expired_edge_set for key in edge_votes)
         if edge_count > cfg["max_support_segments"]:
             raise ValueError("boundary topology edge capacity")
-        # Certify INTERNAL extent independently of the cross-record graph.
-        # Only actual model-next pairs owned by the SAME finalized record may
-        # vote. The creation chart never moves with later fused node means.
+        # Finite position support is not the graph's identity/connection vote.
+        # An actual adjacent segment also observes the incident portion of its
+        # two endpoint owners when a grid boundary separates those owners.
+        # Never walk the graph, bridge a missing face or borrow a nearby line.
+        # Keep graph counting above unchanged; domains cannot confirm an edge.
+        incident_pairs = {}
+        for first, second in zip(faces, following):
+            if float(np.dot(model_normals[first], model_normals[second])) < cosine:
+                continue
+            pair = (int(first), int(second))
+            for record_id in (int(face_owner[first]), int(face_owner[second])):
+                incident_pairs.setdefault(record_id, []).append(pair)
+        # The creation chart never moves with later fused node means. Its
+        # signed normal test still applies independently to both endpoints.
         domains = []
         domain_count = self._domain_interval_count - sum(
             len(self._domains[key].intervals) for key in expired if key in self._domains)
@@ -796,8 +807,11 @@ class BoundaryConsensus:
             selected[selected] &= face_owner[following[selected]] == record_id
             first, second = members[selected], following[selected]
             pairs = np.column_stack((first, second))
+            if record_id in incident_pairs:
+                pairs = np.concatenate((pairs, np.asarray(incident_pairs[record_id], dtype=np.int64)))
+                first, second = pairs[:, 0], pairs[:, 1]
             old_domain = self._domains.get(record_id)
-            # Even an empty creation frame fixes the chart. Later internal
+            # Even an empty creation frame fixes the chart. Later incident
             # evidence must not choose a more convenient new origin/direction.
             domain = advance_domain(old_domain, origin=frame_points[index],
                 current_frame_normal=frame_normals[index], segments=model_points[pairs],
@@ -805,6 +819,11 @@ class BoundaryConsensus:
                 stamp_ns=stamp, minimum_frame_votes=cfg["minimum_frame_votes"],
                 minimum_reliable_votes=cfg["minimum_reliable_votes"], candidate_ttl_ns=ttl,
                 normal_cosine=cosine, max_intervals=cfg["max_support_segments"])
+            # Configuration is frozen for this whole consensus session. Only
+            # saturated confirmed pieces may lose redundant stamp partitions;
+            # pending evidence retains exact stamps for its original TTL.
+            domain = _compact_confirmed_domain(domain, cfg["minimum_frame_votes"],
+                                               cfg["minimum_reliable_votes"])
             domain_count += len(domain.intervals)-(len(old_domain.intervals) if old_domain is not None else 0)
             domains.append((record_id, domain))
         if max(segments, edge_count) + domain_count > cfg["max_support_segments"]:
@@ -818,6 +837,7 @@ class BoundaryConsensus:
                                   "topology_updated_edges": len(edge_updates),
                                   "topology_expired_edges": len(expired_edges),
                                   "certified_domain_intervals": domain_count,
+                                  "finite_domain_support_policy": "direct_incident_model_next_v1",
                                   "topology_representation": TOPOLOGY_REPRESENTATION})
         return PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records), expired,
                                       next_id, segments, tuple(edge_updates), expired_edges, stats,

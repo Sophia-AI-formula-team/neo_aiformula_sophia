@@ -13,6 +13,16 @@ import struct
 
 import numpy as np
 
+try:
+    import _lane_mapping_lya_native as _FINITE_NATIVE
+except ImportError:
+    _FINITE_NATIVE = None
+
+# An older installed extension may still accelerate unrelated graph kernels.
+# This additional optional kernel is selected only by its own exact API.
+_NATIVE_PROJECTION = (getattr(_FINITE_NATIVE, 'finite_projection_bounds', None)
+    if getattr(_FINITE_NATIVE, 'FINITE_PROJECTION_BOUNDS_API_VERSION', None) == 1 else None)
+
 MAX_ITEMS = 200000
 MAX_COORDINATE = 1.e7
 MAX_STAMP = 2**63 - 1
@@ -21,21 +31,27 @@ UNIT_TOLERANCE = 64. * np.finfo(np.float64).eps
 
 
 def _integer(value, name, minimum=1, maximum=MAX_STAMP):
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Integral):
-        raise ValueError(name + ' must be an integer')
-    value = int(value)
+    # Internal immutable states already hold exact builtins. Keep the public
+    # validation/conversion path for every other type, including subclasses.
+    if type(value) is not int:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Integral):
+            raise ValueError(name + ' must be an integer')
+        value = int(value)
     if not minimum <= value <= maximum:
         raise ValueError(name + ' outside supported range')
     return value
 
 
 def _number(value, name):
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Real):
-        raise ValueError(name + ' must be a real number')
-    try:
-        result = float(value)
-    except (ValueError, OverflowError) as error:
-        raise ValueError(name + ' cannot be represented as float64') from error
+    if type(value) is float:
+        result = value
+    else:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Real):
+            raise ValueError(name + ' must be a real number')
+        try:
+            result = float(value)
+        except (ValueError, OverflowError) as error:
+            raise ValueError(name + ' cannot be represented as float64') from error
     if not math.isfinite(result):
         raise ValueError(name + ' must be finite')
     return result
@@ -179,6 +195,14 @@ def projection_bounds(point, origin, tangent):
     return _outward(parts[0][0] + parts[1][0])[0], _outward(parts[0][1] + parts[1][1])[1]
 
 
+def _validated_projection_bounds(point, origin, tangent):
+    """Internal finite inputs only; public conversion/error ordering is intact."""
+    if _NATIVE_PROJECTION is None:
+        return projection_bounds(point, origin, tangent)
+    return _NATIVE_PROJECTION(float(point[0]), float(origin[0]), float(tangent[0]),
+                              float(point[1]), float(origin[1]), float(tangent[1]))
+
+
 def _arrays(segments, normals, reliable):
     try:
         segments, normals, reliable = np.asarray(segments), np.asarray(normals), np.asarray(reliable)
@@ -252,7 +276,7 @@ def _current_union(segments, normals, reliable, origin, tangent, cosine):
             key = tuple(map(float, point))
             if key not in vertices:
                 vertices[key] = len(projected)
-                projected.append(projection_bounds(point, origin, tangent))
+                projected.append(_validated_projection_bounds(point, origin, tangent))
             pair.append(vertices[key])
         edges.append(tuple(pair))
         if trusted:
@@ -345,6 +369,44 @@ def advance_domain(previous, *, origin, current_frame_normal, segments, normals,
     return DomainState(origin, tangent, tuple(Interval(*piece) for piece in result), stamp)
 
 
+def _compact_confirmed_domain(state, minvotes, minreliable):
+    """Canonical confirmed unions for a session with FROZEN vote thresholds.
+
+    Only BoundaryConsensus's immutable configuration may use this operation.
+    Public advance_domain retains its original per-location stamp semantics.
+    Confirmed pieces never expire and their counters are saturated, so their
+    individual last-seen stamps no longer affect future votes or TTL. Keep the
+    maximum contributing frontier, exactly as certified_segments already does.
+    Unconfirmed pieces and every positive gap remain untouched. Do not use a
+    compacted state in a session which changes the confirmation thresholds.
+
+    Storage counts can decrease; the unchanged capacity then bounds canonical
+    pieces, not redundant partitions of the same confirmed geometric domain.
+    """
+    if type(state) is not DomainState:
+        raise ValueError('state must be DomainState')
+    minimum, trusted = _thresholds(minvotes, minreliable)
+    pieces, result, index = state.intervals, [], 0
+    while index < len(pieces):
+        first = pieces[index]
+        following = index + 1
+        upper, latest = first.upper, first.last_stamp_ns
+        if first.frame_votes == minimum and first.reliable_votes == trusted:
+            while following < len(pieces):
+                other = pieces[following]
+                if (other.lower != upper or other.frame_votes != minimum
+                        or other.reliable_votes != trusted):
+                    break
+                upper, latest = other.upper, max(latest, other.last_stamp_ns)
+                following += 1
+        result.append(first if following == index + 1 else
+                      Interval(first.lower, upper, minimum, trusted, latest))
+        index = following
+    if len(result) == len(pieces):
+        return state
+    return DomainState(state.origin, state.tangent, tuple(result), state.source_stamp_ns)
+
+
 def _freeze(value, shape, dtype):
     array = np.asarray(value, dtype=dtype).reshape(shape)
     return np.frombuffer(array.tobytes(), dtype=dtype).reshape(shape)
@@ -360,7 +422,7 @@ def _export_endpoint(state, point, tangent, denominator, mean_coordinate, piece,
     for _ in range(8):
         scale = (parameter-mean_coordinate)/denominator
         endpoint = tuple(point[i] + scale*tangent[i] for i in (0, 1))
-        bounds = projection_bounds(endpoint, state.origin, state.tangent)
+        bounds = _validated_projection_bounds(endpoint, state.origin, state.tangent)
         if bounds[0] >= piece.lower and bounds[1] <= piece.upper:
             return endpoint
         # Only correct the proven numerical envelope, not geometric mismatch.

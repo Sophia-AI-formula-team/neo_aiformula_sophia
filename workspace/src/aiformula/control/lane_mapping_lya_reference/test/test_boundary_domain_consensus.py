@@ -180,13 +180,16 @@ def test_raw_face_hull_without_actual_next_never_becomes_model_domain():
     assert not len(consensus.snapshot().certified_model_segments)
 
 
-def test_cross_record_next_only_observes_graph_not_internal_domain():
+def test_cross_record_next_confirms_incident_support_without_extra_graph_votes():
     points = BASE + [[-.1, 0.], [0., 0.], [.1, 0.]]
     reference = history(points=points).snapshot()
     assert len(reference.points_xy) == 3
     assert len(reference.directed_edges) == 2
     assert np.all(reference.edge_frame_votes == 5)
-    assert not len(reference.certified_model_segments)
+    assert len(reference.certified_model_segments) == 3
+    assert np.all(reference.certified_model_frame_votes == 5)
+    assert np.all(reference.certified_model_reliable_votes == 1)
+    assert_owner_evidence(reference)
 
 
 def test_domain_uses_model_next_positions_not_raw_centers_or_raw_face_endpoints():

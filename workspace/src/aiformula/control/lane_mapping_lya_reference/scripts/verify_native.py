@@ -27,6 +27,7 @@ def main():
     assert native.CROSS_SECTION_WEIGHTS_API_VERSION == 1, "incompatible cross-section API"
     assert native.LOCAL_MOMENTS_API_VERSION == 1, "incompatible local moments API"
     assert native.LOCAL_GEOMETRY_API_VERSION == 1, "incompatible local geometry API"
+    assert native.FINITE_PROJECTION_BOUNDS_API_VERSION == 1, "incompatible finite projection API"
     assert native.SOURCE_SHA256 == expected, "loaded extension does not match the C source"
     assert native.graph_forest(b"\x03\x03\x04", 3) == ([0, 0, 2], [-1, 0, -1])
     assert native.connected_subsets(b"\x03\x03\x04", 3, b"\x07\x05", [0, 1]) == b"\x03\x00"
@@ -60,6 +61,11 @@ def main():
     assert struct.unpack("=q", counts) == (2,)
     assert struct.unpack("=dd", means) == (.5, 0.)
     assert struct.unpack("=dddd", covariance) == (.25, 0., 0., 0.)
+    # The subtraction and multiplication each round outward once. Use exact
+    # binary64 literals: math.nextafter is unavailable on Foxy's Python 3.8.
+    projection = native.finite_projection_bounds(1., 0., 1., 0., 0., 0.)
+    assert projection == (float.fromhex("0x1.ffffffffffffep-1"),
+                          float.fromhex("0x1.0000000000002p+0"))
     result = dict(backend="native", api_version=native.API_VERSION,
         radius_graph_api_version=native.RADIUS_GRAPH_API_VERSION,
         local_support_api_version=native.LOCAL_SUPPORT_API_VERSION,
@@ -67,6 +73,7 @@ def main():
         cross_section_weights_api_version=native.CROSS_SECTION_WEIGHTS_API_VERSION,
         local_moments_api_version=native.LOCAL_MOMENTS_API_VERSION,
         local_geometry_api_version=native.LOCAL_GEOMETRY_API_VERSION,
+        finite_projection_bounds_api_version=native.FINITE_PROJECTION_BOUNDS_API_VERSION,
         source_sha256=expected, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
         binary_name=binary.name, python=sys.version, platform=platform.platform(),
         installed_prefix_verified=args.install_prefix is not None, real_calls_passed=True)

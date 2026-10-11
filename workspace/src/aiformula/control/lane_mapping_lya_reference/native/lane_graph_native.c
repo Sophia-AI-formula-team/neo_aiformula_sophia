@@ -1386,7 +1386,72 @@ fail:
     return result;
 }
 
+/* Same scalar operation order and outward binary64 rounding as
+ * finite_support.projection_bounds. No fused dot product, epsilon, or changed
+ * support extent. The caller has already validated its immutable coordinates.
+ * Keep volatile stores so compilers cannot contract or retain extra precision.
+ */
+static int finite_outward(double value, double *lower, double *upper)
+{
+    if (!isfinite(value)) {
+        PyErr_SetString(PyExc_ValueError, "nonfinite interval arithmetic");
+        return 0;
+    }
+    *lower = nextafter(value, -INFINITY);
+    *upper = nextafter(value, INFINITY);
+    if (!isfinite(*lower) || !isfinite(*upper)) {
+        PyErr_SetString(PyExc_ValueError, "unbounded interval arithmetic");
+        return 0;
+    }
+    return 1;
+}
+
+static int finite_projection_part(double point, double origin, double tangent,
+                                  double *lower, double *upper)
+{
+    double a, b, discard;
+    volatile double subtraction, first, second;
+    if (point == origin) {
+        a = b = 0.;
+    } else {
+        subtraction = point - origin;
+        if (!finite_outward(subtraction, &a, &b)) return 0;
+    }
+    if (tangent == 0. || (a == 0. && b == 0.)) {
+        *lower = *upper = 0.;
+        return 1;
+    }
+    first = (tangent > 0. ? a : b) * tangent;
+    second = (tangent > 0. ? b : a) * tangent;
+    if (!finite_outward(first, lower, &discard)) return 0;
+    return finite_outward(second, &discard, upper);
+}
+
+static PyObject *finite_projection_bounds(PyObject *self, PyObject *args)
+{
+    double px, ox, tx, py, oy, ty, al, au, bl, bu, lower, upper, discard;
+    volatile double first, second;
+    if (!PyArg_ParseTuple(args, "dddddd:finite_projection_bounds",
+                          &px, &ox, &tx, &py, &oy, &ty)) return NULL;
+    if (!(isfinite(px) && isfinite(ox) && isfinite(tx) &&
+          isfinite(py) && isfinite(oy) && isfinite(ty))) {
+        PyErr_SetString(PyExc_ValueError, "finite projection requires finite inputs");
+        return NULL;
+    }
+    if (!finite_projection_part(px, ox, tx, &al, &au) ||
+        !finite_projection_part(py, oy, ty, &bl, &bu)) return NULL;
+    if (al == 0. && au == 0.) return Py_BuildValue("(dd)", bl, bu);
+    if (bl == 0. && bu == 0.) return Py_BuildValue("(dd)", al, au);
+    first = al + bl;
+    second = au + bu;
+    if (!finite_outward(first, &lower, &discard) ||
+        !finite_outward(second, &discard, &upper)) return NULL;
+    return Py_BuildValue("(dd)", lower, upper);
+}
+
 static PyMethodDef methods[] = {
+    {"finite_projection_bounds", finite_projection_bounds, METH_VARARGS,
+     "Exact outward projection enclosure for six finite f64 scalars, ordered px,ox,tx,py,oy,ty."},
     {"local_geometry", local_geometry, METH_VARARGS,
      "Bounded CSR local support and original PCA moments; caller owns radii, eigensolver and gates."},
     {"local_moments", local_moments, METH_VARARGS,
@@ -1424,6 +1489,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         PyModule_AddIntConstant(result, "CROSS_SECTION_WEIGHTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "LOCAL_MOMENTS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "LOCAL_GEOMETRY_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "FINITE_PROJECTION_BOUNDS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||

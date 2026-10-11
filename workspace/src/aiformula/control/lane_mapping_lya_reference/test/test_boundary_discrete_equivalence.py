@@ -278,6 +278,7 @@ def compare_step(fast, oracle, obs, commit=True):
     assert result.stats['certified_domain_intervals'] >= 0
     legacy_stats = dict(result.stats)
     del legacy_stats['certified_domain_intervals']
+    assert legacy_stats.pop('finite_domain_support_policy') == 'direct_incident_model_next_v1'
     legacy_result = replace(result, domain_updates=(), domain_interval_count=0,
                             stats=MappingProxyType(legacy_stats))
     same_value(legacy_result,expected)
