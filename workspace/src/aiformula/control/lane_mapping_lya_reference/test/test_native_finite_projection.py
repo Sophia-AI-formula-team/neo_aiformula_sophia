@@ -40,6 +40,16 @@ MIN_NORMAL = float.fromhex("0x1.0000000000000p-1022")
 MAXIMUM = sys.float_info.max
 
 
+@pytest.fixture(autouse=True)
+def isolate_eighth_api_projection_path(monkeypatch):
+    # These tests compare Python projection arithmetic with the eighth native
+    # API, including its actual calls inside whole-domain updates. The ninth
+    # union API owns that work when enabled; do not let it silently replace BOTH
+    # sides of this older independent comparison. Native9 has its own real-call,
+    # whole-state/export/capacity tests in test_native_current_union_dispatch.
+    monkeypatch.setattr(finite, "_NATIVE_CURRENT_UNION", None)
+
+
 def packed(values):
     return struct.pack("=" + "d" * len(values), *values)
 
