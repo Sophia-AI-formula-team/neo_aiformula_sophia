@@ -1,0 +1,120 @@
+{
+  "directory": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\exact_outer_red_detour",
+  "case": "exact_outer_red_detour",
+  "lane_x": 72.53,
+  "start_z": -10.0,
+  "initial_red": false,
+  "release_green": false,
+  "perception_hz": 10.0,
+  "signal_panel_rgb": true,
+  "signal_approach": true,
+  "automated_background_focus_opt_out": true,
+  "recover_projected_components": true,
+  "use_current_corridor": false,
+  "continue_after_learning": true,
+  "diagnostic_route_output": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\exact_outer_red_detour\\route_fusion_exact.json",
+  "route_export_role": "Read-only actual fusion-call inputs/results from this same worker; no route injection or control change",
+  "lane_recovery_role": "Opt-in Python adapter current-component projection; native upstream LLP and LYA are unchanged",
+  "diagnostic_stage": "same_chain_learning_then_red_detour_observation",
+  "requested_front_gap_m": null,
+  "front_geometry": "FBX front rubber corners: local x +/-0.3275 m, z +0.216 m; simulation model measurement",
+  "scene": "Assets/Scenes/MotorControllerValidation.unity",
+  "requested_utc": "2026-10-11T21:34:57.3301109Z",
+  "requested_editor_wall": 58389.085438799993,
+  "signal_plane_z": 15.0,
+  "finish_region": "Actual first-lap reference, scheduled real red, observed detour entry and explicit completion, plus measured leftward motion; missing evidence fails",
+  "second_approach_trigger": {
+    "enabled": true,
+    "x_center": 72.53,
+    "x_half_width_m": 4.0,
+    "z_center": -10.0,
+    "z_half_depth_m": 3.0,
+    "north_heading_tolerance_deg": 30.0,
+    "requires_first_green_pass_and_reference": true,
+    "role": "Evaluation-only real panel color schedule; never sent as control pose, route or light observation"
+  },
+  "left_motion_evidence": {
+    "min_left_yaw_deg": 45.0,
+    "min_left_displacement_m": 1.0,
+    "role": "Measured Rigidbody motion during the observed detour; not proof of lane safety or successful route exit by itself"
+  },
+  "evaluation_bounds": {
+    "xmin": -25,
+    "xmax": 90,
+    "zmin": -75,
+    "zmax": 55
+  },
+  "wall_timeout_sec": 420,
+  "motion_timeout_sec": 240,
+  "distance_limit_m": 600,
+  "stopped_no_progress_timeout_sec": 15,
+  "reference_role": "Start pose and signal truth initialize/evaluate the trial. No evaluator route or signal truth enters control. Unity Rigidbody pose supplies ideal noiseless simulated odometry to MapAssist.",
+  "baseline": {
+    "bodies": [
+      {
+        "name": "AIFormulaVehicle",
+        "position": [
+          41.0142822,
+          -0.0249999464,
+          43.15886
+        ],
+        "rotation": [
+          0.0,
+          -0.7049651,
+          0.0,
+          0.709242
+        ],
+        "mass": 51.9999924,
+        "isKinematic": false,
+        "constraints": "None",
+        "solverIterations": 6,
+        "solverVelocityIterations": 1
+      },
+      {
+        "name": "RearCasterAssembly",
+        "position": [
+          41.7142677,
+          0.195000052,
+          43.1546249
+        ],
+        "rotation": [
+          0.0,
+          -0.7049651,
+          0.0,
+          0.709242
+        ],
+        "mass": 1.0,
+        "isKinematic": false,
+        "constraints": "None",
+        "solverIterations": 6,
+        "solverVelocityIterations": 1
+      },
+      {
+        "name": "RearRollingWheel",
+        "position": [
+          41.77427,
+          0.07500005,
+          43.1542625
+        ],
+        "rotation": [
+          -2.98023224E-08,
+          -0.704965234,
+          -1.49011612E-08,
+          0.7092421
+        ],
+        "mass": 1.0,
+        "isKinematic": false,
+        "constraints": "None",
+        "solverIterations": 6,
+        "solverVelocityIterations": 1
+      }
+    ],
+    "drive": "{\"actuationMode\":1,\"motorController\":{\"profile\":1,\"tread\":0.6,\"diameter\":0.254,\"gearRatio\":1.1,\"rightA\":0.834,\"rightW0\":2.76,\"leftA\":0.844,\"leftW0\":2.81},\"motorPlant\":{\"response\":2,\"commonGain\":0.7699726223945618,\"differentialGain\":0.05012036859989166,\"commonToDifferential\":0.014155738055706025,\"commonTimeConstant\":0.30000001192092898,\"differentialTimeConstant\":0.010001971386373043,\"shaftDeadbandRpm\":4.0,\"straightRatio\":-0.29203540086746218,\"differentialBias\":0.0016708142356947065,\"negativeSlope\":0.0721861869096756,\"positiveSlope\":0.045797478407621387,\"positiveExponent\":1.6851263046264649,\"commonNegativeSlope\":-0.07922577112913132,\"commonPositiveSlope\":0.010675603523850441,\"neutralReleaseDecelerationRpmPerSecond\":152.0,\"neutralReleaseDelaySeconds\":0.034299999475479129},\"rpmProportionalGain\":1.0,\"rpmIntegralGain\":0.30000001192092898,\"rpmReferenceRamp\":2000.0,\"motorToWheelRatio\":1.0,\"frontTrack\":0.6000000238418579,\"wheelRadius\":0.12700000405311585,\"rearPivot\":{\"x\":0.0,\"y\":0.2199999988079071,\"z\":-0.699999988079071},\"casterTrail\":0.05999999865889549,\"rearWheelRadius\":0.10000000149011612,\"rearWheelWidth\":0.07999999821186066,\"keyboardControl\":true,\"maximumSpeed\":2.0,\"maximumYawRate\":4.0,\"wheelAcceleration\":2.5,\"releaseDeceleration\":2.0199999809265138,\"throttleReleaseMode\":0,\"maximumMotorTorque\":32.0,\"maximumWheelSurfaceSpeed\":4.5,\"speedGain\":120.0,\"speedIntegralGain\":120.0,\"steeringReleaseSettleTime\":0.75,\"brakingTorque\":30.0,\"casterLimitDegrees\":30.0,\"casterBearingDamping\":0.5,\"casterCenteringStiffness\":8.0,\"solverPositionIterations\":24,\"solverVelocityIterations\":12,\"frontLeft\":{\"instanceID\":-531914},\"frontRight\":{\"instanceID\":-531920},\"rearWheelBody\":{\"instanceID\":-531946},\"rearAxle\":{\"instanceID\":-531948},\"rearTire\":{\"instanceID\":-531944},\"rearSwivel\":{\"instanceID\":-531938},\"frontLeftVisual\":{\"instanceID\":-531736},\"frontRightVisual\":{\"instanceID\":-531780},\"rearPivotVisual\":{\"instanceID\":-531824},\"rearWheelVisual\":{\"instanceID\":-531868}}",
+    "contact": "{\"longitudinalCreep\":542.13134765625,\"lateralCreep\":1522.9127197265625,\"yawViscosity\":124.69999694824219,\"yawDryFriction\":0.17726179957389832,\"yawRegularization\":0.029999999329447748,\"friction\":0.8500000238418579,\"frontLoadFraction\":0.6299999952316284,\"leftRollingRadius\":0.12566708028316499,\"rightRollingRadius\":0.12645192444324494,\"preserveDifferentialAtSpeedLimit\":true,\"coupledRearContact\":true,\"rearLongitudinalCreep\":500.0,\"rearLateralCreep\":20.0}",
+    "rgb_topic": "{\"topic\":\"/aiformula_sensing/zed_node/left_image/undistorted\",\"rgbCamera\":{\"instanceID\":533120},\"datasetExporter\":{\"instanceID\":534384},\"vehicleLocalPosition\":{\"x\":0.0,\"y\":0.6549999713897705,\"z\":0.0},\"vehicleLocalRotation\":{\"x\":0.0,\"y\":0.0,\"z\":0.0,\"w\":1.0},\"width\":640,\"height\":360,\"useRepositoryIntrinsics\":true,\"repositoryIntrinsics\":{\"x\":254.39161682128907,\"y\":254.39161682128907,\"z\":330.0130310058594,\"w\":181.14964294433595}}",
+    "rgb_camera": "{\"Camera\":{\"m_Enabled\":true,\"serializedVersion\":\"2\",\"m_ClearFlags\":1,\"m_BackGroundColor\":{\"r\":0.1921568661928177,\"g\":0.3019607961177826,\"b\":0.4745098054409027,\"a\":0.0},\"m_projectionMatrixMode\":1,\"m_GateFitMode\":2,\"m_FOVAxisMode\":0,\"m_Iso\":200,\"m_ShutterSpeed\":0.004999999888241291,\"m_Aperture\":16.0,\"m_FocusDistance\":10.0,\"m_FocalLength\":50.0,\"m_BladeCount\":5,\"m_Curvature\":{\"x\":2.0,\"y\":11.0},\"m_BarrelClipping\":0.25,\"m_Anamorphism\":0.0,\"m_SensorSize\":{\"x\":36.0,\"y\":24.0},\"m_LensShift\":{\"x\":0.0,\"y\":0.0},\"m_NormalizedViewPortRect\":{\"serializedVersion\":\"2\",\"x\":0.0,\"y\":0.0,\"width\":1.0,\"height\":1.0},\"near clip plane\":0.05000000074505806,\"far clip plane\":5000.0,\"field of view\":70.0,\"orthographic\":false,\"orthographic size\":5.0,\"m_Depth\":0.0,\"m_CullingMask\":{\"serializedVersion\":\"2\",\"m_Bits\":128},\"m_RenderingPath\":-1,\"m_TargetTexture\":{\"instanceID\":0},\"m_TargetDisplay\":0,\"m_TargetEye\":3,\"m_HDR\":true,\"m_AllowMSAA\":true,\"m_AllowDynamicResolution\":false,\"m_ForceIntoRT\":false,\"m_OcclusionCulling\":true,\"m_StereoConvergence\":10.0,\"m_StereoSeparation\":0.02199999988079071}}",
+    "preset": "{\n    \"version\": 2,\n    \"contactLayout\": \"implicit-component\",\n    \"sourceScene\": \"Assets/Scenes/MotorControllerValidation.unity\",\n    \"values\": [\n        {\n            \"id\": \"gravity\",\n            \"value\": -9.8100004196167\n        },\n        {\n            \"id\": \"time_scale\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"physics_step\",\n            \"value\": 0.019999999552965165\n        },\n        {\n            \"id\": \"fps\",\n            \"value\": -1.0\n        },\n        {\n            \"id\": \"vsync\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"sun\",\n            \"value\": 0.800000011920929\n        },\n        {\n            \"id\": \"ground_static\",\n            \"value\": 0.6000000238418579\n        },\n        {\n            \"id\": \"ground_dynamic\",\n            \"value\": 0.6000000238418579\n        },\n        {\n            \"id\": \"motor_mode\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"motor_profile\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"motor_tread\",\n            \"value\": 0.6000000238418579\n        },\n        {\n            \"id\": \"motor_diameter\",\n            \"value\": 0.2540000081062317\n        },\n        {\n            \"id\": \"motor_gear\",\n            \"value\": 1.100000023841858\n        },\n        {\n            \"id\": \"motor_right_a\",\n            \"value\": 0.8339999914169312\n        },\n        {\n            \"id\": \"motor_right_w0\",\n            \"value\": 2.759999990463257\n        },\n        {\n            \"id\": \"motor_left_a\",\n            \"value\": 0.843999981880188\n        },\n        {\n            \"id\": \"motor_left_w0\",\n            \"value\": 2.809999942779541\n        },\n        {\n            \"id\": \"motor_plant\",\n            \"value\": 2.0\n        },\n        {\n            \"id\": \"motor_common\",\n            \"value\": 0.7699726223945618\n        },\n        {\n            \"id\": \"motor_diff\",\n            \"value\": 0.05012036859989166\n        },\n        {\n            \"id\": \"motor_cross\",\n            \"value\": 0.014155738055706025\n        },\n        {\n            \"id\": \"motor_common_tau\",\n            \"value\": 0.30000001192092898\n        },\n        {\n            \"id\": \"motor_diff_tau\",\n            \"value\": 0.010001971386373043\n        },\n        {\n            \"id\": \"motor_dead_rpm\",\n            \"value\": 4.0\n        },\n        {\n            \"id\": \"motor_lap_pivot\",\n            \"value\": -0.29203540086746218\n        },\n        {\n            \"id\": \"motor_lap_bias\",\n            \"value\": 0.0016708142356947065\n        },\n        {\n            \"id\": \"motor_lap_negative\",\n            \"value\": 0.0721861869096756\n        },\n        {\n            \"id\": \"motor_lap_positive\",\n            \"value\": 0.045797478407621387\n        },\n        {\n            \"id\": \"motor_lap_exponent\",\n            \"value\": 1.6851263046264649\n        },\n        {\n            \"id\": \"motor_common_negative\",\n            \"value\": -0.07922577112913132\n        },\n        {\n            \"id\": \"motor_common_positive\",\n            \"value\": 0.010675603523850441\n        },\n        {\n            \"id\": \"motor_release_ramp\",\n            \"value\": 152.0\n        },\n        {\n            \"id\": \"motor_release_delay\",\n            \"value\": 0.034299999475479129\n        },\n        {\n            \"id\": \"motor_rpm_kp\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"motor_rpm_ki\",\n            \"value\": 0.30000001192092898\n        },\n        {\n            \"id\": \"motor_rpm_ramp\",\n            \"value\": 2000.0\n        },\n        {\n            \"id\": \"motor_shaft_ratio\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"effective_left_radius\",\n            \"value\": 0.12566708028316499\n        },\n        {\n            \"id\": \"effective_right_radius\",\n            \"value\": 0.12645192444324494\n        },\n        {\n            \"id\": \"contact_long\",\n            \"value\": 542.13134765625\n        },\n        {\n            \"id\": \"contact_lat\",\n            \"value\": 1522.9127197265625\n        },\n        {\n            \"id\": \"contact_yaw\",\n            \"value\": 124.69999694824219\n        },\n        {\n            \"id\": \"contact_dry\",\n            \"value\": 0.17726179957389832\n        },\n        {\n            \"id\": \"contact_regularization\",\n            \"value\": 0.029999999329447748\n        },\n        {\n            \"id\": \"contact_mu\",\n            \"value\": 0.8500000238418579\n        },\n        {\n            \"id\": \"contact_load\",\n            \"value\": 0.6299999952316284\n        },\n        {\n            \"id\": \"contact_pair_limit\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"contact_rear_model\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"contact_rear_long\",\n            \"value\": 500.0\n        },\n        {\n            \"id\": \"contact_rear_lat\",\n            \"value\": 20.0\n        },\n        {\n            \"id\": \"body_mass\",\n            \"value\": 51.99999237060547\n        },\n        {\n            \"id\": \"caster_mass\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"rear_mass\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"com_y\",\n            \"value\": 0.17000000178813935\n        },\n        {\n            \"id\": \"com_z\",\n            \"value\": -0.2800000011920929\n        },\n        {\n            \"id\": \"drag\",\n            \"value\": 0.07999999821186066\n        },\n        {\n            \"id\": \"angular_drag\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"solver\",\n            \"value\": 6.0\n        },\n        {\n            \"id\": \"solver_velocity\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"accel\",\n            \"value\": 2.5\n        },\n        {\n            \"id\": \"release\",\n            \"value\": 2.0199999809265138\n        },\n        {\n            \"id\": \"release_mode\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"torque\",\n            \"value\": 32.0\n        },\n        {\n            \"id\": \"brake\",\n            \"value\": 30.0\n        },\n        {\n            \"id\": \"wheel_ceiling\",\n            \"value\": 4.5\n        },\n        {\n            \"id\": \"kp\",\n            \"value\": 120.0\n        },\n        {\n            \"id\": \"ki\",\n            \"value\": 120.0\n        },\n        {\n            \"id\": \"settle\",\n            \"value\": 0.75\n        },\n        {\n            \"id\": \"front_long\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"front_lat\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"wheel_mass\",\n            \"value\": 7.0\n        },\n        {\n            \"id\": \"wheel_damping\",\n            \"value\": 0.05999999865889549\n        },\n        {\n            \"id\": \"spring\",\n            \"value\": 12000.0\n        },\n        {\n            \"id\": \"damper\",\n            \"value\": 850.0\n        },\n        {\n            \"id\": \"travel\",\n            \"value\": 0.05999999865889549\n        },\n        {\n            \"id\": \"caster_limit\",\n            \"value\": 30.0\n        },\n        {\n            \"id\": \"bearing\",\n            \"value\": 0.5\n        },\n        {\n            \"id\": \"caster_centering\",\n            \"value\": 8.0\n        },\n        {\n            \"id\": \"caster_drag\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"rear_drag\",\n            \"value\": 0.0010000000474974514\n        },\n        {\n            \"id\": \"rear_static\",\n            \"value\": 0.800000011920929\n        },\n        {\n            \"id\": \"rear_dynamic\",\n            \"value\": 0.800000011920929\n        },\n        {\n            \"id\": \"rear_combine\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"source\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"device\",\n            \"value\": -1.0\n        },\n        {\n            \"id\": \"style\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"dpad\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"deadzone\",\n            \"value\": 0.30000001192092898\n        },\n        {\n            \"id\": \"deadband\",\n            \"value\": 0.009999999776482582\n        },\n        {\n            \"id\": \"pad_speed\",\n            \"value\": 2.0\n        },\n        {\n            \"id\": \"pad_yaw\",\n            \"value\": 4.0\n        },\n        {\n            \"id\": \"pad_turbo_speed\",\n            \"value\": 2.0\n        },\n        {\n            \"id\": \"pad_turbo_yaw\",\n            \"value\": 4.0\n        },\n        {\n            \"id\": \"key_speed\",\n            \"value\": 2.0\n        },\n        {\n            \"id\": \"key_yaw\",\n            \"value\": 4.0\n        },\n        {\n            \"id\": \"invert_steering\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"invert_throttle\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"generic_enable\",\n            \"value\": 0.5\n        },\n        {\n            \"id\": \"e2e_observe\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"e2e_hz\",\n            \"value\": 15.0\n        },\n        {\n            \"id\": \"e2e_vmax\",\n            \"value\": 3.0\n        },\n        {\n            \"id\": \"e2e_wmax\",\n            \"value\": 8.0\n        },\n        {\n            \"id\": \"e2e_ema\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"e2e_timeout\",\n            \"value\": 0.5\n        },\n        {\n            \"id\": \"e2e_response_enabled\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"e2e_response_speed\",\n            \"value\": 0.807200014591217\n        },\n        {\n            \"id\": \"e2e_response_yaw\",\n            \"value\": 0.020464999601244928\n        },\n        {\n            \"id\": \"e2e_response_cubic\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"e2e_response_positive_yaw\",\n            \"value\": 2.7074999809265138\n        },\n        {\n            \"id\": \"e2e_response_bias\",\n            \"value\": 0.010978000238537789\n        },\n        {\n            \"id\": \"e2e_response_limit\",\n            \"value\": 0.4000000059604645\n        },\n        {\n            \"id\": \"e2e_response_tau\",\n            \"value\": 0.10000000149011612\n        },\n        {\n            \"id\": \"e2e_response_slowdown\",\n            \"value\": 0.0\n        },\n        {\n            \"id\": \"e2e_camera_intrinsics\",\n            \"value\": 1.0\n        },\n        {\n            \"id\": \"e2e_camera_height\",\n            \"value\": 0.6549999713897705\n        },\n        {\n            \"id\": \"e2e_camera_pitch\",\n            \"value\": 0.0\n        }\n    ]\n}",
+    "fixedDeltaTime": 0.02,
+    "timeScale": 1.0
+  }
+}

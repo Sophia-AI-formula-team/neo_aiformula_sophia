@@ -1,0 +1,36 @@
+--- final63/Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py
++++ candidate/Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py
+@@ -221,6 +221,9 @@
+                     omega_t=float(self.lya.lya.omega_t), counts=[len(c) for c in clouds])
+ 
+     def process(self, mask, request):
++        use_current_corridor = request.get("use_current_corridor", True)
++        if type(use_current_corridor) is not bool:
++            raise ValueError("use_current_corridor must be a bool")
+         opted_in = request.get("recover_projected_components", False) is True
+         before = ([None if line is None else line.copy() for line in self.publisher.lines], list(self.publisher.lost)) if opted_in else None
+         clouds, debug = self.publisher.process(mask, request["camera"],
+@@ -228,6 +231,7 @@
+         corridor, corridor_debug = None, None
+         if opted_in:
+             raw_clouds = clouds
++        if opted_in and use_current_corridor:
+             from current_corridor import CurrentCorridor
+             if self.current_corridor is None:
+                 self.current_corridor = CurrentCorridor()
+@@ -253,12 +257,14 @@
+                     corridor_debug["raw_right_source"]["publisher_debug"] = debug[1]
+         else:
+             self.current_corridor = None
+-            result = self.clouds_to_command(clouds, prefer_observed_center=False)
++            result = self.clouds_to_command(clouds, prefer_observed_center=opted_in)
+         result.update(sequence=request["sequence"], sim_time=request["sim_time"], epoch=request["epoch"],
+                       sides=debug, clouds=clouds, commit=COMMIT)
+         if opted_in:
+             result.update(corridor=corridor, corridor_debug=corridor_debug,
+                           raw_clouds=raw_clouds, raw_counts=[len(c) for c in raw_clouds])
++            if not use_current_corridor:
++                result["adapter_policy"] = "component_recovery_without_current_corridor"
+         if not all(math.isfinite(result[k]) for k in ("v", "w", "omega_t")):
+             raise ValueError("Nonfinite upstream control output")
+         return result

@@ -1,0 +1,167 @@
+Static vision-junction feasibility / interface review — 2026-10-12
+
+Scope: installed source read only. No inference, image processing, fitting,
+Unity operation, camera/lamp change, model replacement or runtime edit performed.
+CAD and Unity world poses must not supply a junction feature's label or geometry.
+
+Actual installed root:
+C:/Users/PC/OneDrive - Sophia Univ. Students/Main/SOPHIA/Y4T1/Research/
+Demo_LaneLineTrainer/Simulator/Assets
+Paths below are relative to this root unless specified otherwise.
+
+1. Available model output — no drivable mask exists in this runtime
+
+- StreamingAssets/RoadDetector/worker.py:62 calls model.predict(image).
+- RoadDetector/a3-v14/yolop_a3_runtime/__init__.py:6 aliases PerceptionModel to
+  SharedFPNPerception, not the original three-head YOLOP architecture.
+- shared_runtime.py:34-36 obtains lanes,results; computes class1 lane probability
+  and the lane mask. shared_fpn.py:104-120 defines a TWO-class LaneDecoder;
+  :143-158 returns lane logits and object detections. No drivable/free-space head.
+- outputs.py:23-37 PerceptionOutput includes lane_mask, lane_overlay,
+  obstacle_mask, object_overlay, combined_overlay and object/color metadata.
+- outputs.py:42-53 obstacle_mask consists of FILLED DETECTION RECTANGLES for
+  classes1,3,91; it is neither free space nor dense physical obstacle segmentation.
+- worker.py:81-84 transports overlay, lane, obstacles as PNG plus detection JSON.
+  It does not transport drivable masks, lane probabilities or ground visibility.
+- LaneRuntimeConfig.postprocess_enabled defaults False (:18). Probability>=.5
+  produces the default binary lane mask; optional morphology/component filtering
+  exists but is off by default. shared_runtime currently discards raw probability
+  after making the binary mask. It could be exported later from the same inference,
+  but that would be a reviewed protocol extension, not an existing data field.
+
+2. Overlay inversion cannot recover drivable data
+
+- lane_processing.py:111-126 changes lane pixels using BGR(0,0,255), alpha=.5,
+  then converts to uint8. This red tint is lane-line evidence, not drivable area.
+- shared_runtime.py:57-60 draws object annotations onto that lane overlay.
+  outputs.py:46-51 paints bounding boxes/text; worker.py:80 then paints the
+  optional signal-panel evidence box using signal_panel_rgb.py:192 onward.
+- Even source RGB + lossless overlay PNG cannot globally recover the lane mask:
+  annotation overwrites are destructive; colors equal/near the tint may have
+  indistinguishable uint8 results. At best an offline inversion marks uniquely
+  explainable, unannotated pixels and leaves ambiguous/overwritten pixels UNKNOWN.
+  It must not be called lossless. JPEG/video compression adds further ambiguity.
+- A drivable mask was never generated, so it cannot be recovered by inversion.
+  lane==0 and obstacles==0 are NOT a drivable/free-space class.
+- No inversion is needed for current trials: AIFormulaSemanticLeftTrial.cs:338-352
+  directly saves detector.Input to rgb_*.png and detector.LaneMask to lane_*.png,
+  together with overlay_*.png. The observer/chase JPG has a different camera and
+  is presentation evidence only, not calibrated inference input.
+
+3. Minimal genuine-vision candidate pipeline (diagnostic first)
+
+A. Consume same-sequence binary lane PNG plus the original RGB and calibration.
+   Preserve the complete image topology, including current components rejected
+   by the driving candidate selector. Use predicted lane pixels, never the Unity
+   label/mask camera, island mesh, evaluator route or known junction coordinates.
+
+B. Project only supported ground-plane pixels/rays, retaining explicit visibility
+   and invalid-ray masks. Record lane-edge polylines, endpoints and intersections;
+   do not reduce every component to y=a+bx or the selected three ABC points.
+   Existing VisionLaneFollower/lane_publisher.py:405-425 clips to forward0..10m,
+   lateral +/-4m and fits one line. This intentionally loses branch structure;
+   the driving projection's crop must not define the full junction observation.
+
+C. Require positive structural evidence: boundary continuation before an opening,
+   two plausible mouth edges or a branch-aligned marking/edge, and visible
+   continuation of the forward corridor. Use same-frame RGB to distinguish
+   supported road/green-edge structure, occlusion and image boundary clipping.
+   A gap alone is UNKNOWN: dashed lines, crosswalks, service strips, glare,
+   occlusion, failed segmentation and a real branch can all create gaps.
+   If no genuine drivable segmentation exists, label the result a lane-boundary
+   junction CANDIDATE, not a verified traversable corridor.
+
+D. Keep side/bearing/opening interval with uncertainty, visible support pixels,
+   rejection reasons and current capture identity. Confirm using multiple actual
+   distinct captures whose independently extracted geometry is consistent after
+   capture-time odometry association. Do not paint old boundaries into a new
+   mask or call extrapolated geometry currently observed. A historical accepted
+   feature may remain a MAP observation with its age/source, not a fresh detector.
+
+E. Associate accepted observations to official graph junctions using ordered
+   travel, branch bearing/side, adjacency and accepted localization uncertainty.
+   A single forward camera cannot observe all incident roads simultaneously;
+   do not claim full node degree from one image. Five similar left-T observations
+   alone may leave cyclic ID ambiguity. Preserve ambiguity rejection until real
+   asymmetry/additional feature evidence resolves it. No forced nearest-CAD ID.
+
+A separate true drivable model could support an opening/free-space branch, but
+adding/training/swapping that model is outside a small wiring change. A hardcoded
+RGB pavement-color heuristic is not a recovered A3 drivable output either.
+
+4. Observability and projection limits
+
+- AIFormulaRgbCameraTopic.cs:17-18 uses fx=fy~254.392, cx~330.013, cy~181.150
+  at640x360; :66-72 builds this projection. Approximate horizontal FOV103deg,
+  with about52deg left and51deg right; vertical FOV about71deg.
+- A purely lateral90deg branch cannot be seen when abreast of the camera. To
+  see lateral offset L on the left, a forward-facing ray needs forward distance
+  roughly >=L/1.297, before considering occlusions. An outer-lane view must look
+  farther across the inner lane, so a branch may leave the FOV before entry.
+  Observe while approaching and retain it as a localized map landmark; do not
+  invent a current mouth after it leaves the image. Camera/lamp stays unchanged.
+- Ground rays near the horizon are ill conditioned. An apparent opening at the
+  image edge has incomplete support. Projection uncertainty must grow with depth,
+  pixel localization error, pitch/roll and calibration/ground-height uncertainty.
+- RoadDetector.CameraCalibration():151-163 uses fixed vehicle-relative camera
+  R,t. Actual camera rendering at RgbCameraTopic.cs:48-50 follows the vehicle's
+  current transform; the existing IPM assumes the base ground plane z=0. Dynamic
+  pitch/roll or body-height offsets therefore need measured attitude/ground-plane
+  treatment or explicit rejection/uncertainty, not silently exact projections.
+- Mask absence outside the FOV or rejected projection is unobserved, not free.
+  Existing road-like asphalt also occurs inside islands: lane-only absence cannot
+  certify connectivity. This must be resolved visually, not using CAD as input.
+
+5. Capture/odometry envelope needed before MapAssist can consume features
+
+Existing atomic guarantees:
+- RgbCameraTopic.cs:47,55 records monotonic CapturedAt and increments Sequence.
+- RoadDetector.cs:180-193 records pending sequence/time and sends camera K/R/t,
+  epoch and sim_time inside lane_control. The worker echoes sequence,input_sha256.
+- RoadDetector.cs:218-237 verifies sequence and exact INPUT PNG hash, then loads
+  RGB/masks/overlay together and sets FrameSimulationTime. FrameAge is measured
+  since capture, not since successful display.
+- SemanticPlanning.cs:106-125 supplies CURRENT tick odometry and, once per new
+  detector sequence, vision epoch, capture sim_time, age, points, color and range.
+  Current tick pose is not the capture pose of a delayed image.
+- semantic_worker.py:310-324 rejects duplicate/out-of-order/stale vision using
+  max(monotonic age, current_sim_time-capture_sim_time); :371 onward stamps the
+  current odometry with the tick simulation time.
+
+Required additional junction observation contract (proposed, not installed):
+- camera_session/epoch, capture_sequence, capture_sim_time, capture_monotonic_time
+  or bound age, receive time, input image hash, output mask identity and calibration
+  version/hash including K,R,t,width,height, image orientation/distortion policy.
+- observations[] with feature ID local to the camera epoch, type candidate/
+  confirmed/unknown, side/bearing, mouth/edge geometry in explicitly named camera
+  or base frame at CAPTURE, uncertainty/support/visibility and reason. Never an
+  evaluator-supplied global junction ID or truth world position.
+- capture-time odom bracket with timestamps/frame IDs, position/yaw and covariance,
+  plus measured attitude/ground-plane information when used in projection. Pose
+  interpolation must reject excessive gaps/reset/discontinuity; record the bracket
+  and interpolation weight. Never attach the response-arrival pose to old pixels.
+- Existing simulator odom is explicitly ideal Unity body odometry. It may locate
+  an independently detected feature downstream, as the current MapAssist already
+  uses it; it must NOT label a pixel, set branch geometry or decide that a junction
+  exists. Preserve this provenance and distinguish eventual real ROS odometry.
+- Camera Capture currently uses transform (possibly render-interpolated), while
+  tick odom reads Rigidbody pose. Bound/record that timing difference; synchronization
+  requires a deliberate capture contract rather than guessing equivalence.
+- Duplicate rejection, fresh age on both clocks, epoch reset/clear, finite-value
+  validation and one real frame per observation vote. Odometry-only ticks and
+  unsupported lane frames must not duplicate evidence or renew visual freshness.
+- A junction observation may be valid when selected ABC is unsupported. Transport
+  its independent status without treating it as lane-control permission. Do not
+  change LYA ownership, the speed gate, point TTL or current missing-lane stop just
+  to collect a junction candidate. Map association and actuation remain separate.
+
+Exact-byte input_sha256 checks the original transport PNG. The harness re-encodes
+the accepted Texture2D when saving rgb_*.png; the saved PNG bytes may differ despite
+identical decoded pixels. For archive pairing use sequence/capture metadata and
+decoded-pixel hashes, or preserve the original request PNG bytes explicitly.
+
+Conclusion: current data supports a genuine lane-boundary junction diagnostic,
+not an already available drivable-opening detector. Start with offline candidate
+evidence and false-positive/observability review; extend the observation protocol
+only after that evidence. Do not replace the official matcher with unobserved
+apex/junction positions or promise automatic node correspondence from one camera.

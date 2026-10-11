@@ -1,0 +1,74 @@
+--- final63/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
++++ candidate/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
+@@ -15,6 +15,35 @@
+     {
+         public bool Requested { get; private set; }
+         public bool EnableSignalApproach { get; set; }
++        // Runtime-only opt-in diagnostic path. Never serialized into the scene.
++        public string DiagnosticRouteOutput { get; set; }
++        // Explicit simulator control priors; empty retains the original chain.
++        public string CalibratedMapPath { get; set; }
++        public string RecordedReferencePath { get; set; }
++        public bool EnableCalibratedDetourOwnership { get; set; }
++        public bool HasFreshCalibratedDetourPoints
++        {
++            get {
++                try {
++                if (!EnableCalibratedDetourOwnership || !Running || Faulted || ResultAge > .25 || Result == null) return false;
++                var status = Result["status"] as JObject;
++                if ((string)status?["traffic_mode"] != "detour"
++                    || (string)status?["map_fusion"]?["mode"] != "calibrated_map"
++                    || (bool?)status?["map_fusion"]?["available"] != true
++                    || (bool?)Result["selected_points_new"] != true || (bool?)Result["command_new"] != true
++                    || (string)status?["velocity_gate_reason"] != "forwarding_controller") return false;
++                var points = Result["selected_points"] as JArray;
++                if (points == null || points.Count != 3 || !TryGetCommand(out float v, out float w)
++                    || float.IsNaN(v) || float.IsInfinity(v) || float.IsNaN(w) || float.IsInfinity(w)) return false;
++                foreach (var point in points) {
++                    if (!(point is JArray pair) || pair.Count != 2) return false;
++                    double x = (double)pair[0], y = (double)pair[1];
++                    if (double.IsNaN(x) || double.IsInfinity(x) || double.IsNaN(y) || double.IsInfinity(y) || x < 0) return false;
++                }
++                return true;
++                } catch (Exception) { return false; }
++            }
++        }
+         public bool Running { get; private set; }
+         public bool Faulted { get; private set; }
+         public string Status { get; private set; } = "Off";
+@@ -52,7 +81,13 @@
+                     FileName = detector.Configuration.python.Trim(),
+                     Arguments = "-B -u \"" + worker + "\" --source-root \"" + Path.Combine(root, "source")
+                         + "\" --vision-root \"" + Path.Combine(Application.streamingAssetsPath, "VisionLaneFollower") + "\""
+-                        + (EnableSignalApproach ? " --signal-approach" : ""),
++                        + (EnableSignalApproach ? " --signal-approach" : "")
++                        + (string.IsNullOrWhiteSpace(DiagnosticRouteOutput) ? ""
++                            : " --diagnostic-route-output " + QuoteArgument(DiagnosticRouteOutput))
++                        + (string.IsNullOrWhiteSpace(CalibratedMapPath) ? ""
++                            : " --calibrated-map " + QuoteArgument(CalibratedMapPath))
++                        + (string.IsNullOrWhiteSpace(RecordedReferencePath) ? ""
++                            : " --recorded-reference " + QuoteArgument(RecordedReferencePath)),
+                     WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true,
+                     RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+                     StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
+@@ -173,6 +208,20 @@
+             task.ContinueWith(t => { var observed = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+             return task;
+         }
++        static string QuoteArgument(string value)
++        {
++            // Windows argv quoting: double backslashes before quotes and the
++            // closing delimiter. UseShellExecute stays false; no shell runs.
++            var quoted = new StringBuilder("\"");
++            int slashes = 0;
++            foreach (char ch in value) {
++                if (ch == '\\') { slashes++; continue; }
++                quoted.Append('\\', ch == '"' ? slashes * 2 + 1 : slashes);
++                quoted.Append(ch); slashes = 0;
++            }
++            quoted.Append('\\', slashes * 2).Append('"');
++            return quoted.ToString();
++        }
+         void Fail(string reason) { Faulted = true; Running = false; Status = reason; Shutdown(); }
+         public void Stop() { Requested = Running = false; Shutdown(); Status = "Off"; }
+         void Shutdown()

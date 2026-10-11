@@ -1,0 +1,17 @@
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sha256 text eol=lf
+COLCON_IGNORE text eol=lf
+VERSION text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+before/** -text -whitespace
+overlay/** -text -whitespace
+evidence/** -text -whitespace
+fixtures/** -text -whitespace
+patches/** -text -whitespace
+tests/semantic_worker* -text -whitespace
+# Every file in this source/evidence archive has a recorded byte identity.
+# Keep clone/index bytes independent of global core.autocrlf settings.
+* -text -whitespace

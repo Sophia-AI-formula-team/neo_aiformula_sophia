@@ -1,0 +1,67 @@
+INNER V06 FAILURE: READ-ONLY JSON COMPARISON
+
+Conclusion
+The immediate failure is six consecutive fresh detector results without an observed lane triplet, followed by the existing follower support watchdog. It is not the timestamp/sequence freshness rejection, not a red-light approach/turn/fusion failure, and not evidence that the harness invented a worker reset. The v04a B run also crossed a fragile support region here but received two intermittent real component recoveries before its support watchdog expired. The saved poses are close, not identical. JSON alone cannot establish why a particular current mask/ROI/path yielded different components; no exhaustive-mask claim is made.
+
+Read inputs (hashes in comparison.json)
+- component_native_inner_learning: v04a B success, genuine first lap reference at t100.9038158, travelled263.707336m, fusion unavailable/rmse_exceeds_limit.
+- exact_inner_red_detour: v06 failure, no reference learned, no panel-red schedule, no detour. Final result travelled64.6789551m and stopped-tail duration29.3108986s. These include the stopped tail; do not confuse them with the actual rejection instant.
+- Both configured laneX68.76/startZ-10, perception10Hz, panelRGB=true, signalApproach=true, projectedRecovery=true, currentCorridor=false. Only the latter requested continuation and new diagnostic recording/export. This is a recorded-run comparison, not a deterministic replay or proof that every runtime binary was otherwise equivalent.
+
+Actual failure evidence
+- Follower StopEvidence: sim_time27.8099993784, sequence198, source frame_sim_time27.6962942996, epoch1, wall_age0.1648312s.
+- Exact reason: Lost predicted lanes; upstream default-straight rejected.
+- Its candidate was valid=true, supported=false, counts[0,0,0], mode default_straight. The current image/metadata were fresh; the advertised default-straight ABC are native fallback, not accepted observed support.
+- Left: projected_output_insufficient,793 component pixels,bottom321,init. Right: too_few_component_pixels,137 pixels,bottom233,init. The right standard180 threshold rejected this selected component. JSON does not enumerate every rejected alternative.
+- Last supported detection192: t27.0269362,wall27.1743000,x48.865406,z38.753353,yaw261.516266; counts[5,0,0],left_only. Recovery used current rank1/tracking component195px,span2m. Native target[3.5,-0.1912243,-0.2568550], candidate(v,w)=(2.481307,-0.292470).
+- Detections193..198 were unsupported consecutively. The observed last-support sample precedes actual StopEvidence by0.7830632 simulation seconds. The follower uses its own real-time acceptance timestamp; this value is not a reconstruction of the exact private lastSupport clock. Its unchanged source only updates lastSupport once for each NEW supported sequence, then stops when current support=false and real-time age>MaximumCommandAge(.75s).
+- Semantic gate was forwarding_controller through196, then waiting_fresh_visual_triplet at197/198 with applied(v,w)=(0,0). Core point TTL already stopped command forwarding before the follower ended the run. No red vote caused this stop.
+- terminal_sample is later(t27.8714898,x46.582275,z38.450577,yaw263.391937) and already shows candidate=null,semantic=Off and detector epoch2 because follower.Stop synchronously stopped the semantic and disabled lane output. StopEvidence correctly preserves the pre-stop epoch1 candidate. This cleanup epoch change is not the triggering failure; chain had stayed epoch1 while running.
+
+Contiguous unsupported evidence (all counts[0,0,0])
+seq | sample t | x | left status / selected pixels | right pixels
+193 |27.131593|48.572110|projected_output_insufficient /845|0
+194 |27.230288|48.301040|insufficient_row_coverage /230|0
+195 |27.367067|47.944004|too_few_component_pixels /111|0
+196 |27.514020|47.527600|too_few_component_pixels /128|0
+197 |27.696294|47.028076|projected_output_insufficient /337|77
+198 |27.808391|46.742523|projected_output_insufficient /793|137
+
+Why B crossed this same section
+- B already lost support at188(one frame),190..191(two),193..196(four). It did not have continuously good detection here.
+- B seq192 t27.6421523,x48.223465,z38.664570,yaw261.469727: current rank1 INIT component191px/span2m recovered LEFT5 points and target[3,-0.2310577,-0.2491106]. This component was only11px above the original180 evaluate threshold.
+- B seq197 t28.2840195,x46.453735,z38.425050,yaw263.202728: four current-mask fragments totaling179px recovered LEFT8 points/span3.5m and target[3,-0.4024740,-0.2297304]. Gap between these supported observation samples was0.6418672s. This is below the unchanged support watchdog and B resumed genuine current support.
+- B seq198 recovered a short paired center[6,3,3]; later B seq199 briefly had[0,3,0] unsupported. The support stream remained intermittent, but no unsupported run lasted long enough to end B here.
+- At comparable x48.3: B seq192(x48.223465,z38.664570,yaw261.469727) recovered5LEFT; v06 seq194(x48.301040,z38.671307,yaw261.988983) had0clouds and insufficient-row-coverage. Differences are about0.078m longitudinal,0.0067m transverse,0.519deg yaw. They are close but not the same rendered input or tracking history.
+
+Selection/command differences started before the terminal support gap
+near x | B sequence/counts/mode,target.y,candidate w | v06 sequence/counts/mode,target.y,candidate w
+54 |175/[7,3,3]/center,+0.282770,+0.506431|176/[6,3,2]/left_only,+1.049099,+0.899369
+52.4|180/[6,0,0]/left_only,+0.856303,+0.967285|181/[7,0,0]/left_only,+0.969217,+0.918018
+50.3|186/[5,7,5]/center,-0.047958,+0.257088|187/[5,6,4]/right_only,-1.320508,-1.065918
+49 |190/[0,0,0]/unsupported,native default unused|192/[5,0,0]/left_only,-0.191224,-0.292470
+- V06 after its right-only187 then emitted a left-only188 target.y+0.683781; applied w swings from-1.065918 to+1.221535 on the next observations before far-left component recovery189. These are real source branch changes, not semantic red/detour actions. Do not claim that a common position means common instantaneous control state.
+
+Diagnostic recorder overhead: quantified, causation unproven
+- Additional semantic_ticks:464 observed responses, sequences1..550,86 skipped intermediate responses across85 gap events; this means the Editor recorder did not sample each reply, not that the model/worker lost86 detector frames.
+- semantic_ticks3,257,935 bytes over~27.58 active wall seconds:~118,109bytes/sec. It repeats the same detector candidate on266 of464 samples. Candidate JSON accounts for636,679bytes; signal_panel167,810; actual full semantic payload1,337,759.
+- v06 events are dominated by85 small sampling-gap entries; semantic phase/mode/reason transition was recorded only once during learning. There was no flood of full transition-state events.
+- Current Sample additionally deep-clones candidate/perception/full semantic and uses synchronous AutoFlush in the main Editor update. This is added allocation/serialization/flush work, but there are no measured per-operation durations in this run.
+- Available prefix after2m to70m(B) or stopping at64.25m(v06) comparison, seconds except inference ms:
+metric | B median/p95/max | v06 median/p95/max
+detection wall delta |.120625/.178939/.205123|.116198/.182168/.219803
+frame age |.156837/.200830/.243468|.157565/.194547/.282399
+inference ms |26.7107/44.0872/58.2434|26.5146/45.5020/55.4713
+semantic result age |.086958/.124142/.146155|.083990/.113828/.173460
+motion wall delta |.067665/.115028/.162808|.067421/.116155/.202967
+- In the directly common travelled54..61.948574m window, median detector frame age is B.158576 vs v06.155926; median detection interval is B.138004 vs v06.129181. These do not show general timing degradation. Differences in maxima leave room for local scheduling effects but cannot establish logging caused this loss.
+- No writer/deep-copy/flush duration profile exists; no CPU utilization was collected. The v06 outer run is independent ongoing evidence and was not read or interrupted by this analysis.
+
+Minimal optional recording optimization, not implemented here
+1. Keep every newly observed semantic Result unchanged, plus sampled pose/actual+applied motion and explicit sequence/epoch/time. Replace repeated candidate, signal_panel, signal_range, detections and image paths with a frame key(epoch,detector sequence); the full current perception/candidate remains recorded once in trace.jsonl, which RecordDetection already writes before continuation observes it. Keep full terminal snapshots and boundary-event snapshots. This removes duplicate copies without dropping any genuine semantic ABC/control/status.
+2. Compute EntryDiagnostics only at red scheduling, formal stop, semantic transitions and terminal failure. All per-response inputs needed to derive it offline already remain in the full status and pose; repeating its JSON20Hz adds no independent observation.
+3. Preserve AutoFlush initially to keep crash evidence behavior unchanged. Add low-cost aggregated Stopwatch timing for cloning/serialization/write only if root later authorizes profiling. Do not change model rate, support TTL, component thresholds or guards as a logging fix. Any buffering proposal should explicitly document possible loss on abnormal process death.
+These are evidence-preserving diagnostic changes, not a promise they repair the missing lane support. No source was changed and no rerun is justified solely by this comparison.
+
+Scope
+Only two completed-run JSON streams and current follower/harness text were read. compare_json.py parsed/hashed the evidence in0.402s (no model, masks, Unity, encoder, fit or replay). comparison.json contains compact section tables, metrics, terminal evidence and input hashes. Actual cause of the differing current component/path outputs remains unresolved without separately authorized exact-mask/state analysis. Preserve this failure; do not relax freshness/support protections.

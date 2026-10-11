@@ -1,0 +1,156 @@
+--- final63/Assets/StreamingAssets/SemanticPlanning/semantic_worker.py
++++ candidate/Assets/StreamingAssets/SemanticPlanning/semantic_worker.py
+@@ -1,8 +1,9 @@
+ """20 Hz stdio transport for MapAssist and the existing LYA classes.
+ 
+ This is an in-process ROS message/clock adapter, not a ROS or DDS runtime.
+-All traffic votes use actual monotonic arrival time. No lamp truth or route
+-reference enters the protocol. Simulation odometry is explicitly supplied.
++All traffic votes use actual monotonic arrival time. No lamp truth enters the
++protocol. Simulation odometry is explicitly supplied. Explicit simulator-only
++calibrated-map/recorded-reference CLI options are disabled by default.
+ """
+ from __future__ import annotations
+ 
+@@ -97,7 +98,10 @@
+ 
+ 
+ class SemanticTransport:
+-    def __init__(self, source_root, vision_root, signal_approach=False):
++    def __init__(self, source_root, vision_root, signal_approach=False, diagnostic_route_output=None,
++                 calibrated_map=None, recorded_reference=None):
++        if recorded_reference is not None and calibrated_map is None:
++            raise ValueError("--recorded-reference requires explicit --calibrated-map")
+         self.source_root, self.vision_root = Path(source_root).resolve(), Path(vision_root).resolve()
+         self.signal_approach = bool(signal_approach)
+         self.sim_time = 0.0
+@@ -124,7 +128,76 @@
+         self.last_vision_sequence = -1
+         self.epoch = None
+         self.total_vision_votes = 0
++        self.calibrated_adapter = None
++        if calibrated_map is not None:
++            from calibrated_transport import CalibratedTransportAdapter
++            self.calibrated_adapter = CalibratedTransportAdapter(self.map_module, calibrated_map)
+         self._new_chain()
++        if recorded_reference is not None:
++            from calibrated_transport import prepare_recorded_reference
++            self.calibrated_adapter.prepared = prepare_recorded_reference(
++                recorded_reference, self.map, self.source_root,
++                dict(source_hash=self.source_hash, source_tree_hash=self.source_tree_hash,
++                     source_files=self.source_files), self.calibrated_adapter.original_builder)
++            # Validate calibration before ready. The actual new epoch applies
++            # this reference without re-fitting on its first control tick.
++            self.calibrated_adapter._calibrate(self.calibrated_adapter.prepared.original_result,
++                                               self.map.official, self.calibrated_adapter.prepared.provenance)
++            if self.calibrated_adapter.calibration is None:
++                raise ValueError("Recorded reference calibration is unavailable")
++        self.route_diagnostic = None
++        self.route_diagnostic_error = None
++        self.diagnostic_route_output = diagnostic_route_output
++        if diagnostic_route_output is not None:
++            try:
++                import os
++                from fusion_snapshot_capture import FusionSnapshotCapture, RouteDiagnosticWriter, reference_snapshot
++                def context():
++                    return dict(worker_pid=os.getpid(), tick_sequence=self.last_tick_sequence,
++                        sim_time=self.sim_time, epoch=self.epoch,
++                        source_hash=self.source_hash, source_tree_hash=self.source_tree_hash,
++                        source_files=dict(self.source_files), vision_commit=self.vision_commit,
++                        map_parameters=copy.deepcopy(self.map.p),
++                        map_state_before=dict(odom=list(self.map.odom) if self.map.odom is not None else None,
++                            odom_stamp=self.map.odom_stamp, odom_sequence=self.map.odom_seq,
++                            recorded_samples=len(self.map.samples), recorded_distance_m=self.map.recorded_distance,
++                            reference=reference_snapshot(self.map.reference)))
++                capture = FusionSnapshotCapture(self.map_module, context)
++                writer = RouteDiagnosticWriter(capture, diagnostic_route_output)
++                capture.install()
++                self.route_diagnostic = writer
++            except Exception as error:
++                self.route_diagnostic_error = repr(error)
++                self._report_route_diagnostic("setup error: " + self.route_diagnostic_error)
++
++    @staticmethod
++    def _report_route_diagnostic(message):
++        try:
++            print("[route_diagnostic] " + message, file=sys.stderr)
++        except Exception:
++            pass
++
++    def flush_route_diagnostic(self):
++        if self.route_diagnostic is not None:
++            try:
++                self.route_diagnostic.flush()
++            except Exception as error:
++                # The helper also catches failures; retain an outer transport
++                # boundary so diagnostics can never fail the control process.
++                self.route_diagnostic_error = repr(error)
++                self._report_route_diagnostic("flush error: " + self.route_diagnostic_error)
++
++    def route_diagnostic_status(self):
++        if self.route_diagnostic is not None:
++            try:
++                status = self.route_diagnostic.status()
++                if self.route_diagnostic_error is not None:
++                    status.update(error=self.route_diagnostic_error, exact_capture=False)
++                return status
++            except Exception as error:
++                self.route_diagnostic_error = repr(error)
++        return dict(enabled=False, output=self.diagnostic_route_output,
++                    exact_capture=False, error=self.route_diagnostic_error)
+ 
+     def _install_ros_transport(self):
+         transport = self
+@@ -193,6 +266,9 @@
+ 
+     def _new_chain(self):
+         self.map = self.map_module.MapAssist()
++        if self.calibrated_adapter is not None:
++            self.calibrated_adapter.attach(self.map, seed_recorded=(
++                self.epoch is not None and self.calibrated_adapter.prepared is not None))
+         self.target = self.upstream.load_classes("perception/kalman_filter/kalman_filter/withoutkalman_0312.py",
+                                                 {"DataProcessingNode"})["DataProcessingNode"]()
+         self.lya = self.upstream.load_classes("control/trajectory_follower/trajectory_follower/lya_0221.py",
+@@ -361,6 +437,9 @@
+     parser.add_argument("--source-root", required=True)
+     parser.add_argument("--vision-root", required=True)
+     parser.add_argument("--signal-approach", action="store_true")
++    parser.add_argument("--diagnostic-route-output", default=None)
++    parser.add_argument("--calibrated-map", default=None)
++    parser.add_argument("--recorded-reference", default=None)
+     args = parser.parse_args()
+     protocol = sys.stdout
+     sys.stdout = sys.stderr
+@@ -371,8 +450,13 @@
+ 
+     request = {}
+     try:
+-        transport = SemanticTransport(args.source_root, args.vision_root, args.signal_approach)
+-        send(transport.ready())
++        transport = SemanticTransport(args.source_root, args.vision_root, args.signal_approach,
++                                      args.diagnostic_route_output, args.calibrated_map,
++                                      args.recorded_reference)
++        ready = transport.ready()
++        if transport.calibrated_adapter is not None:
++            ready["calibrated_adapter"] = transport.calibrated_adapter.status()
++        send(ready)
+         while True:
+             line = sys.stdin.buffer.readline(MAX_LINE + 1)
+             if not line:
+@@ -380,7 +464,15 @@
+             if len(line) > MAX_LINE:
+                 raise ValueError("Input tick exceeds transport limit")
+             request = json.loads(line)
+-            send(transport.tick(request))
++            response = transport.tick(request)
++            if transport.calibrated_adapter is not None:
++                response["calibrated_adapter"] = transport.calibrated_adapter.status()
++            if args.diagnostic_route_output is not None:
++                response["diagnostic_route"] = transport.route_diagnostic_status()
++            send(response)
++            # Keep sidecar I/O outside the fusion call and after normal command
++            # transmission. Diagnostic failures never become control failures.
++            transport.flush_route_diagnostic()
+     except Exception as error:
+         send(dict(type="error", sequence=request.get("sequence") if isinstance(request, dict) else None,
+                   valid=False, v=0.0, w=0.0,
