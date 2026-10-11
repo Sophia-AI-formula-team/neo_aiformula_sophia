@@ -381,12 +381,13 @@ class MapAssist(Node):
         self.traffic_light = self.light_filter.evaluate(now)
         if self.traffic_mode == "approach":
             profile = self._signal_approach_profile(now)
+            # Keep confirmed red intent when older votes expire or tie. The
+            # current real color and fresh range still guard every approach;
+            # a historical unknown vote alone is not a new sensing failure.
             if self.traffic_light_raw == "unknown":
                 self._wait_for_signal("signal_color_unknown", fault=True)
             elif not profile["valid"]:
                 self._wait_for_signal(profile["reason"], fault=True)
-            elif self.traffic_light == "unknown":
-                self._wait_for_signal("signal_vote_unknown", fault=True)
             elif profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
                 self._wait_for_signal("signal_target_reached")
         if self.traffic_light == "red" and self.traffic_mode == "normal":

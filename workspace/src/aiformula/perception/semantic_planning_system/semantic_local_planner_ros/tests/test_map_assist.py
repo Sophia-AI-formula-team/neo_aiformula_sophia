@@ -1361,6 +1361,78 @@ class MapAssistTests(unittest.TestCase):
         for _ in range(7):
             self.signal_frame(state, **kwargs)
 
+    def approach_after_mixed_startup(self):
+        self.approach_node()
+        start = self.now
+        # At a complete window these real frames give 3 red / 2 unknown.
+        for elapsed, state in ((0.0, "red"), (0.08, "red"), (0.18, "unknown"),
+                               (0.28, "unknown"), (0.42, "red")):
+            self.now = start + elapsed
+            self.odom(speed=0.2)
+            self.signal_sequence += 1
+            self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                state=state, sequence=self.signal_sequence, age_sec=0.0,
+                distance_m=20.0 if state == "red" else None))))
+            self.assertEqual(self.node.traffic_mode, "normal")
+        self.now = start + 0.5
+        self.odom(speed=0.2)
+        self.node._update_light_vote(self.now)
+        self.triplet()
+        self.node._tick()
+        self.assertEqual(self.node.traffic_light, "red")
+        self.assertEqual(self.node.traffic_mode, "approach")
+        return start
+
+    def test_approach_historical_vote_tie_keeps_red_intent_but_current_unknown_locks(self):
+        start = self.approach_after_mixed_startup()
+        # No new frame: only the oldest red expires, leaving a 2 / 2 tie.
+        self.now = start + 0.51
+        self.odom(speed=0.2)
+        self.triplet()
+        self.node._tick()
+        vote = self.node.light_filter.snapshot(self.now)
+        self.assertEqual((vote["red_count"], vote["unknown_count"]), (2, 2))
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertEqual(self.node.traffic_light_raw, "red")
+        self.assertEqual(self.node.signal_observation_sequence, 5)
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.assertFalse(self.node.signal_wait_latched)
+        self.node._on_controller_cmd(self.command(2.0, 0.4))
+        self.assertAlmostEqual(self.node.cmd_pub.messages[-1].linear.x, 0.8)
+        self.signal_frame("unknown", distance_m=None)
+        self.assertEqual(self.node.traffic_reason, "signal_color_unknown")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertTrue(self.node.signal_wait_latched)
+        self.assert_stopped()
+        self.confirm_signal()
+        self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_approach_historical_sample_count_loss_keeps_intent_until_range_expires(self):
+        start = self.approach_after_mixed_startup()
+        # One red sample remains, but its real observation is still only .39s old.
+        self.now = start + 0.81
+        self.odom(speed=0.2)
+        self.triplet()
+        self.node._tick()
+        vote = self.node.light_filter.snapshot(self.now)
+        self.assertEqual(vote["sample_count"], 1)
+        self.assertFalse(vote["ready"])
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.node._on_controller_cmd(self.command())
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+        # Keep odometry and lanes fresh so only range age revokes motion.
+        self.now = start + 0.93
+        self.odom(speed=0.2)
+        self.triplet()
+        self.node._tick()
+        self.assertEqual(self.node.traffic_reason, "signal_observation_stale")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertTrue(self.node.signal_wait_latched)
+        self.assert_stopped()
+        self.confirm_signal()
+        self.assertEqual(self.node.traffic_mode, "wait")
+
     def test_approach_is_opt_in_and_legacy_color_never_reuses_range(self):
         self.traffic_node()
         self.signal_sequence = 0
