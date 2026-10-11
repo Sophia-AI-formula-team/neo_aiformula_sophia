@@ -1,7 +1,8 @@
 """Image-observation validation and a conservative longitudinal stop envelope.
 
-Distances are from the vehicle front to the signal's longitudinal plane at the
-image capture time, not slant range or the bottom of an elevated lamp box.
+Distances are signal depths along the capture-time vehicle-forward axis, from
+the front reference point. They are not slant range, fixed road stop-line
+distances, or ground projections of the bottom of an elevated lamp box.
 This module does not estimate distance or decide whether a turn is permitted.
 """
 from dataclasses import dataclass

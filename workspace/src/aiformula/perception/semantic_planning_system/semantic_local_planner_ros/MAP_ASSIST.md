@@ -268,15 +268,17 @@ ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 - `state` 保留真实 `red`、`green` 或 `unknown`，不得为了接近而隐藏红灯。颜色仍使用原来 0.5 秒、至少 3 帧的严格多数确认。
 - `sequence` 为非负、严格递增整数。同一帧不得同时再发旧颜色话题；重复或倒序帧不投票，也不刷新距离。
 - `age_sec` 是图像采集到回调时的总年龄。超过 `signal_observation_timeout_sec`（默认 0.5 秒）不投颜色票；运行期间还会加上回调后的时间。无新帧时不能重发缓存结果。
-- `distance_m` 是**采集时刻的车头至信号纵向平面距离**，已经处理相机外参和车头偏移。它不是灯的欧氏斜距，也不能把悬空灯框的底边当作地面停车线。缺失或 `null` 表示距离不可用；禁止输入 Simulator 灯位、场景对象位置或测试路线真值。
+- `distance_m` 是采集时刻，灯目标相对车头参考点在**当时车体前向轴上的投影深度**，已经处理相机外参和车头偏移。等价参考面通过该灯目标且垂直于当时车体前向轴；它随车辆航向变化，不等于固定赛道信号平面或停车线的间距，也不是灯的欧氏斜距。不能把悬空灯框的底边当作地面停车线。缺失或 `null` 表示距离不可用；禁止输入 Simulator 灯位、场景对象位置或测试路线真值。
 - `uncertainty_m` 是非负距离误差界，默认 0。上游负责校准、目标一致性和误差估计。保守控制使用 `distance_m - uncertainty_m - speed_bound * total_age`，`speed_bound` 为采集区间内最大实测正向速度，含采集前一个 odom 样本。上游不要先推进到当前距离再重复补偿年龄。
 
-接近速度限制满足 `v * approach_latency_sec + v² / (2 * approach_deceleration_mps2) <= remaining_m`，同时不超过 `approach_max_speed_mps`（默认 0.8 m/s）。减速度默认 1.0 m/s²、延迟默认 0.2 秒，都是待实车验证的控制配置。LYA 的 v/w 同比例缩小以保留曲率；红灯接近不允许倒车或原地旋转。速度来自新鲜 odom 的 `twist.twist.linear.x`，过期、缺失或无效 odom 不能授权接近。
+接近速度限制满足 `v * approach_latency_sec + v² / (2 * approach_deceleration_mps2) <= remaining_m`，同时不超过 `approach_max_speed_mps`（默认 0.8 m/s）。减速度默认 1.0 m/s²、延迟默认 0.2 秒，都是待实车验证的控制配置。LYA 的 v/w 同比例缩小以保持命令的 w/v 比值；这不保证实际车辆在不同速度下的轨迹曲率相同。红灯接近不允许倒车或原地旋转。速度来自新鲜 odom 的 `twist.twist.linear.x`，过期、缺失或无效 odom 不能授权接近。
 
 `target_stop_distance_m`（默认 8.5 米）作用于**保守距离下界**，不是对真实停车距离的无误差保证；加上测距不确定度后，实际停车可能更远。余量低于 `approach_stop_tolerance_m`（默认 0.1 米）时进入等待。实际车速超出剩余距离的制动包络时先发零命令并报告 `approach_braking`，仍保留接近状态；只有后续可靠距离及新控制命令才能恢复减速接近，防止普通制动滞后被误当成永久停车。
 
-接近中的 unknown、投票失效、缺失/无效/过期距离或无效 odom 则锁存等待，直到确认绿灯。锁存故障不能被拓扑绕行解除。已经等待的红灯不会因为后续框突然变远而重新接近。绿灯恢复仍要求原来的延迟、新完整 ABC 和新 LYA 命令。旧颜色 String 输入没有距离，会安全退回原等待行为。原 OA 所有权和已提交绕行规则保持；到达停车目标后的正常红灯等待仍可按原条件尝试拓扑绕行。
+接近过程中，当前真实灯色 `traffic_light_raw=unknown`、缺失/无效/过期距离或无效/过期 odom 会锁存等待，直到确认绿灯。已经由确认红灯进入 approach 后，旧票过期导致的平票、无多数或样本数不足不会单独撤销已确认的红灯接近意图；`traffic_light` 仍如实报告当前票决 unknown，不补票、不重放历史颜色。保持接近仍要求当前真实灯色非 unknown、距离与 odom 新鲜有效且满足制动包络。锁存故障不能被拓扑绕行解除。已经等待的红灯不会因为后续框突然变远而重新接近。绿灯恢复要求当前 raw green 与多数确认 green，并满足原来的延迟、新完整 ABC 和新 LYA 命令。旧颜色 String 输入没有距离，会安全退回原等待行为。原 OA 所有权和已提交绕行规则保持；到达停车目标后的正常红灯等待仍可按原条件尝试拓扑绕行。
 
 `status.signal_approach` 报告 enabled、target_stop_distance_m、observation_sequence、wait_latched、原始 distance_m/uncertainty_m 以及 profile。profile 的 valid/reason 总是存在；有效时另含 age_sec、distance_lower_m、remaining_m、speed_limit_mps、braking_distance_m、braking_required。该状态是诊断输出，不是控制输入。
 
 固定相机的可见性决定允许选择的停车目标；停车后若灯离开视野，unknown 会保持等待。8–9 米等目标必须用实际相机视野和制动录像验证，不能仅通过调参数宣称达到。回调测试使用 ROS stub；纯包测试中的运动是明确标记的合成模型，均不替代真实 Unity 或实车验证。
+
+Simulator 的 8–9 米验收另按固定赛道信号平面与实际车头最前角点计算，只用于独立评估，不输入控制。body-forward 测距及其下界不能当作这个固定平面间距。当前模拟器 RGB 适配器的不确定度仅涵盖框中心半像素量化，不覆盖车身俯仰或安装高度等全部误差；因此所谓保守下界限于该模型，实际停车必须逐次实跑核验。
