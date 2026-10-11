@@ -1,0 +1,129 @@
+Manual Traffic-Light Commands for Three-Point Planner Testing
+==============================================================
+
+Purpose
+-------
+
+Use this file with:
+
+  ros2 launch semantic_bringup semantic_lane_points_manual_traffic_light.launch.py
+
+That launch intentionally does NOT start red_pixel_traffic_light_adapter_node.
+It does not subscribe to /red_pixels_count.  The traffic state is supplied
+manually on /traffic_light/state.
+
+The launch retains the original three-point bridge structure:
+
+  selected planner path
+    -> /semantic_planner/processed_point_a
+    -> /semantic_planner/processed_point_b
+    -> /semantic_planner/processed_point_c
+    -> lane_points_mux_node
+    -> /processed_point_a
+    -> /processed_point_b
+    -> /processed_point_c
+
+The three final /processed_point_* topics are the inputs for the original
+withoutkalman -> LYA controller chain.  This launch starts no safety supervisor
+and does not publish directly to the vehicle cmd_vel topic.
+
+1. Start the launch
+-------------------
+
+After building and sourcing the workspace:
+
+  ros2 launch semantic_bringup semantic_lane_points_manual_traffic_light.launch.py
+
+At startup no red message has been received.  traffic_light_gate_node therefore
+publishes NORMAL constraints and the mux selects original lane_points if the
+three /original_processed_point_* streams are available.
+
+2. Manually activate red-light diversion
+----------------------------------------
+
+Open another terminal and run:
+
+  ros2 topic pub -r 10 /traffic_light/state std_msgs/msg/String "{data: red}"
+
+The configured red_stable_frames is 3, so after three consecutive red messages
+the gate enters RED_FORWARD_GATE.  It saves theta_ref, blocks the central
+forward region, disables original lane following, and lets the mux forward only
+fresh valid semantic planner points.
+
+Expected topics while red is active:
+
+  ros2 topic echo /semantic_constraints
+  ros2 topic echo /selected_primitive
+  ros2 topic echo /semantic_planner/lane_points_mux_state
+  ros2 topic echo /processed_point_a
+  ros2 topic echo /processed_point_b
+  ros2 topic echo /processed_point_c
+
+The selected primitive must never be SLOW_FORWARD under a red gate.  If no safe
+semantic diversion path exists, it becomes STOP and the mux publishes three
+zero Pose2D points with /lane_stop_flag=true.
+
+Stop the red publisher with Ctrl+C when the test is complete.
+
+3. Manually deactivate red-light diversion
+------------------------------------------
+
+To clear a red gate, publish green, not unknown:
+
+  ros2 topic pub -r 10 /traffic_light/state std_msgs/msg/String "{data: green}"
+
+The configured green_stable_frames is 3.  After three consecutive green
+messages, /semantic_constraints returns to NORMAL, red_forward_forbidden=false,
+and allow_lane_follow=true.
+
+Important: publishing "unknown" does NOT clear a previously active red gate.
+It only resets the red/green counters; the last red constraint remains active.
+Use "green" to release it.
+
+4. Lane recovery after a red diversion
+--------------------------------------
+
+The mux configuration has require_recoverable_after_diversion=true.  Therefore,
+after green it waits for /lane_recovery_state=recoverable before returning final
+/processed_point_a/b/c to original lane_points.
+
+For a virtual test without a real lane-result publisher, start this optional
+fake publisher in a third terminal after publishing green:
+
+  ros2 run semantic_test_tools fake_lane_result_node --ros-args -p mode:=valid
+
+After five stable frames, lane_recovery_gate_node publishes recoverable and the
+mux can resume the original /original_processed_point_a/b/c input stream.
+
+5. Optional status checks
+-------------------------
+
+  ros2 topic echo /lane_recovery_state
+  ros2 topic echo /lane_stop_flag
+  ros2 topic echo /semantic_planner/speed_limit
+  ros2 topic echo /semantic_planner/primitive_markers
+
+In RViz2, add a MarkerArray display for:
+
+  /semantic_planner/primitive_markers
+
+Use fixed frame base_footprint.  Green means selected, blue means valid but not
+selected, and red means invalid.
+
+6. Input note for virtual testing
+---------------------------------
+
+This launch still starts color_semantic_mask_node, so a simulated or replayed
+camera stream should be available on:
+
+  /aiformula_sensing/zed_node/left_image/undistorted
+
+If testing with fake masks instead of a camera image, local_costmap_node needs
+road and offroad masks on the configured topics:
+
+  /semantic_perception/road_mask
+  /semantic_perception/offroad_mask
+
+The default fake_mask_publisher_node road topic is different.  Override it as:
+
+  ros2 run semantic_test_tools fake_mask_publisher_node --ros-args -p mode:=straight_road -p road_mask_topic:=/semantic_perception/road_mask -p offroad_mask_topic:=/semantic_perception/offroad_mask

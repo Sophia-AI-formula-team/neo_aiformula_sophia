@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 
 
 @dataclass
@@ -17,7 +17,7 @@ class SemanticConstraints:
         return json.dumps(asdict(self), sort_keys=True)
 
     @classmethod
-    def from_json(cls, payload: str | Dict[str, Any] | None) -> "SemanticConstraints":
+    def from_json(cls, payload: Optional[Union[str, Dict[str, Any]]]) -> "SemanticConstraints":
         if payload is None:
             return cls()
         if isinstance(payload, str):

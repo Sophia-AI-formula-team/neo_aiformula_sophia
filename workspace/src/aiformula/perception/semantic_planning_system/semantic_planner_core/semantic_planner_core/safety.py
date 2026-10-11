@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 import numpy as np
 
 from .constraints import SemanticConstraints
 
 
-def is_command_safe(cmd: Any, costmap: np.ndarray | None, constraints: SemanticConstraints) -> bool:
+def is_command_safe(cmd: Any, costmap: Optional[np.ndarray], constraints: SemanticConstraints) -> bool:
     if costmap is None or np.asarray(costmap).size == 0:
         return False
 

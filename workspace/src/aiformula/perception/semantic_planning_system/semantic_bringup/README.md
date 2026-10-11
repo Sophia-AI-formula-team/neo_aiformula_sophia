@@ -7,7 +7,7 @@ This workspace contains a minimal layered prototype for a low-speed ROS2 robot v
 - `semantic_planner_core`: pure Python planning library with no ROS2 imports.
 - `semantic_gate_ros`: turns traffic light state plus odometry into JSON semantic constraints and a saved `theta_ref`.
 - `semantic_costmap_ros`: converts external road/offroad/lane masks into a local semantic costmap.
-- `semantic_local_planner_ros`: scores short-horizon motion primitives and publishes a planner command.
+- `semantic_local_planner_ros`: scores short-horizon motion primitives, publishes a planner command, and can convert the selected path into three vehicle-frame `Pose2D` points for the existing `withoutkalman`/LYA controller chain.
 - `semantic_lane_recovery_ros`: gates lane-follow recovery so lane detection cannot directly take over during diversion.
 - `semantic_safety_ros`: final authority over the configured final velocity topic; stops on stale data, invalid primitives, red forward violations, or unsafe commands.
 - `semantic_test_tools`: fake publishers and a pure Python demo.
@@ -30,6 +30,7 @@ Internal outputs:
 - `/local_semantic_costmap` (`sensor_msgs/Image`): grayscale semantic costmap.
 - `/selected_primitive` (`std_msgs/String`): selected motion primitive.
 - `/selected_path_debug` (`nav_msgs/Path`): sampled path points in normalized image space.
+- `/semantic_planner/processed_point_a`, `/semantic_planner/processed_point_b`, `/semantic_planner/processed_point_c` (`geometry_msgs/Pose2D`): selected semantic planner path converted to three vehicle-frame points.
 - `/planner_cmd_vel` (`geometry_msgs/Twist`): planner output before final safety.
 - `/planner_score_debug` (`std_msgs/String`): JSON score details.
 - `/lane_recovery_state` (`std_msgs/String`): `ignore_lane`, `candidate`, or `recoverable`.
@@ -51,6 +52,83 @@ Two semantic inputs are still adapters, not existing native topics in that repos
 - `/semantic_perception/offroad_mask`: should be produced by a semantic segmentation/green-region adapter. Without this mask the costmap node stays conservative.
 
 When connecting to the real vehicle, avoid running another controller that also publishes `/aiformula_control/game_pad/cmd_vel` at the same time. Use either this safety supervisor as the final publisher or add a command mux.
+
+## Existing LYA Controller Bridge
+
+If you want to keep the original lane-points/withoutkalman/LYA controller chain, use:
+
+```bash
+ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+```
+
+This launch starts the semantic mask adapter, red-light gate, costmap, primitive planner, lane recovery gate, `planned_lane_points_adapter_node`, and `lane_points_mux_node`. It does not start `safety_supervisor_node`, so it does not publish directly to `/aiformula_control/game_pad/cmd_vel`.
+
+The semantic adapter publishes the selected primitive path to three independent `Pose2D` topics:
+
+```text
+/semantic_planner/processed_point_a
+/semantic_planner/processed_point_b
+/semantic_planner/processed_point_c
+```
+
+This matches the shape of the original lane-points output pattern:
+
+```text
+/processed_point_a
+/processed_point_b
+/processed_point_c
+```
+
+The message type is `geometry_msgs/Pose2D`, and the coordinates are vehicle-frame coordinates. The semantic adapter maps the selected front-view path to vehicle coordinates with:
+
+```text
+Pose2D.x = forward distance in meters
+Pose2D.y = lateral offset in meters, positive left
+Pose2D.theta = 0.0 by default, matching the original lane_points behavior
+```
+
+The selected path still starts as front-view image-space samples: image bottom is near the robot, image top is farther ahead, x grows left-to-right, and y grows top-to-bottom. The first version uses a simple perspective-scale approximation controlled by `vehicle_forward_scale_m` and `vehicle_lateral_scale_m`; this is not a calibrated BEV transform. Set `theta_mode: path_heading` only if the downstream controller actually uses `Pose2D.theta` as a path heading.
+
+The mux publishes the final selected point stream to the original downstream topics:
+
+```text
+/processed_point_a
+/processed_point_b
+/processed_point_c
+```
+
+For scheme C, remap the original `lane_points` node output topics to:
+
+```text
+/original_processed_point_a
+/original_processed_point_b
+/original_processed_point_c
+```
+
+Then connect the old chain as:
+
+```text
+original lane_points -> /original_processed_point_a/b/c
+semantic planner -> /semantic_planner/processed_point_a/b/c
+lane_points_mux_node -> /processed_point_a/b/c
+withoutkalman -> LYA -> /aiformula_control/game_pad/cmd_vel
+```
+
+During red-gate diversion the mux does not force an immediate stop. It first tries to use fresh, valid semantic points as a low-speed search path. If no valid semantic path is available, or the costmap is stale, it publishes zero points and `/lane_stop_flag=true`.
+
+The mux also publishes:
+
+```text
+/lane_stop_flag
+/semantic_planner/speed_limit
+/local_semantic_costmap_health
+```
+
+`/semantic_planner/speed_limit` is only an advisory interface until the LYA or downstream velocity controller subscribes to it.
+
+Do not run the direct live safety-output launch and the old LYA controller as simultaneous publishers to `/aiformula_control/game_pad/cmd_vel`.
+
+For the exact vehicle-side startup checklist after copying the code to the robot, see `ONBOARD_RUN_STEPS.txt`.
 
 ## Training-Free Color Mask Adapter
 
@@ -89,6 +167,23 @@ This demo publishes final supervised velocity to `/semantic_demo/cmd_vel_shadow`
 instead of `/aiformula_control/game_pad/cmd_vel`, so it is suitable for checking
 camera masks, costmaps, selected primitives, and safety decisions while the robot
 is physically unable to move.
+
+For an actual low-speed vehicle run based on `/red_pixels_count`, use:
+
+```bash
+ros2 launch semantic_bringup semantic_vehicle_live.launch.py
+```
+
+This live launch publishes the supervised command to
+`/aiformula_control/game_pad/cmd_vel`. Check
+`VEHICLE_SHADOW_DEMO_GUIDE.txt` and verify the shadow demo first before using
+the live launch.
+
+To generate semantic-planner points for the existing LYA controller instead of direct semantic `cmd_vel`, use:
+
+```bash
+ros2 launch semantic_bringup semantic_lane_points_bridge.launch.py
+```
 
 To force a red-gate test without moving the robot, publish:
 
@@ -172,6 +267,7 @@ Parameters are centralized in `config/semantic_system.yaml`. Key groups:
 - Traffic light stability: `red_stable_frames`, `green_stable_frames`.
 - Costmap costs and red forward ROI: `low_cost`, `unknown_cost`, `lethal_cost`, `red_forward_*`.
 - Planner scoring: `heading_weight`, `smoothness_weight`, `curvature_weight`, `semantic_cost_weight`, `progress_weight`.
+- Planner side preference: `left_preference_bonus` lowers left-diversion cost, while right-side primitives are still generated, scored, and visualized.
 - Lane recovery gate: `stable_required_frames`, `min_confidence`, `horizontal_angle_threshold_deg`, `max_center_jump_ratio`.
 - Safety limits: `max_linear_velocity`, `max_angular_velocity`, stale timeout, clamping policy.
 
