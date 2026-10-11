@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List, Optional, Tuple
+
 import json
 
 import numpy as np
@@ -34,6 +36,8 @@ class LocalPrimitivePlannerNode(Node):
             ("curvature_weight", 0.3),
             ("semantic_cost_weight", 1.0),
             ("progress_weight", 0.25),
+            ("left_preference_bonus", 0.12),
+            ("right_preference_penalty", 0.0),
             ("local_costmap_topic", "/local_semantic_costmap"),
             ("semantic_constraints_topic", "/semantic_constraints"),
             ("theta_ref_topic", "/theta_ref"),
@@ -50,11 +54,11 @@ class LocalPrimitivePlannerNode(Node):
             self.declare_parameter(name, value)
 
         self.bridge = CvBridge()
-        self.costmap: np.ndarray | None = None
+        self.costmap: Optional[np.ndarray] = None
         self.constraints = SemanticConstraints()
         self.theta_ref = 0.0
         self.current_yaw = 0.0
-        self.previous_primitive_name: str | None = None
+        self.previous_primitive_name: Optional[str] = None
 
         self.create_subscription(Image, str(self.get_parameter("local_costmap_topic").value), self._on_costmap, 10)
         self.create_subscription(String, str(self.get_parameter("semantic_constraints_topic").value), self._on_constraints, 10)
@@ -82,9 +86,14 @@ class LocalPrimitivePlannerNode(Node):
             semantic_cost=float(self.get_parameter("semantic_cost_weight").value),
             progress=float(self.get_parameter("progress_weight").value),
         )
-        return LocalPrimitivePlanner(weights=weights, primitives=self._primitives())
+        return LocalPrimitivePlanner(
+            weights=weights,
+            primitives=self._primitives(),
+            left_preference_bonus=float(self.get_parameter("left_preference_bonus").value),
+            right_preference_penalty=float(self.get_parameter("right_preference_penalty").value),
+        )
 
-    def _primitives(self) -> list[Primitive]:
+    def _primitives(self) -> List[Primitive]:
         return default_primitives(
             duration=float(self.get_parameter("primitive_duration_sec").value),
             small_left_w=float(self.get_parameter("small_left_w").value),
@@ -199,7 +208,7 @@ class LocalPrimitivePlannerNode(Node):
         marker.action = Marker.DELETEALL
         return MarkerArray(markers=[marker])
 
-    def _normalized_to_marker_point(self, point: tuple[float, float]) -> Point:
+    def _normalized_to_marker_point(self, point: Tuple[float, float]) -> Point:
         x_ratio, y_ratio = point
         forward_scale = float(self.get_parameter("marker_forward_scale_m").value)
         lateral_scale = float(self.get_parameter("marker_lateral_scale_m").value)
@@ -210,7 +219,7 @@ class LocalPrimitivePlannerNode(Node):
         return point_msg
 
     @staticmethod
-    def _marker_color(valid: bool, selected: bool) -> tuple[float, float, float, float]:
+    def _marker_color(valid: bool, selected: bool) -> Tuple[float, float, float, float]:
         if selected:
             return 0.0, 1.0, 0.0, 1.0
         if valid:
@@ -218,7 +227,7 @@ class LocalPrimitivePlannerNode(Node):
         return 1.0, 0.0, 0.0, 0.75
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: Optional[List[str]] = None) -> None:
     rclpy.init(args=args)
     node = LocalPrimitivePlannerNode()
     try:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -59,7 +59,7 @@ class SemanticCostmapBuilder:
             costmap[y0:y1, x0:x1] = np.uint8(self.lethal_cost)
 
     @staticmethod
-    def _as_bool_mask(mask: np.ndarray, shape: tuple[int, int] | None = None) -> np.ndarray:
+    def _as_bool_mask(mask: np.ndarray, shape: Optional[Tuple[int, int]] = None) -> np.ndarray:
         arr = np.asarray(mask)
         if arr.ndim == 3:
             arr = arr[..., 0]

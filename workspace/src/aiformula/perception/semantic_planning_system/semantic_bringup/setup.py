@@ -10,7 +10,17 @@ setup(
     packages=[],
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
-        (f"share/{package_name}", ["package.xml", "README.md", "VEHICLE_SHADOW_DEMO_GUIDE.txt"]),
+        (
+            f"share/{package_name}",
+            [
+                "package.xml",
+                "README.md",
+                "VEHICLE_SHADOW_DEMO_GUIDE.txt",
+                "ONBOARD_RUN_STEPS.txt",
+                "TRAFFIC_LIGHT_MANUAL_COMMANDS.txt",
+            ],
+        ),
+        (f"share/{package_name}/launch", glob("launch/*.launch.py")),
         (f"share/{package_name}/config", glob("config/*.yaml")),
     ],
     install_requires=["setuptools"],

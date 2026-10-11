@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 
 import numpy as np
@@ -28,12 +29,14 @@ class LocalCostmapNode(Node):
             ("publish_rate_hz", 10.0),
             ("fallback_height", 120),
             ("fallback_width", 160),
+            ("fallback_cost", 255),
             ("road_mask_topic", "/aiformula_perception/road_detector/mask_image"),
             ("offroad_mask_topic", "/semantic_perception/offroad_mask"),
             ("lane_guidance_mask_topic", "/lane_guidance_mask"),
             ("semantic_constraints_topic", "/semantic_constraints"),
             ("local_costmap_topic", "/local_semantic_costmap"),
             ("local_costmap_debug_topic", "/local_semantic_costmap_debug"),
+            ("costmap_health_topic", "/local_semantic_costmap_health"),
         ):
             self.declare_parameter(name, value)
 
@@ -44,6 +47,7 @@ class LocalCostmapNode(Node):
         self.road_time = 0.0
         self.offroad_time = 0.0
         self.constraints = SemanticConstraints()
+        self.last_health: dict[str, bool | str] = {"status": "stale", "road_fresh": False, "offroad_fresh": False}
 
         self.create_subscription(Image, str(self.get_parameter("road_mask_topic").value), self._on_road, 10)
         self.create_subscription(Image, str(self.get_parameter("offroad_mask_topic").value), self._on_offroad, 10)
@@ -51,6 +55,7 @@ class LocalCostmapNode(Node):
         self.create_subscription(String, str(self.get_parameter("semantic_constraints_topic").value), self._on_constraints, 10)
         self.costmap_pub = self.create_publisher(Image, str(self.get_parameter("local_costmap_topic").value), 10)
         self.debug_pub = self.create_publisher(Image, str(self.get_parameter("local_costmap_debug_topic").value), 10)
+        self.health_pub = self.create_publisher(String, str(self.get_parameter("costmap_health_topic").value), 10)
         rate_hz = float(self.get_parameter("publish_rate_hz").value)
         self.create_timer(1.0 / max(rate_hz, 0.1), self._publish_costmap)
 
@@ -86,13 +91,17 @@ class LocalCostmapNode(Node):
         image.header.frame_id = "camera"
         self.costmap_pub.publish(image)
         self.debug_pub.publish(image)
+        self.health_pub.publish(String(data=json.dumps(self.last_health, sort_keys=True)))
 
     def _build_or_fallback(self) -> np.ndarray:
         now = time.monotonic()
         stale_timeout = float(self.get_parameter("mask_stale_timeout_sec").value)
         masks_ready = self.road_mask is not None and self.offroad_mask is not None
-        masks_fresh = now - self.road_time <= stale_timeout and now - self.offroad_time <= stale_timeout
+        road_fresh = self.road_mask is not None and now - self.road_time <= stale_timeout
+        offroad_fresh = self.offroad_mask is not None and now - self.offroad_time <= stale_timeout
+        masks_fresh = road_fresh and offroad_fresh
         if masks_ready and masks_fresh:
+            self.last_health = {"status": "fresh", "road_fresh": True, "offroad_fresh": True}
             return self._builder().build(
                 self.road_mask,
                 self.offroad_mask,
@@ -102,8 +111,9 @@ class LocalCostmapNode(Node):
 
         height = int(self.get_parameter("fallback_height").value)
         width = int(self.get_parameter("fallback_width").value)
-        self.get_logger().warn("Input masks missing or stale; publishing conservative high-cost costmap.")
-        return np.full((height, width), int(self.get_parameter("unknown_cost").value), dtype=np.uint8)
+        self.last_health = {"status": "stale", "road_fresh": road_fresh, "offroad_fresh": offroad_fresh}
+        self.get_logger().warn("Input masks missing or stale; publishing conservative lethal fallback costmap.")
+        return np.full((height, width), int(self.get_parameter("fallback_cost").value), dtype=np.uint8)
 
 
 def main(args: list[str] | None = None) -> None:
