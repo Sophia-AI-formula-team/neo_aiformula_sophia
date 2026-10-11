@@ -21,6 +21,9 @@ import numpy as np
 from lane_mapping_lya_reference.mapping_core import SparseConsensusMap, transform_local_points
 from lane_mapping_lya_reference.mask_localization import (
     LaneMapLocalizer, MotionInformationState, _configuration, _motion_prediction, _voxel_means)
+from lane_mapping_lya_reference.paint_geometry import (
+    BoundaryObservation, BoundaryReference, BoundaryConsensus)
+from lane_mapping_lya_reference.boundary_localization import BoundaryLaneLocalizer
 
 
 DEFAULT_CONFIG = {
@@ -64,6 +67,7 @@ class MapSnapshot:
     votes: np.ndarray
     source_frontier_ns: int
     stats: object
+    boundary_reference: object = None
 
     def __post_init__(self):
         object.__setattr__(self, "trace", _readonly(self.trace, 3))
@@ -76,6 +80,10 @@ class MapSnapshot:
             raise ValueError("snapshot must have a positive source frontier")
         copied = json.loads(json.dumps(dict(self.stats), allow_nan=False))
         object.__setattr__(self, "stats", MappingProxyType(copied))
+        if self.boundary_reference is not None and (
+                not isinstance(self.boundary_reference, BoundaryReference)
+                or self.boundary_reference.source_frontier_ns != self.source_frontier_ns):
+            raise ValueError("snapshot boundary evidence must share its committed source frontier")
 
 
 @dataclass(frozen=True)
@@ -136,6 +144,7 @@ class TeachMapEngine:
         # Same-session raw bootstrap evidence, not a visual localization or a
         # general external-map seed. Advance only with the guarded map commit.
         self._bootstrap_motion_information = None
+        self._boundary_map = None
         self._tracking_started = False
         self._snapshot = None
         self._past_direction_support = None
@@ -186,17 +195,25 @@ class TeachMapEngine:
                 and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns
                 and self._candidate.bootstrap_motion_owner is bootstrap_motion):
             return self._candidate
-        points, _ = self._map.confirmed_points_and_votes()
+        boundary = None if self._boundary_map is None else self._boundary_map.snapshot()
+        points = (self._map.confirmed_points_and_votes()[0] if boundary is None else boundary.points_xy)
         distance = np.sum((points - prior[:2]) ** 2, axis=1)
         available = np.flatnonzero(distance <= self.config["keyframe_radius_m"] ** 2)
         if len(available) < self.config["bootstrap_min_anchor_points"]:
             return None
         order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
-        anchor = points[available[order]].copy()
-        matcher = (LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
-                                   self._past_direction_support_stamp_ns) if self._matcher is None
-                   else self._matcher.fork_with_anchor(anchor, self._past_direction_support,
-                                                       self._past_direction_support_stamp_ns))
+        if boundary is None:
+            anchor = points[available[order]].copy()
+            matcher = (LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
+                                       self._past_direction_support_stamp_ns) if self._matcher is None
+                       else self._matcher.fork_with_anchor(anchor, self._past_direction_support,
+                                                           self._past_direction_support_stamp_ns))
+        else:
+            if boundary.source_frontier_ns != frontier:
+                raise ValueError("boundary and filled map frontiers differ")
+            anchor = boundary.subset(available[order])
+            matcher = (BoundaryLaneLocalizer(anchor, self.matcher_config) if self._matcher is None
+                       else self._matcher.fork_with_anchor(anchor))
         self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher,
                                             tracking_stamp, self._past_direction_support,
                                             self._past_direction_support_stamp_ns, bootstrap_motion)
@@ -207,7 +224,7 @@ class TeachMapEngine:
         return (self._clock() - started) * 1000.0 > self.config["max_processing_ms"]
 
     def _match_reference(self, scan, prior, stamp, started, scan_support, scan_sensitivity,
-                         motion_source_stamp_ns=None):
+                         motion_source_stamp_ns=None, boundary_observation=None):
         refresh = (self._matcher is None or (
             self._map.last_stamp_ns != self._anchor_frontier and (
                 stamp - self._keyframe_stamp >= self.config["keyframe_refresh_s"] * 1e9
@@ -228,6 +245,8 @@ class TeachMapEngine:
             return None, None, None, timing, "processing_deadline"
         motion_kwargs = ({} if motion_source_stamp_ns is None else
                          {"motion_source_stamp_ns": motion_source_stamp_ns})
+        if boundary_observation is not None:
+            motion_kwargs["boundary_observation"] = boundary_observation
         if self._matcher is None and motion_source_stamp_ns is not None:
             if (candidate is None or candidate.bootstrap_motion_owner is None
                     or candidate.bootstrap_motion_owner is not self._bootstrap_motion_information):
@@ -270,7 +289,23 @@ class TeachMapEngine:
         return len(self._map.confirmed_keys) + prospective <= self.config["max_confirmed_cells"]
 
     def process(self, local_xy, sensitivity, prior_xyyaw, stamp_ns, commit_guard=None,
-                motion_source_stamp_ns=None):
+                motion_source_stamp_ns=None, *, boundary_observation=None):
+        # A proposal must not survive an exception during geometry preparation
+        # or admission. Both possible owners remain reachable here, including
+        # after candidate promotion. Successful commit already clears pending;
+        # this is idempotent cleanup, not rollback of persistent map stores.
+        try:
+            return self._process_observation(
+                local_xy, sensitivity, prior_xyyaw, stamp_ns, commit_guard,
+                motion_source_stamp_ns, boundary_observation=boundary_observation)
+        finally:
+            if self._matcher is not None:
+                self._matcher.discard_pending()
+            if self._candidate is not None:
+                self._candidate.matcher.discard_pending()
+
+    def _process_observation(self, local_xy, sensitivity, prior_xyyaw, stamp_ns, commit_guard=None,
+                             motion_source_stamp_ns=None, *, boundary_observation=None):
         started = self._clock()
         prior = np.asarray(prior_xyyaw, dtype=float)
         points, sensitivity = np.asarray(local_xy, dtype=float), np.asarray(sensitivity, dtype=float)
@@ -290,6 +325,12 @@ class TeachMapEngine:
             self._latch("nonincreasing_mask_stamp")
             return self._result(False, self._fault, prior, stamp, started)
         self._last_seen_stamp = stamp
+        if boundary_observation is not None and (
+                not isinstance(boundary_observation, BoundaryObservation)
+                or boundary_observation.source_stamp_ns != stamp):
+            return self._result(False, "invalid_boundary_observation", prior, stamp, started)
+        if self._trace and ((boundary_observation is None) != (self._boundary_map is None)):
+            return self._result(False, "changed_feature_representation", prior, stamp, started)
         if motion_source_stamp_ns is None:
             if self._last_motion_source_stamp is not None:
                 return self._result(False, "missing_motion_source_stamp", prior, stamp, started)
@@ -316,7 +357,9 @@ class TeachMapEngine:
         if len(self._trace) >= self.config["max_trace_points"]:
             self._latch("trace_capacity")
             return self._result(False, self._fault, prior, stamp, started)
-        established = len(self._map.confirmed_keys) >= self.config["bootstrap_min_anchor_points"]
+        anchor_count = (len(self._map.confirmed_keys) if self._boundary_map is None
+                        else self._boundary_map.confirmed_count)
+        established = anchor_count >= self.config["bootstrap_min_anchor_points"]
         if established:
             self._tracking_started = True
         result = None
@@ -326,7 +369,8 @@ class TeachMapEngine:
         if self._tracking_started:
             selected, result, candidate, metrics, failure = self._match_reference(
                 points[sensitivity <= self.config["reliable_sensitivity"]], prior, stamp, started, points,
-                sensitivity[sensitivity <= self.config["reliable_sensitivity"]], motion_source_stamp_ns)
+                sensitivity[sensitivity <= self.config["reliable_sensitivity"]], motion_source_stamp_ns,
+                boundary_observation)
             if failure is not None:
                 return self._result(False, failure, prior, stamp, started, metrics)
             pose, reason = result.pose_xyyaw, "matched_past_consensus"
@@ -380,6 +424,24 @@ class TeachMapEngine:
                 selected.discard_pending()
             self._latch("map_capacity")
             return self._result(False, self._fault, prior, stamp, started, metrics)
+        boundary_map, prepared_boundary = self._boundary_map, None
+        if boundary_observation is not None:
+            if boundary_map is None:
+                boundary_settings = {key: self.config[key] for key in (
+                    "grid_resolution_m", "minimum_frame_votes", "minimum_reliable_votes",
+                    "max_sensitivity", "reliable_sensitivity", "max_candidate_cells",
+                    "max_confirmed_cells", "candidate_ttl_s")}
+                boundary_settings["normal_max_angle_rad"] = geometry["normal_max_angle_rad"]
+                boundary_map = BoundaryConsensus(boundary_settings)
+            try:
+                prepared_boundary = boundary_map.prepare(boundary_observation.transformed(pose))
+            except ValueError as error:
+                if selected is not None:
+                    selected.discard_pending()
+                metrics["boundary_preparation_error"] = str(error)
+                return self._result(False, "boundary_preparation_rejected", prior, stamp, started, metrics)
+            metrics["feature_representation"] = "paint_boundary_v1"
+            metrics["boundary_reference_points_before_commit"] = boundary_map.confirmed_count
         with (commit_guard() if commit_guard is not None else nullcontext(True)) as admitted:
             if admitted is False:
                 if selected is not None:
@@ -389,6 +451,10 @@ class TeachMapEngine:
                 if selected is not None:
                     selected.discard_pending()
                 return self._result(False, "processing_deadline", prior, stamp, started, metrics)
+            if prepared_boundary is not None and not boundary_map.can_commit(prepared_boundary):
+                if selected is not None:
+                    selected.discard_pending()
+                return self._result(False, "boundary_commit_token_rejected", prior, stamp, started, metrics)
             if result is not None and not selected.commit(result):
                 selected.discard_pending()
                 return self._result(False, "matcher_commit_rejected", prior, stamp, started, metrics)
@@ -396,6 +462,15 @@ class TeachMapEngine:
             if self._map.capacity_rejected_cells or self._map.confirmation_capacity_rejections:
                 self._latch("unexpected_map_capacity")
                 return self._result(False, self._fault, prior, stamp, started, metrics)
+            if prepared_boundary is not None:
+                # The single worker and the guard own both frontiers. The
+                # prepared token was validated before any persistent mutation;
+                # commit applies its already-built immutable records. This is
+                # serialized admission, not exception-rollback across stores.
+                if not boundary_map.commit(prepared_boundary):
+                    self._latch("unexpected_boundary_commit_failure")
+                    return self._result(False, self._fault, prior, stamp, started, metrics)
+                self._boundary_map = boundary_map
             self._trace.append(np.asarray(pose, dtype=float).copy())
             self._last_motion_source_stamp = motion_source_stamp_ns
             if prepared_bootstrap_motion is not None:
@@ -432,7 +507,8 @@ class TeachMapEngine:
                                          int(self._map.last_stamp_ns), dict(self.counts,
                                              consensus_coordinate_semantics="measured_frame_equal_mean",
                                              consensus_grid_resolution_m=self.config["grid_resolution_m"],
-                                             consensus_vote_semantics="one_vote_per_cell_per_committed_frame"))
+                                             consensus_vote_semantics="one_vote_per_cell_per_committed_frame"),
+                                         None if self._boundary_map is None else self._boundary_map.snapshot())
         return self._snapshot
 
     def capture_repeat_state(self):
@@ -457,4 +533,7 @@ class TeachMapEngine:
         for the handoff. This is not an API for seeding another session's map.
         """
         snapshot = self.freeze()
+        if snapshot.boundary_reference is not None:
+            return BoundaryLaneLocalizer.from_tracking_state(
+                snapshot.boundary_reference, self.capture_repeat_state())
         return LaneMapLocalizer.from_tracking_state(snapshot.consensus_xy, self.capture_repeat_state())

@@ -1327,6 +1327,51 @@ class LaneMapLocalizer:
         residual = np.sum((world[selected] - self._index.line_points[anchor_indices]) * normals, axis=1)
         return world, rotated, selected, normals, residual
 
+    def _prepare_scan_geometry(self, scan, support, metrics):
+        """Current-only foreground evidence, before consulting a reference.
+
+        Keep this legacy calculation independent of target correspondences.
+        A semantic boundary implementation can retain its complete evidence
+        denominator while assigning mass only to actually observed paint sides.
+        Returned mass is deliberately separate from the sum of usable weights:
+        missing/uncertified evidence must not silently raise overlap.
+        """
+        cfg = self.config
+        in_range = np.linalg.norm(scan, axis=1) <= cfg["max_scan_range_m"]
+        metrics["range_rejected_points"] = int(np.sum(~in_range))
+        scan = _voxel_means(scan[in_range], cfg["scan_voxel_m"])
+        if len(scan) > cfg["max_scan_points"]:
+            indices = np.linspace(0, len(scan) - 1, cfg["max_scan_points"]).astype(np.int64)
+            scan = scan[indices]
+        metrics["scan_points"] = len(scan)
+        if len(scan) < cfg["min_scan_points"]:
+            return None, "insufficient_scan_points"
+        support = _voxel_means(support[np.linalg.norm(support, axis=1) <= cfg["max_scan_range_m"]],
+                               cfg["scan_voxel_m"])
+        metrics["scan_support_points"] = len(support)
+        if len(support) > cfg["max_scan_support_points"]:
+            return None, "scan_geometry_capacity"
+        support = np.frombuffer(support.tobytes(), dtype=np.float64).reshape(support.shape)
+        support_cells = {tuple(key): index for index, key in enumerate(
+            np.floor(support / cfg["scan_voxel_m"]).astype(np.int64))}
+        indices = np.asarray([support_cells.get(tuple(key), -1) for key in
+                              np.floor(scan / cfg["scan_voxel_m"]).astype(np.int64)], dtype=np.int64)
+        eligible = indices >= 0
+        try:
+            support_index = _FrozenIndex(support, cfg, normal_targets=indices[eligible],
+                                         reuse_index=self._scan_geometry_index)
+        except ValueError:
+            return None, "scan_geometry_capacity"
+        self._scan_geometry_index = support_index
+        metrics["scan_reused_identical_geometry_points"] = support_index.reused_geometry_points
+        eligible[eligible] &= support_index.normal_valid[indices[eligible]]
+        metrics["scan_geometric_rejections"] = int(np.sum(~eligible))
+        scan_normals = support_index.normals[indices[eligible]]
+        scan = scan[eligible]
+        metrics["scan_eligible_pixels"] = len(scan)
+        weight = _line_weights(scan, scan_normals, support_index, indices[eligible], cfg)
+        return (scan, scan_normals, weight, float(np.sum(weight))), None
+
     def match(self, local_xy, prior_xyyaw, stamp_ns, prior_stamp_ns=None, commit=True,
               scan_support_xy=None, scan_sensitivity=None, motion_source_stamp_ns=None,
               *, bootstrap_motion_information=None):
@@ -1488,53 +1533,17 @@ class LaneMapLocalizer:
             return finish("empty_anchor")
         if metrics["anchor_line_points"] < cfg["min_inliers"]:
             return finish("insufficient_anchor_line_support")
-        in_range = np.linalg.norm(scan, axis=1) <= cfg["max_scan_range_m"]
-        metrics["range_rejected_points"] = int(np.sum(~in_range))
-        scan = scan[in_range]
-        scan = _voxel_means(scan, cfg["scan_voxel_m"])
-        if len(scan) > cfg["max_scan_points"]:
-            indices = np.linspace(0, len(scan) - 1, cfg["max_scan_points"]).astype(np.int64)
-            scan = scan[indices]
-        metrics["scan_points"] = len(scan)
-        if len(scan) < cfg["min_scan_points"]:
-            return finish("insufficient_scan_points")
         # Compute features BEFORE consulting the old anchor. A filled stripe
         # clipped by the reliability window must not acquire a new transverse
         # normal merely because its currently reliable segment is very short.
-        support = _voxel_means(support[np.linalg.norm(support, axis=1) <= cfg["max_scan_range_m"]],
-                               cfg["scan_voxel_m"])
-        metrics["scan_support_points"] = len(support)
-        if len(support) > cfg["max_scan_support_points"]:
-            return finish("scan_geometry_capacity")
-        # Forks may share this memoization source. A bytes-backed view cannot
-        # have its writeable flag re-enabled, unlike an owning read-only array.
-        support = np.frombuffer(support.tobytes(), dtype=np.float64).reshape(support.shape)
-        support_cells = {tuple(key): index for index, key in enumerate(
-            np.floor(support / cfg["scan_voxel_m"]).astype(np.int64))}
-        indices = np.asarray([support_cells.get(tuple(key), -1) for key in
-                              np.floor(scan / cfg["scan_voxel_m"]).astype(np.int64)], dtype=np.int64)
-        eligible = indices >= 0
-        try:
-            support_index = _FrozenIndex(support, cfg, normal_targets=indices[eligible],
-                                         reuse_index=self._scan_geometry_index)
-        except ValueError:
-            return finish("scan_geometry_capacity")
-        # A rejected fit may leave an exact geometry cache, never accepted pose
-        # or map votes. Cache hits require current full-cell dependency equality;
-        # stale/different observations cannot become current measurement support.
-        self._scan_geometry_index = support_index
-        metrics["scan_reused_identical_geometry_points"] = support_index.reused_geometry_points
-        eligible[eligible] &= support_index.normal_valid[indices[eligible]]
-        metrics["scan_geometric_rejections"] = int(np.sum(~eligible))
-        scan_normals = support_index.normals[indices[eligible]]
-        scan = scan[eligible]
-        metrics["scan_eligible_pixels"] = len(scan)
-        feature_weight = _line_weights(scan, scan_normals, support_index, indices[eligible], cfg)
+        prepared_scan, geometry_failure = self._prepare_scan_geometry(scan, support, metrics)
+        if geometry_failure is not None:
+            return finish(geometry_failure)
+        scan, scan_normals, feature_weight, weight_sum = prepared_scan
         fit_weight = feature_weight
         # J4 screens projection stability in the caller; it is not a calibrated
         # point-to-line covariance. Inverse-J weighting suppressed useful heading
         # leverage and changed drift direction, so it is NOT a fitting weight.
-        weight_sum = float(np.sum(feature_weight))
         metrics["scan_feature_weight_sum"] = weight_sum
         metrics["sensitivity_weighting"] = "screen_only_not_fit_covariance" if sensitivity is not None else "not_supplied"
         metrics["sensitivity_is_calibrated_covariance"] = False

@@ -5,6 +5,7 @@ Slow projection, matching, bundle creation and map export never run in the
 command timer. Results are bounded; a full result queue stops further work.
 """
 import queue
+from dataclasses import replace
 import threading
 import time
 
@@ -12,6 +13,7 @@ import numpy as np
 
 from lane_mapping_lya_reference.mapping_core import GroundLookup
 from lane_mapping_lya_reference.tilted_projection import TiltedGroundLookup
+from lane_mapping_lya_reference.paint_geometry import extract_boundary_observation
 from .attitude import AttitudeSnapshot
 from .mapping import TeachMapEngine
 from .bundle import build_bundle, geometry_sha256, load_bundle
@@ -56,6 +58,7 @@ class MapWorker:
             return None
 
     def _project(self, job):
+        job.pop("boundary_observation", None)
         calibration = job["calibration"]
         if self.lookup is None:
             lookup_type = TiltedGroundLookup if self.motion_attitude_mode == "raw_imu_tilt" else GroundLookup
@@ -76,8 +79,12 @@ class MapWorker:
                 raise ValueError("raw-IMU projection requires the selected causal wheel attitude snapshot")
             local, sensitivity, _ = self.lookup.project_mask_with_sensitivity(
                 job["mask"], 127, attitude.up_body)
+            normal = attitude.up_body
         else:
             local, sensitivity, _ = self.lookup.project_mask_with_sensitivity(job["mask"], 127)
+            normal = (0., 0., 1.)
+        job["boundary_observation"] = extract_boundary_observation(
+            job["mask"], self.lookup, normal, job["stamp_ns"], threshold=127)
         return local, sensitivity
 
     def _compute(self, job):
@@ -101,16 +108,23 @@ class MapWorker:
             # never to an arbitrary loaded bundle or a restarted motion frame.
             if (not np.array_equal(anchor, self.snapshot.consensus_xy)
                     or metadata.get("snapshot_geometry_sha256") != geometry_sha256(self.snapshot)
+                    or geometry_sha256(replace(self.snapshot,
+                        boundary_reference=metadata.get("boundary_reference"))) != geometry_sha256(self.snapshot)
                     or metadata.get("source_frontier_ns") != self.snapshot.source_frontier_ns):
                 raise ValueError("loaded bundle does not match this frozen teach snapshot")
             self.matcher = self.engine.repeat_localizer()
             envelope.update(path=str(path), route=route, manifest=manifest)
         elif kind in ("teach", "repeat"):
             local, sensitivity = self._project(job)
+            # The production projection always produces this immutable object.
+            # Old isolated XY test fixtures may replace _project; they remain
+            # legacy rather than inventing black/white image boundaries.
+            boundary = job.pop("boundary_observation", None)
+            boundary_kwargs = {} if boundary is None else {"boundary_observation": boundary}
             if kind == "teach":
                 envelope["result"] = self.engine.process(local, sensitivity, job["prior"],
                     job["stamp_ns"], commit_guard=lambda: self.guard(job),
-                    motion_source_stamp_ns=job["prior_stamp_ns"])
+                    motion_source_stamp_ns=job["prior_stamp_ns"], **boundary_kwargs)
                 if time.monotonic_ns() - self.last_export_ns > 500000000:
                     # A copy from the worker's own consensus, not an optimistic
                     # per-frame overlay presented as a confirmed map.
@@ -122,7 +136,7 @@ class MapWorker:
                 result = self.matcher.match(local[sensitivity <= 0.1], job["prior"],
                     job["stamp_ns"], prior_stamp_ns=job["prior_stamp_ns"], commit=False,
                     scan_support_xy=local, scan_sensitivity=sensitivity[sensitivity <= 0.1],
-                    motion_source_stamp_ns=job["prior_stamp_ns"])
+                    motion_source_stamp_ns=job["prior_stamp_ns"], **boundary_kwargs)
                 job["proposal_correction"] = tuple(float(v) for v in result.correction_se2)
                 committed = False
                 try:
