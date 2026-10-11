@@ -13,6 +13,11 @@ acceptance and the recorded Unity acceptance separate.
   Git objects. A downloaded source ZIP, unavailable history, or a shallow clone
   omitting either commit is insufficient. Restore the relevant history using
   your normal Git workflow; the installer never fetches or changes Git state.
+- On Windows, use a short checkout path. The nested overlay can exceed Git's
+  default path limit; enable long paths for this repository with
+  `git config --local core.longpaths true`, or clone using
+  `git clone -c core.longpaths=true <repository-url> <short-path>`.
+  This is a repository-local setting, not a global Git configuration change.
 - Existing Simulator project with Unity **2022.3.22f1 (887be4894c44)** and the
   saved `Assets/Scenes/MotorControllerValidation.unity` scene. Its camera,
   vehicle physics, traffic-signal assets, A3 runtime and pinned vision/LYA
