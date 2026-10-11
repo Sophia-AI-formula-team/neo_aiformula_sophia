@@ -151,7 +151,11 @@ class UnionHotloopTests(unittest.TestCase):
         values[0][1, 0] = (+0., -0.)
         histories = []
         original_projection = _validated_projection_bounds
-        for function in (literal_r19_union, fs._current_union):
+        # This one white-box test observes Python projection invocation order.
+        # Native9 preserves output bits but does not call that Python helper;
+        # test the retained Python hot-loop body here. All other black-box
+        # comparisons below still use the actual default union dispatcher.
+        for function in (literal_r19_union, fs._current_union_python):
             seen = []
 
             def project(point, origin, tangent):
