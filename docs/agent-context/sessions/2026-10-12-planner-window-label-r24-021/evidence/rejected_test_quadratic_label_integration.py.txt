@@ -1,0 +1,435 @@
+"""Draft R24 integration regressions; not executed during preparation.
+
+Literal R23 window/PCA/fit/contraction control flow is embedded from commit
+764d860e64c5fe726fa03346f2142571fe1b2a99. It does not call the new classifier.
+Unchanged corner partition and finite-face-domain helpers are shared explicitly;
+this is not an independent oracle for those two separate algorithms.
+No runtime dependency on diagnostic paths, Git history, trial masks or truth.
+"""
+from dataclasses import fields
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+
+from lane_mapping_lya_reference import paint_geometry as paint
+from lane_mapping_lya_reference import ribbon_observation as ribbon
+from lane_mapping_lya_reference.boundary_localization import assign_foreground_mass
+from lane_mapping_lya_reference.mask_localization import _configuration as matcher_config
+
+
+def _r23_weighted_patch_products(left, right, weights):
+    """Same three operands/K order, one small output component at a time.
+
+    Avoid the generic multidimensional einsum loop without BLAS, algebraic
+    reassociation, symmetry copying, zero-column removal or altered windows.
+    The literal previous contraction remains an independent test oracle.
+    """
+    result = np.empty((len(left), left.shape[2], right.shape[2]), dtype=np.float64)
+    for i in range(left.shape[2]):
+        for j in range(right.shape[2]):
+            result[:, i, j] = np.einsum('nk,nk,nk->n', left[:, :, i], right[:, :, j],
+                                       weights, optimize=False)
+    return result
+
+
+
+def _r23_fit_quadratic_patches(delta, weights, normals):
+    """Local y=a+b*x+c*x² in the measured PCA frame, not a tangent line.
+
+    The same existing contour window is used. Scaling x to unit magnitude
+    avoids metre-dependent normal-equation rank decisions. No ridge, invented
+    sample, changed support radius, or truth-derived curvature is introduced.
+    """
+    tangents = np.column_stack((normals[:, 1], -normals[:, 0]))
+    # np.sum of the original two-element axis uses a positive-zero identity.
+    # Retain its signed-zero result as well as the two multiply/add operations.
+    x = (delta[:, :, 0]*tangents[:, None, 0] + delta[:, :, 1]*tangents[:, None, 1]) + 0.
+    y = (delta[:, :, 0]*normals[:, None, 0] + delta[:, :, 1]*normals[:, None, 1]) + 0.
+    scales = np.max(np.where(weights, np.abs(x), 0.), axis=1)
+    scaled = np.zeros_like(x)
+    np.divide(x, scales[:, None], out=scaled, where=scales[:, None] > 0.)
+    design = np.stack((np.ones_like(x), scaled, scaled*scaled), axis=2)
+    gram = _r23_weighted_patch_products(design, design, weights)
+    rhs = np.empty((len(design), 3))
+    for i in range(3):
+        rhs[:, i] = np.einsum('nk,nk,nk->n', design[:, :, i], y, weights, optimize=False)
+    eigenvalues = np.linalg.eigvalsh(gram)
+    good = (scales > 0.) & (eigenvalues[:, 0] > 64.*np.finfo(np.float64).eps*eigenvalues[:, -1])
+    coefficients = np.full((len(delta), 3), np.nan)
+    coefficients[good] = np.linalg.solve(gram[good], rhs[good, :, None])[:, :, 0]
+    bounds = np.column_stack((np.min(np.where(weights, scaled, np.inf), axis=1),
+                              np.max(np.where(weights, scaled, -np.inf), axis=1)))
+    return coefficients, scales, bounds
+
+
+
+def _r23_directions(points, segments, white_xy, black_xy, pixel_outward, stable, paths, cfg,
+                *, cut_evidence=None):
+    """Batched contour-only windows. Stops at missing/J-cut/opposite faces.
+
+    Limiting arc distance (rather than Euclidean distance alone) also prevents
+    a nearby U arm being pulled into the local patch through a remote bridge.
+    Opposite IMAGE face polarities stop traversal even around a very short end
+    cap. Perspective is not angle-preserving: orthogonal pixel stair faces can
+    have obtuse metric normals, which must not split one observed paint side.
+    """
+    n = len(points)
+    normals, valid = np.zeros((n, 2)), np.zeros(n, dtype=bool)
+    curve_coefficients = np.full((n, 3), np.nan)
+    curve_scale = np.full(n, np.nan)
+    curve_bounds = np.full((n, 2), np.nan)
+    support_count, used_radius = np.zeros(n, dtype=np.int64), np.zeros(n)
+    tangent = segments[:, 1] - segments[:, 0]
+    length = np.linalg.norm(tangent, axis=1)
+    white_to_black = black_xy - white_xy
+    crossing_length = np.linalg.norm(white_to_black, axis=1)
+    ok = (stable & np.isfinite(length) & (length > 0)
+          & np.isfinite(crossing_length) & (crossing_length > 0))
+    crossing_direction = np.zeros_like(points)
+    crossing_direction[ok] = white_to_black[ok] / crossing_length[ok, None]
+    max_points = cfg["max_patch_points"]
+    left_max, right_max = (max_points - 1) // 2, max_points // 2
+    radii, radius = [], cfg["normal_radius_m"]
+    while radius < cfg["normal_max_radius_m"]:
+        radii.append(radius)
+        radius = min(radius * 2., cfg["normal_max_radius_m"])
+    radii.append(cfg["normal_max_radius_m"])
+    for path, closed in paint._direction_paths(points, segments, ok, paths, cfg,
+                                        white_xy=white_xy, black_xy=black_xy,
+                                        cut_evidence=cut_evidence):
+        count = len(path)
+        if count < cfg["normal_min_points"]:
+            continue
+        left = min(left_max, (count - 1) // 2) if closed else min(left_max, count - 1)
+        right = min(right_max, count - 1 - left) if closed else min(right_max, count - 1)
+        offsets = np.arange(-left, right + 1)
+        # Arc distance follows the measured face, including its corner vertex.
+        step = np.linalg.norm(segments[path, 1] - points[path], axis=1)
+        step += np.linalg.norm(points[np.roll(path, -1)] - segments[path, 1], axis=1)
+        step[~np.isfinite(step)] = np.inf
+        arc = np.concatenate(([0.], np.cumsum(np.where(np.isfinite(step), step, 0.))))
+        circumference = arc[-1]
+        for start in range(0, count, 128):
+            positions = np.arange(start, min(start + 128, count))
+            # An invalid seed makes its complete allowed row false. Avoid its
+            # temporary arrays, but never remove faces from any other window.
+            positions = positions[ok[path[positions]]]
+            if not len(positions):
+                continue
+            targets = path[positions]
+            slots = positions[:, None] + offsets
+            inside = np.ones(slots.shape, dtype=bool) if closed else ((slots >= 0) & (slots < count))
+            wrapped = slots % count
+            candidates = path[wrapped]
+            arc_candidate = arc[wrapped]
+            if closed:
+                arc_candidate = arc_candidate + np.floor_divide(slots, count) * circumference
+            distance = np.abs(arc_candidate - arc[positions, None])
+            # Exact cardinal integer pixel directions: same=1, stair=0,
+            # opposite=-1. Keep the seed-relative test and contiguous stop;
+            # neither a later compatible face nor a J gap can be jumped.
+            compatible = (pixel_outward[targets, None, 0] * pixel_outward[candidates, 0]
+                          + pixel_outward[targets, None, 1] * pixel_outward[candidates, 1]) >= 0
+            allowed = inside & ok[targets, None] & ok[candidates] & compatible
+            # Every intervening face must be usable; never jump an invalid face.
+            if left:
+                allowed[:, :left] = np.logical_and.accumulate(allowed[:, :left][:, ::-1], axis=1)[:, ::-1]
+            if right:
+                allowed[:, left + 1:] = np.logical_and.accumulate(allowed[:, left + 1:], axis=1)
+            differences = points[candidates] - points[targets, None, :]
+            differences[~np.isfinite(differences)] = 0.
+            for radius in radii:
+                if np.all(valid[targets]):
+                    break
+                selected = allowed & (distance <= radius)
+                counts = np.count_nonzero(selected, axis=1)
+                enough = (~valid[targets]) & (counts >= cfg["normal_min_points"])
+                if not np.any(enough):
+                    continue
+                delta, weights = differences[enough], selected[enough]
+                means = np.sum(delta * weights[:, :, None], axis=1) / counts[enough, None]
+                centered = delta - means[:, None, :]
+                cov = _r23_weighted_patch_products(centered, centered, weights) / counts[enough, None, None]
+                eigenvalues, eigenvectors = np.linalg.eigh(cov)
+                accepted = ((eigenvalues[:, 1] > 1.e-5)
+                            & (eigenvalues[:, 0] <= cfg["normal_max_thickness_m"] ** 2)
+                            & (eigenvalues[:, 0] <= cfg["normal_max_variance_ratio"] * eigenvalues[:, 1]))
+                fitted = eigenvectors[:, :, 0]
+                # A normal is a covector. Its sign against the actual measured
+                # white->black displacement survives camera shear/perspective;
+                # dotting two projected normals does not. Normalize the
+                # displacement so the existing 1e-12 angular check is unitless.
+                orientation = np.sum(fitted * crossing_direction[targets[enough]], axis=1)
+                accepted &= np.abs(orientation) > 1.e-12
+                if not np.any(accepted):
+                    continue
+                fitted[orientation < 0] *= -1
+                indices = targets[enough][accepted]
+                normals[indices] = fitted[accepted]
+                coefficients, scales, bounds = _r23_fit_quadratic_patches(
+                    delta[accepted], weights[accepted], fitted[accepted])
+                # Fit samples are pixel-face centres, not the ends of the
+                # observed finite faces. Keep the same fit and arc radius;
+                # certify its finite domain from those selected actual faces.
+                # This explicitly permits evaluation outside the centre hull,
+                # but never beyond the observed, radius-clipped face domain.
+                member_ids = candidates[enough][accepted]
+                observed_bounds = paint._finite_face_fit_bounds(
+                    points[indices], fitted[accepted], scales, points[member_ids],
+                    segments[member_ids],
+                    (arc_candidate-arc[positions, None])[enough][accepted],
+                    weights[accepted], radius)
+                certified = np.all(np.isfinite(observed_bounds), axis=1)
+                bounds[certified] = observed_bounds[certified]
+                curve_coefficients[indices], curve_scale[indices] = coefficients, scales
+                curve_bounds[indices] = bounds
+                valid[indices] = True
+                support_count[indices] = counts[enough][accepted]
+                used_radius[indices] = radius
+    return normals, valid, support_count, used_radius, curve_coefficients, curve_scale, curve_bounds
+
+
+
+def _bits(value):
+    value = np.asarray(value)
+    return value.dtype.str, value.shape, value.tobytes()
+
+
+def _same_arrays(actual, expected):
+    assert len(actual) == len(expected)
+    for i, (a, b) in enumerate(zip(actual, expected)):
+        assert _bits(a) == _bits(b), "array slot %d differs" % i
+
+
+def _line_inputs(*, gap=False, axis=0, reverse=False):
+    n = 97
+    x = np.arange(n, dtype=np.float64) / 32.
+    if reverse:
+        x = -x
+    points = np.column_stack((x, np.full(n, .125)))
+    along = np.array([(-1. if reverse else 1.) / 64., 0.])
+    outward = np.array([0., 1.])
+    segments = np.stack((points-along, points+along), axis=1)
+    white, black = points-outward/64., points+outward/64.
+    pixels = np.tile([0, 1], (n, 1)).astype(np.int64)
+    if axis:
+        points, segments = points[:, ::-1].copy(), segments[:, :, ::-1].copy()
+        white, black, pixels = white[:, ::-1].copy(), black[:, ::-1].copy(), pixels[:, ::-1].copy()
+    stable = np.ones(n, dtype=bool)
+    if gap:
+        stable[48] = False
+    return (points, segments, white, black, pixels, stable,
+            [(np.arange(n, dtype=np.int64), False)])
+
+
+def _constant_classifier(monkeypatch, status, calls):
+    def classify(origins, normals, coefficients, scales, white, black, owners):
+        calls.append(tuple(np.array(a, copy=True) for a in
+                           (origins, normals, coefficients, scales, white, black, owners)))
+        return np.full(len(origins), status, dtype=np.uint8)
+    monkeypatch.setattr(paint, "classify_quadratic_labels", classify)
+
+
+@pytest.mark.parametrize("status", [0, 1, 2])
+@pytest.mark.parametrize("gap,axis,reverse", [
+    (False, 0, False), (True, 0, False), (False, 1, False), (True, 1, True)])
+def test_all_original_window_labels_in_order_and_seven_numeric_fields_exact(
+        monkeypatch, status, gap, axis, reverse):
+    args = _line_inputs(gap=gap, axis=axis, reverse=reverse)
+    cfg = dict(paint.DEFAULT_CONFIG)
+    before = [_bits(a) for a in args[:6]]
+    expected = _r23_directions(*args, cfg)
+    calls = []
+    _constant_classifier(monkeypatch, status, calls)
+    label_status = np.full(len(args[0]), 255, dtype=np.uint8)
+    actual = paint._directions(*args, cfg, label_status=label_status)
+    assert len(actual) == 7
+    _same_arrays(actual, expected)
+    assert before == [_bits(a) for a in args[:6]]
+    assert calls and np.count_nonzero(expected[1]) > 0
+
+    # This fixture has a dyadic step; each window is exactly the ordered
+    # contiguous stable component intersected with the original .45 m arc.
+    points, _, all_white, all_black, _, stable, _ = args
+    visited = []
+    for origins, normals, coefficients, scales, white, black, owners in calls:
+        assert owners.dtype.kind in "iu"
+        assert len(white) == len(black) == len(owners)
+        assert np.array_equal(np.unique(owners), np.arange(len(origins)))
+        for row, origin in enumerate(origins):
+            matches = np.flatnonzero(np.all(points == origin, axis=1))
+            assert len(matches) == 1
+            seed = int(matches[0])
+            visited.append(seed)
+            left = right = seed
+            while left > 0 and stable[left-1]:
+                left -= 1
+            while right+1 < len(points) and stable[right+1]:
+                right += 1
+            ids = [i for i in range(left, right+1)
+                   if abs(i-seed)/32. <= cfg["normal_radius_m"]]
+            selected = owners == row
+            assert len(ids) == expected[2][seed]
+            _same_arrays((white[selected], black[selected]),
+                         (all_white[ids], all_black[ids]))
+            _same_arrays((normals[row], coefficients[row], scales[row]),
+                         (expected[0][seed], expected[4][seed], expected[5][seed]))
+    assert sorted(visited) == list(np.flatnonzero(expected[1]))
+    assert len(visited) == len(set(visited)), "failure must not propose a later radius"
+    assert np.all(label_status[expected[1]] == status)
+    assert np.all(label_status[~expected[1]] == 255)
+
+
+def test_optional_status_none_preserves_old_direct_numeric_api(monkeypatch):
+    def forbidden(*args):
+        raise AssertionError("label callback requested without status output")
+    monkeypatch.setattr(paint, "classify_quadratic_labels", forbidden)
+    args = _line_inputs(gap=True)
+    cfg = dict(paint.DEFAULT_CONFIG)
+    _same_arrays(paint._directions(*args, cfg), _r23_directions(*args, cfg))
+
+
+def _camera():
+    width, height = 96, 192
+    transform = np.diag([1., -1., -1., 1.])
+    transform[2, 3] = 1.
+    return SimpleNamespace(width=width, height=height,
+        camera_matrix=np.array([[64., 0., width/2.],
+                                [0., 64., height/2.], [0., 0., 1.]]),
+        base_from_camera=transform, plane_offset_m=0.,
+        max_sensitivity_m_per_px=.5)
+
+
+def _mask():
+    mask = np.zeros((192, 96), dtype=np.uint8)
+    mask[:, 40:56] = 255
+    return mask
+
+
+RAW_FIELDS = ("points", "normals", "segments", "sensitivity", "metric_valid",
+              "stable", "normal_valid", "valid", "reliable", "pixel_segments",
+              "white_pixels", "black_pixels", "previous", "next", "contour_ids",
+              "normal_support_count", "normal_radius")
+
+
+def _extract(mask):
+    return paint.extract_boundary_observation(mask, _camera(), (0., 0., 1.), 123)
+
+
+@pytest.mark.parametrize("status,reason", [(1, 64), (2, 128)])
+def test_terminal_label_veto_preserves_raw_evidence_and_ribbon_admission_input(
+        monkeypatch, status, reason):
+    mask = _mask()
+    mask_before = _bits(mask)
+    accepted_calls = []
+    _constant_classifier(monkeypatch, 0, accepted_calls)
+    original_proposals = ribbon.island_ribbon_proposals
+    ribbon_inputs = []
+    def capture_proposals(*args, **kwargs):
+        # Original signature position 10 is normal_valid, NOT model_valid.
+        ribbon_inputs.append(np.array(args[10], copy=True))
+        return original_proposals(*args, **kwargs)
+    monkeypatch.setattr(ribbon, "island_ribbon_proposals", capture_proposals)
+    baseline = _extract(mask)
+    assert baseline.model_valid.any()
+    failed_calls = []
+    _constant_classifier(monkeypatch, status, failed_calls)
+    failed = _extract(mask)
+    assert _bits(mask) == mask_before
+    _same_arrays([getattr(failed, name) for name in RAW_FIELDS],
+                 [getattr(baseline, name) for name in RAW_FIELDS])
+    assert len(ribbon_inputs) == 2
+    _same_arrays(ribbon_inputs[:1], ribbon_inputs[1:])
+    assert len(accepted_calls) == len(failed_calls)
+    for first, second in zip(accepted_calls, failed_calls):
+        _same_arrays(first, second)
+    selected = baseline.normal_valid
+    assert selected.any()
+    assert np.all((failed.reason_codes[selected] & reason) == reason)
+    assert not np.any(failed.model_valid[selected])
+    assert not np.any(failed.model_reliable[selected])
+    assert not np.any(failed.position_segment_valid[selected])
+
+
+@pytest.mark.parametrize("status,reason", [(1, 64), (2, 128)])
+def test_later_ribbon_proposal_cannot_restore_rejected_selected_quadratic(
+        monkeypatch, status, reason):
+    calls = []
+    _constant_classifier(monkeypatch, 0, calls)
+    baseline = _extract(_mask())
+    candidates = np.flatnonzero(baseline.normal_valid & baseline.model_valid)
+    assert len(candidates)
+    seed = int(candidates[len(candidates)//2])
+    original = ribbon.island_ribbon_proposals
+    injections = []
+    def append_admitted(*args, **kwargs):
+        proposals = list(original(*args, **kwargs))
+        assert args[10][seed], "label veto must not mark original direction invalid"
+        proposals.append((np.array([seed], dtype=np.int64),
+            baseline.normals[[seed]].copy(), baseline.model_points[[seed]].copy(),
+            baseline.model_normals[[seed]].copy(), np.array([True]),
+            baseline.normal_support_count[[seed]].copy(), baseline.normal_radius[[seed]].copy()))
+        injections.append(seed)
+        return proposals
+    monkeypatch.setattr(ribbon, "island_ribbon_proposals", append_admitted)
+    _constant_classifier(monkeypatch, status, [])
+    observed = _extract(_mask())
+    assert injections == [seed]
+    assert observed.normal_valid[seed]
+    assert observed.reason_codes[seed] & reason
+    assert not observed.model_valid[seed]
+    assert not observed.model_reliable[seed]
+    assert not observed.position_segment_valid[seed]
+
+
+@pytest.mark.parametrize("status", [1, 2])
+def test_invalidated_sides_keep_complete_original_foreground_mass(monkeypatch, status):
+    _constant_classifier(monkeypatch, 0, [])
+    baseline = _extract(_mask())
+    _constant_classifier(monkeypatch, status, [])
+    failed = _extract(_mask())
+    # Foreground point at a row centre, not a shared face vertex. Two literal
+    # observed sides each own half; their rejection cannot redefine D.
+    points = np.array([[0., 0.]])
+    normals = np.array([[1., 0.]])
+    weights = np.array([3.25])
+    cfg = matcher_config(None)
+    before, mb = assign_foreground_mass(points, normals, weights, baseline, cfg)
+    after, ma = assign_foreground_mass(points, normals, weights, failed, cfg)
+    assert before.sum() == 3.25
+    assert after.sum() == 0.
+    assert mb["boundary_original_foreground_mass"] == 3.25
+    assert ma["boundary_original_foreground_mass"] == 3.25
+    assert ma["boundary_uncertified_mass"] == 3.25
+    assert ma["boundary_unassigned_mass"] == 3.25
+    assert ma["boundary_missing_mass"] == 0.
+    assert len(failed.points) == len(baseline.points)
+
+
+def test_real_classifier_straight_full_mask_matches_old_raw_and_model(monkeypatch):
+    mask = _mask()
+    actual = _extract(mask)
+    calls = []
+    _constant_classifier(monkeypatch, 0, calls)
+    expected = _extract(mask)
+    assert actual.model_valid.any()
+    for field in fields(actual):
+        a, b = getattr(actual, field.name), getattr(expected, field.name)
+        if isinstance(a, np.ndarray):
+            assert _bits(a) == _bits(b), field.name
+        else:
+            assert a == b, field.name
+
+
+def test_classifier_programming_error_is_not_silently_treated_as_a_new_window(monkeypatch):
+    calls = []
+    def broken(*args):
+        calls.append(1)
+        raise RuntimeError("label classifier test sentinel")
+    monkeypatch.setattr(paint, "classify_quadratic_labels", broken)
+    args = _line_inputs()
+    with pytest.raises(RuntimeError, match="test sentinel"):
+        paint._directions(*args, dict(paint.DEFAULT_CONFIG),
+                          label_status=np.full(len(args[0]), 2, dtype=np.uint8))
+    assert calls == [1]

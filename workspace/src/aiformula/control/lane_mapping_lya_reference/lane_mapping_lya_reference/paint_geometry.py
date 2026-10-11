@@ -505,6 +505,10 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
     admitted[eligible] = True
     all_cells = np.zeros((len(obs.points), 2), dtype=np.int64)
     all_cells[eligible] = cells
+    # Python integers preserve the exact int64 cell values while avoiding two
+    # NumPy scalar gathers for every coordinate comparison below. Keep the
+    # original whole-run floating-point products and the closed-seam check.
+    cell_keys = all_cells.tolist()
     visited = np.zeros(len(obs.points), dtype=bool)
     output = []
     normals = obs.model_normals
@@ -519,8 +523,7 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
         parts, run = [], []
         for face in path:
             same = (bool(run) and admitted[face]
-                    and all_cells[face, 0] == all_cells[run[0], 0]
-                    and all_cells[face, 1] == all_cells[run[0], 1]
+                    and cell_keys[face] == cell_keys[run[0]]
                     and np.all(normals[run] @ normals[face] >= cosine))
             if run and not same:
                 parts.append(run)
@@ -532,8 +535,7 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
         # A closed contour's arbitrary iteration start is not a physical cut.
         # Merge across it only if the original faces are genuinely adjacent.
         if (len(parts) > 1 and obs.next[parts[-1][-1]] == parts[0][0]
-                and all_cells[parts[-1][0], 0] == all_cells[parts[0][0], 0]
-                and all_cells[parts[-1][0], 1] == all_cells[parts[0][0], 1]
+                and cell_keys[parts[-1][0]] == cell_keys[parts[0][0]]
                 and np.all(normals[parts[-1]] @ normals[parts[0]].T >= cosine)):
             parts[0] = parts[-1] + parts[0]
             parts.pop()
@@ -1081,6 +1083,11 @@ class BoundaryConsensus:
         count = self._continuation_storage_count - sum(
             self._continuation_size(self._continuations.get(key, {})) for key in expired)
         result, cfg = [], self.config
+        # These properties allocate full-frame arrays. The observation is
+        # immutable: evaluate once, then preserve each owner's original gather
+        # order and every per-frame/normal/reliability check below.
+        model_valid, model_j = obs.model_valid, obs.model_sensitivity
+        model_reliable, model_normals = obs.model_reliable, obs.model_normals
         for record_id, _, _, _, _, _, faces in updates:
             previous, following = int(obs.previous[faces[0]]), int(obs.next[faces[-1]])
             signature = (int(face_owner[previous]) if previous >= 0 else -1,
@@ -1089,31 +1096,37 @@ class BoundaryConsensus:
             hypotheses = dict(old)
             selected = np.empty(0, dtype=np.int64)
             if obs.position_footprints is not None:
-                admitted = (obs.model_valid[faces] & obs.position_segment_valid[faces]
-                    & (obs.model_sensitivity[faces] <= cfg['max_sensitivity'])
+                admitted = (model_valid[faces] & obs.position_segment_valid[faces]
+                    & (model_j[faces] <= cfg['max_sensitivity'])
                     & (obs.position_segment_sensitivity[faces] <= cfg['max_sensitivity']))
                 selected = faces[admitted]
             quads = (np.empty((0, 4, 2)) if not len(selected)
                      else obs.position_footprints[selected])
             trusted = np.zeros(len(selected), dtype=bool)
             if len(selected):
-                trusted = (obs.model_reliable[selected] & obs.position_segment_reliable[selected]
-                    & (obs.model_sensitivity[selected] <= cfg['reliable_sensitivity'])
+                trusted = (model_reliable[selected] & obs.position_segment_reliable[selected]
+                    & (model_j[selected] <= cfg['reliable_sensitivity'])
                     & (obs.position_segment_sensitivity[selected] <= cfg['reliable_sensitivity']))
             # Neighbour validity/normal agreement is part of the observed run
             # identity, not just a direction at the public mean. A broken end
             # remains inventoried but contributes no permission this frame.
             endpoints = (int(faces[0]), int(faces[-1]))
-            if min(signature) < 0 or any(float(np.dot(obs.model_normals[own], obs.model_normals[other])) < cosine
+            if min(signature) < 0 or any(float(np.dot(model_normals[own], model_normals[other])) < cosine
                     for own, other in zip(endpoints, (previous, following)) if other >= 0):
                 selected, quads, trusted = np.empty(0, dtype=np.int64), np.empty((0, 4, 2)), np.empty(0, dtype=bool)
-            elif not np.all(obs.model_reliable[[*endpoints, previous, following]] &
-                            (obs.model_sensitivity[[*endpoints, previous, following]] <= cfg['reliable_sensitivity'])):
+            elif not np.all(model_reliable[[*endpoints, previous, following]] &
+                            (model_j[[*endpoints, previous, following]] <= cfg['reliable_sensitivity'])):
                 trusted[:] = False
-            frame = ContinuationFrame(obs.source_stamp_ns, quads, obs.model_normals[selected], trusted)
-            hypotheses[signature] = retain_frames(old.get(signature, ()), frame,
+            frame = ContinuationFrame(obs.source_stamp_ns, quads, model_normals[selected], trusted)
+            previous_frames = old.get(signature, ())
+            hypotheses[signature] = retain_frames(previous_frames, frame,
                 cfg['minimum_frame_votes'], cfg['minimum_reliable_votes'])
-            count += self._continuation_size(hypotheses)-self._continuation_size(old)
+            # Exactly one signature changes; all other immutable hypotheses
+            # cancel. Integers are unbounded, and empty observations still
+            # consume their original metadata unit. No capacity gate changes.
+            count += (int(signature not in old)
+                + sum(item.storage_units for item in hypotheses[signature])
+                - sum(item.storage_units for item in previous_frames))
             result.append((record_id, MappingProxyType(hypotheses)))
         return tuple(result), count
 
