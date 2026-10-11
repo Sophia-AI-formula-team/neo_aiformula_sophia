@@ -275,9 +275,17 @@ ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 
 `target_stop_distance_m`（默认 8.5 米）作用于**保守距离下界**，不是对真实停车距离的无误差保证；加上测距不确定度后，实际停车可能更远。余量低于 `approach_stop_tolerance_m`（默认 0.1 米）时进入等待。实际车速超出剩余距离的制动包络时先发零命令并报告 `approach_braking`，仍保留接近状态；只有后续可靠距离及新控制命令才能恢复减速接近，防止普通制动滞后被误当成永久停车。
 
-接近过程中，当前真实灯色 `traffic_light_raw=unknown`、缺失/无效/过期距离或无效/过期 odom 会锁存等待，直到确认绿灯。已经由确认红灯进入 approach 后，旧票过期导致的平票、无多数或样本数不足不会单独撤销已确认的红灯接近意图；`traffic_light` 仍如实报告当前票决 unknown，不补票、不重放历史颜色。保持接近仍要求当前真实灯色非 unknown、距离与 odom 新鲜有效且满足制动包络。锁存故障不能被拓扑绕行解除。已经等待的红灯不会因为后续框突然变远而重新接近。绿灯恢复要求当前 raw green 与多数确认 green，并满足原来的延迟、新完整 ABC 和新 LYA 命令。旧颜色 String 输入没有距离，会安全退回原等待行为。原 OA 所有权和已提交绕行规则保持；到达停车目标后的正常红灯等待仍可按原条件尝试拓扑绕行。
+接近过程中，当前真实灯色 `traffic_light_raw=unknown` 立即停止视觉控制，进入 `traffic_mode=perception_suspended`；unknown 自然没有距离时不伪造距离，也不直接当成结构故障。持续收到新鲜 unknown 时保持零速度，不输出视觉三点。仅在已经 approach 后发生的这种暂时颜色丢失具有恢复资格；它不适用于目标等待或已锁存故障。
 
-`status.signal_approach` 报告 enabled、target_stop_distance_m、observation_sequence、wait_latched、原始 distance_m/uncertainty_m 以及 profile。profile 的 valid/reason 总是存在；有效时另含 age_sec、distance_lower_m、remaining_m、speed_limit_mps、braking_distance_m、braking_required。该状态是诊断输出，不是控制输入。
+颜色恢复必须使用丢失之后新收到的、连续 raw red 原子观测，每帧距离与 odom 均新鲜有效。独立恢复窗口必须完整经过 `traffic_vote_window_sec`（默认 0.5 秒），且窗口内至少 `traffic_vote_min_samples`（默认 3）个真实新帧；不能复用丢失前的红票，定时器、重复/倒序 sequence 都不补票。任何新 unknown 或 green 清空红色恢复窗口。只有新红帧到达时、仍在停车目标之外且实际车速满足制动包络，才重入 approach。重入先丢弃旧 ABC 和旧控制命令，并重新执行原来的延迟、新完整 ABC、新 LYA 命令门槛。重新看到目标已到达则进入正常目标等待；新红框突然变远不能解除目标等待。重获时实际车速超出包络仍保持零速度，等待后续安全的新观测。
+
+红灯帧缺失/无效距离、无效/过期原子观测、无效/过期 odom、reset 会撤销颜色恢复资格并锁存等待；之后仅新的红灯不能解除，锁存故障也不能通过拓扑绕行解除。到达停车目标后的正常等待仍可按原条件尝试拓扑绕行。原 OA 所有权保持：OA 激活时拥有其控制命令，退出时不会把 suspended 或等待状态清成 normal，仍须相应信号与新视觉控制门槛。
+
+已经由确认红灯进入 approach 后，旧票过期造成的平票、无多数或样本不足不会单独撤销接近意图；`traffic_light` 仍如实报告当前票决 unknown，不补票、不重放历史颜色。保持接近仍要求当前真实灯色非 unknown、距离与 odom 新鲜有效且满足制动包络。确认绿灯可解除 suspended 或等待，但 opt-in 模式还要求当前原子观测及 odom 新鲜有效；旧绿票不能在一个损坏/过期帧之后放行。结构故障或 reset 还会记录 fault_sequence；解除必须有 sequence 更大的新原子 green，只有好 odom 恢复不能复用故障前的绿帧；绿灯本身仍使用原多数窗口。解除后仍执行延迟、新完整 ABC、新 LYA 命令门槛。
+
+`enable_signal_approach=false` 时旧颜色 String 接口及原等待行为保持不变；开启后须使用原子观测接口。纯颜色消息没有对应的原子观测，不能授权接近或解除已锁存故障。接口尚无信号目标 ID，因此这里的恢复契约限于同一相关信号，不宣称已经解决多灯目标关联。
+
+`status.signal_approach` 报告 enabled、target_stop_distance_m、observation_sequence、wait_latched、fault_sequence、原始 distance_m/uncertainty_m 以及 profile。另有 recovery_eligible、recovery_reason、recovery_age_sec 和独立 recovery_vote（真实样本数/年龄/窗口就绪状态）；不会把原始 unknown 改成 red。profile 的 valid/reason 总是存在；有效时另含 age_sec、distance_lower_m、remaining_m、speed_limit_mps、braking_distance_m、braking_required。该状态是诊断输出，不是控制输入。
 
 固定相机的可见性决定允许选择的停车目标；停车后若灯离开视野，unknown 会保持等待。8–9 米等目标必须用实际相机视野和制动录像验证，不能仅通过调参数宣称达到。回调测试使用 ROS stub；纯包测试中的运动是明确标记的合成模型，均不替代真实 Unity 或实车验证。
 

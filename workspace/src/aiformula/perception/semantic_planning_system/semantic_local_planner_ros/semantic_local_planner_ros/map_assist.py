@@ -164,6 +164,15 @@ class MapAssist(Node):
         self.signal_observation_sequence = -1
         self.signal_range_reason = "signal_range_missing"
         self.signal_wait_latched = False
+        self.signal_fault_sequence = -1
+        # Only perception_suspended owns recovery eligibility. Its fresh window
+        # never borrows pre-dropout votes from the ordinary traffic filter.
+        self.signal_recovery_filter = TrafficLightFilter(
+            window_sec=self.p["traffic_vote_window_sec"],
+            min_samples=self.p["traffic_vote_min_samples"],
+        )
+        self.signal_recovery_started = -math.inf
+        self.signal_recovery_reason = "inactive"
         self.odom_speed_mps = None
         self.odom_speed_time = -math.inf
         self.odom_speed_history = deque()
@@ -263,7 +272,9 @@ class MapAssist(Node):
 
     def _reset_learning(self, reason: str) -> None:
         was_detouring = self.traffic_mode == "detour"
-        was_approaching = self.traffic_mode == "approach"
+        was_approaching = self.traffic_mode in ("approach", "perception_suspended")
+        self._clear_signal_recovery("reset")
+        self.signal_fault_sequence = self.signal_observation_sequence
         self.signal_observation = None
         self.signal_range_reason = "signal_range_reset"
         self.odom_speed_mps = None
@@ -343,6 +354,9 @@ class MapAssist(Node):
     def _on_signal_observation(self, msg: String) -> None:
         """Atomic real detector frame; duplicate frames never refresh or vote."""
         now = time.monotonic()
+        # A new arrival cannot hide a timeout that already revoked recovery.
+        if self.traffic_mode == "perception_suspended":
+            self._update_signal_recovery(now)
         try:
             observation = parse_signal_observation(msg.data)
         except (ValueError, TypeError):
@@ -363,19 +377,19 @@ class MapAssist(Node):
         self.signal_observation = observation
         self.signal_observation_time = now
         self.signal_range_reason = observation.range_reason
-        self._receive_light_state(observation.state)
+        self._receive_light_state(observation.state, new_signal_frame=True)
 
-    def _receive_light_state(self, data: str) -> None:
+    def _receive_light_state(self, data: str, new_signal_frame: bool = False) -> None:
         state = str(data).strip().lower()
         self.traffic_light_raw = state if state in ("red", "green") else "unknown"
         if not self.p["enable_traffic_control"]:
             return
         now = time.monotonic()
         self.light_filter.add(self.traffic_light_raw, now)
-        self._update_light_vote(now)
+        self._update_light_vote(now, new_signal_frame=new_signal_frame)
         self._publish_velocity_stop_if_needed(now)
 
-    def _update_light_vote(self, now: float) -> None:
+    def _update_light_vote(self, now: float, new_signal_frame: bool = False) -> None:
         if not self.p["enable_traffic_control"]:
             return
         self.traffic_light = self.light_filter.evaluate(now)
@@ -384,12 +398,19 @@ class MapAssist(Node):
             # Keep confirmed red intent when older votes expire or tie. The
             # current real color and fresh range still guard every approach;
             # a historical unknown vote alone is not a new sensing failure.
-            if self.traffic_light_raw == "unknown":
-                self._wait_for_signal("signal_color_unknown", fault=True)
+            fault = self._signal_input_fault(now)
+            if fault:
+                self._wait_for_signal(fault, fault=True)
+            elif self.traffic_light_raw == "unknown":
+                self._wait_for_signal("signal_color_unknown")
+                self.traffic_mode = "perception_suspended"
+                self._clear_signal_recovery("waiting_current_red")
             elif not profile["valid"]:
                 self._wait_for_signal(profile["reason"], fault=True)
             elif profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
                 self._wait_for_signal("signal_target_reached")
+        if self.traffic_mode == "perception_suspended":
+            self._update_signal_recovery(now, new_signal_frame)
         if self.traffic_light == "red" and self.traffic_mode == "normal":
             self.traffic_mode = "wait"
             self.traffic_reason = "red_wait_first_lap" if self.reference is None else "red_planning"
@@ -403,8 +424,10 @@ class MapAssist(Node):
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        elif self.traffic_light == "green" and self.traffic_mode in ("wait", "approach") and (
-            not self.p["enable_signal_approach"] or self.traffic_light_raw == "green"
+        elif self.traffic_light == "green" and self.traffic_mode in ("wait", "approach", "perception_suspended") and (
+            not self.p["enable_signal_approach"] or (
+                self.traffic_light_raw == "green" and self._signal_input_fault(now) is None
+                and self.signal_observation_sequence > self.signal_fault_sequence)
         ):
             self._resume_vision("green_resume")
         # Unknown/missing detections never release an already confirmed red.
@@ -414,6 +437,8 @@ class MapAssist(Node):
         self.traffic_mode = "normal"
         self.traffic_reason = reason
         self.signal_wait_latched = False
+        self.signal_fault_sequence = -1
+        self._clear_signal_recovery(reason)
         self.detour_tracker = None
         self.detour_motion_ready = False
         self.visual_motion_ready = False
@@ -428,10 +453,67 @@ class MapAssist(Node):
         self.traffic_mode = "wait"
         self.traffic_reason = reason
         self.signal_wait_latched |= fault
+        if fault:
+            self.signal_fault_sequence = self.signal_observation_sequence
+        self._clear_signal_recovery(reason)
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
         self.guard.reset()
         self.last_correction = 0.0
+
+    def _clear_signal_recovery(self, reason: str) -> None:
+        self.signal_recovery_filter.clear()
+        self.signal_recovery_started = -math.inf
+        self.signal_recovery_reason = reason
+
+    def _signal_input_fault(self, now: float) -> Optional[str]:
+        """Validate metadata/odometry even when unknown naturally has no range."""
+        observation = self.signal_observation
+        if observation is None:
+            return self.signal_range_reason
+        if observation.range_reason == "signal_range_invalid":
+            return observation.range_reason
+        age = observation.age_sec + max(0.0, now - self.signal_observation_time)
+        if age > self.p["signal_observation_timeout_sec"]:
+            return "signal_observation_stale"
+        if (self.odom_speed_mps is None or now - self.odom_speed_time > self.p["odom_timeout_sec"]
+                or now - self.odom_time > self.p["odom_timeout_sec"]):
+            return "signal_approach_odom_stale"
+        return None
+
+    def _update_signal_recovery(self, now: float, new_frame: bool = False) -> None:
+        """Hold zero; only a fresh complete red window can re-arm approach."""
+        fault = self._signal_input_fault(now)
+        if fault:
+            self._wait_for_signal(fault, fault=True)
+            return
+        if self.traffic_light_raw != "red":
+            # Unknown cannot contribute a vote, a color or a cached distance.
+            # Confirmed green is handled by the existing green-resume rule.
+            self._clear_signal_recovery("waiting_current_red")
+            return
+        profile = self._signal_approach_profile(now)
+        if not profile["valid"]:
+            self._wait_for_signal(profile["reason"], fault=True)
+            return
+        if profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
+            self._wait_for_signal("signal_target_reached")
+            return
+        if not new_frame:
+            return
+        if not math.isfinite(self.signal_recovery_started):
+            self.signal_recovery_started = now
+        vote = self.signal_recovery_filter.add("red", now)
+        self.signal_recovery_reason = "waiting_fresh_red_window"
+        if vote != "red":
+            return
+        if profile["braking_required"]:
+            self.signal_recovery_reason = "reacquisition_braking"
+            return
+        # Same delay and fresh whole ABC/new command requirement as green
+        # resume; never replay the visual group received while suspended.
+        self._resume_vision("signal_red_reacquired")
+        self.traffic_mode = "approach"
 
     def _signal_approach_profile(self, now: float) -> dict:
         observation = self.signal_observation
@@ -466,7 +548,7 @@ class MapAssist(Node):
         blocked = self._output_block_reason(now)
         if blocked:
             return blocked
-        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
+        if self.p["enable_traffic_control"] and self.traffic_mode in ("wait", "perception_suspended"):
             return self.traffic_reason
         if self.traffic_mode == "approach":
             profile = self._signal_approach_profile(now)
@@ -722,6 +804,8 @@ class MapAssist(Node):
 
     def _on_odom(self, msg: Odometry) -> None:
         now = time.monotonic()
+        if self.traffic_mode == "perception_suspended":
+            self._update_signal_recovery(now)
         pos, q = msg.pose.pose.position, msg.pose.pose.orientation
         values = (pos.x, pos.y, q.x, q.y, q.z, q.w)
         norm = math.hypot(*values[2:])
@@ -731,6 +815,8 @@ class MapAssist(Node):
             self.excluded_since_sample = True
             self.guard.reset()
             self.reason = "invalid_odom"
+            if self.traffic_mode == "perception_suspended":
+                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
             return
         covariance = getattr(msg.pose, "covariance", [])
         variances = [float(covariance[i]) for i in (0, 7, 35)] if len(covariance) == 36 else [0.0] * 3
@@ -743,6 +829,8 @@ class MapAssist(Node):
             self.excluded_since_sample = True
             self.guard.reset()
             self.reason = "odom_uncertainty_high"
+            if self.traffic_mode == "perception_suspended":
+                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
             return
         qx, qy, qz, qw = (v / norm for v in values[2:])
         yaw = math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
@@ -762,6 +850,8 @@ class MapAssist(Node):
                     self.matched = False
                     self.excluded_since_sample = True
                     self.guard.reset()
+                    if self.traffic_mode == "perception_suspended":
+                        self._wait_for_signal("signal_approach_odom_invalid", fault=True)
                     return
                 dt = stamp - self.odom_stamp
             if frame != self.odom_frame or msg.child_frame_id != self.child_frame:
@@ -787,6 +877,8 @@ class MapAssist(Node):
                 self.odom_speed_history.popleft()
         else:
             self.odom_speed_mps = None
+            if self.traffic_mode == "perception_suspended":
+                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
         self.odom_seq += 1
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
         excluded = self._bypass_reason(now) is not None or not self._recording_points_valid(now)
@@ -883,7 +975,7 @@ class MapAssist(Node):
             self.reason = blocked
             self._publish_housekeeping(now)
             return
-        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
+        if self.p["enable_traffic_control"] and self.traffic_mode in ("wait", "perception_suspended"):
             self.reason = self.traffic_reason
             self.guard.reset()
             self.last_correction = 0.0
@@ -1038,7 +1130,7 @@ class MapAssist(Node):
             "correction_deg": math.degrees(self.last_correction),
             "violation_frames": self.guard.violation_count,
             "avoidance_active": self.avoidance_active, "branch_active": self.branch_active,
-            "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode != "wait",
+            "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode not in ("wait", "perception_suspended"),
             "enable_correction": self.p["enable_correction"],
             "official_route_node_ids": self.official.node_ids,
             "approximate_official_edge": self._current_topology_edge(),
@@ -1057,9 +1149,14 @@ class MapAssist(Node):
                 "target_stop_distance_m": self.p["target_stop_distance_m"],
                 "observation_sequence": self.signal_observation_sequence,
                 "wait_latched": self.signal_wait_latched,
+                "fault_sequence": self.signal_fault_sequence,
                 "distance_m": self.signal_observation.distance_m if self.signal_observation else None,
                 "uncertainty_m": self.signal_observation.uncertainty_m if self.signal_observation else None,
                 "profile": self._signal_approach_profile(now),
+                "recovery_eligible": self.traffic_mode == "perception_suspended",
+                "recovery_reason": self.signal_recovery_reason,
+                "recovery_age_sec": age_seconds(self.signal_recovery_started),
+                "recovery_vote": self.signal_recovery_filter.snapshot(now),
             },
             "topology_alignment": self.topology_alignment,
             "blocked_edge": self.blocked_edge,

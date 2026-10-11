@@ -1383,7 +1383,7 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(self.node.traffic_mode, "approach")
         return start
 
-    def test_approach_historical_vote_tie_keeps_red_intent_but_current_unknown_locks(self):
+    def test_approach_historical_vote_tie_keeps_intent_but_current_unknown_suspends(self):
         start = self.approach_after_mixed_startup()
         # No new frame: only the oldest red expires, leaving a 2 / 2 tie.
         self.now = start + 0.51
@@ -1401,11 +1401,12 @@ class MapAssistTests(unittest.TestCase):
         self.assertAlmostEqual(self.node.cmd_pub.messages[-1].linear.x, 0.8)
         self.signal_frame("unknown", distance_m=None)
         self.assertEqual(self.node.traffic_reason, "signal_color_unknown")
-        self.assertEqual(self.node.traffic_mode, "wait")
-        self.assertTrue(self.node.signal_wait_latched)
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.assertFalse(self.node.signal_wait_latched)
         self.assert_stopped()
         self.confirm_signal()
-        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.assertEqual(self.node.traffic_reason, "signal_red_reacquired")
 
     def test_approach_historical_sample_count_loss_keeps_intent_until_range_expires(self):
         start = self.approach_after_mixed_startup()
@@ -1515,8 +1516,8 @@ class MapAssistTests(unittest.TestCase):
         self.node._on_controller_cmd(self.command())
         self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
 
-    def test_approach_unknown_missing_invalid_and_stale_range_lock_wait(self):
-        cases = [("unknown", {}), ("missing", {"distance_m": None}),
+    def test_approach_missing_invalid_and_stale_range_lock_wait(self):
+        cases = [("missing", {"distance_m": None}),
                  ("nan", {"distance_m": float("nan")}),
                  ("uncertainty", {"uncertainty_m": -1.0}),
                  ("stale", {"age_sec": 0.51})]
@@ -1530,6 +1531,325 @@ class MapAssistTests(unittest.TestCase):
                 self.assert_stopped()
                 self.confirm_signal()
                 self.assertEqual(self.node.traffic_mode, "wait")
+
+    def suspend_approach(self):
+        self.approach_node()
+        self.confirm_signal()
+        self.signal_frame("unknown", distance_m=None)
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.assert_stopped()
+
+    def recovery_frame(self, state="red", distance=20.0, speed=0.2, elapsed=0.11):
+        self.advance(elapsed)
+        self.odom(speed=speed)
+        self.signal_sequence += 1
+        payload = dict(state=state, sequence=self.signal_sequence, age_sec=0.0,
+                       distance_m=distance, uncertainty_m=0.0)
+        self.node._on_signal_observation(DataMessage(json.dumps(payload)))
+        self.node._tick()
+        return payload
+
+    def test_recovery_needs_whole_new_red_window_then_new_abc_and_command(self):
+        self.suspend_approach()
+        count = self.output_count()
+        self.assertFalse(self.node.signal_wait_latched)
+        self.assertEqual(self.node.signal_recovery_filter.snapshot(self.now)["sample_count"], 0)
+        for index in range(5):
+            self.recovery_frame()
+            self.node._on_controller_cmd(self.command())
+            self.assert_stopped()
+            self.assertEqual(self.node.traffic_mode, "perception_suspended")
+            self.assertEqual(self.node.signal_recovery_filter.snapshot(self.now)["sample_count"], index + 1)
+        self.recovery_frame()
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.assertEqual(self.node.used_seq, self.node.point_seq)
+        self.assertFalse(self.node.visual_motion_ready)
+        self.assertEqual(self.node.last_cmd_time, -math.inf)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()  # Existing resume delay remains effective.
+        self.advance(0.21)
+        self.odom(speed=0.0)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()  # A fresh command alone cannot reuse old ABC.
+        self.node._point_cb("a")(Pose2D(0.4, 0.0))
+        self.node._tick()
+        self.assertEqual(self.output_count(), count)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.triplet()
+        self.node._tick()
+        self.assert_stopped()  # New ABC alone cannot replay an old command.
+        self.node._on_controller_cmd(self.command())
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+
+    def test_recovery_window_requires_minimum_recent_real_frames(self):
+        self.suspend_approach()
+        self.recovery_frame(elapsed=0.01)
+        self.recovery_frame(elapsed=0.3)
+        self.recovery_frame(elapsed=0.3)
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        vote = self.node.signal_recovery_filter.snapshot(self.now)
+        self.assertEqual(vote["sample_count"], 2)
+        self.assertFalse(vote["ready"])
+        self.recovery_frame(elapsed=0.1)
+        self.assertEqual(self.node.traffic_mode, "approach")
+
+    def test_recovery_unknown_resets_new_window_without_replaying_color_or_range(self):
+        self.suspend_approach()
+        for _ in range(3):
+            self.recovery_frame()
+        self.recovery_frame("unknown", distance=None)
+        self.assertEqual(self.node.signal_recovery_filter.snapshot(self.now)["sample_count"], 0)
+        self.assertEqual(self.node.traffic_light_raw, "unknown")
+        self.assertIsNone(self.node.signal_observation.distance_m)
+        for _ in range(5):
+            self.recovery_frame()
+            self.assertEqual(self.node.traffic_mode, "perception_suspended")
+            self.assert_stopped()
+        self.recovery_frame()
+        self.assertEqual(self.node.traffic_mode, "approach")
+
+    def test_recovery_continuous_current_unknown_stays_zero_without_structural_fault(self):
+        self.suspend_approach()
+        before_points = self.output_count()
+        for _ in range(10):
+            self.recovery_frame("unknown", distance=None)
+            self.triplet()
+            self.node._tick()
+            self.node._on_controller_cmd(self.command())
+            self.assert_stopped()
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.assertFalse(self.node.signal_wait_latched)
+        self.assertEqual(self.output_count(), before_points)
+        self.node._publish_status()
+        status = json.loads(self.node.status_pub.messages[-1].data)
+        self.assertFalse(status["path_output_allowed"])
+        self.assertTrue(status["signal_approach"]["recovery_eligible"])
+        self.assertEqual(status["signal_approach"]["recovery_vote"]["sample_count"], 0)
+        self.assertIsNone(status["signal_approach"]["distance_m"])
+        self.assertEqual(status["traffic_light_raw"], "unknown")
+
+    def test_recovery_duplicate_out_of_order_and_timers_never_supply_votes(self):
+        self.suspend_approach()
+        payload = self.recovery_frame()
+        received = self.node.signal_observation_time
+        for delta in (0, -1, 0):
+            self.advance(0.1)
+            self.odom(speed=0.0)
+            duplicate = dict(payload, sequence=payload["sequence"] + delta)
+            self.node._on_signal_observation(DataMessage(json.dumps(duplicate)))
+            self.node._tick()
+            self.node._on_controller_cmd(self.command())
+            self.assertEqual(self.node.signal_recovery_filter.snapshot(self.now)["sample_count"], 1)
+            self.assertEqual(self.node.signal_observation_time, received)
+            self.assertEqual(self.node.traffic_mode, "perception_suspended")
+            self.assert_stopped()
+        self.advance(0.21)
+        self.odom(speed=0.0)
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertTrue(self.node.signal_wait_latched)
+        self.confirm_signal()
+        self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_recovery_red_range_invalid_stale_malformed_or_legacy_revoke_eligibility(self):
+        cases = ("missing", "invalid", "uncertainty", "stale", "malformed", "legacy")
+        for case in cases:
+            with self.subTest(case=case):
+                self.suspend_approach()
+                self.advance(0.1)
+                self.odom(speed=0.0)
+                self.signal_sequence += 1
+                payload = dict(state="red", sequence=self.signal_sequence, age_sec=0., distance_m=20.)
+                if case == "missing":
+                    payload["distance_m"] = None
+                elif case == "invalid":
+                    payload["distance_m"] = float("nan")
+                elif case == "uncertainty":
+                    payload["uncertainty_m"] = -1
+                elif case == "stale":
+                    payload["age_sec"] = 0.51
+                if case == "legacy":
+                    self.node._on_light_state(DataMessage("red"))
+                else:
+                    self.node._on_signal_observation(DataMessage("{" if case == "malformed" else json.dumps(payload)))
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.assert_stopped()
+                self.confirm_signal()
+                self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_recovery_bad_odom_or_reset_revokes_even_before_next_good_input(self):
+        for case in ("invalid_pose", "invalid_speed", "out_of_order", "uncertainty", "reset"):
+            with self.subTest(case=case):
+                self.suspend_approach()
+                self.advance(0.01)
+                if case == "reset":
+                    self.node._on_reset(DataMessage(True))
+                elif case == "invalid_pose":
+                    self.odom(x=float("nan"), speed=0.0)
+                elif case == "invalid_speed":
+                    self.odom(speed=float("nan"))
+                elif case == "out_of_order":
+                    self.odom(stamp=self.node.odom_stamp, speed=0.0)
+                else:
+                    message = Odometry()
+                    message.pose.covariance[0] = 100.
+                    self.node._on_odom(message)
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.confirm_signal()
+                self.node._on_controller_cmd(self.command())
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assert_stopped()
+
+    def test_recovery_fresh_frame_cannot_hide_prior_odom_or_observation_timeout(self):
+        for timed_out in ("odom", "observation"):
+            with self.subTest(input=timed_out):
+                self.suspend_approach()
+                self.advance(0.51)
+                if timed_out == "odom":
+                    # Keep observation metadata current to isolate odometry.
+                    self.node.signal_observation_time = self.now
+                self.signal_sequence += 1
+                self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                    state="red", sequence=self.signal_sequence, age_sec=0., distance_m=20.))))
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.confirm_signal()
+                self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_recovery_target_wait_never_rearms_from_farther_red_box(self):
+        self.suspend_approach()
+        self.recovery_frame(distance=8.58, speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertEqual(self.node.traffic_reason, "signal_target_reached")
+        self.confirm_signal(distance=30.0, speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+
+    def test_recovery_actual_overspeed_holds_until_new_safe_observation(self):
+        self.suspend_approach()
+        for _ in range(7):
+            self.recovery_frame(distance=9.0, speed=1.5)
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.assertEqual(self.node.signal_recovery_reason, "reacquisition_braking")
+        self.node._on_controller_cmd(self.command(0.1, 0.0))
+        self.assert_stopped()
+        self.recovery_frame(distance=9.0, speed=0.0)
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()  # Re-entry delay and new ABC still apply.
+
+    def test_recovery_confirmed_green_uses_original_delay_and_new_control_gate(self):
+        self.suspend_approach()
+        self.recovery_frame("green", distance=None)
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.assert_stopped()
+        for _ in range(6):
+            self.recovery_frame("green", distance=None)
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.triplet()
+        self.node._tick()
+        self.assert_stopped()
+        self.node._on_controller_cmd(self.command())
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+
+    def test_recovery_oa_ownership_and_release_cannot_bypass_suspension(self):
+        self.suspend_approach()
+        self.node._on_avoidance(DataMessage(True))
+        moving = self.command(1.5, -0.4)
+        self.node._on_controller_cmd(moving)
+        self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        self.node._on_avoidance(DataMessage(False))
+        self.node._on_controller_cmd(moving)
+        self.assert_stopped()
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        for _ in range(7):
+            self.recovery_frame()
+        self.assertEqual(self.node.traffic_mode, "approach")
+        self.node._on_controller_cmd(moving)
+        self.assert_stopped()
+
+    def test_recovery_malformed_or_stale_frame_cannot_release_via_older_green_votes(self):
+        for malformed in (True, False):
+            with self.subTest(malformed=malformed):
+                self.approach_node()
+                start = self.now
+                for offset, color in ((0., "red"), (.2, "red"), (.4, "red"), (.5, "red"),
+                                      (.6, "unknown"), (.7, "green"), (.8, "green"), (.9, "green")):
+                    self.now = start + offset
+                    self.odom(speed=0.)
+                    self.signal_sequence += 1
+                    self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                        state=color, sequence=self.signal_sequence, age_sec=0.,
+                        distance_m=20. if color == "red" else None))))
+                self.assertEqual(self.node.traffic_mode, "perception_suspended")
+                self.assertEqual(self.node.traffic_light, "unknown")
+                self.now = start + .91
+                self.odom(speed=0.)
+                self.signal_sequence += 1
+                payload = "{" if malformed else json.dumps(dict(state="green", sequence=self.signal_sequence,
+                                                               age_sec=.51, distance_m=None))
+                self.node._on_signal_observation(DataMessage(payload))
+                self.assertEqual(self.node.traffic_light, "green", "Old red expiration creates historical green majority")
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertTrue(self.node.signal_wait_latched)
+                self.node._tick()
+                self.node._on_controller_cmd(self.command())
+                self.assert_stopped()
+                self.confirm_signal()
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.confirm_signal("green")
+                self.assertEqual(self.node.traffic_mode, "normal")
+
+    def test_opt_in_legacy_green_cannot_release_fault_without_atomic_observation(self):
+        self.suspend_approach()
+        self.node._on_signal_observation(DataMessage("{"))
+        for _ in range(7):
+            self.advance(.1)
+            self.odom(speed=0.)
+            self.node._on_light_state(DataMessage("green"))
+        self.assertEqual(self.node.traffic_light, "green")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.confirm_signal("green", distance_m=None)
+        self.assertEqual(self.node.traffic_mode, "normal")
+
+    def test_recovery_good_odom_cannot_reuse_green_observation_from_before_fault(self):
+        self.approach_node()
+        start = self.now
+        for offset, color in ((0., "red"), (.2, "red"), (.4, "red"), (.5, "red"),
+                              (.6, "unknown"), (.7, "green"), (.8, "green"), (.9, "green")):
+            self.now = start + offset
+            self.odom(speed=0.)
+            self.signal_sequence += 1
+            self.node._on_signal_observation(DataMessage(json.dumps(dict(
+                state=color, sequence=self.signal_sequence, age_sec=0.,
+                distance_m=20. if color == "red" else None))))
+        self.assertEqual(self.node.traffic_mode, "perception_suspended")
+        before_fault = self.node.signal_observation_sequence
+        self.now = start + .91
+        self.odom(x=float("nan"), speed=0.)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertEqual(self.node.signal_fault_sequence, before_fault)
+        self.now = start + .92
+        self.odom(speed=0.)
+        self.triplet()
+        self.node._tick()
+        self.assertEqual(self.node.traffic_light, "green")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.recovery_frame("green", distance=None, speed=0., elapsed=.01)
+        self.assertEqual(self.node.traffic_mode, "normal", "New valid green may use the normal green vote")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()  # Resume delay and new ABC remain required.
 
     def test_approach_duplicates_do_not_vote_refresh_range_or_release_a_wait(self):
         self.approach_node()
