@@ -1,0 +1,218 @@
+"""Causal, synchronous target-only adapter for the pinned vision/LYA frontend.
+
+This module does not infer pose, choose a speed, publish commands, create map
+points, run YOLOP, or start ROS/Unity/a worker. The caller supplies the complete
+current grayscale mask and its source timestamp. Upstream ROI/tracking and
+single-side assumptions are preserved, not tuned for this simulation.
+"""
+from __future__ import annotations
+
+from copy import deepcopy
+import hashlib
+import importlib
+import json
+import math
+from pathlib import Path
+import sys
+
+import numpy as np
+
+
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_ROOT = SOURCE_ROOT / "Assets/StreamingAssets/VisionLaneFollower"
+
+
+class UpstreamTeacherError(ValueError):
+    """A rejected frame. The caller must not reuse an older teacher command."""
+
+    def __init__(self, reason, diagnostics=None):
+        super().__init__(reason)
+        self.diagnostics = dict(diagnostics or {}, accepted=False, reason=reason)
+
+
+def _digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _safe(value):
+    if isinstance(value, np.ndarray):
+        return _safe(value.tolist())
+    if isinstance(value, np.generic):
+        return _safe(value.item())
+    if isinstance(value, dict):
+        return {key: _safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _load_pipeline():
+    # Match ProductionCore's same-checkout import guard: do not silently use a
+    # similarly named module that was imported from another project.
+    for name in ("lane_publisher", "upstream_adapter"):
+        loaded = sys.modules.get(name)
+        if loaded is not None and Path(getattr(loaded, "__file__", "")).resolve() != FRONTEND_ROOT / (name + ".py"):
+            raise UpstreamTeacherError("frontend module belongs to another checkout: " + name)
+    if str(FRONTEND_ROOT) not in sys.path:
+        sys.path.insert(0, str(FRONTEND_ROOT))
+    adapter = importlib.import_module("upstream_adapter")
+    # Pipeline verifies every vendored source against provenance.json before
+    # extracting the actual ROS class bodies and constructing local publishers.
+    return adapter.Pipeline(), adapter.COMMIT
+
+
+class CausalLyaFrontend:
+    """One frontend per session; monotonically consumed frames, fixed calibration.
+
+    process() returns target/omega_t and diagnostics only. Successful return
+    means supported=True; unsupported/default-straight and invalid outputs
+    raise UpstreamTeacherError. A valid input frame is consumed even when its
+    perception result fails, so a rejected timestamp cannot be replayed into
+    the stateful upstream tracker. Invalid input is rejected before it runs.
+    """
+
+    def __init__(self, epoch):
+        if not isinstance(epoch, str) or not epoch.strip():
+            raise UpstreamTeacherError("epoch must be a fixed nonempty session string")
+        self._epoch = epoch
+        self._sequence = self._stamp_ns = None
+        self._camera = None
+        self._pipeline, commit = _load_pipeline()
+        manifest_path = FRONTEND_ROOT / "upstream/provenance.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        local_paths = (Path(__file__).resolve(), FRONTEND_ROOT / "upstream_adapter.py",
+                       FRONTEND_ROOT / "lane_publisher.py", manifest_path)
+        self._source_files = local_paths + tuple(FRONTEND_ROOT / "upstream" / entry["path"]
+                                               for entry in manifest["files"])
+        self._provenance = dict(
+            repository=manifest["repository"], upstream_commit=commit,
+            upstream_source_sha256={entry["path"]: entry["sha256"] for entry in manifest["files"]},
+            adapter_source_sha256={path.relative_to(SOURCE_ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                                   for path in local_paths},
+            execution="synchronous existing Python port plus pinned ROS class bodies",
+            upstream_control_output_used=False, map_points_exported=False,
+            assumptions=dict(single_side_lane_width_m=float(self._pipeline.points.lane_width_m),
+                left_only_abc_width_divisors=[1.5, 1.4, 1.3], right_only_abc_width_divisors=[2., 2., 2.],
+                abc_indices=[self._pipeline.points.a, self._pipeline.points.b, self._pipeline.points.c],
+                omega_t_denominator_s=.1, ground_plane_base_z_m=0.,
+                mask_foreground="upstream > 0, no wrapper threshold/resize/flip",
+                calibration="same-image K and optical-camera-to-base rigid T"),
+            limitations=[
+                "Python OpenCV/NumPy port; native C++/Eigen numerical parity is not established",
+                "Synchronous in-process ROS stubs; DDS delivery, latency and TF races are not modeled",
+                "Identity local odometry in upstream command code is relative-frame algebra, not localization",
+                "Single-side target uses the original assumed 2.6 m width and asymmetric offsets, not measured width",
+                "Original ROI tracking uses only past consumed frames; frontend clouds include fitted/resampled points and never enter mapping",
+                "omega_t is original (theta2-theta1)/0.1, not curvature times the requested reference speed",
+            ])
+        self._provenance_sha256 = _digest(self._provenance)
+
+    @property
+    def epoch(self):
+        return self._epoch
+
+    @property
+    def provenance(self):
+        """JSON-safe source hashes and port limitations to log once at startup."""
+        return deepcopy(self._provenance)
+
+    @property
+    def source_root(self):
+        """Local-only copy root; do not serialize the machine's absolute path."""
+        return SOURCE_ROOT
+
+    @property
+    def source_files(self):
+        """Immutable source inventory, including manifest/license, never weights.
+
+        Snapshot each path at path.relative_to(source_root), preserving that
+        layout so the adapter's __file__-relative imports work on another host.
+        """
+        return self._source_files
+
+    def _validate_camera(self, camera):
+        if not isinstance(camera, dict) or set(camera) != {"width", "height", "K", "T_base_camera"}:
+            raise UpstreamTeacherError("camera fields must be width, height, K, T_base_camera")
+        width, height = camera["width"], camera["height"]
+        if (type(width) is not int or type(height) is not int or min(width, height) < 2
+                or width * height > 2_000_000):
+            raise UpstreamTeacherError("camera dimensions outside image budget")
+        try:
+            k = np.asarray(camera["K"], dtype=float).reshape(3, 3)
+            t = np.asarray(camera["T_base_camera"], dtype=float).reshape(4, 4)
+        except (ValueError, TypeError) as error:
+            raise UpstreamTeacherError("invalid camera matrix shape/type") from error
+        r = t[:3, :3]
+        if (not np.isfinite(k).all() or not np.isfinite(t).all()
+                or k[0, 0] <= 0 or k[1, 1] <= 0 or abs(np.linalg.det(k)) < 1e-12
+                or not np.allclose(k[2], [0., 0., 1.])
+                or not np.allclose(t[3], [0., 0., 0., 1.])
+                or not np.allclose(r.T @ r, np.eye(3), atol=1e-5)
+                or abs(np.linalg.det(r) - 1.) > 1e-5 or t[2, 3] <= 0):
+            raise UpstreamTeacherError("invalid K or rigid optical-camera-to-base calibration")
+        canonical = dict(width=width, height=height, K=k.ravel().tolist(), T_base_camera=t.ravel().tolist())
+        if self._camera is not None and canonical != self._camera:
+            raise UpstreamTeacherError("camera calibration changed within session")
+        # No inverse, row flip, yaw sign adjustment or intrinsics scaling here:
+        # the existing upstream projector expects exactly optical->base R,t.
+        converted = dict(K=k.ravel().tolist(), R=r.ravel().tolist(), t=t[:3, 3].tolist())
+        return canonical, converted
+
+    def process(self, mask, camera, sequence, stamp_ns):
+        diagnostics = dict(epoch=self._epoch, sequence=_safe(sequence), stamp_ns=_safe(stamp_ns),
+                           upstream_commit=self._provenance["upstream_commit"],
+                           provenance_sha256=self._provenance_sha256)
+        try:
+            if type(sequence) is not int or sequence < 0 or type(stamp_ns) is not int or stamp_ns < 0:
+                raise UpstreamTeacherError("sequence and stamp_ns must be nonnegative integers")
+            if ((self._sequence is not None and sequence <= self._sequence)
+                    or (self._stamp_ns is not None and stamp_ns <= self._stamp_ns)):
+                raise UpstreamTeacherError("sequence and source stamp must strictly increase")
+            canonical, converted = self._validate_camera(camera)
+            if (not isinstance(mask, np.ndarray) or mask.dtype != np.uint8
+                    or mask.shape != (canonical["height"], canonical["width"])):
+                raise UpstreamTeacherError("mask must be unchanged uint8 HxW matching camera dimensions")
+            diagnostics.update(input_mask_sha256=hashlib.sha256(mask.tobytes(order="C")).hexdigest(),
+                               camera_sha256=_digest(canonical))
+            self._sequence, self._stamp_ns, self._camera = sequence, stamp_ns, canonical
+            # A private identical copy protects the mapping input from any
+            # unexpected upstream in-place mutation. This is not an ROI crop.
+            request = dict(camera=converted, sequence=sequence, sim_time=stamp_ns * 1e-9, epoch=self._epoch)
+            result = self._pipeline.process(mask.copy(), request)
+            diagnostics.update(sides=_safe(result.get("sides", [])), counts=_safe(result.get("counts")),
+                               mode=result.get("mode"), supported=result.get("supported"))
+            if (result.get("sequence") != sequence or result.get("epoch") != self._epoch
+                    or result.get("sim_time") != request["sim_time"]):
+                raise UpstreamTeacherError("upstream response is not the current source frame")
+            mode = result.get("mode")
+            if result.get("supported") is not True or mode not in {"center", "left_only", "right_only"}:
+                raise UpstreamTeacherError("current mask unsupported; default straight is prohibited")
+            counts = result.get("counts")
+            if (not isinstance(counts, list) or len(counts) != 3
+                    or any(type(value) is not int or value < 0 for value in counts)):
+                raise UpstreamTeacherError("invalid current-frame lane point counts")
+            required = max(self._pipeline.points.a, self._pipeline.points.b, self._pipeline.points.c) + 1
+            expected_mode = ("center" if min(counts[:2]) >= required else
+                             "left_only" if counts[0] >= required else
+                             "right_only" if counts[1] >= required else "default_straight")
+            if mode != expected_mode or (mode == "center" and counts[2] < required):
+                raise UpstreamTeacherError("current-frame support counts disagree with upstream mode")
+            if result.get("valid") is not True:
+                raise UpstreamTeacherError("upstream did not publish a current-frame target")
+            target = np.asarray(result.get("target"), dtype=float)
+            omega = result.get("omega_t")
+            if (target.shape != (3,) or not np.isfinite(target).all()
+                    or isinstance(omega, bool) or not isinstance(omega, (int, float)) or not math.isfinite(omega)):
+                raise UpstreamTeacherError("nonfinite or invalid current-frame target/omega_t")
+            diagnostics.update(accepted=True, assumption_single_side_width_m=self._pipeline.points.lane_width_m,
+                               upstream_control_output_used=False, map_points_exported=False)
+            return dict(target=target.tolist(), omega_t=float(omega), supported=True,
+                        counts=list(counts), mode=mode, metadata=diagnostics)
+        except UpstreamTeacherError as error:
+            error.diagnostics = dict(diagnostics, **error.diagnostics)
+            raise
+        except Exception as error:
+            raise UpstreamTeacherError("upstream frontend failed: " + str(error), diagnostics) from error

@@ -1,0 +1,934 @@
+"""Export/replay a portable, observed mask + wheel/gyro mapping regression.
+
+No Unity, ROS transport, world pose, route prior, control publication or future
+frame is used. Export admits only named sensor fields; replay recomputes odometry
+and the one-time teach origin. New outputs are exclusive, never replacements.
+The prefix is a regression case, not evidence of a completed physical lap.
+"""
+import argparse
+import ast
+import base64
+from dataclasses import asdict
+import hashlib
+import io
+import json
+import math
+from pathlib import Path
+import subprocess
+import sys
+from types import ModuleType
+
+import numpy as np
+from PIL import Image
+from motion_channel import IMU_PROTOCOL, PROTOCOL, integer, source_ns as runtime_source_ns, ticks_ns
+
+
+CORE_NAMES = (
+    "lane_mapping_lya_reference.mapping_core",
+    "lane_mapping_lya_reference.mask_localization",
+    "lane_mapping_fixed_gnss.motion",
+    "lane_mapping_fixed_gnss.mapping",
+)
+IMU_CORE_NAMES = CORE_NAMES + (
+    "lane_mapping_fixed_gnss.attitude",
+    "lane_mapping_fixed_gnss.imu_motion",
+    "lane_mapping_lya_reference.tilted_projection",
+)
+BOUNDARY_CORE_NAMES = (
+    "lane_mapping_lya_reference.mapping_core",
+    "lane_mapping_lya_reference.tilted_projection",
+    "lane_mapping_lya_reference.paint_geometry",
+    "lane_mapping_lya_reference.mask_localization",
+    "lane_mapping_lya_reference.boundary_localization",
+    "lane_mapping_fixed_gnss.motion",
+    "lane_mapping_fixed_gnss.mapping",
+    "lane_mapping_fixed_gnss.attitude",
+    "lane_mapping_fixed_gnss.imu_motion",
+)
+CORNER_HELPER_NAME = "lane_mapping_lya_reference.corner_brackets"
+FINITE_SUPPORT_NAME = "lane_mapping_lya_reference.finite_support"
+PAINT_HELPER_NAMES = (CORNER_HELPER_NAME, FINITE_SUPPORT_NAME)
+BOUNDARY_REPRESENTATION = "paint_boundary_v1"
+BOUNDARY_GRAPH_VERSION = 2
+BOUNDARY_CERTIFIED_VERSION = 3
+BOUNDARY_TOPOLOGY = "confirmed_contour_node_chords_v1"
+CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
+
+
+def boundary_mode(evidence, *, raw_imu):
+    """Only explicit recorded identity enables the new observation model."""
+    mode = evidence.get("feature_representation")
+    if mode is None:
+        if "boundary_version" in evidence or "certified_model_representation" in evidence:
+            raise ValueError("boundary version requires explicit feature representation")
+        return False
+    if mode != BOUNDARY_REPRESENTATION or not raw_imu:
+        raise ValueError("boundary representation requires explicit schema3 raw IMU")
+    version = evidence.get("boundary_version", 1)
+    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
+        raise ValueError("unsupported recorded boundary version")
+    if version == BOUNDARY_CERTIFIED_VERSION:
+        if evidence.get("certified_model_representation") != CERTIFIED_MODEL_REPRESENTATION:
+            raise ValueError("recorded boundary v3 requires explicit certified creation-chart contract")
+    elif "certified_model_representation" in evidence:
+        raise ValueError("legacy boundary cannot claim certified model geometry")
+    return True
+
+
+def boundary_source_version(modules):
+    geometry = modules["lane_mapping_lya_reference.paint_geometry"]
+    version = getattr(geometry, "BOUNDARY_VERSION", 1)
+    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
+        raise ValueError("unsupported source boundary version")
+    if version >= BOUNDARY_GRAPH_VERSION and getattr(geometry, "TOPOLOGY_REPRESENTATION", None) != BOUNDARY_TOPOLOGY:
+        raise ValueError("source lacks the declared observed-graph topology contract")
+    if (version == BOUNDARY_CERTIFIED_VERSION
+            and getattr(geometry, "CERTIFIED_MODEL_REPRESENTATION", None) != CERTIFIED_MODEL_REPRESENTATION):
+        raise ValueError("source lacks the certified creation-chart contract")
+    return version
+CONTROL = "workspace/src/aiformula/control/"
+EPOCH_NS = 1_000_000_000
+CAMERA_FIELDS = ("width", "height", "K", "T_base_camera")
+PLANE_FIELDS = ("observation_plane_offset_m", "observation_plane_source")
+OBSERVATION_PLANE_SOURCE = "authored_semantic_paint_above_nominal_contact_v1"
+OBSERVATION_PLANE_OFFSET_M = 0.007
+
+
+def observation_plane_offset(value):
+    """This adapter profile admits one authored calibration, not a tuning knob."""
+    if type(value) not in (int, float) or value != OBSERVATION_PLANE_OFFSET_M or not math.isfinite(value):
+        raise ValueError("observation plane offset must be the finite authored value 0.007 m")
+    return value
+
+
+def camera_calibration(camera, *, raw_imu):
+    """Preserve the four legacy keys, or the complete explicit schema3 plane."""
+    if not isinstance(camera, dict) or set(camera) not in (
+            set(CAMERA_FIELDS), set(CAMERA_FIELDS + PLANE_FIELDS)):
+        raise ValueError("camera requires exactly four legacy fields or both observation-plane fields")
+    has_plane = "observation_plane_offset_m" in camera
+    if has_plane:
+        if not raw_imu:
+            raise ValueError("observation-plane calibration requires explicit schema3 raw IMU")
+        observation_plane_offset(camera["observation_plane_offset_m"])
+        if camera["observation_plane_source"] != OBSERVATION_PLANE_SOURCE:
+            raise ValueError("unrecognized observation-plane calibration source")
+    fields = CAMERA_FIELDS + PLANE_FIELDS if has_plane else CAMERA_FIELDS
+    return {key: camera[key] for key in fields}
+
+
+def candidate_plane_argument(value):
+    try:
+        return observation_plane_offset(float(value))
+    except (TypeError, ValueError, OverflowError) as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def source_hashes(data):
+    normalized = data.replace(b"\r\n", b"\n")
+    return dict(raw=sha(data), lf=sha(normalized), crlf=sha(normalized.replace(b"\n", b"\r\n")))
+
+
+def source_path(name):
+    package, module = name.split(".")
+    return CONTROL + package + "/" + package + "/" + module + ".py"
+
+
+def _with_corner_helper(names):
+    """Insert a verified dependency before paint, keeping old tuples intact."""
+    return _with_paint_helper(names, CORNER_HELPER_NAME)
+
+
+def _with_paint_helper(names, helper):
+    names = tuple(names)
+    index = names.index("lane_mapping_lya_reference.paint_geometry")
+    return names[:index] + (helper,) + names[index:]
+
+
+def recorded_core_names(provenance, *, raw_imu=False, boundary=False):
+    names = BOUNDARY_CORE_NAMES if boundary else IMU_CORE_NAMES if raw_imu else CORE_NAMES
+    for helper in PAINT_HELPER_NAMES:
+        if boundary and source_path(helper) in provenance["source_sha256"]:
+            names = _with_paint_helper(names, helper)
+    return names
+
+
+def source_ns(seconds):
+    return EPOCH_NS + round(seconds * 1e9)
+
+
+def pose_digest(pose):
+    # 摘要仅用于检验轮速积分没有漂移；不会把记录位姿作为算法输入。
+    values = [0. if round(float(value), 10) == 0. else round(float(value), 10)
+              for value in pose]
+    return sha(json.dumps(values, separators=(",", ":")).encode())
+
+
+def json_safe(value):
+    if isinstance(value, np.ndarray):
+        return json_safe(value.tolist())
+    if isinstance(value, np.generic):
+        return json_safe(value.item())
+    if isinstance(value, dict):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [json_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def write_new(path, value):
+    if not path.parent.is_dir():
+        raise ValueError("output parent must already exist")
+    with path.open("x", encoding="utf-8") as stream:
+        json.dump(json_safe(value), stream, ensure_ascii=False, allow_nan=False,
+                  separators=(",", ":"))
+        stream.write("\n")
+
+
+def export_fixture(backend, unity, output, repo=None):
+    records = [json.loads(line) for line in (backend / "events.jsonl").read_text(encoding="utf-8").splitlines()]
+    startup = next(row for row in records if row["event"] == "startup")
+    provenance = startup["provenance"]
+    transport = startup.get("motion_transport")
+    if transport == "awaiting_motion_protocol":
+        observed = {row["protocol"] for row in records if row["event"] == "motion"}
+        if len(observed) != 1 or not observed <= {PROTOCOL, IMU_PROTOCOL}:
+            raise ValueError("recording lacks one locked observed motion protocol")
+        transport = next(iter(observed))
+    if provenance.get("feature_representation") is not None and transport != IMU_PROTOCOL:
+        raise ValueError("boundary export requires independent schema3 raw IMU")
+    if transport in (PROTOCOL, IMU_PROTOCOL):
+        return export_independent_fixture(backend, unity, output, records, startup, repo)
+    if startup.get("motion_transport") not in (None, "legacy-image-batch-replay"):
+        raise ValueError("unsupported recorded motion protocol")
+    camera = camera_calibration(next(row["camera"] for row in records if row["event"] == "calibration"),
+                                raw_imu=False)
+    sensor = next(row["measured_values"] for row in records if row["event"] == "sensor_calibration")
+    frames, mask_bytes = [], 0
+    receipt_origin = None
+    for row in records:
+        if row["event"] != "step":
+            continue
+        response = row["response"]
+        metrics = response["metrics"]
+        receipt_origin = receipt_origin or row["received_monotonic_ns"]
+        motion = []
+        for sample in row["motion"]:
+            if set(sample) != {"stamp", "left_rpm", "right_rpm", "gyro_z"}:
+                raise ValueError("unexpected motion fields")
+            motion.append(dict(sample))
+        frame = dict(sequence=response["sequence"], image_stamp_ns=source_ns(response["sim_time"]),
+                     receipt_ns=EPOCH_NS + row["received_monotonic_ns"] - receipt_origin,
+                     motion=motion, raw_odom_digest=pose_digest(metrics["raw_odom_pose"]))
+        if "mapping" in metrics:
+            png = (unity / ("mask_%06d.png" % response["sequence"])).read_bytes()
+            if sha(png) != metrics["mask_sha256"]:
+                raise ValueError("mask hash mismatch at sequence " + str(response["sequence"]))
+            mask_bytes += len(png)
+            result = metrics["mapping"]
+            frame.update(mask_png_base64=base64.b64encode(png).decode("ascii"),
+                         mask_sha256=sha(png), prior_digest=pose_digest(metrics["map_frame_raw_prior"]),
+                         recorded_decision=dict(accepted=result["accepted"], reason=result["reason"]))
+        frames.append(frame)
+        if "mapping" in metrics and not metrics["mapping"]["accepted"]:
+            break
+    mapped = [row for row in frames if "mask_png_base64" in row]
+    if not mapped or mapped[-1]["recorded_decision"]["accepted"]:
+        raise ValueError("fixture must end at the first observed map rejection")
+    fixture = dict(schema_version=1, kind="observed_mask_wheel_gyro_prefix",
+                   sensor_source="Unity model-wheel RPM and body gyro; ideal-camera mask",
+                   source_epoch_offset_ns=EPOCH_NS,
+                   camera=camera,
+                   sensor_calibration={key: sensor[key] for key in ("wheel_diameter_m", "motor_to_wheel_ratio")},
+                   teach_map_config=provenance["teach_map_adapter_overrides"],
+                   recorded_core_revision=provenance["repo_head"],
+                   recorded_source_sha256={source_path(name): provenance["source_sha256"][source_path(name)]
+                                           for name in CORE_NAMES},
+                   evidence_sha256=dict(events=sha((backend / "events.jsonl").read_bytes())),
+                   frames=frames,
+                   scope="Observed prefix only; no world pose, GNSS, route, controller or future recovery proof",
+                   receipt_note="Original per-batch receipt intervals, translated to a positive relative epoch")
+    write_new(output, fixture)
+    return dict(fixture=output.name, bytes=output.stat().st_size, sha256=sha(output.read_bytes()),
+                batches=len(frames), motion_samples=sum(len(row["motion"]) for row in frames),
+                mapping_frames=len(mapped), exact_png_bytes=mask_bytes,
+                first_mapping_sequence=mapped[0]["sequence"], terminal_sequence=mapped[-1]["sequence"])
+
+
+MOTION_FIELDS = {"sequence", "stamp", "received_qpc", "left_rpm", "right_rpm", "gyro_z"}
+IMU_MOTION_FIELDS = (MOTION_FIELDS - {"gyro_z"}) | {"gyro_xyz", "accel_xyz", "output_held"}
+TIMING_FIELDS = {"sequence", "source_ns", "source_now_ns", "source_clock_published_qpc",
+                 "sensor_received_qpc", "sent_qpc", "arrival_qpc", "consumed_qpc", "committed_qpc",
+                 "source_age_ms", "arrival_age_ms", "receipt_age_ms", "queue_age_ms", "processing_ms"}
+
+
+class RecordedIndependentMotion:
+    """Replay exact logged odometer arguments, never a synthetic runtime clock.
+
+    Mirrors MotionChannel's actual accept_gyro/accept_wheels call contract using
+    recorded sensor receipt, source-now and consumed QPC. Only the capture's
+    acknowledged sequence prefix is integrated. This is not an HTTP/MMF or
+    commit-guard scheduler replay: those individual read instants were not logged.
+    """
+    def __init__(self, odometry, frequency, epoch, generation, *, protocol=PROTOCOL):
+        if protocol not in (PROTOCOL, IMU_PROTOCOL):
+            raise ValueError("unsupported replay motion protocol")
+        self.protocol = protocol
+        self.odometry, self.frequency = odometry, integer(frequency, "QPC frequency", 1)
+        self.epoch, self.generation = epoch, integer(generation, "generation")
+        if generation != 0:
+            raise ValueError("recorded publisher generation was revoked")
+        self.sequence, self.sensor_qpc, self.sample = 0, -1, None
+        self.last_timing = None
+        self.last_image_stamp = self.last_capture = None
+
+    def consume(self, frame):
+        binding = frame["image_motion_binding"]
+        if binding["epoch"] != self.epoch or binding["generation"] != self.generation:
+            raise ValueError("image motion epoch/generation differs")
+        capture = integer(binding["capture_qpc"], "image capture QPC", 1)
+        tail = integer(binding["motion_tail_sequence"], "image motion tail", 1)
+        image_stamp = integer(frame["image_stamp_ns"], "image source stamp", 1)
+        if (self.last_capture is not None and capture <= self.last_capture or
+                self.last_image_stamp is not None and image_stamp <= self.last_image_stamp):
+            raise ValueError("recorded image time regressed or repeated")
+        rows, times = frame["motion"], frame["motion_timing"]
+        if len(rows) != len(times):
+            raise ValueError("motion sample/timing length mismatch")
+        for row, timing in zip(rows, times):
+            fields = IMU_MOTION_FIELDS if self.protocol == IMU_PROTOCOL else MOTION_FIELDS
+            if set(row) != fields or set(timing) != TIMING_FIELDS:
+                raise ValueError("unexpected recorded motion sample/timing fields")
+            sequence = integer(row["sequence"], "motion sequence", 1)
+            if sequence != self.sequence + 1 or sequence > tail or timing["sequence"] != sequence:
+                raise ValueError("motion sequence is not the acknowledged contiguous prefix")
+            sensor_qpc = integer(row["received_qpc"], "sensor QPC", 1)
+            sent, arrival, consumed, committed = (integer(timing[key], key, 1) for key in
+                ("sent_qpc", "arrival_qpc", "consumed_qpc", "committed_qpc"))
+            if not self.sensor_qpc <= sensor_qpc <= sent <= arrival <= consumed <= committed <= capture:
+                raise ValueError("motion was not received and committed before capture")
+            stamp = runtime_source_ns(row["stamp"])
+            if timing["source_ns"] != stamp or timing["sensor_received_qpc"] != sensor_qpc:
+                raise ValueError("motion timing does not belong to its raw sample")
+            if stamp > image_stamp:
+                raise ValueError("future motion relative to image")
+            now_source = integer(timing["source_now_ns"], "source now", 1)
+            published = integer(timing["source_clock_published_qpc"], "clock published QPC", 1)
+            if published > consumed:
+                raise ValueError("source-clock publication follows consumption")
+            for field in (("left_rpm", "right_rpm") if self.protocol == IMU_PROTOCOL else
+                          ("left_rpm", "right_rpm", "gyro_z")):
+                if isinstance(row[field], bool) or not isinstance(row[field], (float, int)) or not math.isfinite(row[field]):
+                    raise ValueError("invalid raw motion sensor value")
+            receipt_ns, consumed_ns = ticks_ns(sensor_qpc, self.frequency), ticks_ns(consumed, self.frequency)
+            # Exact production call arguments, including original independent
+            # receipts; never frame receipt or image stamp as synthetic now.
+            if self.protocol == IMU_PROTOCOL:
+                for field in ("gyro_xyz", "accel_xyz"):
+                    value = row[field]
+                    if (not isinstance(value, (list, tuple)) or len(value) != 3 or
+                            any(isinstance(v, bool) or not isinstance(v, (float, int)) or
+                                not math.isfinite(v) for v in value)):
+                        raise ValueError("invalid raw three-axis sensor value")
+                if type(row["output_held"]) is not bool:
+                    raise ValueError("invalid raw command hold evidence")
+                self.odometry.accept_imu(stamp, receipt_ns, tuple(row["gyro_xyz"]),
+                    tuple(row["accel_xyz"]), row["output_held"], now_source, consumed_ns)
+            else:
+                self.odometry.accept_gyro(stamp, receipt_ns, row["gyro_z"])
+            self.sample = self.odometry.accept_wheels(stamp, receipt_ns, row["left_rpm"], row["right_rpm"],
+                                                      now_source, consumed_ns)
+            self.sequence, self.sensor_qpc, self.last_timing = sequence, sensor_qpc, timing
+        if self.sample is None or self.sequence != tail:
+            raise ValueError("image motion tail unavailable; no latest-pose substitution")
+        if not 0 <= image_stamp - self.sample.stamp_ns <= 100_000_000:
+            raise ValueError("mask has no past motion within 100 ms")
+        if frame["sensor_stamp_ns"] != self.sample.stamp_ns:
+            raise ValueError("recorded image pose is not its acknowledged motion tail")
+        # Empty incremental prefixes (same acknowledged tail) still need the
+        # capture-time checks, rather than inheriting a newer/latest sample.
+        if self.last_timing["committed_qpc"] > capture or self.last_timing["arrival_qpc"] > capture:
+            raise ValueError("image pose had not arrived and committed at capture")
+        self.last_capture, self.last_image_stamp = capture, image_stamp
+        return self.sample
+
+
+def raw_attitude_evidence(sample):
+    """Comparison output only; recorded tilt is NEVER fed to the estimator."""
+    attitude = sample.attitude
+    if attitude is None:
+        return dict(required=True, ready=False)
+    if attitude.stamp_ns != sample.stamp_ns or attitude.source_stamp_ns != sample.gyro_stamp_ns:
+        raise ValueError("recomputed attitude is not bound to the selected gyro/wheel")
+    if (attitude.source_stamp_ns > sample.stamp_ns or
+            attitude.received_steady_ns > sample.received_steady_ns or
+            attitude.initialization.last_source_stamp_ns > attitude.source_stamp_ns or
+            attitude.initialization.last_received_steady_ns > attitude.received_steady_ns):
+        raise ValueError("recomputed attitude contains future initialization or receipt")
+    return dict(required=True, ready=True, stamp_ns=attitude.stamp_ns,
+        imu_source_stamp_ns=attitude.source_stamp_ns, imu_received_steady_ns=attitude.received_steady_ns,
+        up_body=list(attitude.up_body), gyro_bias=list(attitude.gyro_bias),
+        initialization=json_safe(asdict(attitude.initialization)), dynamic_acceleration_used=False,
+        ins_orientation_used=False, ground_assumption="level plane through base origin; no heave compensation")
+
+
+def verify_raw_imu_frame(sample, frame, *, candidate_evaluation=False):
+    actual = raw_attitude_evidence(sample)
+    exact_motion = [sample.x, sample.y, sample.yaw] == frame["raw_odom_expected"]
+    exact_attitude = actual == frame["raw_attitude_expected"]
+    if not candidate_evaluation and not exact_motion:
+        raise ValueError("exact recomputed raw odometry differs at " + str(frame["sequence"]))
+    if not candidate_evaluation and not exact_attitude:
+        raise ValueError("exact recomputed raw attitude differs at " + str(frame["sequence"]))
+    if "recorded_decision" in frame and sample.attitude is None:
+        raise ValueError("mapping frame has no initialized raw attitude")
+    return dict(raw_odometry_exact=exact_motion, raw_attitude_exact=exact_attitude)
+
+
+def non_timing_mapping(value):
+    """Only known wall-clock diagnostics are excluded, never gates or geometry."""
+    if isinstance(value, dict):
+        return {k: non_timing_mapping(v) for k, v in value.items()
+                if k not in {"processing_ms", "elapsed_ms", "pre_match_engine_ms"}}
+    if isinstance(value, list):
+        return [non_timing_mapping(v) for v in value]
+    return value
+
+
+def export_independent_fixture(backend, unity, output, records, startup, repo):
+    """Explicit schema2: raw independent motion prefix plus immutable image tail."""
+    provenance = startup["provenance"]
+    bridge_payload = (unity / "bridge.jsonl").read_bytes()
+    contracts = [json.loads(line)["data"] for line in bridge_payload.decode("utf-8").splitlines()
+                 if json.loads(line).get("event") == "sensor_contract"]
+    if len(contracts) != 1 or contracts[0]["motionProtocol"] not in (PROTOCOL, IMU_PROTOCOL):
+        raise ValueError("Unity independent protocol sensor contract missing")
+    contract = contracts[0]
+    protocol = contract["motionProtocol"]
+    raw_imu = protocol == IMU_PROTOCOL
+    boundary = boundary_mode(provenance, raw_imu=raw_imu)
+    schema_version = 3 if raw_imu else 2
+    fields = IMU_MOTION_FIELDS if raw_imu else MOTION_FIELDS
+    cameras = [row["camera"] for row in records if row["event"] == "calibration"]
+    if len(cameras) != 1:
+        raise ValueError("exactly one camera calibration required")
+    camera = camera_calibration(cameras[0], raw_imu=raw_imu)
+    if raw_imu and next(row for row in records if row["event"] == "calibration").get("projection") != "causal_raw_imu_level_plane":
+        raise ValueError("v2 recording lacks explicit causal raw IMU projection")
+    steps, terminal = [], None
+    for row in records:
+        if row["event"] == "step":
+            steps.append(row)
+            mapping = row["response"]["metrics"].get("mapping")
+            if mapping is not None and not mapping["accepted"]:
+                terminal = row
+                break
+    if terminal is None:
+        raise ValueError("fixture must end at the first observed map rejection")
+    final_tail = terminal["image_motion_binding"]["motion_tail_sequence"]
+    samples, sensor = {}, None
+    for row in records:
+        if row["event"] != "motion":
+            continue
+        if row["epoch"] != contract["epoch"]:
+            raise ValueError("motion and selected Unity epoch differ")
+        if (row["protocol"] != protocol or row["generation"] != 0
+                or row["qpc_frequency"] != contract["qpcFrequency"]):
+            raise ValueError("recorded independent motion contract changed")
+        sensor = row["sensor_calibration"] if sensor is None else sensor
+        if row["sensor_calibration"] != sensor or sensor["motor_to_wheel_ratio"] != 1.:
+            raise ValueError("independent calibrated wheel sensor changed")
+        if len(row["samples"]) != len(row["timing"]):
+            raise ValueError("motion timing rows missing")
+        for sample, timing in zip(row["samples"], row["timing"]):
+            sequence = sample["sequence"]
+            if sequence > final_tail:
+                continue
+            if sequence in samples or set(sample) != fields or set(timing) != TIMING_FIELDS:
+                raise ValueError("duplicate or unexpected recorded motion fields")
+            samples[sequence] = (sample, timing)
+    if set(samples) != set(range(1, final_tail + 1)):
+        raise ValueError("acknowledged motion prefix has missing samples")
+    deliveries = {}
+    for row in records:
+        if row["event"] == "command_delivery" and row["epoch"] == contract["epoch"]:
+            sequence = row["response"]["sequence"]
+            if sequence in deliveries:
+                raise ValueError("duplicate command delivery requires separate retry handling")
+            deliveries[sequence] = row
+    frames, previous_tail, mask_bytes = [], 0, 0
+    for row in steps:
+        response, binding = row["response"], row["image_motion_binding"]
+        metrics, sequence = response["metrics"], response["sequence"]
+        if (row["motion_transport"] != protocol or row["motion"] or
+                row["response_stage"] != "prepared_after_compute" or
+                binding["epoch"] != contract["epoch"] or binding["generation"] != 0 or
+                response["protocol"] != protocol or response["epoch"] != binding["epoch"] or
+                response["generation"] != binding["generation"]):
+            raise ValueError("image is not an independent frozen-tail observation")
+        tail = binding["motion_tail_sequence"]
+        if tail < previous_tail:
+            raise ValueError("image motion tail regressed")
+        delivery = deliveries.get(sequence)
+        if delivery is None:
+            raise ValueError("prepared response has no recorded delivery")
+        delivered = delivery["response"]
+        if delivered["metrics"] != metrics or delivered["sim_time"] != response["sim_time"]:
+            raise ValueError("delivery does not correspond to this computed image")
+        frame = dict(sequence=sequence, image_stamp_ns=runtime_source_ns(response["sim_time"]),
+            receipt_ns=row["received_monotonic_ns"], image_motion_binding=dict(binding),
+            motion=[samples[n][0] for n in range(previous_tail + 1, tail + 1)],
+            motion_timing=[samples[n][1] for n in range(previous_tail + 1, tail + 1)],
+            raw_odom_digest=pose_digest(metrics["raw_odom_pose"]), sensor_stamp_ns=metrics["sensor_stamp_ns"],
+            recorded_image_timing=dict(received_monotonic_ns=row["received_monotonic_ns"],
+                processing_ms=row["processing_ms"], capture_qpc=binding["capture_qpc"],
+                delivered_qpc=delivery["delivered_qpc"],
+                delivery_stage=delivery["delivery_stage"], arrival_qpc=None,
+                prepared_phase=response["phase"], delivered_phase=delivered["phase"],
+                delivered_reason=delivered["reason"], request_sha256=row["request_sha256"]))
+        if raw_imu:
+            frame.update(raw_odom_expected=list(metrics["raw_odom_pose"]),
+                         raw_attitude_expected=metrics["raw_attitude"])
+            # Verify every actual PNG, including initialization; only map-input
+            # PNGs are embedded below. Unmapped images are never synthesized.
+            image_data = (unity / ("mask_%06d.png" % sequence)).read_bytes()
+            if sha(image_data) != metrics["mask_sha256"]:
+                raise ValueError("mask hash mismatch at sequence " + str(sequence))
+            frame["image_png_sha256"] = sha(image_data)
+        if "mapping" in metrics:
+            png = (unity / ("mask_%06d.png" % sequence)).read_bytes()
+            if sha(png) != metrics["mask_sha256"]:
+                raise ValueError("mask hash mismatch at sequence " + str(sequence))
+            mask_bytes += len(png)
+            result = metrics["mapping"]
+            frame.update(mask_png_base64=base64.b64encode(png).decode("ascii"), mask_sha256=sha(png),
+                prior_digest=pose_digest(metrics["map_frame_raw_prior"]),
+                recorded_decision=dict(accepted=result["accepted"], reason=result["reason"]))
+            if raw_imu:
+                frame["recorded_mapping"] = result
+        elif delivered["phase"] == "HOLD":
+            raise ValueError("transport/control held before a mappable rejection")
+        frames.append(frame)
+        previous_tail = tail
+    mapped = [row for row in frames if "mask_png_base64" in row]
+    names = recorded_core_names(provenance, raw_imu=raw_imu, boundary=boundary)
+    fixture = dict(schema_version=schema_version,
+        kind="observed_raw_imu_mask_prefix" if raw_imu else "observed_independent_motion_mask_prefix", motion_transport=protocol,
+        epoch=contract["epoch"], generation=0, qpc_frequency=contract["qpcFrequency"],
+        sensor_source=("Unity model-wheel RPM, raw body 3-axis gyro and specific force; ideal-camera mask"
+                       if raw_imu else "Unity model-wheel RPM and body gyro; ideal-camera mask"),
+        source_epoch_offset_ns=EPOCH_NS, camera=camera,
+        sensor_calibration=dict(sensor), teach_map_config=provenance["teach_map_adapter_overrides"],
+        recorded_core_revision=provenance["repo_head"],
+        recorded_source_sha256={source_path(name): provenance["source_sha256"][source_path(name)] for name in names},
+        recorded_motion_adapter_sha256=provenance["adapter_source_sha256"]["simulator/Tools/LaneTeachRepeat/motion_channel.py"],
+        evidence_sha256=dict(events=sha((backend / "events.jsonl").read_bytes()), bridge=sha(bridge_payload)),
+        frames=frames, scope="Observed captured prefix only; no truth/GNSS/route/controller/future recovery input",
+        receipt_note="Unchanged raw QPC receipts, per-sample actual consumed/source-now times and image frozen acknowledged tail",
+        timing_limits=["Image HTTP arrival_qpc and individual MMF/commit-guard read times were not logged; never inferred.",
+                       "Recorded processing/delivery timestamps are evidence, not substituted clocks or new admission proof."])
+    if boundary:
+        fixture["feature_representation"] = BOUNDARY_REPRESENTATION
+        fixture["boundary_version"] = provenance.get("boundary_version", 1)
+        if fixture["boundary_version"] == BOUNDARY_CERTIFIED_VERSION:
+            fixture["certified_model_representation"] = provenance["certified_model_representation"]
+    # Validate all timing and recomputed pose digests before publishing the fixture.
+    if repo is None:
+        raise ValueError("independent export requires --repo to verify the exact recorded odometer source")
+    if raw_imu:
+        load_options = {"raw_imu": True}
+        if boundary:
+            load_options["boundary"] = True
+        modules, hashes, _, _ = load_core(repo, **load_options)
+        if hashes != fixture["recorded_source_sha256"]:
+            raise ValueError("v2 source differs from recording; recover exact recorded sources before exporting")
+        if boundary and boundary_source_version(modules) != fixture["boundary_version"]:
+            raise ValueError("recorded boundary version differs from export verification source")
+        fixture["odometry_validation_source"] = ("worktree_all_boundary_modules_hash_identical" if boundary
+                                                 else "worktree_all_seven_modules_hash_identical")
+        fixture["projection"] = "causal_raw_imu_level_plane"
+        fixture["expected_states_are_comparison_only"] = True
+        odometer = modules["lane_mapping_fixed_gnss.imu_motion"].CausalImuWheelOdometry(
+            {"wheel_diameter_m": sensor["wheel_diameter_m"]})
+    else:
+        odometer = _recorded_legacy_odometer(repo, provenance, fixture, sensor)
+    validation = RecordedIndependentMotion(odometer, fixture["qpc_frequency"], fixture["epoch"],
+        fixture["generation"], protocol=protocol)
+    origin = None
+    for frame in frames:
+        sample = validation.consume(frame)
+        if raw_imu:
+            verify_raw_imu_frame(sample, frame)
+        raw = np.array([sample.x, sample.y, sample.yaw])
+        if pose_digest(raw) != frame["raw_odom_digest"]:
+            raise ValueError("recorded odometer digest differs at " + str(frame["sequence"]))
+        if "prior_digest" in frame:
+            origin = raw.copy() if origin is None else origin
+            if pose_digest(map_prior(raw, origin)) != frame["prior_digest"]:
+                raise ValueError("recorded teach-origin digest differs")
+    write_new(output, fixture)
+    return dict(fixture=output.name, schema_version=schema_version, protocol=protocol, epoch=fixture["epoch"],
+        bytes=output.stat().st_size, sha256=sha(output.read_bytes()), batches=len(frames), motion_samples=final_tail,
+        mapping_frames=len(mapped), exact_png_bytes=mask_bytes,
+        all_image_png_hashes_checked=len(frames) if raw_imu else len(mapped),
+        exact_raw_attitude_states_checked=len(frames) if raw_imu else 0,
+        first_mapping_sequence=mapped[0]["sequence"], terminal_sequence=mapped[-1]["sequence"])
+
+
+def _recorded_legacy_odometer(repo, provenance, fixture, sensor):
+    """Keep historical schema2 source recovery and call semantics unchanged."""
+    relative = source_path("lane_mapping_fixed_gnss.motion")
+    motion_path = repo / relative
+    motion_bytes = motion_path.read_bytes()
+    source_mode = "worktree_hash_identical"
+    if sha(motion_bytes) != fixture["recorded_source_sha256"][relative]:
+        motion_bytes = subprocess.check_output(["git", "-C", str(repo), "show",
+                                               provenance["repo_head"] + ":" + relative])
+        source_mode = "recorded_git_blob_hash_identical"
+    if sha(motion_bytes) != fixture["recorded_source_sha256"][relative]:
+        raise ValueError("available odometer source differs from the recording")
+    fixture["odometry_validation_source"] = source_mode
+    namespace = {"__name__": "recorded_independent_odometer"}
+    module = ModuleType(namespace["__name__"])
+    sys.modules[module.__name__] = module
+    exec(compile(motion_bytes, str(motion_path), "exec"), module.__dict__)
+    return module.CausalWheelGyroOdometry({"wheel_diameter_m": sensor["wheel_diameter_m"]})
+
+
+def load_core(repo, revision=None, *, raw_imu=False, boundary=False):
+    """Load the selected revision's explicit source dependencies.
+
+    The optional raw-IMU path never fabricates modules absent from a selected
+    revision. Source hashes remain separate from the recorded comparison data.
+    """
+    if revision:
+        revision = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "--verify",
+                                            revision + "^{commit}"], text=True).strip()
+    modules, hashes, text_hashes = {}, {}, {}
+    # A compiled module is not loadable from a Git blob. A native-capable
+    # revision may use only the locally built binary matching that exact C
+    # source, never a different installed checkout. Historical pure-Python
+    # revisions have no native import and remain unchanged.
+    native_root = repo / (CONTROL + "lane_mapping_lya_reference")
+    sys.path.insert(0, str(native_root))
+    mapping_path = source_path("lane_mapping_fixed_gnss.mapping")
+    mapping_bytes = (subprocess.check_output(["git", "-C", str(repo), "show", revision + ":" + mapping_path])
+                     if revision else (repo / mapping_path).read_bytes())
+    imports = {node.module for node in ast.walk(ast.parse(mapping_bytes))
+               if isinstance(node, ast.ImportFrom)}
+    needs_boundary = boundary or bool(imports & {
+        "lane_mapping_lya_reference.paint_geometry", "lane_mapping_lya_reference.boundary_localization"})
+    names = (BOUNDARY_CORE_NAMES if raw_imu else BOUNDARY_CORE_NAMES[:-2]) if needs_boundary else (IMU_CORE_NAMES if raw_imu else CORE_NAMES)
+    selected_sources = {mapping_path: mapping_bytes}
+    if needs_boundary:
+        paint_path = source_path("lane_mapping_lya_reference.paint_geometry")
+        paint_bytes = (subprocess.check_output(["git", "-C", str(repo), "show", revision + ":" + paint_path])
+                       if revision else (repo / paint_path).read_bytes())
+        selected_sources[paint_path] = paint_bytes
+        paint_imports = {node.module for node in ast.walk(ast.parse(paint_bytes))
+                         if isinstance(node, ast.ImportFrom) and node.level == 1}
+        for helper in PAINT_HELPER_NAMES:
+            if helper.rsplit(".", 1)[1] in paint_imports:
+                names = _with_paint_helper(names, helper)
+    # Loading an explicit source dependency never selects its feature mode.
+    # Old immutable revisions have no such imports and keep their original list.
+    for name in names:
+        relative = source_path(name)
+        data = selected_sources.get(relative)
+        if data is None:
+            data = (subprocess.check_output(["git", "-C", str(repo), "show", revision + ":" + relative])
+                    if revision else (repo / relative).read_bytes())
+        hashes[relative] = sha(data)
+        text_hashes[relative] = source_hashes(data)
+        package = name.split(".")[0]
+        if package not in sys.modules:
+            parent = ModuleType(package)
+            parent.__path__ = []
+            sys.modules[package] = parent
+        module = ModuleType(name)
+        module.__package__ = package
+        module.__file__ = ("git:" + revision + ":" + relative) if revision else str(repo / relative)
+        sys.modules[name] = module
+        exec(compile(data, module.__file__, "exec"), module.__dict__)
+        native = getattr(module, "_GRAPH_NATIVE", None)
+        if native is not None:
+            relative_c = CONTROL + "lane_mapping_lya_reference/native/lane_graph_native.c"
+            c_source = (subprocess.check_output(["git", "-C", str(repo), "show", revision + ":" + relative_c])
+                        if revision else (repo / relative_c).read_bytes())
+            Path(native.__file__).resolve(strict=True).relative_to(native_root.resolve(strict=True))
+            if native.SOURCE_SHA256 != sha(c_source):
+                raise ValueError("native binary does not match the selected C source")
+        modules[name] = module
+    return modules, hashes, text_hashes, revision
+
+
+def map_prior(raw, origin):
+    dx, dy = raw[:2] - origin[:2]
+    c, s = math.cos(origin[2]), math.sin(origin[2])
+    return np.array([c * dx + s * dy, -s * dx + c * dy,
+                     math.atan2(math.sin(raw[2] - origin[2]), math.cos(raw[2] - origin[2]))])
+
+
+def replay_fixture(fixture_path, repo, revision, output, *, motion_factor=False,
+                   candidate_evaluation=False, candidate_plane_offset_m=None,
+                   candidate_boundary=False):
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    raw_imu = fixture.get("schema_version") == 3 and fixture.get("kind") == "observed_raw_imu_mask_prefix"
+    if type(candidate_evaluation) is not bool or (candidate_evaluation and not raw_imu):
+        raise ValueError("candidate evaluation requires an explicit schema3 raw-IMU fixture")
+    if type(candidate_boundary) is not bool or (candidate_boundary and not (raw_imu and candidate_evaluation and motion_factor)):
+        raise ValueError("candidate boundary requires schema3, candidate evaluation and motion factor")
+    recorded_boundary = boundary_mode(fixture, raw_imu=raw_imu)
+    boundary = recorded_boundary or candidate_boundary
+    recorded_boundary_version = fixture.get("boundary_version", 1) if recorded_boundary else None
+    effective_boundary_version = recorded_boundary_version
+    if candidate_plane_offset_m is not None:
+        if not raw_imu or not candidate_evaluation:
+            raise ValueError("candidate plane override requires explicit schema3 and candidate evaluation")
+        observation_plane_offset(candidate_plane_offset_m)
+    independent = raw_imu or (fixture.get("schema_version") == 2 and fixture.get("kind") == "observed_independent_motion_mask_prefix")
+    if not independent and (fixture["schema_version"] != 1 or fixture["kind"] != "observed_mask_wheel_gyro_prefix"):
+        raise ValueError("unsupported fixture")
+    protocol = IMU_PROTOCOL if raw_imu else PROTOCOL
+    if independent and fixture.get("motion_transport") != protocol:
+        raise ValueError("independent fixture protocol mismatch")
+    if raw_imu and (not motion_factor or fixture.get("projection") != "causal_raw_imu_level_plane"):
+        raise ValueError("schema3 requires --motion-factor and its recorded tilted projection; no legacy fallback")
+    camera = camera_calibration(fixture["camera"], raw_imu=raw_imu)
+    plane_offset = (camera.get("observation_plane_offset_m", 0.) if candidate_plane_offset_m is None
+                    else candidate_plane_offset_m)
+    plane_kwargs = ({"plane_offset_m": plane_offset} if "observation_plane_offset_m" in camera
+                    or candidate_plane_offset_m is not None else {})
+    load_options = {"raw_imu": raw_imu}
+    if boundary:
+        load_options["boundary"] = True
+    modules, hashes, text_hashes, resolved_revision = load_core(repo, revision, **load_options)
+    if candidate_boundary:
+        effective_boundary_version = boundary_source_version(modules)
+    if boundary and boundary_source_version(modules) != effective_boundary_version:
+        raise ValueError("recorded/candidate boundary version differs from selected source; graph model changes require explicit --candidate-boundary")
+    motion_module = modules["lane_mapping_fixed_gnss.motion"]
+    map_module = modules["lane_mapping_fixed_gnss.mapping"]
+    localizer = modules["lane_mapping_lya_reference.mask_localization"].LaneMapLocalizer
+    sensor = fixture["sensor_calibration"]
+    odometer_class = (modules["lane_mapping_fixed_gnss.imu_motion"].CausalImuWheelOdometry if raw_imu
+                      else motion_module.CausalWheelGyroOdometry)
+    odometry = odometer_class({"wheel_diameter_m": sensor["wheel_diameter_m"]})
+    recorded_motion = (RecordedIndependentMotion(odometry, fixture["qpc_frequency"], fixture["epoch"], fixture["generation"], protocol=protocol)
+                       if independent else None)
+    engine = map_module.TeachMapEngine(config=fixture["teach_map_config"])
+    default_matcher = dict(localizer(np.empty((0, 2))).config)
+    lookup_class = (modules["lane_mapping_lya_reference.tilted_projection"].TiltedGroundLookup if raw_imu
+                    else modules["lane_mapping_lya_reference.mapping_core"].GroundLookup)
+    lookup = lookup_class(
+        camera["width"], camera["height"], camera["K"], np.asarray(camera["T_base_camera"]).reshape(4, 4), .5,
+        **plane_kwargs)
+    origin, results = None, []
+    sample_count, prior_checks, attitude_checks = 0, 0, 0
+    sensor_comparisons = []
+    for frame in fixture["frames"]:
+        stamp, receipt = frame["image_stamp_ns"], frame["receipt_ns"]
+        if independent:
+            accepted = recorded_motion.consume(frame)
+            sample_count += len(frame["motion"])
+        else:
+            for sample in frame["motion"]:
+                sensor_stamp = source_ns(sample["stamp"])
+                if sensor_stamp > stamp:
+                    raise ValueError("future motion relative to image")
+                odometry.accept_gyro(sensor_stamp, receipt, sample["gyro_z"])
+                accepted = odometry.accept_wheels(sensor_stamp, receipt,
+                    sample["left_rpm"] / sensor["motor_to_wheel_ratio"],
+                    sample["right_rpm"] / sensor["motor_to_wheel_ratio"], stamp, receipt)
+                sample_count += 1
+        raw = np.array([accepted.x, accepted.y, accepted.yaw])
+        if raw_imu:
+            comparison = verify_raw_imu_frame(accepted, frame,
+                candidate_evaluation=candidate_evaluation)
+            attitude_checks += int(comparison["raw_attitude_exact"])
+            sensor_comparisons.append(dict(sequence=frame["sequence"], **comparison,
+                raw_pose_xyyaw=raw.tolist(), motion_stamp_ns=accepted.stamp_ns,
+                gyro_stamp_ns=accepted.gyro_stamp_ns,
+                attitude_up_body=(None if accepted.attitude is None else list(accepted.attitude.up_body)),
+                attitude_bias=(None if accepted.attitude is None else list(accepted.attitude.gyro_bias))))
+        if not candidate_evaluation and pose_digest(raw) != frame["raw_odom_digest"]:
+            raise ValueError("recomputed raw odometry differs at sequence " + str(frame["sequence"]))
+        if "mask_png_base64" not in frame:
+            continue
+        if origin is None:
+            origin = raw.copy()
+        prior = map_prior(raw, origin)
+        prior_exact = pose_digest(prior) == frame["prior_digest"]
+        if not candidate_evaluation and not prior_exact:
+            raise ValueError("recomputed map prior differs at sequence " + str(frame["sequence"]))
+        prior_checks += int(prior_exact)
+        png = base64.b64decode(frame["mask_png_base64"], validate=True)
+        if sha(png) != frame["mask_sha256"]:
+            raise ValueError("fixture mask hash mismatch")
+        with Image.open(io.BytesIO(png)) as image:
+            if image.format != "PNG" or image.size != (camera["width"], camera["height"]):
+                raise ValueError("invalid fixture PNG")
+            array = np.asarray(image.convert("L"))
+            if raw_imu:
+                points, sensitivity, _ = lookup.project_mask_with_sensitivity(array, 127, accepted.attitude.up_body)
+            else:
+                points, sensitivity, _ = lookup.project_mask_with_sensitivity(array, 127)
+        # Historical immutable revisions do not expose this input. Opt-in is
+        # explicit in the report; never silently substitute the mask timestamp.
+        motion_kwargs = ({"motion_source_stamp_ns": accepted.stamp_ns} if motion_factor else {})
+        if boundary:
+            motion_kwargs["boundary_observation"] = modules["lane_mapping_lya_reference.paint_geometry"].extract_boundary_observation(
+                array, lookup, accepted.attitude.up_body, stamp, threshold=127)
+        result = engine.process(points, sensitivity, prior, stamp, **motion_kwargs)
+        if engine._matcher is not None and dict(engine._matcher.config) != default_matcher:
+            raise ValueError("matcher gates differ from production defaults")
+        frontier = result["matched_against_frontier_ns"]
+        if frontier is not None and frontier >= stamp:
+            raise ValueError("current or future keyframe frontier")
+        saved = dict(sequence=frame["sequence"], recorded_decision=frame["recorded_decision"],
+                     mask_sha256=frame["mask_sha256"], result=json_safe(result))
+        if raw_imu:
+            saved["recomputed_prior_xyyaw"] = prior.tolist()
+            saved["prior_exact_to_recording"] = prior_exact
+            saved["non_timing_mapping_exact"] = (non_timing_mapping(saved["result"]) ==
+                                                   non_timing_mapping(frame["recorded_mapping"]))
+        results.append(saved)
+        if not result["accepted"]:
+            break
+    expected_count = sum("mask_png_base64" in frame for frame in fixture["frames"])
+    equivalence = {}
+    for name, expected in fixture["recorded_source_sha256"].items():
+        actual = text_hashes[name]
+        equivalence[name] = ("raw_identical" if actual["raw"] == expected else
+                             "line_endings_only" if expected in (actual["lf"], actual["crlf"]) else
+                             "different_content")
+    graph_module = modules["lane_mapping_lya_reference.mask_localization"]
+    graph_info = (graph_module.graph_backend_info() if hasattr(graph_module, "graph_backend_info")
+                  else dict(backend="python", api_version=None, source_sha256=None))
+    if graph_info["backend"] == "native":
+        binary = Path(graph_module._GRAPH_NATIVE.__file__)
+        graph_info = dict(graph_info, binary_name=binary.name, binary_sha256=sha(binary.read_bytes()))
+    report = dict(schema_version=1,
+                  kind=("offline_observed_prefix_candidate_evaluation" if candidate_evaluation
+                        else "offline_observed_prefix_core_regression"),
+                  candidate_evaluation=bool(candidate_evaluation),
+                  feature_representation=BOUNDARY_REPRESENTATION if boundary else "legacy_filled_consensus",
+                  recorded_feature_representation=fixture.get("feature_representation", "legacy_filled_consensus"),
+                  candidate_boundary_override=candidate_boundary,
+                  recorded_boundary_version=recorded_boundary_version,
+                  effective_boundary_version=effective_boundary_version,
+                  candidate_boundary_version=effective_boundary_version if candidate_boundary else None,
+                  changed_model=bool(candidate_boundary and recorded_boundary_version != effective_boundary_version),
+                  historical_state_equivalence_required=not candidate_evaluation,
+                  graph_acceleration=graph_info,
+                  input_motion_transport=protocol if independent else "legacy-image-batch-replay",
+                  recorded_timing_limits=fixture.get("timing_limits", []),
+                  motion_replay_semantics=("original per-sample source-now/receipt/consume arguments and capture-acknowledged tail"
+                                           if independent else "historical image-batch receipts"),
+                  motion_factor_enabled=bool(motion_factor),
+                  fixture_sha256=sha(fixture_path.read_bytes()), source_sha256=hashes,
+                  source_line_ending_hashes=text_hashes, source_equivalence_to_recording=equivalence,
+                  source_revision=resolved_revision, source_mode="git_blob" if revision else "worktree",
+                  baseline_hashes_match=hashes == fixture["recorded_source_sha256"],
+                  baseline_content_matches_ignoring_only_line_endings=all(
+                      value != "different_content" for value in equivalence.values()),
+                  motion_config=dict(odometry.config), teach_config=dict(engine.config),
+                  matcher_config=default_matcher, matcher_gates_unchanged=True,
+                  recomputed_motion_samples=sample_count, checked_recomputed_priors=prior_checks,
+                  checked_exact_raw_attitude_states=attitude_checks,
+                  expected_mapping_frames=expected_count, actual_mapping_frames=len(results),
+                  all_prefix_frames_accepted=len(results) == expected_count and all(r["result"]["accepted"] for r in results),
+                  observed_decisions_reproduced=len(results) == expected_count and all(
+                      r["result"]["accepted"] == r["recorded_decision"]["accepted"] and
+                      r["result"]["reason"] == r["recorded_decision"]["reason"] for r in results),
+                  results=results, odometry_reset_count=odometry.reset_count,
+                  limits=["Real captured simulation sensors, not physical vehicle data.",
+                          "No adapter teacher/control/transport/stopping/route/repeat exercised.",
+                          "This fixed recorded prefix is not the future trajectory after a changed command.",
+                          "Real default clocks and processing budgets; offline latency is not runtime performance."])
+    if recorded_boundary_version == BOUNDARY_CERTIFIED_VERSION:
+        report["recorded_certified_model_representation"] = fixture["certified_model_representation"]
+    if effective_boundary_version == BOUNDARY_CERTIFIED_VERSION:
+        report["effective_certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
+    if raw_imu:
+        # Separate camera calibration from raw_attitude_evidence: the latter's
+        # historical R8 dictionary is an exact state comparison contract.
+        report["observation_plane"] = dict(recorded_camera=camera,
+            recorded_offset_m=camera.get("observation_plane_offset_m", 0.),
+            recorded_source=camera.get("observation_plane_source"),
+            effective_offset_m=plane_offset,
+            effective_source=(OBSERVATION_PLANE_SOURCE if candidate_plane_offset_m is not None
+                              else camera.get("observation_plane_source")),
+            candidate_override_m=candidate_plane_offset_m,
+            selection=("explicit_candidate_override" if candidate_plane_offset_m is not None
+                       else "recorded_calibration" if plane_kwargs else "legacy_body_origin_zero"))
+        report["sensor_state_comparisons"] = sensor_comparisons
+        report["limits"].append(
+            "Candidate evaluation may change recomputed IMU/odometry states; it is not historical state reproduction."
+            if candidate_evaluation else "Historical raw-IMU states are required to match exactly.")
+        report["candidate_initialization"] = (
+            None if odometry.attitude_tracker.last_sample is None else
+            json_safe(asdict(odometry.attitude_tracker.last_sample.initialization)))
+        report["all_non_timing_mapping_exact"] = (len(results) == expected_count and
+                                                  all(r["non_timing_mapping_exact"] for r in results))
+        report["attitude_config"] = dict(odometry.attitude_tracker.config)
+        report["projection"] = fixture["projection"]
+        if candidate_plane_offset_m is not None:
+            report["limits"].append("Explicit authored observation-plane calibration override; not exact historical projection reproduction.")
+    write_new(output, report)
+    return dict(report=output.name, all_prefix_frames_accepted=report["all_prefix_frames_accepted"],
+                observed_decisions_reproduced=report["observed_decisions_reproduced"],
+                all_non_timing_mapping_exact=report.get("all_non_timing_mapping_exact"),
+                mapping_frames=len(results), last_sequence=results[-1]["sequence"],
+                last_reason=results[-1]["result"]["reason"], sha256=sha(output.read_bytes()))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="operation", required=True)
+    export = sub.add_parser("export")
+    export.add_argument("--backend", type=Path, required=True)
+    export.add_argument("--unity", type=Path, required=True)
+    export.add_argument("--repo", type=Path, help="Required for independent protocol odometer source verification")
+    replay = sub.add_parser("replay")
+    replay.add_argument("--fixture", type=Path, required=True)
+    replay.add_argument("--repo", type=Path, required=True)
+    replay.add_argument("--revision", help="Optional immutable Git source; otherwise current worktree")
+    replay.add_argument("--motion-factor", action="store_true",
+                        help="Pass the actual accepted motion source stamp to the new fusion core")
+    replay.add_argument("--candidate-evaluation", action="store_true",
+                        help="Explicit schema3 candidate: recompute changed IMU states; retain all raw-input timing checks")
+    replay.add_argument("--candidate-plane-offset-m", type=candidate_plane_argument,
+                        help="Candidate schema3 only: explicit authored observation plane 0.007 m; never edits the fixture")
+    replay.add_argument("--candidate-boundary", action="store_true",
+                        help="Explicit schema3 candidate paint-boundary model; old fixtures otherwise remain legacy")
+    for child in (export, replay):
+        child.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    if args.output.exists():
+        parser.error("output already exists")
+    if args.operation == "export":
+        result = export_fixture(args.backend, args.unity, args.output, args.repo)
+    else:
+        options = dict(motion_factor=args.motion_factor, candidate_evaluation=args.candidate_evaluation)
+        if args.candidate_plane_offset_m is not None:
+            if not args.candidate_evaluation or not args.motion_factor:
+                parser.error("--candidate-plane-offset-m requires --candidate-evaluation and --motion-factor")
+            options["candidate_plane_offset_m"] = args.candidate_plane_offset_m
+        if args.candidate_boundary:
+            if not args.candidate_evaluation or not args.motion_factor:
+                parser.error("--candidate-boundary requires --candidate-evaluation and --motion-factor")
+            options["candidate_boundary"] = True
+        result = replay_fixture(args.fixture, args.repo, args.revision, args.output,
+                                **options)
+    print(json.dumps(result, allow_nan=False))
+
+
+if __name__ == "__main__":
+    main()

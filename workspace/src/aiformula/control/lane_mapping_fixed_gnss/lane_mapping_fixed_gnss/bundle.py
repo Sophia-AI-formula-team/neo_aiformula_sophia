@@ -30,6 +30,8 @@ BOUNDARY_SCHEMA_VERSION = 3
 BOUNDARY_REPRESENTATION = "paint_boundary_v1"
 BOUNDARY_VERSION = 1
 BOUNDARY_GRAPH_VERSION = 2
+BOUNDARY_CERTIFIED_VERSION = 3
+CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
 BOUNDARY_ARRAYS = {"points_xy": ("<f8", (2,)), "normals": ("<f8", (2,)),
                    "support_segments": ("<f8", (2, 2)), "segment_owner": ("<i8", ()),
                    "votes": ("<i8", ()), "reliable_votes": ("<i8", ()),
@@ -40,6 +42,12 @@ BOUNDARY_EDGE_ARRAYS = {"directed_edges": ("<i8", (2,)),
                          "edge_last_stamp_ns": ("<i8", ())}
 BOUNDARY_GRAPH_ARRAYS = dict(BOUNDARY_EDGE_ARRAYS,
                             full_in_degree=("<i8", ()), full_out_degree=("<i8", ()))
+BOUNDARY_CERTIFIED_ARRAYS = {
+    "certified_model_segments": ("<f8", (2, 2)),
+    "certified_model_owner": ("<i8", ()),
+    "certified_model_frame_votes": ("<i8", ()),
+    "certified_model_reliable_votes": ("<i8", ()),
+    "certified_model_last_stamp_ns": ("<i8", ())}
 LOCALIZATION_KIND = "wheel_rawgyro_mask"
 COORDINATE_CONVENTION = "start-relative local metres; x initial vehicle forward, y left; yaw CCW; not ENU"
 MAX_PAYLOAD_BYTES = 16 * 1024 * 1024
@@ -82,36 +90,65 @@ def _boundary_payload(reference):
     if any(value is None for value in graph) and not all(value is None for value in graph):
         raise ValueError("boundary graph members must all be present or all absent")
     version = BOUNDARY_VERSION if graph[0] is None else BOUNDARY_GRAPH_VERSION
+    certified = [getattr(reference, name, None) for name in BOUNDARY_CERTIFIED_ARRAYS]
+    if any(value is None for value in certified) and not all(value is None for value in certified):
+        raise ValueError("certified model members must all be present or all absent")
+    if certified[0] is not None:
+        if version != BOUNDARY_GRAPH_VERSION:
+            raise ValueError("certified model requires explicit boundary graph")
+        if reference.certified_model_representation != CERTIFIED_MODEL_REPRESENTATION:
+            raise ValueError("unsupported certified model representation")
+        version = BOUNDARY_CERTIFIED_VERSION
     specs = dict(BOUNDARY_ARRAYS)
-    if version == BOUNDARY_GRAPH_VERSION:
+    if version >= BOUNDARY_GRAPH_VERSION:
         specs.update(BOUNDARY_GRAPH_ARRAYS)
+    if version == BOUNDARY_CERTIFIED_VERSION:
+        specs.update(BOUNDARY_CERTIFIED_ARRAYS)
     arrays = {}
     for name, (dtype, suffix) in specs.items():
         value = np.asarray(getattr(reference, name), dtype=dtype)
-        capacity = 200000 if name in ("support_segments", "segment_owner") or name in BOUNDARY_EDGE_ARRAYS else MAX_GEOMETRY_POINTS
+        capacity = _boundary_capacity(name)
         if value.ndim != len(suffix) + 1 or value.shape[1:] != suffix or len(value) > capacity:
             raise ValueError("boundary array shape/capacity invalid: " + name)
         arrays[name] = {"dtype": dtype, "shape": list(value.shape),
                         "sha256": _digest(value.tobytes()), "data": value.tolist()}
-    return {"representation": BOUNDARY_REPRESENTATION, "version": version,
-            "source_frontier_ns": int(reference.source_frontier_ns), "arrays": arrays}
+    result = {"representation": BOUNDARY_REPRESENTATION, "version": version,
+              "source_frontier_ns": int(reference.source_frontier_ns), "arrays": arrays}
+    # Do not add even a null marker to v1/v2: their serialized identity is frozen.
+    if version == BOUNDARY_CERTIFIED_VERSION:
+        result["certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
+    return result
+
+
+def _boundary_capacity(name):
+    return (200000 if name in ("support_segments", "segment_owner")
+            or name in BOUNDARY_EDGE_ARRAYS or name in BOUNDARY_CERTIFIED_ARRAYS
+            else MAX_GEOMETRY_POINTS)
 
 
 def _load_boundary(data, source_frontier_ns, expected_version):
     value = _decode_json(data)
     _require_local_only(value)
-    if (set(value) != {"representation", "version", "source_frontier_ns", "arrays"}
+    fields = {"representation", "version", "source_frontier_ns", "arrays"}
+    if expected_version == BOUNDARY_CERTIFIED_VERSION:
+        fields.add("certified_model_representation")
+    if (set(value) != fields
             or value["representation"] != BOUNDARY_REPRESENTATION
             or type(value["version"]) is not int or value["version"] != expected_version
             or type(value["source_frontier_ns"]) is not int
             or value["source_frontier_ns"] != source_frontier_ns
             or not isinstance(value["arrays"], dict)):
         raise ValueError("boundary representation/frontier mismatch")
+    if (expected_version == BOUNDARY_CERTIFIED_VERSION
+            and value["certified_model_representation"] != CERTIFIED_MODEL_REPRESENTATION):
+        raise ValueError("unsupported certified model representation")
     specs = dict(BOUNDARY_ARRAYS)
-    if expected_version == BOUNDARY_GRAPH_VERSION:
+    if expected_version in (BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
         specs.update(BOUNDARY_GRAPH_ARRAYS)
     elif expected_version != BOUNDARY_VERSION:
         raise ValueError("unsupported boundary geometry version")
+    if expected_version == BOUNDARY_CERTIFIED_VERSION:
+        specs.update(BOUNDARY_CERTIFIED_ARRAYS)
     if set(value["arrays"]) != set(specs):
         raise ValueError("boundary member set differs from explicit geometry version")
     arrays = {}
@@ -120,7 +157,7 @@ def _load_boundary(data, source_frontier_ns, expected_version):
         if not isinstance(record, dict) or set(record) != {"dtype", "shape", "sha256", "data"}:
             raise ValueError("invalid boundary member: " + name)
         shape = record["shape"]
-        capacity = 200000 if name in ("support_segments", "segment_owner") or name in BOUNDARY_EDGE_ARRAYS else MAX_GEOMETRY_POINTS
+        capacity = _boundary_capacity(name)
         if (record["dtype"] != dtype or not isinstance(shape, list)
                 or len(shape) != len(suffix) + 1 or any(type(n) is not int for n in shape)
                 or tuple(shape[1:]) != suffix or not 0 <= shape[0] <= capacity):
@@ -154,9 +191,14 @@ def _boundary_schema(payload, schema):
     if schema == BOUNDARY_SCHEMA_VERSION:
         if (payload.get("feature_representation") != BOUNDARY_REPRESENTATION
                 or type(payload.get("boundary_version")) is not int
-                or payload["boundary_version"] not in (BOUNDARY_VERSION, BOUNDARY_GRAPH_VERSION)):
+                or payload["boundary_version"] not in (BOUNDARY_VERSION, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION)):
             raise ValueError("boundary schema requires explicit representation/version")
-    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference")):
+        if payload["boundary_version"] == BOUNDARY_CERTIFIED_VERSION:
+            if payload.get("certified_model_representation") != CERTIFIED_MODEL_REPRESENTATION:
+                raise ValueError("boundary v3 requires explicit certified model representation")
+        elif "certified_model_representation" in payload:
+            raise ValueError("legacy boundary cannot claim certified model geometry")
+    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference", "certified_model_representation")):
         raise ValueError("legacy bundle cannot claim boundary geometry")
 
 
@@ -236,8 +278,11 @@ def build_bundle(outputroot, snapshot, calibration, route_config=None, session_i
               "reference_speed_mps": route["reference_speed_mps"]}
     schema = SCHEMA_VERSION if snapshot.boundary_reference is None else BOUNDARY_SCHEMA_VERSION
     if schema == BOUNDARY_SCHEMA_VERSION:
+        boundary_payload = _boundary_payload(snapshot.boundary_reference)
         shared.update(feature_representation=BOUNDARY_REPRESENTATION,
-                      boundary_version=_boundary_payload(snapshot.boundary_reference)["version"])
+                      boundary_version=boundary_payload["version"])
+        if boundary_payload["version"] == BOUNDARY_CERTIFIED_VERSION:
+            shared["certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
     route.update(shared)
     metadata = dict(shared, schema_version=schema, session_id=session_id,
                     finished=True, model_type="causal_odometry_mask_consensus",

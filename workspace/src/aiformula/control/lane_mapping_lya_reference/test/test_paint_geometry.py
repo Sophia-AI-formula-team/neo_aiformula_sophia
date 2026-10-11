@@ -756,6 +756,13 @@ def test_graph_ttl_expires_only_unconfirmed_links_without_expiring_confirmed_nod
 
 def test_graph_none_legacy_vs_explicit_empty_are_not_interchangeable():
     reference = confirmed_graph().snapshot()
+    assert reference.boundary_version == 3
+    # Explicitly construct the old v2 fixture before testing its downgrade to
+    # v1. A v3 certificate must never silently survive removal of its graph.
+    reference = replace(reference, certified_model_segments=None, certified_model_owner=None,
+                        certified_model_frame_votes=None, certified_model_reliable_votes=None,
+                        certified_model_last_stamp_ns=None)
+    assert reference.boundary_version == 2
     legacy = replace(reference, directed_edges=None, edge_frame_votes=None,
                      edge_reliable_votes=None, edge_last_stamp_ns=None,
                      full_in_degree=None, full_out_degree=None)

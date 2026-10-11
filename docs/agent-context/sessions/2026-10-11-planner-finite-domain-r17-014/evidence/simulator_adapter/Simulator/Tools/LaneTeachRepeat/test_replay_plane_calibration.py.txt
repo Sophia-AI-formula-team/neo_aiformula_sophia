@@ -1,0 +1,297 @@
+"""Replay/export calibration contracts; core/transport stubs do not prove a lap."""
+import base64
+import copy
+import io
+import json
+from pathlib import Path
+import sys
+import tempfile
+from types import SimpleNamespace
+import unittest
+from unittest.mock import Mock, patch
+
+import numpy as np
+from PIL import Image
+
+import replay_observed_keyframe as replay
+from motion_channel import IMU_PROTOCOL
+from test_replay_raw_imu import imu_frame
+
+
+def camera(explicit=False):
+    value = dict(width=2, height=2, K=[2., 0., 1., 0., 2., 1., 0., 0., 1.],
+                 T_base_camera=[0., 0., 1., 0., -1., 0., 0., 0., 0., -1., 0., .655, 0., 0., 0., 1.])
+    if explicit:
+        value.update(observation_plane_offset_m=.007,
+                     observation_plane_source=replay.OBSERVATION_PLANE_SOURCE)
+    return value
+
+
+class PlaneCameraContract(unittest.TestCase):
+    def test_legacy_four_keys_remain_exact_and_not_mutated(self):
+        original = camera()
+        saved = copy.deepcopy(original)
+        self.assertEqual(replay.camera_calibration(original, raw_imu=True), saved)
+        self.assertEqual(original, saved)
+        self.assertEqual(tuple(replay.camera_calibration(original, raw_imu=False)), replay.CAMERA_FIELDS)
+
+    def test_explicit_authored_plane_preserves_intrinsics_extrinsics_and_source(self):
+        original = camera(True)
+        saved = copy.deepcopy(original)
+        self.assertEqual(replay.camera_calibration(original, raw_imu=True), saved)
+        self.assertEqual(original, saved)
+
+    def test_partial_plane_fields_are_rejected(self):
+        for key in replay.PLANE_FIELDS:
+            value = camera(True)
+            value.pop(key)
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "exactly four"):
+                replay.camera_calibration(value, raw_imu=True)
+
+    def test_unknown_and_missing_camera_fields_are_rejected(self):
+        for key in ("width", "unknown_pose"):
+            value = camera()
+            if key == "width":
+                value.pop(key)
+            else:
+                value[key] = [1,2,3]
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "exactly four"):
+                replay.camera_calibration(value, raw_imu=True)
+
+    def test_wrong_source_profile_is_not_an_implicit_fallback(self):
+        for profile in ("", None, True, "ground", "authored_semantic_paint_above_nominal_contact_v2"):
+            value = camera(True)
+            value['observation_plane_source'] = profile
+            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, "source"):
+                replay.camera_calibration(value, raw_imu=True)
+
+    def test_offset_requires_finite_builtin_number_and_exact_authored_value(self):
+        for offset in (True, False, None, ".007", [0.007], np.float64(.007), 0, -.007,
+                       .007000001, 10**1000, float('nan'), float('inf'), float('-inf')):
+            value = camera(True)
+            value['observation_plane_offset_m'] = offset
+            with self.subTest(offset=repr(offset)), self.assertRaisesRegex(ValueError, "0.007"):
+                replay.camera_calibration(value, raw_imu=True)
+
+    def test_explicit_plane_is_not_accepted_by_legacy_sensor_protocol(self):
+        with self.assertRaisesRegex(ValueError, "schema3"):
+            replay.camera_calibration(camera(True), raw_imu=False)
+
+    def test_huge_integer_direct_api_rejects_value_error_not_overflow(self):
+        with self.assertRaisesRegex(ValueError, "finite authored value 0.007"):
+            replay.observation_plane_offset(10**1000)
+
+    def test_non_dict_camera_is_rejected(self):
+        for value in (None, [], list(camera().items()), 1):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                replay.camera_calibration(value, raw_imu=True)
+
+
+class PlaneReplayRouting(unittest.TestCase):
+    """Exercise complete tool report/constructor plumbing with no solver call."""
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(dir=Path(__file__).parent)
+        self.addCleanup(temp.cleanup)
+        self.directory = Path(temp.name)
+        png = io.BytesIO()
+        Image.fromarray(np.zeros((2,2), dtype=np.uint8)).save(png, format='PNG')
+        self.png = png.getvalue()
+        self.result = dict(accepted=False, reason='synthetic_terminal', pose_xyyaw=[0.,0.,0.],
+                           stamp_ns=1_020_000_000, matched_against_frontier_ns=None)
+        frame = imu_frame()
+        frame.update(mask_png_base64=base64.b64encode(self.png).decode(), mask_sha256=replay.sha(self.png),
+            raw_odom_digest=replay.pose_digest([0,0,0]), prior_digest=replay.pose_digest([0,0,0]),
+            recorded_decision=dict(accepted=False,reason='synthetic_terminal'), recorded_mapping=self.result)
+        self.hashes = {replay.source_path(name):'unchanged-source' for name in replay.IMU_CORE_NAMES}
+        self.fixture = dict(schema_version=3,kind='observed_raw_imu_mask_prefix',motion_transport=IMU_PROTOCOL,
+            projection='causal_raw_imu_level_plane',epoch='0'*32,generation=0,qpc_frequency=1_000_000_000,
+            camera=camera(),sensor_calibration=dict(wheel_diameter_m=.254,motor_to_wheel_ratio=1.),
+            teach_map_config={},recorded_source_sha256=self.hashes,frames=[frame])
+        self.sample = SimpleNamespace(x=0.,y=0.,yaw=0.,stamp_ns=1_000_000_000,gyro_stamp_ns=1_000_000_000,
+                                      attitude=SimpleNamespace(up_body=(0.,0.,1.),gyro_bias=(0.,0.,0.)))
+        self.odometry = SimpleNamespace(config=dict(wheel_diameter_m=.254),reset_count=0,
+                                       attitude_tracker=SimpleNamespace(last_sample=None,config={}))
+        self.engine = SimpleNamespace(config={},_matcher=None,process=Mock(return_value=self.result))
+        self.lookup = SimpleNamespace(project_mask_with_sensitivity=Mock(
+            return_value=(np.array([[1.,0.]]),np.array([.01]),None)))
+        self.lookup_constructor = Mock(return_value=self.lookup)
+        self.modules = {
+            'lane_mapping_fixed_gnss.motion':SimpleNamespace(),
+            'lane_mapping_fixed_gnss.mapping':SimpleNamespace(TeachMapEngine=lambda config:self.engine),
+            'lane_mapping_lya_reference.mask_localization':SimpleNamespace(
+                LaneMapLocalizer=lambda _:SimpleNamespace(config={'min_overlap_ratio':.55})),
+            'lane_mapping_fixed_gnss.imu_motion':SimpleNamespace(CausalImuWheelOdometry=lambda _:self.odometry),
+            'lane_mapping_lya_reference.tilted_projection':SimpleNamespace(TiltedGroundLookup=self.lookup_constructor)}
+
+    def execute(self, **options):
+        path, output = self.directory/'fixture.json', self.directory/'report.json'
+        path.write_text(json.dumps(self.fixture),encoding='utf-8')
+        before = path.read_bytes()
+        text_hashes = {k:dict(raw=v,lf=v,crlf=v) for k,v in self.hashes.items()}
+        state = SimpleNamespace(consume=Mock(return_value=self.sample))
+        with patch.object(replay,'load_core',return_value=(self.modules,self.hashes,text_hashes,None)), \
+             patch.object(replay,'RecordedIndependentMotion',return_value=state), \
+             patch.object(replay,'verify_raw_imu_frame',return_value=dict(raw_odometry_exact=True,raw_attitude_exact=True)):
+            result = replay.replay_fixture(path,self.directory,None,output,**options)
+        self.assertEqual(path.read_bytes(),before)
+        self.assertEqual(result['mapping_frames'],1)
+        return json.loads(output.read_text())
+
+    def test_legacy_constructor_keeps_exact_five_argument_call(self):
+        report = self.execute(motion_factor=True)
+        args, kwargs = self.lookup_constructor.call_args
+        self.assertEqual(len(args),5)
+        self.assertEqual(kwargs,{})
+        self.assertEqual(args[:3],(2,2,self.fixture['camera']['K']))
+        np.testing.assert_array_equal(args[3],np.asarray(self.fixture['camera']['T_base_camera']).reshape(4,4))
+        self.assertEqual(report['observation_plane']['selection'],'legacy_body_origin_zero')
+        self.assertEqual(report['observation_plane']['effective_offset_m'],0.)
+        self.assertIsNone(report['observation_plane']['recorded_source'])
+
+    def test_exact_recorded_calibration_replay_passes_new_keyword_without_candidate_mode(self):
+        self.fixture['camera'] = camera(True)
+        report = self.execute(motion_factor=True)
+        self.assertEqual(self.lookup_constructor.call_args.kwargs,{'plane_offset_m':.007})
+        self.assertFalse(report['candidate_evaluation'])
+        self.assertTrue(report['historical_state_equivalence_required'])
+        plane = report['observation_plane']
+        self.assertEqual(plane['recorded_camera'],self.fixture['camera'])
+        self.assertEqual(plane['recorded_offset_m'],.007)
+        self.assertEqual(plane['effective_source'],replay.OBSERVATION_PLANE_SOURCE)
+        self.assertEqual(plane['selection'],'recorded_calibration')
+        self.assertIsNone(plane['candidate_override_m'])
+
+    def test_explicit_candidate_override_logs_original_and_effective_calibration(self):
+        report = self.execute(motion_factor=True,candidate_evaluation=True,candidate_plane_offset_m=.007)
+        self.assertEqual(self.lookup_constructor.call_args.kwargs,{'plane_offset_m':.007})
+        plane = report['observation_plane']
+        self.assertEqual(plane['recorded_camera'],camera())
+        self.assertEqual(plane['recorded_offset_m'],0.)
+        self.assertIsNone(plane['recorded_source'])
+        self.assertEqual(plane['candidate_override_m'],.007)
+        self.assertEqual(plane['effective_offset_m'],.007)
+        self.assertEqual(plane['effective_source'],replay.OBSERVATION_PLANE_SOURCE)
+        self.assertEqual(plane['selection'],'explicit_candidate_override')
+        self.assertFalse(report['historical_state_equivalence_required'])
+        self.assertTrue(any('not exact historical projection' in s for s in report['limits']))
+        self.assertEqual(report['fixture_sha256'],replay.sha((self.directory/'fixture.json').read_bytes()))
+        self.assertEqual(report['matcher_config'],{'min_overlap_ratio':.55})
+        self.assertEqual(self.engine.process.call_args.kwargs,{'motion_source_stamp_ns':self.sample.stamp_ns})
+
+    def test_explicit_override_of_same_recorded_value_is_still_disclosed(self):
+        self.fixture['camera']=camera(True)
+        report=self.execute(motion_factor=True,candidate_evaluation=True,candidate_plane_offset_m=.007)
+        self.assertEqual(report['observation_plane']['selection'],'explicit_candidate_override')
+
+    def test_old_revision_rejects_explicit_new_keyword_without_silent_fallback(self):
+        def historical_lookup(width,height,k,t,sensitivity):
+            return self.lookup
+        self.modules['lane_mapping_lya_reference.tilted_projection'].TiltedGroundLookup=historical_lookup
+        self.fixture['camera']=camera(True)
+        with self.assertRaisesRegex(TypeError,'plane_offset_m'):
+            self.execute(motion_factor=True)
+        self.engine.process.assert_not_called()
+
+    def test_override_without_candidate_mode_fails_before_loading_core(self):
+        self.assert_invalid_before_core(dict(motion_factor=True,candidate_plane_offset_m=.007),'candidate evaluation')
+
+    def test_override_without_motion_factor_fails_before_loading_core(self):
+        self.assert_invalid_before_core(dict(candidate_evaluation=True,candidate_plane_offset_m=.007),'motion-factor')
+
+    def test_override_rejects_other_schema_before_loading_core(self):
+        self.fixture.update(schema_version=2,kind='observed_independent_motion_mask_prefix')
+        self.assert_invalid_before_core(dict(motion_factor=True,candidate_plane_offset_m=.007),'schema3')
+
+    def test_programmatic_override_cannot_coerce_strings_bools_or_nonfinite(self):
+        for value in ('.007',True,float('nan'),float('inf'),0.,.01):
+            with self.subTest(value=value):
+                self.assert_invalid_before_core(dict(motion_factor=True,candidate_evaluation=True,
+                    candidate_plane_offset_m=value),'0.007')
+
+    def test_invalid_camera_is_rejected_before_core_instantiation(self):
+        self.fixture['camera']['observation_plane_offset_m']=.007
+        self.assert_invalid_before_core(dict(motion_factor=True),'exactly four')
+
+    def assert_invalid_before_core(self,options,pattern):
+        path=self.directory/'invalid.json'
+        path.write_text(json.dumps(self.fixture),encoding='utf-8')
+        with patch.object(replay,'load_core') as load, self.assertRaisesRegex(ValueError,pattern):
+            replay.replay_fixture(path,self.directory,None,self.directory/'invalid_output.json',**options)
+        load.assert_not_called()
+        self.assertFalse((self.directory/'invalid_output.json').exists())
+
+    def export_camera(self, explicit):
+        value=camera(explicit)
+        frame=self.fixture['frames'][0]
+        provenance=dict(source_sha256=self.hashes,teach_map_adapter_overrides={},repo_head='test-source',
+            adapter_source_sha256={'simulator/Tools/LaneTeachRepeat/motion_channel.py':'adapter-source'})
+        metrics=dict(raw_odom_pose=[0.,0.,0.],sensor_stamp_ns=self.sample.stamp_ns,
+            raw_attitude={'ready':True},mask_sha256=replay.sha(self.png),mapping=self.result,map_frame_raw_prior=[0.,0.,0.])
+        response=dict(sequence=1,sim_time=.02,metrics=metrics,protocol=IMU_PROTOCOL,epoch='0'*32,
+                      generation=0,phase='HOLD',reason='synthetic_terminal')
+        records=[dict(event='startup',provenance=provenance,motion_transport=IMU_PROTOCOL),
+            dict(event='calibration',camera=value,projection='causal_raw_imu_level_plane'),
+            dict(event='motion',epoch='0'*32,protocol=IMU_PROTOCOL,generation=0,qpc_frequency=1_000_000_000,
+                 sensor_calibration=self.fixture['sensor_calibration'],samples=frame['motion'],timing=frame['motion_timing']),
+            dict(event='step',response=response,image_motion_binding=frame['image_motion_binding'],motion_transport=IMU_PROTOCOL,
+                motion=[],response_stage='prepared_after_compute',received_monotonic_ns=frame['receipt_ns'],
+                processing_ms=1.,request_sha256='request'),
+            dict(event='command_delivery',epoch='0'*32,response=response,delivered_qpc=frame['receipt_ns']+1,
+                 delivery_stage='sent')]
+        (self.directory/'events.jsonl').write_text('\n'.join(json.dumps(r) for r in records))
+        (self.directory/'bridge.jsonl').write_text(json.dumps(dict(event='sensor_contract',data=dict(
+            motionProtocol=IMU_PROTOCOL,epoch='0'*32,qpcFrequency=1_000_000_000))))
+        (self.directory/'mask_000001.png').write_bytes(self.png)
+        output=self.directory/'export.json'
+        with patch.object(replay,'load_core',return_value=(self.modules,self.hashes,{},None)), \
+             patch.object(replay,'RecordedIndependentMotion',return_value=SimpleNamespace(consume=lambda _:self.sample)), \
+             patch.object(replay,'verify_raw_imu_frame'):
+            replay.export_fixture(self.directory,self.directory,output,self.directory)
+        return json.loads(output.read_text()),value
+
+    def test_schema3_export_preserves_exact_explicit_plane_pair(self):
+        fixture,value=self.export_camera(True)
+        self.assertEqual(fixture['camera'],value)
+        self.assertEqual(tuple(fixture['camera']),replay.CAMERA_FIELDS+replay.PLANE_FIELDS)
+        self.assertEqual(fixture['frames'][0]['raw_attitude_expected'],{'ready':True})
+
+    def test_schema3_export_leaves_historical_four_key_camera_unchanged(self):
+        fixture,value=self.export_camera(False)
+        self.assertEqual(fixture['camera'],value)
+        self.assertEqual(tuple(fixture['camera']),replay.CAMERA_FIELDS)
+        self.assertNotIn('observation_plane_offset_m',fixture['camera'])
+
+
+class PlaneReplayCli(unittest.TestCase):
+    def invoke(self, extra):
+        args=['replay_observed_keyframe.py','replay','--fixture','fixture.json','--repo','repo',
+              '--output','not-existing-plane-report.json']+extra
+        with patch.object(sys,'argv',args),patch.object(replay,'replay_fixture',return_value={}) as call, \
+             patch('sys.stdout',new_callable=io.StringIO),patch('sys.stderr',new_callable=io.StringIO):
+            replay.main()
+        return call.call_args.kwargs
+
+    def test_absent_flag_keeps_only_the_two_existing_keyword_arguments(self):
+        self.assertEqual(self.invoke([]),{'motion_factor':False,'candidate_evaluation':False})
+        self.assertEqual(self.invoke(['--motion-factor','--candidate-evaluation']),
+                         {'motion_factor':True,'candidate_evaluation':True})
+
+    def test_explicit_flag_adds_only_the_named_candidate_calibration(self):
+        self.assertEqual(self.invoke(['--motion-factor','--candidate-evaluation','--candidate-plane-offset-m','.007']),
+                         {'motion_factor':True,'candidate_evaluation':True,'candidate_plane_offset_m':.007})
+
+    def test_flag_requires_both_opt_ins(self):
+        for other in ([],['--motion-factor'],['--candidate-evaluation']):
+            with self.subTest(other=other),self.assertRaises(SystemExit) as error:
+                self.invoke(other+['--candidate-plane-offset-m','.007'])
+            self.assertEqual(error.exception.code,2)
+
+    def test_invalid_cli_values_fail_before_replay(self):
+        for value in ('nan','inf','true','0','.006','.008'):
+            with self.subTest(value=value),self.assertRaises(SystemExit) as error:
+                self.invoke(['--motion-factor','--candidate-evaluation','--candidate-plane-offset-m',value])
+            self.assertEqual(error.exception.code,2)
+
+
+if __name__=='__main__':
+    unittest.main()

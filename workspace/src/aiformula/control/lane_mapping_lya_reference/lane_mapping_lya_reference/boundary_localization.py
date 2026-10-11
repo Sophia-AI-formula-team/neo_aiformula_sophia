@@ -145,15 +145,24 @@ class _FrozenBoundaryGraph:
     def __init__(self, reference, config):
         self.reference, self.config = reference, config
         self.edges = reference.directed_edges
+        self.graph_primitive_count = len(self.edges)
+        self.primitive_nodes = self.edges
         self.starts = reference.points_xy[self.edges[:, 0]]
         self.ends = reference.points_xy[self.edges[:, 1]]
+        if reference.certified_model_segments is not None:
+            # These are finite model primitives, NOT new topology edges/nodes.
+            # Graph first preserves its exact-distance tie priority.
+            self.starts = np.concatenate((self.starts, reference.certified_model_segments[:, 0]))
+            self.ends = np.concatenate((self.ends, reference.certified_model_segments[:, 1]))
+            self.primitive_nodes = np.concatenate((self.edges,
+                np.repeat(reference.certified_model_owner[:, None], 2, axis=1)))
         self.delta = self.ends-self.starts
         self.length_squared = np.sum(self.delta*self.delta, axis=1)
         self.nonzero = self.length_squared > 0.
         self.normals = np.zeros_like(self.delta)
         self.normals[self.nonzero] = np.column_stack((self.delta[self.nonzero, 1],
             -self.delta[self.nonzero, 0]))/np.sqrt(self.length_squared[self.nonzero, None])
-        observed = reference.normals[self.edges]
+        observed = reference.normals[self.primitive_nodes]
         flip = np.sum(self.normals*np.sum(observed, axis=1), axis=1) < 0.
         self.normals[flip] *= -1.
         cosine = math.cos(config["normal_max_angle_rad"])
@@ -171,11 +180,11 @@ class _FrozenBoundaryGraph:
         # incident chords must agree; query-dependent normal averaging would
         # allow a corner to choose whichever direction admits the observation.
         for side in (0, 1):
-            np.logical_or.at(bad, self.edges[:, side], ~self.direction_valid)
+            np.logical_or.at(bad, self.edges[:, side], ~self.direction_valid[:self.graph_primitive_count])
         self.smooth_joint &= ~bad
         incoming_normal, outgoing_normal = np.zeros((count, 2)), np.zeros((count, 2))
-        np.add.at(incoming_normal, self.edges[:, 1], self.normals)
-        np.add.at(outgoing_normal, self.edges[:, 0], self.normals)
+        np.add.at(incoming_normal, self.edges[:, 1], self.normals[:self.graph_primitive_count])
+        np.add.at(outgoing_normal, self.edges[:, 0], self.normals[:self.graph_primitive_count])
         self.smooth_joint &= np.sum(incoming_normal*outgoing_normal, axis=1) >= cosine
         # Outward-normal sign correction must not hide a directed hairpin.
         # The incoming and outgoing contour tangents must continue in the
@@ -184,9 +193,15 @@ class _FrozenBoundaryGraph:
         tangents[self.nonzero] = self.delta[self.nonzero]/np.sqrt(
             self.length_squared[self.nonzero, None])
         incoming_tangent, outgoing_tangent = np.zeros((count, 2)), np.zeros((count, 2))
-        np.add.at(incoming_tangent, self.edges[:, 1], tangents)
-        np.add.at(outgoing_tangent, self.edges[:, 0], tangents)
+        np.add.at(incoming_tangent, self.edges[:, 1], tangents[:self.graph_primitive_count])
+        np.add.at(outgoing_tangent, self.edges[:, 0], tangents[:self.graph_primitive_count])
         self.smooth_joint &= np.sum(incoming_tangent*outgoing_tangent, axis=1) >= cosine
+        if reference.certified_model_segments is not None:
+            owners = reference.certified_model_owner
+            # Retain ambiguous geometry in nearest competition; rejecting it
+            # must not expose a farther certificate or graph edge as fallback.
+            self.direction_valid[self.graph_primitive_count:] &= (
+                (reference.full_in_degree[owners] <= 1) & (reference.full_out_degree[owners] <= 1))
 
     def query(self, points, normals):
         count = len(points)
@@ -194,7 +209,7 @@ class _FrozenBoundaryGraph:
         targets = np.zeros((count, 2))
         directions = np.zeros((count, 2))
         covered = np.zeros(count, dtype=bool)
-        if not len(self.edges) or not count:
+        if not len(self.starts) or not count:
             return owners, targets, directions, covered
         config = self.config
         radius = config["match_distance_m"]
@@ -206,7 +221,7 @@ class _FrozenBoundaryGraph:
             lower, upper = np.min(points[rows], axis=0)-radius, np.max(points[rows], axis=0)+radius
             candidates = np.flatnonzero(self.nonzero & np.all(self.upper >= lower, axis=1)
                 & np.all(self.lower <= upper, axis=1))
-            if not len(candidates) or len(np.unique(self.edges[candidates])) > config["max_patch_points"]:
+            if not len(candidates) or len(np.unique(self.primitive_nodes[candidates])) > config["max_patch_points"]:
                 continue
             best_distance = np.full(len(rows), np.inf)
             best_edge = np.full(len(rows), -1, dtype=np.int64)
@@ -230,7 +245,9 @@ class _FrozenBoundaryGraph:
             if not len(rows):
                 continue
             fraction = np.clip(alpha, 0., 1.)
-            nodes = self.edges[ids, (fraction >= .5).astype(np.int64)]
+            nodes = self.primitive_nodes[ids, (fraction >= .5).astype(np.int64)]
+            graph_primitive = ids < self.graph_primitive_count
+            smooth = graph_primitive & self.smooth_joint[nodes]
             owners[rows] = nodes
             targets[rows] = self.starts[ids] + fraction[:, None]*self.delta[ids]
             directions[rows] = self.normals[ids]
@@ -241,7 +258,7 @@ class _FrozenBoundaryGraph:
                 self.delta[ids], self.starts[ids], self.ends[ids])
             ambiguous_ends = near_start & near_end
             at_vertex = (fraction == 0.) | (fraction == 1.) | near_start | near_end
-            joint = at_vertex & self.smooth_joint[nodes] & ~ambiguous_ends
+            joint = at_vertex & smooth & ~ambiguous_ends
             if np.any(joint):
                 selected_rows, selected_nodes = rows[joint], nodes[joint]
                 targets[selected_rows] = self.reference.points_xy[selected_nodes]
@@ -250,12 +267,12 @@ class _FrozenBoundaryGraph:
             # Nearest-only: a rejected terminal/ambiguous joint or direction
             # must not search for a farther segment with more convenient support.
             full_degree = self.reference.full_in_degree[nodes] + self.reference.full_out_degree[nodes]
-            ambiguous_vertex = at_vertex & (full_degree > 1) & ~self.smooth_joint[nodes]
+            ambiguous_vertex = graph_primitive & at_vertex & (full_degree > 1) & ~smooth
             covered[rows[ambiguous_vertex]] = False
             # Never add support by snapping terminal extrapolation. Preserve
             # the old computed-exact-zero closed endpoint convention; it is
             # not a proof of an exact-real dot product after cancellation.
-            uncertain_terminal = (~self.smooth_joint[nodes]
+            uncertain_terminal = (~smooth
                 & ((near_start & (start_dot != 0.)) | (near_end & (end_dot != 0.))))
             covered[rows[ambiguous_ends | uncertain_terminal | ~start_valid | ~end_valid]] = False
         return owners, targets, directions, covered
@@ -279,8 +296,11 @@ class FrozenBoundaryIndex:
                       else _FrozenBoundaryGraph(reference, self.cfg))
         if self.graph is not None:
             self.normal_valid = np.zeros(len(self.anchor), dtype=bool)
-            self.normal_valid[self.graph.edges[self.graph.direction_valid].reshape(-1)] = True
+            self.normal_valid[self.graph.primitive_nodes[self.graph.direction_valid].reshape(-1)] = True
             self.normal_position_support = self.graph.degree.copy()
+            if reference.certified_model_segments is not None:
+                admitted = self.graph.direction_valid[self.graph.graph_primitive_count:]
+                np.add.at(self.normal_position_support, reference.certified_model_owner[admitted], 1)
             return
         self.intervals = [[] for _ in self.anchor]
         for segment, owner in zip(reference.support_segments, reference.segment_owner):
@@ -421,6 +441,11 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
                                               else "union_of_observed_boundary_segments_no_extrapolation"),
                        overlap_denominator="complete_original_foreground_mass_before_boundary_assignment",
                        boundary_unique_scan_points=len(points))
+        if self._index.reference.certified_model_segments is not None:
+            metrics.update(boundary_version=3,
+                line_reference="confirmed_graph_and_creation_chart_finite_models_v3",
+                correspondence_extent="globally_nearest_confirmed_chords_or_certified_finite_domain",
+                certified_model_representation=self._index.reference.certified_model_representation)
         if len(points) > self.config["max_scan_points"]:
             return None, "boundary_scan_capacity"
         return (points, directions, weights, denominator), None
@@ -461,4 +486,6 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
             np.array_equal(getattr(reference, name), getattr(original, name)) for name in
             ("points_xy", "normals", "support_segments", "segment_owner", "votes",
              "reliable_votes", "record_ids", "directed_edges", "edge_frame_votes",
-             "edge_reliable_votes", "edge_last_stamp_ns", "full_in_degree", "full_out_degree")))
+             "edge_reliable_votes", "edge_last_stamp_ns", "full_in_degree", "full_out_degree",
+             "certified_model_segments", "certified_model_owner", "certified_model_frame_votes",
+             "certified_model_reliable_votes", "certified_model_last_stamp_ns")))

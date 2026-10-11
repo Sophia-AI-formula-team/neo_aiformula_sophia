@@ -16,6 +16,9 @@ REFERENCE_ARRAYS = (
     'points_xy', 'normals', 'support_segments', 'segment_owner', 'votes',
     'reliable_votes', 'record_ids', 'directed_edges', 'edge_frame_votes',
     'edge_reliable_votes', 'edge_last_stamp_ns', 'full_in_degree', 'full_out_degree',
+    'certified_model_segments', 'certified_model_owner',
+    'certified_model_frame_votes', 'certified_model_reliable_votes',
+    'certified_model_last_stamp_ns',
 )
 
 
@@ -82,10 +85,12 @@ def full_oracle(consensus, center, radius, maximum_points):
 
 
 def assert_reference_bytes(actual, expected):
-    assert len(REFERENCE_ARRAYS) == 13
+    assert len(REFERENCE_ARRAYS) == 18
     assert actual.source_frontier_ns == expected.source_frontier_ns
     assert actual.representation == expected.representation
     assert actual.topology_representation == expected.topology_representation
+    assert actual.boundary_version == expected.boundary_version
+    assert actual.certified_model_representation == expected.certified_model_representation
     for name in REFERENCE_ARRAYS:
         got, wanted = getattr(actual, name), getattr(expected, name)
         assert isinstance(got, np.ndarray), name

@@ -49,6 +49,14 @@ _REFERENCE_REJECTIONS = frozenset({
     "tracking_innovation_gate", "total_correction_gate",
 })
 
+# A stale active keyframe may lack support already confirmed in the newer
+# committed map. Refresh on coverage only, never to search around a failed
+# residual/innovation/observability or time gate.
+_ACTIVE_COVERAGE_REJECTIONS = frozenset({
+    "empty_anchor", "insufficient_anchor_line_support", "insufficient_overlap",
+    "insufficient_overlap_after_raw_prior_anchor",
+})
+
 
 def _readonly(values, columns=None):
     array = np.asarray(values, dtype=np.float64)
@@ -174,7 +182,7 @@ class TeachMapEngine:
     def _latch(self, reason):
         self._fault = str(reason)
 
-    def _prepare_matcher(self, prior, stamp):
+    def _prepare_matcher(self, prior, stamp, *, tracking_state=None):
         frontier = self._map.last_stamp_ns
         if frontier is None or frontier >= stamp:
             raise ValueError("keyframe contains current or future evidence")
@@ -188,12 +196,14 @@ class TeachMapEngine:
             raise ValueError("bootstrap motion contains uncommitted or future map evidence")
         # Index preparation can exceed a deadline. Cache only an inactive
         # candidate, and never reuse one seeded from a different committed pose.
-        if (self._candidate is not None and self._candidate.frontier_ns == frontier
+        if (tracking_state is None and self._candidate is not None and self._candidate.frontier_ns == frontier
                 and self._candidate.tracking_owner is self._matcher
                 and self._candidate.tracking_stamp_ns == tracking_stamp
                 and self._candidate.direction_owner is self._past_direction_support
                 and self._candidate.direction_source_stamp_ns == self._past_direction_support_stamp_ns
-                and self._candidate.bootstrap_motion_owner is bootstrap_motion):
+                and self._candidate.bootstrap_motion_owner is bootstrap_motion
+                and (self._candidate.matcher.last_seen_stamp_ns is None
+                     or self._candidate.matcher.last_seen_stamp_ns < stamp)):
             return self._candidate
         if self._boundary_map is None:
             points = self._map.confirmed_points_and_votes()[0]
@@ -203,7 +213,10 @@ class TeachMapEngine:
                 return None
             order = np.argsort(distance[available], kind="stable")[:self.config["keyframe_max_points"]]
             anchor = points[available[order]].copy()
-            matcher = (LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
+            matcher = (LaneMapLocalizer.from_tracking_state(anchor, tracking_state,
+                            self._past_direction_support, self._past_direction_support_stamp_ns)
+                       if tracking_state is not None else
+                       LaneMapLocalizer(anchor, self.matcher_config, self._past_direction_support,
                                        self._past_direction_support_stamp_ns) if self._matcher is None
                        else self._matcher.fork_with_anchor(anchor, self._past_direction_support,
                                                            self._past_direction_support_stamp_ns))
@@ -215,7 +228,9 @@ class TeachMapEngine:
             if len(boundary.points_xy) < self.config["bootstrap_min_anchor_points"]:
                 return None
             anchor = boundary
-            matcher = (BoundaryLaneLocalizer(anchor, self.matcher_config) if self._matcher is None
+            matcher = (BoundaryLaneLocalizer.from_tracking_state(anchor, tracking_state)
+                       if tracking_state is not None else
+                       BoundaryLaneLocalizer(anchor, self.matcher_config) if self._matcher is None
                        else self._matcher.fork_with_anchor(anchor))
         self._candidate = _PreparedKeyframe(matcher, int(frontier), stamp, prior.copy(), self._matcher,
                                             tracking_stamp, self._past_direction_support,
@@ -256,6 +271,14 @@ class TeachMapEngine:
                 return None, None, None, timing, "missing_bootstrap_motion_information"
             motion_kwargs["bootstrap_motion_information"] = candidate.bootstrap_motion_owner
         prior_stamp = stamp if motion_source_stamp_ns is None else motion_source_stamp_ns
+        # Capture BEFORE match advances active.last_seen, even on rejection.
+        # A fresh reference may inherit only this immutable committed seed,
+        # never a rejected fit/current posterior. The engine/active fences are
+        # not rolled back. Do not prepare an index unless coverage actually fails.
+        newer_past_reference = (candidate is None and self._matcher is not None
+            and self._anchor_frontier is not None and self._map.last_stamp_ns is not None
+            and self._anchor_frontier < self._map.last_stamp_ns < stamp)
+        before_attempt = self._matcher.capture_tracking_state() if newer_past_reference else None
         result = selected.match(scan, prior, stamp, prior_stamp_ns=prior_stamp, commit=False,
                                 scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity, **motion_kwargs)
         attempts.append({"reference": "candidate" if candidate is not None else "active",
@@ -271,6 +294,26 @@ class TeachMapEngine:
             attempts.append({"reference": "active", "frontier_ns": frontier,
                              "accepted": result.accepted, "reason": result.reason,
                              "metrics": dict(result.metrics)})
+        elif (not result.accepted and before_attempt is not None
+                and result.reason in _ACTIVE_COVERAGE_REJECTIONS
+                and not result.metrics.get("budget_exceeded", True)
+                and 0. <= result.metrics.get("elapsed_ms", math.inf)
+                    <= self._geometry_config["runtime_budget_ms"]):
+            if self._deadline(started):
+                return None, None, None, dict(timing, reference_attempts=attempts), "processing_deadline"
+            # No cache reuse: a candidate made after the rejected attempt could
+            # contain its current last_seen fence. Rebuild from the saved seed.
+            candidate = self._prepare_matcher(prior, stamp, tracking_state=before_attempt)
+            if self._deadline(started):
+                return None, None, None, dict(timing, reference_attempts=attempts), "processing_deadline"
+            if candidate is not None:
+                selected, frontier = candidate.matcher, candidate.frontier_ns
+                result = selected.match(scan, prior, stamp, prior_stamp_ns=prior_stamp, commit=False,
+                                        scan_support_xy=scan_support, scan_sensitivity=scan_sensitivity,
+                                        **motion_kwargs)
+                attempts.append({"reference": "candidate", "frontier_ns": frontier,
+                                 "accepted": result.accepted, "reason": result.reason,
+                                 "metrics": dict(result.metrics)})
         metrics = dict(result.metrics, **timing, reference_attempts=attempts,
                        selected_anchor_frontier_ns=frontier,
                        selected_reference="candidate" if candidate is not None and selected is candidate.matcher else "active")

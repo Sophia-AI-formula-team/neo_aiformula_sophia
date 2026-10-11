@@ -8,6 +8,11 @@ R16 adds topology-witnessed adjacent-cell identity as an explicitly new domain.
 These unchanged fixtures stay inside the legacy domain: every step must report
 zero adjacent-cell associations. Only that new diagnostic key is supplied to
 the old token comparator; the literal algorithm below remains unchanged.
+R17 deliberately adds separately certified finite domains. The old oracle
+continues to compare every original token field, statistic and 13 reference
+arrays, not the new domain state/counter or five certificate arrays. Those
+have independent consensus and certified-domain tests; copying production
+domain results into this oracle would not establish equivalence.
 """
 from dataclasses import fields, replace
 import math
@@ -252,6 +257,15 @@ def same_value(left, right):
         assert left==right
 
 
+def same_legacy_snapshot(left, right):
+    assert left.source_frontier_ns == right.source_frontier_ns
+    for name in ('points_xy', 'normals', 'support_segments', 'segment_owner',
+                 'votes', 'reliable_votes', 'record_ids', 'directed_edges',
+                 'edge_frame_votes', 'edge_reliable_votes', 'edge_last_stamp_ns',
+                 'full_in_degree', 'full_out_degree'):
+        same_value(getattr(left, name), getattr(right, name))
+
+
 def compare_step(fast, oracle, obs, commit=True):
     before_fast=(fast._generation,fast.last_stamp_ns,tuple(fast._records.items()),tuple(fast._edges.items()))
     before_old=(oracle._generation,oracle.last_stamp_ns,tuple(oracle._records.items()),tuple(oracle._edges.items()))
@@ -260,7 +274,13 @@ def compare_step(fast, oracle, obs, commit=True):
     assert result.stats['adjacent_cell_associations'] == 0
     expected=replace(expected,stats=MappingProxyType(dict(expected.stats,
                                                        adjacent_cell_associations=0)))
-    same_value(result,expected)
+    assert isinstance(result.stats['certified_domain_intervals'], int)
+    assert result.stats['certified_domain_intervals'] >= 0
+    legacy_stats = dict(result.stats)
+    del legacy_stats['certified_domain_intervals']
+    legacy_result = replace(result, domain_updates=(), domain_interval_count=0,
+                            stats=MappingProxyType(legacy_stats))
+    same_value(legacy_result,expected)
     # Structural identities ensure preparing either token cannot mutate state.
     assert fast._generation==before_fast[0] and fast.last_stamp_ns==before_fast[1]
     assert oracle._generation==before_old[0] and oracle.last_stamp_ns==before_old[1]
@@ -278,7 +298,7 @@ def compare_step(fast, oracle, obs, commit=True):
                 assert not np.shares_memory(rec.segments,other.segments)
     if commit:
         assert fast.commit(result) and oracle.commit(expected)
-        same_value(fast.snapshot(),oracle.snapshot())
+        same_legacy_snapshot(fast.snapshot(),oracle.snapshot())
         assert list(fast._records)==list(oracle._records)
         assert list(fast._edges)==list(oracle._edges)
         for key in fast._records:
@@ -392,7 +412,7 @@ def test_prepared_rejected_stale_and_wrong_owner_do_not_advance():
     accepted,_=compare_step(fast,oracle,observation([[.01,0.],[.11,0.]],2))
     assert not fast.can_commit(rejected) and not fast.commit(rejected)
     assert not oracle.can_commit(accepted) and not oracle.commit(accepted)
-    same_value(fast.snapshot(),oracle.snapshot())
+    same_legacy_snapshot(fast.snapshot(),oracle.snapshot())
 
 
 @pytest.mark.parametrize('settings',[
@@ -416,7 +436,7 @@ def test_capacity_rejection_is_same_without_mutation(settings):
                 errors.append(None)
                 assert obj.commit(token)
         assert errors[0]==errors[1]
-        same_value(fast.snapshot(),oracle.snapshot())
+        same_legacy_snapshot(fast.snapshot(),oracle.snapshot())
         if errors[0] is not None:
             break
     else:

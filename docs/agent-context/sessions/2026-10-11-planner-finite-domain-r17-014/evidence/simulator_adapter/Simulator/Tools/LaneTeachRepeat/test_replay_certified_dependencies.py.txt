@@ -1,0 +1,237 @@
+"""V3 source/version routing only; no solver, driving or runtime timing claim."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+from types import ModuleType, SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+import lane_backend as backend
+import replay_observed_keyframe as replay
+import test_boundary_replay as boundary_tests
+import test_replay_corner_dependencies as corner_tests
+import test_replay_plane_calibration as plane_tests
+
+
+PAINT = 'lane_mapping_lya_reference.paint_geometry'
+FINITE = 'lane_mapping_lya_reference.finite_support'
+CORNER = 'lane_mapping_lya_reference.corner_brackets'
+MAPPING = 'lane_mapping_fixed_gnss.mapping'
+CERT = 'confirmed_creation_chart_domains_v1'
+PAINT_SOURCE = b'def invoke():\n    from .corner_brackets import value\n    from .finite_support import support\n    return value, support\n'
+
+
+class FiniteDependencyTests(unittest.TestCase):
+    setUp = corner_tests.SelectedDependencyTests.setUp
+    put = corner_tests.SelectedDependencyTests.put
+
+    def prepare(self):
+        self.sources[replay.source_path(PAINT)] = PAINT_SOURCE
+        self.sources[replay.source_path(FINITE)] = b'support = 73\n'
+        for relative, data in self.sources.items():
+            self.put(relative, data)
+
+    def check(self, loaded, raw=True):
+        modules, hashes, text_hashes, _ = loaded
+        names = replay.BOUNDARY_CORE_NAMES if raw else replay.BOUNDARY_CORE_NAMES[:-2]
+        names = replay._with_paint_helper(replay._with_corner_helper(names), FINITE)
+        self.assertEqual(tuple(modules), names)
+        self.assertEqual(modules[PAINT].invoke(), (42, 73))
+        for name in names:
+            relative = replay.source_path(name)
+            self.assertEqual(hashes[relative], hashlib.sha256(self.sources[relative]).hexdigest())
+            self.assertEqual(text_hashes[relative]['raw'], hashes[relative])
+        self.assertLess(names.index(FINITE), names.index(PAINT))
+        return modules, hashes
+
+    def test_declared_lazy_finite_support_loaded_before_paint_and_exact_hash(self):
+        self.prepare()
+        for raw in (False, True):
+            self.check(replay.load_core(self.repo, raw_imu=raw), raw)
+
+    def test_foreign_helper_cannot_supply_unrecorded_state(self):
+        self.prepare()
+        foreign = ModuleType(FINITE)
+        foreign.support = 'unrecorded'
+        sys.modules[FINITE] = foreign
+        modules, _ = self.check(replay.load_core(self.repo, raw_imu=True))
+        self.assertIsNot(modules[FINITE], foreign)
+
+    def test_exact_git_selection_not_dirty_worktree_dependency(self):
+        self.prepare()
+        self.put(replay.source_path(PAINT), b'def invoke(): return "dirty"\n')
+        self.put(replay.source_path(FINITE), b'support="dirty"\n')
+        revision = 'b' * 40
+        def git(command, **kwargs):
+            if command[3] == 'rev-parse':
+                return revision + '\n'
+            self.assertEqual(command[3], 'show')
+            self.assertTrue(command[4].startswith(revision + ':'))
+            return self.sources[command[4].split(':', 1)[1]]
+        with patch.object(replay.subprocess, 'check_output', side_effect=git):
+            self.check(replay.load_core(self.repo, 'immutable-selected', raw_imu=True))
+
+    def test_missing_declared_helper_fails_without_foreign_fallback(self):
+        self.prepare()
+        (self.repo / replay.source_path(FINITE)).unlink()
+        sys.modules[FINITE] = SimpleNamespace(support='foreign')
+        with self.assertRaises(FileNotFoundError):
+            replay.load_core(self.repo, raw_imu=True)
+
+    def test_comment_only_does_not_extend_historical_module_list(self):
+        self.prepare()
+        self.put(replay.source_path(PAINT), corner_tests.LAZY_PAINT + b'# from .finite_support import support\n')
+        modules, hashes, _, _ = replay.load_core(self.repo, raw_imu=True)
+        self.assertEqual(tuple(modules), replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES))
+        self.assertNotIn(replay.source_path(FINITE), hashes)
+
+    def test_recorded_names_only_add_explicit_helpers(self):
+        for helpers in ((), (CORNER,), (FINITE,), (CORNER, FINITE)):
+            expected = replay.BOUNDARY_CORE_NAMES
+            for helper in helpers:
+                expected = replay._with_paint_helper(expected, helper)
+            provenance = {'source_sha256': {replay.source_path(name): 'hash' for name in expected}}
+            self.assertEqual(replay.recorded_core_names(provenance, raw_imu=True, boundary=True), expected)
+
+
+class CertifiedRoutingTests(unittest.TestCase):
+    setUp = plane_tests.PlaneReplayRouting.setUp
+    execute = plane_tests.PlaneReplayRouting.execute
+    assert_invalid_before_core = plane_tests.PlaneReplayRouting.assert_invalid_before_core
+    assert_boundary_call = boundary_tests.BoundaryReplayRouting.assert_boundary_call
+
+    def extractor(self, version=3):
+        result = boundary_tests.BoundaryReplayRouting.extractor(self, version=version)
+        geometry = self.modules[PAINT]
+        geometry.TOPOLOGY_REPRESENTATION = replay.BOUNDARY_TOPOLOGY if version >= 2 else None
+        if version == 3:
+            geometry.CERTIFIED_MODEL_REPRESENTATION = CERT
+        return result
+
+    def recorded(self, version=3):
+        self.fixture.update(feature_representation=replay.BOUNDARY_REPRESENTATION, boundary_version=version)
+        if version == 3:
+            self.fixture['certified_model_representation'] = CERT
+
+    def test_v3_exact_replay_preserves_explicit_representation(self):
+        self.recorded()
+        obs, extract = self.extractor()
+        report = self.execute(motion_factor=True)
+        self.assert_boundary_call(obs, extract)
+        self.assertEqual(report['effective_boundary_version'], 3)
+        self.assertEqual(report['recorded_certified_model_representation'], CERT)
+        self.assertEqual(report['effective_certified_model_representation'], CERT)
+        self.assertFalse(report['changed_model'])
+
+    def test_v2_to_v3_requires_explicit_candidate_model_override(self):
+        self.recorded(2)
+        self.extractor()
+        with self.assertRaisesRegex(ValueError, 'differs from selected source'):
+            self.execute(motion_factor=True, candidate_evaluation=True)
+        self.engine.process.assert_not_called()
+
+    def test_explicit_candidate_uses_selected_v3_not_hardcoded_v2(self):
+        self.recorded(2)
+        obs, extract = self.extractor()
+        report = self.execute(motion_factor=True, candidate_evaluation=True, candidate_boundary=True)
+        self.assert_boundary_call(obs, extract)
+        self.assertEqual(report['recorded_boundary_version'], 2)
+        self.assertEqual(report['candidate_boundary_version'], 3)
+        self.assertEqual(report['effective_certified_model_representation'], CERT)
+        self.assertNotIn('recorded_certified_model_representation', report)
+        self.assertTrue(report['changed_model'])
+
+    def test_selected_v2_remains_v2_for_explicit_legacy_candidate(self):
+        self.extractor(2)
+        report = self.execute(motion_factor=True, candidate_evaluation=True, candidate_boundary=True)
+        self.assertEqual(report['candidate_boundary_version'], 2)
+        self.assertNotIn('effective_certified_model_representation', report)
+
+    def test_v3_recording_never_uses_v2_without_explicit_model_override(self):
+        self.recorded()
+        self.extractor(2)
+        with self.assertRaisesRegex(ValueError, 'differs from selected source'):
+            self.execute(motion_factor=True)
+        self.engine.process.assert_not_called()
+
+    def test_missing_or_wrong_v3_source_capability_rejects_before_engine(self):
+        self.recorded()
+        self.extractor()
+        for value in (None, '', 'latest_face_extent'):
+            self.modules[PAINT].CERTIFIED_MODEL_REPRESENTATION = value
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, 'creation-chart contract'):
+                self.execute(motion_factor=True)
+        self.engine.process.assert_not_called()
+
+    def test_recorded_v3_missing_wrong_or_legacy_orphan_certificate_rejects(self):
+        self.recorded()
+        for value in (None, '', 'latest_face_extent'):
+            self.fixture['certified_model_representation'] = value
+            self.assert_invalid_before_core({'motion_factor': True}, 'creation-chart contract')
+        self.fixture['certified_model_representation'] = CERT
+        self.fixture['boundary_version'] = 2
+        self.assert_invalid_before_core({'motion_factor': True}, 'legacy boundary')
+
+    def export(self, *, selected_hash='finite-source', recorded=True):
+        plane_tests.PlaneReplayRouting.export_camera(self, True)
+        events = self.directory / 'events.jsonl'
+        rows = [json.loads(line) for line in events.read_text().splitlines()]
+        names = replay._with_paint_helper(replay._with_corner_helper(replay.BOUNDARY_CORE_NAMES), FINITE)
+        hashes = {replay.source_path(name): 'same-source' for name in names}
+        hashes[replay.source_path(FINITE)] = 'finite-source'
+        if not recorded:
+            del hashes[replay.source_path(FINITE)]
+        rows[0]['provenance'].update(feature_representation=replay.BOUNDARY_REPRESENTATION,
+            boundary_version=3, certified_model_representation=CERT, source_sha256=hashes)
+        events.write_text('\n'.join(map(json.dumps, rows)))
+        selected = dict(hashes)
+        selected[replay.source_path(FINITE)] = selected_hash
+        self.extractor()
+        output = self.directory / 'certified-export.json'
+        with patch.object(replay, 'load_core', return_value=(self.modules, selected, {}, None)), \
+             patch.object(replay, 'RecordedIndependentMotion', return_value=SimpleNamespace(consume=lambda _: self.sample)), \
+             patch.object(replay, 'verify_raw_imu_frame'):
+            replay.export_fixture(self.directory, self.directory, output, self.directory)
+        return json.loads(output.read_text()), hashes
+
+    def test_export_has_all_eleven_sources_and_exact_v3_identity(self):
+        fixture, hashes = self.export()
+        self.assertEqual(fixture['recorded_source_sha256'], hashes)
+        self.assertEqual(len(hashes), 11)
+        self.assertEqual(fixture['boundary_version'], 3)
+        self.assertEqual(fixture['certified_model_representation'], CERT)
+
+    def test_changed_helper_fails_export_not_silent_candidate_mode(self):
+        with self.assertRaisesRegex(ValueError, 'source differs'):
+            self.export(selected_hash='changed')
+        self.assertFalse((self.directory / 'certified-export.json').exists())
+
+    def test_unrecorded_helper_fails_export(self):
+        with self.assertRaisesRegex(ValueError, 'source differs'):
+            self.export(recorded=False)
+        self.assertFalse((self.directory / 'certified-export.json').exists())
+
+
+class ActualCertifiedManifest(unittest.TestCase):
+    def test_current_runtime_manifest_and_archive_pin_loaded_finite_support(self):
+        if not os.environ.get('LANE_TEST_REPO'):
+            self.skipTest('set LANE_TEST_REPO')
+        corner_tests.isolate_modules(self)
+        core = backend.ProductionCore(Path(os.environ['LANE_TEST_REPO']))
+        self.assertEqual(core.provenance['boundary_version'], 3)
+        self.assertEqual(core.provenance['certified_model_representation'], CERT)
+        relative = replay.source_path(FINITE)
+        self.assertEqual(core.provenance['source_sha256'][relative],
+                         hashlib.sha256((core.repo / relative).read_bytes()).hexdigest())
+        with tempfile.TemporaryDirectory() as directory:
+            archived = backend.archive_core_sources(core, Path(directory))
+            self.assertEqual(archived, {'core/' + k: v for k, v in core.provenance['source_sha256'].items()})
+            self.assertEqual(hashlib.sha256((Path(directory) / 'core' / relative).read_bytes()).hexdigest(),
+                             core.provenance['source_sha256'][relative])
+
+
+if __name__ == '__main__':
+    unittest.main()

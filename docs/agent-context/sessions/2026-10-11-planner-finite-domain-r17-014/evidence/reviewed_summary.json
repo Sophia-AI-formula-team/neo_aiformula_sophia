@@ -1,0 +1,1035 @@
+{
+  "schema_version": 1,
+  "session_id": "2026-10-11-planner-finite-domain-r17-014",
+  "status": "reviewed_failure_checkpoint",
+  "result": "partial",
+  "bundle_verification": "Verify companion bundle and .sha256; packaging is not algorithm acceptance.",
+  "publication_review": {
+    "privacy_checked": true,
+    "secrets_checked": true
+  },
+  "base_commit": "c7e316a8b9e52afb87f7d00db564cc670295b7b4",
+  "base_tag": "lane-mapping-20261011-r16-rc1",
+  "input_handoff_id": "2026-09-28-planner-neo-004",
+  "canonical_repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "canonical_repository_id": 1303517209,
+  "scope": "Root-reviewed factual summary. Offline R17 development remains partial/failed quality/runtime validation. Publication is not driving or deployment acceptance.",
+  "artifact_root": "local diagnostics; artifact paths below are relative",
+  "artifacts": [
+    {
+      "path": "r17_native_identity_01.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "bytes": 716,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_certified_domains_01/focused_01.xml",
+      "sha256": "4bc419ef3bffdb4845f487a6ba5e04820d2187bf2c6a0c47929824aa4ba76d6c",
+      "bytes": 65686,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_certified_domains_01/focused_02.xml",
+      "sha256": "33540e0565ad4aa1308fdc37ca80ff717945119b9ef0c38a31ecbd4b9e90c3b0",
+      "bytes": 18236,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_finite_domain_prototype_01/focused_02.json",
+      "sha256": "895886d5e11a33e5c15e448d4c505b42a148dc8486a946dd9d9152d5bb1b3e34",
+      "bytes": 615,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_finite_domain_prototype_01/integrated_01.json",
+      "sha256": "921534a63e901c5d5479d3aafefd5ebf649bd371579e1ee7ceba40df362f4f86",
+      "bytes": 3011,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_finite_domain_prototype_01/integrated_01.xml",
+      "sha256": "be263ce85ffeec20a1632d096744b08787a3eb5bfafc1e39c3d6ae99a0111d07",
+      "bytes": 20681,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_finite_domain_prototype_01/integrated_02.json",
+      "sha256": "251276d4846857ea302aa309231b54b3db0aaf72531250acdd0da722f86ab0d3",
+      "bytes": 3011,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_finite_domain_prototype_01/integrated_02.xml",
+      "sha256": "0511dd2336e4ec5438aeaee6bf63438d1a07ae021e5c5b7c06938ab6e07a8485",
+      "bytes": 12471,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_01_summary.json",
+      "sha256": "dadc0d3270b67122a4d28c87970abff3d3cdfafcb53856f79346c21039ca2223",
+      "bytes": 4660,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_01.xml",
+      "sha256": "42920c2669f1ae3bec01077809dd03fe1818e47129c0f98aa06d75aba52cc3e9",
+      "bytes": 415878,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_01_sources_before.json",
+      "sha256": "76e54838f74dc8bd943684caeb4bd51fba18170b7b681d11f19e821719f499a6",
+      "bytes": 26927,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_01_sources_after.json",
+      "sha256": "bd20e17adbb6861df40f0ea78aab4461b575324f6a74dcd42391a9837fb94568",
+      "bytes": 26927,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_legacy_fixture_02.xml",
+      "sha256": "b521a3d8acfc0ab7866bc65af03e211cd94c7596ed50d3e0c59f67366701de9c",
+      "bytes": 386,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/bundle_focused_01.xml",
+      "sha256": "02f36b2dcbf89f98c9262c423258dcecb85e9bc52d811c3b8ee724ef6c0c47b4",
+      "bytes": 18059,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/adapter_focused_01.xml",
+      "sha256": "bace52d976e33a1a8c13a4396638164bfad9282f5af2232ba7f1bf758875a85a",
+      "bytes": 1179,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/adapter_focused_02.xml",
+      "sha256": "deab299d5aafefa34b53447d17589e96918a3e1726033d2eb09a94eb1b6454b5",
+      "bytes": 14202,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/adapter_pending_09_01.xml",
+      "sha256": "539da0393a69b693de4351937b423273d94d128fe1f4a072e81fd91c97472c9e",
+      "bytes": 1564,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/adapter_pending_09_01.log",
+      "sha256": "455bc209dc482d1e76f5a95ad3d5cfa60d9b919c5224fab99fe307a000217b21",
+      "bytes": 319,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_persistence_adapter_01/summary.json",
+      "sha256": "6eca10737ddfc2b30e313238ffbf81ab002d206a28f8fcfe657423e540671e93",
+      "bytes": 5934,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_handoff_draft_01/SESSION.md",
+      "sha256": "8940a72bf263d008979549ee2004ed8dda4f3d1c1a068afd66c90c3e6cff12d4",
+      "bytes": 7883,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_handoff_draft_01/evidence_index.json",
+      "sha256": "1a67d70012727d0e35cdf56af1635f86939283c2a3656cc30ee8c1cd6dcda94a",
+      "bytes": 7915,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_01/r17_development_01.json",
+      "sha256": "89ee27f76ce055a00d92de93b35f08039e729803a44982e7a4b8ee9670fedb16",
+      "bytes": 536415,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_01/r17_observed_01.json",
+      "sha256": "d777cd3eb506749ed006660e1e5f33107aaccbeea3cb1bff414f56c5b952a4ee",
+      "bytes": 64553,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_01/result_01.json",
+      "sha256": "968243bfda2a066a1bea3ae16cdc74531e06f974055b7b5ea16c002d1c1731c7",
+      "bytes": 75587,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_01/nextafter_focused_01.json",
+      "sha256": "0efe26f8d7c7be6ff3ae5a7912806e922d08b71dcb336eebeb4e75e3dcb61324",
+      "bytes": 1632,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_01/nextafter_focused_01.xml",
+      "sha256": "edcf14865b38413a52060f7675f5639a5094c1e8ce5ff0e2abaf36a2b7140762",
+      "bytes": 2760,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_active_reference_refresh_01/focused_01.xml",
+      "sha256": "f2438e3e2feec57b4687519a164cc2a19d880ac7a903c5828af3f6dea91291cb",
+      "bytes": 21060,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_active_reference_refresh_01/focused_01.log",
+      "sha256": "7ea578332f2ec758855f3862de815acd029de202c56db5301f38b74809f559b3",
+      "bytes": 396,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_02/failure_01.json",
+      "sha256": "08af2dc1e08f3652c5da775645a9b3c3ef4ed0a2794a1adcd37ce9900ff3e9bd",
+      "bytes": 786,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_02/result_02.json",
+      "sha256": "c22ca2adb3b870ca4c15363ed6ad65d81e0a80f7cb5af9b94d2ed2e1fbae0453",
+      "bytes": 76961,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_first_prepare_profile_02/profile_prepare_02.py",
+      "sha256": "4b4ceee667b6533bc0786168f643d916e38ff074fd301402eabc26f755ce2a89",
+      "bytes": 12096,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_02/run_once.py",
+      "sha256": "13d0898573a36de7975df0bd735e6010f161bd5d35df65c4b034a11007343395",
+      "bytes": 2605,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_02/r17_development_02.json",
+      "sha256": "bef01555cdb462ffb3f468ca3c8808919f381202128b5a0799578e4892b29770",
+      "bytes": 668872,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_02/r17_development_02_execution.json",
+      "sha256": "657273193d8e85afd316fadae22fd86a0b99570780e75f06c13bc42662495c2c",
+      "bytes": 552,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_02/run_observed.py",
+      "sha256": "93996afed56b0ce5b3d26165dc34039bb4cfda5b78add9278dfb7b498e7318f6",
+      "bytes": 12847,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_02/candidate_manifest_APPROVED_02.json",
+      "sha256": "4279d59297c0fdcf6c4d1d6485335afc20444452d770786f051ae72db906d146",
+      "bytes": 3361,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_02/r17_observed_02.json",
+      "sha256": "bc1ce6732cc095e089eae29e7ac2c7d92ce329a767e4bf4032dabc59c03eb10f",
+      "bytes": 72221,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_02/r17_observed_02_execution.json",
+      "sha256": "0a3db3846d17b1e7ba2a830b365cf32bdc58f4b44da4662d289cbd87bcad03ab",
+      "bytes": 7010,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_02_run.py",
+      "sha256": "3a39c465a2526c8fb966f856753fc44210c7a1e20116c9b3feb8f63bc7196cb9",
+      "bytes": 568,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_connected_projection_01/summary.json",
+      "sha256": "2ac693a90fab14e1b8dd2a14b167c8d21479589c4d437dc380354d73845e2e72",
+      "bytes": 5303,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_connected_projection_01/focused_01.xml",
+      "sha256": "1f26633ab889140f6157a1ddc735e0f93cf020e72c07ec8bed938ab012ba8f85",
+      "bytes": 19430,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_synthetic_support_audit_01/REPORT.txt",
+      "sha256": "9c557775559c0c8f888657f8560418e424d77f1eaf12ef1b5a23b41476db6dab",
+      "bytes": 5664,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_synthetic_support_audit_01/capture_summary_01.json",
+      "sha256": "7758bea81b027bc2e81027386377973f82b511a754179f5c2529eb170f238b5c",
+      "bytes": 8956,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_synthetic_support_audit_01/support_01.json",
+      "sha256": "b1944755aa1bc9a8a78d01de6d933fa148310c8b133c3edec445ce277d791479",
+      "bytes": 9536268,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_sixth_prepare_profile_01/failure_01.json",
+      "sha256": "549873276cdcfe8e263575bf24335fce0ff2ebe374d4931a3d792eb0bd3df711",
+      "bytes": 1356,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_sixth_prepare_profile_01/recovery_01.json",
+      "sha256": "371a27c4afd7a85fc1e99f2ac1f76475634f58b4e5b28902703f71fd4edfe858",
+      "bytes": 77277,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_03/r17_development_03.json",
+      "sha256": "fe454455eb83745853002db4cb46628bc7babe5fc73563a9d674a75c9d7c5d21",
+      "bytes": 668725,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_quality_validation_03/r17_development_03_execution.json",
+      "sha256": "a03d7e779d16bad7fd223c4447dc34753f5bb57681f300e9a35d020793594555",
+      "bytes": 551,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_03/candidate_manifest_APPROVED_03.json",
+      "sha256": "2c35bbb56505c4ca3a49aef79ada2a6ac50a786826300d2aabef8464a21ae4e8",
+      "bytes": 3346,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_03/run_observed.py",
+      "sha256": "82ec12e78d7df43782782c17e318b1fb44809c0e2ff61116f497cfb4afafb0b9",
+      "bytes": 12846,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_native_identity_02.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "bytes": 716,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_02_summary.json",
+      "sha256": "d25f250cfa095389af67d227ed106cd85d2da630f5441df623336f0d4de8741d",
+      "bytes": 4659,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_02.xml",
+      "sha256": "1bd753739a1f7a93de72c961e61acfb8da11241e4c7b34fddc874687c804bb45",
+      "bytes": 423246,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_02_sources_before.json",
+      "sha256": "d9bb2a8d9b1ec12f04445e7dd547c0d6a7ab5a65b7e63d68d4509dc816b99011",
+      "bytes": 27438,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_02_sources_after.json",
+      "sha256": "747c18158e729b5ed65102ddd588579cd2ec025a4571318ca7830ff729be720f",
+      "bytes": 27438,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_03/r17_observed_03.json",
+      "sha256": "20721ced434d3fb7e95bfcebcda2ec7d5eaca3e6446e43bdf47a9ecd8c17ffa8",
+      "bytes": 88456,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_03/r17_observed_03_execution.json",
+      "sha256": "121d850ff04fd7c9ae93a3194a682567e44faff095b93e9cb89cb13e0321d71f",
+      "bytes": 17206,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_native_identity_03.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "bytes": 716,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03_run.py",
+      "sha256": "152c4da048f514846aaa6d3b8b40b5a208280fcc285c493788e7b78f02ff7e60",
+      "bytes": 564,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03_summary.json",
+      "sha256": "58e69e87b5fe22bae04b781b01ec05b79dee1ac4c71c3460c4e7c52141a2fbf7",
+      "bytes": 4661,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03.xml",
+      "sha256": "a1a0dff155765f6900137c6791630c37bbf43ec3b262311b5e5e9b11ebebe4bb",
+      "bytes": 427972,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03_sources_before.json",
+      "sha256": "c329d6a7e3b8ec23bc9d2955d94a7deb27c8d9b13f3ea4af8fe64723d13356ca",
+      "bytes": 27616,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03_sources_after.json",
+      "sha256": "a6bd5873eb2cb02c4816731679f9f433da1896dadddca2bd0f55c0a16338c08c",
+      "bytes": 27616,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_full_native_03.log",
+      "sha256": "db37619919a7b6d362627fcfd81b61446e2d0490d794e16a3136811ca1532b32",
+      "bytes": 3849,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_04/r17_observed_04.json",
+      "sha256": "7d256e438f9c8d850d901aefd3cf8123bd9f78f3c5840ee281fb315daeecfdfd",
+      "bytes": 96914,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_04/r17_observed_04_execution.json",
+      "sha256": "0e86d7dff8bf17722d42b5913c88298b19ec0e446eb2ddb7cbaed1985f21e8ee",
+      "bytes": 17147,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_04/candidate_manifest_APPROVED_04.json",
+      "sha256": "b5a04c50c69014785983295fccea10ece62d9cfacbd70571d0da3274316236ee",
+      "bytes": 3502,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    },
+    {
+      "path": "r17_validation_preparation_04/run_observed.py",
+      "sha256": "e6205703b6601a83053f054bf36fca86814a77055a34a76205bc885426038fb2",
+      "bytes": 12847,
+      "copied": false,
+      "access": "Local original only; raw content not included or approved for public redistribution."
+    }
+  ],
+  "results": {
+    "standalone": {
+      "tests": 47,
+      "passed": 47,
+      "elapsed_s": 0.11388000001898035
+    },
+    "v3_contract_initial": {
+      "tests": 47,
+      "passed": 28,
+      "failed": 19,
+      "errors": 0,
+      "junit_s": 0.917,
+      "reason": "combined graph/certificate indexing defect"
+    },
+    "v3_contract_repaired": {
+      "tests": 117,
+      "passed": 117,
+      "junit_s": 1.694
+    },
+    "integrated_initial": {
+      "tests": 73,
+      "passed": 70,
+      "failed": 3,
+      "junit_s": 0.741,
+      "reason": "finite model world-coordinate endpoint representability"
+    },
+    "integrated_repaired": {
+      "tests": 85,
+      "passed": 85,
+      "junit_s": 0.455
+    },
+    "bundle": {
+      "passed": 115,
+      "pytest_s": 2.51
+    },
+    "adapter_collection_initial": {
+      "exit_code": 2,
+      "errors": 1,
+      "test_cases_executed": 0,
+      "reason": "cross-drive pytest root/cwd caused protected-directory traversal"
+    },
+    "adapter_corrected_root": {
+      "passed": 93,
+      "pytest_s": 6.02
+    },
+    "adapter_additional_current_contract": {
+      "passed": 9,
+      "pytest_s": 0.58
+    },
+    "core_initial": {
+      "tests": 2880,
+      "passed": 2878,
+      "failed": 1,
+      "skipped": 1,
+      "errors": 0,
+      "junit_s": 83.162,
+      "process_s": 84.05071999999927,
+      "source_count": 162,
+      "changed_source_count": 0
+    },
+    "legacy_fixture_narrow": {
+      "tests": 1,
+      "passed": 1,
+      "junit_s": 0.221,
+      "reason": "clear all five v3 certificate fields when deliberately constructing old v2 fixture"
+    },
+    "full_final": {
+      "state": "complete",
+      "attempt": "native03",
+      "tests": 2995,
+      "passed": 2994,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0,
+      "pytest_s": 102.54,
+      "junit_s": 102.523,
+      "process_s": 103.84248930000467,
+      "exit_code": 0,
+      "source_count": 166,
+      "changed_source_count": 0,
+      "native_real_api_calls": 7,
+      "skip_reason": "Target Linux process-group test on Windows",
+      "scope": "Windows offline native/source-tree tests; not ROS DDS, runtime or driving acceptance."
+    },
+    "recorded_candidate": {
+      "attempt_01": {
+        "attempted": 1,
+        "accepted": 0,
+        "terminal_sequence": 151,
+        "reason": "processing_deadline",
+        "processing_ms": 81.68429997749627
+      },
+      "attempt_02": {
+        "attempted": 6,
+        "accepted": 5,
+        "terminal_sequence": 156,
+        "reason": "processing_deadline",
+        "processing_ms": 86.5322999889031,
+        "trace_points": 5,
+        "expected_fixture_frames": 111,
+        "matcher_gates_unchanged": true
+      },
+      "attempt_03": {
+        "attempted": 12,
+        "accepted": 11,
+        "expected": 111,
+        "terminal_sequence": 162,
+        "reason": "processing_deadline",
+        "engine_ms": 84.75089998682961,
+        "visual_match_accepted": true,
+        "visual_match_ms": 22.02,
+        "overlap_ratio": 0.7971014492753623,
+        "current_frame_committed": false,
+        "trace_points": 11,
+        "integrity_pass": true,
+        "sources_unchanged": true,
+        "native_unchanged": true,
+        "exit_code": 0,
+        "validation_outcome": "prefix_failed"
+      },
+      "attempt_04": {
+        "attempted": 13,
+        "accepted": 12,
+        "expected": 111,
+        "terminal_sequence": 163,
+        "reason": "processing_deadline",
+        "engine_ms": 90.33749997615814,
+        "visual_match_accepted": true,
+        "visual_match_ms": 30.58,
+        "overlap_ratio": 0.6448275862068966,
+        "current_frame_committed": false,
+        "trace_points": 12,
+        "integrity_pass": true,
+        "sources_unchanged": true,
+        "native_unchanged": true,
+        "exit_code": 0,
+        "validation_outcome": "prefix_failed",
+        "scope": "Frozen captured input; not actual driving or closed-loop lap."
+      }
+    },
+    "four_fixed_development": {
+      "attempt_01": {
+        "passed_cases": 0,
+        "total_cases": 4,
+        "cases": [
+          {
+            "id": "left_0",
+            "planned": 509,
+            "attempted": 8,
+            "accepted": 7,
+            "first_failed_frame": 7,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694
+          },
+          {
+            "id": "left_0.35",
+            "planned": 509,
+            "attempted": 8,
+            "accepted": 7,
+            "first_failed_frame": 7,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694
+          },
+          {
+            "id": "right_0",
+            "planned": 509,
+            "attempted": 10,
+            "accepted": 9,
+            "first_failed_frame": 9,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5284552845528455
+          },
+          {
+            "id": "right_0.35",
+            "planned": 509,
+            "attempted": 10,
+            "accepted": 9,
+            "first_failed_frame": 9,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5284552845528455
+          }
+        ]
+      },
+      "attempt_02": {
+        "passed_cases": 0,
+        "total_cases": 4,
+        "cases": [
+          {
+            "id": "left_0",
+            "planned": 509,
+            "attempted": 9,
+            "accepted": 8,
+            "first_failed_frame": 8,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694,
+            "input_verified": true,
+            "rejection_preserved_committed_state": true
+          },
+          {
+            "id": "left_0.35",
+            "planned": 509,
+            "attempted": 9,
+            "accepted": 8,
+            "first_failed_frame": 8,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694,
+            "input_verified": true,
+            "rejection_preserved_committed_state": true
+          },
+          {
+            "id": "right_0",
+            "planned": 509,
+            "attempted": 11,
+            "accepted": 10,
+            "first_failed_frame": 10,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.532520325203252,
+            "input_verified": true,
+            "rejection_preserved_committed_state": true
+          },
+          {
+            "id": "right_0.35",
+            "planned": 509,
+            "attempted": 11,
+            "accepted": 10,
+            "first_failed_frame": 10,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.532520325203252,
+            "input_verified": true,
+            "rejection_preserved_committed_state": true
+          }
+        ]
+      },
+      "scope": "Reused prescribed geometric regression cases, 2000 ms unit budget; not runtime or untouched holdout acceptance.",
+      "attempt_03": {
+        "passed_cases": 0,
+        "total_cases": 4,
+        "cases": [
+          {
+            "id": "left_0",
+            "planned": 509,
+            "attempted": 9,
+            "accepted": 8,
+            "first_failed_frame": 8,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694,
+            "input_verified": true
+          },
+          {
+            "id": "left_0.35",
+            "planned": 509,
+            "attempted": 9,
+            "accepted": 8,
+            "first_failed_frame": 8,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.5330578512396694,
+            "input_verified": true
+          },
+          {
+            "id": "right_0",
+            "planned": 509,
+            "attempted": 11,
+            "accepted": 10,
+            "first_failed_frame": 10,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.532520325203252,
+            "input_verified": true
+          },
+          {
+            "id": "right_0.35",
+            "planned": 509,
+            "attempted": 11,
+            "accepted": 10,
+            "first_failed_frame": 10,
+            "reason": "match_insufficient_overlap",
+            "overlap": 0.532520325203252,
+            "input_verified": true
+          }
+        ],
+        "report_sha256": "fe454455eb83745853002db4cb46628bc7babe5fc73563a9d674a75c9d7c5d21"
+      },
+      "attempt_04": {
+        "state": "not_run",
+        "runner_prepared": true,
+        "measured_report_available": false,
+        "note": "Quality03 remains the last measured four-case result, 0/4. Thirty strict finite-state/export equivalence tests support no geometric-model change in the final optimization, not a claimed new quality execution or pass."
+      }
+    },
+    "new_actual_driving": "not_run; no actual29 for this work",
+    "nextafter": {
+      "passed": 17,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_s": 0.362,
+      "process_s": 0.9503243999788538,
+      "exit_code": 0,
+      "source_changes": 0
+    },
+    "active_reference_refresh": {
+      "passed": 136,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_s": 6.433,
+      "new_tests": 42,
+      "existing_tests": 94,
+      "scope": "Strict-past fresh-candidate retry after active coverage rejection; original gates and transactional ownership."
+    },
+    "isolated_prepare": {
+      "before_ms": 75.44620003318414,
+      "after_ms": 31.90939995693043,
+      "previous_profiled_ms": 154.6490999753587,
+      "current_profiled_ms": 72.79740000376478,
+      "plain_token_exact_to_previous": true,
+      "profile_token_exact_to_previous": true,
+      "world_observation_exact": true,
+      "excluded_identity": "token owner identity only",
+      "commits": 0,
+      "engine_calls": 0,
+      "matcher_calls": 0,
+      "scope": "Single-input isolated prepare measurements, not a distribution, latency guarantee or full runtime acceptance.",
+      "setup_attempt_01": "Explicit dependency identity guard rejected setup before extraction or prepare; preserved failure_01.json."
+    },
+    "core_second": {
+      "tests": 2965,
+      "passed": 2964,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0,
+      "pytest_s": 98.41,
+      "junit_s": 98.398,
+      "process_s": 99.3842323999852,
+      "exit_code": 0,
+      "source_count": 165,
+      "changed_source_count": 0,
+      "skip_reason": "Target Linux process-group test on Windows",
+      "scope": "Windows offline native/source-tree tests; not ROS DDS/runtime/driving acceptance."
+    },
+    "connected_projection": {
+      "new_methods": 26,
+      "bounded_random_subcases": 48,
+      "existing_tests": 102,
+      "total_passed": 128,
+      "failed": 0,
+      "skipped": 0,
+      "pytest_s": 0.92,
+      "junit_s": 0.923,
+      "process_s": 1.7226868,
+      "source_changes": 0,
+      "source_sha256": "1bca7b32914f48475b6591f4cf76c037cc4845fd5a3be74fe9d1a7caab322225"
+    },
+    "support_audit": {
+      "engine_calls": 9,
+      "successful_commits": 8,
+      "non_timing_difference_count": 0,
+      "source_count": 15,
+      "sources_unchanged": true,
+      "baseline": "development02 left_0",
+      "terminal_reason": "match_insufficient_overlap",
+      "original_foreground_mass": 60.5,
+      "assigned_mass": 49.75,
+      "unassigned_mass": 10.75,
+      "active_covered_mass": 30.5,
+      "fresh_covered_mass": 32.25,
+      "fresh_overlap": 0.5330578512396694,
+      "rejections": [
+        {
+          "category": "terminal_extrapolation",
+          "queries": 22,
+          "mass": 10.5
+        },
+        {
+          "category": "nearest_signed_compatible_beyond_original_distance",
+          "queries": 3,
+          "mass": 1.5
+        },
+        {
+          "category": "no_nonzero_primitive_in_original_hash_group_AABB",
+          "queries": 12,
+          "mass": 5.5
+        }
+      ],
+      "terminal_selected_geometry": {
+        "certified_domain_queries": 20,
+        "certified_domain_mass": 9.5,
+        "graph_chord_queries": 2,
+        "graph_chord_mass": 1
+      },
+      "selected_owner_domain": {
+        "outside_all": 18,
+        "outside_mass": 8.5,
+        "underconfirmed": 4,
+        "underconfirmed_mass": 2,
+        "confirmed": 0,
+        "gap": 0
+      },
+      "shared_endpoint_audit": {
+        "normal_admitted_exact_shared_endpoints": 8263,
+        "excluded_by_original_independent_inner_rounding": 8263,
+        "all_incident_segments_reliable": 8249,
+        "stored_open_gaps": 412,
+        "gaps_at_most_64_endpoint_ulps": 409,
+        "one_additional_gap_ulps": 66,
+        "real_gaps_mm": [
+          1.859503,
+          5.911443
+        ],
+        "gaps_with_fully_confirmed_both_sides": 0
+      },
+      "interpretation": "Proves a numerical continuity defect but not that it caused actual terminal rejections; per-owner repeated support remains missing. Never substitute nearby latest raw faces or remove denominator mass."
+    },
+    "sixth_prepare_diagnostic": {
+      "scope": "recovery from saved files only; zero extraction/prepare/commit/engine calls",
+      "original_attempt_complete": false,
+      "completed_stages": [
+        "six exact input extractions",
+        "five accepted-past prepares and commits",
+        "sixth plain prepare",
+        "sixth profiled prepare",
+        "profile saved"
+      ],
+      "failed_stage": "post_profile_fragmentation_arithmetic",
+      "original_operation_counts": {
+        "extraction": 6,
+        "past_prepare": 5,
+        "past_commit": 5,
+        "target_plain": 1,
+        "target_profile": 1
+      },
+      "recovery_operation_counts": {
+        "extraction": 0,
+        "prepare": 0,
+        "commit": 0,
+        "engine": 0
+      },
+      "ordinary_prepare_walltime_ms": null,
+      "ordinary_walltime_status": "not persisted before diagnostic failure; unrecoverable, not inferred",
+      "target_token_status": "in-process equality and state-purity assertions completed before failure, but target fingerprints were not persisted",
+      "fragmentation_status": "postprocessing failed before output; no gap widths or connected-endpoint conclusion claimed",
+      "timing_confound": "other live Unity activity may exist; wallclock not a controlled runtime comparison",
+      "timing_interpretation": "profile function accounting only; not runtime acceptance, not comparable to original engine walltime",
+      "sources_unchanged_at_recovery": true
+    },
+    "incident_domain": "Future R18 research only; neither implemented nor part of this R17 checkpoint.",
+    "coalescing_equivalence": {
+      "tests": 30,
+      "passed": 30,
+      "failed": 0,
+      "executed_as_part_of": "full_native03",
+      "separate_new_run": false,
+      "test_repo_relative_path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_coalescing_equivalence.py",
+      "test_sha256": "c72f14d9cca5240eb9de774f131590b6917cb7541cf81239a0a0aefd0b4f33a7",
+      "literal_before_source_sha256": "1bca7b32914f48475b6591f4cf76c037cc4845fd5a3be74fe9d1a7caab322225",
+      "final_source_sha256": "4d5dbea1be3e83bf7640b372d578911275e3832675edcef92bcfff515766dce4",
+      "contract": "Tuple coalescing before final Interval construction; byte-identical state/export and equivalent errors, stamps, counters, capacity, TTL and immutability against literal previous functions.",
+      "scope": "Shared unchanged numerical projection/export helpers isolate this discrete optimization. Not a separately executed quality04 or runtime benchmark."
+    }
+  },
+  "limits": [
+    "Overlapping focused counts are not a unique-total test count.",
+    "Retained first attempts must not be replaced by later passes.",
+    "Raw local evidence may contain private paths and is indexed, not copied.",
+    "Checkpoint does not claim runtime, ROS DDS, full lap or vehicle acceptance.",
+    "Attempt02 supersedes the current summary only, not the retained attempt01 results or their source identities.",
+    "No live Unity state was read by this documentation task; the loan is a parent-reported coordination fact.",
+    "Observed03 process exit0 means evidence generation succeeded; the algorithm outcome remains prefix_failed.",
+    "Public summary omits private paths, exact pose/GT samples, images, logs and binaries; originals are indexed only.",
+    "The final R17 full suite and recorded04 are completed. Quality04 was not run; equivalence tests do not constitute a new quality result.",
+    "Future R18 incident-domain work is outside this checkpoint."
+  ],
+  "draft_revision": 4,
+  "supersedes_private_summary": "r17_handoff_draft_02; private drafts retained unchanged",
+  "unity_ownership_note": {
+    "source": "parent coordination report",
+    "state": "peer reported clean Edit return at 2026-10-11T11:38:36Z; our new preflight still required",
+    "live_verified_by_this_agent": false
+  },
+  "summary": {
+    "status": "reviewed_failure_checkpoint",
+    "result": "partial",
+    "publication_review_complete": true,
+    "final_source_frozen": true,
+    "full03_completed": true,
+    "full03_passed": 2994,
+    "full03_skipped": 1,
+    "quality03_passed": 0,
+    "quality03_total": 4,
+    "quality04_run": false,
+    "recorded04_accepted": 12,
+    "recorded04_attempted": 13,
+    "recorded04_expected": 111,
+    "recorded_prefix_complete": false,
+    "full_lap_demonstrated": false,
+    "actual29_run": false
+  },
+  "tested_source_manifest": {
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py": "ef2cc93dcdcb07c861a9f21d9ae0d7fb061f33f5772a48044671e1875ef09128",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py": "2a18da367e4d9ff5e48d4539b77e078856425ae400ecbba40f5cd6f9f4b588e5",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/tilted_projection.py": "63131d278ceecb9dd7581f00c040cf1fadf739750e38dd586cc6e21d6b454b62",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/motion.py": "725f042ee6270c9cdb9b7cb232181a3dda7c2705f76020d90df9b06247aef3c7",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/attitude.py": "09b2d103105086d1d04ce50b233efa4d3c995284f5bd45072d675a9a2ed3b033",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/imu_motion.py": "bacd494e55f9cc0fc7a3e8b19694138aad84af03d341de49885d5cedcf9fea2d",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "a2171210d68c1d3d55e67cf2e826914f109f382280a7dbdc67a05571da574b88",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py": "3b75c68ec9072a9a2a4889381e499df3e7e9871d28cbf1cbe9aae47223a21f35",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py": "4d5dbea1be3e83bf7640b372d578911275e3832675edcef92bcfff515766dce4",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py": "2daa5e14a7a4f7455d455473de71ec1b50e356bb91b11f8d97afd3a725ab55b8",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py": "161747d502dd26616858a232182b8872d7191be61cf76d821596bac4b44434df",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/setup.py": "5c629a6b0755842eb6a95e22bef5cb585ac2c7c5959ab216471b75e465bd6b9e",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/__init__.py": "a5103feb089958eb55ebc7940e0858180a184091a679884c25667ca4ba175e7c",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/__init__.py": "29bd7278966cfae838211b18769e8349e49c3a3518c71939ba8cba79b4256d5c"
+  },
+  "tested_manifest_scope": "Final frozen R17 coalescing source, covered by full_native03 and observed04. Geometry quality03 remains the last measured four-case result; quality04 was not run.",
+  "adapter_archive": {
+    "manifest": "simulator_adapter/manifest.json",
+    "readme": "simulator_adapter/README.md",
+    "files": 12,
+    "byte_exact_afterimages": true,
+    "exact_before_after_patch_available": false,
+    "scope": "Six R17 adapter source/test afterimages and six import dependencies; not a complete Unity project or recorded dataset."
+  },
+  "tested_source_manifest_before_coalescing": {
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py": "ef2cc93dcdcb07c861a9f21d9ae0d7fb061f33f5772a48044671e1875ef09128",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py": "2a18da367e4d9ff5e48d4539b77e078856425ae400ecbba40f5cd6f9f4b588e5",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/tilted_projection.py": "63131d278ceecb9dd7581f00c040cf1fadf739750e38dd586cc6e21d6b454b62",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/motion.py": "725f042ee6270c9cdb9b7cb232181a3dda7c2705f76020d90df9b06247aef3c7",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/attitude.py": "09b2d103105086d1d04ce50b233efa4d3c995284f5bd45072d675a9a2ed3b033",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/imu_motion.py": "bacd494e55f9cc0fc7a3e8b19694138aad84af03d341de49885d5cedcf9fea2d",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "a2171210d68c1d3d55e67cf2e826914f109f382280a7dbdc67a05571da574b88",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py": "3b75c68ec9072a9a2a4889381e499df3e7e9871d28cbf1cbe9aae47223a21f35",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py": "1bca7b32914f48475b6591f4cf76c037cc4845fd5a3be74fe9d1a7caab322225",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py": "2daa5e14a7a4f7455d455473de71ec1b50e356bb91b11f8d97afd3a725ab55b8",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py": "161747d502dd26616858a232182b8872d7191be61cf76d821596bac4b44434df",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/setup.py": "5c629a6b0755842eb6a95e22bef5cb585ac2c7c5959ab216471b75e465bd6b9e",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/__init__.py": "a5103feb089958eb55ebc7940e0858180a184091a679884c25667ca4ba175e7c",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/__init__.py": "29bd7278966cfae838211b18769e8349e49c3a3518c71939ba8cba79b4256d5c"
+  }
+}

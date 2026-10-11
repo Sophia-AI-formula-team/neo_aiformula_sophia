@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "scope": "Byte-exact current Simulator adapter afterimages; not an exact before/after patch or a complete simulator distribution.",
+  "base_repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "base_commit": "c7e316a8b9e52afb87f7d00db564cc670295b7b4",
+  "logical_source_root": "Simulator",
+  "archive_transform": "Only append .txt to filenames for an inert documentation archive; file content bytes match original sources exactly.",
+  "files": [
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/lane_backend.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/lane_backend.py.txt",
+      "source_sha256": "19d687bb76f098ec8e2b230d9e0d253140251925162057bea0ec1b00e838a940",
+      "archive_sha256": "19d687bb76f098ec8e2b230d9e0d253140251925162057bea0ec1b00e838a940",
+      "archive_bytes": 94599,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/motion_channel.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/motion_channel.py.txt",
+      "source_sha256": "14f75abf57f3e6e3737f681c73c16b429b266170877f596c30cf484985882a88",
+      "archive_sha256": "14f75abf57f3e6e3737f681c73c16b429b266170877f596c30cf484985882a88",
+      "archive_bytes": 20782,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/replay_observed_keyframe.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/replay_observed_keyframe.py.txt",
+      "source_sha256": "8a517c19cdf21f75fffe8658bcedac8e83fceac09c37083b7b0728d68903375a",
+      "archive_sha256": "8a517c19cdf21f75fffe8658bcedac8e83fceac09c37083b7b0728d68903375a",
+      "archive_bytes": 57082,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_boundary_adapter.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_boundary_adapter.py.txt",
+      "source_sha256": "2b90569ca1ab9855a7b56af7742dc103b325342839eda6171a177c58fa6d521d",
+      "archive_sha256": "2b90569ca1ab9855a7b56af7742dc103b325342839eda6171a177c58fa6d521d",
+      "archive_bytes": 7841,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_boundary_replay.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_boundary_replay.py.txt",
+      "source_sha256": "e2c631c803eb0858f04609a25109f339b24852c812f4894e162278cd88e1f263",
+      "archive_sha256": "e2c631c803eb0858f04609a25109f339b24852c812f4894e162278cd88e1f263",
+      "archive_bytes": 12114,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_lane_backend.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_lane_backend.py.txt",
+      "source_sha256": "56e37d2574b5fc06a66ae3c4898ec0ca8ce9a8565ce9a4f82569632fa6ccc341",
+      "archive_sha256": "56e37d2574b5fc06a66ae3c4898ec0ca8ce9a8565ce9a4f82569632fa6ccc341",
+      "archive_bytes": 44002,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_certified_dependencies.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_certified_dependencies.py.txt",
+      "source_sha256": "a33edc0ad8fb781e37a2aabfe7617caa18bfacb93b477d842f63af79cffbedcb",
+      "archive_sha256": "a33edc0ad8fb781e37a2aabfe7617caa18bfacb93b477d842f63af79cffbedcb",
+      "archive_bytes": 12021,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_corner_dependencies.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_corner_dependencies.py.txt",
+      "source_sha256": "2218568ee69f049e7ac1e1c0afd1110c7375a7bcbf9a93738d913fe041ce3432",
+      "archive_sha256": "2218568ee69f049e7ac1e1c0afd1110c7375a7bcbf9a93738d913fe041ce3432",
+      "archive_bytes": 14806,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_independent_motion.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_independent_motion.py.txt",
+      "source_sha256": "eeed3f8ec7a4b72c19aa76b13ef94e00e6f00df90deee6ca5ac2f6724c1a9bbe",
+      "archive_sha256": "eeed3f8ec7a4b72c19aa76b13ef94e00e6f00df90deee6ca5ac2f6724c1a9bbe",
+      "archive_bytes": 10096,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_plane_calibration.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_plane_calibration.py.txt",
+      "source_sha256": "1233e8c48c8b886e6bd81ebf110d36df1869cd0a560b549bd0866ec1489397b5",
+      "archive_sha256": "1233e8c48c8b886e6bd81ebf110d36df1869cd0a560b549bd0866ec1489397b5",
+      "archive_bytes": 17740,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_raw_imu.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/test_replay_raw_imu.py.txt",
+      "source_sha256": "fd6b59bfc0171a1aa8b5ff9b8a80571e8f8f5f202d2e28449ca41f8e5129a10a",
+      "archive_sha256": "fd6b59bfc0171a1aa8b5ff9b8a80571e8f8f5f202d2e28449ca41f8e5129a10a",
+      "archive_bytes": 18265,
+      "normalized_text_exact": true,
+      "role": "R17 changed/new adapter source or test"
+    },
+    {
+      "source_relative_path": "Simulator/Tools/LaneTeachRepeat/upstream_teacher.py",
+      "archive_relative_path": "Simulator/Tools/LaneTeachRepeat/upstream_teacher.py.txt",
+      "source_sha256": "ba3a1d64163091c00bb88a2e7cfda582d128de36729a64486d2662dcde623696",
+      "archive_sha256": "ba3a1d64163091c00bb88a2e7cfda582d128de36729a64486d2662dcde623696",
+      "archive_bytes": 12581,
+      "normalized_text_exact": true,
+      "role": "unchanged import dependency, not claimed as R17 modification"
+    }
+  ],
+  "omitted": [
+    "Unity Assets and scene files",
+    "Frontend package used by upstream_teacher",
+    "recorded masks and motion logs",
+    "native binary",
+    "other simulator test suites"
+  ],
+  "privacy_review": {
+    "personal_absolute_paths_found": false,
+    "credential_pattern_matches": false,
+    "root_publication_review_pending": true
+  },
+  "claims": {
+    "byte_exact_afterimages": true,
+    "tightly_preceding_beforeimage_available": false,
+    "archive_executed": false,
+    "live_runtime_revalidated": false
+  }
+}

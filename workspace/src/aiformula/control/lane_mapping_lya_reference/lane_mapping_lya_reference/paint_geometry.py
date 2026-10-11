@@ -14,10 +14,16 @@ from types import MappingProxyType
 
 import numpy as np
 
+from .finite_support import DomainState, advance_domain, certified_segments
+
 
 REPRESENTATION = "paint_boundary_v1"
-BOUNDARY_VERSION = 2
+BOUNDARY_VERSION = 3
 TOPOLOGY_REPRESENTATION = "confirmed_contour_node_chords_v1"
+CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
+CERTIFIED_MODEL_FIELDS = ("certified_model_segments", "certified_model_owner",
+                          "certified_model_frame_votes", "certified_model_reliable_votes",
+                          "certified_model_last_stamp_ns")
 DEFAULT_CONFIG = {
     "normal_radius_m": .45, "normal_max_radius_m": 1.35,
     "normal_min_points": 6, "normal_max_variance_ratio": .15,
@@ -202,6 +208,11 @@ class BoundaryReference:
     edge_last_stamp_ns: object = None
     full_in_degree: object = None
     full_out_degree: object = None
+    certified_model_segments: object = None
+    certified_model_owner: object = None
+    certified_model_frame_votes: object = None
+    certified_model_reliable_votes: object = None
+    certified_model_last_stamp_ns: object = None
 
     def __post_init__(self):
         n, m = len(np.asarray(self.points_xy)), len(np.asarray(self.support_segments))
@@ -262,6 +273,38 @@ class BoundaryReference:
                     raise ValueError("inconsistent boundary full degree")
                 object.__setattr__(self, name, value)
 
+        supplied_model = [getattr(self, name) is not None for name in CERTIFIED_MODEL_FIELDS]
+        if any(supplied_model) and (not all(supplied_model) or not all(supplied)):
+            raise ValueError("certified boundary domains require all five arrays and explicit graph")
+        if all(supplied_model):
+            raw_segments = np.asarray(self.certified_model_segments)
+            if raw_segments.ndim != 3 or raw_segments.shape[1:] != (2, 2):
+                raise ValueError("invalid certified model segments")
+            count = len(raw_segments)
+            if max(m, len(self.directed_edges)) + count > 200000:
+                raise ValueError("combined boundary model capacity")
+            for name in CERTIFIED_MODEL_FIELDS:
+                shape = (count, 2, 2) if name == "certified_model_segments" else (count,)
+                dtype = np.float64 if name == "certified_model_segments" else np.int64
+                object.__setattr__(self, name, _frozen(getattr(self, name), dtype, shape, name))
+            owner = self.certified_model_owner
+            if (np.any(owner < 0) or np.any(owner >= n)
+                    or np.any(self.certified_model_frame_votes < 1)
+                    or np.any(self.certified_model_reliable_votes < 1)
+                    or np.any(self.certified_model_reliable_votes > self.certified_model_frame_votes)
+                    or np.any(self.certified_model_last_stamp_ns <= 0)
+                    or (count and self.source_frontier_ns is None)
+                    or (count and np.any(self.certified_model_last_stamp_ns > self.source_frontier_ns))):
+                raise ValueError("inconsistent certified boundary evidence")
+            if (np.any(self.certified_model_frame_votes > self.votes[owner])
+                    or np.any(self.certified_model_reliable_votes > self.reliable_votes[owner])):
+                raise ValueError("certified domain votes exceed owner evidence")
+            delta = self.certified_model_segments[:, 1]-self.certified_model_segments[:, 0]
+            with np.errstate(over="ignore", invalid="ignore"):
+                lengths = np.sum(delta*delta, axis=1)
+            if np.any(~np.isfinite(lengths)) or np.any(lengths <= 0.):
+                raise ValueError("certified model must have finite positive length")
+
     @property
     def representation(self):
         return REPRESENTATION
@@ -269,6 +312,14 @@ class BoundaryReference:
     @property
     def topology_representation(self):
         return None if self.directed_edges is None else TOPOLOGY_REPRESENTATION
+
+    @property
+    def boundary_version(self):
+        return 3 if self.certified_model_segments is not None else (2 if self.directed_edges is not None else 1)
+
+    @property
+    def certified_model_representation(self):
+        return None if self.certified_model_segments is None else CERTIFIED_MODEL_REPRESENTATION
 
     def subset(self, indices):
         raw = np.asarray(indices)
@@ -291,6 +342,11 @@ class BoundaryReference:
                          edge_last_stamp_ns=self.edge_last_stamp_ns[retain],
                          full_in_degree=self.full_in_degree[ids],
                          full_out_degree=self.full_out_degree[ids])
+        if self.certified_model_segments is not None:
+            model_owners = remap[self.certified_model_owner]
+            retained = model_owners >= 0
+            graph.update({name: getattr(self, name)[retained] for name in CERTIFIED_MODEL_FIELDS})
+            graph["certified_model_owner"] = model_owners[retained]
         return BoundaryReference(self.points_xy[ids], self.normals[ids], self.support_segments[keep],
                                  owners[keep], self.votes[ids], self.reliable_votes[ids],
                                  self.record_ids[ids], self.source_frontier_ns, **graph)
@@ -340,6 +396,8 @@ class PreparedBoundaryUpdate:
     edge_updates: tuple
     expired_edge_keys: tuple
     stats: object
+    domain_updates: tuple = ()
+    domain_interval_count: int = 0
 
 
 def _contiguous_cell_runs(obs, eligible, cells, cosine):
@@ -495,6 +553,9 @@ class BoundaryConsensus:
         # prepare/rejected tokens never mutate it or retain stale record objects.
         self._cell_records = {}
         self._edges = {}
+        self._domains = {}
+        self._domain_expiry = {}
+        self._domain_interval_count = 0
         self._generation = 0
         self._next_record_id = 0
         self._segment_count = 0
@@ -708,6 +769,46 @@ class BoundaryConsensus:
             key not in self._edges or key in expired_edge_set for key in edge_votes)
         if edge_count > cfg["max_support_segments"]:
             raise ValueError("boundary topology edge capacity")
+        # Certify INTERNAL extent independently of the cross-record graph.
+        # Only actual model-next pairs owned by the SAME finalized record may
+        # vote. The creation chart never moves with later fused node means.
+        domains = []
+        domain_count = self._domain_interval_count - sum(
+            len(self._domains[key].intervals) for key in expired if key in self._domains)
+        updated_ids = {item[0] for item in updates}
+        # A confirmed owner may never be seen again, yet its UNCONFIRMED
+        # interval fragments must still expire. The small earliest-expiry index
+        # avoids scanning every confirmed piece of the whole historical map.
+        # All pruning remains in the prepared delta until the guard commits it.
+        if ttl:
+            for record_id, earliest in self._domain_expiry.items():
+                if record_id in expired_set or record_id in updated_ids or stamp-earliest <= ttl:
+                    continue
+                old_domain = self._domains[record_id]
+                retained = tuple(piece for piece in old_domain.intervals if not (
+                    stamp-piece.last_stamp_ns > ttl and (piece.frame_votes < cfg["minimum_frame_votes"]
+                    or piece.reliable_votes < cfg["minimum_reliable_votes"])))
+                domains.append((record_id, DomainState(old_domain.origin, old_domain.tangent, retained, stamp)))
+                domain_count += len(retained)-len(old_domain.intervals)
+        for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
+            following = obs.next[members]
+            selected = following >= 0
+            selected[selected] &= face_owner[following[selected]] == record_id
+            first, second = members[selected], following[selected]
+            pairs = np.column_stack((first, second))
+            old_domain = self._domains.get(record_id)
+            # Even an empty creation frame fixes the chart. Later internal
+            # evidence must not choose a more convenient new origin/direction.
+            domain = advance_domain(old_domain, origin=frame_points[index],
+                current_frame_normal=frame_normals[index], segments=model_points[pairs],
+                normals=model_normals[pairs], reliable=face_reliable[first] & face_reliable[second],
+                stamp_ns=stamp, minimum_frame_votes=cfg["minimum_frame_votes"],
+                minimum_reliable_votes=cfg["minimum_reliable_votes"], candidate_ttl_ns=ttl,
+                normal_cosine=cosine, max_intervals=cfg["max_support_segments"])
+            domain_count += len(domain.intervals)-(len(old_domain.intervals) if old_domain is not None else 0)
+            domains.append((record_id, domain))
+        if max(segments, edge_count) + domain_count > cfg["max_support_segments"]:
+            raise ValueError("combined boundary finite-domain capacity")
         stats = MappingProxyType({"input_edges": len(obs.points), "eligible_edges": len(eligible),
                                   "invalid_edges": len(obs.points) - len(eligible), "updated_records": len(records),
                                   "ambiguous_groups": ambiguous_groups, "expired_candidates": len(expired),
@@ -716,9 +817,11 @@ class BoundaryConsensus:
                                   "retained_segments": segments, "topology_candidate_edges": edge_count,
                                   "topology_updated_edges": len(edge_updates),
                                   "topology_expired_edges": len(expired_edges),
+                                  "certified_domain_intervals": domain_count,
                                   "topology_representation": TOPOLOGY_REPRESENTATION})
         return PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records), expired,
-                                      next_id, segments, tuple(edge_updates), expired_edges, stats)
+                                      next_id, segments, tuple(edge_updates), expired_edges, stats,
+                                      tuple(domains), domain_count)
 
     def can_commit(self, prepared):
         return (isinstance(prepared, PreparedBoundaryUpdate) and prepared.owner is self
@@ -734,6 +837,8 @@ class BoundaryConsensus:
             if not self._cell_records[cell]:
                 del self._cell_records[cell]
             del self._records[record_id]
+            self._domains.pop(record_id, None)
+            self._domain_expiry.pop(record_id, None)
         for record in prepared.updates:
             old = self._records.get(record.record_id)
             if old is not None and old.cell != record.cell:
@@ -749,12 +854,47 @@ class BoundaryConsensus:
             del self._edges[key]
         for edge in prepared.edge_updates:
             self._edges[(edge.source_id, edge.target_id)] = edge
+        self._domains.update(prepared.domain_updates)
+        for record_id, domain in prepared.domain_updates:
+            pending = [piece.last_stamp_ns for piece in domain.intervals
+                       if piece.frame_votes < self.config["minimum_frame_votes"]
+                       or piece.reliable_votes < self.config["minimum_reliable_votes"]]
+            if pending:
+                self._domain_expiry[record_id] = min(pending)
+            else:
+                self._domain_expiry.pop(record_id, None)
+        self._domain_interval_count = prepared.domain_interval_count
         self._next_record_id = prepared.next_record_id
         self._segment_count = prepared.segment_count
         self._confirmed_count = prepared.stats["confirmed_records"]
         self.source_frontier_ns = prepared.source_stamp_ns
         self._generation += 1
         return True
+
+    def _certified_model(self, records, slots):
+        """Export finite domains without inventing graph nodes or past poses.
+
+        Branched owners remain candidates: their domain is rejected by the
+        matcher, not deleted to let a farther convenient primitive win.
+        Global record-ID order is stable under distance-sorted subsets.
+        """
+        pieces, owners, votes, reliable, stamps = [], [], [], [], []
+        cfg = self.config
+        for record in sorted(records, key=lambda item: item.record_id):
+            domain = self._domains.get(record.record_id)
+            if domain is None:
+                continue
+            segments, frame, trusted, last = certified_segments(
+                domain, record.point, record.normal, math.cos(cfg["normal_max_angle_rad"]),
+                cfg["minimum_frame_votes"], cfg["minimum_reliable_votes"])
+            if len(segments):
+                pieces.append(segments)
+                owners.append(np.full(len(segments), slots[record.record_id], dtype=np.int64))
+                votes.append(frame); reliable.append(trusted); stamps.append(last)
+        values = (np.concatenate(pieces) if pieces else np.empty((0, 2, 2)),)
+        values += tuple(np.concatenate(items) if items else np.empty(0, dtype=np.int64)
+                        for items in (owners, votes, reliable, stamps))
+        return dict(zip(CERTIFIED_MODEL_FIELDS, values))
 
     def snapshot_near(self, center_xy, radius_m, maximum_points):
         """Exact full-snapshot/filter/stable-sort/subset without full packaging.
@@ -820,7 +960,8 @@ class BoundaryConsensus:
             edge_reliable_votes=np.asarray([e.reliable_votes for e in links], dtype=np.int64),
             edge_last_stamp_ns=np.asarray([e.last_stamp_ns for e in links], dtype=np.int64),
             full_in_degree=np.asarray([incoming.get(r.record_id, 0) for r in local], dtype=np.int64),
-            full_out_degree=np.asarray([outgoing.get(r.record_id, 0) for r in local], dtype=np.int64))
+            full_out_degree=np.asarray([outgoing.get(r.record_id, 0) for r in local], dtype=np.int64),
+            **self._certified_model(local, slots))
 
     def snapshot(self):
         records = [record for _, record in sorted(self._records.items()) if self._confirmed(record)]
@@ -861,7 +1002,7 @@ class BoundaryConsensus:
                                  segments, owners,
                                  np.asarray([record.votes for record in records], dtype=np.int64),
                                  np.asarray([record.reliable_votes for record in records], dtype=np.int64), ids,
-                                 self.source_frontier_ns, **graph)
+                                 self.source_frontier_ns, **graph, **self._certified_model(records, slots))
 
 
 def _configuration(config):
