@@ -1,5 +1,11 @@
 # Changelog
 
+## Diagnostic notes — 2026-10-12
+
+Added the subsequent 26/27 quantized-curve failure, unprocessed actual-mask batch,
+video02 identity rejection and pending original-RGB/public-plane-API diagnostics.
+Payload version remains 0.1.0; no candidate or core change is enabled by these notes.
+
 ## 0.1.0 — 2026-10-12
 
 Default-off Unity exposure provenance (v2), exact original lane PNG recording,

@@ -10,6 +10,8 @@
 
 已确认的独立问题：
 
+后续候选的具体失败与准备状态见 `reports/UNCONFIRMED_CANDIDATE_AUDIT_02.md`：量化曲线首次 26/27 PASS，真实 703-mask audit 未开始；video02 在编码前因 post-reset 身份混用失败；原 RGB/完整 plane API 正例仍待独立运行。不要把这些准备态升级为通过。
+
 1. 稀疏官方 junction chord 不等于圆角实测外轮廓；官方 junction 不一定有车体转角。旧整体 fit 已失败，删转角门控不能解决它。
 2. 现 LLP 经过 ROI/组件选择/直线化，不能提供完整横向支路；`left_only` 是当前车道边界模式。
 3. 远处一行像素的投影阶梯会被固定 0.15m 分片误认成横线；拟合零残差不等于低量化误差。
