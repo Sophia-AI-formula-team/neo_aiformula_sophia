@@ -1,0 +1,104 @@
+--- final63/Assets/StreamingAssets/SemanticPlanning/semantic_worker.py
++++ capture-v2/Assets/StreamingAssets/SemanticPlanning/semantic_worker.py
+@@ -97,7 +97,7 @@
+ 
+ 
+ class SemanticTransport:
+-    def __init__(self, source_root, vision_root, signal_approach=False):
++    def __init__(self, source_root, vision_root, signal_approach=False, diagnostic_route_output=None):
+         self.source_root, self.vision_root = Path(source_root).resolve(), Path(vision_root).resolve()
+         self.signal_approach = bool(signal_approach)
+         self.sim_time = 0.0
+@@ -125,6 +125,59 @@
+         self.epoch = None
+         self.total_vision_votes = 0
+         self._new_chain()
++        self.route_diagnostic = None
++        self.route_diagnostic_error = None
++        self.diagnostic_route_output = diagnostic_route_output
++        if diagnostic_route_output is not None:
++            try:
++                import os
++                from fusion_snapshot_capture import FusionSnapshotCapture, RouteDiagnosticWriter, reference_snapshot
++                def context():
++                    return dict(worker_pid=os.getpid(), tick_sequence=self.last_tick_sequence,
++                        sim_time=self.sim_time, epoch=self.epoch,
++                        source_hash=self.source_hash, source_tree_hash=self.source_tree_hash,
++                        source_files=dict(self.source_files), vision_commit=self.vision_commit,
++                        map_parameters=copy.deepcopy(self.map.p),
++                        map_state_before=dict(odom=list(self.map.odom) if self.map.odom is not None else None,
++                            odom_stamp=self.map.odom_stamp, odom_sequence=self.map.odom_seq,
++                            recorded_samples=len(self.map.samples), recorded_distance_m=self.map.recorded_distance,
++                            reference=reference_snapshot(self.map.reference)))
++                capture = FusionSnapshotCapture(self.map_module, context)
++                writer = RouteDiagnosticWriter(capture, diagnostic_route_output)
++                capture.install()
++                self.route_diagnostic = writer
++            except Exception as error:
++                self.route_diagnostic_error = repr(error)
++                self._report_route_diagnostic("setup error: " + self.route_diagnostic_error)
++
++    @staticmethod
++    def _report_route_diagnostic(message):
++        try:
++            print("[route_diagnostic] " + message, file=sys.stderr)
++        except Exception:
++            pass
++
++    def flush_route_diagnostic(self):
++        if self.route_diagnostic is not None:
++            try:
++                self.route_diagnostic.flush()
++            except Exception as error:
++                # The helper also catches failures; retain an outer transport
++                # boundary so diagnostics can never fail the control process.
++                self.route_diagnostic_error = repr(error)
++                self._report_route_diagnostic("flush error: " + self.route_diagnostic_error)
++
++    def route_diagnostic_status(self):
++        if self.route_diagnostic is not None:
++            try:
++                status = self.route_diagnostic.status()
++                if self.route_diagnostic_error is not None:
++                    status.update(error=self.route_diagnostic_error, exact_capture=False)
++                return status
++            except Exception as error:
++                self.route_diagnostic_error = repr(error)
++        return dict(enabled=False, output=self.diagnostic_route_output,
++                    exact_capture=False, error=self.route_diagnostic_error)
+ 
+     def _install_ros_transport(self):
+         transport = self
+@@ -361,6 +414,7 @@
+     parser.add_argument("--source-root", required=True)
+     parser.add_argument("--vision-root", required=True)
+     parser.add_argument("--signal-approach", action="store_true")
++    parser.add_argument("--diagnostic-route-output", default=None)
+     args = parser.parse_args()
+     protocol = sys.stdout
+     sys.stdout = sys.stderr
+@@ -371,7 +425,8 @@
+ 
+     request = {}
+     try:
+-        transport = SemanticTransport(args.source_root, args.vision_root, args.signal_approach)
++        transport = SemanticTransport(args.source_root, args.vision_root, args.signal_approach,
++                                      args.diagnostic_route_output)
+         send(transport.ready())
+         while True:
+             line = sys.stdin.buffer.readline(MAX_LINE + 1)
+@@ -380,7 +435,13 @@
+             if len(line) > MAX_LINE:
+                 raise ValueError("Input tick exceeds transport limit")
+             request = json.loads(line)
+-            send(transport.tick(request))
++            response = transport.tick(request)
++            if args.diagnostic_route_output is not None:
++                response["diagnostic_route"] = transport.route_diagnostic_status()
++            send(response)
++            # Keep sidecar I/O outside the fusion call and after normal command
++            # transmission. Diagnostic failures never become control failures.
++            transport.flush_route_diagnostic()
+     except Exception as error:
+         send(dict(type="error", sequence=request.get("sequence") if isinstance(request, dict) else None,
+                   valid=False, v=0.0, w=0.0,
