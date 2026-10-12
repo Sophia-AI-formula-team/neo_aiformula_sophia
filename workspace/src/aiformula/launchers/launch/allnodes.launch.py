@@ -430,6 +430,7 @@ def generate_launch_description():
         parameters=[
             osp.join(vehicle_dir, "config", "wheel.yaml"),
             osp.join(motor_controller_dir, "config", "motor_controller.yaml"),
+            LaunchConfiguration("button_layout_config"),
         ],
         remappings=[
             ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),

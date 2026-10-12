@@ -1,0 +1,60 @@
+{
+  "base_commit": "09f3110d42721b025928aaa270f9dffeb780f0f2",
+  "source_commit": "711cf30a2cc074b22fcd5743886c53227b59f7c3",
+  "versions": {
+    "motor_controller": "0.4.1",
+    "semantic_local_planner_ros": "0.2.2"
+  },
+  "files": {
+    "control/motor_controller/README.md": {
+      "before": "7f5217db190ea09cfd10fedcb8f81301623163db711ca331682e72eb71645f0a",
+      "after": "4a5c962bea6333e7f4d0f420f2a8d29f21e86f74f497a05d3c825d4683e212c6"
+    },
+    "control/motor_controller/UPSTREAM.json": {
+      "before": "134dd15078b91ef5d55dace3ff0f0bb7acadfc9f13513d8810e12a07d4cba211",
+      "after": "36fe357b60e2ee438a6b80e1193898433f9d22235ce1ca8fa36b749ff258aedc"
+    },
+    "control/motor_controller/motor_controller/gate.py": {
+      "before": "32ce15e0ba97a197a671d001f07c17ab4d4cc1cbca647ac87d3d7200161aee67",
+      "after": "5051626c0497763d8aa6baab307d96b1330219876358968d1ecb110699905ac1"
+    },
+    "control/motor_controller/package.xml": {
+      "before": "e1ba5064a7865b52d0562e65a99778863e3325f23424d6cdfe896f5a9a63034c",
+      "after": "38ff736584123b0c51b9c9a942e7cdbbc6c2374682d0d4a93452986ab2f3ad0a"
+    },
+    "control/motor_controller/setup.py": {
+      "before": "7d9c55f18515aeca771b2c8670261a4675ebaf820347a41202b546e7d583550e",
+      "after": "c58f0e894c30a0366eb2f8b5139eb068fe64d0e2e4a6f3b03affd5b7aeede80c"
+    },
+    "control/motor_controller/tests/test_gate.py": {
+      "before": "ab70b9ebdb3f5045ed290732820142db3022d039ba74c606d2fb8e25fbb56aa1",
+      "after": "1d435e1d74377f43bad6a4a7d165f2d6e14663e4aff37dedb467c2cdc5f2e033"
+    },
+    "perception/semantic_planning_system/semantic_local_planner_ros/MAP_ASSIST.md": {
+      "before": "d230d0f1d2feec6b61f6363c6d64106bc59dbe42e8d8a880ba05d0a93d8fd28b",
+      "after": "223a66baba8f9372ee1a6a941bd15c33889ec9079c66c597d29f97c4d4ca3a12"
+    },
+    "perception/semantic_planning_system/semantic_local_planner_ros/package.xml": {
+      "before": "1ff24ffd576e991294d2131b289ea84823bcbd4f5c05436f6839c0fcc1c546dc",
+      "after": "cd08945526225be105672c2b974a315ef97d8c0ffe5583942a452d6c13452069"
+    },
+    "perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py": {
+      "before": "b587e4785a78f9e55651f6c8d2e5948f56c9f7a1171d1863b2f391ff5b60256e",
+      "after": "f98cbd28098aa613dffccf91a53c15e5f5151adc17ebe4296f39e5556747ac5e"
+    },
+    "perception/semantic_planning_system/semantic_local_planner_ros/setup.py": {
+      "before": "61cfe123cf41c52e2f767e63a241ce7c77d935febc315504cd02f420eb9d1c2e",
+      "after": "c3dcaf70c63e87eb31e988d9cf34bfd7999fe26bdb5a9e2b59907e34f3b322a6"
+    },
+    "control/motor_controller/motor_controller/motor_controller.py": {
+      "before": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742",
+      "after": "7a6282c6a7e8f0215477da917f654fc39d15891c76a0b4209edeeb859519fd7d"
+    }
+  },
+  "guards": {
+    "control/semantic_vehicle_wiring/semantic_vehicle_wiring/session.py": "d11b713025d02848ed5087324fee54df9f0117ee928a6b5c012fc0d591e94976",
+    "control/semantic_vehicle_wiring/package.xml": "c36a31f958be32718da1fbff44b4a378db172f3d210a9cd99a7c454bef93a161",
+    "launchers/launch/semantic_vehicle.launch.py": "3f43050b1ad7d3344bf32730e2543c41832448ef4d4c39b4a56f791742aab908"
+  },
+  "vehicle_baseline_note": "Observed exact USB131 main file restored on vehicle; include reviewed motor main so traffic gate and zero fix are actually used. Preserve original before replacement."
+}

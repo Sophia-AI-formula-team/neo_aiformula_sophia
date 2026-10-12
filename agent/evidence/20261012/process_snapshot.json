@@ -1,0 +1,125 @@
+{
+  "captured_jst": "2026-10-12T17:51:32.246011+09:00",
+  "processes": [
+    {
+      "pid": 33891,
+      "command": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers allnodes.launch.py ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33914,
+      "command": "/usr/bin/python3 /opt/ros/foxy/lib/joint_state_publisher/joint_state_publisher /home/workspace/install/vehicle/share/vehicle/xacro/ai_car1.urdf --ros-args --log-level WARN --ros-args -r __node:=joint_state_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_2s027lxf ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33916,
+      "command": "/home/workspace/install/zed_wrapper/lib/zed_wrapper/zed_wrapper --ros-args -r __node:=zed_node -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml --params-file /tmp/launch_params_uasjror4 -r ~/left/image_rect_color:=/aiformula_sensing/zed_node/left_image/undistorted -r ~/right/image_rect_color:=/aiformula_sensing/zed_node/right_image/undistorted -r ~/imu/data:=/aiformula_sensing/zed_node/imu ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33918,
+      "command": "/home/workspace/install/vectornav/lib/vectornav/vectornav --ros-args -r __node:=vectornav -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33920,
+      "command": "/home/workspace/install/vectornav/lib/vectornav/vn_sensor_msgs --ros-args -r __node:=vn_sensor_msgs -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml -r vectornav/imu:=/aiformula_sensing/vectornav/imu ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33922,
+      "command": "/home/control/aiformula_runtime/yolop_a3_v14_20261012/venv/bin/python3 /home/control/aiformula_runtime/yolop_a3_v14_20261012/run_a3.py --ros-args -r __ns:=/aiformula_perception -p weights:=/home/control/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/weights/shared_best.pth -p device:=cuda -p score_threshold:=0.5 -p use_sim_time:=false -p input_image_topic:=/aiformula_sensing/zed_node/left_image/undistorted -r pub_mask_image:=/aiformula_perception/road_detector/mask_image -r pub_annotated_mask_image:=/aiformula_visualization/road_detector/annotated_mask_image -r /cone_mask:=/cone_mask -r /cone_bbox_image:=/cone_bbox_image -r /aiformula_perception/yolop_a3/detections:=/aiformula_perception/yolop_a3/detections -r /traffic_light/state:=/aiformula_perception/yolop_a3/traffic_light/state -r /red_pixels_count:=/aiformula_perception/yolop_a3/red_pixels_count ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33924,
+      "command": "/home/workspace/install/lane_line_publisher/lib/lane_line_publisher/lane_line_publisher --ros-args -r __node:=lane_line_publisher --params-file /home/workspace/install/lane_line_publisher/share/lane_line_publisher/config/lane_line_publisher.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/camera_params/SN48797506/intrinsic_nHD.yaml --params-file /tmp/launch_params_0_50cfi1 -r mask_image:=/aiformula_perception/road_detector/mask_image -r annotated_mask_image:=/aiformula_perception/lane_line_publisher/annotated_mask_image -r dynamic_roi_image:=/aiformula_perception/lane_line_publisher/dynamic_roi_image -r linear_fit_image:=/aiformula_perception/lane_line_publisher/linear_fit_image -r vehicle_fit_image:=/aiformula_perception/lane_line_publisher/vehicle_fit_image -r lane_lines/left:=/aiformula_perception/lane_line_publisher/lane_lines/left -r lane_lines/right:=/aiformula_perception/lane_line_publisher/lane_lines/right -r lane_lines/center:=/aiformula_perception/lane_line_publisher/lane_lines/center -r tf:=/tf -r tf_static:=/tf_static ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33926,
+      "command": "/usr/bin/python3 /home/workspace/install/lane_points/lib/lane_points/lane_0215 --ros-args ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33928,
+      "command": "/usr/bin/python3 /home/workspace/install/kalman_filter/lib/kalman_filter/withoutkalman_0312 --ros-args ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33930,
+      "command": "/opt/ros/foxy/lib/joy/joy_node --ros-args -r __node:=joy_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/joy.yaml -r joy:=/aiformula_control/joy_node/joy ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33932,
+      "command": "python3 /home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_60ut2j8l -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33934,
+      "command": "/opt/ros/foxy/lib/teleop_twist_joy/teleop_node --ros-args -r __node:=teleop_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r joy:=/aiformula_control/joy_node/joy_l2_throttle -r cmd_vel:=/aiformula_control/game_pad/cmd_vel ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33944,
+      "command": "/usr/bin/python3 /home/workspace/install/motor_controller/lib/motor_controller/motor_controller --ros-args -r __node:=motor_controller -r __ns:=/aiformula_control --params-file /home/workspace/install/vehicle/share/vehicle/config/wheel.yaml --params-file /home/workspace/install/motor_controller/share/motor_controller/config/motor_controller.yaml --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r sub_speed_command:=/aiformula_control/game_pad/cmd_vel -r pub_can:=/aiformula_control/motor_controller/reference_signal ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33970,
+      "command": "/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_n83clfyi -r from_can_bus:=/aiformula_sensing/vehicle_info ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33984,
+      "command": "/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_sender_node_exe --ros-args -r __node:=socket_can_sender -r __ns:=/aiformula_control --params-file /tmp/launch_params_6gi_lm83 -r to_can_bus:=/aiformula_control/motor_controller/reference_signal ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33991,
+      "command": "/home/workspace/install/odometry_publisher/lib/odometry_publisher/gyro_odometry_publisher --ros-args -r __node:=gyro_odometry_publisher -r __ns:=/aiformula_sensing --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/wheel.yaml --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/gyro_odometry_publisher.yaml --params-file /tmp/launch_params_21y0ufm0 -r sub_imu:=/aiformula_sensing/vectornav/imu -r sub_can:=/aiformula_sensing/vehicle_info -r pub_odometry:=/aiformula_sensing/gyro_odometry_publisher/odom ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    },
+    {
+      "pid": 33994,
+      "command": "/usr/bin/python3 /home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info ",
+      "ros_environment": [
+        "ROS_LOCALHOST_ONLY=0"
+      ]
+    }
+  ],
+  "read_only": true
+}
