@@ -53,11 +53,13 @@ map_assist:
     # map_drive.launch.py enables these and remaps the existing LYA output.
     # Standalone map_assist.launch.py retains point-only assistance by default.
     enable_traffic_control: false
+    # Stable red waits; fresh stable green resumes. No automatic detour.
+    traffic_policy: stop_wait
     traffic_light_topic: /map_assist/traffic_light_input
     # Both red and green require a strict majority of real detector frames.
     traffic_vote_window_sec: 0.5
     traffic_vote_min_samples: 3
-    # Opt-in metric stop approach. Legacy color-only inputs still stop immediately.
+    # Historical distance approach requires explicit traffic_policy: legacy.
     enable_signal_approach: false
     signal_observation_topic: /map_assist/signal_observation
     signal_observation_timeout_sec: 0.5

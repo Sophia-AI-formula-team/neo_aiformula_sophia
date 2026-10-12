@@ -76,6 +76,8 @@ class MapAssistTests(unittest.TestCase):
         official = self.package / "config" / "aiformula_topomap.osm"
         self.assertTrue(official.is_file(), "The package must include the supplied official map fixture")
         overrides = {
+            # Keep historical distance/detour regressions explicit.
+            "traffic_policy": "legacy",
             "topomap_path": str(official),
             "min_lap_distance_m": 10.0,
             "lap_closure_radius_m": 0.1,
