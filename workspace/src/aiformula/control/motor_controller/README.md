@@ -1,34 +1,7 @@
-# motor_controller 0.2.0
+# motor_controller 0.2.1
 
-This version replaces neo's selectable 0.1.1 controller with the implementation
-requested from `Sophia-AI-formula-team/aiformula_sophia`, commit
-`dd55f65ef2fe434512d9f7bf48fff7c17141fac3`, path
-`aiformula/control/motor_controller`. `UPSTREAM.json` records source checksums.
-The control algorithm file is byte-for-byte identical to that source.
-
-Twist input is `sub_speed_command`; the output is `pub_can`, CAN ID `0x210`,
-eight bytes containing two signed int32 little-endian RPM values. The existing
-launch maps these to `/aiformula_control/game_pad/cmd_vel` and
-`/aiformula_control/motor_controller/reference_signal`. Wheel tread, diameter
-and gear ratio continue to come from the vehicle's wheel.yaml. The package's
-timer remains 0.01 seconds.
-
-The imported controller uses the upstream fixed empirical compensation. It does
-not implement the previous controller_state selector, joystick state switching,
-live RPM correction weights, learned-model mode or correction debug topic.
-The source's output ordering and compensation constants are preserved exactly.
-
-Integration metadata is versioned 0.2.0, with explicit runtime dependencies,
-upstream MIT attribution, and this provenance record. The invalid upstream
-motortest entry point is removed because its module is absent. Tracked Python
-bytecode is excluded. No control algorithm or empirical constant was changed.
-
-Only motor_controller is built for this deployment. The independently staged
-semantic packages remain unbuilt. An already-running Python node keeps its
-loaded previous code; restarting its owning launch selects the newly installed
-controller. Build and isolated ROS-topic validation do not establish physical
-driving performance.
-
-The previous neo implementation remains in Git history at
-`05f1651c8a14d56ab9a86a9767c52793403dcfdc`. Vehicle source, build and install
-backups and deployment receipts are recorded in the dated deployment handoff.
+- 来源：用户指定的 `aiformula0124/aiformula/control/motor_controller/motor_controller/motor_controller.py`，原样导入；完整路径和 SHA256 见 `UPSTREAM.json`。
+- 改动：在原轮速补偿前增加正、负方向分别拟合的 Sigmoid 反函数转向补偿；ROS 话题与 CAN `0x210` 接口保持不变（右、左轮各一个小端有符号 int32）。
+- 验证：相同算法文件已在车上单包编译并核对安装哈希；用户反馈车辆可以转向。仓库元数据升为 0.2.1，车上此前构建的包元数据仍为 0.2.0。
+- 已知问题：按当前车轮参数，零指令 `v=0, ω=0` 会输出右轮 −63、左轮 +63 RPM；直行也可能产生差速。本次保留指定算法，未修复此问题，零指令停车尚不成立。
+- 上一版本保留在 PR #19；车上替换前备份为 `/home/control/aiformula_backups/20261012_motor_controller_usb`。历史上游哈希保留在 `UPSTREAM.json` 的 `upstream_files`。
