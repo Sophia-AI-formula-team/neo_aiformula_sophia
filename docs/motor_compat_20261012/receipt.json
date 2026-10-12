@@ -1,0 +1,19 @@
+{
+  "source_files_verified": 29,
+  "packages_built": [
+    "motor_controller 0.4.0",
+    "semantic_vehicle_wiring 0.2.0",
+    "launchers"
+  ],
+  "unit_tests": 25,
+  "dds_tests": 27,
+  "active_drive_or_semantic_processes": [
+    "/usr/bin/python3 /home/workspace/install/motor_controller/lib/motor_controller/motor_controller --ros-args -r",
+    "/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver",
+    "/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_sender_node_exe --ros-args -r __node:=socket_can_sender"
+  ],
+  "hardware_can_test": false,
+  "backup": "/home/control/aiformula_backups/20261012_motor_compat_0_4_0",
+  "agent_test_sent_to_hardware": false,
+  "observed_live_stack_at_finish": "Existing external allnodes/motor/CAN stack observed after isolated verification; not launched or stopped by this test"
+}

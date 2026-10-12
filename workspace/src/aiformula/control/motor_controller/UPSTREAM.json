@@ -3,8 +3,8 @@
   "commit": "dd55f65ef2fe434512d9f7bf48fff7c17141fac3",
   "source_directory": "aiformula/control/motor_controller",
   "upstream_package_version": "0.0.0",
-  "neo_package_version": "0.3.0",
-  "algorithm_sha256": "4186afe1fee861799b61bcf168c84ec482ab904226fb1600ecc0a18245d0a65b",
+  "neo_package_version": "0.4.0",
+  "algorithm_sha256": "7a6282c6a7e8f0215477da917f654fc39d15891c76a0b4209edeeb859519fd7d",
   "upstream_files": {
     "package.xml": "dbf2d32de586d312174fb5fd16fd2555a2abaf1715e40bc1795f33ef634b11d3",
     "setup.cfg": "161217f62732c479e81f2048ad58d6ece0edf172c9197135b91960bd1756229a",
@@ -25,7 +25,7 @@
     "Replace algorithm with user-supplied sigmoid steering compensation; upstream_files retain historical baseline hashes",
     "Motor-side automatic red/green gate and independent manual priority with timeouts",
     "Exact zero CAN payload and zero-yaw sigmoid bypass; preserve nonzero steering fits",
-    "Default motion inhibition for stationary deployment"
+    "Original launch and velocity topic retained; semantic lifecycle opts into MapAssist decisions without user flags"
   ],
   "excluded": [
     "Tracked Python bytecode caches"
@@ -36,5 +36,7 @@
     "path": "/run/media/nanato/6718-316A/aiformula0124/aiformula/control/motor_controller/motor_controller/motor_controller.py",
     "copied_byte_for_byte": false
   },
-  "usb_algorithm_sha256": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742"
+  "usb_algorithm_sha256": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742",
+  "current_version": "0.4.0",
+  "compatibility": "Legacy topics and default startup restored; optional semantic lifecycle; mapped Joy priority; zero fix"
 }

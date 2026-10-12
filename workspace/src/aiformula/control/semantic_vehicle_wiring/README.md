@@ -1,9 +1,15 @@
-# 车辆 A3 信号接线
+# 车辆启动（motor 0.4.0）
 
-`a3_signal_capture` 将 `/aiformula_perception/yolop_a3/detections` 中真实 red/green/unknown 与原始相机 Header 转为 `/semantic_drive/signal_capture`，sequence 等于采集纳秒时间戳；重复/回退帧不发布，不定时重复旧颜色。
+每个终端先加载 `source /home/workspace/install/setup.bash`。
 
-本包没有模型、距离估计或电机输出。距离和不确定度为 null；本次稳定红灯停/绿灯走不需要米制距离。
+1. 原基础节点：`ros2 launch launchers allnodes.launch.py`
+2. 原 LYA：`ros2 run trajectory_follower lya_follower_connected_omegat_global`（仅运行一个 LYA）。
+3. 需要红停绿行和 topo 时另开：`ros2 run semantic_vehicle_wiring semantic`。
 
-当前已编译部署。`ros2 launch launchers semantic_vehicle.launch.py` 使用本节点和信号桥给 topo 提供观测，motor_controller 同时直接读取原始带时间戳捕获，在发 CAN 前门控。运动默认禁止，详见 launchers/MOTOR_TRAFFIC_DEPLOYMENT.md。旧 semantic_vehicle_staged / semantic_shadow 仍是独立观察链，不与新入口叠加。
+不加 enable_motion 或 use_semantic 参数。不运行第 3 条时普通 LYA 不依赖红绿灯。手柄保持原操作，L2/L1 使能优先接管。
 
-相机帧为 zed_left_camera_optical_frame。本次不更改相机标定、TF 或 LYA；里程计与车道点由现有 allnodes 提供。静止隔离通信测试不等于实车建图/刹停验收。
+正常 Ctrl-C 关闭 semantic 后恢复普通 LYA；异常退出/失联保持自动停车，重新启动 semantic 恢复。手柄仍能接管。停止 LYA 后 0.5 秒命令超时归零。
+
+semantic 使用 PR23 stop_wait，去掉按距停车，稳定红灯等待、稳定绿灯放行；拓扑按真实里程计记录一圈，不执行自动左转。map_assist 速度输出仅诊断，motor 使用其决策门控原 LYA 输入。旧 shadow 入口保持不接车。
+
+部署和隔离验证不会启动真实电机输出；静止模拟消息不代表实车跑圈验收。

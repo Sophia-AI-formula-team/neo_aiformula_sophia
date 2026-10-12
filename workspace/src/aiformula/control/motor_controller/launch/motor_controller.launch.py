@@ -24,8 +24,6 @@ def generate_launch_description():
         parameters=[*ROS_PARAM_CONFIG],
         remappings=[
             ("sub_speed_command", TOPIC_NAMES["control"]["speed_command"]["game_pad"]),
-            ("sub_manual_command", "/aiformula_control/manual/cmd_vel"),
-            ("sub_manual_joy", "/aiformula_control/joy_node/joy_l2_throttle"),
             ("pub_can", TOPIC_NAMES["control"]["output_can_data"]),
         ],
     )

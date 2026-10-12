@@ -31,6 +31,8 @@ def generate_launch_description():
         params['input_point_' + label + '_topic'] = '/processed_point_' + label
         params['output_point_' + label + '_topic'] = '/semantic_drive/topo_point_' + label
     return LaunchDescription([
+        Node(package='semantic_vehicle_wiring', executable='motor_gate_session',
+             name='motor_gate_session', namespace='/semantic_drive', output='screen'),
         Node(package='semantic_vehicle_wiring', executable='a3_signal_capture',
              name='a3_signal_capture', namespace='/semantic_drive', output='screen',
              parameters=[{'expected_frame_id': 'zed_left_camera_optical_frame'}]),
