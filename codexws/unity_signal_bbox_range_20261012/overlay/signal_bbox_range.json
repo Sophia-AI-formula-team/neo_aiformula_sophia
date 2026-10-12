@@ -1,0 +1,19 @@
+{
+  "schema": "signal_bbox_range/v1",
+  "enabled": false,
+  "image_width": 640,
+  "image_height": 360,
+  "camera": {
+    "K": [254.391622, 0, 330.013020833, 0, 254.391622, 181.149637858, 0, 0, 1],
+    "R": [0, 0, 1, -1, 0, 0, 0, -1, 0],
+    "t": [0, 0, 0.655]
+  },
+  "reference_depth_m": 10.0,
+  "reference_height_px": 7.2756003892,
+  "min_height_px": 4.0,
+  "min_width_px": 4.0,
+  "height_error_px": 1.0,
+  "front_offset_m": 0.216,
+  "target_height_px": 8.0,
+  "calibration_provenance": "Unity DisplayFace.asset height 0.286m, prefab root/display scale=1; neo SN48442725/intrinsic_nHD.yaml fy=254.391622px at 640x360. Pinhole projection at optical depth 10m; not an empirical raster bbox measurement. Existing camera base_link x=0 and vehicle front offset=0.216m."
+}
