@@ -67,5 +67,16 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual((self.backup/'source'/name).read_bytes(),b'old')
 
 
+    def test_egg_link_install_resolves_fresh_python_import(self):
+        def fake_build(ws,env,log):
+            for package in installer.PACKAGES:
+                (ws/'build'/package).mkdir(parents=True)
+                (ws/'install'/package/'lib/python3.8/site-packages').mkdir(parents=True)
+        resolved=[json.dumps(str(self.ws/'src/aiformula'/name)).encode() for name in self.names]
+        with patch.object(installer,'build',side_effect=fake_build), patch.object(installer.subprocess,'check_output',side_effect=resolved):
+            receipt=installer.apply(self.bundle,self.ws,self.backup,self.manifest,{})
+        self.assertEqual(receipt['status'],'installed')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

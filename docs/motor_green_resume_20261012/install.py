@@ -76,6 +76,18 @@ def verify_installed(workspace, manifest):
     }
     for package, (relative, source) in modules.items():
         matches = list((workspace / 'install' / package / 'lib').glob('python*/site-packages/' + relative))
+        if not matches:
+            # Foxy/setuptools can use .egg-link + environment hooks instead of
+            # placing a package directory under site-packages. Resolve exactly
+            # what a freshly sourced installed Python process will import.
+            module = relative[:-3].replace('/', '.')
+            code = "import importlib.util,json; print(json.dumps(importlib.util.find_spec(%r).origin))" % module
+            resolved = subprocess.check_output(['/bin/bash', '-e', '-c',
+                '. /opt/ros/foxy/setup.bash >&2\n. "$1/install/setup.bash" >&2\npython3 -c "$2"',
+                'verify', str(workspace), code])
+            origin = Path(json.loads(resolved.decode()))
+            origin.resolve().relative_to(workspace.resolve())
+            matches = [origin]
         if len(matches) != 1 or digest(matches[0]) != manifest['files'][source]['after']:
             raise RuntimeError('Installed module mismatch: ' + package)
 

@@ -1,6 +1,6 @@
 # 绿灯恢复修复：motor 0.4.1 / MapAssist 0.2.2
 
-状态：离线修复和部署包已准备，尚未连接或部署到车辆。
+状态：已部署到车辆，motor 0.4.1 / MapAssist 0.2.2 两包 Foxy 编译和安装模块校验通过。车上原有 131 行 USB motor 已先备份；部署后未启动实际驾驶节点。
 
 ## 问题和证据
 
@@ -20,7 +20,7 @@ MapAssist 状态新增 `traffic_stop_required`，明确表示 stop_wait 红灯�
 
 Python 3.8.20：motor 27 项、生产回调联动 6 项、MapAssist/简单红绿灯/启动接线 108 项、部署事务 4 项全部通过。联动覆盖三次红绿循环且完全没有 topo ABC、topo 延时未结束、绿灯无新 LYA、LYA 零命令、单帧绿灯/unknown、手柄优先。
 
-部署事务使用临时目录和模拟编译器，检查源码漂移/进程占用拒绝部署、备份、编译失败恢复及安装文件校验。车辆 ROS/Foxy 编译、真实 DDS 和实车恢复尚未执行。dds_acceptance_pending.py 已增加“无 topo ABC 的红停绿行”隔离场景，等待联网后执行；它不是已通过的实车证据。
+部署事务使用临时目录和模拟编译器，检查源码漂移/进程占用拒绝部署、备份、编译失败恢复及安装文件校验。车辆 ROS/Foxy 编译和真实 DDS 隔离测试 30 场景通过，包括无 topo ABC 的红停绿行。用户随后要求结束验证、转入实车测试；隔离脚本此时已完成退出，没有继续测试或触碰用户实车节点。物理行驶/制动仍非本次验收范围。
 
 ## 包与部署
 
@@ -29,3 +29,5 @@ Python 3.8.20：motor 27 项、生产回调联动 6 项、MapAssist/简单红绿
 车辆恢复连接后先读取状态/日志、确认实际源码和节点状态，再安排停止相关节点并部署。安装器位于解压根目录，可先 `python3 install.py --check-only`，实际安装使用 `python3 install.py`。这是维护命令，不是驾驶启动参数。已有 allnodes/LYA/semantic 启动命令保持不变。
 
 备份目录 `/home/control/aiformula_backups/motor_green_resume_<UTC时间>_<随机后缀>` 保存 manifest、build.log、receipt.json 和旧文件。手动回滚前应退出驾驶/semantic，另存当前修改，再仅按 manifest 恢复对应 source/build/install；不要覆盖其他包。
+
+部署过程：首次编译通过，但安装器只查 site-packages 目录，未兼容 Foxy 的 egg-link 布局，自动恢复了备份。补充按实际 Python 导入位置校验后再次安装成功；安装器回归 5 项通过。备份及精确覆盖清单见 vehicle_install_receipt.json、vehicle_deployment_manifest.json。
