@@ -280,6 +280,8 @@ def generate_launch_description():
         DeclareLaunchArgument("vehicle_name", default_value="ai_car1"),
         DeclareLaunchArgument("use_joint_state_publisher", default_value="true"),
         DeclareLaunchArgument("lane_debug", default_value="true"),
+        DeclareLaunchArgument("enable_motion", default_value="false",
+                              description="Explicitly permit motor motion after stationary commissioning."),
         DeclareLaunchArgument("game_pad", default_value="dualshock4"),
         DeclareLaunchArgument(
             "button_layout_config",
@@ -416,7 +418,7 @@ def generate_launch_description():
         parameters=[LaunchConfiguration("button_layout_config")],
         remappings=[
             ("joy", "/aiformula_control/joy_node/joy_l2_throttle"),
-            ("cmd_vel", "/aiformula_control/game_pad/cmd_vel"),
+            ("cmd_vel", "/aiformula_control/manual/cmd_vel"),
         ],
     )
 
@@ -430,9 +432,12 @@ def generate_launch_description():
         parameters=[
             osp.join(vehicle_dir, "config", "wheel.yaml"),
             osp.join(motor_controller_dir, "config", "motor_controller.yaml"),
+            {"motion_enabled": LaunchConfiguration("enable_motion")},
         ],
         remappings=[
             ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),
+            ("sub_manual_command", "/aiformula_control/manual/cmd_vel"),
+            ("sub_manual_joy", "/aiformula_control/joy_node/joy_l2_throttle"),
             ("pub_can", "/aiformula_control/motor_controller/reference_signal"),
         ],
     )

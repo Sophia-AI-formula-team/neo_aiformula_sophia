@@ -1,0 +1,40 @@
+{
+  "repository": "https://github.com/Sophia-AI-formula-team/aiformula_sophia",
+  "commit": "dd55f65ef2fe434512d9f7bf48fff7c17141fac3",
+  "source_directory": "aiformula/control/motor_controller",
+  "upstream_package_version": "0.0.0",
+  "neo_package_version": "0.3.0",
+  "algorithm_sha256": "4186afe1fee861799b61bcf168c84ec482ab904226fb1600ecc0a18245d0a65b",
+  "upstream_files": {
+    "package.xml": "dbf2d32de586d312174fb5fd16fd2555a2abaf1715e40bc1795f33ef634b11d3",
+    "setup.cfg": "161217f62732c479e81f2048ad58d6ece0edf172c9197135b91960bd1756229a",
+    "setup.py": "5d155f2e85a0b567b3deeeaed181b1d1d8a19acfe8d9b6891f94a71a6c61c2bf",
+    "config/motor_controller.yaml": "67df533764b532877236e80cbb3215cfb7634e9060b290c61bfdb79f3c56251f",
+    "launch/motor_controller.launch.py": "1b265a735f1433ea06e5e7801c23d9b2f9fd908f1d79e79ff7a16f90cd6939fa",
+    "motor_controller/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "motor_controller/motor_controller.py": "224cee23e3151d94cdd5864963c57266b0ab2297ba68f155d24ce93193d44d0e",
+    "resource/motor_controller": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test/test_copyright.py": "977a2313a0ae218ef9e2b944347d2b8f7aba43447283d2a832391f9904fd37e9",
+    "test/test_flake8.py": "37a813a0507f0ce51a2d0b57312d2cc078a0307a3ca85580ea801b0d2f9755d2",
+    "test/test_pep257.py": "e8b88d49ee296987b1b40069f81019b5fa09b1aa1bfee9a1faae45bb5cf53eda"
+  },
+  "integration_changes": [
+    "Package version and dependency metadata",
+    "MIT license attribution and import documentation",
+    "Remove motortest entry point: upstream supplies no motortest module",
+    "Replace algorithm with user-supplied sigmoid steering compensation; upstream_files retain historical baseline hashes",
+    "Motor-side automatic red/green gate and independent manual priority with timeouts",
+    "Exact zero CAN payload and zero-yaw sigmoid bypass; preserve nonzero steering fits",
+    "Default motion inhibition for stationary deployment"
+  ],
+  "excluded": [
+    "Tracked Python bytecode caches"
+  ],
+  "upstream_algorithm_sha256": "224cee23e3151d94cdd5864963c57266b0ab2297ba68f155d24ce93193d44d0e",
+  "active_source": {
+    "kind": "derived_from_user_supplied_file",
+    "path": "/run/media/nanato/6718-316A/aiformula0124/aiformula/control/motor_controller/motor_controller/motor_controller.py",
+    "copied_byte_for_byte": false
+  },
+  "usb_algorithm_sha256": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742"
+}

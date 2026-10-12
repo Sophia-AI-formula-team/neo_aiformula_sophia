@@ -45,3 +45,7 @@ core geometry; distance/automatic detour are historical legacy policy only. Froz
 core63 evidence belongs to its original revision. See SIMPLE_TRAFFIC_CHANGE.md.
 The vehicle source update remains uncompiled and shadow-only unless the user later
 authorizes compilation or changes that scope.
+
+## User-authorized motor gate follow-up — 2026-10-12
+
+The user now authorizes compilation/deployment and motor-side traffic gating with manual priority, but no vehicle movement. PR23 geometry/learning remains unchanged; semantic_vehicle.launch observes existing lanes/odom and publishes diagnostic-only commands. Motor 0.3.0 is the actual gate and defaults motion_enabled=false. Keep the old shadow restrictions intact and distinguish isolated DDS from physical lap/braking acceptance.
