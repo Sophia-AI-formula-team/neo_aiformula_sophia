@@ -1,0 +1,1273 @@
+{
+  "method": "Offline selected-message analysis. Bag record cadence is not publisher rate. Sparse recorded poses approximate path length only; no causal latency or physical stop proof.",
+  "bags": [
+    {
+      "bag": "trajectory_1_bag",
+      "start_jst": "2026-10-12T16:31:40.084+09:00",
+      "duration_sec": 70.132,
+      "recorded_messages": 16625,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 219,
+          "median_gap_sec": 0.318099242,
+          "max_gap_sec": 0.500997297
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 232,
+          "median_gap_sec": 0.325976586,
+          "max_gap_sec": 0.475431564
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 216,
+          "median_gap_sec": 0.329387715,
+          "max_gap_sec": 0.471770911
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 61,
+          "median_gap_sec": 0.348126689,
+          "max_gap_sec": 0.460313005
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 219
+      },
+      "odometry": {
+        "first_xy": [
+          15.869773693803953,
+          -4.5132098263751645
+        ],
+        "last_xy": [
+          39.80348481902553,
+          -17.69108778135985
+        ],
+        "sampled_path_length_m": 27.332692457348628,
+        "max_abs_v": 2.213819365688469,
+        "nonzero_v_samples": 66
+      }
+    },
+    {
+      "bag": "trajectory_2_bag",
+      "start_jst": "2026-10-12T16:33:28.911+09:00",
+      "duration_sec": 61.713,
+      "recorded_messages": 8191,
+      "topic_recording": {
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 114,
+          "median_gap_sec": 0.568871495,
+          "max_gap_sec": 1.129384342
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 112,
+          "median_gap_sec": 0.559074862,
+          "max_gap_sec": 1.069921127
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 88,
+          "median_gap_sec": 0.648270803,
+          "max_gap_sec": 1.069674852
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 29,
+          "median_gap_sec": 0.5957536800000001,
+          "max_gap_sec": 0.838230608
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 88
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          25.396829398741687,
+          11.393570057921675
+        ],
+        "sampled_path_length_m": 28.251105886396108,
+        "max_abs_v": 2.2123564277528693,
+        "nonzero_v_samples": 31
+      }
+    },
+    {
+      "bag": "trajectory_3_bag",
+      "start_jst": "2026-10-12T16:35:27.601+09:00",
+      "duration_sec": 36.034,
+      "recorded_messages": 3378,
+      "topic_recording": {
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 50,
+          "median_gap_sec": 0.788787614,
+          "max_gap_sec": 1.226320654
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 44,
+          "median_gap_sec": 0.805444245,
+          "max_gap_sec": 1.226315598
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 39,
+          "median_gap_sec": 0.8349751665,
+          "max_gap_sec": 1.232190836
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 24,
+          "median_gap_sec": 0.875295998,
+          "max_gap_sec": 1.059796714
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 43,
+        "red": 1
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          13.625129409122604,
+          2.5418680008094143
+        ],
+        "sampled_path_length_m": 13.924365779673195,
+        "max_abs_v": 1.442441414327441,
+        "nonzero_v_samples": 13
+      }
+    },
+    {
+      "bag": "trajectory_4__bag",
+      "start_jst": "2026-10-12T16:37:04.484+09:00",
+      "duration_sec": 57.39,
+      "recorded_messages": 5063,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 67,
+          "median_gap_sec": 0.8825849935000001,
+          "max_gap_sec": 1.283228015
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 67,
+          "median_gap_sec": 0.8825971534999999,
+          "max_gap_sec": 1.283177583
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 61,
+          "median_gap_sec": 0.89292279,
+          "max_gap_sec": 1.290651639
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 20,
+          "median_gap_sec": 0.916937401,
+          "max_gap_sec": 1.254068592
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 58,
+        "red": 9
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          24.50809745465187,
+          1.2560574206648776
+        ],
+        "sampled_path_length_m": 24.554715935139473,
+        "max_abs_v": 2.5313544774101127,
+        "nonzero_v_samples": 20
+      }
+    },
+    {
+      "bag": "trajectory_5_bag",
+      "start_jst": "2026-10-12T16:41:14.594+09:00",
+      "duration_sec": 31.014,
+      "recorded_messages": 3044,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 72,
+          "median_gap_sec": 0.231095758,
+          "max_gap_sec": 1.299808542
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 24,
+          "median_gap_sec": 0.914276745,
+          "max_gap_sec": 1.254619865
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 26,
+          "median_gap_sec": 0.961692366,
+          "max_gap_sec": 1.20080387
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 26,
+          "median_gap_sec": 0.999114511,
+          "max_gap_sec": 1.199961442
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 72
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          13.3848613382699,
+          4.075059707500513
+        ],
+        "sampled_path_length_m": 14.15043360005579,
+        "max_abs_v": 1.4274681603981494,
+        "nonzero_v_samples": 12
+      }
+    },
+    {
+      "bag": "trajectory_6_bag",
+      "start_jst": "2026-10-12T16:43:08.579+09:00",
+      "duration_sec": 44.143,
+      "recorded_messages": 4016,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 71,
+          "median_gap_sec": 0.7822839705,
+          "max_gap_sec": 1.17998309
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 46,
+          "median_gap_sec": 0.969021136,
+          "max_gap_sec": 1.170074989
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 40,
+          "median_gap_sec": 1.006201719,
+          "max_gap_sec": 1.26813871
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 19,
+          "median_gap_sec": 0.9894901835000001,
+          "max_gap_sec": 1.159949398
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 71
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          12.861225568991166,
+          1.9366011667343437
+        ],
+        "sampled_path_length_m": 13.049119209027394,
+        "max_abs_v": 1.369830441170297,
+        "nonzero_v_samples": 12
+      }
+    },
+    {
+      "bag": "trajectory_7_bag",
+      "start_jst": "2026-10-12T16:45:57.823+09:00",
+      "duration_sec": 29.499,
+      "recorded_messages": 2413,
+      "topic_recording": {
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 30,
+          "median_gap_sec": 0.969957681,
+          "max_gap_sec": 1.222507536
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 27,
+          "median_gap_sec": 0.974168444,
+          "max_gap_sec": 1.254550774
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 23,
+          "median_gap_sec": 1.034002107,
+          "max_gap_sec": 1.254553558
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 20,
+          "median_gap_sec": 1.152676058,
+          "max_gap_sec": 1.28571788
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 23
+      },
+      "odometry": {
+        "first_xy": [
+          0.0,
+          0.0
+        ],
+        "last_xy": [
+          12.973916301001431,
+          2.3150843679976547
+        ],
+        "sampled_path_length_m": 13.22507539439002,
+        "max_abs_v": 1.3699143142000862,
+        "nonzero_v_samples": 11
+      }
+    },
+    {
+      "bag": "trajectory_R1_bag",
+      "start_jst": "2026-10-12T17:10:16.129+09:00",
+      "duration_sec": 61.567,
+      "recorded_messages": 5356,
+      "topic_recording": {
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 59,
+          "median_gap_sec": 1.0620165915,
+          "max_gap_sec": 1.298842254
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 59,
+          "median_gap_sec": 1.062023408,
+          "max_gap_sec": 1.298850158
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 59,
+          "median_gap_sec": 1.062024336,
+          "max_gap_sec": 1.298891247
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 58,
+          "median_gap_sec": 1.066708748,
+          "max_gap_sec": 1.298918191
+        },
+        "/semantic_drive/motor_session": {
+          "count": 51,
+          "median_gap_sec": 1.063628849,
+          "max_gap_sec": 1.298327496
+        },
+        "/semantic_drive/signal_capture": {
+          "count": 51,
+          "median_gap_sec": 1.0610562799999999,
+          "max_gap_sec": 1.314829268
+        },
+        "/semantic_drive/map_status": {
+          "count": 51,
+          "median_gap_sec": 1.0662279185,
+          "max_gap_sec": 1.254723963
+        },
+        "/semantic_drive/map_signal": {
+          "count": 50,
+          "median_gap_sec": 1.056782234,
+          "max_gap_sec": 1.314830163
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 41,
+          "median_gap_sec": 1.0435238065,
+          "max_gap_sec": 1.31491074
+        }
+      },
+      "a3_colors": {
+        "unknown": 55,
+        "red": 2,
+        "green": 2
+      },
+      "odometry": {
+        "first_xy": [
+          104.39967414397175,
+          32.794933712372824
+        ],
+        "last_xy": [
+          116.71506099277771,
+          44.05771032462255
+        ],
+        "sampled_path_length_m": 16.70156479969066,
+        "max_abs_v": 1.9812841135859605,
+        "nonzero_v_samples": 8
+      },
+      "semantic": {
+        "phase": {
+          "learning": 51
+        },
+        "traffic_mode": {
+          "normal": 20,
+          "wait": 31
+        },
+        "traffic_reason": {
+          "traffic_idle": 20,
+          "red_wait_green": 31
+        },
+        "traffic_light": {
+          "unknown": 49,
+          "red": 2
+        },
+        "traffic_light_raw": {
+          "unknown": 47,
+          "red": 3,
+          "green": 1
+        },
+        "traffic_stop_required": {
+          "None": 51
+        },
+        "reason": {
+          "waiting_for_odom": 1,
+          "learning_first_lap": 17,
+          "visual_points_stale": 2,
+          "red_wait_green": 31
+        },
+        "velocity_gate_reason": {
+          "waiting_controller_command": 1,
+          "controller_command_timeout": 10,
+          "waiting_fresh_visual_triplet": 2,
+          "forwarding_controller": 7,
+          "red_wait_green": 31
+        },
+        "max_samples": 79,
+        "max_distance_m": 16.512129020187174,
+        "reference_ever_available": false,
+        "input_never_received_samples": 1
+      },
+      "motor_reasons": {
+        "command_timeout": 7,
+        "semantic_status_timeout": 2,
+        "semantic_hold:waiting_fresh_visual_triplet": 2,
+        "semantic_hold:controller_command_timeout": 8,
+        "semantic_go": 6,
+        "semantic_hold:red_wait_green": 33
+      },
+      "motor_nonzero_commands": 6,
+      "automatic_red_hold_nonzero_CAN": 0,
+      "session": {
+        "identities": {
+          "3dd2b27bd01e4e409651fe33a1ef5d40": 51
+        },
+        "min_receipt_age_sec": 0.921968688,
+        "max_receipt_age_sec": 1.026124464,
+        "median_receipt_age_sec": 0.969750766,
+        "active": {
+          "True": 51
+        }
+      }
+    },
+    {
+      "bag": "trajectory_f1_bag",
+      "start_jst": "2026-10-12T17:18:04.642+09:00",
+      "duration_sec": 220.569,
+      "recorded_messages": 16714,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 237,
+          "median_gap_sec": 1.011629411,
+          "max_gap_sec": 1.437774053
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 222,
+          "median_gap_sec": 1.026004862,
+          "max_gap_sec": 1.422603602
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 212,
+          "median_gap_sec": 1.059810551,
+          "max_gap_sec": 1.421501412
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 95,
+          "median_gap_sec": 1.0641907835,
+          "max_gap_sec": 1.308601016
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 217,
+        "green": 3,
+        "red": 17
+      },
+      "odometry": {
+        "first_xy": [
+          10.851127351696924,
+          2.0613986901872914
+        ],
+        "last_xy": [
+          -41.272446084412536,
+          -55.11371507765948
+        ],
+        "sampled_path_length_m": 433.51125814762185,
+        "max_abs_v": 2.5470923191565182,
+        "nonzero_v_samples": 177
+      }
+    },
+    {
+      "bag": "trajectory_8_bag",
+      "start_jst": "2026-10-12T17:23:36.999+09:00",
+      "duration_sec": 29.905,
+      "recorded_messages": 2672,
+      "topic_recording": {
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 231,
+          "median_gap_sec": 0.01005553,
+          "max_gap_sec": 1.494240033
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 26,
+          "median_gap_sec": 1.116796129,
+          "max_gap_sec": 1.349876363
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 23,
+          "median_gap_sec": 1.146257527,
+          "max_gap_sec": 1.351919939
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 20,
+          "median_gap_sec": 1.085365668,
+          "max_gap_sec": 1.34470286
+        },
+        "/semantic_drive/map_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/semantic_drive/motor_session": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {
+        "unknown": 22,
+        "red": 1
+      },
+      "odometry": {
+        "first_xy": [
+          -19.301812436179155,
+          3.159642675965162
+        ],
+        "last_xy": [
+          -9.066371937799172,
+          10.71987916350978
+        ],
+        "sampled_path_length_m": 19.552272851554275,
+        "max_abs_v": 1.9521289065140903,
+        "nonzero_v_samples": 10
+      }
+    },
+    {
+      "bag": "trajectory_Sem1_bag",
+      "start_jst": "2026-10-12T17:33:03.259+09:00",
+      "duration_sec": 87.969,
+      "recorded_messages": 7052,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 94,
+          "median_gap_sec": 1.07234182,
+          "max_gap_sec": 1.396837527
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 75,
+          "median_gap_sec": 1.08376551,
+          "max_gap_sec": 1.474014333
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 74,
+          "median_gap_sec": 1.087087535,
+          "max_gap_sec": 1.474029406
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 74,
+          "median_gap_sec": 1.087117936,
+          "max_gap_sec": 1.474035934
+        },
+        "/semantic_drive/motor_session": {
+          "count": 65,
+          "median_gap_sec": 1.0882732609999999,
+          "max_gap_sec": 1.46635088
+        },
+        "/semantic_drive/signal_capture": {
+          "count": 65,
+          "median_gap_sec": 1.0882932135,
+          "max_gap_sec": 1.466345441
+        },
+        "/semantic_drive/map_status": {
+          "count": 63,
+          "median_gap_sec": 1.0881991800000002,
+          "max_gap_sec": 1.466364736
+        },
+        "/semantic_drive/map_signal": {
+          "count": 59,
+          "median_gap_sec": 1.088294925,
+          "max_gap_sec": 3.218937036
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 58,
+          "median_gap_sec": 1.108790837,
+          "max_gap_sec": 1.476944672
+        }
+      },
+      "a3_colors": {
+        "unknown": 88,
+        "green": 5,
+        "red": 1
+      },
+      "odometry": {
+        "first_xy": [
+          22.295961857422782,
+          -7.26881092113618
+        ],
+        "last_xy": [
+          70.03697930298394,
+          32.01821534167229
+        ],
+        "sampled_path_length_m": 83.07944661041599,
+        "max_abs_v": 2.503180429123348,
+        "nonzero_v_samples": 36
+      },
+      "semantic": {
+        "phase": {
+          "learning": 63
+        },
+        "traffic_mode": {
+          "normal": 44,
+          "wait": 19
+        },
+        "traffic_reason": {
+          "traffic_idle": 30,
+          "red_wait_green": 19,
+          "green_resume": 14
+        },
+        "traffic_light": {
+          "unknown": 61,
+          "green": 2
+        },
+        "traffic_light_raw": {
+          "unknown": 57,
+          "red": 1,
+          "green": 5
+        },
+        "traffic_stop_required": {
+          "False": 44,
+          "True": 19
+        },
+        "reason": {
+          "waiting_for_odom": 1,
+          "learning_first_lap": 41,
+          "visual_points_stale": 2,
+          "red_wait_green": 19
+        },
+        "velocity_gate_reason": {
+          "waiting_controller_command": 1,
+          "controller_command_timeout": 5,
+          "waiting_fresh_visual_triplet": 2,
+          "forwarding_controller": 36,
+          "red_wait_green": 19
+        },
+        "max_samples": 395,
+        "max_distance_m": 83.47015773100651,
+        "reference_ever_available": false,
+        "input_never_received_samples": 1
+      },
+      "motor_reasons": {
+        "command_timeout": 13,
+        "semantic_status_timeout": 4,
+        "semantic_go": 33,
+        "semantic_hold:red_wait_green": 19,
+        "manual_priority": 5
+      },
+      "motor_nonzero_commands": 36,
+      "automatic_red_hold_nonzero_CAN": 0,
+      "session": {
+        "identities": {
+          "a0491eb62a2e4ddaa135affffcf0d8f5": 65
+        },
+        "min_receipt_age_sec": 0.923424753,
+        "max_receipt_age_sec": 1.221790095,
+        "median_receipt_age_sec": 0.972009693,
+        "active": {
+          "True": 65
+        }
+      }
+    },
+    {
+      "bag": "trajectory_Sem2_bag",
+      "start_jst": "2026-10-12T17:34:58.869+09:00",
+      "duration_sec": 49.973,
+      "recorded_messages": 4361,
+      "topic_recording": {
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 208,
+          "median_gap_sec": 0.009946296,
+          "max_gap_sec": 1.380925206
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 74,
+          "median_gap_sec": 0.814678475,
+          "max_gap_sec": 1.380896085
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 81,
+          "median_gap_sec": 0.7019035255,
+          "max_gap_sec": 1.390969103
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 48,
+          "median_gap_sec": 1.059564641,
+          "max_gap_sec": 1.380819124
+        },
+        "/semantic_drive/motor_session": {
+          "count": 42,
+          "median_gap_sec": 1.075725477,
+          "max_gap_sec": 1.380870516
+        },
+        "/semantic_drive/signal_capture": {
+          "count": 39,
+          "median_gap_sec": 1.058390915,
+          "max_gap_sec": 1.406654413
+        },
+        "/semantic_drive/map_status": {
+          "count": 39,
+          "median_gap_sec": 1.015961361,
+          "max_gap_sec": 1.509976849
+        },
+        "/semantic_drive/map_signal": {
+          "count": 32,
+          "median_gap_sec": 1.107735433,
+          "max_gap_sec": 1.390355143
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 21,
+          "median_gap_sec": 1.1088098450000001,
+          "max_gap_sec": 1.380380207
+        }
+      },
+      "a3_colors": {
+        "unknown": 81
+      },
+      "odometry": {
+        "first_xy": [
+          70.03697930298394,
+          32.01821534167229
+        ],
+        "last_xy": [
+          76.28742457991832,
+          53.961539876989846
+        ],
+        "sampled_path_length_m": 22.821644954702638,
+        "max_abs_v": 0.7649879636690158,
+        "nonzero_v_samples": 10
+      },
+      "semantic": {
+        "phase": {
+          "learning": 39
+        },
+        "traffic_mode": {
+          "normal": 39
+        },
+        "traffic_reason": {
+          "traffic_idle": 39
+        },
+        "traffic_light": {
+          "unknown": 39
+        },
+        "traffic_light_raw": {
+          "unknown": 39
+        },
+        "traffic_stop_required": {
+          "False": 39
+        },
+        "reason": {
+          "waiting_for_odom": 1,
+          "visual_points_stale": 4,
+          "learning_first_lap": 34
+        },
+        "velocity_gate_reason": {
+          "waiting_controller_command": 1,
+          "waiting_fresh_visual_triplet": 4,
+          "controller_command_timeout": 12,
+          "forwarding_controller": 22
+        },
+        "max_samples": 108,
+        "max_distance_m": 22.76153172117133,
+        "reference_ever_available": false,
+        "input_never_received_samples": 2
+      },
+      "motor_reasons": {
+        "command_timeout": 49,
+        "semantic_status_timeout": 3,
+        "semantic_go": 22
+      },
+      "motor_nonzero_commands": 22,
+      "automatic_red_hold_nonzero_CAN": 0,
+      "session": {
+        "identities": {
+          "89cd192581ac485fb9af9e3f2632a038": 42
+        },
+        "min_receipt_age_sec": 0.817959251,
+        "max_receipt_age_sec": 1.018409807,
+        "median_receipt_age_sec": 0.962765357,
+        "active": {
+          "True": 42
+        }
+      }
+    },
+    {
+      "bag": "trajectory_Sem3_bag",
+      "start_jst": "2026-10-12T17:36:30.065+09:00",
+      "duration_sec": 81.163,
+      "recorded_messages": 6624,
+      "topic_recording": {
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 73,
+          "median_gap_sec": 1.1209052714999999,
+          "max_gap_sec": 1.391456565
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 74,
+          "median_gap_sec": 1.112068061,
+          "max_gap_sec": 1.500897185
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 72,
+          "median_gap_sec": 1.125128123,
+          "max_gap_sec": 1.500869153
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 72,
+          "median_gap_sec": 1.111322548,
+          "max_gap_sec": 1.464811821
+        },
+        "/semantic_drive/motor_session": {
+          "count": 54,
+          "median_gap_sec": 1.123825291,
+          "max_gap_sec": 1.391130001
+        },
+        "/semantic_drive/map_status": {
+          "count": 53,
+          "median_gap_sec": 1.1175783830000001,
+          "max_gap_sec": 1.360644575
+        },
+        "/semantic_drive/signal_capture": {
+          "count": 53,
+          "median_gap_sec": 1.148196258,
+          "max_gap_sec": 1.367388337
+        },
+        "/semantic_drive/map_signal": {
+          "count": 47,
+          "median_gap_sec": 1.1523360205,
+          "max_gap_sec": 1.357357912
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 33,
+          "median_gap_sec": 1.106142661,
+          "max_gap_sec": 1.368733473
+        }
+      },
+      "a3_colors": {
+        "unknown": 73
+      },
+      "odometry": {
+        "first_xy": [
+          71.41773508836292,
+          64.46248100789154
+        ],
+        "last_xy": [
+          11.63082309144606,
+          112.50832406049334
+        ],
+        "sampled_path_length_m": 80.82855116955447,
+        "max_abs_v": 2.6897712924454837,
+        "nonzero_v_samples": 32
+      },
+      "semantic": {
+        "phase": {
+          "learning": 53
+        },
+        "traffic_mode": {
+          "normal": 53
+        },
+        "traffic_reason": {
+          "traffic_idle": 53
+        },
+        "traffic_light": {
+          "unknown": 53
+        },
+        "traffic_light_raw": {
+          "unknown": 53
+        },
+        "traffic_stop_required": {
+          "False": 53
+        },
+        "reason": {
+          "waiting_for_odom": 1,
+          "learning_first_lap": 50,
+          "visual_points_stale": 2
+        },
+        "velocity_gate_reason": {
+          "waiting_controller_command": 1,
+          "controller_command_timeout": 16,
+          "waiting_fresh_visual_triplet": 2,
+          "forwarding_controller": 34
+        },
+        "max_samples": 380,
+        "max_distance_m": 80.73856495647333,
+        "reference_ever_available": false,
+        "input_never_received_samples": 1
+      },
+      "motor_reasons": {
+        "command_timeout": 37,
+        "semantic_status_timeout": 1,
+        "semantic_go": 31,
+        "manual_priority": 3
+      },
+      "motor_nonzero_commands": 34,
+      "automatic_red_hold_nonzero_CAN": 0,
+      "session": {
+        "identities": {
+          "46bf4a97131e418ca41a964b463d7590": 54
+        },
+        "min_receipt_age_sec": 0.924290682,
+        "max_receipt_age_sec": 1.018777043,
+        "median_receipt_age_sec": 0.977890004,
+        "active": {
+          "True": 54
+        }
+      }
+    },
+    {
+      "bag": "trajectory_Sem3hand_bag",
+      "start_jst": "2026-10-12T17:38:02.464+09:00",
+      "duration_sec": 218.567,
+      "recorded_messages": 19849,
+      "topic_recording": {
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 225,
+          "median_gap_sec": 0.9643992800000001,
+          "max_gap_sec": 1.447171895
+        },
+        "/aiformula_control/motor_controller/reference_signal": {
+          "count": 225,
+          "median_gap_sec": 0.964247598,
+          "max_gap_sec": 1.447169271
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 221,
+          "median_gap_sec": 0.9668655975,
+          "max_gap_sec": 1.503648003
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 221,
+          "median_gap_sec": 0.9792909325,
+          "max_gap_sec": 1.374043393
+        },
+        "/semantic_drive/motor_session": {
+          "count": 217,
+          "median_gap_sec": 0.9806184204999999,
+          "max_gap_sec": 1.402415897
+        },
+        "/semantic_drive/signal_capture": {
+          "count": 217,
+          "median_gap_sec": 0.979313589,
+          "max_gap_sec": 1.374062306
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 115,
+          "median_gap_sec": 1.0591015625,
+          "max_gap_sec": 1.374130242
+        },
+        "/semantic_drive/map_signal": {
+          "count": 213,
+          "median_gap_sec": 0.973967316,
+          "max_gap_sec": 3.65872988
+        },
+        "/semantic_drive/map_status": {
+          "count": 214,
+          "median_gap_sec": 0.970683692,
+          "max_gap_sec": 1.444824187
+        }
+      },
+      "a3_colors": {
+        "unknown": 220,
+        "red": 1
+      },
+      "odometry": {
+        "first_xy": [
+          11.63082309144606,
+          112.50832406049334
+        ],
+        "last_xy": [
+          27.761307546258596,
+          43.05979667390555
+        ],
+        "sampled_path_length_m": 203.5354634807335,
+        "max_abs_v": 2.7516999844601573,
+        "nonzero_v_samples": 107
+      },
+      "semantic": {
+        "phase": {
+          "learning": 214
+        },
+        "traffic_mode": {
+          "normal": 214
+        },
+        "traffic_reason": {
+          "traffic_idle": 214
+        },
+        "traffic_light": {
+          "unknown": 214
+        },
+        "traffic_light_raw": {
+          "unknown": 214
+        },
+        "traffic_stop_required": {
+          "False": 214
+        },
+        "reason": {
+          "learning_first_lap": 214
+        },
+        "velocity_gate_reason": {
+          "controller_command_timeout": 117,
+          "forwarding_controller": 97
+        },
+        "max_samples": 950,
+        "max_distance_m": 202.5371850471998,
+        "reference_ever_available": false,
+        "input_never_received_samples": 0
+      },
+      "motor_reasons": {
+        "command_timeout": 4,
+        "semantic_status_timeout": 2,
+        "semantic_go": 1,
+        "manual_priority": 97,
+        "manual_joy_timeout": 1,
+        "semantic_session_timeout": 116
+      },
+      "motor_nonzero_commands": 97,
+      "automatic_red_hold_nonzero_CAN": 0,
+      "session": {
+        "identities": {
+          "9b1a3b1c1c0b4d5ebd2e6f281924ebcb": 217
+        },
+        "min_receipt_age_sec": 0.920911474,
+        "max_receipt_age_sec": 1.024804892,
+        "median_receipt_age_sec": 0.965994484,
+        "active": {
+          "True": 217
+        }
+      }
+    },
+    {
+      "bag": "rosbag2_2026_10_12-17_45_23",
+      "start_jst": "2026-10-12T17:45:23.774+09:00",
+      "duration_sec": 173.836,
+      "recorded_messages": 9061,
+      "topic_recording": {
+        "/semantic_drive/signal_capture": {
+          "count": 51,
+          "median_gap_sec": 0.066300739,
+          "max_gap_sec": 0.40410883
+        },
+        "/semantic_drive/map_signal": {
+          "count": 51,
+          "median_gap_sec": 0.0661792655,
+          "max_gap_sec": 0.40350879
+        },
+        "/semantic_drive/motor_session": {
+          "count": 1652,
+          "median_gap_sec": 0.102089493,
+          "max_gap_sec": 4.755957887
+        },
+        "/semantic_drive/map_status": {
+          "count": 532,
+          "median_gap_sec": 0.398588379,
+          "max_gap_sec": 7.110992425
+        },
+        "/aiformula_control/motor_controller/gate_status": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_sensing/gyro_odometry_publisher/odom": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_control/game_pad/cmd_vel": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        },
+        "/aiformula_perception/yolop_a3/detections": {
+          "count": 0,
+          "median_gap_sec": null,
+          "max_gap_sec": null
+        }
+      },
+      "a3_colors": {},
+      "semantic": {
+        "phase": {
+          "learning": 532
+        },
+        "traffic_mode": {
+          "normal": 532
+        },
+        "traffic_reason": {
+          "traffic_idle": 532
+        },
+        "traffic_light": {
+          "unknown": 532
+        },
+        "traffic_light_raw": {
+          "unknown": 532
+        },
+        "traffic_stop_required": {
+          "False": 532
+        },
+        "reason": {
+          "learning_first_lap": 5,
+          "waiting_for_odom": 1,
+          "visual_points_stale": 526
+        },
+        "velocity_gate_reason": {
+          "controller_command_timeout": 5,
+          "waiting_controller_command": 1,
+          "waiting_fresh_visual_triplet": 526
+        },
+        "max_samples": 950,
+        "max_distance_m": 202.5371850471998,
+        "reference_ever_available": false,
+        "input_never_received_samples": 527
+      },
+      "session": {
+        "identities": {
+          "9b1a3b1c1c0b4d5ebd2e6f281924ebcb": 34,
+          "73061e39880242cfbcc892e9268c359f": 1618
+        },
+        "min_receipt_age_sec": 0.000219843,
+        "max_receipt_age_sec": 0.303579004,
+        "median_receipt_age_sec": 0.000384021,
+        "active": {
+          "True": 1647,
+          "False": 5
+        }
+      }
+    }
+  ]
+}

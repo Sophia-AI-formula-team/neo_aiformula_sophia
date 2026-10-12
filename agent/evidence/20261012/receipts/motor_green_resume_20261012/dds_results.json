@@ -1,0 +1,918 @@
+{
+  "domain": 93,
+  "localhost_only": true,
+  "can_output": "/gate_acceptance/can",
+  "no_socketcan_process": true,
+  "vehicle_moved": false,
+  "cases": [
+    {
+      "case": "legacy_without_semantic",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "legacy_passthrough",
+        "semantic_active": false,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "legacy_zero",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "legacy_passthrough",
+        "semantic_active": false,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "legacy_manual",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        93,
+        -132
+      ],
+      "status": {
+        "reason": "manual_priority",
+        "semantic_active": false,
+        "manual_held": true,
+        "command": [
+          -0.2000000011175871,
+          0.3000000029802322
+        ],
+        "can_data": [
+          93,
+          0,
+          0,
+          0,
+          124,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "case": "legacy_manual_release",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "legacy_passthrough",
+        "semantic_active": false,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "semantic_start",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "automatic_go",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "stable_red_stop",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_hold:red_wait_green",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "unknown_after_red_holds",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_hold:red_wait_green",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "green_go",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "red_without_topo_points",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_hold:red_wait_green",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "green_without_topo_points",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "green_without_topo_LYA_zero",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "zero_command_zero_CAN",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "negative_steering_CAN",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        48,
+        206
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          -0.3
+        ],
+        "can_data": [
+          48,
+          0,
+          0,
+          0,
+          206,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "manual_priority_red",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        93,
+        -132
+      ],
+      "status": {
+        "reason": "manual_priority",
+        "semantic_active": true,
+        "manual_held": true,
+        "command": [
+          -0.2000000011175871,
+          0.3000000029802322
+        ],
+        "can_data": [
+          93,
+          0,
+          0,
+          0,
+          124,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "case": "manual_zero_owns_control",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "manual_priority",
+        "semantic_active": true,
+        "manual_held": true,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "manual_joy_loss_holds",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "manual_joy_timeout",
+        "semantic_active": true,
+        "manual_held": true,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "release_at_red_still_stops",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_hold:red_wait_green",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "green_restores_auto",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "LYA_timeout_zero",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "command_timeout",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "LYA_fresh_resumes",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "no_new_light_after_green_follows_semantic",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "fresh_camera_resumes",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "nonzero_sigmoid_regression_and_zero_fix",
+      "pass_": true
+    },
+    {
+      "case": "semantic_clean_exit_legacy",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "legacy_passthrough",
+        "semantic_active": false,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "semantic_restart",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "semantic_crash_holds",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        0,
+        0
+      ],
+      "status": {
+        "reason": "semantic_session_timeout",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          0.0,
+          0.0
+        ],
+        "can_data": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "manual_after_semantic_crash",
+      "pass_": true,
+      "tail_frames": 20,
+      "rpm": [
+        133,
+        -93
+      ],
+      "status": {
+        "reason": "manual_priority",
+        "semantic_active": true,
+        "manual_held": true,
+        "command": [
+          0.2000000011175871,
+          0.3000000029802322
+        ],
+        "can_data": [
+          133,
+          0,
+          0,
+          0,
+          163,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "case": "semantic_recovery",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "semantic_go",
+        "semantic_active": true,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "case": "final_clean_exit",
+      "pass_": true,
+      "tail_frames": 19,
+      "rpm": [
+        212,
+        44
+      ],
+      "status": {
+        "reason": "legacy_passthrough",
+        "semantic_active": false,
+        "manual_held": false,
+        "command": [
+          1.0,
+          0.3
+        ],
+        "can_data": [
+          212,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "total_CAN_frames": 9066,
+  "topo_status": {
+    "phase": "learning",
+    "reason": "learning_first_lap",
+    "lap": 1,
+    "recorded_samples": 1,
+    "recorded_distance_m": 0.0,
+    "reference_length_m": null,
+    "route_matched": false,
+    "progress_m": 0.0,
+    "use_sim_time": false,
+    "ros_time_sec": 1791793862.8339703,
+    "odom_age_sec": 0.026686723000239,
+    "point_age_sec": {
+      "a": 0.025897274000271864,
+      "b": 0.02571503200033476,
+      "c": 0.02555726999980834
+    },
+    "recording_points_valid": true,
+    "odom_covariance_available": false,
+    "correction_deg": 0.0,
+    "violation_frames": 0,
+    "avoidance_active": false,
+    "branch_active": false,
+    "path_output_allowed": true,
+    "enable_correction": false,
+    "official_route_node_ids": [
+      "10000000000",
+      "10000000001",
+      "10000000002",
+      "10000000003",
+      "10000000004",
+      "10000000000"
+    ],
+    "approximate_official_edge": null,
+    "official_alignment_diagnostic_only": null,
+    "map_fusion": {
+      "available": false,
+      "reason": "waiting_for_odom"
+    },
+    "official_node_positions_odom": {},
+    "official_node_progress_m": {},
+    "topology_mapping": {
+      "available": false,
+      "reason": "waiting_for_odom"
+    },
+    "traffic_light_raw": "green",
+    "traffic_light": "green",
+    "traffic_vote": {
+      "window_sec": 0.5,
+      "min_samples": 3,
+      "ready": true,
+      "sample_count": 12,
+      "red_count": 0,
+      "green_count": 12,
+      "unknown_count": 0,
+      "last_message_age_sec": 0.024563081999986025
+    },
+    "traffic_policy": "stop_wait",
+    "traffic_mode": "normal",
+    "traffic_reason": "traffic_idle",
+    "traffic_stop_required": false,
+    "signal_approach": {
+      "enabled": false,
+      "target_stop_distance_m": 8.5,
+      "observation_sequence": 1791793862805880164,
+      "wait_latched": false,
+      "fault_sequence": -1,
+      "distance_m": null,
+      "uncertainty_m": 0.0,
+      "profile": {
+        "valid": false,
+        "reason": "signal_range_missing"
+      },
+      "recovery_eligible": false,
+      "recovery_reason": "reset",
+      "recovery_age_sec": null,
+      "recovery_vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": false,
+        "sample_count": 0,
+        "red_count": 0,
+        "green_count": 0,
+        "unknown_count": 0,
+        "last_message_age_sec": null
+      }
+    },
+    "topology_alignment": null,
+    "blocked_edge": null,
+    "detour_node_ids": [],
+    "velocity_gate_reason": "forwarding_controller"
+  }
+}
