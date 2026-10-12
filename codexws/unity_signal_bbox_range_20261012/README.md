@@ -14,6 +14,6 @@
 
 **实际控制仍消费 distance/uncertainty。** `target_reached` 是本帧距离结果的附加标志，未替换 semantic 的制动状态机。红灯但距离缺失仍沿用原故障停车行为。因此此版本不承诺小框红灯继续行驶，也不以静态像素阈值宣称停车/左转已通过。完整原因见 [PROBLEM_ANALYSIS.md](PROBLEM_ANALYSIS.md)。
 
-当前状态：实现已准备，单测/MCP尚未执行；未安装到共享Simulator。另一对话持有测试资源及Editor。历史PR21、final63及其证据保持原样。
+当前状态：2026-10-12 14:45 JST，18项标准库单测全部PASS（0失败/0skip）；单次primary 0.291s，Job清空且父/子独立确认退出，CPU已归还。完整具名ledger、源码前后SHA及进程回执见evidence/tests_01。未安装到共享Simulator，安装往返和MCP实跑仍待独立窗口；Unity仍由另一对话持有。历史PR21、final63及其证据保持原样。测试后仅文档/manifest状态与证据归档更新，运行时源及参数不变。
 
 本目录为Unity验证接线归档，有COLCON_IGNORE，不属于原生ROS包。原生ROS capture relay仍使用其原有distance输入契约，未注入此试验。

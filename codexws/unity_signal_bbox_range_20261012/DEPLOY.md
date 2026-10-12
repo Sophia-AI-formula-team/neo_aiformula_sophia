@@ -1,6 +1,6 @@
 # 部署与验证
 
-先读PROBLEM_ANALYSIS与AGENT_HANDOFF。只使用Unity MCP，禁止Computer Use。拿到另一对话明确释放的CPU/Editor窗口后执行；当前仅准备完成，不得把以下命令当作已执行。
+先读PROBLEM_ANALYSIS与AGENT_HANDOFF。只使用Unity MCP，禁止Computer Use。18项标准库单测已在2026-10-12 14:45 JST通过，回执见evidence/tests_01；不要重复跑已通过测试。安装往返、安装及MCP命令尚未执行，须取得另一对话明确释放的新窗口。
 
 1. 独立CPU窗口运行纯标准库测试：`python -B test_bbox_range.py`。18个测试方法覆盖大小边界、反比、目标阈值、缺失/旧证据、颜色一致、分辨率/相机变化、误差区间、原路径等价和worker单行接线。它不启动Unity、模型或图像处理。测试通过后在独立临时目录验证安装/回滚，不对live项目做测试夹具。
 2. 获得Editor所有权后先经MCP确认clean Edit、worker=0，拍最新源/参数基线。保留Lane对话后续合法改动，不恢复旧整项目快照。确认实际显示面缩放=1、相机640×360及K/R/t与配置相符。

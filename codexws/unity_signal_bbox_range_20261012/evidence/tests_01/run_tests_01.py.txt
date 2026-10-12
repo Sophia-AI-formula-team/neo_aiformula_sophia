@@ -1,0 +1,111 @@
+"""Single approved 18-method stdlib run: 10s work, 5s cleanup; no retry."""
+import datetime
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+from types import SimpleNamespace
+
+ROOT = Path(__file__).resolve().parent
+REPO = ROOT.parent / "semantic_stop_20261012/repo"
+PACKAGE = REPO / "codexws/unity_signal_bbox_range_20261012"
+HELPER = ROOT.parent / "semantic_left_turn_20261012/run_positive_fixture_diagnosis_03.py"
+PYTHON = r"C:\Users\PC\AppData\Local\Programs\Python\Python313\python.exe"
+OUT = ROOT / "tests_01"
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def write(path, value):
+    path.write_text(json.dumps(value, indent=2), encoding="utf-8")
+
+
+def birth(job, handle):
+    value = job.birth(SimpleNamespace(_handle=handle))
+    value["filetime_100ns"] = str(value["filetime_100ns"])
+    return value
+
+
+def main():
+    if datetime.datetime.now(datetime.timezone.utc) >= datetime.datetime(2026, 10, 12, 5, 54, 40, tzinfo=datetime.timezone.utc):
+        raise RuntimeError("Lease ending: no launch")
+    OUT.mkdir(exist_ok=False)
+    pins = json.loads((ROOT / "tests_01_pins.json").read_text(encoding="utf-8-sig"))
+    expected_helper = "c70c04b7d67b417cf3854619a945b5aaf3ca785953c401c79e35737100a61722"
+    if digest(HELPER) != expected_helper:
+        raise RuntimeError("Ownership helper changed")
+    before = {name: digest(PACKAGE / name) for name in pins}
+    if before != pins:
+        raise RuntimeError("Source changed before launch")
+    spec = importlib.util.spec_from_file_location("bbox_owned_job", HELPER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # main() is not invoked; stdlib definitions only.
+    job = module.WindowsOwnedJob()
+    receipt = dict(parent_pid=os.getpid(), parent_birth=birth(job, -1),
+                   source_before=before, helper_sha256=expected_helper,
+                   driver_sha256=digest(__file__), auto_retry=False,
+                   primary_limit_sec=10, cleanup_limit_sec=5)
+    child = None
+    assigned = False
+    began = time.monotonic()
+    try:
+        with (OUT / "stdout.txt").open("xb") as stdout, (OUT / "stderr.txt").open("xb") as stderr:
+            child = subprocess.Popen([PYTHON, "-B", str(PACKAGE / "test_bbox_range.py")],
+                cwd=PACKAGE, stdout=stdout, stderr=stderr, close_fds=True,
+                creationflags=subprocess.CREATE_NO_WINDOW | 0x4,
+                env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"))
+            receipt.update(child_pid=child.pid, child_birth=birth(job, int(child._handle)))
+            job.assign(child)
+            assigned = True
+            thread, identity = job.open_initial_thread(child)
+            identity["creation_filetime_100ns"] = str(identity["creation_filetime_100ns"])
+            receipt["initial_thread"] = identity
+            try:
+                if time.monotonic()-began >= 10:
+                    raise TimeoutError("pre-resume deadline")
+                if job.kernel.ResumeThread(thread) != 1:
+                    raise RuntimeError("unexpected suspend count")
+            finally:
+                job.kernel.CloseHandle(thread)
+            write(OUT / "started.json", receipt)
+            receipt["exit_code"] = child.wait(timeout=max(.001, 10-(time.monotonic()-began)))
+    except Exception as error:
+        receipt.update(error=repr(error), exit_code=1)
+    finally:
+        receipt["primary_elapsed_sec"] = time.monotonic()-began
+        stopped = time.monotonic()
+        try:
+            receipt["termination_attempts"] = 0
+            if assigned and job.active():
+                receipt["termination_attempts"] = 1
+                job.terminate()
+            elif child is not None and child.poll() is None:
+                receipt["termination_attempts"] = 1
+                child.kill()
+            if child is not None:
+                child.wait(timeout=max(.001, 5-(time.monotonic()-stopped)))
+                receipt["child_birth_after"] = birth(job, int(child._handle))
+                receipt["child_exited"] = child.poll() is not None
+            while assigned and job.active() and time.monotonic()-stopped < 4.8:
+                time.sleep(.01)
+            receipt["job_active_after_cleanup"] = job.active()
+        finally:
+            job.close()
+        receipt["cleanup_elapsed_sec"] = time.monotonic()-stopped
+        receipt["source_after"] = {name: digest(PACKAGE / name) for name in pins}
+        receipt["source_unchanged"] = receipt["source_after"] == before
+        receipt["passed"] = (receipt.get("exit_code") == 0 and receipt.get("child_exited")
+            and receipt["job_active_after_cleanup"] == 0 and receipt["source_unchanged"]
+            and receipt["primary_elapsed_sec"] <= 10 and receipt["cleanup_elapsed_sec"] <= 5)
+        write(OUT / "receipt.json", receipt)
+    print(json.dumps(receipt))
+    return 0 if receipt["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
