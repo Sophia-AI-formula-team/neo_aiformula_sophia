@@ -21,6 +21,7 @@ class GateTests(unittest.TestCase):
 
     def status(self, go=True):
         data=dict(ros_time_sec=self.t,traffic_policy='stop_wait',traffic_mode='normal' if go else 'wait',
+                  traffic_stop_required=not go,traffic_reason='normal' if go else 'red_wait_green',
                   velocity_gate_reason='forwarding_controller' if go else 'red_wait_green',path_output_allowed=go)
         self.g.status(json.dumps(data),round(self.t*1e9),self.t)
         return data
@@ -113,6 +114,28 @@ class GateTests(unittest.TestCase):
 
     def test_manual_can_take_over_semantic_crash(self):
         self.enabled();self.t+=1;self.g.joy(True,(.1,.1),self.t);self.assertEqual(self.out(),(.1,.1))
+
+    def test_topo_diagnostic_hold_does_not_block_traffic_go(self):
+        self.session()
+        for reason in ('waiting_fresh_visual_triplet', 'controller_command_timeout', 'resume_delay', 'avoidance_active'):
+            self.t += .01
+            d=self.status();d.update(velocity_gate_reason=reason,path_output_allowed=False)
+            d['ros_time_sec'] += .001
+            self.g.status(json.dumps(d),round((self.t+.001)*1e9),self.t)
+            self.t += .002;self.command()
+            self.assertEqual(self.out(),(1.,.3),reason)
+
+    def test_old_or_inconsistent_semantic_protocol_stops(self):
+        self.enabled()
+        for invalid in (None, 'false', 0, True):
+            self.t += .01
+            d=self.status();d.update(traffic_stop_required=invalid,ros_time_sec=self.t+.001)
+            self.g.status(json.dumps(d),round((self.t+.001)*1e9),self.t)
+            self.command();self.assertEqual(self.out(),ZERO)
+        self.t += .01
+        d=self.status();del d['traffic_stop_required'];d['ros_time_sec']+=.001
+        self.g.status(json.dumps(d),round((self.t+.001)*1e9),self.t)
+        self.command();self.assertEqual(self.out(),ZERO)
 
 
 class JoystickTests(unittest.TestCase):

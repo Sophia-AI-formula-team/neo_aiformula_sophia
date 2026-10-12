@@ -294,3 +294,9 @@ ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 固定相机的可见性决定允许选择的停车目标；停车后若灯离开视野，unknown 会保持等待。8–9 米等目标必须用实际相机视野和制动录像验证，不能仅通过调参数宣称达到。回调测试使用 ROS stub；纯包测试中的运动是明确标记的合成模型，均不替代真实 Unity 或实车验证。
 
 Simulator 的 8–9 米验收另按固定赛道信号平面与实际车头最前角点计算，只用于独立评估，不输入控制。body-forward 测距及其下界不能当作这个固定平面间距。当前模拟器 RGB 适配器的不确定度仅涵盖框中心半像素量化，不覆盖车身俯仰或安装高度等全部误差；因此所谓保守下界限于该模型，实际停车必须逐次实跑核验。
+
+## 车辆 motor 门控协议 0.2.2
+
+车辆 `semantic_vehicle` 入口的状态增加 `traffic_stop_required`：启用 stop_wait 时，稳定红灯锁停为 true，确认当前新鲜绿灯后为 false；关闭红灯或使用 legacy 时为 null。motor 0.4.1 消费此灯态决定，保持自身命令超时和手动优先；不再把 `velocity_gate_reason` / `path_output_allowed` 当作原 LYA 的就绪状态。两包必须一起更新。
+
+Topo 私有点/速度的等待新 ABC、恢复延时和构图逻辑不变。绿灯只解除红灯门控，不能生成 LYA 速度或重放停车前指令。本次是离线回调回归，车辆断网期间未部署或进行实车验收。

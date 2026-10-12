@@ -120,12 +120,15 @@ class MotorGate:
                 return
             if d.get('traffic_policy') != 'stop_wait':
                 raise ValueError('incompatible semantic policy')
-            mode, reason = d.get('traffic_mode'), d.get('velocity_gate_reason')
-            if mode not in ('normal','wait') or not isinstance(reason,str):
-                raise ValueError('invalid semantic decision')
-            # Red voting, green confirmation and path readiness belong to MapAssist.
-            self.status_allowed = (mode == 'normal' and reason == 'forwarding_controller'
-                                   and d.get('path_output_allowed') is True)
+            mode = d.get('traffic_mode')
+            stop = d.get('traffic_stop_required')
+            reason = d.get('traffic_reason')
+            if (mode not in ('normal', 'wait') or type(stop) is not bool
+                    or stop != (mode == 'wait') or not isinstance(reason, str)):
+                raise ValueError('missing or inconsistent semantic traffic decision')
+            # MapAssist owns the red latch and green release. Its diagnostic
+            # command/ABC readiness is not the existing LYA's command path.
+            self.status_allowed = not stop
             self.status_time, self.status_source = now, source
             self.semantic_reason = reason
             if not self.status_allowed:
