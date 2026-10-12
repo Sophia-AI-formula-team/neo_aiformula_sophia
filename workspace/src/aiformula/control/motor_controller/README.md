@@ -1,96 +1,34 @@
-# motor_controller
+# motor_controller 0.2.0
 
-Selectable ROS 2 motor controller for the Aiformula vehicle.
+This version replaces neo's selectable 0.1.1 controller with the implementation
+requested from `Sophia-AI-formula-team/aiformula_sophia`, commit
+`dd55f65ef2fe434512d9f7bf48fff7c17141fac3`, path
+`aiformula/control/motor_controller`. `UPSTREAM.json` records source checksums.
+The control algorithm file is byte-for-byte identical to that source.
 
-This package owns the final command path from body velocity command to CAN motor RPM. It supports three controller states so a run can compare the old parameter-tuned behavior against the new live RPM correction model.
+Twist input is `sub_speed_command`; the output is `pub_can`, CAN ID `0x210`,
+eight bytes containing two signed int32 little-endian RPM values. The existing
+launch maps these to `/aiformula_control/game_pad/cmd_vel` and
+`/aiformula_control/motor_controller/reference_signal`. Wheel tread, diameter
+and gear ratio continue to come from the vehicle's wheel.yaml. The package's
+timer remains 0.01 seconds.
 
-## Controller States
+The imported controller uses the upstream fixed empirical compensation. It does
+not implement the previous controller_state selector, joystick state switching,
+live RPM correction weights, learned-model mode or correction debug topic.
+The source's output ordering and compensation constants are preserved exactly.
 
-`controller_state` defaults to `1` in `config/motor_controller.yaml` for backward compatibility.
+Integration metadata is versioned 0.2.0, with explicit runtime dependencies,
+upstream MIT attribution, and this provenance record. The invalid upstream
+motortest entry point is removed because its module is absent. Tracked Python
+bytecode is excluded. No control algorithm or empirical constant was changed.
 
-- `0`: ideal differential-drive conversion only. No empirical tuning and no model correction.
-- `1`: copied BKUP parameter-tuned controller. This is the normal safe default.
-- `2`: corrected controller RPM mode. It applies a live RPM affine model when accepted weights and history are available.
+Only motor_controller is built for this deployment. The independently staged
+semantic packages remain unbuilt. An already-running Python node keeps its
+loaded previous code; restarting its owning launch selects the newly installed
+controller. Build and isolated ROS-topic validation do not establish physical
+driving performance.
 
-The standard PS4 controller mapping is:
-
-- Triangle: state `0`
-- Circle: state `1`
-- Cross/X: state `2`
-
-When the state leaves `2`, live RPM weights are unloaded. State `0` and state `1` ignore live weight messages.
-
-## RPM Correction Flow
-
-In state `2`, the controller can receive a live checkpoint from `correction_controller_trainer`:
-
-```text
-/aiformula_control/correction_controller_trainer/rpm_weights
-```
-
-The message type is `std_msgs/msg/ByteMultiArray`; the payload is a Torch checkpoint containing:
-
-- GRU history model weights
-- RPM affine output head
-- feature/command column names
-- normalization and clamp config
-- checkpoint metrics
-
-The model predicts separate affine parameters for each wheel:
-
-```text
-right_rpm = a_right * ideal_right_rpm + b_right
-left_rpm  = a_left  * ideal_left_rpm  + b_left
-```
-
-The left and right wheels have separate `a` and `b` values. That is intentional: the robot may need asymmetric correction.
-
-Live weights stay loaded while the controller remains in state `2`. The RPM history gate is intentionally tolerant: it uses recent samples, resamples/pads them to the model's required history length, and briefly holds the last valid RPM correction through short callback gaps. If no accepted live weights have arrived, state `2` falls back to the ideal RPM path. It does not apply stale weights from state `1`.
-
-## Inputs And Outputs
-
-Subscribed inputs:
-
-- `sub_speed_command`: remapped by launch to gamepad `cmd_vel`
-- `/aiformula_sensing/vectornav/velocity_body`: measured forward velocity
-- `/aiformula_sensing/gyro_odometry_publisher/odom`: measured yaw rate
-- `/aiformula_control/joy_node/joy`: PS4 state switching
-- `/aiformula_control/correction_controller_trainer/rpm_weights`: accepted live RPM checkpoints
-
-Published outputs:
-
-- `pub_can`: remapped by launch to the vehicle CAN command topic
-- `/aiformula_control/motor_controller/correction_debug`: `std_msgs/msg/Float64MultiArray` debug stream
-
-CAN encoding is unchanged from the BKUP controller:
-
-- CAN ID: `0x210`
-- bytes `0..3`: right wheel RPM, signed int32 little-endian
-- bytes `4..7`: left wheel RPM, signed int32 little-endian
-
-A full stop command always sends zero RPM to both wheels.
-
-## Safety Limits
-
-`max_command_v` gates input linear velocity before any state-specific controller math. The default is `4.0 m/s`.
-
-No standalone omega clamp is applied in the command gate. This is deliberate because the observed problem is underturning, and clamping yaw would hide the failure mode during correction training.
-
-The RPM model output is still clipped by the checkpoint config, default `max_abs_rpm=650`.
-
-## Debug Data
-
-The debug topic and optional CSV include both body-level and RPM-level fields. Important RPM fields:
-
-- `rpm_weights_loaded`: live checkpoint has been loaded
-- `rpm_correction_ready`: weights and recent history are ready for a fresh model prediction
-- `rpm_model_applied`: RPM correction was used for this command
-- `rpm_model_right_rpm`, `rpm_model_left_rpm`: corrected wheel RPM output
-- `rpm_a_right`, `rpm_a_left`, `rpm_b_right`, `rpm_b_left`: current affine parameters
-- `rpm_history_len`, `rpm_history_ready`: model history status
-
-The trainer uses this debug stream to verify that online samples are collected only from observed state `2`.
-
-## Related Package
-
-`pid_ws/src/correction_controller_trainer` generates trajectories, collects aligned CSV logs, trains RPM checkpoints online, and publishes accepted live weights to this controller.
+The previous neo implementation remains in Git history at
+`05f1651c8a14d56ab9a86a9767c52793403dcfdc`. Vehicle source, build and install
+backups and deployment receipts are recorded in the dated deployment handoff.
