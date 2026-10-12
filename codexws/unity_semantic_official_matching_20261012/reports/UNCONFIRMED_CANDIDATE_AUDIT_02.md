@@ -41,3 +41,11 @@ video03 单次编码/校验完成（45.129 s、exit0、owned Job 全树归零）
 Codex 已查看全部28张解码联系图以及外圈/内圈中段和终止的4张原尺寸解码图：输出图、LP/ABC/LYA、semantic RUNNING/FROZEN 和精确停止原因可识别，采样画面展示检查通过。该人工视觉审查不是逐帧1513张的视觉检查。机器与视觉回执原字节位于 `evidence/video03/`，本地视频路径与 SHA 见 `evidence/MEDIA.json`；视频本体未入 Git。
 
 此视频仅展示两个真实**绿灯元数据采集**，外圈176.649m主动停止、内圈64.875m车道支持失败；红灯/左转仍未通过，不把它替代原真实红灯失败视频。
+
+## Review3 首次合成结果 — 04:30 UTC
+
+在另一独立 CPU 窗口，review3 原27项和新增6项合成方法共33项全部实际通过，无skip/失败/错误（3.219085 s、两个exit0）。两份owned Job退出/active_after_cleanup=0、四个launcher/实际解释器独立确认消失，所有输入/原失败/新源码SHA前后一致。
+
+源码在 `experiments/official_observer_quantized_curve_review3/`，原27项测试保持 SHA `6257487526ce53f9188e0a97f510b185a122ec5259ba07b96af1f91c24497555`，新observer为 `03ce9426b4077d73499d638db8f18454738b4c38cff101ef53005cdc11d19679`。实际测试回执位于 `evidence/quantized_review3_33/`。这些文件仅是离线实验，不在安装 payload 或 ROS/Unity 控制中。
+
+真实703-mask审计尚未执行；原RGB接线/多视图45项测试也未执行。另一对话收回CPU进行连续几何/真实输入诊断，Unity始终由其独占；禁止借过期窗口运行或刷新Editor。完成上述测试、MCP真实原PNG采集、匿名路口/官方匹配和控制所有权修复后，仍需分别实跑内外圈红灯左转，并重新检查正常红/绿轨迹。

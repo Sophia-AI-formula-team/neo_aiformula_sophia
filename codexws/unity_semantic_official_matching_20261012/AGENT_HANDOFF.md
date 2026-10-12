@@ -12,6 +12,8 @@
 
 后续候选的具体失败与准备状态见 `reports/UNCONFIRMED_CANDIDATE_AUDIT_02.md`：量化曲线首次 26/27 PASS，真实 703-mask audit 未开始；video02 在编码前因 post-reset 身份混用失败；原 RGB/完整 plane API 正例仍待独立运行。不要把这些准备态升级为通过。
 
+04:30 UTC更新：review3的原27+新增6合成方法已全部PASS（3.219s），仅离线未安装；真实703图仍未处理。video03已完整解码1513帧/100.867s，并审查28解码样本和内外圈mid/final4图；只展示两场绿灯元数据采集，未验收红灯或左转。机器/视觉回执、视频SHA及局部修复源见 evidence/experiments 和上述报告。原RGB/plane45项下一窗口pending，另一对话当前CPU/Unity独占，root不启动45/703/视频/MCP。
+
 1. 稀疏官方 junction chord 不等于圆角实测外轮廓；官方 junction 不一定有车体转角。旧整体 fit 已失败，删转角门控不能解决它。
 2. 现 LLP 经过 ROI/组件选择/直线化，不能提供完整横向支路；`left_only` 是当前车道边界模式。
 3. 远处一行像素的投影阶梯会被固定 0.15m 分片误认成横线；拟合零残差不等于低量化误差。

@@ -37,3 +37,5 @@ python -B install.py --action verify-before --simulator 'C:\absolute\Simulator'
 回滚仅恢复列出的精确 before bytes，移除 hash 完全一致的新增文件；不删除目录、不修改另一对话文件、场景、相机、车辆、参数或官方图。中途失败保存 completed-path 回执，inspect 后逐项处理，不能清空整个项目。
 
 任何下一次真实试验都须重新取得独占所有权、拍 fresh source/Edit baseline、使用新 case、设 wall/sim/no-progress 上限并检查 cleanup/PID。0.1.0 是诊断版本；要声称左转可部署，须另有真实内外圈左入/通过/退出与红/绿回归视频、新的 source identity 和版本。
+
+`experiments/official_observer_quantized_curve_review3` 已在独立进程通过33项合成方法，但不在 guarded installer 的 payload 中，不能据此启用导航。原RGB/plane45项与真实703-mask批次仍待执行；只有取得新的CPU/Unity独占窗口后才能继续。Video03只展示两场绿灯元数据采集，完整解码与采样展示检查不替代红灯左转功能验收。

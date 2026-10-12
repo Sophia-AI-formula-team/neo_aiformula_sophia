@@ -6,6 +6,12 @@ Added the subsequent 26/27 quantized-curve failure, unprocessed actual-mask batc
 video02 identity rejection and pending original-RGB/public-plane-API diagnostics.
 Payload version remains 0.1.0; no candidate or core change is enabled by these notes.
 
+Later evidence: the default-off review3 experiment passes the unchanged 27
+original methods plus six added methods; actual-mask and plane validation remain
+pending. Video03 is fully decoded (1513 frames) with sampled visual QA, showing
+only the two genuine green metadata cases. Both left-turn and red-light acceptance
+remain absent from that video. Experimental source is archived outside the installer.
+
 ## 0.1.0 — 2026-10-12
 
 Default-off Unity exposure provenance (v2), exact original lane PNG recording,
