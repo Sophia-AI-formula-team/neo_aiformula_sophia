@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "installer_tests": 12,
+  "verify_payload": {
+    "ok": true,
+    "action": "verify-payload",
+    "managed_files": 9,
+    "payload_sides": 14,
+    "writes": 0
+  },
+  "actual_live_after_read_only": {
+    "ok": true,
+    "action": "verify-after",
+    "writes": 0,
+    "managed_files": 9,
+    "prerequisites": 416
+  },
+  "temporary_roundtrip": {
+    "before": {
+      "ok": true,
+      "action": "verify-before",
+      "writes": 0,
+      "managed_files": 9,
+      "prerequisites": 416
+    },
+    "apply": {
+      "ok": true,
+      "action": "apply",
+      "writes": 9,
+      "completed": [
+        "Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+        "Assets/StreamingAssets/RoadDetector/worker.py",
+        "Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py",
+        "Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+        "Assets/StreamingAssets/SemanticPlanning/semantic_worker.py",
+        "Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py",
+        "Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py.meta",
+        "Assets/AIFormula/Editor/Validation/AIFormulaSemanticLeftTrial.cs",
+        "Assets/AIFormula/Editor/Validation/AIFormulaSemanticLeftTrial.cs.meta"
+      ]
+    },
+    "after": {
+      "ok": true,
+      "action": "verify-after",
+      "writes": 0,
+      "managed_files": 9,
+      "prerequisites": 416
+    },
+    "rollback": {
+      "ok": true,
+      "action": "rollback",
+      "writes": 9,
+      "completed": [
+        "Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+        "Assets/StreamingAssets/RoadDetector/worker.py",
+        "Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py",
+        "Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+        "Assets/StreamingAssets/SemanticPlanning/semantic_worker.py",
+        "Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py",
+        "Assets/StreamingAssets/SemanticPlanning/fusion_snapshot_capture.py.meta",
+        "Assets/AIFormula/Editor/Validation/AIFormulaSemanticLeftTrial.cs",
+        "Assets/AIFormula/Editor/Validation/AIFormulaSemanticLeftTrial.cs.meta"
+      ]
+    },
+    "exact_restoration": true
+  },
+  "simulator_written": false,
+  "Unity_operations": false,
+  "model_inference": false,
+  "core_written": false
+}

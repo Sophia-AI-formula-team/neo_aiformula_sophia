@@ -1,0 +1,19 @@
+{
+  "child_pid": 37616,
+  "exit_code": 0,
+  "elapsed_seconds": 0.1369328000000678,
+  "child_terminated": true,
+  "stop_attempted": false,
+  "retried": false,
+  "Unity_operations": false,
+  "model_inference": false,
+  "source_pins": {
+    "AIFormulaRoadDetector.cs": "5a6b9c4500ea93c79fb495080a2d79ac53268cc0ce4ca007ecc2dd844771dccf",
+    "AIFormulaSemanticLeftTrial.cs": "a6c7e80eea3ebd7a5b5bac2ab000aacc9344af78ef2926e3886da23e52a47a8a",
+    "test_capture_metadata.py": "fbe22a08f8f252db754829859b055823a5dcf7b71cb9658f599fdfe0c74f817d",
+    "worker.py": "f66ca711811b5adfd2c1ef44dc4878aa1f1e0fc792b3e8f2934e767e3668acff"
+  },
+  "pins_unchanged": true,
+  "stdout": "",
+  "stderr": "test_calibration_change_is_invalid_not_replaced_with_receipt_camera (test_capture_metadata.CaptureMetadataTests.test_calibration_change_is_invalid_not_replaced_with_receipt_camera) ... ok\ntest_capture_coordinate_conversion_checked (test_capture_metadata.CaptureMetadataTests.test_capture_coordinate_conversion_checked) ... ok\ntest_csharp_optin_is_not_serialized_or_added_to_settings (test_capture_metadata.CaptureMetadataTests.test_csharp_optin_is_not_serialized_or_added_to_settings) ... ok\ntest_default_infer_reply_and_model_calls_equal_before (test_capture_metadata.CaptureMetadataTests.test_default_infer_reply_and_model_calls_equal_before) ... ok\ntest_default_lane_pipeline_receives_same_mask_and_exact_request (test_capture_metadata.CaptureMetadataTests.test_default_lane_pipeline_receives_same_mask_and_exact_request) ... ok\ntest_enabled_infer_echo_does_not_touch_model_output (test_capture_metadata.CaptureMetadataTests.test_enabled_infer_echo_does_not_touch_model_output) ... ok\ntest_finite_numbers_and_shapes_required (test_capture_metadata.CaptureMetadataTests.test_finite_numbers_and_shapes_required) ... ok\ntest_invalid_capsule_cannot_keep_flat_pose_or_time (test_capture_metadata.CaptureMetadataTests.test_invalid_capsule_cannot_keep_flat_pose_or_time) ... ok\ntest_malformed_capture_does_not_change_lane_or_color (test_capture_metadata.CaptureMetadataTests.test_malformed_capture_does_not_change_lane_or_color) ... ok\ntest_missing_body_has_no_pose (test_capture_metadata.CaptureMetadataTests.test_missing_body_has_no_pose) ... ok\ntest_no_unknown_manual_map_or_truth_fields_accepted (test_capture_metadata.CaptureMetadataTests.test_no_unknown_manual_map_or_truth_fields_accepted) ... ok\ntest_pose_change_is_echoed_only_as_explicit_invalid (test_capture_metadata.CaptureMetadataTests.test_pose_change_is_echoed_only_as_explicit_invalid) ... ok\ntest_render_body_mismatch_does_not_authorize_capture_pose (test_capture_metadata.CaptureMetadataTests.test_render_body_mismatch_does_not_authorize_capture_pose) ... ok\ntest_same_lane_epoch_camera_and_time_required (test_capture_metadata.CaptureMetadataTests.test_same_lane_epoch_camera_and_time_required) ... ok\ntest_sequence_hash_and_clock_must_match (test_capture_metadata.CaptureMetadataTests.test_sequence_hash_and_clock_must_match) ... ok\ntest_time_change_is_invalid_even_if_pose_unchanged (test_capture_metadata.CaptureMetadataTests.test_time_change_is_invalid_even_if_pose_unchanged) ... ok\ntest_uncalibrated_render_stays_invalid (test_capture_metadata.CaptureMetadataTests.test_uncalibrated_render_stays_invalid) ... ok\ntest_valid_echo_preserves_exact_fields_and_input (test_capture_metadata.CaptureMetadataTests.test_valid_echo_preserves_exact_fields_and_input) ... ok\n\n----------------------------------------------------------------------\nRan 18 tests in 0.004s\n\nOK\n"
+}

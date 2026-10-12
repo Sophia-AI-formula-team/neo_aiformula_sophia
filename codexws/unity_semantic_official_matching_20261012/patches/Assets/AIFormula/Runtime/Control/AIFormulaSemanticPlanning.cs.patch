@@ -1,0 +1,43 @@
+--- final63/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
++++ capture-v2/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
+@@ -15,6 +15,8 @@
+     {
+         public bool Requested { get; private set; }
+         public bool EnableSignalApproach { get; set; }
++        // Runtime-only opt-in diagnostic path. Never serialized into the scene.
++        public string DiagnosticRouteOutput { get; set; }
+         public bool Running { get; private set; }
+         public bool Faulted { get; private set; }
+         public string Status { get; private set; } = "Off";
+@@ -52,7 +54,9 @@
+                     FileName = detector.Configuration.python.Trim(),
+                     Arguments = "-B -u \"" + worker + "\" --source-root \"" + Path.Combine(root, "source")
+                         + "\" --vision-root \"" + Path.Combine(Application.streamingAssetsPath, "VisionLaneFollower") + "\""
+-                        + (EnableSignalApproach ? " --signal-approach" : ""),
++                        + (EnableSignalApproach ? " --signal-approach" : "")
++                        + (string.IsNullOrWhiteSpace(DiagnosticRouteOutput) ? ""
++                            : " --diagnostic-route-output " + QuoteArgument(DiagnosticRouteOutput)),
+                     WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true,
+                     RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+                     StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
+@@ -173,6 +177,20 @@
+             task.ContinueWith(t => { var observed = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+             return task;
+         }
++        static string QuoteArgument(string value)
++        {
++            // Windows argv quoting: double backslashes before quotes and the
++            // closing delimiter. UseShellExecute stays false; no shell runs.
++            var quoted = new StringBuilder("\"");
++            int slashes = 0;
++            foreach (char ch in value) {
++                if (ch == '\\') { slashes++; continue; }
++                quoted.Append('\\', ch == '"' ? slashes * 2 + 1 : slashes);
++                quoted.Append(ch); slashes = 0;
++            }
++            quoted.Append('\\', slashes * 2).Append('"');
++            return quoted.ToString();
++        }
+         void Fail(string reason) { Faulted = true; Running = false; Status = reason; Shutdown(); }
+         public void Stop() { Requested = Running = false; Shutdown(); Status = "Off"; }
+         void Shutdown()

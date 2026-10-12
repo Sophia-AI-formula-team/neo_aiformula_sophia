@@ -1,0 +1,221 @@
+{
+  "command": [
+    "C:/Users/PC/OneDrive - Sophia Univ. Students/Main/SOPHIA/Y4T1/Research/Demo_LaneLineTrainer/workspace/tools/video_deps/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe",
+    "-hide_banner",
+    "-v",
+    "info",
+    "-nostats",
+    "-xerror",
+    "-i",
+    "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\official_capture_v2_diagnostics.mp4",
+    "-progress",
+    "pipe:1",
+    "-map",
+    "0:v:0",
+    "-vf",
+    "showinfo",
+    "-f",
+    "null",
+    "nul",
+    "-map",
+    "0:v:0",
+    "-vf",
+    "select=eq(n\\,0)+eq(n\\,75)+eq(n\\,150)+eq(n\\,225)+eq(n\\,300)+eq(n\\,375)+eq(n\\,450)+eq(n\\,525)+eq(n\\,534)+eq(n\\,600)+eq(n\\,675)+eq(n\\,750)+eq(n\\,825)+eq(n\\,900)+eq(n\\,975)+eq(n\\,1039)+eq(n\\,1050)+eq(n\\,1068)+eq(n\\,1069)+eq(n\\,1125)+eq(n\\,1200)+eq(n\\,1275)+eq(n\\,1291)+eq(n\\,1350)+eq(n\\,1425)+eq(n\\,1483)+eq(n\\,1500)+eq(n\\,1512)",
+    "-vsync",
+    "0",
+    "-compression_level",
+    "1",
+    "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_%03d.png"
+  ],
+  "progress": {
+    "frame": "1513",
+    "fps": "770.38",
+    "stream_0_0_q": "-0.0",
+    "stream_1_0_q": "-0.0",
+    "bitrate": "N/A",
+    "total_size": "N/A",
+    "out_time_us": "100866667",
+    "out_time_ms": "100866667",
+    "out_time": "00:01:40.866667",
+    "dup_frames": "0",
+    "drop_frames": "0",
+    "speed": "51.4x",
+    "progress": "end"
+  },
+  "stderr_log": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\official_capture_v2_diagnostics.decode.log",
+  "stream_audit": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\official_capture_v2_diagnostics.stream_audit.json",
+  "verification_mode": "ffmpeg_showinfo_full_decode_without_ffprobe",
+  "exit_code": 0,
+  "all_frames_decoded": true,
+  "samples": [
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_001.png",
+      "output_frame": 0,
+      "output_time_sec": 0.0,
+      "sha256": "ca41054c2a240c3f9fd6adb1a4aeda474cfa0e1141b67154a771f275d80598a5"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_002.png",
+      "output_frame": 75,
+      "output_time_sec": 5.0,
+      "sha256": "c9a210f227019e7592d79e208ac2ac8a8f55d70c5e298d340cfe28f247be7ec3"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_003.png",
+      "output_frame": 150,
+      "output_time_sec": 10.0,
+      "sha256": "336742228e38000a0691368780cb281c7b0827c7faf0383816380b394a81646a"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_004.png",
+      "output_frame": 225,
+      "output_time_sec": 15.0,
+      "sha256": "d7a36f04e9d4c51ab5a2abcec0f2c5a795b3df35d38ff37163d6fd31beba75e6"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_005.png",
+      "output_frame": 300,
+      "output_time_sec": 20.0,
+      "sha256": "77d01bb75593daaed66812baaea7dd56cd219fbd29825537942cea7613e1dfbc"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_006.png",
+      "output_frame": 375,
+      "output_time_sec": 25.0,
+      "sha256": "07f6c8eed6e140581e6414485619d65bfcb7fb38a0923f9909434e466488424c"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_007.png",
+      "output_frame": 450,
+      "output_time_sec": 30.0,
+      "sha256": "3bf0952d2c2463b2fe23210924f114c756203778e1167c4da5c1cddef584a48e"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_008.png",
+      "output_frame": 525,
+      "output_time_sec": 35.0,
+      "sha256": "32ac4b667043879272c668942932b8b2711f7971ddd3c23b7de167dd50bef1e3"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_009.png",
+      "output_frame": 534,
+      "output_time_sec": 35.6,
+      "sha256": "1850c8936353a59b9e66a35182b97587b902dc7e667cf8c878cda3581174f0ba"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_010.png",
+      "output_frame": 600,
+      "output_time_sec": 40.0,
+      "sha256": "be592da5e736056d66fdba18bacac6ca20cb567388ecf3c31198f2d722102ac8"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_011.png",
+      "output_frame": 675,
+      "output_time_sec": 45.0,
+      "sha256": "d63ae658a7eee233bb7dd037204641fa0c6df0d0201424c32589c9ad4fb882ec"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_012.png",
+      "output_frame": 750,
+      "output_time_sec": 50.0,
+      "sha256": "f3ea38ef039e12b10fe4a97cc12b6f4b830172f7c933d17b21ef0603d709e89a"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_013.png",
+      "output_frame": 825,
+      "output_time_sec": 55.0,
+      "sha256": "fb7a2b50187b6b4edb39fb0a93582e24381fc8a8119e6d565f30c68947485977"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_014.png",
+      "output_frame": 900,
+      "output_time_sec": 60.0,
+      "sha256": "d98a7d1a92fba189700c2371d50a8529682cb927c5b827e1e6bd7cfd0acd8733"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_015.png",
+      "output_frame": 975,
+      "output_time_sec": 65.0,
+      "sha256": "2f4334ff21be5d3b526dc94c9da7181f3dc6a288bcc2ae913d8e88dceb68d4b3"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_016.png",
+      "output_frame": 1039,
+      "output_time_sec": 69.26666666666667,
+      "sha256": "e0c11461474157bb6f3fe9f43b08bf15b977726bfa4ca5ac0c71811db8e2029f"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_017.png",
+      "output_frame": 1050,
+      "output_time_sec": 70.0,
+      "sha256": "fa14e120116bcef7c73667f2a057525e7e185d6e57f0a1d527ca3fae453202b9"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_018.png",
+      "output_frame": 1068,
+      "output_time_sec": 71.2,
+      "sha256": "14e0acf3123f812dd171671e09e2d047f2e904fe0655757fe62321e845102c57"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_019.png",
+      "output_frame": 1069,
+      "output_time_sec": 71.26666666666667,
+      "sha256": "9c6a5b3261e48edc67495066734527f5b94f6f5b7576a73606a645e31fe7d90f"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_020.png",
+      "output_frame": 1125,
+      "output_time_sec": 75.0,
+      "sha256": "e67679273ddd0c0ce7d6f5ce477e09496f5b45e55b937ff358ce2003ac2f9e1b"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_021.png",
+      "output_frame": 1200,
+      "output_time_sec": 80.0,
+      "sha256": "4e7c6924524f051ee55e076f76b2a40d30c6f4036e1f524bf2b5f3cff0d41da3"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_022.png",
+      "output_frame": 1275,
+      "output_time_sec": 85.0,
+      "sha256": "b7d059893a3b074d3a84daf697f85255628bcde441eb15f950f64e698bb93834"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_023.png",
+      "output_frame": 1291,
+      "output_time_sec": 86.06666666666666,
+      "sha256": "0ee77ee673e5793cf839110658830957b1cd25cdbd4094217754ea5d1bbbb974"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_024.png",
+      "output_frame": 1350,
+      "output_time_sec": 90.0,
+      "sha256": "a7a43477e1379eb8aba9639abc208267995dbbc4a2fc808ff2669bd0ea72506d"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_025.png",
+      "output_frame": 1425,
+      "output_time_sec": 95.0,
+      "sha256": "114e0d34faabf3238825fb0fe6a3e17d8f8882058a500d1287085d07f759370d"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_026.png",
+      "output_frame": 1483,
+      "output_time_sec": 98.86666666666666,
+      "sha256": "0365d82c964dc24aae4e5bded976e1e922e2d1cdfb6d2cc62efbaf98c70ce548"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_027.png",
+      "output_frame": 1500,
+      "output_time_sec": 100.0,
+      "sha256": "4ac1ed6fd702ae3b830154539d792ed55ffc775da5317aa82d473f4190e95e4f"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\official_capture_v2_03\\qa\\decoded_028.png",
+      "output_frame": 1512,
+      "output_time_sec": 100.8,
+      "sha256": "54bb64eea60448ef98a7013189a84153bd615509270b1769f4feb2fbf2a8e2f9"
+    }
+  ],
+  "visual_review": "pending human/agent actual image inspection"
+}
