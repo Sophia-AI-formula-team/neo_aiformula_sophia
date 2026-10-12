@@ -1,0 +1,30 @@
+{
+  "schema": "decoded_video_visual_review/v1",
+  "reviewer": "Codex",
+  "video_sha256": "0acdc339a32fd49b36b7fbd30ab60d8fde11b228f2cbdabdfd8bda7444e6f7e5",
+  "machine_decode": "All 1513 frames checked by ffmpeg showinfo; exact n/15 PTS, H264, 1280x960 yuv420p",
+  "review_scope": "28 decoded contact samples and four full-size mid/final images; not visual inspection of every frame",
+  "decoded_contact": "official_capture_v2_diagnostics.decoded_contact.jpg",
+  "full_size_samples": [
+    {"path": "qa/decoded_009.png", "frame": 534, "case": "OUTER mid", "sha256": "1850c8936353a59b9e66a35182b97587b902dc7e667cf8c878cda3581174f0ba"},
+    {"path": "qa/decoded_018.png", "frame": 1068, "case": "OUTER final", "sha256": "14e0acf3123f812dd171671e09e2d047f2e904fe0655757fe62321e845102c57"},
+    {"path": "qa/decoded_023.png", "frame": 1291, "case": "INNER mid", "sha256": "0ee77ee673e5793cf839110658830957b1cd25cdbd4094217754ea5d1bbbb974"},
+    {"path": "qa/decoded_028.png", "frame": 1512, "case": "INNER final", "sha256": "54bb64eea60448ef98a7013189a84153bd615509270b1769f4feb2fbf2a8e2f9"}
+  ],
+  "sampled_visual_checks": {
+    "main_view_unobscured_75_percent": true,
+    "overlay_rgb_lane_identifiable": true,
+    "LP_ABC_LYA_present_when_recorded": true,
+    "semantic_running_and_frozen_distinguished": true,
+    "terminal_reason_fits": true,
+    "correct_inner_outer_case_identity": true,
+    "old_context_separate_from_current_control": true,
+    "no_added_transition_or_old_video_substitution": true
+  },
+  "result": "sampled presentation review passed",
+  "functional_acceptance": false,
+  "scope": "Two genuine green metadata captures; outer intentional stop and inner lane-support failure",
+  "red_light_validated_by_this_video": false,
+  "left_turn_validated": false,
+  "Unity_or_control_execution_during_review": false
+}
