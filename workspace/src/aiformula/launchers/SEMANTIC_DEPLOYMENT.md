@@ -14,6 +14,11 @@ with `semantic_planner_core` and `semantic_local_planner_ros` at version 0.2.0.
 The separately added bridge package is version 0.1.0. This entry does not alter
 the semantic core, native LLP, native lane target selection, LYA gains or state1.
 
+MapAssist 0.2.1 uses `traffic_policy=stop_wait` and `enable_signal_approach=false`.
+Stable red holds zero; fresh stable green resumes after the normal fresh-control gates.
+Null signal distance is accepted for this color-only policy. Topo learning is unchanged;
+no red-triggered detour is entered. Existing source-age and coordinate-frame gaps remain.
+
 ## What this deployment establishes
 
 The launch constructs real ROS nodes and explicit remappings:

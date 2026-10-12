@@ -23,3 +23,7 @@ it does not change the semantic algorithm, old launch defaults, or motor math.
 Red does not mean unconditional LEFT. The primitive planner prefers a feasible
 left candidate, while MapAssist needs a learned/aligned topology to detour. The
 short, cold-start Unity runs verify red stop and green continuation.
+
+Native MapAssist 0.2.1 now defaults to stable-red wait / stable-green resume,
+with distance approach and automatic detour disabled. Topo learning is unchanged.
+See [the scoped change record](SIMPLE_TRAFFIC_CHANGE.md); historical Unity results above remain tied to core63.
