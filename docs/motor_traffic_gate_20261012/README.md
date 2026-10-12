@@ -1,5 +1,7 @@
 # 2026-10-12 静止部署回执
 
+**已按用户要求从车辆回滚 motor 和 allnodes 接线。** 原 USB motor 源码、build、install 已恢复，SHA256 为 `022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742`；原 allnodes SHA256 为 `0957d8fa41183d80cbcc25565de414aeccfd7657a76b17e42d2e5b9f60c318df`。不再强制 semantic 门控、手柄独立话题或 enable_motion 开关；原版零速问题也随之恢复。其他包未回滚，未启动任何节点。新版本存档于 `/home/control/aiformula_backups/20261012_motor_gate_rollback`，车辆回执为 runtime 下的 `rollback_result.json`。以下是已回滚版本的历史验证记录，不代表当前车上 motor。
+
 基于 PR23 `6caa6a8`，motor 来源为 PR20 `b9676e4` 的用户确认 USB sigmoid 版本。
 本次用户授权编译、motor 内红灯门控、手柄优先和零轮速修复；没有发送运动指令。
 
