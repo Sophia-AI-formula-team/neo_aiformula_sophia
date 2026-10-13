@@ -28,6 +28,7 @@ from semantic_planner_core.anchored_topology import anchored_graph
 from semantic_planner_core.traffic_route import DetourTracker, OfficialToOdom, TopologyGraph
 from semantic_planner_core.traffic_light_filter import TrafficLightFilter
 from semantic_planner_core.signal_approach import parse_signal_observation, stop_envelope
+from semantic_local_planner_ros.topo_state import TopoState
 
 
 def wrap_angle(value: float) -> float:
@@ -48,8 +49,8 @@ def startup_args(args=None) -> List[str]:
     return argv
 
 
-class MapAssist(Node):
-    """Learn in RAM, then gently constrain persistent visual heading outliers."""
+class MapAssist(TopoState, Node):
+    """Learn a lap with diagnostics and optional disk checkpoints."""
 
     def __init__(self) -> None:
         super().__init__("map_assist")
@@ -62,6 +63,11 @@ class MapAssist(Node):
             "status_topic": "/map_assist/status",
             "reference_path_topic": "/map_assist/path",
             "topomap_path": "",
+            "checkpoint_path": "",
+            "checkpoint_interval_sec": 1.0,
+            "checkpoint_resume_distance_m": 1.5,
+            "checkpoint_resume_heading_deg": 25.0,
+            "topo_log_interval_sec": 5.0,
             "route_node_ids": "",
             "angle_tolerance_deg": 15.0,
             "progress_tolerance_m": 1.0,
@@ -222,15 +228,17 @@ class MapAssist(Node):
         # the node's ROS clock and cannot run from the diagnostic callback.
         self.status_clock = Clock(clock_type=ClockType.STEADY_TIME)
         self.status_timer = self.create_timer(0.2, self._status_tick, clock=self.status_clock)
+        self._init_checkpoint()
         self._status_tick()
         self.get_logger().info(
-            "Map assist: first lap learns in RAM; points use metres, x forward/y left. "
+            "Map assist: first lap learns with closure diagnostics; points use metres, x forward/y left. "
             f"Initial avoidance state: {self.avoidance_active}; unknown waits for a real False flag. "
             f"Official map: {self.p['topomap_path']}"
         )
 
     def _validate_parameters(self) -> None:
         for name in (
+            "checkpoint_interval_sec", "checkpoint_resume_distance_m", "topo_log_interval_sec",
             "sample_spacing_m", "min_lap_distance_m",
             "lap_closure_radius_m", "match_window_m", "max_match_distance_m",
             "max_odom_speed_mps", "max_odom_yaw_rate_radps", "max_odom_position_std_m",
@@ -265,7 +273,7 @@ class MapAssist(Node):
             raise ValueError("Atomic observations and legacy color topics must differ")
         if self.p["input_cmd_vel_topic"] == self.p["output_cmd_vel_topic"]:
             raise ValueError("Velocity input/output must differ; feedback is not allowed")
-        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg"):
+        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg", "checkpoint_resume_heading_deg"):
             if not math.isfinite(float(self.p[name])) or not 0 < self.p[name] < 90:
                 raise ValueError(f"{name} must be between 0 and 90 degrees")
         if self.p["persistence_frames"] < 1 or self.p["max_recorded_samples"] < 30:
@@ -276,6 +284,9 @@ class MapAssist(Node):
             raise ValueError("Input/output point topics must be distinct; feedback is not allowed")
 
     def _reset_learning(self, reason: str) -> None:
+        self.closed_at = None
+        self.closure_build_error = None
+        self.last_learning_reset_reason = reason
         was_detouring = self.traffic_mode == "detour"
         was_approaching = self.traffic_mode in ("approach", "perception_suspended")
         self._clear_signal_recovery("reset")
@@ -320,9 +331,14 @@ class MapAssist(Node):
         self.reason = reason
         self.last_correction = 0.0
         self.guard.reset()
+        self.checkpoint_dirty = True
+        self._save_checkpoint(force=True)
 
     def _on_reset(self, msg: Bool) -> None:
         if msg.data:
+            # Explicit reset is the only way to discard a rejected old checkpoint.
+            self.restore_pending = None
+            self.restore_blocked = False
             self._reset_learning("reset_learning")
             self.odom = None
             self.odom_stamp = None
@@ -884,6 +900,8 @@ class MapAssist(Node):
         current = (float(pos.x), float(pos.y), yaw)
         stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         frame = msg.header.frame_id or "odom"
+        if not self._resume_checkpoint(current, frame, msg.child_frame_id, stamp):
+            return
         delta = 0.0
         if self.odom is not None:
             delta = math.hypot(current[0] - self.odom[0], current[1] - self.odom[1])
@@ -927,10 +945,13 @@ class MapAssist(Node):
             if self.traffic_mode == "perception_suspended":
                 self._wait_for_signal("signal_approach_odom_invalid", fault=True)
         self.odom_seq += 1
+        self.checkpoint_dirty = True
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
         excluded = self._bypass_reason(now) is not None or not self._recording_points_valid(now)
         self.excluded_since_sample |= excluded
         if self.reference is None:
+            self.fusion_status = {"available": False, "reason": "first_lap_not_closed"}
+            self.topology_mapping_status = {"available": False, "reason": "first_lap_not_closed"}
             if not self.samples:
                 self.samples.append(RouteSample(*current, excluded=excluded))
             else:
@@ -962,6 +983,27 @@ class MapAssist(Node):
                 self.progress = result
                 self.pending_distance = 0.0
 
+    def _build_reference(self, candidate_samples):
+        return build_fused_route(
+            candidate_samples, self.official, spacing_m=self.p["sample_spacing_m"],
+            smooth_window_m=self.p["smooth_window_m"], max_detour_gap_m=self.p["max_detour_gap_m"],
+            max_rmse_m=self.p["alignment_max_rmse_m"],
+            ambiguity_margin_m=self.p["alignment_ambiguity_margin_m"],
+            node_search_m=self.p["fusion_node_search_m"],
+            feature_window_m=self.p["fusion_feature_window_m"],
+            shape_weight=self.p["fusion_shape_weight"],
+            max_displacement_m=self.p["fusion_max_displacement_m"],
+        )
+
+    def _accept_reference(self, fusion):
+        self.reference = fusion.reference
+        self.fusion_status = dict(fusion.status)
+        self.fused_node_positions = dict(fusion.node_positions)
+        self.fused_node_progress = dict(fusion.node_progress)
+        self.topology_alignment = fusion.alignment
+        self.alignment = {"diagnostic_only": True, "superseded_by": "map_fusion"}
+        self._prepare_mapped_topology()
+
     def _try_complete_lap(self, current, excluded: bool) -> None:
         # The official drawing does not define odometric metres or lap length.
         minimum = self.p["min_lap_distance_m"]
@@ -978,34 +1020,22 @@ class MapAssist(Node):
             return
         candidate_samples = self.samples + [RouteSample(*current, excluded=excluded)]
         try:
-            fusion = build_fused_route(
-                candidate_samples, self.official, spacing_m=self.p["sample_spacing_m"],
-                smooth_window_m=self.p["smooth_window_m"], max_detour_gap_m=self.p["max_detour_gap_m"],
-                max_rmse_m=self.p["alignment_max_rmse_m"],
-                ambiguity_margin_m=self.p["alignment_ambiguity_margin_m"],
-                node_search_m=self.p["fusion_node_search_m"],
-                feature_window_m=self.p["fusion_feature_window_m"],
-                shape_weight=self.p["fusion_shape_weight"],
-                max_displacement_m=self.p["fusion_max_displacement_m"],
-            )
+            fusion = self._build_reference(candidate_samples)
         except ValueError as exc:
             self.reason = "reference_build_failed"
+            self.closure_build_error = str(exc)
             self.get_logger().warn(str(exc))
             return
-        self.reference = fusion.reference
-        self.fusion_status = dict(fusion.status)
-        self.fused_node_positions = dict(fusion.node_positions)
-        self.fused_node_progress = dict(fusion.node_progress)
-        self.topology_alignment = fusion.alignment
-        # Retain the old diagnostic field for readers; it is not the fusion result.
-        self.alignment = {"diagnostic_only": True, "superseded_by": "map_fusion"}
+        self.closure_build_error = None
+        self.closed_at = tuple(current)
+        self._accept_reference(fusion)
         self.recorded_distance += math.hypot(current[0] - self.samples[-1].x, current[1] - self.samples[-1].y)
         self.progress = 0.0
         self.pending_distance = 0.0
         self.matched = False  # First post-closure odometry confirms association.
         self.reason = "first_lap_complete" if self.fusion_status.get("available") else "first_lap_fusion_unavailable"
-        self._prepare_mapped_topology()
         self._publish_path()
+        self._save_checkpoint(force=True)
         self.get_logger().info(
             f"First lap complete: {self.reference.length_m:.1f} odom m; "
             f"fusion={self.fusion_status.get('available')}, reason={self.fusion_status.get('reason')}."
@@ -1146,8 +1176,10 @@ class MapAssist(Node):
         self.path_pub.publish(msg)
 
     def _status_tick(self) -> None:
-        # Read-only diagnostics: never publish path points or velocity here.
-        self._publish_status_if_due(time.monotonic())
+        # Checkpoint I/O and diagnostics only; no control publication here.
+        now = time.monotonic()
+        self._topo_status_tick(now)
+        self._publish_status_if_due(now)
 
     def _publish_status_if_due(self, now: float) -> None:
         if now - self.last_status_time >= 0.2:
@@ -1166,6 +1198,8 @@ class MapAssist(Node):
             "reason": self.reason,
             "lap": 2 + max(0, int(self.progress / reference.length_m)) if reference is not None else 1,
             "recorded_samples": len(self.samples), "recorded_distance_m": self.recorded_distance,
+            "closure": self._closure_diagnostics(now),
+            "persistence": dict(self.persistence_status),
             "reference_length_m": reference.length_m if reference is not None else None,
             "route_matched": self.matched, "progress_m": self.progress,
             "use_sim_time": bool(self.get_parameter("use_sim_time").value),
@@ -1227,6 +1261,7 @@ def main(args=None) -> None:
     try:
         rclpy.spin(node)
     finally:
+        node.close_checkpoint()
         node.destroy_node()
         rclpy.shutdown()
 

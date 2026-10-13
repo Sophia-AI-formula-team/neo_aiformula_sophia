@@ -59,3 +59,13 @@ by motor 0.4.1; do not reuse topo diagnostic path/velocity readiness as the moto
 release condition. Deploy both packages together only after reconnection.
 Geometry, learning, legacy/shadow behavior and the USB wheel math stay intact.
 Evidence and pending target acceptance: docs/motor_green_resume_20261012.
+
+## Local-only topo follow-up — 2026-10-13
+
+The user authorizes closure diagnostics, checkpoint persistence/restart recovery,
+local tests and GitHub publication. MapAssist 0.3.0 implements these in the ROS
+adapter; core geometry/closure thresholds, traffic and motor behavior stay intact.
+The vehicle is offline; do not deploy or claim new DDS/physical acceptance.
+Read docs/topo_checkpoint_20261013 at the repository root for current behavior,
+source hashes and validation. Vehicle startup takes no new flags. Keep PR24's
+already deployed version/history intact and stack this feature PR on it.

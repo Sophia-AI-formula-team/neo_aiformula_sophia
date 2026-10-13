@@ -1,5 +1,7 @@
 # Deployment
 
+> **2026-10-13 当前本地版本**：MapAssist 0.3.0新增闭环诊断和车辆入口自动存档/重启恢复，基于PR24；未部署到离线车辆。车上最后确认MapAssist 0.2.2 / motor 0.4.1。详见[最新变更、使用和验证说明](../../../../../docs/topo_checkpoint_20261013/README.md)。下文保留各历史阶段的版本和证据边界，不代表当前车辆仍为shadow-only或motor无超时。
+
 This repository offers two distinct deployment paths. The frozen Unity path
 has four recorded closed-loop runs. The new native ROS path is a shadow wiring
 entry and has no physical vehicle acceptance.
