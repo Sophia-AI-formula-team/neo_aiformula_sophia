@@ -1,5 +1,7 @@
 # 2026-10-12 车辆实验与 Agent 总交接
 
+> **2026-10-13 后续更新（本地待部署）**：MapAssist 0.3.0已补闭环诊断、自动存档和重启恢复，见[变更及测试说明](../docs/topo_checkpoint_20261013/README.md)。以下为10月12日的原始实车交接；不将新版测试当作已上车结果。
+
 > 日期和下列时刻均为日本时间 JST（UTC+9）。车辆 `control@192.168.10.111`，工作区 `/home/workspace`，源码 `/home/workspace/src/aiformula`。不在仓库记录连接密码。
 >
 > **最后状态**：A3 V14、motor **0.4.1**、MapAssist **0.2.2**、semantic_vehicle_wiring **0.2.0** 已在车上。17:51:32 只读快照中 allnodes 仍运行，未见 LYA 或 semantic 会话运行；之后 SSH 超时。不能仅凭网络断开确认已断电。今天的关键日志和录包消息已保存到本地，本交接不依赖车辆继续在线。

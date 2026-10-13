@@ -145,7 +145,7 @@ class MapAssistTests(unittest.TestCase):
         for parent, child in (("rclpy", "node"), ("rclpy", "qos"), ("rclpy", "clock"),
                               ("geometry_msgs", "msg"), ("nav_msgs", "msg"), ("std_msgs", "msg")):
             setattr(modules[parent], child, modules[parent + "." + child])
-        path_patch = patch.object(sys, "path", [str(self.system / "semantic_planner_core")] + sys.path)
+        path_patch = patch.object(sys, "path", [str(self.package), str(self.system / "semantic_planner_core")] + sys.path)
         path_patch.start()
         self.addCleanup(path_patch.stop)
         missing = object()
@@ -2136,6 +2136,361 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assertEqual(self.output_count(), before_points)
         self.assertEqual(len(self.node.cmd_pub.messages), before_commands)
+
+
+    def checkpoint_node(self):
+        import tempfile
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.checkpoint_path = Path(directory.name) / 'map.json'
+        self.parameter_overrides.update(checkpoint_path=str(self.checkpoint_path), avoidance_initially_idle=True)
+        import semantic_local_planner_ros.topo_state as lifecycle
+        clock_patch = patch.object(lifecycle, 'time', types.SimpleNamespace(monotonic=lambda: self.now))
+        clock_patch.start()
+        self.addCleanup(clock_patch.stop)
+        self.node = self.module.MapAssist()
+        self.addCleanup(self.node.close_checkpoint)
+        return self.node
+
+    def restart_checkpoint_node(self):
+        self.node.close_checkpoint()
+        self.advance(10.0)  # Restart gap exceeds normal continuous odom watchdog.
+        self.node = self.module.MapAssist()
+        self.addCleanup(self.node.close_checkpoint)
+        return self.node
+
+    def partial_map(self):
+        self.start_session()
+        for i in range(25):
+            self.advance(0.1)
+            self.triplet()
+            self.odom(i * 0.25, 0.0, 0.0)
+        self.node._save_checkpoint(force=True)
+
+    def test_closure_diagnostics_explains_all_thresholds_and_missing_inputs(self):
+        d = self.node._closure_diagnostics(self.now)
+        self.assertIsNone(d['distance_to_start_m'])
+        self.assertEqual(d['blocker'], 'odom_fresh')
+        self.assertEqual(d['point_issues'], ['a_missing', 'b_missing', 'c_missing'])
+        self.start_session()
+        self.triplet()
+        self.odom()
+        self.advance(0.2)
+        self.triplet()
+        self.odom(0.5, 0.0, math.radians(20))
+        d = self.node._closure_diagnostics(self.now)
+        self.assertAlmostEqual(d['distance_to_start_m'], 0.5)
+        self.assertAlmostEqual(d['heading_error_deg'], 20)
+        self.assertIn('within_start_radius', d['blockers'])
+        self.assertIn('heading_aligned', d['blockers'])
+        self.assertIn('enough_samples', d['blockers'])
+        self.assertIn('enough_distance', d['blockers'])
+        self.advance(1.0)
+        d = self.node._closure_diagnostics(self.now)
+        self.assertIn('odom_fresh', d['blockers'])
+        self.assertIn('a_stale', d['point_issues'])
+
+    def test_closure_diagnostics_wraps_heading_and_reports_exclusion(self):
+        self.start_session()
+        self.triplet()
+        self.odom(yaw=math.radians(179))
+        self.advance(0.1)
+        self.odom(yaw=math.radians(-179))
+        self.node.branch_active = True
+        d = self.node._closure_diagnostics(self.now)
+        self.assertAlmostEqual(d['heading_error_deg'], 2)
+        self.assertEqual(d['exclusion_reason'], 'branch_active')
+        self.assertIn('not_excluded', d['blockers'])
+
+    def test_closure_diagnostics_records_builder_failure_and_reset_reason(self):
+        with patch.object(self.node, '_build_reference', side_effect=ValueError('bad geometry')):
+            # Actual odom callbacks reach the closure; injected builder failure is retained.
+            with self.assertRaises(AssertionError):
+                self.learn_circle()
+        d = self.node._closure_diagnostics(self.now)
+        self.assertEqual(d['build_error'], 'bad geometry')
+        self.assertIn('reference_build_failed', d['blockers'])
+        self.node._on_reset(DataMessage(True))
+        d = self.node._closure_diagnostics(self.now)
+        self.assertIsNone(d['build_error'])
+        self.assertEqual(d['last_learning_reset_reason'], 'reset_learning')
+
+    def test_closure_complete_diagnostics_and_fusion_waiting_reason(self):
+        self.start_session()
+        self.triplet()
+        self.odom()
+        self.assertEqual(self.node.fusion_status['reason'], 'first_lap_not_closed')
+        self.learn_circle()
+        d = self.node._closure_diagnostics(self.now)
+        self.assertEqual(d['state'], 'complete')
+        self.assertEqual(d['blockers'], [])
+
+    def test_partial_checkpoint_resumes_then_continues_recording(self):
+        self.checkpoint_node()
+        self.partial_map()
+        before = list(self.node.samples)
+        distance = self.node.recorded_distance
+        self.restart_checkpoint_node()
+        self.assertEqual(self.node.persistence_status['state'], 'waiting_for_odom')
+        self.assertEqual(self.node.samples, [])
+        self.triplet()
+        self.odom(6, 0, 0)
+        self.assertEqual(self.node.samples, before)
+        self.assertEqual(self.node.recorded_distance, distance)
+        self.assertTrue(self.node.left_start_area)
+        self.assertTrue(self.node.excluded_since_sample)
+        self.advance(0.1)
+        self.triplet()
+        self.odom(6.25, 0, 0)
+        self.assertGreater(self.node.recorded_distance, distance)
+        self.assertTrue(self.node.samples[-1].excluded)  # Unobserved downtime segment.
+        self.assertFalse(self.node.excluded_since_sample)
+
+    def test_partial_checkpoint_can_finish_lap_after_restart(self):
+        self.checkpoint_node()
+        self.start_session()
+        for i in range(61):
+            self.advance(0.1)
+            self.triplet()
+            a = 2 * math.pi * i / 120
+            self.odom(3 * math.sin(a), 3 * (1 - math.cos(a)), a)
+        before = self.node.recorded_distance
+        self.restart_checkpoint_node()
+        self.triplet()
+        self.odom(0, 6, math.pi)
+        self.assertAlmostEqual(self.node.recorded_distance, before)
+        for i in range(61, 121):
+            self.advance(0.1)
+            self.triplet()
+            a = 2 * math.pi * i / 120
+            self.odom(3 * math.sin(a), 3 * (1 - math.cos(a)), a)
+        self.assertIsNotNone(self.node.reference)
+        self.assertEqual(self.node._closure_diagnostics(self.now)['state'], 'complete')
+        self.assertIsNotNone(json.loads(self.checkpoint_path.read_text())['state']['closed_at'])
+
+    def test_closed_checkpoint_reconstructs_identical_reference(self):
+        self.checkpoint_node()
+        self.learn_circle()
+        points = list(self.node.reference.points)
+        trusted = list(self.node.reference.trusted)
+        fusion_status = dict(self.node.fusion_status)
+        self.node.progress = 2.0
+        self.node.checkpoint_dirty = True
+        self.restart_checkpoint_node()
+        self.triplet()
+        self.odom(0, 0, 2 * math.pi)
+        self.assertEqual(self.node.reference.points, points)
+        self.assertEqual(self.node.reference.trusted, trusted)
+        self.assertEqual(self.node.fusion_status, fusion_status)
+        self.assertTrue(self.node.path_pub.messages[-1].poses)
+        self.assertEqual(self.node.last_cmd_time, -math.inf)
+        self.assertEqual(self.output_count(), 0)
+
+    def test_restore_rejects_position_heading_frame_or_time_discontinuity(self):
+        for issue in ('position', 'heading', 'frame', 'child_frame', 'time'):
+            with self.subTest(issue=issue):
+                self.checkpoint_node()
+                self.partial_map()
+                saved = self.checkpoint_path.read_bytes()
+                self.restart_checkpoint_node()
+                msg = Odometry()
+                msg.header.frame_id = 'different' if issue == 'frame' else 'odom'
+                msg.child_frame_id = 'changed' if issue == 'child_frame' else 'base_link'
+                msg.header.stamp.sec = 1 if issue == 'time' else int(self.now)
+                msg.pose.pose.position.x = 0 if issue == 'position' else 6
+                if issue == 'heading':
+                    msg.pose.pose.orientation.z = 1
+                    msg.pose.pose.orientation.w = 0
+                self.node._on_odom(msg)
+                self.assertTrue(self.node.restore_blocked)
+                self.assertEqual(self.node.persistence_status['state'], 'restore_rejected')
+                self.node._save_checkpoint(force=True)
+                self.assertEqual(self.checkpoint_path.read_bytes(), saved)
+                self.assertEqual(self.node.samples, [])
+                self.node.close_checkpoint()
+
+    def test_explicit_reset_discards_pending_checkpoint_persistently(self):
+        self.checkpoint_node()
+        self.partial_map()
+        self.restart_checkpoint_node()
+        self.node._on_reset(DataMessage(True))
+        self.assertIsNone(self.node.restore_pending)
+        self.assertEqual(json.loads(self.checkpoint_path.read_text())['state']['samples'], [])
+        self.restart_checkpoint_node()
+        self.assertIsNone(self.node.restore_pending)
+        self.triplet()
+        self.odom()
+        self.assertEqual(len(self.node.samples), 1)
+
+    def test_rejected_restore_can_be_explicitly_reset(self):
+        self.checkpoint_node()
+        self.partial_map()
+        self.restart_checkpoint_node()
+        self.odom(0, 0, 0)
+        self.assertTrue(self.node.restore_blocked)
+        self.node._on_reset(DataMessage(True))
+        self.assertFalse(self.node.restore_blocked)
+        self.triplet()
+        self.odom(0, 0, 0)
+        self.assertEqual(len(self.node.samples), 1)
+
+    def test_corrupt_checkpoint_is_reported_and_not_overwritten(self):
+        self.checkpoint_node()
+        self.partial_map()
+        self.node.close_checkpoint()
+        self.checkpoint_path.write_text('{interrupted')
+        self.node = self.module.MapAssist()
+        self.addCleanup(self.node.close_checkpoint)
+        self.assertTrue(self.node.restore_blocked)
+        self.triplet()
+        self.odom()
+        self.node._status_tick()
+        self.assertEqual(self.checkpoint_path.read_text(), '{interrupted')
+
+    def test_changed_map_configuration_rejects_saved_map(self):
+        self.checkpoint_node()
+        self.partial_map()
+        self.parameter_overrides['sample_spacing_m'] = 0.3
+        self.restart_checkpoint_node()
+        self.assertTrue(self.node.restore_blocked)
+        self.assertEqual(self.node.persistence_status['error'], 'map_or_config_mismatch')
+
+    def test_checkpoint_write_failure_preserves_previous_file_and_recovers(self):
+        self.checkpoint_node()
+        self.partial_map()
+        previous = self.checkpoint_path.read_bytes()
+        self.advance(0.1)
+        self.triplet()
+        self.odom(6.25)
+        with patch('semantic_local_planner_ros.topo_checkpoint.os.replace', side_effect=OSError('disk failure')):
+            self.node._save_checkpoint(force=True)
+        self.assertEqual(self.node.persistence_status['state'], 'save_failed')
+        self.assertEqual(self.checkpoint_path.read_bytes(), previous)
+        self.node._save_checkpoint(force=True)
+        self.assertEqual(self.node.persistence_status['state'], 'saved')
+        self.assertNotEqual(self.checkpoint_path.read_bytes(), previous)
+
+    def test_checkpoint_lock_rejects_second_writer(self):
+        self.checkpoint_node()
+        other = self.module.MapAssist()
+        self.addCleanup(other.close_checkpoint)
+        self.assertTrue(other.restore_blocked)
+        self.assertEqual(other.persistence_status['error'], 'checkpoint_in_use')
+        self.assertIsNone(other.checkpoint)
+
+    def test_shutdown_flushes_new_unsaved_points(self):
+        self.checkpoint_node()
+        self.partial_map()
+        count = len(self.node.samples)
+        self.advance(0.1)
+        self.triplet()
+        self.odom(6.25)
+        self.node.close_checkpoint()
+        self.assertEqual(len(json.loads(self.checkpoint_path.read_text())['state']['samples']), count + 1)
+
+    def test_checkpoint_disabled_in_replay_and_no_default_disk_side_effect(self):
+        self.assertIsNone(self.node.checkpoint)
+        self.checkpoint_node()
+        self.node.close_checkpoint()
+        self.parameter_overrides['use_sim_time'] = True
+        self.node = self.module.MapAssist()
+        self.assertIsNone(self.node.checkpoint)
+        self.assertEqual(self.node.persistence_status['state'], 'disabled_sim_time')
+        self.assertFalse(self.checkpoint_path.exists())
+
+    def test_restore_does_not_import_traffic_or_command_state(self):
+        self.checkpoint_node()
+        self.partial_map()
+        self.node.traffic_mode = 'wait'
+        self.node.last_cmd_time = self.now
+        self.node.checkpoint_dirty = True
+        self.restart_checkpoint_node()
+        self.triplet()
+        self.odom(6, 0, 0)
+        self.assertEqual(self.node.traffic_mode, 'normal')
+        self.assertEqual(self.node.last_cmd_time, -math.inf)
+        self.assertEqual(self.output_count(), 0)
+        state = json.loads(self.checkpoint_path.read_text())['state']
+        self.assertNotIn('traffic_mode', state)
+        self.assertNotIn('last_cmd_time', state)
+
+    def test_save_diagnostics_never_publish_control_and_log_blockers(self):
+        self.checkpoint_node()
+        self.partial_map()
+        before = self.output_count()
+        self.advance(6)
+        self.node._status_tick()
+        status = json.loads(self.node.status_pub.messages[-1].data)
+        self.assertIn('closure', status)
+        self.assertIn('persistence', status)
+        self.assertIn('odom_fresh', status['closure']['blockers'])
+        self.assertEqual(self.output_count(), before)
+        self.assertTrue(any('Topo blocked: start=' in line and 'blocked=' in line for line in self.node.logs))
+
+
+    def test_periodic_checkpoint_io_does_not_block_ros_callback_thread(self):
+        import threading
+        self.checkpoint_node()
+        self.partial_map()
+        entered, release = threading.Event(), threading.Event()
+        original = self.node.checkpoint.save
+
+        def slow_save(state):
+            entered.set()
+            if not release.wait(5):
+                raise OSError('test worker timeout')
+            original(state)
+
+        self.advance(2)
+        self.triplet()
+        self.odom(6.25)
+        with patch.object(self.node.checkpoint, 'save', side_effect=slow_save):
+            try:
+                self.node._save_checkpoint()
+                self.assertTrue(entered.wait(2))
+                self.assertFalse(self.node.checkpoint_future.done())
+                # These callbacks execute while the disk worker is still blocked.
+                self.advance(0.1)
+                self.triplet()
+                self.odom(6.5)
+                self.node._status_tick()
+                self.assertEqual(self.node.odom[0], 6.5)
+                self.assertFalse(self.node.checkpoint_future.done())
+            finally:
+                release.set()
+            self.node.close_checkpoint()
+        self.assertEqual(json.loads(self.checkpoint_path.read_text())['state']['last_pose'][0], 6.5)
+
+    def test_autosave_interval_and_shutdown_keep_latest_revision(self):
+        self.checkpoint_node()
+        self.partial_map()
+        previous = self.checkpoint_path.read_bytes()
+        self.advance(0.1)
+        self.triplet()
+        self.odom(6.25)
+        self.node._save_checkpoint()
+        self.assertIsNone(self.node.checkpoint_future)
+        self.assertEqual(self.checkpoint_path.read_bytes(), previous)
+        self.advance(1.0)
+        self.node._save_checkpoint()
+        self.node._finish_checkpoint(wait=True)
+        self.assertNotEqual(self.checkpoint_path.read_bytes(), previous)
+
+
+
+    def test_closed_restore_publishes_saved_nondefault_frame(self):
+        self.checkpoint_node()
+        self.learn_circle()
+        self.node.odom_frame = 'local_odom'
+        self.node.checkpoint_dirty = True
+        self.restart_checkpoint_node()
+        message = Odometry()
+        message.header.frame_id = 'local_odom'
+        message.header.stamp.sec = int(self.now)
+        self.node._on_odom(message)
+        self.assertIsNotNone(self.node.reference)
+        self.assertEqual(self.node.path_pub.messages[-1].header.frame_id, 'local_odom')
+
 
 
 if __name__ == "__main__":

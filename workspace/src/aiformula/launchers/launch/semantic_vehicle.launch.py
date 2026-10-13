@@ -10,6 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     params = {
         'use_sim_time': False,
+        'checkpoint_path': '~/.ros/aiformula/topo_map/checkpoint.json',
         'traffic_policy': 'stop_wait',
         'enable_traffic_control': True,
         'enable_signal_approach': False,
