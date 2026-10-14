@@ -18,7 +18,7 @@ from .local_moments import _moments, _NATIVE_MOMENTS
 
 from .finite_support import (DomainState, advance_domain, certified_segments,
                              _compact_confirmed_domain, _validate_frame_batch,
-                             _advance_domain_validated)
+                             _advance_domain_validated, _prepare_normal_admission)
 from .continuation_support import (ContinuationFrame, retain_frames, common_intervals,
                                    _validate_continuation_batch, _continuation_frame_from_batch,
                                    FIELDS as CONTINUATION_FIELDS,
@@ -264,6 +264,7 @@ class BoundaryReference:
     continuation_frame_votes: object = None
     continuation_reliable_votes: object = None
     continuation_last_stamp_ns: object = None
+    curve_geometry: object = None
 
     def __post_init__(self):
         n, m = len(np.asarray(self.points_xy)), len(np.asarray(self.support_segments))
@@ -355,29 +356,55 @@ class BoundaryReference:
                 lengths = np.sum(delta*delta, axis=1)
             if np.any(~np.isfinite(lengths)) or np.any(lengths <= 0.):
                 raise ValueError("certified model must have finite positive length")
+        curve = self.curve_geometry
+        if curve is not None:
+            from .curve_reference import CurveGeometry
+            if (type(curve) is not CurveGeometry or not all(supplied)
+                    or any(supplied_model) or len(curve.owner_status) != n
+                    or max(m, len(self.directed_edges)) + len(curve.segments)
+                        + len(curve.blocker_boxes) > 200000):
+                raise ValueError("v5 requires complete explicit graph and only curve geometry")
+            if (np.any(curve.frame_votes < 5)
+                    or np.any(curve.frame_votes > self.votes[curve.owner])
+                    or np.any(curve.reliable_votes > self.reliable_votes[curve.owner])
+                    or (len(curve.segments) and self.source_frontier_ns is None)
+                    or (len(curve.segments) and np.any(curve.last_stamp_ns > self.source_frontier_ns))):
+                raise ValueError("inconsistent v5 curve evidence/frontier")
+            # V5's public/load contract must match its fixed-5/1 producer.
+            # Pending/UNKNOWN owners stay present; only exported confirmed
+            # topology and an explicit ready status require confirmation.
+            ready = curve.owner_status == 2
+            if (np.any(self.edge_frame_votes < 5)
+                    or np.any(self.edge_reliable_votes < 1)
+                    or np.any(self.votes[ready] < 5)
+                    or np.any(self.reliable_votes[ready] < 1)):
+                raise ValueError("v5 topology/ready status requires original 5/1 evidence")
         supplied_continuations = [getattr(self, name) is not None for name in CONTINUATION_FIELDS]
         if any(supplied_continuations):
-            if not all(supplied_continuations) or not all(supplied_model):
+            if not all(supplied_continuations) or (not all(supplied_model) and curve is None):
                 raise ValueError("continuation evidence requires all arrays and certified geometry")
+            model_segments = self.certified_model_segments if curve is None else curve.segments
+            model_owner = self.certified_model_owner if curve is None else curve.owner
             count = len(self.continuation_primitive)
-            if max(m, len(self.directed_edges)) + len(self.certified_model_segments) + count > 200000:
+            if (max(m, len(self.directed_edges)) + len(model_segments) + count
+                    + (0 if curve is None else len(curve.blocker_boxes)) > 200000):
                 raise ValueError("combined continuation model capacity")
             for name in CONTINUATION_FIELDS:
                 shape = (count, 2) if name == "continuation_intervals" else (count,)
                 dtype = np.float64 if name == "continuation_intervals" else np.int64
                 object.__setattr__(self, name, _frozen(getattr(self, name), dtype, shape, name))
             ids, spans = self.continuation_primitive, self.continuation_intervals
-            if (np.any(ids < 0) or np.any(ids >= len(self.certified_model_segments))
+            if (np.any(ids < 0) or np.any(ids >= len(model_segments))
                     or np.any(spans[:, 0] < 0.) or np.any(spans[:, 1] > 1.)
                     or np.any(spans[:, 0] >= spans[:, 1])
-                    or np.any(self.continuation_frame_votes < 1)
+                    or np.any(self.continuation_frame_votes < (1 if curve is None else 5))
                     or np.any(self.continuation_reliable_votes < 1)
                     or np.any(self.continuation_reliable_votes > self.continuation_frame_votes)
                     or np.any(self.continuation_last_stamp_ns <= 0)
                     or (count and np.any(self.continuation_last_stamp_ns > self.source_frontier_ns))):
                 raise ValueError("invalid continuation permission")
             if count:
-                owners = self.certified_model_owner[ids]
+                owners = model_owner[ids]
                 if (np.any(self.continuation_frame_votes > self.votes[owners])
                         or np.any(self.continuation_reliable_votes > self.reliable_votes[owners])):
                     raise ValueError("continuation votes exceed owner evidence")
@@ -391,10 +418,14 @@ class BoundaryReference:
 
     @property
     def topology_representation(self):
+        if self.curve_geometry is not None:
+            return "confirmed_contour_topology_only_v5"
         return None if self.directed_edges is None else TOPOLOGY_REPRESENTATION
 
     @property
     def boundary_version(self):
+        if self.curve_geometry is not None:
+            return 5
         if self.continuation_intervals is not None:
             return 4
         return 3 if self.certified_model_segments is not None else (2 if self.directed_edges is not None else 1)
@@ -434,6 +465,17 @@ class BoundaryReference:
             graph.update({name: getattr(self, name)[retained] for name in CERTIFIED_MODEL_FIELDS})
             graph["certified_model_owner"] = model_owners[retained]
             if self.continuation_intervals is not None:
+                primitive_map = np.full(len(retained), -1, dtype=np.int64)
+                primitive_map[retained] = np.arange(np.sum(retained))
+                primitives = primitive_map[self.continuation_primitive]
+                keep_permission = primitives >= 0
+                graph.update({name: getattr(self, name)[keep_permission] for name in CONTINUATION_FIELDS})
+                graph["continuation_primitive"] = primitives[keep_permission]
+        if self.curve_geometry is not None:
+            curve = self.curve_geometry
+            graph["curve_geometry"] = curve.subset(ids)
+            if self.continuation_intervals is not None:
+                retained = remap[curve.owner] >= 0
                 primitive_map = np.full(len(retained), -1, dtype=np.int64)
                 primitive_map[retained] = np.arange(np.sum(retained))
                 primitives = primitive_map[self.continuation_primitive]
@@ -495,6 +537,10 @@ class PreparedBoundaryUpdate:
     continuation_storage_count: int = 0
     permission_bound_updates: tuple = ()
     permission_bound_count: int = 0
+    curve_states: object = None
+    curve_orphan_sources: tuple = ()
+    curve_reference: object = None
+    curve_inventory: object = None
 
 
 def _contiguous_cell_runs(obs, eligible, cells, cosine):
@@ -662,11 +708,13 @@ class BoundaryConsensus:
 
     Records come from contiguous cell-runs, never disconnected re-entries.
     Directed record links require their OWN per-frame confirmation evidence.
-    A production reference includes a finite polyline of confirmed node means:
+    The legacy reference includes a finite polyline of confirmed node means:
     these chords are a measured-node interpolation model, NOT exact historical
-    pixel faces. Latest actual faces remain separately available for audit.
+    pixel faces. Explicit v5 instead publishes original-chart finite curves
+    plus ALL unknown/pending competition. Latest actual faces remain available
+    separately for audit; neither graph chords nor node means are v5 geometry.
     """
-    def __init__(self, config=None):
+    def __init__(self, config=None, *, curve_geometry=False):
         cfg = dict(CONSENSUS_DEFAULT_CONFIG)
         if config is not None:
             if set(config) - set(cfg):
@@ -684,6 +732,14 @@ class BoundaryConsensus:
                 or not math.isfinite(cfg["candidate_ttl_s"] * 1.e9)):
             raise ValueError("inconsistent boundary consensus settings")
         self.config = MappingProxyType(cfg)
+        if type(curve_geometry) is not bool or (curve_geometry and (
+                cfg["minimum_frame_votes"] != 5 or cfg["minimum_reliable_votes"] != 1)):
+            raise ValueError("unsupported v5 confirmation contract; requires explicit 5/1")
+        self._curve_mode = curve_geometry
+        self._curve_states = MappingProxyType({})
+        self._curve_orphan_sources = ()
+        self._curve_reference = None
+        self._curve_inventory = None
         self._records = {}
         # Candidate association uses the observed cell and its neighbours. This
         # ordered secondary index is published with successful map commits;
@@ -965,6 +1021,19 @@ class BoundaryConsensus:
                 obs, updates, offsets, packed_segments, packed_normals, packed_reliable,
                 face_reliable, cfg)
         batch = _validate_frame_batch(packed_segments, packed_normals, packed_reliable, offsets)
+        normal_admission = None
+        creation_domains = tuple(self._domains.get(update[0]) for update in updates)
+        if batch is not None and all(domain is None or type(domain) is DomainState
+                                     for domain in creation_domains):
+            # Use each OLD creation chart, never its moving fused normal.
+            # A newborn chart uses exactly the original frame-normal signs.
+            # This optional plan is not evidence and cannot change a gate.
+            creation_normals = np.asarray([
+                (-domain.tangent[1], domain.tangent[0])
+                if domain is not None else frame_normals[index]
+                for index, domain in enumerate(creation_domains)],
+                dtype=np.float64).reshape(len(updates), 2)
+            normal_admission = _prepare_normal_admission(batch, creation_normals, cosine)
         for index, (record_id, _, _, _, _, _, members) in enumerate(updates):
             old_domain = self._domains.get(record_id)
             # Even an empty creation frame fixes the chart. Later incident
@@ -976,7 +1045,7 @@ class BoundaryConsensus:
                               reliable=packed_reliable[start:stop])
             else:
                 advance = _advance_domain_validated
-                arrays = dict(batch=batch, group_index=index)
+                arrays = dict(batch=batch, group_index=index, normal_admission=normal_admission)
             domain = advance(old_domain, origin=frame_points[index],
                 current_frame_normal=frame_normals[index], **arrays,
                 stamp_ns=stamp, minimum_frame_votes=cfg["minimum_frame_votes"],
@@ -995,9 +1064,19 @@ class BoundaryConsensus:
             obs, updates, face_owner, expired, cosine)
         if max(segments, edge_count) + domain_count + continuation_count > cfg["max_support_segments"]:
             raise ValueError("combined boundary continuation capacity")
-        permission_bounds, permission_count = self._prepare_permission_capacity(
-            records, expired, edge_updates, expired_edges, domains, continuation_updates,
-            segments, edge_count, domain_count, continuation_count)
+        curve_states, curve_orphans, curve_reference, curve_inventory = None, (), None, None
+        if self._curve_mode:
+            # ALL source/key/geometry/permission deltas are validated before
+            # publication. The legacy meanline exporter is never a v5 fallback.
+            curve_states, curve_orphans, curve_reference, curve_inventory = self._prepare_curves(
+                obs, groups, records, face_owner, expired, edge_updates, expired_edges,
+                domains, continuation_updates, segments, edge_count, domain_count,
+                continuation_count)
+            permission_bounds, permission_count = (), 0
+        else:
+            permission_bounds, permission_count = self._prepare_permission_capacity(
+                records, expired, edge_updates, expired_edges, domains, continuation_updates,
+                segments, edge_count, domain_count, continuation_count)
         stats = MappingProxyType({"input_edges": len(obs.points), "eligible_edges": len(eligible),
                                   "invalid_edges": len(obs.points) - len(eligible), "updated_records": len(records),
                                   "ambiguous_groups": ambiguous_groups, "expired_candidates": len(expired),
@@ -1012,12 +1091,118 @@ class BoundaryConsensus:
                                   "finite_domain_support_policy": ("direct_incident_model_next_v1"
                                       if obs.position_segments is None else
                                       "direct_incident_next_plus_wb_pixel_tangent_v1"),
-                                  "topology_representation": TOPOLOGY_REPRESENTATION})
+                                  "topology_representation": (TOPOLOGY_REPRESENTATION if not self._curve_mode
+                                      else "confirmed_contour_topology_only_v5"),
+                                  **({**{"curve_"+name: value for name, value in curve_inventory.items()
+                                              if name != "incomplete_reasons"},
+                                      "curve_incomplete_reasons": tuple(sorted(
+                                          curve_inventory["incomplete_reasons"].items())),
+                                      "curve_geometry_complete": curve_reference.curve_geometry.complete,
+                                      "curve_nominal_segments": len(curve_reference.curve_geometry.segments),
+                                      "curve_blocker_boxes": len(curve_reference.curve_geometry.blocker_boxes)}
+                                     if self._curve_mode else {})})
         return PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records), expired,
                                       next_id, segments, tuple(edge_updates), expired_edges, stats,
                                       tuple(domains), domain_count,
                                       continuation_updates, continuation_count,
-                                      permission_bounds, permission_count)
+                                      permission_bounds, permission_count,
+                                      curve_states, curve_orphans, curve_reference, curve_inventory)
+
+    def _prepare_curves(self, obs, groups, records, face_owner, expired, edges,
+                        expired_edges, domains, continuations, segment_count,
+                        edge_count, domain_count, continuation_count):
+        """Complete unpublished v5 map; no query-dependent source/key pruning."""
+        from . import curve_consensus_compact as curves
+        from .curve_observation_adapter import prepare_packets
+        from .curve_geometry_builder import (build_curve_geometry, OrphanSourceFrame,
+                                             retain_orphan_sources)
+        from .curve_evidence import SourceFrame
+        cfg, stamp = self.config, obs.source_stamp_ns
+        # Adapter authenticates these actual final records against the same
+        # original group-member order and every raw segment/neighbour byte.
+        actual = PreparedBoundaryUpdate(stamp, self._generation, self, tuple(records),
+            tuple(expired), self._next_record_id, segment_count, (), (), MappingProxyType({}))
+        packets, packet_owners = prepare_packets(obs, groups, actual, cfg)
+        if (packet_owners.dtype != face_owner.dtype or packet_owners.shape != face_owner.shape
+                or packet_owners.tobytes() != face_owner.tobytes()):
+            raise ValueError("curve final owners differ from original prepare")
+        expired_set, expired_edge_set = set(expired), set(expired_edges)
+        all_records = {key: value for key, value in self._records.items() if key not in expired_set}
+        all_records.update((record.record_id, record) for record in records)
+        all_domains = {key: value for key, value in self._domains.items() if key not in expired_set}
+        all_domains.update(domains)
+        all_edges = {key: value for key, value in self._edges.items() if key not in expired_edge_set}
+        all_edges.update(((edge.source_id, edge.target_id), edge) for edge in edges)
+        all_continuations = {key: value for key, value in self._continuations.items() if key not in expired_set}
+        all_continuations.update(continuations)
+        staged = {key: state for key, state in self._curve_states.items() if key[0] not in expired_set}
+        cosine = math.cos(cfg["normal_max_angle_rad"])
+        for packet in packets:
+            key = (packet.owner_id, packet.signed_side, packet.signature)
+            previous = staged.get(key)
+            domain = all_domains.get(packet.owner_id)
+            if type(domain) is not DomainState:
+                raise ValueError("v5 original creation domain missing")
+            if previous is None:
+                previous = curves.create_curve_state(*key, domain.origin, domain.tangent,
+                    normal_cosine=cosine, max_support_records=cfg["max_support_segments"])
+            staged[key] = curves.advance_curve(previous, packet, available_before_ns=stamp)
+        # Even zero final owners cannot erase independently valid own quads.
+        # Reuse the packet source by object identity when present; only the
+        # zero-packet case needs an independently retained original table.
+        source = packets[0].source if packets else SourceFrame(
+            stamp_ns=stamp, face_ids=np.arange(len(obs.points), dtype=np.int64),
+            previous_next=np.column_stack((obs.previous, obs.next)),
+            contour_ids=obs.contour_ids, endpoint_owners=face_owner,
+            model_roots=obs.model_points, normals=obs.model_normals,
+            quads=obs.position_footprints,
+            quad_valid=(obs.position_segment_valid
+                        & (obs.position_segment_sensitivity <= cfg["max_sensitivity"])),
+            reliable=(obs.model_reliable & obs.model_valid
+                      & (obs.model_sensitivity <= cfg["reliable_sensitivity"])),
+            valid=(obs.model_valid & (obs.model_sensitivity <= cfg["max_sensitivity"])))
+        orphan_sources = self._curve_orphan_sources
+        unowned = source.quad_valid & (source.endpoint_owners < 0)
+        if np.any(unowned):
+            reliable_quad = bool(np.any(unowned & obs.position_segment_reliable
+                & (obs.position_segment_sensitivity <= cfg["reliable_sensitivity"])))
+            orphan_sources = retain_orphan_sources(orphan_sources,
+                OrphanSourceFrame(source, reliable_quad), available_before_ns=stamp)
+        ordered = tuple(all_records[key] for key in sorted(all_records))
+        base = max(segment_count, edge_count)+domain_count+continuation_count
+        built = build_curve_geometry(ordered, all_domains, staged, all_edges,
+            all_continuations, cfg, stamp, base_support_records=base,
+            orphan_sources=orphan_sources)
+        reference = self._make_curve_reference(ordered, all_edges, built, stamp)
+        return MappingProxyType(staged), orphan_sources, reference, built.inventory
+
+    def _make_curve_reference(self, records, edges, built, stamp):
+        """Cache only v5 nominal geometry; graph coordinates never make chords."""
+        slots = {record.record_id: index for index, record in enumerate(records)}
+        links = [edge for _, edge in sorted(edges.items()) if self._confirmed(edge)
+                 and self._confirmed(records[slots[edge.source_id]])
+                 and self._confirmed(records[slots[edge.target_id]])]
+        incoming, outgoing = {}, {}
+        for edge in links:
+            incoming[edge.target_id] = incoming.get(edge.target_id, 0)+1
+            outgoing[edge.source_id] = outgoing.get(edge.source_id, 0)+1
+        # Latest raw faces remain in _records and ALL original endpoint fields
+        # remain in shared SourceFrames. They are not a second residual model.
+        return BoundaryReference(
+            np.asarray([record.point for record in records], dtype=np.float64).reshape(-1, 2),
+            np.asarray([record.normal for record in records], dtype=np.float64).reshape(-1, 2),
+            np.empty((0, 2, 2)), np.empty(0, dtype=np.int64),
+            np.asarray([record.votes for record in records], dtype=np.int64),
+            np.asarray([record.reliable_votes for record in records], dtype=np.int64),
+            np.asarray([record.record_id for record in records], dtype=np.int64), stamp,
+            directed_edges=np.asarray([[slots[e.source_id], slots[e.target_id]] for e in links],
+                                      dtype=np.int64).reshape(-1, 2),
+            edge_frame_votes=np.asarray([edge.votes for edge in links], dtype=np.int64),
+            edge_reliable_votes=np.asarray([edge.reliable_votes for edge in links], dtype=np.int64),
+            edge_last_stamp_ns=np.asarray([edge.last_stamp_ns for edge in links], dtype=np.int64),
+            full_in_degree=np.asarray([incoming.get(r.record_id, 0) for r in records], dtype=np.int64),
+            full_out_degree=np.asarray([outgoing.get(r.record_id, 0) for r in records], dtype=np.int64),
+            curve_geometry=built.geometry, **built.permissions)
 
     def _prepare_permission_capacity(self, records, expired, edges, expired_edges,
                                      domains, continuations, segment_count, edge_count,
@@ -1204,7 +1389,13 @@ class BoundaryConsensus:
     def can_commit(self, prepared):
         return (isinstance(prepared, PreparedBoundaryUpdate) and prepared.owner is self
                 and prepared.base_generation == self._generation
-                and (self.source_frontier_ns is None or prepared.source_stamp_ns > self.source_frontier_ns))
+                and (self.source_frontier_ns is None or prepared.source_stamp_ns > self.source_frontier_ns)
+                and (not self._curve_mode or (
+                    type(prepared.curve_states) is type(self._curve_states)
+                    and type(prepared.curve_reference) is BoundaryReference
+                    and prepared.curve_reference.boundary_version == 5
+                    and prepared.curve_reference.source_frontier_ns == prepared.source_stamp_ns
+                    and type(prepared.curve_inventory) is type(self._curve_states))))
 
     def commit(self, prepared):
         if not self.can_commit(prepared):
@@ -1248,6 +1439,11 @@ class BoundaryConsensus:
         self._continuation_storage_count = prepared.continuation_storage_count
         self._permission_bounds.update(prepared.permission_bound_updates)
         self._permission_bound_count = prepared.permission_bound_count
+        if self._curve_mode:
+            self._curve_states = prepared.curve_states
+            self._curve_orphan_sources = prepared.curve_orphan_sources
+            self._curve_reference = prepared.curve_reference
+            self._curve_inventory = prepared.curve_inventory
         self._next_record_id = prepared.next_record_id
         self._segment_count = prepared.segment_count
         self._confirmed_count = prepared.stats["confirmed_records"]
@@ -1262,6 +1458,8 @@ class BoundaryConsensus:
         matcher, not deleted to let a farther convenient primitive win.
         Global record-ID order is stable under distance-sorted subsets.
         """
+        if self._curve_mode:
+            raise ValueError("v5 cannot export a legacy meanline fallback")
         pieces, owners, votes, reliable, stamps = [], [], [], [], []
         cfg = self.config
         for record in sorted(records, key=lambda item: item.record_id):
@@ -1348,6 +1546,29 @@ class BoundaryConsensus:
         if not math.isfinite(radius_squared):
             raise ValueError("boundary snapshot radius square overflow")
         maximum = _integer(maximum_points, "boundary snapshot maximum", 1, 100000)
+        if self._curve_mode:
+            reference = self.snapshot()
+            curve = reference.curve_geometry
+            # Metadata centroids cannot hide a curved/pending competitor.
+            # This square is an outward rejection envelope of the requested
+            # disk; retain all possibly affecting owners, without top-k cuts.
+            lower = np.nextafter(center-radius, -np.inf)
+            upper = np.nextafter(center+radius, np.inf)
+            selected = np.zeros(len(reference.record_ids), dtype=bool)
+            envelopes = ((np.min(curve.segments, axis=1), np.max(curve.segments, axis=1), curve.owner),
+                         (curve.blocker_boxes[:, 0], curve.blocker_boxes[:, 1], curve.blocker_owner))
+            standalone_count = 0
+            for minimum, maximum_xy, owners in envelopes:
+                included = np.all(maximum_xy >= lower, axis=1) & np.all(minimum <= upper, axis=1)
+                selected[owners[included & (owners >= 0)]] = True
+                standalone_count += int(np.count_nonzero(included & (owners < 0)))
+            if not curve.complete:
+                # A missing finite envelope cannot be spatially certified away.
+                selected[:] = True
+            indices = np.flatnonzero(selected)
+            if len(indices)+standalone_count > maximum:
+                raise ValueError("v5 local competitor owner capacity; no truncation")
+            return reference.subset(indices)
         records = [record for _, record in sorted(self._records.items()) if self._confirmed(record)]
         global_ids = {record.record_id for record in records}
         points = np.asarray([record.point for record in records], dtype=np.float64).reshape(-1, 2)
@@ -1396,6 +1617,25 @@ class BoundaryConsensus:
             **self._certified_model(local, slots))
 
     def snapshot(self):
+        if self._curve_mode:
+            if self._curve_reference is not None:
+                return self._curve_reference
+            from .curve_reference import CurveGeometry
+            empty = CurveGeometry(np.empty((0, 2, 2)), np.empty((0, 2)),
+                np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64), np.empty((0, 2, 2)),
+                np.empty(0, dtype=np.int64), True)
+            return BoundaryReference(np.empty((0, 2)), np.empty((0, 2)),
+                np.empty((0, 2, 2)), np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64),
+                np.empty(0, dtype=np.int64), None,
+                directed_edges=np.empty((0, 2), dtype=np.int64),
+                edge_frame_votes=np.empty(0, dtype=np.int64),
+                edge_reliable_votes=np.empty(0, dtype=np.int64),
+                edge_last_stamp_ns=np.empty(0, dtype=np.int64),
+                full_in_degree=np.empty(0, dtype=np.int64),
+                full_out_degree=np.empty(0, dtype=np.int64), curve_geometry=empty)
         records = [record for _, record in sorted(self._records.items()) if self._confirmed(record)]
         ids = np.asarray([record.record_id for record in records], dtype=np.int64)
         if records:
@@ -1571,7 +1811,7 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
     if (white_xy is None) != (black_xy is None):
         raise ValueError("corner domains require both white and black labels")
     if white_xy is not None:
-        from .corner_brackets import certify_corner_brackets
+        from .corner_brackets import certify_corner_brackets, _definitely_disjoint_batch
     result = []
     k = cfg["normal_min_points"]
     cosine = math.cos(CONSENSUS_DEFAULT_CONFIG["normal_max_angle_rad"])
@@ -1644,14 +1884,30 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
                 # both sides. The exact witness is used only as a boolean;
                 # it is never a corner observation or a new map coordinate.
                 side_ids = ids.reshape(-1, 2, k)
-                for slot in np.flatnonzero(accepted):
+                candidates = np.flatnonzero(accepted)
+                candidate_white = white_xy[side_ids[candidates]]
+                candidate_black = black_xy[side_ids[candidates]]
+                candidate_normals = np.empty((len(candidates), 2, 2), dtype=pair.dtype)
+                # Keep the original per-junction sign/reduction arithmetic.
+                # Only the cheap necessary negative check is batched; no
+                # labels, witnesses, support gates or candidate order change.
+                for index, slot in enumerate(candidates):
                     normals = np.column_stack((pair[slot, :, 1], -pair[slot, :, 0]))
-                    white = white_xy[side_ids[slot]]
-                    black = black_xy[side_ids[slot]]
+                    white, black = candidate_white[index], candidate_black[index]
                     outward = np.sum(black-white, axis=1)
                     normals[np.sum(normals*outward, axis=1) < 0.] *= -1.
+                    candidate_normals[index] = normals
+                candidate_axes = np.stack((first[candidates], second[candidates]), axis=1)
+                disjoint = _definitely_disjoint_batch(junction[candidates], candidate_axes,
+                    candidate_normals, candidate_white, candidate_black)
+                for index, slot in enumerate(candidates):
+                    if disjoint is not None and disjoint[index]:
+                        accepted[slot] = False
+                        continue
+                    normals = candidate_normals[index]
+                    white, black = candidate_white[index], candidate_black[index]
                     accepted[slot] = certify_corner_brackets(junction[slot],
-                        np.stack((first[slot], second[slot])), normals, white, black) is not None
+                        candidate_axes[index], normals, white, black) is not None
                     if cut_evidence is not None and accepted[slot]:
                         corner_normals[int(rows[slot])] = normals.copy()
             score[rows[accepted]] = 1.-agreement[accepted]

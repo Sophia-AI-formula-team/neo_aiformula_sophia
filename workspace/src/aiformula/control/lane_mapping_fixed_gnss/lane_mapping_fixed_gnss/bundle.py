@@ -32,6 +32,8 @@ BOUNDARY_VERSION = 1
 BOUNDARY_GRAPH_VERSION = 2
 BOUNDARY_CERTIFIED_VERSION = 3
 BOUNDARY_CONTINUATION_VERSION = 4
+BOUNDARY_CURVE_VERSION = 5
+CURVE_REPRESENTATION = "finite_creation_chart_curve_consensus_v1"
 CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
 CONTINUATION_REPRESENTATION = "all_continuations_owned_quad_support_v1"
 BOUNDARY_ARRAYS = {"points_xy": ("<f8", (2,)), "normals": ("<f8", (2,)),
@@ -56,6 +58,12 @@ BOUNDARY_CONTINUATION_ARRAYS = {
     "continuation_frame_votes": ("<i8", ()),
     "continuation_reliable_votes": ("<i8", ()),
     "continuation_last_stamp_ns": ("<i8", ())}
+BOUNDARY_CURVE_ARRAYS = {
+    "curve_segments": ("<f8", (2, 2)), "curve_normals": ("<f8", (2,)),
+    "curve_owner": ("<i8", ()), "curve_frame_votes": ("<i8", ()),
+    "curve_reliable_votes": ("<i8", ()), "curve_last_stamp_ns": ("<i8", ()),
+    "curve_owner_status": ("<i8", ()), "curve_blocker_boxes": ("<f8", (2, 2)),
+    "curve_blocker_owner": ("<i8", ())}
 LOCALIZATION_KIND = "wheel_rawgyro_mask"
 COORDINATE_CONVENTION = "start-relative local metres; x initial vehicle forward, y left; yaw CCW; not ENU"
 MAX_PAYLOAD_BYTES = 16 * 1024 * 1024
@@ -94,6 +102,8 @@ def geometry_sha256(snapshot):
 def _boundary_payload(reference):
     if not isinstance(reference, BoundaryReference):
         raise ValueError("an immutable BoundaryReference is required")
+    if reference.curve_geometry is not None:
+        return _boundary_curve_payload(reference)
     graph = [getattr(reference, name, None) for name in BOUNDARY_GRAPH_ARRAYS]
     if any(value is None for value in graph) and not all(value is None for value in graph):
         raise ValueError("boundary graph members must all be present or all absent")
@@ -145,12 +155,93 @@ def _boundary_capacity(name):
     return (200000 if name in ("support_segments", "segment_owner")
             or name in BOUNDARY_EDGE_ARRAYS or name in BOUNDARY_CERTIFIED_ARRAYS
             or name in BOUNDARY_CONTINUATION_ARRAYS
+            or name in BOUNDARY_CURVE_ARRAYS and name != "curve_owner_status"
             else MAX_GEOMETRY_POINTS)
+
+
+def _boundary_curve_payload(reference):
+    """V5 has explicit curve arrays; graph edges are topology, not chords.
+
+    Every rejection-only box and status is hash checked too. A missing
+    continuation set remains missing, distinct from an explicitly empty set.
+    None of the legacy v1-v4 serialized bytes are changed by this branch.
+    """
+    curve = reference.curve_geometry
+    specs = dict(BOUNDARY_ARRAYS, **BOUNDARY_GRAPH_ARRAYS, **BOUNDARY_CURVE_ARRAYS)
+    continuation = reference.continuation_intervals is not None
+    if continuation:
+        specs.update(BOUNDARY_CONTINUATION_ARRAYS)
+    arrays = {}
+    for name, (dtype, suffix) in specs.items():
+        source = getattr(curve, name[6:]) if name.startswith("curve_") else getattr(reference, name)
+        value = np.asarray(source, dtype=dtype)
+        if value.ndim != len(suffix)+1 or value.shape[1:] != suffix or len(value) > _boundary_capacity(name):
+            raise ValueError("boundary array shape/capacity invalid: " + name)
+        arrays[name] = dict(dtype=dtype, shape=list(value.shape),
+                            sha256=_digest(value.tobytes()), data=value.tolist())
+    return dict(representation=BOUNDARY_REPRESENTATION, version=BOUNDARY_CURVE_VERSION,
+        source_frontier_ns=int(reference.source_frontier_ns), arrays=arrays,
+        curve_representation=CURVE_REPRESENTATION, curve_complete=curve.complete,
+        continuation_representation=CONTINUATION_REPRESENTATION if continuation else None)
+
+
+def _load_boundary_curve(value, source_frontier_ns):
+    from lane_mapping_lya_reference.curve_reference import CurveGeometry
+    fields = {"representation", "version", "source_frontier_ns", "arrays",
+              "curve_representation", "curve_complete", "continuation_representation"}
+    if (set(value) != fields or value["representation"] != BOUNDARY_REPRESENTATION
+            or type(value["version"]) is not int or value["version"] != BOUNDARY_CURVE_VERSION
+            or type(value["source_frontier_ns"]) is not int or value["source_frontier_ns"] != source_frontier_ns
+            or value["curve_representation"] != CURVE_REPRESENTATION
+            or type(value["curve_complete"]) is not bool or not isinstance(value["arrays"], dict)
+            or value["continuation_representation"] not in (None, CONTINUATION_REPRESENTATION)):
+        raise ValueError("curve boundary representation/frontier mismatch")
+    specs = dict(BOUNDARY_ARRAYS, **BOUNDARY_GRAPH_ARRAYS, **BOUNDARY_CURVE_ARRAYS)
+    if value["continuation_representation"] is not None:
+        specs.update(BOUNDARY_CONTINUATION_ARRAYS)
+    if set(value["arrays"]) != set(specs):
+        raise ValueError("curve boundary member set differs from explicit geometry version")
+    arrays = {}
+    for name, (dtype, suffix) in specs.items():
+        record = value["arrays"][name]
+        if not isinstance(record, dict) or set(record) != {"dtype", "shape", "sha256", "data"}:
+            raise ValueError("invalid boundary member: " + name)
+        shape = record["shape"]
+        if (record["dtype"] != dtype or not isinstance(shape, list)
+                or len(shape) != len(suffix)+1 or any(type(n) is not int for n in shape)
+                or tuple(shape[1:]) != suffix or not 0 <= shape[0] <= _boundary_capacity(name)):
+            raise ValueError("invalid boundary member layout: " + name)
+        scalar_types = (int,) if dtype == "<i8" else (int, float)
+        def valid(item, dimensions):
+            if not dimensions:
+                return type(item) in scalar_types
+            return (isinstance(item, list) and len(item) == dimensions[0]
+                    and all(valid(child, dimensions[1:]) for child in item))
+        if not valid(record["data"], shape):
+            raise ValueError("invalid boundary member scalar types: " + name)
+        raw = np.asarray(record["data"])
+        if raw.size == 0 and shape[0] == 0:
+            raw = raw.reshape(shape)
+        allowed = "iu" if dtype == "<i8" else "iuf"
+        minimum = -1 if name == "curve_blocker_owner" else 0
+        if (list(raw.shape) != shape or raw.size and raw.dtype.kind not in allowed
+                or raw.size and not np.all(np.isfinite(raw))
+                or dtype == "<i8" and raw.size and (int(np.min(raw)) < minimum or int(np.max(raw)) >= 2**63)):
+            raise ValueError("invalid boundary member values: " + name)
+        array = np.asarray(raw, dtype=dtype)
+        if _digest(array.tobytes()) != record["sha256"]:
+            raise ValueError("boundary member checksum mismatch: " + name)
+        arrays[name] = array
+    curve_arrays = {name[6:]: arrays.pop(name) for name in BOUNDARY_CURVE_ARRAYS}
+    curve = CurveGeometry(**curve_arrays, complete=value["curve_complete"])
+    return BoundaryReference(**arrays, source_frontier_ns=source_frontier_ns, curve_geometry=curve)
 
 
 def _load_boundary(data, source_frontier_ns, expected_version):
     value = _decode_json(data)
     _require_local_only(value)
+    if expected_version == BOUNDARY_CURVE_VERSION:
+        return _load_boundary_curve(value, source_frontier_ns)
     fields = {"representation", "version", "source_frontier_ns", "arrays"}
     if expected_version >= BOUNDARY_CERTIFIED_VERSION:
         fields.add("certified_model_representation")
@@ -221,8 +312,18 @@ def _boundary_schema(payload, schema):
         if (payload.get("feature_representation") != BOUNDARY_REPRESENTATION
                 or type(payload.get("boundary_version")) is not int
                 or payload["boundary_version"] not in (BOUNDARY_VERSION, BOUNDARY_GRAPH_VERSION,
-                                                       BOUNDARY_CERTIFIED_VERSION, BOUNDARY_CONTINUATION_VERSION)):
+                                                       BOUNDARY_CERTIFIED_VERSION, BOUNDARY_CONTINUATION_VERSION,
+                                                       BOUNDARY_CURVE_VERSION)):
             raise ValueError("boundary schema requires explicit representation/version")
+        if payload["boundary_version"] == BOUNDARY_CURVE_VERSION:
+            if (payload.get("curve_representation") != CURVE_REPRESENTATION
+                    or "certified_model_representation" in payload
+                    or "continuation_representation" not in payload
+                    or payload["continuation_representation"] not in (None, CONTINUATION_REPRESENTATION)):
+                raise ValueError("boundary v5 requires explicit actual-curve representation")
+            return
+        if "curve_representation" in payload:
+            raise ValueError("legacy boundary cannot claim curve geometry")
         if payload["boundary_version"] >= BOUNDARY_CERTIFIED_VERSION:
             if payload.get("certified_model_representation") != CERTIFIED_MODEL_REPRESENTATION:
                 raise ValueError("boundary v3 requires explicit certified model representation")
@@ -233,7 +334,7 @@ def _boundary_schema(payload, schema):
                 raise ValueError("boundary v4 requires explicit continuation representation")
         elif "continuation_representation" in payload:
             raise ValueError("legacy boundary cannot claim continuation permissions")
-    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference", "certified_model_representation", "continuation_representation")):
+    elif any(key in payload for key in ("feature_representation", "boundary_version", "boundary_path", "boundary_sha256", "boundary_reference", "certified_model_representation", "continuation_representation", "curve_representation")):
         raise ValueError("legacy bundle cannot claim boundary geometry")
 
 
@@ -285,6 +386,9 @@ def _check_snapshot(snapshot):
     if snapshot.boundary_reference is not None:
         if snapshot.boundary_reference.source_frontier_ns != snapshot.source_frontier_ns:
             raise ValueError("boundary reference differs from snapshot frontier")
+        curve = snapshot.boundary_reference.curve_geometry
+        if curve is not None and (not curve.complete or not len(curve.segments)):
+            raise ValueError("ready bundle requires complete nonempty actual curve geometry")
         _boundary_payload(snapshot.boundary_reference)
 
 
@@ -316,7 +420,10 @@ def build_bundle(outputroot, snapshot, calibration, route_config=None, session_i
         boundary_payload = _boundary_payload(snapshot.boundary_reference)
         shared.update(feature_representation=BOUNDARY_REPRESENTATION,
                       boundary_version=boundary_payload["version"])
-        if boundary_payload["version"] >= BOUNDARY_CERTIFIED_VERSION:
+        if boundary_payload["version"] == BOUNDARY_CURVE_VERSION:
+            shared["curve_representation"] = CURVE_REPRESENTATION
+            shared["continuation_representation"] = boundary_payload["continuation_representation"]
+        elif boundary_payload["version"] >= BOUNDARY_CERTIFIED_VERSION:
             shared["certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
         if boundary_payload["version"] == BOUNDARY_CONTINUATION_VERSION:
             shared["continuation_representation"] = CONTINUATION_REPRESENTATION
@@ -470,6 +577,12 @@ def load_bundle(manifest_path):
     boundary_reference = (_load_boundary(payloads["boundary"], metadata.get("source_frontier_ns"),
                                         manifest["boundary_version"])
                  if schema == BOUNDARY_SCHEMA_VERSION else None)
+    if schema == BOUNDARY_SCHEMA_VERSION and manifest["boundary_version"] == BOUNDARY_CURVE_VERSION:
+        expected_continuation = (CONTINUATION_REPRESENTATION
+            if boundary_reference.continuation_intervals is not None else None)
+        if any(payload["continuation_representation"] != expected_continuation
+               for payload in (manifest, route, metadata)):
+            raise ValueError("curve continuation presence differs across bundle payloads")
     snapshot = MapSnapshot(trace, consensus[:, :2], consensus[:, 2],
                            metadata.get("source_frontier_ns", 0), metadata.get("mapping_stats", {}),
                            boundary_reference=boundary_reference)

@@ -1,0 +1,93 @@
+{
+  "scope": "Current-source original raw mask/motion first-match diagnostic; not full replay, two laps or driving release",
+  "head": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "completed_diagnostic": true,
+  "first_preflight_refusal": {
+    "codec": "utf8-sig",
+    "error": "LookupError",
+    "child_started": false,
+    "output_directory_created": false,
+    "production_modified": false
+  },
+  "capture02": {
+    "driver_sha256": "f02138a5aecfcee96b4a335f67e992682cdf57cd54f9881547631a3b88a7499e",
+    "approved_sha256": "d006a9802ae4c341602990e602fc92771168734409881d55d0b02a31c7529dfe",
+    "inventory": {
+      "frames": 261,
+      "masks": 111,
+      "raw_motion_samples": 2868
+    },
+    "actual_mapping_frames": 15,
+    "accepted": 14,
+    "first_rejection": {
+      "sequence": 165,
+      "reason": "processing_deadline",
+      "engine_ms": 84.96970002306625,
+      "engine_budget_ms": 80,
+      "matcher_ms": 35.2584,
+      "matcher_budget_ms": 40,
+      "attempts": 1,
+      "committed": false
+    },
+    "raw_odometry_and_attitude_exact_on_processed_prefix": true,
+    "source_input_pins": 23,
+    "pins_before_after_equal": true,
+    "owned_child_stopped": true,
+    "stop_attempts": 0,
+    "retries": 0,
+    "full_adapter_200ms_exercised": false,
+    "new_geometry_helpers_imported": 0
+  },
+  "first_match": {
+    "sequence": 162,
+    "mask_stamp_ns": 18779999603,
+    "reference_frontier_ns": 18669999605,
+    "motion_stamp_ns": 18759999603,
+    "accepted_single_candidate": true,
+    "captured_correspondence_returns": 4,
+    "captured_query_returns": 4,
+    "prefix_complete": true,
+    "array_descriptors": 107,
+    "denominator": 46.00000000000001,
+    "lateral_innovation_m": 0.002865351390816362,
+    "yaw_innovation_rad": 0.0006893554063194806,
+    "rmse_before_m": 0.007337900218845346,
+    "rmse_after_m": 0.00445548326653866,
+    "inline_hessian": null,
+    "inline_gradient": null,
+    "inline_robust_weights": null,
+    "array_semantics_independent_review": "all107 descriptors and four query/correspondence groups verified; direct residual reconstruction bitwise equal",
+    "normal_diversity": 0.0000501373280263818,
+    "observable_rank": 2,
+    "longitudinal_observable": false,
+    "readback_analysis_sha256": "31cf4b99bbcc6be0fa8ad79fd8d31a9c223dcb8203bfd3d09b07a8bbf2a0bbfb",
+    "readback_report_sha256": "9c33c5d7f53ba30ab493af76d423756ba738777481d86f19763ba26248864a95",
+    "first_json_sha256": "f29689ddf8f2e3d086bad5d57aa6870516cf14eaf8d515102d573e032955975a",
+    "npz_sha256": "a3115cec8e31195e34c00b010ad08011902e7ca67c18150528ccda57215a52de"
+  },
+  "live_unity": {
+    "scene": "Assets/Scenes/LaneTeachRepeatValidation.unity",
+    "playing": false,
+    "dirty": false,
+    "parameters": 116,
+    "bodies": 3,
+    "equal_to_trial29_baseline": [
+      "globals",
+      "parameters_with_order",
+      "spawn",
+      "full_original_component_serialization",
+      "all_bodies"
+    ],
+    "snapshot_sha256": "f313f67a7bf5c502a6564321f9e784f17d2e7255b2251c6bc657d42d7dc6b0c8",
+    "no_refresh_play_parameter_write_or_command": true
+  },
+  "remaining": [
+    "runtime geometry integration",
+    "full causal replay",
+    "new scene first lap and map freeze",
+    "second fixed-route lap",
+    "driving error metrics",
+    "new trial video"
+  ]
+}
+

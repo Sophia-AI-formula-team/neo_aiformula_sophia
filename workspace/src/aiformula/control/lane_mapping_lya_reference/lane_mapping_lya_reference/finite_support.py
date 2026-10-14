@@ -404,6 +404,166 @@ def _current_union_python(segments, normals, reliable, origin, tangent, cosine):
     return pieces
 
 
+# Optional frame-wide negative/positive classification only. The exact scalar
+# dot remains for every uncertain row at its ORIGINAL post-validation point.
+# Changed wrappers, native identity, dot or FP policy use the complete old path.
+_ADMISSION_ORIGINAL_DOT = np.dot
+_ADMISSION_POLICY = dict(divide="warn", over="warn", under="ignore", invalid="warn")
+_ADMISSION_SEAL = object()
+_ADMISSION_ORIGINAL_UNION = _current_union
+_ADMISSION_ORIGINAL_PYTHON = _current_union_python
+_ADMISSION_ORIGINAL_NATIVE = _NATIVE_CURRENT_UNION
+
+
+@dataclass(frozen=True)
+class _NormalAdmission:
+    original_union: object
+    original_python: object
+    original_native: object
+    batch: object
+    segments: object
+    normals: object
+    reliable: object
+    offsets: object
+    group_normals: object
+    cosine: float
+    tags: bytes
+    seal: object
+
+
+def _prepare_normal_admission(batch, group_normals, cosine):
+    """Optional preflight: None means COMPLETE old group route, never veto.
+
+    The producer and unchanged kernel identities are bound here. Only
+    outward classification is done here: no original dot/native/group advance,
+    scalar validation, future state or arbitrary user conversion is executed.
+    """
+    try:
+        return _normal_admission_plan(batch, group_normals, cosine)
+    except (AttributeError, IndexError, TypeError, ValueError, OverflowError):
+        # Optional representation inspection never raises a later group's
+        # structural error before the original ordered owner route.
+        return None
+
+
+def _normal_admission_plan(batch, group_normals, cosine):
+    if (_current_union is not _ADMISSION_ORIGINAL_UNION
+            or _current_union_python is not _ADMISSION_ORIGINAL_PYTHON
+            or _NATIVE_CURRENT_UNION is not _ADMISSION_ORIGINAL_NATIVE
+            or _NATIVE_CURRENT_UNION is None or np.dot is not _ADMISSION_ORIGINAL_DOT
+            or np.geterr() != _ADMISSION_POLICY
+            or type(batch) is not _ValidatedFrameBatch
+            or batch.seal is not _BATCH_SEAL
+            or type(group_normals) is not np.ndarray or type(cosine) is not float
+            or not 1.e-6 <= cosine <= 1.):
+        return None
+    segments, normals, reliable, offsets = batch.segments, batch.normals, batch.reliable, batch.offsets
+    if (any(type(array) is not np.ndarray for array in (segments, normals, reliable, offsets))
+            or any(not array.flags.c_contiguous or array.flags.writeable
+                   for array in (segments, normals, reliable, offsets))
+            or segments.dtype != np.dtype(np.float64) or normals.dtype != np.dtype(np.float64)
+            or reliable.dtype != np.dtype(np.bool_) or offsets.dtype != np.dtype(np.int64)
+            or not all(array.dtype.isnative for array in (segments, normals, reliable, offsets))
+            or segments.ndim != 3 or segments.shape[1:] != (2, 2)
+            or normals.shape != segments.shape or reliable.shape != (len(segments),)
+            or offsets.ndim != 1 or not 1 <= len(offsets) <= MAX_ITEMS + 1
+            or len(segments) > (2 * MAX_ITEMS)
+            or group_normals.dtype != np.dtype(np.float64) or not group_normals.dtype.isnative
+            or not group_normals.flags.c_contiguous or group_normals.shape != (len(offsets)-1, 2)):
+        return None
+    if (offsets[0] != 0 or offsets[-1] != len(normals)
+            or np.any(offsets < 0) or np.any(offsets > len(normals))):
+        return None
+    frozen_normals = np.frombuffer(group_normals.tobytes(), dtype=np.float64).reshape(group_normals.shape)
+    lengths = offsets[1:] - offsets[:-1]
+    if (np.any(lengths < 0) or np.any(lengths > MAX_ITEMS)
+            or not np.isfinite(normals).all() or not np.isfinite(frozen_normals).all()
+            or np.any(np.abs(normals) > 2.) or np.any(np.abs(frozen_normals) > 2.)):
+        return None
+    row_normals = np.repeat(frozen_normals, lengths, axis=0)
+    products = normals * row_normals[:, None, :]
+    lower_product, upper_product = np.nextafter(products, -np.inf), np.nextafter(products, np.inf)
+    lower = np.nextafter(lower_product[..., 0] + lower_product[..., 1], -np.inf)
+    upper = np.nextafter(upper_product[..., 0] + upper_product[..., 1], np.inf)
+    lower, upper = np.nextafter(lower, -np.inf), np.nextafter(upper, np.inf)
+    reject, accept = np.any(upper < cosine, axis=1), np.all(lower >= cosine, axis=1)
+    tags = accept.astype(np.uint8)
+    tags[~(reject | accept)] = 2
+    return _NormalAdmission(_current_union, _current_union_python,
+                 _NATIVE_CURRENT_UNION, batch, segments, normals, reliable,
+                 offsets, frozen_normals, cosine, tags.tobytes(), _ADMISSION_SEAL)
+
+
+def _admission_same_view(value, expected):
+    return (type(value) is np.ndarray and value.dtype == expected.dtype
+            and value.shape == expected.shape and value.strides == expected.strides
+            and value.flags.writeable == expected.flags.writeable
+            and value.base is expected.base
+            and value.__array_interface__["data"][0] == expected.__array_interface__["data"][0])
+
+
+def _current_union_admitted(plan, batch, group_index,
+                  segments, normals, reliable, origin, tangent, cosine):
+    """Consume only at the original post-validation group call point.
+
+    Every stale/unsupported binding uses the CURRENT complete original alias;
+    changed-dot/native/FP/spies are not hidden by a captured old function. No
+    later-group dot is executed by preflight. Native errors propagate once.
+    """
+    args = (segments, normals, reliable, origin, tangent, cosine)
+    if (type(plan) is not _NormalAdmission or plan.seal is not _ADMISSION_SEAL
+            or plan.batch is not batch or type(batch) is not _ValidatedFrameBatch
+            or batch.seal is not _BATCH_SEAL
+            or batch.segments is not plan.segments or batch.normals is not plan.normals
+            or batch.reliable is not plan.reliable or batch.offsets is not plan.offsets
+            or _current_union is not plan.original_union
+            or _current_union_python is not plan.original_python
+            or _NATIVE_CURRENT_UNION is not plan.original_native
+            or np.dot is not _ADMISSION_ORIGINAL_DOT or np.geterr() != _ADMISSION_POLICY
+            or type(group_index) is not int or not 0 <= group_index < len(plan.offsets)-1
+            or type(tangent) is not tuple or len(tangent) != 2
+            or any(type(value) is not float for value in tangent)
+            or type(cosine) is not float or struct.pack(">d", cosine) != struct.pack(">d", plan.cosine)):
+        return _current_union(*args)
+    # Literal original native eligibility. The Python fallback stays complete.
+    if (_NATIVE_CURRENT_UNION is None
+            or type(segments) is not np.ndarray or type(normals) is not np.ndarray
+            or type(reliable) is not np.ndarray
+            or segments.dtype != np.dtype(np.float64) or normals.dtype != np.dtype(np.float64)
+            or reliable.dtype != np.dtype(np.bool_)
+            or not all(array.flags.c_contiguous for array in (segments, normals, reliable))
+            or segments.ndim != 3 or segments.shape[1:] != (2, 2)
+            or normals.shape != segments.shape or reliable.shape != (len(segments),)
+            or np.geterr()["under"] != "ignore"):
+        return _current_union(*args)
+    first, stop = int(plan.offsets[group_index]), int(plan.offsets[group_index+1])
+    if (len(plan.tags) != len(plan.normals)
+            or not _admission_same_view(segments, batch.segments[first:stop])
+            or not _admission_same_view(normals, batch.normals[first:stop])
+            or not _admission_same_view(reliable, batch.reliable[first:stop])):
+        return _current_union(*args)
+    # Same conversion and unary signs as the old union; never use the current
+    # fused normal in place of an old DomainState's creation tangent.
+    normal = np.asarray((-tangent[1], tangent[0]), dtype=np.float64)
+    if normal.tobytes() != plan.group_normals[group_index].tobytes():
+        return _current_union(*args)
+    admitted = bytearray(plan.tags[first:stop])
+    if not set(admitted).issubset((0, 1, 2)):
+        return _current_union(*args)
+    for index, tag in enumerate(admitted):
+        if tag == 2:
+            admitted[index] = 0
+            directions = normals[index]
+            if (float(np.dot(directions[0], normal)) < cosine or
+                    float(np.dot(directions[1], normal)) < cosine):
+                continue
+            admitted[index] = 1
+    trusted = bytes(bool(value) for value in reliable)
+    return list(_NATIVE_CURRENT_UNION(
+        segments.tobytes(order="C"), bytes(admitted), trusted, len(segments),
+        float(origin[0]), float(origin[1]), float(tangent[0]), float(tangent[1])))
+
+
 def advance_domain(previous, *, origin, current_frame_normal, segments, normals, reliable,
                    stamp_ns, minimum_frame_votes, minimum_reliable_votes, candidate_ttl_ns,
                    normal_cosine, max_intervals):
@@ -427,7 +587,8 @@ def advance_domain(previous, *, origin, current_frame_normal, segments, normals,
 
 def _advance_domain_validated(previous, *, batch, group_index, origin, current_frame_normal,
                               stamp_ns, minimum_frame_votes, minimum_reliable_votes,
-                              candidate_ttl_ns, normal_cosine, max_intervals):
+                              candidate_ttl_ns, normal_cosine, max_intervals,
+                              normal_admission=None):
     """Private equivalent entry for one group of _validate_frame_batch output.
 
     Scalars are still checked in public order BEFORE selecting the already
@@ -449,11 +610,14 @@ def _advance_domain_validated(previous, *, batch, group_index, origin, current_f
     return _advance_domain_arrays(previous, origin, frame_normal,
                                   batch.segments[first:stop], batch.normals[first:stop],
                                   batch.reliable[first:stop], stamp, minimum,
-                                  minimum_reliable, ttl, cosine, capacity)
+                                  minimum_reliable, ttl, cosine, capacity,
+                                  normal_admission=normal_admission, batch=batch,
+                                  group_index=index)
 
 
 def _advance_domain_arrays(previous, origin, frame_normal, segments, normals, reliable,
-                           stamp, minimum, minimum_reliable, ttl, cosine, capacity):
+                           stamp, minimum, minimum_reliable, ttl, cosine, capacity,
+                           normal_admission=None, batch=None, group_index=None):
     """Original advance body; entry points above own all input validation."""
     if previous is not None and type(previous) is not DomainState:
         raise ValueError('previous must be DomainState or None')
@@ -470,7 +634,13 @@ def _advance_domain_arrays(previous, origin, frame_normal, segments, normals, re
         old = tuple(p for p in previous.intervals if not
                     (ttl and stamp-p.last_stamp_ns > ttl and
                      (p.frame_votes < minimum or p.reliable_votes < minimum_reliable)))
-    current = _current_union(segments, normals, reliable, origin, tangent, cosine)
+    # Classification is consumed only HERE, after every original scalar,
+    # array, previous-state/frontier/counter and TTL check. Public callers and
+    # unsupported plans retain the complete original ordered current-union.
+    current = (_current_union(segments, normals, reliable, origin, tangent, cosine)
+        if normal_admission is None else _current_union_admitted(
+            normal_admission, batch, group_index, segments, normals, reliable,
+            origin, tangent, cosine))
     boundaries = sorted({v for p in old for v in (p.lower, p.upper)} |
                         {v for p in current for v in p[:2]})
     result, old_index, current_index = [], 0, 0

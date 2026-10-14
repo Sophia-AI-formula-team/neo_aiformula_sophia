@@ -1,0 +1,101 @@
+{
+  "evidence_level": "offline_production_prepare_diagnostic_not_runtime_or_driving",
+  "date": "2026-10-15",
+  "source_frontier_selection": "fixed original151..164; no favorable output selection",
+  "source_and_input_pins": 118,
+  "source_unchanged": true,
+  "code_head": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "paint_geometry_sha256": "ef109ad83c6337b4af1b3c1c6e9d7c62118132fa5dfbe8dbf9cb57a816dc4813",
+  "curve_geometry_builder_sha256": "a75f1c336af8769e512abd01a87853da2b670eff4005476c01139befafe8e543",
+  "primary_seconds": 45,
+  "stop_seconds": 5,
+  "retries": 0,
+  "elapsed_s": 45.607044900010806,
+  "parent": {
+    "pid": 55856,
+    "birth": "134362593821054278",
+    "independently_absent": true
+  },
+  "child": {
+    "pid": 69000,
+    "birth": "134362593823979298",
+    "stop_attempted": true,
+    "independently_absent": true
+  },
+  "complete_records": [
+    {
+      "sequence": 151,
+      "prepare_ms": 172.9932,
+      "commit_ms": 0.1547,
+      "nominal_segments": 0,
+      "blocker_boxes": 246,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 152,
+      "prepare_ms": 225.9321,
+      "commit_ms": 0.3429,
+      "nominal_segments": 0,
+      "blocker_boxes": 246,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 153,
+      "prepare_ms": 297.3794,
+      "commit_ms": 0.4116,
+      "nominal_segments": 0,
+      "blocker_boxes": 347,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 154,
+      "prepare_ms": 376.7194,
+      "commit_ms": 0.5102,
+      "nominal_segments": 0,
+      "blocker_boxes": 411,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 155,
+      "prepare_ms": 2586.908,
+      "commit_ms": 0.5742,
+      "nominal_segments": 2065,
+      "blocker_boxes": 2547,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 156,
+      "prepare_ms": 2612.7621,
+      "commit_ms": 0.7271,
+      "nominal_segments": 2325,
+      "blocker_boxes": 2578,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 157,
+      "prepare_ms": 2546.2557,
+      "commit_ms": 0.765,
+      "nominal_segments": 2287,
+      "blocker_boxes": 2504,
+      "geometry_complete": true
+    },
+    {
+      "sequence": 158,
+      "prepare_ms": 2433.8113,
+      "commit_ms": 0.8588,
+      "nominal_segments": 2331,
+      "blocker_boxes": 2425,
+      "geometry_complete": true
+    }
+  ],
+  "cost_scope": "entire real prepare/commit with three transparent recording hooks; separate huge diagnostic object-graph IO excluded from these recorded per-prepare clocks",
+  "incomplete_record": 159,
+  "incomplete_record_reason": "JSON write truncated by owned deadline; no inference of completed commit/cleanup",
+  "child_result_present": false,
+  "hook_restore_present": false,
+  "actual14_pass": false,
+  "engine_or_motion_created": false,
+  "gnss_used_for_mapping": false,
+  "unity_play_started": false,
+  "limits": "No80/40/200ms, causal Engine, map freeze, two-lap, ROS or vehicle acceptance; parameter thresholds unchanged. Private raw arrays/paths not published."
+}

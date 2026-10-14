@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-15",
+  "evidence_level": "synthetic_integration_not_runtime",
+  "tests": 109,
+  "pass": 109,
+  "errors": 0,
+  "failures": 0,
+  "skips": 0,
+  "exact_started_stopped_ledger": true,
+  "source_pins": 39,
+  "source_unchanged": true,
+  "raw_source_bound_loader": true,
+  "fixed_native_and_C_identity": true,
+  "manifest_sha256": "dd307f3863f55ef9d632d34bade06d00070451ab0d89f0f9ff8d4f23dbc283f4",
+  "parent_result_sha256": "63e2c42349914d0213c19b6aa3a12dcbcaf1a5b1ca501af6b72abecc933e799d",
+  "child_result_sha256": "b0b51592080b23a51dcc5c3e80983d24761d904758df5da095b838e52bb9f56e",
+  "parent": {
+    "pid": 43840,
+    "birth": "134364684801921849",
+    "independently_absent": true
+  },
+  "child": {
+    "pid": 38796,
+    "birth": "134364684804091005",
+    "independently_absent": true
+  },
+  "elapsed_s": 4.4079977000073995,
+  "stop_attempted": false,
+  "retries": 0,
+  "prior_failure_preserved": {
+    "run": 4,
+    "tests": 109,
+    "pass": 108,
+    "errors": 1,
+    "cause": "v5 JSON loader rejected the explicit standalone blocker_owner=-1 sentinel",
+    "parent": {
+      "pid": 22092,
+      "birth": "134364683345839605",
+      "independently_absent": true
+    },
+    "child": {
+      "pid": 41052,
+      "birth": "134364683348468410",
+      "independently_absent": true
+    },
+    "source_unchanged": true,
+    "elapsed_s": 4.0755582000128925,
+    "stop_attempted": false
+  },
+  "fix": "Only curve_blocker_owner accepts sentinel -1; all other integer fields retain minimum0. Rehashed blocker -2 and nominal owner -1 still reject. No threshold changes.",
+  "coverage": "ALL reachable unassociated finite source footprints stay independent rejection-only boxes; empty/reordered subsets retain them, patch capacity counts every standalone box, masks/records/rawfields retained, no fake nodes or normals. Unrepresentable boxes still completeFalse. Bundle roundtrip and fresh query remain bit exact.",
+  "limits": "The batch performance candidate is not integrated. This unit suite does not establish real-source timing, Engine, ROS, Unity, map freeze, two laps or vehicle acceptance."
+}

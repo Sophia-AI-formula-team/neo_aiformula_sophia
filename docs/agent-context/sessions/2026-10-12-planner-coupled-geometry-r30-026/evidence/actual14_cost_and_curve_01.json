@@ -1,0 +1,52 @@
+{
+  "status": "VALID_DIAGNOSTIC_NOT_RUNTIME_ACCEPTANCE",
+  "approval_sha256": "32478b172e462218531945689a95c5cb6198c18dab20bde73aa2d1b28ecaf537",
+  "parent_result_sha256": "230dc9350a1ba1a405374ad1f9a52bca06cb89a697ea65c3f60ef0afff9caf32",
+  "child_result_sha256": "a35ca24d2ed7f4da012bba491677c4c14a9f0227f09d2d218370439e9c50087f",
+  "shadow_summary_sha256": "84204db54cd560dfb49dfb86e76724a13433fd2948c1259a9af9f8c426c3e78a",
+  "parent_pid": 46168,
+  "parent_birth": "134362514537323796",
+  "child_pid": 27904,
+  "child_birth": "134362514543017682",
+  "normal_exit_code": 0,
+  "parent_wall_s": 5.4070980999968,
+  "root_independent_pid_absence": true,
+  "stop_attempted": false,
+  "retries": 0,
+  "all_86_pins_unchanged": true,
+  "normal_admission_tests": {"run": 20, "failures": 0, "errors": 0, "skips": 0},
+  "original_observations": 14,
+  "sequence_range": [151, 164],
+  "original_union_groups": 3495,
+  "original_union_rows": 34462,
+  "candidate_non_None_groups": 1314,
+  "candidate_non_None_rows": 24644,
+  "complete_admission_and_union_output_bits_equal": true,
+  "complete_wrapper_reverse_AST_exact": true,
+  "paired_wrapper_sum_ms": [
+    {"pair": 0, "OFF": 77.7521, "ON": 81.3396},
+    {"pair": 1, "OFF": 79.2502, "ON": 75.8613},
+    {"pair": 2, "OFF": 73.9094, "ON": 78.9162}
+  ],
+  "performance_decision": "NOT_ADOPTED: mixed paired results and higher aggregate candidate cost",
+  "geometry_attempted_frames": 3,
+  "geometry_committed_frames": 2,
+  "geometry_first_failure_sequence": 153,
+  "geometry_failure": "definite_global_capacity_failure",
+  "geometry_both_uncommitted_on_failure": true,
+  "unchanged_global_capacity": 200000,
+  "geometry_storage": [
+    {"sequence": 151, "old_base": 2641, "all_curves": 77891, "total_lower_bound": 80532, "states": 246, "occurrences": 1219, "confirmed": 0, "unknown": 4},
+    {"sequence": 152, "old_base": 4251, "all_curves": 150862, "total_lower_bound": 155113, "states": 246, "occurrences": 1219, "confirmed": 0, "unknown": 4},
+    {"sequence": 153, "old_base": 6044, "all_curves": 226939, "total_lower_bound": 232983, "states": 347, "occurrences": 1233, "confirmed": 0, "unknown": 9}
+  ],
+  "geometry_original_prepare_adapter_curve_ms": [
+    [24.9296, 42.9881, 51.5383],
+    [31.5676, 43.2912, 50.3351],
+    [42.7724, 55.3529, 59.0490]
+  ],
+  "geometry_shadow_adopted": false,
+  "engine_matcher_new_motion_created": false,
+  "wholepermission_integrated": false,
+  "two_lap_or_video_claim": false
+}

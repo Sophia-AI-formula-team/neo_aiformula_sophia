@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "status": "partial_offline_evidence_not_runtime_acceptance",
+  "head": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "review": "Read-only raw artifact audit. No Python/AST/tests/native/Unity execution by reviewer; no existing artifact rewritten.",
+  "candidate_units": {
+    "path": "r30_curve_envelope_batch_candidate_01/units_run_01",
+    "methods": 19,
+    "passed": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pins": 44,
+    "pins_before_after_match": true,
+    "exact_started_stopped_ledger": true,
+    "raw_executed_candidate_bound": true,
+    "real_native_C_identity_verified": true,
+    "manifest_sha256": "0c127016299682819b0926d4e92c54e5daf60211d4435f206e066e1a45e3f11d",
+    "result_sha256": "1ce89a81cf73f51db8a0bc509f2a92d5190c4996a9bcec021831ff61a693ed1c",
+    "exit_code": 0,
+    "stop_attempted": false,
+    "retries": 0,
+    "parent_elapsed_s": 0.9547915000002831,
+    "pid": 37648,
+    "birth": "134364688451254258",
+    "child_pid": 38692,
+    "child_birth": "134364688453626622",
+    "stderr": "One original nextafter underflow RuntimeWarning during a passing strict-FP test is retained."
+  },
+  "pair": {
+    "path": "r30_curve_envelope_actual14_pair_01/run_01",
+    "planned": [
+      151,
+      164
+    ],
+    "complete_equal": [
+      151,
+      159
+    ],
+    "complete_equal_count": 9,
+    "not_complete": [
+      160,
+      161,
+      162,
+      163,
+      164
+    ],
+    "complete_actual14": false,
+    "pins": 129,
+    "pins_before_after_match": true,
+    "candidate_calls_completed_prefix": 239,
+    "hits_completed_prefix": 239,
+    "fallbacks_completed_prefix": 0,
+    "fallback_reasons": {},
+    "all_nine_frames_all_flags_and_descriptor_checks": true,
+    "verified_checks": "Fixed original29+5 inputs/immutability; alternating order; both complete prepare calls; per-call input/output hashes; exact token/reference9 arrays+metadata+5permissions; full maps/states; no prepare mutation; real can_commit/commit; token frontiers; seam ownership/restoration and FP policy.",
+    "manifest_sha256": "34b048a35b64b74b0c7f26a1112469e241d8c94e7d42456b3c08f8ef9e5c5b5f",
+    "result_sha256": "927c530c06a8696bfa9b89f3e952bd9bfd72dd333b50ef6ca805d65d5580d8ba",
+    "pid": 38600,
+    "birth": "134364690184500687",
+    "child_pid": 32544,
+    "child_birth": "134364690188297377",
+    "parent_valid": false,
+    "termination": "60s offline work budget TimeoutExpired; one owned stop, no retry",
+    "exit_code": 1,
+    "parent_elapsed_s": 60.22516830000677,
+    "final_absence": "160 has only started; no frame160, child_result, hook_restore or pair_summary. Do not infer160 calls/commits, complete14 or global finally.",
+    "timing_columns": [
+      "sequence",
+      "OFF_whole_prepare_ms",
+      "ON_whole_prepare_ms"
+    ],
+    "timing_rows": [
+      [
+        151,
+        172.49,
+        168.8895
+      ],
+      [
+        152,
+        224.6825,
+        223.7855
+      ],
+      [
+        153,
+        387.594,
+        350.4602
+      ],
+      [
+        154,
+        395.897,
+        479.8512
+      ],
+      [
+        155,
+        3120.8416,
+        1015.9182
+      ],
+      [
+        156,
+        3220.6147,
+        1201.9665
+      ],
+      [
+        157,
+        3095.4247,
+        1070.0692
+      ],
+      [
+        158,
+        2979.6866,
+        1103.8598
+      ],
+      [
+        159,
+        3168.4378,
+        1251.1505
+      ]
+    ],
+    "timing_scope": "No profiler. Whole real prepare includes transparent tuple/reference seam and actual candidate batch/scratch/fallback work. Commit timed separately. Authentication/transforms/hashing/comparison/IO lie outside prepare but inside the shared60s child work budget.",
+    "timing_limits": "Single incomplete alternating pass, no repeat statistics or stable speedup/WCET claim; no ratio to a different cProfile/source run. Original Engine80/matcher40/adapter200 limits are unchanged and are not gates exercised by this no-Engine pair."
+  },
+  "profile_correction": {
+    "path": "r30_curve_producer_profile_01/run_01",
+    "complete": [
+      151,
+      160
+    ],
+    "count": 10,
+    "started_only": 161,
+    "remaining_not_complete": [
+      161,
+      162,
+      163,
+      164
+    ],
+    "frame160_sha256": "20176f633e37eef32d7d7e523dc1b07cf1bd1f0526e6ef74b186493377e5d52c",
+    "frame160_bytes": 29105,
+    "frame160_returned_commit_input_profile_flags": true,
+    "frame160_already_in_original_parent_output_hashes": true,
+    "parent_result_sha256": "4b4af25f0f5d847d779c7dbdd6a27dbc1b1cd156e2d2c67136da3e64044f68e9",
+    "frame160_mtime_utc": "2026-10-14T16:09:33.7193863Z",
+    "parent_result_mtime_utc": "2026-10-14T16:09:36.3755836Z",
+    "note": "Append correction to prior nine-frame profile statement. Raw160 predates and is hashed by the original parent result; no kill race inferred. Global final receipts absent after45s offline timeout; cProfile overhead included."
+  },
+  "original_actual14_check": "Original actual14 remains complete151..158 only;103066234-byte frame159 fails full JSON parse. Existing159 phase binaries do not establish a complete frame/commit.",
+  "independent_pid_absence": {
+    "checked_utc": "2026-10-14T16:44:47.5348427Z",
+    "all_eight_recorded_original_profile_unit_pair_PIDs_absent": true,
+    "units": [
+      37648,
+      38692
+    ],
+    "pair": [
+      38600,
+      32544
+    ],
+    "profile": [
+      36376,
+      42640
+    ],
+    "original": [
+      55856,
+      69000
+    ]
+  },
+  "frozen_candidate_sha256": "9332d07ff5b44aff12caa75cb9a3775e74cb4358a0a636ef428d636c34021680",
+  "frozen_test_sha256": "81d0984a72fcb9011d87e7c436030b8f4ec0b11d3a2378562057bef90803ab52",
+  "detailed_review_sha256": {
+    "candidate19_pair9_summary.json": "71ce1104e00b2ca1b519bbf6ca7156f46a73b89a40f9c20123ce443d73768892",
+    "final_prefix_correction.json": "ed8015977065e84af8284ea84461c3a0a7ed12a2c8ed1d49d981969aea2525b0",
+    "SESSION_delta.txt": "7b5edb0eee649751082188ac0b43bc0acc6858538185bf7b308351ea9e7f8a6f"
+  },
+  "scope": "Synthetic units plus incomplete fixed-input OFF/ON diagnostic only. No complete14, runtime deadline, stable acceleration, ROS/Foxy, new Unity lap, freeze/repeat, video, physical vehicle or driving acceptance."
+}

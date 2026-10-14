@@ -299,6 +299,149 @@ class _FrozenBoundaryGraph:
         return owners, targets, directions, covered
 
 
+def _curve_distance_upper(points, starts, ends, fractions):
+    """Upper squared distance to a feasible exact finite segment point.
+
+    The selected binary64 fraction is in [0,1]. Enclose end-start, its product
+    and addition, instead of pretending the rounded foot lies on the exact line.
+    This bound is only for rejection competitors, never an acceptance radius.
+    """
+    with np.errstate(all='ignore'):
+        delta = ends-starts
+        lower, upper = np.nextafter(delta, -np.inf), np.nextafter(delta, np.inf)
+        lower = np.nextafter(lower*fractions[:, None], -np.inf)
+        upper = np.nextafter(upper*fractions[:, None], np.inf)
+        lower = np.nextafter(starts+lower, -np.inf)
+        upper = np.nextafter(starts+upper, np.inf)
+        far = np.maximum(np.abs(np.nextafter(points-lower, np.inf)),
+                         np.abs(np.nextafter(upper-points, np.inf)))
+        squares = np.nextafter(far*far, np.inf)
+        bound = np.nextafter(squares[:, 0]+squares[:, 1], np.inf)
+    return bound
+
+
+def _curve_blocked(points, squared_upper, boxes):
+    """A box may be excluded ONLY by proven strictly greater distance.
+
+    All immutable boxes compete, including unknown direction, pending states
+    and alternative signatures. No query-dependent normal or farther retry.
+    """
+    rejected = ~np.isfinite(squared_upper)
+    for first in range(0, len(boxes), 512):
+        chunk = boxes[first:first+512]
+        with np.errstate(all='ignore'):
+            a = np.nextafter(chunk[None, :, 0]-points[:, None, :], -np.inf)
+            b = np.nextafter(points[:, None, :]-chunk[None, :, 1], -np.inf)
+            gap = np.maximum(0., np.maximum(a, b))
+            squares = np.maximum(0., np.nextafter(gap*gap, -np.inf))
+            lower = np.maximum(0., np.nextafter(squares[..., 0]+squares[..., 1], -np.inf))
+        rejected |= np.any(~np.isfinite(lower) | (lower <= squared_upper[:, None]), axis=1)
+    return rejected
+
+
+class _FrozenCurveGraph:
+    """V5: actual finite curves only; node means/graph chords are NOT geometry."""
+    def __init__(self, reference, config):
+        self.reference, self.config = reference, config
+        curve = reference.curve_geometry
+        self.curve, self.edges = curve, reference.directed_edges
+        self.graph_primitive_count = 0
+        self.primitive_nodes = np.repeat(curve.owner[:, None], 2, axis=1)
+        self.starts, self.ends = curve.segments[:, 0], curve.segments[:, 1]
+        self.delta = self.ends-self.starts
+        self.length_squared = np.sum(self.delta*self.delta, axis=1)
+        self.nonzero = self.length_squared > 0.
+        self.normals = curve.normals
+        self.lower, self.upper = np.minimum(self.starts, self.ends), np.maximum(self.starts, self.ends)
+        self.degree = reference.full_in_degree+reference.full_out_degree
+        self.unambiguous_model = ((reference.full_in_degree[curve.owner] <= 1)
+                                   & (reference.full_out_degree[curve.owner] <= 1))
+        self.continuation_permissions = {}
+        if reference.continuation_intervals is not None:
+            for primitive, interval in zip(reference.continuation_primitive, reference.continuation_intervals):
+                self.continuation_permissions.setdefault(int(primitive), []).append(interval)
+        permitted = self.unambiguous_model.copy()
+        if self.continuation_permissions:
+            permitted[list(self.continuation_permissions)] = True
+        self.direction_valid = self.nonzero & permitted & curve.complete
+
+    def query(self, points, normals):
+        count = len(points)
+        owners = np.full(count, -1, dtype=np.int64)
+        targets, directions = np.zeros((count, 2)), np.zeros((count, 2))
+        covered = np.zeros(count, dtype=bool)
+        if not count or not len(self.starts) or not self.curve.complete:
+            return owners, targets, directions, covered
+        cfg = self.config
+        radius, cosine = cfg['match_distance_m'], math.cos(cfg['normal_max_angle_rad'])
+        keys = np.floor(points/cfg['hash_cell_m']).astype(np.int64)
+        unique, inverse, _ = _unique_cells(keys)
+        for group in range(len(unique)):
+            rows = np.flatnonzero(inverse == group)
+            # Outward query bounds are candidate rejection bounds, NOT added
+            # support. Count every competing owner, including UNKNOWN boxes,
+            # before the original patch-capacity gate. A ready-only inventory
+            # would hide ambiguity behind arbitrarily many unready owners.
+            lower = np.nextafter(np.min(points[rows], axis=0)-radius, -np.inf)
+            upper = np.nextafter(np.max(points[rows], axis=0)+radius, np.inf)
+            candidates = np.flatnonzero(self.nonzero & np.all(self.upper >= lower, axis=1)
+                                         & np.all(self.lower <= upper, axis=1))
+            boxes = self.curve.blocker_boxes
+            box_candidates = np.flatnonzero(np.all(boxes[:, 1] >= lower, axis=1)
+                                            & np.all(boxes[:, 0] <= upper, axis=1))
+            box_owners = self.curve.blocker_owner[box_candidates]
+            competing_owners = np.unique(np.concatenate((self.curve.owner[candidates],
+                box_owners[box_owners >= 0])))
+            # Each unassociated source footprint is an independent competing
+            # record, not one shared fictional owner named -1.
+            competing_count = len(competing_owners)+int(np.count_nonzero(box_owners < 0))
+            if not len(candidates) or competing_count > cfg['max_patch_points']:
+                continue
+            distance = np.full(len(rows), np.inf)
+            choice = np.full(len(rows), -1, dtype=np.int64)
+            alpha = np.zeros(len(rows))
+            for first in range(0, len(candidates), 512):
+                ids = candidates[first:first+512]
+                offset = points[rows, None, :]-self.starts[ids][None, :, :]
+                raw_alpha = np.sum(offset*self.delta[ids][None, :, :], axis=2)/self.length_squared[ids]
+                clamped = np.clip(raw_alpha, 0., 1.)
+                difference = offset-clamped[:, :, None]*self.delta[ids][None, :, :]
+                squared = np.sum(difference*difference, axis=2)
+                squared[normals[rows] @ self.normals[ids].T < cosine] = np.inf
+                slot = np.argmin(squared, axis=1)
+                values = squared[np.arange(len(rows)), slot]
+                better = values < distance
+                distance[better], choice[better] = values[better], ids[slot[better]]
+                alpha[better] = raw_alpha[np.arange(len(rows))[better], slot[better]]
+            eligible = distance <= radius**2
+            rows, ids, alpha = rows[eligible], choice[eligible], alpha[eligible]
+            if not len(rows):
+                continue
+            fraction = np.clip(alpha, 0., 1.)
+            owners[rows] = self.curve.owner[ids]
+            targets[rows] = self.starts[ids]+fraction[:, None]*self.delta[ids]
+            directions[rows] = self.normals[ids]
+            covered[rows] = self.direction_valid[ids] & (alpha >= 0.) & (alpha <= 1.)
+            # The nearest nominal candidate is fixed before any permission or
+            # UNKNOWN rejection. Nothing below may choose a more distant one.
+            upper_distance = _curve_distance_upper(points[rows], self.starts[ids], self.ends[ids], fraction)
+            covered[rows] &= ~_curve_blocked(points[rows], upper_distance, self.curve.blocker_boxes)
+            checked = np.flatnonzero(~self.unambiguous_model[ids])
+            alpha_lower, alpha_upper, valid = projection_alpha_bounds(points[rows[checked]],
+                np.stack((self.starts[ids[checked]], self.ends[ids[checked]]), axis=1))
+            for check, local in enumerate(checked):
+                permitted = self.continuation_permissions.get(int(ids[local]), ())
+                covered[rows[local]] &= bool(valid[check]) and any(
+                    a <= alpha_lower[check] and alpha_upper[check] <= b for a, b in permitted)
+            start_dot, near_start, start_valid = _endpoint_dot_uncertainty(points[rows],
+                self.starts[ids], self.delta[ids], self.starts[ids], self.ends[ids])
+            end_dot, near_end, end_valid = _endpoint_dot_uncertainty(points[rows],
+                self.ends[ids], self.delta[ids], self.starts[ids], self.ends[ids])
+            uncertain = ((near_start & (start_dot != 0.)) | (near_end & (end_dot != 0.)))
+            covered[rows[(near_start & near_end) | uncertain | ~start_valid | ~end_valid]] = False
+        return owners, targets, directions, covered
+
+
 class FrozenBoundaryIndex:
     """Signed nearest finite mean-line geometry, with no support extrapolation."""
     def __init__(self, reference, config):
@@ -313,12 +456,17 @@ class FrozenBoundaryIndex:
         self.normal_position_support = np.zeros(len(self.anchor), dtype=np.int64)
         self.thickness_p95_m = 0.
         self.reused_geometry_points = self.direction_supported_points = 0
-        self.graph = (None if reference.directed_edges is None
+        self.graph = (_FrozenCurveGraph(reference, self.cfg) if reference.curve_geometry is not None
+                      else None if reference.directed_edges is None
                       else _FrozenBoundaryGraph(reference, self.cfg))
         if self.graph is not None:
             self.normal_valid = np.zeros(len(self.anchor), dtype=bool)
             self.normal_valid[self.graph.primitive_nodes[self.graph.direction_valid].reshape(-1)] = True
             self.normal_position_support = self.graph.degree.copy()
+            if reference.curve_geometry is not None:
+                # Segmentation is not independent evidence. Report one usable
+                # geometry per owner, not one confidence unit per tiny piece.
+                self.normal_position_support = self.normal_valid.astype(np.int64)
             if reference.certified_model_segments is not None:
                 admitted = self.graph.direction_valid[self.graph.graph_primitive_count:]
                 np.add.at(self.normal_position_support, reference.certified_model_owner[admitted], 1)
@@ -473,6 +621,18 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
                 continuation_representation=self._index.reference.continuation_representation,
                 continuation_permission_intervals=len(self._index.reference.continuation_intervals),
                 continuation_policy="original_global_nearest_then_all_hypotheses_alpha_permission")
+        curve = self._index.reference.curve_geometry
+        if curve is not None:
+            metrics.update(boundary_version=5,
+                line_reference="confirmed_actual_finite_curve_consensus_v5",
+                correspondence_extent="nearest_actual_curve_then_all_unknown_boxes_and_original_permissions",
+                curve_nominal_pieces=len(curve.segments),
+                curve_blocker_boxes=len(curve.blocker_boxes),
+                curve_complete=curve.complete,
+                curve_unknown_owners=int(np.sum(curve.owner_status == 0)),
+                curve_pending_owners=int(np.sum(curve.owner_status == 1)),
+                curve_ready_owners=int(np.sum(curve.owner_status == 2)),
+                continuation_policy="original_nearest_actual_curve_then_all_hypotheses_alpha_permission")
         if len(points) > self.config["max_scan_points"]:
             return None, "boundary_scan_capacity"
         return (points, directions, weights, denominator), None
@@ -509,7 +669,13 @@ class BoundaryLaneLocalizer(LaneMapLocalizer):
         if not isinstance(reference, BoundaryReference):
             return False
         original = self._index.reference
-        return (reference.source_frontier_ns == original.source_frontier_ns and all(
+        curve, old_curve = reference.curve_geometry, original.curve_geometry
+        same_curve = ((curve is None and old_curve is None) or (curve is not None and old_curve is not None
+            and curve.complete == old_curve.complete and all(
+                np.array_equal(getattr(curve, name), getattr(old_curve, name)) for name in
+                ('segments', 'normals', 'owner', 'frame_votes', 'reliable_votes', 'last_stamp_ns',
+                 'owner_status', 'blocker_boxes', 'blocker_owner'))))
+        return (same_curve and reference.source_frontier_ns == original.source_frontier_ns and all(
             np.array_equal(getattr(reference, name), getattr(original, name)) for name in
             ("points_xy", "normals", "support_segments", "segment_owner", "votes",
              "reliable_votes", "record_ids", "directed_edges", "edge_frame_votes",

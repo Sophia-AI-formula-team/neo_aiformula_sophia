@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-15",
+  "scope": "four synthetic confirmation counterexample methods, ordinary explicit-node pytest",
+  "issue": "V5 public constructor/load accepted 1..4-frame continuation or exported graph evidence, unreliable exported edges and unconfirmed ready-owner status despite producer fixed5/1. Normal builder output was already5/1.",
+  "methods": [
+    "CurveReferenceGeometryTests.test_v5_continuation_requires_original_five_frames",
+    "CurveReferenceGeometryTests.test_v5_exported_topology_requires_five_plus_one_but_legacy_does_not",
+    "CurveReferenceGeometryTests.test_v5_ready_status_requires_confirmed_owner_but_pending_is_retained",
+    "test_rehashed_v5_permissions_topology_and_ready_status_require_five_plus_one"
+  ],
+  "red": {
+    "relative_run": "r30_v5_confirmation_red_01",
+    "tests": 4,
+    "failed": 4,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 1,
+    "reported_s": 0.51,
+    "junit_sha256": "b6d31dda9008704317185bc5fa27a7906e4496fb768c3b5584989db2fd8a8d31",
+    "paint_sha256": "389d90dcc5313cf350b3732e883216084053a660e00a8693d6289f62cc2b819b"
+  },
+  "green": {
+    "relative_run": "r30_v5_confirmation_green_01",
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 0,
+    "reported_s": 0.32,
+    "junit_sha256": "3c62e6f260b82956ab6ca7049800656356b687d612281fcaf3ff4ca5e16f19c1",
+    "paint_sha256": "3bb5426cba95c34d3e04ea7a337249e41fde193f36d040d024cb31cc4b38ca73"
+  },
+  "same_test_source_sha256": {
+    "reference": "e188a7f4d503c0c78ccc76b8fdb24adf1bba96be797ecaa5a96ae52e797fe6fe",
+    "bundle": "51ddc2e937852d6c55679c675390b5f7a8a36c6d60d30c19c2a7f4379f275055"
+  },
+  "bundle_production_sha256": "dac2c6ea4c52391143e4361b2d92af97474682d1af369846ee8b3c7ad6de9930",
+  "four_explicit_file_hashes_unchanged_during_each_invocation": true,
+  "retries": 0,
+  "fix": "Only v5 constructor/load: exported edges>=5 frames and1 reliable, ready status>=5/1, continuation>=5 frames. Pending/UNKNOWN owners with1frame/0reliable remain stored; legacyv2/v3/v4 low-vote edge and v4 permission contracts remain unchanged.",
+  "limits": "Red stops each failed method at its first unmet assertion; do not infer every loop case ran red. All loops completed green. Ordinary-import narrow probe, not full raw-loader/source-closure attestation, Engine runtime, ROS, Unity or driving. New full120-file regression is still required after this fix."
+}

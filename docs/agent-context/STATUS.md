@@ -1,6 +1,144 @@
 # 当前异步交接状态
 
-最后整理：2026-10-12。这里是索引，不是代替不可覆盖的原始记录。
+最后整理：2026-10-15。这里是索引，不是代替不可覆盖的原始记录。
+
+## R30进行中：曲线生产实现实测超时，未完成两圈
+
+2026-10-15当前结论：这是**未通过的v5开发检查点**，不是可部署基线。
+修复后完整Windows回归4612通过/1原Linux专用跳过，217pins稳定、308具名
+方法全部完整，原native真调用通过；[当前完整记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/full_regression_current04_after_confirmation_fix.json)。
+真实固定输入151..162仅12次离线prepare/commit，163在开发容量门拒绝且未提交，
+164未开始；没有新因果Engine或两圈。最后提交的加权计数193188，单帧prepare
+仍约2.8–3.7秒；[失败原件复核](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/production_inventory_actual14_capacity_failure.json)。
+**口径更正**：v5仍混有20/state、4/frame、8/piece、10/packet等metadata/scalar
+遗留加权，尚未证明与旧quad/Interval各计1同维度。较早记录称其已同维度不成立；
+数值200000没改，不代表单位已对齐，更不能只减系数称物理压缩或通过原容量。
+当前加权门的失败必须保留；先统一逐类记录合同并做真实结构/生命周期修复，
+再决定原生加速；[下一步及不许偷换的边界](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/NEXT_GEOMETRY_RUNTIME.md)。
+v5仍未在TeachMapEngine/control启用，车/仿真/相机/LYA和原准入门限未改。
+尚无新首圈、冻结、第二圈、视频或实车许可。
+
+2026-10-15续作：未发布的v5真实帧离线诊断在首个5帧确认时，完整prepare
+耗时2586.908ms，后续约2.4–2.6秒，明显不满足原80ms engine空间，禁止启用
+控制。一次45+5秒诊断因大量完整图证据序列化超时，只有151..158八个完整
+记录；159 JSON截断，没有child_result/清理回执，不称14帧通过。父55856/
+子69000已独立确认退出，118源/输入哈希前后不变。原门限/容量/计时起点未改。
+下一步单独profile真实prepare，不能把证据IO超时与算法耗时混为一谈。
+最终原件复核更正：单次profile在45秒停止时已有151..160十个完整记录，
+161仅started；原父回执已记录160的哈希，非推断kill竞态。旧九帧摘要保留，121pins
+不变、父36376/子42640独立退出。通过159的34.8349秒prepare(profile included)
+中，未确认补集包络占24.4909秒，约70.3%，标量step累计8503028次；这是明确
+热点，不是runtime时限通过。见[profile记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/production_prepare_profile01.json)。
+完整producer与bundle加入后，另一次101具名方法全PASS/零错误失败跳过，39pins
+稳定，原字节loader和真实native/C前后身份相同；父25736/子46016独立退出。
+见[101接口测试](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/production_integration_units03.json)。
+这仍不覆盖随后standalone UNKNOWN局部拒绝修复或尚未接入的包络批处理候选。
+unowned quad旧source引用导致全球complete=False长期不恢复的bug已修：
+保留ALL可达source与每个原始finite footprint，以-1显式独立UNKNOWN box
+局部拒绝，不造owner/normal/curve，不能有限包围时仍全球failclosed。subset
+不丢孤立box，patch容量逐box计数，原全局200000容量仍完整计。run04新增
+持久化测试抓到loader仍拒-1（108PASS/1ERROR）；精确修复唯一合法字段后，
+同109项run05全部通过/零跳过，39pins稳定、父43840/子38796独立退出。
+负面测试仍拒blocker -2与nominal owner -1。见[109项记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/production_integration_units05.json)。
+包络批处理仍是独立未接入候选：19具名数值测试全通过，44pins稳定。
+真实双路只完成151..159九帧，全部prepare/token/9数组/permissions/全map及
+提交逐位相同，239次命中/零回退；60秒离线工作预算超时，160只有started，
+不能称14帧通过。有确认曲线的5帧完整prepare约从3秒降至1.0–1.25秒，
+仍不满足原80ms，故不启用。见[完整边界与更正](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/curve_envelope_candidate19_pair9_review.json)。
+下一步评估包内既有C扩展的纯包络算术，以及整帧证据被旧key钉住的生命周期；
+没有编译/安装新native，不改原容量/票数/门限，不能先假定C加速就能通过整圈。
+随后current03完整Windows回归4608通过/1原Linux限定跳过，217pins不变，
+304具名方法全部完整、原native真调用通过、owned进程独立退出。它不覆盖随后
+独立审查发现的v5低票permission/edge/ready状态准入缺口。Root新增4个反例，
+旧代码单次4FAIL，v5专属5/1守卫修复后同4个方法全部PASS；pending/UNKNOWN
+低票owner仍保留，旧v2–v4门槛不改。修复后的120文件完整回归已完成，见本节顶端。
+见[前版完整回归](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/full_regression_current03_before_confirmation_fix.json)与[反例及修复](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/v5_confirmation_guard_red_green.json)。
+共享Unity/CPU已于2026-10-15归还；Unity9828出生token134364639991484353
+独立核对，现场任务回执116参数不变、原scene干净Edit。尚未开始新的Play。
+
+2026-10-12新接入测试：13生产法向+21角点+29曲线参考+8独立Fraction数值守卫，
+单次71方法全通过，零失败/错误/跳过，27源哈希前后不变；父25960/子67516
+正常退出、独立确认不存在。此前pytest跨C/E盘收集在Windows兼容目录报权限错误，
+0方法执行，失败记录保留；改具名unittest加载，不改任何测试断言。
+见[生产接口记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/production_integration_units02.json)。
+该记录绑定接入完整producer前字节，不覆盖随后paint/builder/bundle新修改。
+v5曲线匹配已去掉均值折线/图边几何，UNKNOWN局部owner容量与日志标记遗漏已修。
+ALL-source曲线原子prepare/commit、局部pending补集拒绝box及v5保存/加载正在接入，
+尚未启用runtime；新scene第一圈/冻结/第二圈、新误差指标与驾驶视频仍未通过。
+
+最新一次整帧法向候选验证：10明确方法全通过；原14帧/3495组/34462行的
+输入及完整输出逐位一致。三轮OFF/ON交错完整小计236.7561→191.9764ms，
+减少18.91385%，包括创建法向、全帧准备、所有小组/空组消费及native调用。
+这与下面较慢的小组候选不同；已经接入原运行点，并通过上述生产窄范围测试。
+124pins前后不变，父67728/子5304正常退出并独立确认不存在，无kill/重试。
+这不是整engine/adapter或两圈通过。见[实际计算记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/framewide_normal_actual14_cost_01.json)。
+完整精确corner候选修复Windows长双精度转换后，同7方法全通过；原6通过/
+1ERROR及单次诊断保留。随后实际14mask/392调用(53 None)完整Fraction证书、
+全部29+5观察字段逐位一致。wrapper小计约减少23.76%，整提取仅合计减少1.22%
+且一轮更慢，不声称稳定整提取收益；已接入生产并通过上述21角点方法。
+共享原始证据表/紧凑曲线/adapter的39+23共62方法单次全通过，29pins不变；
+这不等于实际mask全局容量、80/40/200ms或完整producer已通过。
+
+当前仍未发布R30，HEAD/tag仍为R29。修复新曲线包单字节共享后，同34曲线+
+16人工适配器测试全部通过；原49通过/1失败记录保留，没有弱化断言或门限。
+随后一次真实14帧/3495组/34462行完整计算对照和20数值测试通过字节等价，
+但三轮完整耗时没有稳定改善、合计候选更慢，法线小组批量候选不接入。
+新曲线旁路在第3帧seq153触发自设scalar/header计数门：232983>200000，
+双方均未提交。独立源审查纠正：这不是原包的support-record容量口径；
+原continuation每quad计1，而新曲线把41个原始分量和额外header逐项计数。
+不能把这次失败描述为原包容量超限，也不能简单把scalar重标为bytes。
+原始失败回执保留；下一版须给出完整的同维度support记录计数、独立物理
+存储指标及共享证据的生命周期审计，原max_support_segments保持200000。
+没有达到5帧确认、没有可用新地图。适配器43..55ms、曲线51..59ms也不满足
+现有runtime空间。下一步是保留全部原证据的紧凑存储与全帧计算复用，
+不能提高容量、放宽80/40/200时限、删点或让这版失败曲线进入控制。
+车/仿真/LYA参数不改，新scene两圈及新驾驶视频仍未通过。见
+[真实诊断](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/actual14_cost_and_curve_01.json)。
+
+当前HEAD仍是R29的`9b8636f`。新增paired拟合/交点工具尚未接入runtime；
+不要按新99项测试通过就上车。一次202pins/111显式文件完整Windows回归：
+4403通过、1原Linux限定跳过；新增58+30+11方法全部通过，Native9真调用通过。
+源码前后不变、所有owned进程已停。见[实际独立审阅](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/full_regression_actual_review.md)。
+
+当前源一次原mask/raw-motion诊断处理15/111，14接受，seq165因engine
+84.9697ms>原80ms拒绝，matcher35.2584ms<40；没有放宽门限或重跑取好结果。
+首次视觉是实际seq162：横向创新2.865mm、航向0.000689rad、残差7.338→4.455mm；
+只有短前缀，不是整圈误差或旧47mm同帧对照。原始输入与23pins不变；
+没有200ms完整adapter、第一圈/冻结/第二圈/新驾驶视频通过证据。见
+[诊断摘要](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/current_first_match_capture02_summary.json)。
+Unity既有桥已连通，Lane scene干净Edit；116参数、3刚体、全组件/相机、spawn与
+仿真globals逐项等于trial29保留基线，没有刷新/Play/参数写入。
+完整原链profile已完成：提取与BoundaryConsensus.prepare是实际热点，native union本体不是主因；
+profile带开销只12帧，不能当runtime改善。根已修改原必要负证据批量计算，
+所有幸存者保留原精确证书、标签、切分与门限；静态独立审查通过。
+新unit01实际20方法/22mask全部29+5字段通过，一方法两Inf子测试因
+错误oracle失败；原失败已保留。根仅修正非有限输入测试合同，生产core/门限不改。
+独立新unit02单次实际21/21方法全部通过，零失败/错误/跳过；25pins和17实际
+core模块身份前后不变，父子进程均正常结束，无kill/重试。它只证明窄范围等价，
+不是完整回归、真实111帧、加速、Foxy、两圈或驾驶验收。
+[实际独立审阅](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/corner_batch_units02_actual_review.md)已逐项核验。
+上面4403+1回归绑定修改前源码，不覆盖这次新字节。见
+[负证据批量静态审阅](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/corner_negative_batch_static_review.md)。
+新负筛选一次真实因果回放A实际15/111帧、14接受；seq165仍因engine
+81.1870ms>80拒绝，matcher33.7319ms<40。该帧extract163.580ms，
+decode→engine-return248.150ms，不是完整adapter时延。28pins/17模块身份不变，
+父19928/子67516正常停止且独立确认不存在；不重试挑好结果，也不继续提交后续地图。
+见[新回放摘要](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/corner_batch_causal_A01_summary.json)。
+这仍不是加速统计、111帧等价、整圈、Foxy或驾驶通过。B01实际当前源111提取完成；
+旧源OFF在0图时因准备的CRLF工作树hash与实际GitLF字节不符而停止。
+原失败保留；独立B02严格绑定17个Git原始字节哈希，单次OFF完成111图，
+与原已完成ON的全部29字段+5派生数组、dtype/shape/producer可写性逐字节一致。
+261帧/2868原始motion比较全通过；374pins/实际17模块身份不变，父63080/子39484
+正常退出且独立确认不存在；没有重跑ON、创建engine或修改几何门限。
+见[真实111对照摘要](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/corner_batch_B02_actual_summary.json)。
+独立只读ZIP审阅已逐项通过：3663个完整.npy header+payload逐字节相等、
+每臂89,266,628 payload bytes、3330只读/333派生可写原标志一致；
+该正确性对照不是加速统计、几何改善或两圈驾驶通过。
+下一步：完整原mask提取对照，以及可接实际双端点邻接证据的曲线表达；
+不能把owner均值连弦当作已证明无偏的曲线。Unity已明确交回，尚未启动新Lane实跑；
+根fresh只读预检已核实116参数/3刚体/所有非时钟字段逐项等于对方after03，
+343保护文件仅3声明采集改动、零意外变化；该预检不等于驾驶通过。
+session026仍是未封包草稿；R30尚未提交/打tag/上传。
 
 ## R28：原生PCA统计复用通过，几何与两圈仍未通过
 
@@ -11,7 +149,12 @@ Endpoint branch9/9 stationary DDS通过、tag仅2/9，七例bootstrap因engine d
 构建4280 Linux单测与4 Header检查通过不等于runtime通过，见
 [完整CI结果回执](receipts/2026-10-12-planner-r28-rc1-result.md)。
 
-R29部分开发检查点：25索引oracle与22固定mask29+5字段全部字节等价；已合入完全相同源码，
+R29已发布代码`9b8636fc3c1aa9e9712142b3924a722211df19bd`，tag
+`lane-mapping-20261012-r29-rc1`；[回读回执](receipts/2026-10-12-planner-r29-rc1-published.md)。
+新SHA八个CI均终态，7/8成功；Endpoint branch七例因处理deadline未建立
+bootstrap，只有2/9，tag9/9不能抵消失败。这仍是部分开发检查点，见
+[完整CI审阅](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/r29_ci_review.md)。
+25索引oracle与22固定mask29+5字段全部字节等价；已合入完全相同源码，
 新单次生产回归4304通过/1 Linux限定跳过，108显式测试文件、197实际pins前后不变；
 冻结manifest的数量元数据196错误与4对测试排序变化用新记录纠正，原证据不改。
 R28原111帧严格重放仍13/14接受，seq164 engine80.4982ms>80，

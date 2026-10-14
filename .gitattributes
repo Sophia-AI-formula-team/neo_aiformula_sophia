@@ -14,3 +14,18 @@
 /tools/tests/*.py text eol=lf
 /.github/workflows/agent-handoff.yml text eol=lf
 /workspace/src/aiformula/control/lane_mapping_*/scripts/*.sh text eol=lf
+# Keep R30's reviewed numerical sources and pinned fixture identical on clone.
+# Narrow names deliberately exclude unrelated quantized-curve prototypes.
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paired_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_paired_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_domain_consensus.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_corner_bracket_batch.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_frame_normal_admission.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/bundle.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_fixed_gnss/test/test_curve_bundle.py text eol=lf

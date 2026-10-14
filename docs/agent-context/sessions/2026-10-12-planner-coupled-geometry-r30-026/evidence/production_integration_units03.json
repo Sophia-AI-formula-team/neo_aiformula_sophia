@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-15",
+  "evidence_level": "synthetic_production_integration_units_not_runtime",
+  "counts": {
+    "normal": 13,
+    "corner": 21,
+    "curve_reference": 29,
+    "numeric_guards": 8,
+    "curve_producer": 15,
+    "curve_bundle": 15
+  },
+  "tests": 101,
+  "pass": 101,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "exact_started_stopped_ledger": true,
+  "source_count": 39,
+  "source_unchanged": true,
+  "raw_source_bound_loader": true,
+  "fixed_native_and_C_identity_before_after": true,
+  "manifest_sha256": "107edbeb0bcff9b8a964ddde824c6f43935248dafa536b73b38cce2f46027d36",
+  "parent_result_sha256": "5ee628743f9520db1114bac0a6495812d47fb9324dcc1c52a5cfa8a891ef1160",
+  "child_result_sha256": "f246fc1e55f961c5db07ce42cb083f5e39cf1f8641bfe5d500d81afc254c823c",
+  "elapsed_s": 4.773441700002877,
+  "parent": {
+    "pid": 25736,
+    "birth": "134364679067296821",
+    "independently_absent": true
+  },
+  "child": {
+    "pid": 46016,
+    "birth": "134364679069744628",
+    "independently_absent": true
+  },
+  "stop_attempted": false,
+  "retries": 0,
+  "code_head": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "producer_sha256": "ef109ad83c6337b4af1b3c1c6e9d7c62118132fa5dfbe8dbf9cb57a816dc4813",
+  "builder_sha256": "a75f1c336af8769e512abd01a87853da2b670eff4005476c01139befafe8e543",
+  "bundle_sha256": "f64f8e2ded7c603831a43bbca4e759e99de76b948efe7341def4a2b5466d5e3b",
+  "limits": "Binds pre-standalone UNKNOWN fix. No real mask model capacity/timing, Engine, ROS, Unity, two-lap or vehicle pass. Later source changes require new run."
+}

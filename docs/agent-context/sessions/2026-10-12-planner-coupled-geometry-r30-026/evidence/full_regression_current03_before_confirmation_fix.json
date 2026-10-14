@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-15",
+  "scope": "full local Windows offline regression, BEFORE the later v5 confirmation guard fix",
+  "relative_run": "r30_full_regression_current_03/run_01",
+  "source_pins": 217,
+  "explicit_test_files": 120,
+  "source_unchanged": true,
+  "original_111_order_retained": true,
+  "tests": 4609,
+  "passed": 4608,
+  "failed": 0,
+  "errors": 0,
+  "skips": 1,
+  "skip": "Original Linux process-group test",
+  "named_methods": 304,
+  "named_exact_once_no_skip_or_failure": true,
+  "approved_sha256": "70576bc5a11a8e58d2cb4451fad1e7a737b3378f06a0afc13c47a203c1a96170",
+  "root_receipt_sha256": "9859182ed7eb88c800ea3aedf5d4cfc9098370fe027fdf4dcbf9fe4d3b974115",
+  "child_summary_sha256": "aa2709ea7a2acc73256726cf9cad80836f420a52c754e587c9c06b569e9868f6",
+  "junit_sha256": "685228a2446b5201d1f2830960550b6595e6b8334ca0ad367c0511c6df18bf8a",
+  "native_verification_sha256": "286231e8f872fd271b9fbe15b18e1e616814d19c72bf5c9bf27c735d5368bd1c",
+  "native_C_and_binary_identity_verified": true,
+  "elapsed_outer_s": 117.56289150001248,
+  "pytest_reported_s": 112.59,
+  "exit_code": 0,
+  "stop_attempted": false,
+  "retries": 0,
+  "primary_s": 150,
+  "single_stop_s": 5,
+  "outer": {
+    "pid": 38040,
+    "independently_absent": true,
+    "birth": "not_recorded"
+  },
+  "orchestrator": {
+    "pid": 46176,
+    "birth": "134364707152921708",
+    "independently_absent": true
+  },
+  "native": {
+    "pid": 43924,
+    "birth": "134364707168472036",
+    "independently_absent": true
+  },
+  "pytest": {
+    "pid": 26724,
+    "birth": "134364707170160245",
+    "independently_absent": true
+  },
+  "preparation_correction": "Unexecuted current02 preserved. Current03 only changed PID creation_filetime JSON serialization to decimal strings, own paths/module label and hashes.",
+  "limits": "217 hashes and .gitattributes match before/after. The native verifier and pytest use ordinary imports, not authenticated raw bytecode for every dependency. This result does not cover the later paint/test confirmation fix, ROS/Foxy, deadline acceleration, new Unity laps/freeze/repeat/video or vehicle acceptance."
+}

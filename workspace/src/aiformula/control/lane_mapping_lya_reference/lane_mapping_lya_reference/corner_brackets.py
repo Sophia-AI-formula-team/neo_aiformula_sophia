@@ -137,6 +137,126 @@ def _definitely_disjoint(vertex, axes, normals, whites, blacks):
     return bool(np.any((lower > upper) | (lower > footprint_upper) | (upper < footprint_lower)))
 
 
+def _definitely_disjoint_batch(vertices, axes, normals, whites, blacks):
+    """Batch ONLY the original necessary negative test, never feasibility.
+
+    The extractor supplies at most 128 junctions, each with ALL two-sided
+    labels. Every surviving junction still uses certify_corner_brackets and
+    its exact original-label/footprint recheck. A True row proves only the
+    same disjointness as _definitely_disjoint; False is UNKNOWN. Unsupported
+    arrays return None so the caller retains its complete scalar route.
+
+    Only native binary64 base ndarrays are admitted here. Strided/read-only
+    inputs are fine: this helper neither converts nor modifies any input.
+    Nonfinite or overflow-uncertain rows cannot reject another finite row.
+    """
+    values = (vertices, axes, normals, whites, blacks)
+    if any(type(value) is not np.ndarray or value.dtype != np.dtype(np.float64)
+           for value in values):
+        return None
+    if (whites.ndim != 4 or whites.shape[1] != 2 or whites.shape[3] != 2
+            or not 1 <= whites.shape[2] <= MAX_SIDE_FACES):
+        return None
+    count = whites.shape[0]
+    if (count > 128 or vertices.shape != (count, 2)
+            or axes.shape != (count, 2, 2) or normals.shape != (count, 2, 2)
+            or blacks.shape != whites.shape):
+        return None
+    if count == 0:
+        return np.zeros(0, dtype=bool)
+    with np.errstate(all='ignore'):
+        white_lower, _ = _dot_enclosure(normals[:, :, None, :], whites)
+        _, black_upper = _dot_enclosure(normals[:, :, None, :], blacks)
+        origin_lower, origin_upper = _dot_enclosure(normals, vertices[:, None, :])
+        axes_lower, axes_upper = _dot_enclosure(
+            normals[:, :, None, :], axes[:, None, :, :])
+        magnitudes = np.maximum(np.abs(axes_lower), np.abs(axes_upper))
+        radius = np.nextafter(.5*np.nextafter(
+            magnitudes[:, :, 0]+magnitudes[:, :, 1], np.inf), np.inf)
+        footprint_lower = np.nextafter(origin_lower-radius, -np.inf)
+        footprint_upper = np.nextafter(origin_upper+radius, np.inf)
+        lower = np.max(white_lower, axis=2)
+        upper = np.min(black_upper, axis=2)
+    finite = np.ones(count, dtype=bool)
+    for value in (lower, upper, footprint_lower, footprint_upper):
+        finite &= np.all(np.isfinite(value), axis=1)
+    return finite & np.any((lower > upper) | (lower > footprint_upper)
+                           | (upper < footprint_lower), axis=1)
+
+
+# Exact dyadic label dots are immutable numerator/power-of-two pairs. This
+# removes redundant Fraction reduction work, not original labels or gates.
+# Full witnesses/UV and all 28 boundary intersections remain Fractions.
+def _label_ratio(value):
+    if type(value) not in (float, np.float64):
+        raise ValueError('expected already validated binary64 scalar')
+    numerator, denominator = value.as_integer_ratio()
+    return numerator, denominator.bit_length()-1
+
+
+def _dyadic_cache_normal(normal):
+    if len(normal) != 2:
+        raise ValueError('expected original two-component normal')
+    return tuple(_label_ratio(value) for value in normal)
+
+
+def _dyadic_dot(cached, point):
+    if len(point) != 2:
+        raise ValueError('expected original two-component label')
+    x, y = _label_ratio(point[0]), _label_ratio(point[1])
+    first, second = cached[0][0]*x[0], cached[1][0]*y[0]
+    a, b = cached[0][1]+x[1], cached[1][1]+y[1]
+    exponent = max(a, b)
+    return (first << (exponent-a))+(second << (exponent-b)), exponent
+
+
+def _dyadic_fraction(value):
+    return Fraction(value[0], 1 << value[1])
+
+
+def _dyadic_less(first, second):
+    exponent = max(first[1], second[1])
+    return first[0] << (exponent-first[1]) < second[0] << (exponent-second[1])
+
+
+def _dyadic_interval(whites, blacks):
+    lower, upper = whites[0], blacks[0]
+    for value in whites[1:]:
+        if _dyadic_less(lower, value):
+            lower = value
+    for value in blacks[1:]:
+        if _dyadic_less(value, upper):
+            upper = value
+    return _dyadic_fraction(lower), _dyadic_fraction(upper)
+
+
+def _label_inside(white, projected, black):
+    numerator, denominator = projected.numerator, projected.denominator
+    return (white[0]*denominator <= (numerator << white[1])
+            and (numerator << black[1]) <= black[0]*denominator)
+
+
+def _dyadic_certificate(point, vertex, axes, normals, whites, blacks):
+    """Recheck original labels and independently invert original footprint."""
+    delta = tuple(point[j]-vertex[j] for j in range(2))
+    determinant = _det(axes[0], axes[1])
+    if determinant == 0:
+        return None
+    # q - vertex = u * axes[0] + v * axes[1], not a rounded transformed matrix.
+    uv = (_det(delta, axes[1])/determinant,
+          _det(axes[0], delta)/determinant)
+    if any(value < -_HALF or value > _HALF for value in uv):
+        return None
+    if _world_point(vertex, axes, uv) != point:
+        return None
+    for side in range(2):
+        projected = _dot(normals[side], point)
+        for white, black in zip(whites[side], blacks[side]):
+            if not _label_inside(white, projected, black):
+                return None
+    return uv
+
+
 def certify_corner_brackets(vertex, face_axes, side_normals, whites, blacks):
     """Return an exact CornerBracketCertificate or None, without input writes.
 
@@ -174,15 +294,19 @@ def certify_corner_brackets(vertex, face_axes, side_normals, whites, blacks):
     vertex = _pair(vertex)
     axes = tuple(_pair(row) for row in face_axes)
     normals = tuple(_pair(row) for row in side_normals)
-    whites = tuple(tuple(_pair(point) for point in side) for side in whites)
-    blacks = tuple(tuple(_pair(point) for point in side) for side in blacks)
+    # Same explicit float conversion as _pair, AFTER original array gates.
+    # On Windows an 8-byte longdouble can survive np.array(dtype=float64).
+    normal_cache = tuple(_dyadic_cache_normal(tuple(float(value) for value in row))
+                         for row in side_normals)
+    whites = tuple(tuple(_dyadic_dot(cache, tuple(float(value) for value in point)) for point in side)
+                   for cache, side in zip(normal_cache, whites))
+    blacks = tuple(tuple(_dyadic_dot(cache, tuple(float(value) for value in point)) for point in side)
+                   for cache, side in zip(normal_cache, blacks))
     if any(abs(_dot(normal, normal)-1) > _ROUND for normal in normals):
         return None
     if not (_independent(axes[0], axes[1]) and _independent(normals[0], normals[1])):
         return None
-    intervals = tuple((max(_dot(normals[i], point) for point in whites[i]),
-                       min(_dot(normals[i], point) for point in blacks[i]))
-                      for i in range(2))
+    intervals = tuple(_dyadic_interval(whites[i], blacks[i]) for i in range(2))
     if any(lo > hi for lo, hi in intervals):
         return None
     # A_i . [u,v] >= b_i. These four box and four label-band inequalities
@@ -206,7 +330,7 @@ def certify_corner_brackets(vertex, face_axes, side_normals, whites, blacks):
         if any(_dot(row, uv) < bound for row, bound in rows):
             continue
         point = _world_point(vertex, axes, uv)
-        verified_uv = _original_certificate(point, vertex, axes, normals, whites, blacks)
+        verified_uv = _dyadic_certificate(point, vertex, axes, normals, whites, blacks)
         if verified_uv is not None and verified_uv == uv:
             return CornerBracketCertificate(point, verified_uv, intervals)
     return None
