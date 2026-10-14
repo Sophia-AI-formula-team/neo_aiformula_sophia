@@ -1,5 +1,32 @@
 # Deployment
 
+Latest Unity verification and reproducible installation are in
+[unity_neo_topo_20261015](../../../../../codexws/unity_neo_topo_20261015/DEPLOYMENT.md).
+Four final MCP cases passed; the vehicle/native ROS entry is unchanged. The
+following patch record preserves the source baseline used before those runs.
+
+## MapAssist 0.3.1 checkpoint patch — 2026-10-15
+
+`semantic_local_planner_ros` is now 0.3.1. Its only runtime change allows finite
+negative progress when a closed reference exists, matching the original route
+matcher's signed seam coordinates. Negative travel distance and negative progress
+before closure remain invalid. The semantic core and other package versions are
+unchanged. See the [problem, source hashes and 118-test receipt](semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/README.md).
+
+For a future authorized vehicle deployment, back up the current checkpoint and
+installed package, then rebuild only `semantic_local_planner_ros` using the normal
+vehicle deployment procedure. This local revision does not authorize vehicle
+operation and is not a new ROS/DDS or physical durability result. Production
+`use_sim_time=true` still disables checkpoints; the explicit Unity simulation
+adapter is separate and must not be installed as native ROS lifecycle code.
+
+Checkpoint schema remains 1. An older unpatched 0.3.0 reader still rejects a
+negative seam value; preserve backups for rollback and never clamp or rewrite
+progress merely to make an old reader accept it. Record closure, official-map
+fusion and semantic restart as separate results. The triggering Unity run closed
+its odometric lap but failed final checkpoint save and official fusion; it remains
+a failed overall run under its original source revision.
+
 > **2026-10-13 当前本地版本**：MapAssist 0.3.0新增闭环诊断和车辆入口自动存档/重启恢复，基于PR24；未部署到离线车辆。车上最后确认MapAssist 0.2.2 / motor 0.4.1。详见[最新变更、使用和验证说明](../../../../../docs/topo_checkpoint_20261013/README.md)。下文保留各历史阶段的版本和证据边界，不代表当前车辆仍为shadow-only或motor无超时。
 
 This repository offers two distinct deployment paths. The frozen Unity path
