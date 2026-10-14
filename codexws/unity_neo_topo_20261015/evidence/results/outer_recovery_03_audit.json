@@ -1,0 +1,547 @@
+{
+  "schema": "independent_completed_recovery_audit/v1",
+  "case": "outer_recovery_03",
+  "scope": "Read-only standard-library audit of captured Unity evidence; no model, image, test or Unity calls",
+  "run_accepted": true,
+  "checks": {
+    "run_reports_accepted_cleanly": true,
+    "topo_closure_complete_all_checks": true,
+    "partial_restart_all_checks": true,
+    "reference_restart_all_checks": true,
+    "checkpoint_schema_hash_fingerprint": true,
+    "detector_epoch_continuous": true,
+    "sim_time_monotonic": true,
+    "capture_sequence_monotonic": true,
+    "lya_positive_motion_after_final_restore": true,
+    "final_clean_shutdown_and_checkpoint": true,
+    "stop_wait_bbox_modes_separate": true,
+    "integration_sources_unchanged_during_run": true,
+    "new_source_commit_manifest_matches_run": true,
+    "native_lane_controller_source_parameters_preserved": true,
+    "physics_camera_parameters_preserved": true,
+    "observed_process_birth_identities_absent": true,
+    "audited_inputs_unchanged": true
+  },
+  "sampling_limit": "Continuity and motion checks cover logged samples, not every physics step",
+  "closure": {
+    "wall": 111.7434546999998,
+    "recorded_samples": 1027,
+    "recorded_distance_m": 285.2271940282693,
+    "reference_length_m": 286.5893923368646,
+    "distance_to_start_m": 1.3823293245867627,
+    "heading_error_deg": 0.6547470815819082,
+    "checks": {
+      "restore_ready": true,
+      "odom_fresh": true,
+      "start_recorded": true,
+      "left_start_area": true,
+      "recording_points_valid": true,
+      "not_excluded": true,
+      "within_start_radius": true,
+      "heading_aligned": true,
+      "enough_samples": true,
+      "enough_distance": true
+    },
+    "phase": "odom_only",
+    "map_fusion": {
+      "available": false,
+      "mode": "odom_only",
+      "metric_source": "odometry",
+      "recorded_length_m": 286.6031818330812,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "rmse_exceeds_limit",
+      "final_length_m": 286.5893923368646
+    },
+    "topology_mapping": {
+      "available": false,
+      "reason": "fusion_unavailable"
+    }
+  },
+  "limitation": "Closed odometry reference and process restart recovery are verified separately from official topology alignment; this run does not establish a matched official map or red-light detour.",
+  "restarts": [
+    {
+      "kind": "partial",
+      "checks": {
+        "prefix_exact_in_final_checkpoint": true,
+        "receipt_count_matches_snapshot": true,
+        "new_generation_and_boot": true,
+        "genuine_restore_same_new_boot": true,
+        "restored_sample_count_exact": true,
+        "detector_and_epoch_preserved": true,
+        "body_drift_bounded": true,
+        "clock_advances": true,
+        "shutdown_ack_checkpoint_clean": true,
+        "sampled_restart_full_body_zero": true,
+        "resumes_learning_without_reference": true
+      },
+      "prefix_samples": 437,
+      "before_generation": 1,
+      "after_generation": 2,
+      "before_boot_id": "5c34ad24-4425-473f-bae6-3b773b99d3bf",
+      "after_boot_id": "d566f084-0194-4a65-a8e8-0b295e79d7c7",
+      "snapshot_sim_time": 50.077328199552994,
+      "restore_odom_stamp": 50.38999887369573,
+      "position_drift_m": 2.23517418e-08,
+      "rotation_drift_deg": 0.0,
+      "elapsed_sim_sec": 0.3235904000002847,
+      "elapsed_wall_sec": 0.32241290000001754,
+      "sampled_interval_count": 4,
+      "max_body_speed": 7.460965e-07,
+      "max_body_angular_speed": 2.64005917e-06,
+      "shutdown_receipt": {
+        "clean": true,
+        "before_worker_id": 35752,
+        "worker_boot_id": "5c34ad24-4425-473f-bae6-3b773b99d3bf",
+        "forced": false,
+        "exited": true,
+        "exit_code": 0,
+        "elapsed_ms": 25.941100000000002,
+        "error": null,
+        "acknowledgement": {
+          "type": "shutdown",
+          "clean": true,
+          "worker_boot_id": "5c34ad24-4425-473f-bae6-3b773b99d3bf",
+          "checkpoint_ok": true,
+          "persistence": {
+            "state": "saved",
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json",
+            "error": null,
+            "saved_samples": 437,
+            "saved_distance_m": 120.96416825819641
+          }
+        }
+      },
+      "restore_event": {
+        "observed": true,
+        "tick_sequence": 1,
+        "odom_stamp": 50.38999887369573,
+        "worker_boot_id": "d566f084-0194-4a65-a8e8-0b295e79d7c7",
+        "persistence": {
+          "state": "restored",
+          "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json",
+          "error": null,
+          "saved_samples": 437,
+          "saved_distance_m": 120.96416825819641,
+          "resume_distance_m": 0.0,
+          "resume_heading_deg": 3.1467877756323545e-06
+        },
+        "recorded_samples": 437,
+        "recorded_distance_m": 120.96416825819641,
+        "reference_length_m": null
+      }
+    },
+    {
+      "kind": "reference",
+      "checks": {
+        "prefix_exact_in_final_checkpoint": true,
+        "receipt_count_matches_snapshot": true,
+        "new_generation_and_boot": true,
+        "genuine_restore_same_new_boot": true,
+        "restored_sample_count_exact": true,
+        "detector_and_epoch_preserved": true,
+        "body_drift_bounded": true,
+        "clock_advances": true,
+        "shutdown_ack_checkpoint_clean": true,
+        "sampled_restart_full_body_zero": true,
+        "restores_closed_reference_exact_length": true
+      },
+      "prefix_samples": 1027,
+      "before_generation": 2,
+      "after_generation": 3,
+      "before_boot_id": "d566f084-0194-4a65-a8e8-0b295e79d7c7",
+      "after_boot_id": "a38896c1-95f3-42d3-bb1e-8d312df58ac1",
+      "snapshot_sim_time": 113.25377019955295,
+      "restore_odom_stamp": 113.56999746151268,
+      "position_drift_m": 7.450581e-09,
+      "rotation_drift_deg": 0.0,
+      "elapsed_sim_sec": 0.40855020000026343,
+      "elapsed_wall_sec": 0.3900217000000339,
+      "sampled_interval_count": 7,
+      "max_body_speed": 2.343208e-07,
+      "max_body_angular_speed": 2.460524e-06,
+      "shutdown_receipt": {
+        "clean": true,
+        "before_worker_id": 24900,
+        "worker_boot_id": "d566f084-0194-4a65-a8e8-0b295e79d7c7",
+        "forced": false,
+        "exited": true,
+        "exit_code": 0,
+        "elapsed_ms": 23.1919,
+        "error": null,
+        "acknowledgement": {
+          "type": "shutdown",
+          "clean": true,
+          "worker_boot_id": "d566f084-0194-4a65-a8e8-0b295e79d7c7",
+          "checkpoint_ok": true,
+          "persistence": {
+            "state": "saved",
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json",
+            "error": null,
+            "saved_samples": 1027,
+            "saved_distance_m": 285.2271940282693,
+            "resume_distance_m": 0.0,
+            "resume_heading_deg": 3.1467877756323545e-06
+          }
+        }
+      },
+      "restore_event": {
+        "observed": true,
+        "tick_sequence": 1,
+        "odom_stamp": 113.56999746151268,
+        "worker_boot_id": "a38896c1-95f3-42d3-bb1e-8d312df58ac1",
+        "persistence": {
+          "state": "restored",
+          "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json",
+          "error": null,
+          "saved_samples": 1027,
+          "saved_distance_m": 285.2271940282693,
+          "resume_distance_m": 0.0,
+          "resume_heading_deg": 2.1873265797414025e-05
+        },
+        "recorded_samples": 1027,
+        "recorded_distance_m": 285.2271940282693,
+        "reference_length_m": 286.5893923368646
+      }
+    }
+  ],
+  "checkpoint_integrity": {
+    "final": {
+      "schema_version": 1,
+      "state_sha_valid": true,
+      "fingerprint": "9681849a9763af1ea7947f11f6f6126d33739ec984cef053002bea153bc0e0d7",
+      "samples": 1027
+    },
+    "partial": {
+      "schema_version": 1,
+      "state_sha_valid": true,
+      "fingerprint": "9681849a9763af1ea7947f11f6f6126d33739ec984cef053002bea153bc0e0d7",
+      "samples": 437
+    },
+    "reference": {
+      "schema_version": 1,
+      "state_sha_valid": true,
+      "fingerprint": "9681849a9763af1ea7947f11f6f6126d33739ec984cef053002bea153bc0e0d7",
+      "samples": 1027
+    }
+  },
+  "continuity": {
+    "detector_worker": 43672,
+    "epoch": 1,
+    "motion_samples": 1975,
+    "detection_samples": 558,
+    "semantic_samples": 2144,
+    "active_interval_wall": [
+      3.806199099999958,
+      115.19323369999984
+    ],
+    "active_motion_samples": 1883,
+    "post_acceptance_cleanup_epochs": [
+      2
+    ],
+    "cleanup_note": "After trial_stop, follower.Stop increments lane epoch for teardown; continuity checks end at the actual acceptance event",
+    "semantic_generations": [
+      1,
+      2,
+      3
+    ],
+    "semantic_boot_ids": [
+      "5c34ad24-4425-473f-bae6-3b773b99d3bf",
+      "a38896c1-95f3-42d3-bb1e-8d312df58ac1",
+      "d566f084-0194-4a65-a8e8-0b295e79d7c7"
+    ],
+    "body_max_step_m": 0.29803571193264605
+  },
+  "post_restore_motion": {
+    "net_displacement_m": 3.0243751374555345,
+    "terminal_actual_v": 2.74197674,
+    "terminal_applied_v": 2.36627722,
+    "terminal_gate": {
+      "reason": "semantic_go",
+      "policy": "motor_0.4.1_traffic_only",
+      "traffic_stop_required": false,
+      "source_sequence": 550,
+      "source_age_sec": 0.13719199997422038,
+      "remaining_sec": 0.3628080000257796,
+      "raw_command_new": false
+    }
+  },
+  "final_shutdown_receipt": {
+    "clean": true,
+    "before_worker_id": 11500,
+    "worker_boot_id": "a38896c1-95f3-42d3-bb1e-8d312df58ac1",
+    "forced": false,
+    "exited": true,
+    "exit_code": 0,
+    "elapsed_ms": 22.390700000000002,
+    "error": null,
+    "acknowledgement": {
+      "type": "shutdown",
+      "clean": true,
+      "worker_boot_id": "a38896c1-95f3-42d3-bb1e-8d312df58ac1",
+      "checkpoint_ok": true,
+      "persistence": {
+        "state": "saved",
+        "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json",
+        "error": null,
+        "saved_samples": 1027,
+        "saved_distance_m": 285.2271940282693,
+        "resume_distance_m": 0.0,
+        "resume_heading_deg": 2.1873265797414025e-05
+      }
+    }
+  },
+  "mode": {
+    "traffic_policy": "stop_wait",
+    "distance_enabled": false,
+    "bbox_enabled": false,
+    "automatic_detour_enabled": false,
+    "signal_approach": false,
+    "lane_recovery_mode": "baseline",
+    "runtime_first_frame_headroom": true,
+    "inactive_distance_target_metadata": "signal_approach.target_stop_distance_m may retain 8.5 but enabled=false and distance_m=null throughout; no target-distance behavior accepted"
+  },
+  "source_version": {
+    "source_commit": "3c6fbac2ff9f8dd23b247a187e966648876400b1",
+    "baseline": "ed8e397ae41732877dfef334f0b89f98c0b20ae8",
+    "matched_recorded_files": 85,
+    "mismatches": [],
+    "not_in_runner_extension_manifest": [
+      "source/AGENTS.md",
+      "source/AGENT_HANDOFF.md",
+      "source/DEPLOYMENT.md",
+      "source/INTEGRATION_ISSUES.md",
+      "source/INTEGRATION_VALIDATION.md",
+      "source/README.md",
+      "source/SIMPLE_TRAFFIC_CHANGE.md",
+      "source/map_assist_start_and_mapping_check_1006.txt",
+      "source/map_assist_traffic_wiring_1011.txt",
+      "source/semantic_bringup/ONBOARD_RUN_STEPS.txt",
+      "source/semantic_bringup/README.md",
+      "source/semantic_bringup/TRAFFIC_LIGHT_MANUAL_COMMANDS.txt",
+      "source/semantic_bringup/VEHICLE_SHADOW_DEMO_GUIDE.txt",
+      "source/semantic_bringup/package.xml",
+      "source/semantic_bringup/resource/semantic_bringup",
+      "source/semantic_bringup/setup.cfg",
+      "source/semantic_costmap_ros/package.xml",
+      "source/semantic_costmap_ros/resource/semantic_costmap_ros",
+      "source/semantic_costmap_ros/setup.cfg",
+      "source/semantic_gate_ros/package.xml",
+      "source/semantic_gate_ros/resource/semantic_gate_ros",
+      "source/semantic_gate_ros/setup.cfg",
+      "source/semantic_lane_recovery_ros/package.xml",
+      "source/semantic_lane_recovery_ros/resource/semantic_lane_recovery_ros",
+      "source/semantic_lane_recovery_ros/setup.cfg",
+      "source/semantic_local_planner_ros/CHANGELOG.md",
+      "source/semantic_local_planner_ros/MAP_ASSIST.md",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/CRITICAL_CHECKPOINT_ANALYSIS.md",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/README.md",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/evidence/candidate.stderr.log",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/evidence/candidate.stdout.log",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/evidence/original.stderr.log",
+      "source/semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/evidence/original.stdout.log",
+      "source/semantic_local_planner_ros/package.xml",
+      "source/semantic_local_planner_ros/resource/semantic_local_planner_ros",
+      "source/semantic_local_planner_ros/setup.cfg",
+      "source/semantic_planner_core/package.xml",
+      "source/semantic_planner_core/resource/semantic_planner_core",
+      "source/semantic_planner_core/setup.cfg",
+      "source/semantic_safety_ros/package.xml",
+      "source/semantic_safety_ros/resource/semantic_safety_ros",
+      "source/semantic_safety_ros/setup.cfg",
+      "source/semantic_test_tools/package.xml",
+      "source/semantic_test_tools/resource/semantic_test_tools",
+      "source/semantic_test_tools/setup.cfg"
+    ],
+    "topo_checkpoint_sha256": "42fc792b615f80418782b6826a5693edac210f81de0a7b6f7d8acdb907353a8e",
+    "semantic_source_hashes_seen": [
+      "16e2034b124a186272817d4054efcf4b3182859fe0bad52f822ec6f317b90344"
+    ],
+    "semantic_source_tree_hashes_seen": [
+      "1bd0a232ba88498779ab2aaab4d2e985951c3551924f1114b9160c08e3ac6820"
+    ]
+  },
+  "lane_controller_preservation": {
+    "files": [
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py",
+        "baseline_sha256": "8be126cfc98395858f81ac61a855bb3d5fa4d8b19ade1ad4788cceb6db8c672d",
+        "current_sha256": "8be126cfc98395858f81ac61a855bb3d5fa4d8b19ade1ad4788cceb6db8c672d",
+        "unchanged": true,
+        "also_pinned_before_after_run": true
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/provenance.json",
+        "baseline_sha256": "c56f7a6d8e4add40e5185a7160456ff186e37a759c0335563b2172d7c22347af",
+        "current_sha256": "c56f7a6d8e4add40e5185a7160456ff186e37a759c0335563b2172d7c22347af",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/lane_publisher.py",
+        "baseline_sha256": "c8ac3ef0a428928a78a18711160e247445b238ebc93eccdd5a39de27e32df1f5",
+        "current_sha256": "c8ac3ef0a428928a78a18711160e247445b238ebc93eccdd5a39de27e32df1f5",
+        "unchanged": true,
+        "also_pinned_before_after_run": true
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/current_corridor.py",
+        "baseline_sha256": "e80c9717b3c4a7bbc2808f94dae8e6064f09d3f8dd234817ecaafd9a14bd50ca",
+        "current_sha256": "e80c9717b3c4a7bbc2808f94dae8e6064f09d3f8dd234817ecaafd9a14bd50ca",
+        "unchanged": true,
+        "also_pinned_before_after_run": true
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py",
+        "baseline_sha256": "abcbf8df2c017e6af33584fad96b5c5d5f732b7c6f757f4660cfa436184e4b5d",
+        "current_sha256": "abcbf8df2c017e6af33584fad96b5c5d5f732b7c6f757f4660cfa436184e4b5d",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/control/trajectory_follower/trajectory_follower/lya_0221.py",
+        "baseline_sha256": "a886809dd5ad5672d906c9049a8ae6e34b66b5b730f6b6bd37785fce0b170470",
+        "current_sha256": "a886809dd5ad5672d906c9049a8ae6e34b66b5b730f6b6bd37785fce0b170470",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/perception/kalman_filter/kalman_filter/withoutkalman_0312.py",
+        "baseline_sha256": "aef3ff2e69ad09f8a984121d3668e978b73ac511c09b539800cfacd408a437b0",
+        "current_sha256": "aef3ff2e69ad09f8a984121d3668e978b73ac511c09b539800cfacd408a437b0",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/perception/lane_points/launch/lane_points_launch.py",
+        "baseline_sha256": "623ea6d9782a2d3b7f6356feda6f8fddef7c66fa98b46a2033e5217fc7a7e4d4",
+        "current_sha256": "623ea6d9782a2d3b7f6356feda6f8fddef7c66fa98b46a2033e5217fc7a7e4d4",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+        "baseline_sha256": "6e346691a10b7d8b2086053008cab6433b5681483d6eb31dc3e95c438778693d",
+        "current_sha256": "6e346691a10b7d8b2086053008cab6433b5681483d6eb31dc3e95c438778693d",
+        "unchanged": true,
+        "also_pinned_before_after_run": true
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/perception/lane_line_publisher/config/lane_line_publisher.yaml",
+        "baseline_sha256": "3debc4dac8691e7d67bfa9418ff31df85a2260c92a48bf49651136cfbc0b0686",
+        "current_sha256": "3debc4dac8691e7d67bfa9418ff31df85a2260c92a48bf49651136cfbc0b0686",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/launchers/launch/allnodes.launch.py",
+        "baseline_sha256": "a7bdd440eb7b30d35e0ef01d7628e7409730034904e67ea6814aa11e4166601c",
+        "current_sha256": "a7bdd440eb7b30d35e0ef01d7628e7409730034904e67ea6814aa11e4166601c",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/perception/lane_points/lane_points/lane_0215.py",
+        "baseline_sha256": "d1c77bce689021fc59053ae5d8cc2dea7e4ad54a5849fed1bcd2dc113fde25d6",
+        "current_sha256": "d1c77bce689021fc59053ae5d8cc2dea7e4ad54a5849fed1bcd2dc113fde25d6",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      },
+      {
+        "path": "Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs",
+        "baseline_sha256": "2d6cde601311e9ce3d2a97011332d5a5ae80a1477504a83312538a1be66e71bd",
+        "current_sha256": "2d6cde601311e9ce3d2a97011332d5a5ae80a1477504a83312538a1be66e71bd",
+        "unchanged": true,
+        "also_pinned_before_after_run": true
+      },
+      {
+        "path": "Assets/StreamingAssets/VisionLaneFollower/upstream/workspace/src/aiformula/launchers/config/topic_list.yaml",
+        "baseline_sha256": "be1df5bb058a7d816bc5e2bfffb0f3badc309ac2ff406aa7d4bd49895923297b",
+        "current_sha256": "be1df5bb058a7d816bc5e2bfffb0f3badc309ac2ff406aa7d4bd49895923297b",
+        "unchanged": true,
+        "also_pinned_before_after_run": false
+      }
+    ],
+    "parameter_change_claim": false,
+    "runtime_options": {
+      "frequency": 5.0,
+      "lane_recovery_mode": "baseline",
+      "recover_projected_components_original": false,
+      "use_current_corridor_original": true,
+      "recover_projected_components": false,
+      "use_current_corridor": true,
+      "first_frame_headroom_original": false,
+      "first_frame_headroom_active": true
+    },
+    "vision_commits_seen": [
+      "05f1651c8a14d56ab9a86a9767c52793403dcfdc"
+    ]
+  },
+  "physics_camera_preservation": {
+    "drive": true,
+    "contact": true,
+    "rgb_topic": true,
+    "rgb_camera": true,
+    "preset": true,
+    "fixedDeltaTime": true,
+    "timeScale": true
+  },
+  "process_absence": {
+    "source": "Independent root process monitor receipt; no live process query by this audit",
+    "workers": [
+      {
+        "pid": 29720,
+        "parent_pid": 35752,
+        "birth_filetime": "134364668219250740",
+        "same_identity_present": false
+      },
+      {
+        "pid": 21628,
+        "parent_pid": 24900,
+        "birth_filetime": "134364668721011960",
+        "same_identity_present": false
+      },
+      {
+        "pid": 35752,
+        "parent_pid": 9828,
+        "birth_filetime": "134364668218986260",
+        "same_identity_present": false
+      },
+      {
+        "pid": 24900,
+        "parent_pid": 9828,
+        "birth_filetime": "134364668720714540",
+        "same_identity_present": false
+      },
+      {
+        "pid": 44576,
+        "parent_pid": 50688,
+        "birth_filetime": "134364668178768700",
+        "same_identity_present": false
+      }
+    ],
+    "scope": "Observed runner and semantic process identities; detector continuity is checked in run samples"
+  },
+  "input_sha256": {
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\result.json": "05902f10f7c95fe17c108ca8c0d73e9ee95a90aafe842392471d0f3ae1489d8e",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\configuration.json": "99bda5861aa7ec9b4f304f8d14018411f205f332277480d1de95ef733abaeff5",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\events.jsonl": "e1d96e25b2001e6e652502ab76f2bbc70461bd692627acb45f4c86abbaf4561e",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\trace.jsonl": "b6a1fadd5036335ae47bbb7048a404bceee94f1080d3f5eadd84e48d0bf713dd",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\motion.jsonl": "6c0aa7bcbdf831938571eb9565041407defb8260c51ac2e423a27aeaac59194a",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\semantic_ticks.jsonl": "a4035a0219db5418e9a3bd27a714a2854db92309bc0b6cf9d5a9c00fc7a4c31a",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\restart_partial_before.json": "3fee8238ee81709e221e25d72ca718487dc3c59b1d95d2f1f6a7da5aedcffb51",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\restart_reference_before.json": "6d27e38a6d56078179ea2b12a031a3eb96c1b6c474ed6479dd187a62413ebbac",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\restart_receipts.json": "bbe34f4aa01ec1bbc41df3ade32c3eceae07d5e2c7a3ac3ebb6b9167a5a4c494",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\terminal_sample.json": "a76660b7a909e13974278339f00d3d6de0cb18e72dd23ba99d4b2869980b4fa5",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\integration_hashes.json": "c66836170c20d442001e3cf90544b28cdb3b8a33590eefcba619b01177aa850b",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\integration_hashes_after.json": "f920801848570fe159d432e733dc76c5362b30e49cd9615a622849ea0476e310",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\play_before.json": "467ff45b3c67404b0d8f2988ed4a2485851321118eb0a192bff43aeae7d99327",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\play_after.json": "1eda8722c2b0db25cb1921cbb1435092fec1ca2e81361d7f6e242569a9147d88",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\outer_recovery_03_process_monitor.json": "f7097261eea96035e6607b18adb39801de3092a5c6c465dfb1b0db04d2be5747",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\bundle_03\\provenance.json": "5d53f955dc9f2be0826a201c792e1d5f59f123107edabe2b08b1de125bdfa512",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\source_before.json": "e4ff4cc7cb234047f239d5afeed262d5e53de6c9a52e69a92e38d8047bc68865",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_recovery_03\\checkpoints\\outer_recovery_03\\topo.json": "d49dbaec37b20c84d5709794b69365c1261fa790d94d19733e59914773bd62c8"
+  },
+  "all_checks_pass": true,
+  "elapsed_sec": 0.5725520999985747
+}

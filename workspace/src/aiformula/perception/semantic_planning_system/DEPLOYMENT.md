@@ -1,5 +1,10 @@
 # Deployment
 
+Latest Unity verification and reproducible installation are in
+[unity_neo_topo_20261015](../../../../../codexws/unity_neo_topo_20261015/DEPLOYMENT.md).
+Four final MCP cases passed; the vehicle/native ROS entry is unchanged. The
+following patch record preserves the source baseline used before those runs.
+
 ## MapAssist 0.3.1 checkpoint patch — 2026-10-15
 
 `semantic_local_planner_ros` is now 0.3.1. Its only runtime change allows finite

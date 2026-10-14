@@ -1,5 +1,14 @@
 # Agent handoff — 2026-10-12
 
+## Completed Unity verification — 2026-10-15 01:05 JST
+
+The fixed 0.3.1 source passed all four final Unity MCP traffic/recovery cases.
+Continue from the [current Unity handoff](../../../../../codexws/unity_neo_topo_20261015/AGENT_HANDOFF.md)
+and [measured results](../../../../../codexws/unity_neo_topo_20261015/RESULTS.md).
+Official-map fusion is still rejected by its original RMSE gate. Shared Unity/CPU
+resources were returned to the independent SLAM task; do not assume ownership.
+This does not change the native ROS entry or claim vehicle acceptance.
+
 ## Current patch handoff — 2026-10-15
 
 MapAssist package 0.3.1 fixes one persistence predicate after genuine Unity

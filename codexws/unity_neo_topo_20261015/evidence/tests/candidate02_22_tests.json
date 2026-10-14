@@ -1,0 +1,113 @@
+{
+  "kind": "synthetic_stdio_transport_and_windows_checkpoint_unit_tests",
+  "actual_unity": false,
+  "actual_model": false,
+  "native_dds": false,
+  "tests_run": 22,
+  "successful": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "elapsed_sec": 4.41338139999425,
+  "ledger": [
+    {
+      "test": "__main__.TransportTests.test_atomic_color_preserves_capture_age_without_distance",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_checkpoint_corruption_rejected_without_overwrite",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_checkpoint_path_escape_and_vehicle_ros_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_checkpoint_roundtrip_uses_production_checksum",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_delayed_green_ages_out_before_vote_ready",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_duplicate_vision_does_not_vote_or_refresh_command",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_epoch_change_cannot_reset_map_implicitly",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_mismatched_lya_provenance_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonfinite_command_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonzero_age_recovers_after_empty_tick_timeout",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonzero_source_age_startup_forwards_original_command",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_recovery_pose_mismatch_preserves_saved_file",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_recovery_time_rewind_preserves_saved_file",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_red_green_nonzero_age_release_without_private_abc",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_same_case_second_writer_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_semantic_restart_restores_prefix_and_actual_restore_event",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_signal_range_cannot_enter_stop_wait",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_simulation_clock_rewind_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_source_ttl_expires_without_repeated_frame_refresh",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_stale_source_rejected_even_at_fresh_arrival",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_unsupported_lane_still_votes_but_never_drives",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_use_sim_time_reported_honestly",
+      "status": "PASS"
+    }
+  ],
+  "source_sha256_before": {
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\test_transport.py": "8c12a88a0359b2065b2bc02f58d83923f14f6e9504f857807723c6fe037dc2d8",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\semantic_worker.py": "c0342d35dfde95c17828004a856c2fdfbe730f657410c260f8a8a9b494b066c6",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\sim_checkpoint_adapter.py": "82dd6aa8d162b8203b27afb774d14de126601fcc84ad4c530daa52a41a565834"
+  },
+  "source_sha256_after": {
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\test_transport.py": "8c12a88a0359b2065b2bc02f58d83923f14f6e9504f857807723c6fe037dc2d8",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\semantic_worker.py": "c0342d35dfde95c17828004a856c2fdfbe730f657410c260f8a8a9b494b066c6",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\sim_checkpoint_adapter.py": "82dd6aa8d162b8203b27afb774d14de126601fcc84ad4c530daa52a41a565834"
+  },
+  "source_unchanged": true
+}

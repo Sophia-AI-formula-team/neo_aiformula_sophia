@@ -1,0 +1,235 @@
+{
+  "schema": "neo_stop_wait_traffic_acceptance_audit_v1",
+  "method": "Read-only standard-library JSON analysis, no Unity, models, images or tests",
+  "passed": true,
+  "cases": [
+    {
+      "case": "inner_traffic_03",
+      "passed": true,
+      "checks": {
+        "recorded_acceptance": true,
+        "mode_separation": true,
+        "native_red_confirmation": true,
+        "native_green_confirmation": true,
+        "hold_event_duration_at_least_3s": true,
+        "sampled_full_body_zero": true,
+        "vector_scalar_consistent": true,
+        "applied_zero": true,
+        "fresh_red_native_wait_latch": true,
+        "green_scheduled_after_hold": true,
+        "green_confirmed_after_real_switch": true,
+        "no_red_plane_crossing": true,
+        "sampled_green_release_motion_at_least_1s": true,
+        "terminal_native_gate_released": true,
+        "actual_resumed_path_at_least_5m": true,
+        "clean_shutdown_receipt": true,
+        "source_unchanged_during_run": true,
+        "source_commit_3c6_matches_recorded_hashes": true,
+        "distance_disabled_throughout": true,
+        "observed_process_birth_identities_absent": true
+      },
+      "lane_recovery_mode": "component-only",
+      "runtime_first_frame_headroom": true,
+      "source_commit": "3c6fbac2ff9f8dd23b247a187e966648876400b1",
+      "matched_recorded_source_files": 85,
+      "source_mismatches": [],
+      "final_shutdown_receipt": {
+        "clean": true,
+        "before_worker_id": 36588,
+        "worker_boot_id": "bcb206c4-e21d-413a-ac83-9f7c613b06ca",
+        "forced": false,
+        "exited": true,
+        "exit_code": 0,
+        "elapsed_ms": 21.2243,
+        "error": null,
+        "acknowledgement": {
+          "type": "shutdown",
+          "clean": true,
+          "worker_boot_id": "bcb206c4-e21d-413a-ac83-9f7c613b06ca",
+          "checkpoint_ok": true,
+          "persistence": {
+            "state": "saved",
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\inner_traffic_03\\checkpoints\\inner_traffic_03\\topo.json",
+            "error": null,
+            "saved_samples": 34,
+            "saved_distance_m": 8.873803997993871
+          }
+        }
+      },
+      "observed_stop_front_gap_m": 20.7315521,
+      "stop_distance_role": "Observed early stop_wait gap; no distance input or 8-9 m target",
+      "red_hold": {
+        "event_sim_start": 6.24716599955309,
+        "event_sim_end": 9.282261399553136,
+        "event_duration_sec": 3.0350954000000456,
+        "sample_count": 122,
+        "sample_first_t": 6.24716599955309,
+        "sample_last_t": 9.282261399553136,
+        "maximum_sample_gap_sec": 0.061448700000255485,
+        "maximum_linear_speed_mps": 0.023249271952848077,
+        "maximum_angular_speed_radps": 0.0008660891983456495,
+        "voted_unknown_samples_with_native_wait_latched": 32
+      },
+      "green_resume": {
+        "sampled_continuous_release_motion_sec": 2.067460199999914,
+        "integrated_resumed_path_m": 5.012480000000001,
+        "net_displacement_from_actual_green_switch_m": 5.011058399956558,
+        "terminal_actual_v_mps": 2.769818,
+        "terminal_applied_v_mps": 2.31324339,
+        "terminal_gate_reason": "semantic_go"
+      },
+      "scope": "Live sampled command/Body evidence plus evaluator event interval; no claim of every physics-step independent observation, braking-distance control, topo closure, restart or left-turn validation",
+      "independent_process_absence": {
+        "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\inner_traffic_03_process_monitor.json",
+        "all_observed_workers_absent": true,
+        "workers": [
+          {
+            "pid": 41388,
+            "parent_pid": 49852,
+            "birth_filetime": "134364669677279040",
+            "same_identity_present": false
+          },
+          {
+            "pid": 48548,
+            "parent_pid": 36588,
+            "birth_filetime": "134364669716727990",
+            "same_identity_present": false
+          },
+          {
+            "pid": 36588,
+            "parent_pid": 9828,
+            "birth_filetime": "134364669716442050",
+            "same_identity_present": false
+          }
+        ]
+      },
+      "input_sha256": {
+        "configuration.json": "533a92e1b43c47d84887c44b447df33ed26470f5dd05378a14afd4eee94636d6",
+        "result.json": "2b342d97ff0accf1711e45b5ae014fe027a0e4c42d39581239bdc0dc3172f9a7",
+        "terminal_sample.json": "2f5e83e6b6573602247b9f58746b0f026430ae83418ad0cf9637ae3d96a4755c",
+        "events.jsonl": "b39b8a8e92741fb7075334802ead7df978eb4dafcc4b81c64593fff5aeadee1c",
+        "motion.jsonl": "1cdfe0d0b655bc55c6a7892fd82c9f5c190f16657563b891ab01b78d614d51d8",
+        "semantic_ticks.jsonl": "04db7119782fc65b25f488125b52cb95e18d8f321ea5e1b8248cb19c81adb332",
+        "trace.jsonl": "d14bc31e2392ca65c64911f3c30e16fc5c8cc0dacaf170377a3a62143f675a16",
+        "integration_hashes.json": "c66836170c20d442001e3cf90544b28cdb3b8a33590eefcba619b01177aa850b",
+        "integration_hashes_after.json": "f920801848570fe159d432e733dc76c5362b30e49cd9615a622849ea0476e310",
+        "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\inner_traffic_03_process_monitor.json": "4e40d549d050c3ed985c9da407e8db7e1447c58213af5d7709a92af9f8de7d2f",
+        "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\bundle_03\\provenance.json": "5d53f955dc9f2be0826a201c792e1d5f59f123107edabe2b08b1de125bdfa512"
+      }
+    },
+    {
+      "case": "outer_traffic_03",
+      "passed": true,
+      "checks": {
+        "recorded_acceptance": true,
+        "mode_separation": true,
+        "native_red_confirmation": true,
+        "native_green_confirmation": true,
+        "hold_event_duration_at_least_3s": true,
+        "sampled_full_body_zero": true,
+        "vector_scalar_consistent": true,
+        "applied_zero": true,
+        "fresh_red_native_wait_latch": true,
+        "green_scheduled_after_hold": true,
+        "green_confirmed_after_real_switch": true,
+        "no_red_plane_crossing": true,
+        "sampled_green_release_motion_at_least_1s": true,
+        "terminal_native_gate_released": true,
+        "actual_resumed_path_at_least_5m": true,
+        "clean_shutdown_receipt": true,
+        "source_unchanged_during_run": true,
+        "source_commit_3c6_matches_recorded_hashes": true,
+        "distance_disabled_throughout": true,
+        "observed_process_birth_identities_absent": true
+      },
+      "lane_recovery_mode": "baseline",
+      "runtime_first_frame_headroom": true,
+      "source_commit": "3c6fbac2ff9f8dd23b247a187e966648876400b1",
+      "matched_recorded_source_files": 85,
+      "source_mismatches": [],
+      "final_shutdown_receipt": {
+        "clean": true,
+        "before_worker_id": 32360,
+        "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+        "forced": false,
+        "exited": true,
+        "exit_code": 0,
+        "elapsed_ms": 20.9417,
+        "error": null,
+        "acknowledgement": {
+          "type": "shutdown",
+          "clean": true,
+          "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+          "checkpoint_ok": true,
+          "persistence": {
+            "state": "saved",
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+            "error": null,
+            "saved_samples": 28,
+            "saved_distance_m": 7.035815528109673
+          }
+        }
+      },
+      "observed_stop_front_gap_m": 22.7110615,
+      "stop_distance_role": "Observed early stop_wait gap; no distance input or 8-9 m target",
+      "red_hold": {
+        "event_sim_start": 5.432125299553263,
+        "event_sim_end": 8.43313749955314,
+        "event_duration_sec": 3.0010121999998773,
+        "sample_count": 126,
+        "sample_first_t": 5.440912499553178,
+        "sample_last_t": 8.420668799553368,
+        "maximum_sample_gap_sec": 0.06680280000000494,
+        "maximum_linear_speed_mps": 0.01685167599114124,
+        "maximum_angular_speed_radps": 0.000597852938126842,
+        "voted_unknown_samples_with_native_wait_latched": 42
+      },
+      "green_resume": {
+        "sampled_continuous_release_motion_sec": 2.1558460999999625,
+        "integrated_resumed_path_m": 5.032462880000001,
+        "net_displacement_from_actual_green_switch_m": 5.031591912089603,
+        "terminal_actual_v_mps": 2.75838876,
+        "terminal_applied_v_mps": 2.520564,
+        "terminal_gate_reason": "semantic_go"
+      },
+      "scope": "Live sampled command/Body evidence plus evaluator event interval; no claim of every physics-step independent observation, braking-distance control, topo closure, restart or left-turn validation",
+      "independent_process_absence": {
+        "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\outer_traffic_03_process_monitor.json",
+        "all_observed_workers_absent": true,
+        "workers": [
+          {
+            "pid": 21384,
+            "parent_pid": 25028,
+            "birth_filetime": "134364670131486460",
+            "same_identity_present": false
+          },
+          {
+            "pid": 32360,
+            "parent_pid": 9828,
+            "birth_filetime": "134364670170931690",
+            "same_identity_present": false
+          },
+          {
+            "pid": 47052,
+            "parent_pid": 32360,
+            "birth_filetime": "134364670171195570",
+            "same_identity_present": false
+          }
+        ]
+      },
+      "input_sha256": {
+        "configuration.json": "7e44cc9c5e2cf34641b8dbf590574c2e36f9050fe25de31c71439554f80fe94b",
+        "result.json": "6bbe2bafbb998a12bad3ed618a33db0b6be068d6f9f315ee138bbf825ef74aa0",
+        "terminal_sample.json": "66ab7c9b32630e41e4f8233f1185c193b4aa64f14097654a1cf06b417301b679",
+        "events.jsonl": "3db77f3ffbdafa384a8148a21d54750d92c94f160ca38221ff5fdb67ea8e207f",
+        "motion.jsonl": "1b611cfe8860ee31a96fa0db35556ab1cfda3e8017c45331d1e3a8693ad54740",
+        "semantic_ticks.jsonl": "5b2648a8d5458f23e3937bea6a21831752cfdda784db91baee9be380794c48f1",
+        "trace.jsonl": "a46594d2c59c8653160655ffc82f8b3b00c22f939d3214960658e013d10aebc9",
+        "integration_hashes.json": "c66836170c20d442001e3cf90544b28cdb3b8a33590eefcba619b01177aa850b",
+        "integration_hashes_after.json": "f920801848570fe159d432e733dc76c5362b30e49cd9615a622849ea0476e310",
+        "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\evidence\\outer_traffic_03_process_monitor.json": "f169fc212f9e9d0e82a886edac3511c7c5b803ec3c82cbf6e2c393cf417eebd3",
+        "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\bundle_03\\provenance.json": "5d53f955dc9f2be0826a201c792e1d5f59f123107edabe2b08b1de125bdfa512"
+      }
+    }
+  ]
+}
