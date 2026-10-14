@@ -4,6 +4,11 @@
 
 ## R30进行中：曲线生产实现实测超时，未完成两圈
 
+R30部分开发检查点已上传：代码`c212c3b`，tag
+`lane-mapping-20261015-r30-rc1`，session026已封包；[发布回读](receipts/2026-10-15-planner-r30-rc1-published.md)。
+精确代码8项CI已触发，发布回执时均运行中，未宣称全绿。下方“未发布/草稿”
+描述为各次迭代当时状态，最终封包/远端状态以本条与新回执为准。
+
 2026-10-15当前结论：这是**未通过的v5开发检查点**，不是可部署基线。
 修复后完整Windows回归4612通过/1原Linux专用跳过，217pins稳定、308具名
 方法全部完整，原native真调用通过；[当前完整记录](sessions/2026-10-12-planner-coupled-geometry-r30-026/evidence/full_regression_current04_after_confirmation_fix.json)。
