@@ -1,5 +1,7 @@
 # map_assist：保留 odom 尺度的地图融合、视觉辅助与红灯等待
 
+> **2026-10-15：0.3.1 持久化修复**。已闭合路线允许保存起点附近的有限负进度；累计路程仍须非负。算法/阈值不变。触发故障、118 项回归及尚待实跑的边界见[修复记录](docs/checkpoint_signed_progress_20261015/README.md)。
+
 > **当前车辆入口（2026-10-13，本地待部署）**：`ros2 run semantic_vehicle_wiring semantic`。0.3.0自动显示闭环阻塞条件，并保存/恢复topo；见[具体字段、存档路径及恢复限制](../../../../../../docs/topo_checkpoint_20261013/README.md)。下文包含旧独立map_drive流程，不要与现用allnodes/LYA/semantic入口混用。
 
 `map_assist` 仍在原 `semantic_local_planner_ros` 包内，独立于原语义门控运行。原语义方案保留。

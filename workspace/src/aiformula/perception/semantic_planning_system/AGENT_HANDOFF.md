@@ -1,5 +1,26 @@
 # Agent handoff — 2026-10-12
 
+## Current patch handoff — 2026-10-15
+
+MapAssist package 0.3.1 fixes one persistence predicate after genuine Unity
+`outer_closure_02` completed the odometric loop but failed its final save with
+`negative_progress`. A closed route's progress is signed/unwrapped near the seam;
+do not clamp it or change the route matcher. Original 0.3.0 failure evidence,
+before/after hashes, original-code reproduction and 118 passing targeted tests
+are archived in [checkpoint_signed_progress_20261015](semantic_local_planner_ros/docs/checkpoint_signed_progress_20261015/README.md).
+
+The root agent owns guarded deployment and new MCP tests. This patch alone has
+no genuine Unity recovery or physical-vehicle acceptance; synthetic callback
+tests must not replace those. Preserve the failed run and its separate fusion
+RMSE failure (3.453969 m > 3 m). Core geometry, official OSM, closure thresholds,
+LYA, traffic stop_wait and motor behavior remain unchanged. Keep bbox-distance
+and old distance/automatic-detour experiments isolated.
+
+Only the local planner package version changed, 0.3.0 → 0.3.1. On rollback, an
+old 0.3.0 reader may reject a signed checkpoint; preserve it instead of silently
+rewriting it. The Windows test boundary skips POSIX directory fsync and does not
+constitute native filesystem durability evidence.
+
 > **2026-10-13 当前本地版本**：MapAssist 0.3.0新增闭环诊断和车辆入口自动存档/重启恢复，基于PR24；未部署到离线车辆。车上最后确认MapAssist 0.2.2 / motor 0.4.1。详见[最新变更、使用和验证说明](../../../../../docs/topo_checkpoint_20261013/README.md)。下文保留各历史阶段的版本和证据边界，不代表当前车辆仍为shadow-only或motor无超时。
 
 ## User intent and delivered baseline
