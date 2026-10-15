@@ -423,14 +423,78 @@ def _permission_arrays(records, edges, continuations, config, geometry):
                              for name, value in zip(CONTINUATION_FIELDS, values)})
 
 
+def _overlay_record_bound(state):
+    """Bound also the pieces accumulated before an UNKNOWN/exception return.
+
+    The unchanged overlay appends at most one piece per adjacent source-event
+    interval. Its two contributor sequences have at most one entry per retained
+    frame. Count that complete worst case, not merely the returned pieces.
+    This is the existing weighted overlay-record dimension, not heap/RSS.
+    """
+    events = {bound for frame in state.frames for piece in frame.pieces
+              for bound in (piece.lower, piece.upper)}
+    return 20 + max(0, len(events)-1) * (8 + 2*len(state.frames))
+
+
+def _export_key(state, domain, confirmed_owner, multiple_keys, cosine, *, retained):
+    """One key's transient work, released before the next key is materialized.
+
+    Return finite output tuples and counters only, never a ConsensusPiece or a
+    materialized state. Owner slots and global permissions remain caller-owned.
+    """
+    scratch, overlay_records = 0, 0
+    if retained:
+        from .curve_retained_state import materialize
+        scratch = _overlay_record_bound(state)
+        state = materialize(state)
+        overlay_records = sum(8 + len(piece.contributors) + len(piece.reliable_contributors)
+                              for piece in state.pieces)
+        if 20 + overlay_records > scratch:
+            raise ValueError("materialized overlay exceeds source-event record bound")
+    local, rejected = [], False
+    if state.status == "confirmed" and confirmed_owner and type(domain) is DomainState:
+        try:
+            for piece in state.pieces:
+                for interval in domain.intervals:
+                    if interval.frame_votes < 5 or interval.reliable_votes < 1:
+                        continue
+                    exported = _finite_piece(state, piece, interval, cosine)
+                    if exported is not None:
+                        local.append(exported)
+        except ArithmeticError:
+            local, rejected = [], True
+    pending = state.status != "confirmed" or not confirmed_owner or not local
+    remainder = not (pending or rejected or multiple_keys)
+    error = None
+    try:
+        boxes = (_remaining_boxes(state, (item[-1] for item in local)) if remainder
+                 else (_state_box(state),))
+    except ArithmeticError as exc:
+        boxes, error = (), str(exc)
+    return (tuple(local), rejected, pending, tuple(boxes), remainder, error,
+            state.status, scratch, overlay_records)
+
+
 def build_curve_geometry(records, domains, states, edges, continuations, config,
-                         source_frontier_ns, *, base_support_records, orphan_sources=()):
+                         source_frontier_ns, *, base_support_records, orphan_sources=(),
+                         retained=False):
     """Prepare a COMPLETE global bundle or reject before the caller commits.
 
     records must be stable record-ID order and include pending owners. All
     keys must be supplied; the builder never selects a convenient signature.
     No spatial crop or hidden evidence eviction is a capacity remedy.
     """
+    if type(retained) is not bool:
+        raise ValueError("retained geometry mode must be boolean")
+    if retained:
+        from .curve_retained_state import RetainedCurveState, _require_retained
+        distinct = {}
+        for state in states.values():
+            _require_retained(state)
+            key = (state.owner_id, state.signed_side, state.signature)
+            if key in distinct:
+                raise ValueError("duplicate owner/side/signature in staged map")
+            distinct[key] = state
     records = tuple(records)
     if (tuple(record.record_id for record in records) != tuple(sorted(
             {record.record_id for record in records}))
@@ -451,10 +515,12 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
         if (any(not blocks.is_block_packet(packet) for packet in packets)
                 or any(not blocks.is_unowned_capsule(frame.source) for frame in orphan_sources)):
             raise ValueError("cannot mix dense and retained-block source inventories")
-        inventory = compact.inventory(states.values(),
-            orphan_capsules=tuple(frame.source for frame in orphan_sources))
+        capsules = tuple(frame.source for frame in orphan_sources)
+        inventory = (compact._inventory_parts(distinct, (), orphan_capsules=capsules) if retained
+                     else compact.inventory(states.values(), orphan_capsules=capsules))
     else:
-        inventory = compact.inventory(states.values())
+        inventory = (compact._inventory_parts(distinct, ()) if retained
+                     else compact.inventory(states.values()))
     slots = {record.record_id: index for index, record in enumerate(records)}
     if any(key != (state.owner_id, state.signed_side, state.signature)
            or state.owner_id not in slots for key, state in states.items()):
@@ -470,6 +536,7 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
     boxes, box_owners, status = [], [], np.zeros(len(records), dtype=np.int64)
     complete, reasons = True, {}
     partial_keys, remaining_boxes, competing_keys = 0, 0, 0
+    overlay_scratch_peak, overlay_logical_records = 0, 0
     cosine = math.cos(config["normal_max_angle_rad"])
     sources = {_source_key(_source(packet)): _source(packet) for packet in packets}
     extra_sources = {_source_key(frame.source): frame.source for frame in orphan_sources
@@ -519,52 +586,31 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
                     != np.asarray((domain.origin, domain.tangent), dtype=np.float64).tobytes()
                                       or state.normal_cosine != cosine):
                 raise ValueError("curve/finite domain original creation chart differs")
-            local, rejected = [], False
-            if state.status == "confirmed" and confirmed_owner and type(domain) is DomainState:
-                try:
-                    for piece in state.pieces:
-                        for interval in domain.intervals:
-                            if interval.frame_votes < 5 or interval.reliable_votes < 1:
-                                continue
-                            exported = _finite_piece(state, piece, interval, cosine)
-                            if exported is not None:
-                                local.append(exported)
-                except ArithmeticError:
-                    # Reject the WHOLE key, not just the inconvenient fragment.
-                    local, rejected = [], True
+            local, rejected, pending, key_boxes, remainder, error, key_status, scratch, overlay_records = _export_key(
+                state, domain, confirmed_owner, len(keys) > 1, cosine, retained=retained)
+            overlay_scratch_peak = max(overlay_scratch_peak, scratch)
+            overlay_logical_records += overlay_records
             if local:
                 for segment, normal, frame_votes, reliable_votes, last, _ in local:
                     segments.append(segment); normals.append(normal); owners.append(slot)
                     votes.append(frame_votes); reliable.append(reliable_votes); stamps.append(last)
-            pending = state.status != "confirmed" or not confirmed_owner or not local
-            if state.status in ("unknown", "empty") or rejected:
+            if key_status in ("unknown", "empty") or rejected:
                 owner_status = 0
             elif pending and owner_status != 0:
                 owner_status = 1
             # Distinct source signatures are alternatives, not duplicate world
             # coordinates. Even two individually ready alternatives retain
             # their reject-only competition instead of selecting one key.
-            if pending or rejected or len(keys) > 1:
-                try:
-                    boxes.append(_state_box(state)); box_owners.append(slot)
-                except ArithmeticError as error:
-                    complete = False
-                    reason = str(error)
-                    reasons[reason] = reasons.get(reason, 0)+1
-            else:
-                try:
-                    remaining = _remaining_boxes(state, (item[-1] for item in local))
-                    boxes.extend(remaining)
-                    box_owners.extend([slot]*len(remaining))
-                    if remaining:
-                        partial_keys += 1
-                        remaining_boxes += len(remaining)
-                        if owner_status != 0:
-                            owner_status = 1
-                except ArithmeticError as error:
-                    complete = False
-                    reason = str(error)
-                    reasons[reason] = reasons.get(reason, 0)+1
+            boxes.extend(key_boxes)
+            box_owners.extend([slot]*len(key_boxes))
+            if error is not None:
+                complete = False
+                reasons[error] = reasons.get(error, 0)+1
+            elif remainder and key_boxes:
+                partial_keys += 1
+                remaining_boxes += len(key_boxes)
+                if owner_status != 0:
+                    owner_status = 1
         status[slot] = owner_status
     geometry = CurveGeometry(np.asarray(segments, dtype=np.float64).reshape(-1, 2, 2),
         np.asarray(normals, dtype=np.float64).reshape(-1, 2), np.asarray(owners, dtype=np.int64),
@@ -576,7 +622,12 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
     # Explicit semantic record ledger: one geometry header, ALL owner status
     # entries, nominal segment records, reject boxes and permission records.
     export_records = 1 + len(records)+len(segments)+len(boxes)+len(permissions["continuation_primitive"])
-    total = base_support_records + inventory["support_records"] + export_records
+    retained_total = base_support_records + inventory["support_records"] + export_records
+    # The experimental representation removes the whole-map overlay table.
+    # Charge the largest ONE-key materialization in addition to every retained
+    # record and the COMPLETE final export, with the old coefficients. This is
+    # a weighted record bound, not a claim about Python heap/RSS or total scratch.
+    total = retained_total + overlay_scratch_peak
     if total > config["max_support_segments"]:
         raise ValueError("combined v5 shared source/export/permission capacity")
     metrics = dict(inventory)
@@ -589,6 +640,11 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
         retained_orphan_sources=len(orphan_sources),
         partially_ready_keys=partial_keys, pending_complement_boxes=remaining_boxes,
         competing_signature_keys=competing_keys)
+    if retained:
+        metrics.update(retained_support_records=retained_total,
+            overlay_scratch_bound_records=overlay_scratch_peak,
+            reconstructed_overlay_logical_records=overlay_logical_records,
+            representation_storage="raw_frames_sequential_overlay_experiment")
     return BuiltCurveGeometry(geometry, permissions, MappingProxyType(metrics), total)
 
 

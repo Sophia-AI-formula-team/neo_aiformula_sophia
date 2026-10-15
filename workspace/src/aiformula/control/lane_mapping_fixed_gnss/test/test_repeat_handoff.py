@@ -7,6 +7,7 @@ build/load with an explicitly owned analytic frozen-map fixture.
 
 from contextlib import nullcontext
 from dataclasses import replace
+import json
 import math
 from pathlib import Path
 import sys
@@ -30,6 +31,38 @@ def scan():
     return np.vstack([np.column_stack((x, np.full(len(x), side))) for side in (-1., 1.)])
 
 
+def _emit_teach_rejection(index, stamp_ns, result):
+    """Keep the full failed frame in pytest's captured stdout, before assert."""
+    def encode(value):
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        if isinstance(value, np.generic):
+            return value.item()
+        return repr(value)
+
+    print(json.dumps({"frame_index": index, "stamp_ns": stamp_ns, "result": result},
+                     default=encode, sort_keys=True))
+
+
+def test_teach_rejection_diagnostic_keeps_complete_nested_result(capsys):
+    result = {"accepted": False, "reason": "processing_deadline",
+              "processing_ms": np.float64(81.25),
+              "pose_xyyaw": np.asarray([0., .55, 0.]),
+              "counts": {"accepted": np.int64(15)},
+              "metrics": {"pre_match_engine_ms": np.float64(42.5),
+                          "reference_attempts": [{"reference": "candidate",
+                              "accepted": np.bool_(False), "reason": "runtime_budget",
+                              "metrics": {"all_rows": np.arange(128, dtype=np.int64)}}]}}
+    _emit_teach_rejection(16, 1600000000, result)
+    decoded = json.loads(capsys.readouterr().out)
+    assert decoded == {"frame_index": 16, "stamp_ns": 1600000000, "result": {
+        "accepted": False, "reason": "processing_deadline", "processing_ms": 81.25,
+        "pose_xyyaw": [0., .55, 0.], "counts": {"accepted": 15}, "metrics": {
+            "pre_match_engine_ms": 42.5, "reference_attempts": [{
+                "reference": "candidate", "accepted": False, "reason": "runtime_budget",
+                "metrics": {"all_rows": list(range(128))}}]}}}
+
+
 @pytest.fixture
 def taught():
     """A stationary scene with gradually drifting raw lateral odometry.
@@ -44,6 +77,8 @@ def taught():
     for index in range(1, 18):
         prior = [0., max(0, index - 5) * .05, 0.]
         result = engine.process(points, sensitivity, prior, index * 100000000)
+        if not result["accepted"]:
+            _emit_teach_rejection(index, index * 100000000, result)
         assert result["accepted"], result
     np.testing.assert_allclose(engine._matcher.correction_se2, [0., -.6, 0.], atol=1e-12)
     return engine, points, sensitivity

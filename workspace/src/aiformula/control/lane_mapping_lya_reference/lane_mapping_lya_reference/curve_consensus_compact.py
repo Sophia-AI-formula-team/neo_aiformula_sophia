@@ -77,6 +77,35 @@ def advance_curve(previous, current, *, available_before_ns):
     """Prepare without mutating old state or authenticating source transport."""
     if type(previous) is not CurveState or previous._seal is not _SEAL:
         raise ValueError("expected prepared compact state")
+    return _advance_prepared(previous, current, available_before_ns=available_before_ns)
+
+
+def _advance_prepared(previous, current, *, available_before_ns):
+    """Internal advance from an already validated immutable key/frame header.
+
+    The public compact API and the explicit retained-state API validate their
+    own exact type and factory seal before calling here. Previous overlay
+    pieces are not an input: the unchanged overlay uses the retained frames.
+    The returned materialized state still receives the original capacity check.
+    """
+    frames = _prepare_frames(previous, current, available_before_ns=available_before_ns)
+    pieces, status, reason = arithmetic._overlay(previous, frames)
+    result = CurveState(previous.owner_id, previous.signed_side, previous.signature,
+        previous.origin, previous.tangent, previous.normal_cosine,
+        previous.max_support_records, current.stamp_ns, frames, pieces,
+        status, reason, _SEAL)
+    if inventory((result,))["support_records"] > previous.max_support_records:
+        raise ValueError("complete compact support capacity exceeded")
+    return result
+
+
+def _prepare_frames(previous, current, *, available_before_ns):
+    """Original raw-frame validation/derivation, without a consensus overlay.
+
+    Public callers validate the exact previous-header type first. The original
+    compact updater immediately overlays and checks capacity in its old order;
+    the explicit streamed experiment does that during complete key export.
+    """
     if not ((type(current) is evidence.PairPacket and current._seal is evidence._PACKET_SEAL)
             or blocks.is_block_packet(current)):
         raise ValueError("expected complete shared original pair packet")
@@ -96,14 +125,7 @@ def advance_curve(previous, current, *, available_before_ns):
     frames = retained + (_chart_frame(previous, current),)
     if len(frames) > arithmetic.MAX_RETAINED_FRAMES:
         raise ValueError("invalid bounded witness retention")
-    pieces, status, reason = arithmetic._overlay(previous, frames)
-    result = CurveState(previous.owner_id, previous.signed_side, previous.signature,
-        previous.origin, previous.tangent, previous.normal_cosine,
-        previous.max_support_records, current.stamp_ns, frames, pieces,
-        status, reason, _SEAL)
-    if inventory((result,))["support_records"] > previous.max_support_records:
-        raise ValueError("complete compact support capacity exceeded")
-    return result
+    return frames
 
 
 def inventory(states, *, orphan_capsules=()):
@@ -124,6 +146,18 @@ def inventory(states, *, orphan_capsules=()):
         if key in distinct:
             raise ValueError("duplicate owner/side/signature in staged map")
         distinct[key] = state
+    return _inventory_parts(distinct, None, orphan_capsules=orphan_capsules)
+
+
+def _inventory_parts(distinct, pieces, *, orphan_capsules=()):
+    """Account validated headers and the overlay records actually retained.
+
+    The existing compact entry point uses None to read ALL pieces in the
+    original order after source validation. The
+    explicit retained-state experiment supplies no persistent overlay table;
+    its builder separately charges the largest live materialization scratch.
+    No record coefficient or configured limit changes here.
+    """
     frames = tuple(frame for state in distinct.values() for frame in state.frames)
     packets = tuple(frame.packet for frame in frames)
     block_mode = bool(orphan_capsules) or any(blocks.is_block_packet(packet) for packet in packets)
@@ -139,7 +173,8 @@ def inventory(states, *, orphan_capsules=()):
     else:
         raw = evidence.reachable_inventory(packets)
     affines = sum(len(frame.pieces) for frame in frames)
-    pieces = tuple(piece for state in distinct.values() for piece in state.pieces)
+    if pieces is None:
+        pieces = tuple(piece for state in distinct.values() for piece in state.pieces)
     contributors = sum(len(piece.contributors) + len(piece.reliable_contributors)
                        for piece in pieces)
     # Conservative explicit metadata record charges. The original semantic

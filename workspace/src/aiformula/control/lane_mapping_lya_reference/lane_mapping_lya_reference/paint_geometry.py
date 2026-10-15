@@ -751,8 +751,8 @@ class BoundaryConsensus:
         if type(curve_geometry) is not bool or (curve_geometry and (
                 cfg["minimum_frame_votes"] != 5 or cfg["minimum_reliable_votes"] != 1)):
             raise ValueError("unsupported v5 confirmation contract; requires explicit 5/1")
-        if (type(curve_storage) is not str or curve_storage not in ("dense", "blocks")
-                or (curve_storage == "blocks" and not curve_geometry)):
+        if (type(curve_storage) is not str or curve_storage not in ("dense", "blocks", "streamed")
+                or (curve_storage != "dense" and not curve_geometry)):
             raise ValueError("retained-block storage requires explicit v5 development mode")
         self._curve_mode = curve_geometry
         self._curve_storage = curve_storage
@@ -1174,7 +1174,7 @@ class BoundaryConsensus:
         orphan_sources = self._curve_orphan_sources
         unowned = source.quad_valid & (source.endpoint_owners < 0)
         retained_source = source
-        if self._curve_storage == "blocks":
+        if self._curve_storage in ("blocks", "streamed"):
             from .curve_evidence_blocks import project_frame
             # Exactly one projection for all keys of this actual source event.
             # SourceFrame/PairPacket validation is complete before this point.
@@ -1188,7 +1188,16 @@ class BoundaryConsensus:
             if previous is None:
                 previous = curves.create_curve_state(*key, domain.origin, domain.tangent,
                     normal_cosine=cosine, max_support_records=cfg["max_support_segments"])
-            staged[key] = curves.advance_curve(previous, packet, available_before_ns=stamp)
+            if self._curve_storage == "streamed":
+                from . import curve_retained_state as retained
+                if type(previous) is curves.CurveState:
+                    previous = retained.from_materialized(previous)
+                # Stage original frames once. The export builder derives each
+                # key's overlay once, checks its original complete capacity,
+                # then releases it before materializing another key.
+                staged[key] = retained.stage(previous, packet, available_before_ns=stamp)
+            else:
+                staged[key] = curves.advance_curve(previous, packet, available_before_ns=stamp)
         if np.any(unowned):
             reliable_quad = bool(np.any(unowned & obs.position_segment_reliable
                 & (obs.position_segment_sensitivity <= cfg["reliable_sensitivity"])))
@@ -1198,7 +1207,7 @@ class BoundaryConsensus:
         base = max(segment_count, edge_count)+domain_count+continuation_count
         built = build_curve_geometry(ordered, all_domains, staged, all_edges,
             all_continuations, cfg, stamp, base_support_records=base,
-            orphan_sources=orphan_sources)
+            orphan_sources=orphan_sources, retained=self._curve_storage == "streamed")
         reference = self._make_curve_reference(ordered, all_edges, built, stamp)
         return MappingProxyType(staged), orphan_sources, reference, built.inventory
 

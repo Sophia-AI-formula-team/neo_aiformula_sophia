@@ -37,7 +37,7 @@ def _prepared(value):
         raise ValueError("use prepared retained-evidence factories")
 
 
-def _decode(blocks, name):
+def _decode_scalar(blocks, name):
     _, dtype, shape, _, _ = _layout(name)
     # Row views remain ndarrays, including scalar booleans with noncanonical
     # true backing bytes. Extracting a np.bool_ scalar would normalize them.
@@ -83,6 +83,49 @@ class FaceBlock:
         _, dtype, shape, offset, count = _layout(name)
         return np.frombuffer(self.payload, dtype=dtype, count=count,
                              offset=offset).reshape(shape)
+
+
+_BYTE_LAYOUT = _LAYOUT
+_BYTE_BLOCK = FaceBlock
+_BYTE_SEAL = _SEAL
+_BYTE_NUMPY = np
+_BYTE_FROMBUFFER = np.frombuffer
+_BYTE_READERS = tuple((value, value.__code__, value.__defaults__)
+                     for value in (_decode_scalar, _layout, _prepared, FaceBlock.get))
+_BYTE_DESCRIPTORS = tuple(FaceBlock.__dict__.get(name)
+                          for name in ("payload", "_seal", "__getattribute__"))
+
+
+def _decode(blocks, name):
+    """Gather immutable field bytes without making an ndarray for every row.
+
+    Exact prepared rows use the original field offsets. Other readers retain
+    the scalar implementation, including its original first error/read order.
+    Byte slicing preserves NaN payloads, signed zero and noncanonical bools.
+    No decoded array or additional source reference persists after the call.
+    """
+    readers = (_decode_scalar, _layout, _prepared, FaceBlock.get)
+    plain = (type(blocks) is tuple and FaceBlock is _BYTE_BLOCK and _LAYOUT is _BYTE_LAYOUT
+             and _SEAL is _BYTE_SEAL and np is _BYTE_NUMPY and np.frombuffer is _BYTE_FROMBUFFER
+             and all(FaceBlock.__dict__.get(field) is descriptor
+                     for field, descriptor in zip(("payload", "_seal", "__getattribute__"),
+                                                  _BYTE_DESCRIPTORS))
+             and all(value is original and value.__code__ is code and value.__defaults__ is defaults
+                     for value, (original, code, defaults) in zip(readers, _BYTE_READERS)))
+    if not plain:
+        return _decode_scalar(blocks, name)
+    _, dtype, shape, offset, count = _layout(name)
+    stop = offset + dtype.itemsize * count
+    parts = []
+    for block in blocks:
+        if type(block) is not _BYTE_BLOCK:
+            return _decode_scalar(blocks, name)
+        _prepared(block)
+        payload = block.payload
+        if type(payload) is not bytes or len(payload) != _ROW_BYTES:
+            return _decode_scalar(blocks, name)
+        parts.append(payload[offset:stop])
+    return np.frombuffer(b"".join(parts), dtype=dtype).reshape((len(blocks),) + shape)
 
 
 @dataclass(frozen=True, eq=False)

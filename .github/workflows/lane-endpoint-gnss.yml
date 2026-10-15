@@ -64,5 +64,6 @@ jobs:
           path: |
             /tmp/lane_endpoint_gnss_ws/log
             /tmp/lane_endpoint_gnss_ws/build/*/test_results
+            /tmp/lane_endpoint_gnss_ws/build/*/pytest.xml
             /tmp/lane_endpoint_gnss_ws/evidence
           retention-days: 14

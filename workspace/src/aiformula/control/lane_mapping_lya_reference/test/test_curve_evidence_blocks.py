@@ -1,10 +1,12 @@
 """Independent dense-source byte/lifetime and unchanged-arithmetic oracles."""
 import gc
-from dataclasses import fields, FrozenInstanceError
+from dataclasses import fields, FrozenInstanceError, replace
 import math
 import struct
 import unittest
 import weakref
+import sys
+from unittest import mock
 import numpy as np
 from lane_mapping_lya_reference import curve_evidence as original
 from lane_mapping_lya_reference import curve_evidence_blocks as candidate
@@ -51,6 +53,66 @@ def fixture(stamp=100, *, noncanonical=False):
 
 
 class RetainedBlocksTests(unittest.TestCase):
+    def test_byte_gather_preserves_all_fields_and_repeated_occurrences(self):
+        source, packets = fixture(noncanonical=True)
+        retained, capsule = candidate.project_frame(source, packets)
+        rows = retained[0].lease.required_blocks + capsule.blocks
+        rows = rows + rows[:2]
+        for name, _, shape in original._FIELDS:
+            expected = b''.join(getattr(source, name)[row.face_id:row.face_id+1].tobytes()
+                                for row in rows)
+            actual = candidate._decode(rows, name)
+            self.assertEqual(actual.tobytes(), expected, name)
+            self.assertEqual(actual.shape, (len(rows),) + shape)
+            self.assertFalse(actual.flags.writeable)
+
+    def test_byte_gather_avoids_per_row_arrays(self):
+        source, packets = fixture()
+        rows = candidate.project_frame(source, packets)[0][0].lease.required_blocks
+        watched = {candidate.FaceBlock.get.__code__, candidate._decode_scalar.__code__}
+        calls = []
+        def trace(frame, event, argument):
+            if event == 'call' and frame.f_code in watched:
+                calls.append(frame.f_code.co_name)
+        previous = sys.getprofile()
+        try:
+            sys.setprofile(trace)
+            result = candidate._decode(rows, 'model_roots')
+        finally:
+            sys.setprofile(previous)
+        self.assertEqual(calls, [])
+        self.assertEqual(len(result), len(rows))
+
+    def test_changed_row_reader_and_layout_keep_original_calls(self):
+        source, packets = fixture()
+        rows = candidate.project_frame(source, packets)[0][0].lease.required_blocks
+        old_get, old_layout = candidate.FaceBlock.get, candidate._layout
+        calls = []
+        def get(row, name):
+            calls.append(row.face_id)
+            return old_get(row, name)
+        with mock.patch.object(candidate.FaceBlock, 'get', get):
+            result = candidate._decode(rows, 'normals')
+        self.assertEqual(calls, [row.face_id for row in rows])
+        self.assertEqual(result.tobytes(), candidate._decode_scalar(rows, 'normals').tobytes())
+        names = []
+        def layout(name):
+            names.append(name)
+            return old_layout(name)
+        with mock.patch.object(candidate, '_layout', layout):
+            candidate._decode(rows, 'valid')
+        self.assertEqual(names, ['valid'] * (1 + len(rows)))
+
+    def test_malformed_payload_keeps_scalar_error(self):
+        source, packets = fixture()
+        row = candidate.project_frame(source, packets)[0][0].lease.required_blocks[0]
+        rows = (replace(row, payload=b'\x00'),)
+        with self.assertRaises(ValueError) as old:
+            candidate._decode_scalar(rows, 'quads')
+        with self.assertRaises(ValueError) as new:
+            candidate._decode(rows, 'quads')
+        self.assertEqual(str(new.exception), str(old.exception))
+
     def test_multiple_nonadjacent_unowned_faces_keep_every_complete_row(self):
         source, old = fixture(noncanonical=True)
         args = {name: getattr(source, name).copy() for name, _, _ in original._FIELDS}
