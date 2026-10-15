@@ -2,7 +2,28 @@
 
 最后整理：2026-10-15。这里是索引，不是代替不可覆盖的原始记录。
 
+## R31开发检查点：保留证据压缩与包络批处理，仍未通过验收
+
+已直接修改neo对应包，显式blocks开发模式实际接入；完整原始面、incident重复、
+unowned quad和5+1均保留。最后一帧保留数组由3152693B降到1449804B，
+不是heap/RSS。固定原输入的完整地图/许可/拒绝结果一致；确认曲线帧prepare
+约0.94–1.41秒，仍超实时预算，仍在163帧被原加权容量门拒绝。未改其权重或上限。
+最终本地125文件回归**4722通过/1原Linux限定跳过**；详见
+[session028](sessions/2026-10-15-planner-runtime-integration-r31-028/SESSION.md)。
+记录包括一次113通过/1失败、一次诊断脚本零帧失败及后续修复，不只保留绿灯。
+原型027已接入的范围以028源码/测试为准；027原封包不回写。
+**未启用TeachMapEngine的v5/control，未操作Unity，未完成新首圈、冻结、第二圈、
+误差指标或视频。** 原车/仿真/LYA参数和所有验收门限不变；不是上车版本。
+待发布检查点和远端回读由新的append-only回执确认，不把本地状态当已上传。
+
 ## R30进行中：曲线生产实现实测超时，未完成两圈
+
+2026-10-15终态：R30精确代码CI为**6/8通过，两个Endpoint均失败**，各仅2/9
+runtime场景通过；7场景均在相机建图bootstrap完成前因processing deadline/anchor
+未建立停止，不能拿4613个Linux单测通过抵消。[完整结果](receipts/2026-10-15-planner-r30-ci-result.md)。
+后续R31只是独立存储原型：已补反例并修复raw-bool字节丢失，最终18项通过；
+没有接入生产、改容量系数或完成两圈。[封存session027](sessions/2026-10-15-planner-lossless-blocks-r31-027/SESSION.md)
+含源码文本、失败/通过记录、设计与独立审查，下一agent不要把原型当运行基线。
 
 R30部分开发检查点已上传：代码`c212c3b`，tag
 `lane-mapping-20261015-r30-rc1`，session026已封包；[发布回读](receipts/2026-10-15-planner-r30-rc1-published.md)。

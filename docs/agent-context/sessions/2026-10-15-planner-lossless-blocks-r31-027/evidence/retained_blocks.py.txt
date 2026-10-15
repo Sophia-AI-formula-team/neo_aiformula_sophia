@@ -1,0 +1,194 @@
+"""Isolated lossless *semantic* evidence projection; not production enabled.
+
+Original complete SourceFrame validation remains mandatory. This new diagnostic
+representation retains every row consumed by the present builder for the chosen
+key leases, not a byte-for-byte copy of unused parts of a full original table.
+It performs no fit, numerical geometry, permission, eviction or budget change.
+"""
+from dataclasses import dataclass, field
+import numpy as np
+from lane_mapping_lya_reference import curve_evidence as original
+
+
+REPRESENTATION = "complete_face_blocks_key_leases_diagnostic_v1"
+_SEAL = object()
+_LAYOUT = []
+_ROW_BYTES = 0
+for _name, _dtype, _shape in original._FIELDS:
+    _dtype = np.dtype(_dtype)
+    _count = int(np.prod(_shape, dtype=np.int64)) if _shape else 1
+    _LAYOUT.append((_name, _dtype, _shape, _ROW_BYTES, _count))
+    _ROW_BYTES += _dtype.itemsize * _count
+_LAYOUT = tuple(_LAYOUT)
+
+
+@dataclass(frozen=True, eq=False)
+class FrameIdentity:
+    stamp_ns: int
+    original_face_count: int
+    source_kind: str
+    _seal: object = field(repr=False)
+
+
+@dataclass(frozen=True, eq=False)
+class FaceBlock:
+    frame: FrameIdentity
+    face_id: int
+    payload: bytes
+    _seal: object = field(repr=False)
+
+    def get(self, name):
+        if self._seal is not _SEAL:
+            raise ValueError("unprepared face block")
+        for candidate, dtype, shape, offset, count in _LAYOUT:
+            if name == candidate:
+                return np.frombuffer(self.payload, dtype=dtype, count=count,
+                                     offset=offset).reshape(shape)
+        raise ValueError("unknown complete source field")
+
+
+@dataclass(frozen=True, eq=False)
+class UnownedCapsule:
+    frame: FrameIdentity
+    blocks: tuple
+    _seal: object = field(repr=False)
+
+
+@dataclass(frozen=True, eq=False)
+class KeyFrameLease:
+    frame: FrameIdentity
+    owner_id: int
+    signed_side: int
+    signature: tuple
+    own_blocks: tuple
+    required_blocks: tuple
+    unowned: UnownedCapsule
+    _seal: object = field(repr=False)
+
+
+@dataclass(frozen=True, eq=False)
+class BlockPacket:
+    lease: KeyFrameLease
+    roles: np.ndarray
+    face_indices: np.ndarray
+    _has_reliable: bool
+    _seal: object = field(repr=False)
+
+    @property
+    def owner_id(self):
+        return self.lease.owner_id
+
+    @property
+    def signed_side(self):
+        return self.lease.signed_side
+
+    @property
+    def signature(self):
+        return self.lease.signature
+
+    @property
+    def stamp_ns(self):
+        return self.lease.frame.stamp_ns
+
+    def gather_original(self, name):
+        if self._seal is not _SEAL:
+            raise ValueError("unprepared block packet")
+        layout = next((item for item in _LAYOUT if item[0] == name), None)
+        if layout is None:
+            raise ValueError("unknown complete source field")
+        _, dtype, shape, _, _ = layout
+        required = {block.face_id: block for block in self.lease.required_blocks}
+        # Concatenate complete original row bytes in occurrence/endpoint order.
+        # There is no arithmetic, NaN canonicalization or new local numbering.
+        payload = b"".join(required[int(face)].get(name).tobytes(order="C")
+                           for face in self.face_indices.reshape(-1))
+        return np.frombuffer(payload, dtype=dtype).reshape(
+            self.face_indices.shape + shape)
+
+
+def _frozen(value):
+    return np.frombuffer(bytes(bytearray(value.tobytes(order="C"))),
+                         dtype=value.dtype).reshape(value.shape)
+
+
+def project_frame(source, packets):
+    """Project one already validated full source; no persistent full registry.
+
+    An unrelated owned face can be released only if its owner's packet/lease is
+    not retained. Every retained key keeps all its own valid-root OR valid-quad
+    rows, both incident endpoints and the complete original unowned capsule.
+    All original validation occurs in SourceFrame/PairPacket, before projection.
+    """
+    if type(source) is not original.SourceFrame or source._seal is not original._SOURCE_SEAL:
+        raise ValueError("expected original complete validated source")
+    packets = tuple(packets)
+    keys = set()
+    for packet in packets:
+        if (type(packet) is not original.PairPacket
+                or packet._seal is not original._PACKET_SEAL
+                or packet.source is not source):
+            raise ValueError("packet is not from this original source event")
+        key = (packet.owner_id, packet.signed_side, packet.signature)
+        if key in keys:
+            raise ValueError("duplicate key frame lease")
+        keys.add(key)
+    frame = FrameIdentity(source.stamp_ns, len(source.face_ids),
+                          source.source_kind, _SEAL)
+    blocks = {}
+    def get_block(face):
+        face = int(face)
+        if face not in blocks:
+            # Keep an ndarray slice: scalar np.bool_ indexing normalizes
+            # noncanonical true backing bytes, which the source preserves.
+            payload = b"".join(getattr(source, name)[face:face+1].tobytes(order="C")
+                               for name, _, _, _, _ in _LAYOUT)
+            if len(payload) != _ROW_BYTES:
+                raise ValueError("complete row payload differs")
+            blocks[face] = FaceBlock(frame, face, payload, _SEAL)
+        return blocks[face]
+    unowned = UnownedCapsule(frame, tuple(get_block(face) for face in np.flatnonzero(
+        source.quad_valid & (source.endpoint_owners < 0))), _SEAL)
+    projected = []
+    for packet in packets:
+        own_ids = np.flatnonzero((source.endpoint_owners == packet.owner_id)
+                                & (source.valid | source.quad_valid))
+        own_blocks = tuple(get_block(face) for face in own_ids)
+        required_ids = sorted(set(map(int, own_ids))
+                              | set(map(int, packet.face_indices.reshape(-1))))
+        lease = KeyFrameLease(frame, packet.owner_id, packet.signed_side,
+            packet.signature, own_blocks, tuple(get_block(face) for face in required_ids),
+            unowned, _SEAL)
+        projected.append(BlockPacket(lease, _frozen(packet.roles),
+            _frozen(packet.face_indices), packet._has_reliable, _SEAL))
+    return tuple(projected), unowned
+
+
+def inventory(packets, capsules=()):
+    """Distinct retained buffers, NOT heap; preserve old gate charge separately."""
+    frames, blocks, packet_objects, unowned = {}, {}, {}, {}
+    for packet in packets:
+        if type(packet) is not BlockPacket or packet._seal is not _SEAL:
+            raise ValueError("expected prepared diagnostic block packet")
+        packet_objects[id(packet)] = packet
+        lease = packet.lease
+        frames[id(lease.frame)] = lease.frame
+        unowned[id(lease.unowned)] = lease.unowned
+        for block in lease.required_blocks:
+            blocks[id(block)] = block
+    for capsule in tuple(capsules) + tuple(unowned.values()):
+        if type(capsule) is not UnownedCapsule or capsule._seal is not _SEAL:
+            raise ValueError("expected complete unowned capsule")
+        frames[id(capsule.frame)] = capsule.frame
+        for block in capsule.blocks:
+            blocks[id(block)] = block
+    return {
+        "source_events": len(frames),
+        "retained_complete_faces": len(blocks),
+        "face_payload_bytes": sum(len(block.payload) for block in blocks.values()),
+        "packet_payload_bytes": sum(p.roles.nbytes + p.face_indices.nbytes
+                                    for p in packet_objects.values()),
+        "legacy_source_packet_weighted_charge": (
+            sum(1 + frame.original_face_count for frame in frames.values())
+            + sum(10 + 2 * len(p.roles) for p in packet_objects.values())),
+        "heap_or_runtime_acceptance": False,
+    }

@@ -558,9 +558,22 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
     # NumPy scalar gathers for every coordinate comparison below. Keep the
     # original whole-run floating-point products and the closed-seam check.
     cell_keys = all_cells.tolist()
-    visited = np.zeros(len(obs.points), dtype=bool)
     output = []
     normals = obs.model_normals
+    # Production topology is immutable native int64. Copy only these discrete
+    # values once; the actual directed walk and every floating-point product
+    # below keep their original order. Unusual/manual observations retain the
+    # original NumPy scalar access, including its conversion/error behavior.
+    discrete_lists = (type(obs) is BoundaryObservation and all(
+        type(values) is np.ndarray and values.dtype == np.dtype(np.int64)
+        and values.shape == (len(obs.points),) and not values.flags.writeable
+        for values in (obs.previous, obs.next, obs.contour_ids)))
+    following_links = obs.next.tolist() if discrete_lists else None
+    if discrete_lists:
+        admitted = admitted.tolist()
+        visited = [False] * len(obs.points)
+    else:
+        visited = np.zeros(len(obs.points), dtype=bool)
     for seed in list(np.flatnonzero(obs.previous < 0)) + list(range(len(obs.points))):
         if visited[seed]:
             continue
@@ -568,7 +581,8 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
         while current >= 0 and not visited[current]:
             visited[current] = True
             path.append(current)
-            current = int(obs.next[current])
+            current = (int(obs.next[current]) if following_links is None
+                       else following_links[current])
         parts, run = [], []
         for face in path:
             same = (bool(run) and admitted[face]
@@ -583,7 +597,9 @@ def _contiguous_cell_runs(obs, eligible, cells, cosine):
             parts.append(run)
         # A closed contour's arbitrary iteration start is not a physical cut.
         # Merge across it only if the original faces are genuinely adjacent.
-        if (len(parts) > 1 and obs.next[parts[-1][-1]] == parts[0][0]
+        if (len(parts) > 1
+                and (obs.next[parts[-1][-1]] if following_links is None
+                     else following_links[parts[-1][-1]]) == parts[0][0]
                 and cell_keys[parts[-1][0]] == cell_keys[parts[0][0]]
                 and np.all(normals[parts[-1]] @ normals[parts[0]].T >= cosine)):
             parts[0] = parts[-1] + parts[0]
@@ -714,7 +730,7 @@ class BoundaryConsensus:
     plus ALL unknown/pending competition. Latest actual faces remain available
     separately for audit; neither graph chords nor node means are v5 geometry.
     """
-    def __init__(self, config=None, *, curve_geometry=False):
+    def __init__(self, config=None, *, curve_geometry=False, curve_storage="dense"):
         cfg = dict(CONSENSUS_DEFAULT_CONFIG)
         if config is not None:
             if set(config) - set(cfg):
@@ -735,7 +751,11 @@ class BoundaryConsensus:
         if type(curve_geometry) is not bool or (curve_geometry and (
                 cfg["minimum_frame_votes"] != 5 or cfg["minimum_reliable_votes"] != 1)):
             raise ValueError("unsupported v5 confirmation contract; requires explicit 5/1")
+        if (type(curve_storage) is not str or curve_storage not in ("dense", "blocks")
+                or (curve_storage == "blocks" and not curve_geometry)):
+            raise ValueError("retained-block storage requires explicit v5 development mode")
         self._curve_mode = curve_geometry
+        self._curve_storage = curve_storage
         self._curve_states = MappingProxyType({})
         self._curve_orphan_sources = ()
         self._curve_reference = None
@@ -1137,16 +1157,6 @@ class BoundaryConsensus:
         all_continuations.update(continuations)
         staged = {key: state for key, state in self._curve_states.items() if key[0] not in expired_set}
         cosine = math.cos(cfg["normal_max_angle_rad"])
-        for packet in packets:
-            key = (packet.owner_id, packet.signed_side, packet.signature)
-            previous = staged.get(key)
-            domain = all_domains.get(packet.owner_id)
-            if type(domain) is not DomainState:
-                raise ValueError("v5 original creation domain missing")
-            if previous is None:
-                previous = curves.create_curve_state(*key, domain.origin, domain.tangent,
-                    normal_cosine=cosine, max_support_records=cfg["max_support_segments"])
-            staged[key] = curves.advance_curve(previous, packet, available_before_ns=stamp)
         # Even zero final owners cannot erase independently valid own quads.
         # Reuse the packet source by object identity when present; only the
         # zero-packet case needs an independently retained original table.
@@ -1163,11 +1173,27 @@ class BoundaryConsensus:
             valid=(obs.model_valid & (obs.model_sensitivity <= cfg["max_sensitivity"])))
         orphan_sources = self._curve_orphan_sources
         unowned = source.quad_valid & (source.endpoint_owners < 0)
+        retained_source = source
+        if self._curve_storage == "blocks":
+            from .curve_evidence_blocks import project_frame
+            # Exactly one projection for all keys of this actual source event.
+            # SourceFrame/PairPacket validation is complete before this point.
+            packets, retained_source = project_frame(source, packets)
+        for packet in packets:
+            key = (packet.owner_id, packet.signed_side, packet.signature)
+            previous = staged.get(key)
+            domain = all_domains.get(packet.owner_id)
+            if type(domain) is not DomainState:
+                raise ValueError("v5 original creation domain missing")
+            if previous is None:
+                previous = curves.create_curve_state(*key, domain.origin, domain.tangent,
+                    normal_cosine=cosine, max_support_records=cfg["max_support_segments"])
+            staged[key] = curves.advance_curve(previous, packet, available_before_ns=stamp)
         if np.any(unowned):
             reliable_quad = bool(np.any(unowned & obs.position_segment_reliable
                 & (obs.position_segment_sensitivity <= cfg["reliable_sensitivity"])))
             orphan_sources = retain_orphan_sources(orphan_sources,
-                OrphanSourceFrame(source, reliable_quad), available_before_ns=stamp)
+                OrphanSourceFrame(retained_source, reliable_quad), available_before_ns=stamp)
         ordered = tuple(all_records[key] for key in sorted(all_records))
         base = max(segment_count, edge_count)+domain_count+continuation_count
         built = build_curve_geometry(ordered, all_domains, staged, all_edges,

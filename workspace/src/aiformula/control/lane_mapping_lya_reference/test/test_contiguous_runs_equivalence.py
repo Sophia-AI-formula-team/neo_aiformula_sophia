@@ -1,4 +1,4 @@
-"""Cell-key-only refactor against the literal R23 directed-run algorithm.
+"""Discrete walk refactors against the literal R23 directed-run algorithm.
 
 Oracle source: commit 764d860e64c5fe726fa03346f2142571fe1b2a99,
 paint_geometry.py SHA256
@@ -259,3 +259,83 @@ def test_bounded_deterministic_mixed_paths_against_literal(seed):
         eligible = np.r_[eligible, eligible[:3]]
         cells = np.concatenate((cells, rng.integers(-2, 3, size=(min(3, len(cells)), 2), dtype=np.int64)))
     _check(obs, eligible, cells)
+
+
+def _production_observation(normals, **kwargs):
+    """Construct the ordinary immutable object used by the production walk."""
+    source = _observation(normals, **kwargs)
+    count = len(source.points)
+    flags = np.ones(count, dtype=bool)
+    return paint.BoundaryObservation(
+        points=source.points, normals=source.model_normals,
+        segments=np.zeros((count, 2, 2)), sensitivity=np.zeros(count),
+        metric_valid=flags, stable=flags, normal_valid=flags,
+        valid=flags, reliable=flags, source_stamp_ns=1,
+        pixel_segments=np.zeros((count, 2, 2)),
+        white_pixels=np.zeros((count, 2), dtype=np.int64),
+        black_pixels=np.ones((count, 2), dtype=np.int64),
+        previous=source.previous, next=source.next, contour_ids=source.contour_ids,
+        reason_codes=np.zeros(count, dtype=np.int64),
+        normal_support_count=np.ones(count, dtype=np.int64),
+        normal_radius=np.zeros(count))
+
+
+@pytest.mark.parametrize('count', [0, 1, 7])
+@pytest.mark.parametrize('closed', [False, True])
+def test_production_integer_walk_empty_singleton_and_closed_seam(count, closed):
+    obs = _production_observation(np.tile([1., -0.], (count, 1)), closed=closed)
+    cells = np.zeros((count, 2), dtype=np.int64)
+    if count > 1:
+        cells[2:4, 0] = 1
+    _check(obs, np.arange(count), cells)
+    if count > 1:
+        eligible = np.array([1, 2, 4, 5, 6])
+        _check(obs, eligible, cells[eligible])
+
+
+def test_production_integer_walk_keeps_nonindex_path_order_and_signed_normals():
+    obs = _production_observation(_normals([0., 20., 40., 180., 0., 0., 0., 0.]),
+        paths=[[4, 1, 3], [2, 0, 5], [7, 6]], closed=[False, True, True])
+    eligible = np.array([0, 1, 2, 3, 4, 5, 7])
+    cells = np.array([[0, 0], [0, 0], [0, 0], [0, 0], [1, 0], [0, 0], [-1, 2]])
+    _check(obs, eligible, cells)
+
+
+@pytest.mark.parametrize('dtype', [np.int32, np.float64, object, np.dtype('>i8')])
+def test_unusual_topology_dtype_uses_original_scalar_walk(dtype):
+    obs = _production_observation(np.tile([0., 1.], (5, 1)), closed=True)
+    unusual = np.asarray(obs.next, dtype=dtype)
+    unusual.flags.writeable = False
+    object.__setattr__(obs, 'next', unusual)
+    _check(obs, np.arange(5), [[0, 0], [0, 0], [1, 0], [0, 0], [0, 0]])
+
+
+def test_topology_array_subclass_is_not_copied_through_tolist():
+    class NoListTopology(np.ndarray):
+        def tolist(self):
+            raise AssertionError('unusual topology must retain scalar access')
+
+    obs = _production_observation(np.tile([1., 0.], (5, 1)), closed=True)
+    object.__setattr__(obs, 'next', obs.next.view(NoListTopology))
+    _check(obs, np.arange(5), [[0, 0], [0, 0], [1, 0], [0, 0], [0, 0]])
+
+
+def test_production_walk_preserves_each_original_matrix_product_and_seam_order():
+    calls = []
+
+    class RecordedNormals(np.ndarray):
+        def __matmul__(self, other):
+            calls.append((self.shape, self.tobytes(), other.shape, other.tobytes()))
+            return np.ndarray.__matmul__(self, other)
+
+    obs = _production_observation(_normals([0., 20., 90., -20., 0.]), closed=True)
+    object.__setattr__(obs, 'normals', obs.normals.view(RecordedNormals))
+    eligible = np.arange(5)
+    cells = np.array([[0, 0], [0, 0], [1, 0], [0, 0], [0, 0]])
+    cosine = math.cos(math.pi / 6.)
+    expected = _literal_r23_runs(obs, eligible, cells, cosine)
+    original_calls = list(calls)
+    calls.clear()
+    assert paint._contiguous_cell_runs(obs, eligible, cells, cosine) == expected
+    assert calls == original_calls
+    assert original_calls[-1][0] == (2, 2) and original_calls[-1][2] == (2, 2)

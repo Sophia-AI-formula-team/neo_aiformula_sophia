@@ -3,7 +3,8 @@
 This module neither associates owners nor commits a map.  The caller supplies
 the complete prospective map, including pending owners and every retained key.
 Means are metadata only: no mean/chord geometry is made on a failed curve key.
-The inventory uses semantic support records, not scalar entries or heap bytes.
+The retained weighted development ledger is not a measured heap size and is
+not yet proved equivalent to the original quad/Interval capacity dimension.
 """
 from dataclasses import dataclass
 from bisect import bisect_right
@@ -15,9 +16,11 @@ import numpy as np
 from . import curve_consensus as arithmetic
 from . import curve_consensus_compact as compact
 from . import curve_evidence as evidence
+from . import curve_evidence_blocks as blocks
 from .continuation_support import common_intervals, FIELDS as CONTINUATION_FIELDS
 from .curve_reference import CurveGeometry
 from .finite_support import DomainState
+from .curve_rounding import step as _step
 
 
 @dataclass(frozen=True)
@@ -35,10 +38,11 @@ class OrphanSourceFrame:
     has_reliable: bool
 
     def __post_init__(self):
-        if (type(self.source) is not evidence.SourceFrame
-                or self.source._seal is not evidence._SOURCE_SEAL
-                or type(self.has_reliable) is not bool
-                or not np.any(self.source.quad_valid & (self.source.endpoint_owners < 0))):
+        dense = (type(self.source) is evidence.SourceFrame
+                 and self.source._seal is evidence._SOURCE_SEAL
+                 and np.any(self.source.quad_valid & (self.source.endpoint_owners < 0)))
+        retained = blocks.is_unowned_capsule(self.source) and bool(self.source.blocks)
+        if type(self.has_reliable) is not bool or not (dense or retained):
             raise ValueError("expected original unowned valid-quad source")
 
 
@@ -62,10 +66,6 @@ def retain_orphan_sources(previous, current, *, available_before_ns):
     if len(retained) > 6:
         raise ValueError("invalid original 5/1 unowned source retention")
     return retained
-
-
-def _step(value, direction):
-    return float(np.nextafter(np.float64(value), direction))
 
 
 def _bounded(lower, upper):
@@ -128,6 +128,28 @@ def _unknown_affine(state, roots):
     return span, intercept, slope
 
 
+def _own(packet, field, validity):
+    if blocks.is_block_packet(packet):
+        return packet.own_original(field, **{validity + "_only": True})
+    source = packet.source
+    return getattr(source, field)[(source.endpoint_owners == packet.owner_id)
+                                  & getattr(source, validity)]
+
+
+def _source(packet):
+    return packet.lease.unowned if blocks.is_block_packet(packet) else packet.source
+
+
+def _source_key(source):
+    return id(source.frame) if blocks.is_unowned_capsule(source) else id(source)
+
+
+def _unowned_quads(source):
+    if blocks.is_unowned_capsule(source):
+        return source.gather_original("quads")
+    return source.quads[source.quad_valid & (source.endpoint_owners < 0)]
+
+
 def _state_box(state):
     """ALL owned faces, quads and both incident endpoints, with IEEE bounds.
 
@@ -147,23 +169,23 @@ def _state_box(state):
             lower = np.minimum(lower, np.min(data, axis=0))
             upper = np.maximum(upper, np.max(data, axis=0))
     for frame in state.frames:
-        packet, source = frame.packet, frame.packet.source
-        own = source.endpoint_owners == state.owner_id
-        include(source.model_roots[own & source.valid])
-        include(source.quads[own & source.quad_valid])
+        packet = frame.packet
+        include(_own(packet, "model_roots", "valid"))
+        include(_own(packet, "quads", "quad_valid"))
         # Do not drop the opposite owner of an incident endpoint occurrence.
-        indices = packet.face_indices.reshape(-1)
-        include(source.model_roots[indices[source.valid[indices]]])
+        pair_roots = packet.gather_original("model_roots")
+        pair_valid = packet.gather_original("valid")
+        include(pair_roots[pair_valid])
         if frame.status == "known":
             for piece in frame.pieces:
                 affines.append(((piece.lower, piece.upper),
                                 (piece.intercept, piece.intercept),
                                 (piece.slope, piece.slope)))
         else:
-            for pair in packet.face_indices:
-                if not bool(np.all(source.valid[pair])):
+            for roots, valid in zip(pair_roots, pair_valid):
+                if not bool(np.all(valid)):
                     raise ArithmeticError("invalid required incident source roots")
-                affines.append(_unknown_affine(state, source.model_roots[pair]))
+                affines.append(_unknown_affine(state, roots))
     for span, intercept, slope in affines:
         envelope = _world_envelope(state, span, intercept, slope)
         include(((envelope[0][0], envelope[1][0]),
@@ -298,18 +320,19 @@ def _remaining_boxes(state, covered):
     for frame in state.frames:
         if frame.status != "known":
             raise ArithmeticError("partly ready key has unknown source chart")
-        packet, source = frame.packet, frame.packet.source
-        own = source.endpoint_owners == state.owner_id
+        packet = frame.packet
         # A point is a separate original face witness, not a gathered hull of
         # disconnected faces. Incident endpoint multiplicity is kept too.
-        for point in source.model_roots[own & source.valid]:
+        for point in _own(packet, "model_roots", "valid"):
             source_boxes((point,))
-        for quad in source.quads[own & source.quad_valid]:
+        for quad in _own(packet, "quads", "quad_valid"):
             source_boxes(quad)
-        for face in packet.face_indices.reshape(-1):
-            if not source.valid[face]:
+        roots = packet.gather_original("model_roots").reshape(-1, 2)
+        valid = packet.gather_original("valid").reshape(-1)
+        for point, admitted in zip(roots, valid):
+            if not admitted:
                 raise ArithmeticError("invalid required remaining incident source")
-            source_boxes((source.model_roots[face],))
+            source_boxes((point,))
         for affine in frame.pieces:
             for pending in _remaining((affine.lower, affine.upper), covered):
                 add_box(pending, _world_envelope(state, pending, mean_intercept, mean_slope))
@@ -343,8 +366,10 @@ def _finite_piece(state, piece, interval, cosine):
         if len(candidates) != 1:
             raise ArithmeticError("incomplete original curve contributor occurrence")
         original = candidates[0]
-        source_normals = frame.packet.source.normals[
-            frame.packet.face_indices[original.occurrence]]
+        packet = frame.packet
+        source_normals = (packet.occurrence_normals(original.occurrence)
+            if blocks.is_block_packet(packet) else
+            packet.source.normals[packet.face_indices[original.occurrence]])
         if any(arithmetic._dot(normal, value) < cosine for value in source_normals):
             raise ArithmeticError("rounded finite curve original support direction")
         active += 1
@@ -413,13 +438,23 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
         raise ValueError("v5 requires complete ordered owners and original 5/1")
     source_frontier_ns = arithmetic._integer(source_frontier_ns, "source_frontier_ns", minimum=1)
     base_support_records = arithmetic._integer(base_support_records, "base_support_records", minimum=0)
-    inventory = compact.inventory(states.values())
     orphan_sources = tuple(orphan_sources)
     if (len(orphan_sources) > 6 or any(type(frame) is not OrphanSourceFrame for frame in orphan_sources)
             or any(frame.source.stamp_ns > source_frontier_ns for frame in orphan_sources)
             or any(b.source.stamp_ns <= a.source.stamp_ns
                    for a, b in zip(orphan_sources, orphan_sources[1:]))):
         raise ValueError("invalid complete retained unowned source inventory")
+    packets = tuple(frame.packet for state in states.values() for frame in state.frames)
+    block_mode = (any(blocks.is_block_packet(packet) for packet in packets)
+                  or any(blocks.is_unowned_capsule(frame.source) for frame in orphan_sources))
+    if block_mode:
+        if (any(not blocks.is_block_packet(packet) for packet in packets)
+                or any(not blocks.is_unowned_capsule(frame.source) for frame in orphan_sources)):
+            raise ValueError("cannot mix dense and retained-block source inventories")
+        inventory = compact.inventory(states.values(),
+            orphan_capsules=tuple(frame.source for frame in orphan_sources))
+    else:
+        inventory = compact.inventory(states.values())
     slots = {record.record_id: index for index, record in enumerate(records)}
     if any(key != (state.owner_id, state.signed_side, state.signature)
            or state.owner_id not in slots for key, state in states.items()):
@@ -436,18 +471,18 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
     complete, reasons = True, {}
     partial_keys, remaining_boxes, competing_keys = 0, 0, 0
     cosine = math.cos(config["normal_max_angle_rad"])
-    sources = {id(frame.packet.source): frame.packet.source
-               for state in states.values() for frame in state.frames}
-    extra_sources = {id(frame.source): frame.source for frame in orphan_sources
-                     if id(frame.source) not in sources}
+    sources = {_source_key(_source(packet)): _source(packet) for packet in packets}
+    extra_sources = {_source_key(frame.source): frame.source for frame in orphan_sources
+                     if _source_key(frame.source) not in sources}
     sources.update(extra_sources)
     # Count physical source tables once globally, but ALL independent retained
     # orphan reference/ordinal/reliability/header records remain charged.
-    extra_records = sum(source.support_records for source in extra_sources.values())
-    extra_scalars = sum(source.scalar_entries for source in extra_sources.values())
-    extra_payload = sum(source.payload_bytes for source in extra_sources.values())
-    inventory["source_tables"] += len(extra_sources)
-    inventory["source_faces"] += sum(len(source.face_ids) for source in extra_sources.values())
+    extra_records = 0 if block_mode else sum(source.support_records for source in extra_sources.values())
+    extra_scalars = 0 if block_mode else sum(source.scalar_entries for source in extra_sources.values())
+    extra_payload = 0 if block_mode else sum(source.payload_bytes for source in extra_sources.values())
+    if not block_mode:
+        inventory["source_tables"] += len(extra_sources)
+        inventory["source_faces"] += sum(len(source.face_ids) for source in extra_sources.values())
     inventory["support_records"] += extra_records + 4*len(orphan_sources)
     inventory["scalar_entries"] += extra_scalars + 4*len(orphan_sources)
     inventory["payload_bytes"] += extra_payload
@@ -458,10 +493,10 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
     # competitor, never a fabricated node/normal/curve or nearby-owner match.
     unowned, standalone_boxes = 0, 0
     for source in sources.values():
-        for face in np.flatnonzero(source.quad_valid & (source.endpoint_owners < 0)):
+        for quad in _unowned_quads(source):
             unowned += 1
             try:
-                boxes.append(_unowned_quad_box(source.quads[face]))
+                boxes.append(_unowned_quad_box(quad))
                 box_owners.append(-1)
                 standalone_boxes += 1
             except ArithmeticError as error:
@@ -555,3 +590,18 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
         partially_ready_keys=partial_keys, pending_complement_boxes=remaining_boxes,
         competing_signature_keys=competing_keys)
     return BuiltCurveGeometry(geometry, permissions, MappingProxyType(metrics), total)
+
+
+# Capture the original implementation and helper identities once during module
+# initialization. Batch scratch work never persists in the map or changes its
+# capacity ledger. Unsupported arithmetic/readers fall back to this exact scalar
+# helper once; v4 never imports this opt-in curve builder.
+_remaining_boxes_scalar = _remaining_boxes
+from . import curve_envelope_batch as _envelope_batch
+import sys as _sys
+_ENVELOPE_BINDINGS = _envelope_batch.bind_scalar_helpers(_sys.modules[__name__])
+
+
+def _remaining_boxes(state, covered):
+    return _envelope_batch.dispatch_remaining_boxes(
+        state, covered, bindings=_ENVELOPE_BINDINGS)

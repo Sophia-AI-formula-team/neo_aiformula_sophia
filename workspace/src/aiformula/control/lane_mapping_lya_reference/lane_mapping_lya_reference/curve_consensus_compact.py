@@ -2,14 +2,15 @@
 
 Used by the explicit BoundaryConsensus(curve_geometry=True) development path.
 TeachMapEngine/control do not enable that path; runtime acceptance is pending.
-The old scalar/header gate remains a preserved diagnostic failure; this module
-counts support records in the original mapper dimension and separately reports
-physical payload/scalars. Original200000 capacity and5+1 witnesses stay fixed.
+The weighted metadata/scalar ledger is a preserved development gate; its units
+are NOT yet proved equivalent to the old quad/Interval ledger. Physical payload
+is reported separately. Original200000 capacity and5+1 witnesses stay fixed.
 """
 from dataclasses import dataclass, field
 
 from . import curve_consensus as arithmetic
 from . import curve_evidence as evidence
+from . import curve_evidence_blocks as blocks
 
 
 REPRESENTATION = "finite_equal_frame_shared_evidence_creation_chart_v3"
@@ -76,8 +77,11 @@ def advance_curve(previous, current, *, available_before_ns):
     """Prepare without mutating old state or authenticating source transport."""
     if type(previous) is not CurveState or previous._seal is not _SEAL:
         raise ValueError("expected prepared compact state")
-    if type(current) is not evidence.PairPacket or current._seal is not evidence._PACKET_SEAL:
+    if not ((type(current) is evidence.PairPacket and current._seal is evidence._PACKET_SEAL)
+            or blocks.is_block_packet(current)):
         raise ValueError("expected complete shared original pair packet")
+    if any(type(frame.packet) is not type(current) for frame in previous.frames):
+        raise ValueError("cannot mix dense and retained-block evidence in one state")
     available = arithmetic._integer(available_before_ns, "available_before_ns", minimum=1)
     if (current.owner_id, current.signed_side, current.signature) != (
             previous.owner_id, previous.signed_side, previous.signature):
@@ -102,7 +106,7 @@ def advance_curve(previous, current, *, available_before_ns):
     return result
 
 
-def inventory(states):
+def inventory(states, *, orphan_capsules=()):
     """Full staged-map inventory, not a query/window or per-owner credit.
 
     Charges all retained source tables, complete occurrences, state/key metadata,
@@ -121,7 +125,19 @@ def inventory(states):
             raise ValueError("duplicate owner/side/signature in staged map")
         distinct[key] = state
     frames = tuple(frame for state in distinct.values() for frame in state.frames)
-    raw = evidence.reachable_inventory(frame.packet for frame in frames)
+    packets = tuple(frame.packet for frame in frames)
+    block_mode = bool(orphan_capsules) or any(blocks.is_block_packet(packet) for packet in packets)
+    if block_mode:
+        retained = blocks.inventory(packets, orphan_capsules)
+        raw = dict(source_tables=retained["source_events"], packets=retained["packets"],
+            source_faces=retained["legacy_source_faces"], pair_occurrences=retained["pair_occurrences"],
+            support_records=retained["legacy_source_packet_weighted_charge"],
+            scalar_entries=retained["legacy_source_packet_scalar_entries"],
+            payload_bytes=retained["retained_array_payload_bytes"],
+            retained_complete_faces=retained["retained_complete_faces"],
+            legacy_source_packet_payload_bytes=retained["legacy_source_packet_payload_bytes"])
+    else:
+        raw = evidence.reachable_inventory(packets)
     affines = sum(len(frame.pieces) for frame in frames)
     pieces = tuple(piece for state in distinct.values() for piece in state.pieces)
     contributors = sum(len(piece.contributors) + len(piece.reliable_contributors)

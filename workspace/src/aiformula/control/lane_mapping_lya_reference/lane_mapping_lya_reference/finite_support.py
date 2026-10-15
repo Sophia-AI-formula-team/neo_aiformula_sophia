@@ -87,6 +87,14 @@ def _cosine(value):
     return value
 
 
+# Exact builtin constructors may retain the values already assigned by the
+# dataclass when ALL public invariants pass. A changed validation helper still
+# takes the ordinary conversion path, including its errors and side effects.
+_CONSTRUCTOR_NUMBER = _number
+_CONSTRUCTOR_INTEGER = _integer
+_CONSTRUCTOR_VECTOR = _vector
+
+
 @dataclass(frozen=True)
 class Interval:
     lower: float
@@ -96,6 +104,17 @@ class Interval:
     last_stamp_ns: int
 
     def __post_init__(self):
+        if (type(self) is Interval and _number is _CONSTRUCTOR_NUMBER
+                and _integer is _CONSTRUCTOR_INTEGER):
+            lower, upper = self.lower, self.upper
+            votes, reliable, stamp = self.frame_votes, self.reliable_votes, self.last_stamp_ns
+            if (type(lower) is float and type(upper) is float
+                    and type(votes) is int and type(reliable) is int and type(stamp) is int
+                    and math.isfinite(lower) and math.isfinite(upper)
+                    and lower < upper and max(abs(lower), abs(upper)) <= 4. * MAX_COORDINATE
+                    and 1 <= votes <= MAX_VOTES and 0 <= reliable <= votes
+                    and 1 <= stamp <= MAX_STAMP):
+                return
         lower = _number(self.lower, 'interval.lower')
         upper = _number(self.upper, 'interval.upper')
         if not lower < upper or max(abs(lower), abs(upper)) > 4. * MAX_COORDINATE:
@@ -116,8 +135,19 @@ class DomainState:
     source_stamp_ns: int
 
     def __post_init__(self):
-        origin = _vector(self.origin, 'origin')
-        tangent = _vector(self.tangent, 'tangent', unit=True)
+        exact_chart = False
+        if (type(self) is DomainState and _vector is _CONSTRUCTOR_VECTOR
+                and _number is _CONSTRUCTOR_NUMBER and _integer is _CONSTRUCTOR_INTEGER):
+            origin, tangent = self.origin, self.tangent
+            exact_chart = (type(origin) is tuple and type(tangent) is tuple
+                and len(origin) == 2 and len(tangent) == 2
+                and all(type(value) is float and math.isfinite(value)
+                        for value in origin + tangent)
+                and max(map(abs, origin)) <= MAX_COORDINATE
+                and abs(math.hypot(*tangent) - 1.) <= UNIT_TOLERANCE)
+        if not exact_chart:
+            origin = _vector(self.origin, 'origin')
+            tangent = _vector(self.tangent, 'tangent', unit=True)
         stamp = _integer(self.source_stamp_ns, 'source_stamp_ns')
         try:
             intervals = tuple(self.intervals)

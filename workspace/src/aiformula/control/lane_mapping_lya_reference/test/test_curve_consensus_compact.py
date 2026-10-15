@@ -9,6 +9,7 @@ import math
 import struct
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -414,6 +415,40 @@ class CompactCurveIndependentTests(unittest.TestCase):
         # neither representation invents a finite usable model from this span.
         self.assertEqual(states[0].status, 'unknown')
         self.assertEqual(states[0].pieces, ())
+
+
+class OverlayReaderTests(unittest.TestCase):
+    def test_changed_normal_property_keeps_original_second_read_failure(self):
+        state, _ = _states()
+        for stamp in range(1, 6):
+            packet, _ = _linear_packets(stamp, intervals=((0., 1.), (1., 2.)))
+            state = compact.advance_curve(state, packet, available_before_ns=stamp)
+        self.assertEqual(state.status, 'confirmed')
+        descriptor = evidence.PairPacket.normals
+        reads = {}
+        def changed(packet):
+            reads[id(packet)] = reads.get(id(packet), 0) + 1
+            if reads[id(packet)] == 2:
+                raise ArithmeticError('second-read diagnostic sentinel')
+            return descriptor.fget(packet)
+        with mock.patch.object(evidence.PairPacket, 'normals', property(changed)):
+            self.assertFalse(original._normal_readers_unchanged())
+            self.assertEqual(original._overlay(state, state.frames),
+                             ((), 'unknown', 'numerical_export'))
+        self.assertEqual(max(reads.values()), 2)
+        self.assertTrue(original._normal_readers_unchanged())
+
+    def test_changed_reader_code_without_rebinding_disables_cache(self):
+        function = evidence.PairPacket.gather_original
+        old_code = function.__code__
+        def changed(self, name):
+            raise ArithmeticError('changed normal reader')
+        try:
+            function.__code__ = changed.__code__
+            self.assertFalse(original._normal_readers_unchanged())
+        finally:
+            function.__code__ = old_code
+        self.assertTrue(original._normal_readers_unchanged())
 
 
 if __name__ == '__main__':

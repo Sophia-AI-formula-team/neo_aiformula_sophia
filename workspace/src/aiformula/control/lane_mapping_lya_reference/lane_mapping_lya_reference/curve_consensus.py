@@ -19,6 +19,31 @@ import math
 from numbers import Integral, Real
 
 import numpy as np
+from .curve_rounding import step as _step
+from .curve_evidence import PairPacket
+from .curve_evidence_blocks import BlockPacket
+from . import curve_evidence as _evidence
+from . import curve_evidence_blocks as _blocks
+
+
+def _reader_entry(owner, name):
+    value = getattr(owner, name)
+    function = value.fget if type(value) is property else value
+    return owner, name, value, function, getattr(function, '__code__', None)
+
+
+_NORMAL_READERS = tuple(_reader_entry(owner, name) for owner, names in (
+    (PairPacket, ('normals', 'gather_original')),
+    (BlockPacket, ('normals', 'gather_original')),
+    (_evidence, ('_FIELDS',)),
+    (_blocks, ('_decode', '_layout', '_prepared', '_LAYOUT', '_SEAL')),
+    (_blocks.FaceBlock, ('get',)), (np, ('frombuffer',))) for name in names)
+
+
+def _normal_readers_unchanged():
+    return all(getattr(owner, name) is value
+               and getattr(function, '__code__', None) is code
+               for owner, name, value, function, code in _NORMAL_READERS)
 
 
 REPRESENTATION = 'finite_equal_frame_creation_chart_directed_pairs_v2'
@@ -98,10 +123,6 @@ def _key(owner_id, signed_side, signature):
 
 def _dot(first, second):
     return float(first[0])*float(second[0])+float(first[1])*float(second[1])
-
-
-def _step(value, direction):
-    return float(np.nextafter(np.float64(value), direction))
 
 
 def _projection_bounds(point, origin, tangent):
@@ -459,6 +480,20 @@ def _overlay(state, frames):
     events = sorted({bound for frame in frames for piece in frame.pieces
                      for bound in (piece.lower, piece.upper)})
     cursors, result = [0]*len(frames), []
+    normal_tables = {}
+    cache_normals = _normal_readers_unchanged()
+    def occurrence_normals(packet, ordinal):
+        # Immutable source packets used to reconstruct the entire normal table
+        # for every event interval. Gather at its first original read only, then
+        # reuse within THIS overlay invocation. Nothing is retained in a state.
+        if cache_normals and type(packet) in (PairPacket, BlockPacket):
+            key = id(packet)
+            table = normal_tables.get(key)
+            if table is None:
+                table = packet.normals
+                normal_tables[key] = table
+            return table[ordinal]
+        return packet.normals[ordinal]
     normal = (-state.tangent[1], state.tangent[0])
     denominator = _dot(state.tangent, state.tangent)
     try:
@@ -483,7 +518,7 @@ def _overlay(state, frames):
             if not all(math.isfinite(x) for x in (intercept, slope)+derivative):
                 raise ArithmeticError('nonfinite fused affine model')
             if any(_dot(fused_normal, endpoint_normal) < state.normal_cosine
-                   for packet, piece in active for endpoint_normal in packet.normals[piece.occurrence]):
+                   for packet, piece in active for endpoint_normal in occurrence_normals(packet, piece.occurrence)):
                 return (), 'unknown', 'fused_direction'
             first, first_bounds = _endpoint(state, lower, upper, intercept, slope, first=True)
             second, second_bounds = _endpoint(state, lower, upper, intercept, slope, first=False)
