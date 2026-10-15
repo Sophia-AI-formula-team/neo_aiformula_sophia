@@ -5,8 +5,12 @@
 ## R34已发布开发检查点：数值接缝修复，仍不是实时/两圈通过
 
 代码`010c089e03d8952677f688656639e215b816984d`，tag`lane-mapping-20261015-r34-rc1`，
-正确neo仓库分支/tag回读一致。八项精确代码CI已触发，回执时均运行中，未称全绿。
-[发布回执](receipts/2026-10-15-planner-r34-published.md)。
+正确neo仓库分支/tag回读一致。精确代码CI终态**6/8**，不是全绿。
+Endpoint tag在unit fixture匹配45.175ms>40ms后停止，DDS未执行；分支unit通过，
+后续DDS仅2/9，bootstrap连续超过80ms。完整原件/局限见
+[终态回执](receipts/2026-10-15-planner-r34-ci-result.md)、
+[session034](sessions/2026-10-15-planner-r34-ci-result-034/SESSION.md)。
+[原发布回执](receipts/2026-10-15-planner-r34-published.md)保留当时进行中状态。
 
 新显式开发选项`curve_closed_support=True`只在原始连续face/root、5+1独立帧和
 原5票有限域均支持时共用有限端点，重算方向并保留原方向门限。不同owner、

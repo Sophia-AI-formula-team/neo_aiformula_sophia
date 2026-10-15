@@ -1,0 +1,63 @@
+{
+  "scope": "synthetic CI; no physical vehicle, Unity or independent lap",
+  "unit": {
+    "lane_mapping_fixed": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "problem_cases": [],
+      "xml_sha256": "35087a758e7c28823492d038a533e3e5ba0b9092777cf19418a64e146637c906"
+    },
+    "lane_mapping_fixed_gnss": {
+      "tests": 958,
+      "failures": 0,
+      "errors": 1,
+      "skipped": 0,
+      "problem_cases": [
+        {
+          "classname": "lane_mapping_fixed_gnss.test.test_repeat_handoff",
+          "name": "test_capture_frozen_repeat_state_does_not_build_full_map_index"
+        }
+      ],
+      "xml_sha256": "bacb88bf97dcbe5bb57e25c7ec8e30b1970f8a182f162ed6b85962d445396158"
+    },
+    "lane_mapping_lya_reference": {
+      "tests": 3856,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "problem_cases": [],
+      "xml_sha256": "31a653acc32b2fea83d27cc242c2ae047fa956a4675fc3b6fd431bd50db4ef83"
+    }
+  },
+  "runtime_report_present": false,
+  "complete_unit_fixture_rejections": [
+    {
+      "frame_index": 16,
+      "accepted": false,
+      "reason": "match_runtime_budget_exceeded",
+      "processing_ms": 47.537877999957345,
+      "counts": {
+        "accepted": 15,
+        "bootstrap_odometry": 5,
+        "keyframes_prepared": 2,
+        "keyframes_promoted": 1,
+        "match_runtime_budget_exceeded": 1,
+        "matched_past_consensus": 10,
+        "rejected": 1
+      },
+      "metrics": {
+        "elapsed_ms": 45.175277,
+        "runtime_budget_ms": 40.0,
+        "pre_match_engine_ms": 2.314019999971606,
+        "overlap_ratio": 0.9836065573770492,
+        "scan_points": 122,
+        "scan_reused_identical_geometry_points": 122,
+        "iterations": 1,
+        "selected_reference": "candidate"
+      }
+    }
+  ],
+  "limitation": "No CPU-time, GC, thread/backend or cgroup evidence: no scheduling/BLAS/GC cause claimed."
+}
