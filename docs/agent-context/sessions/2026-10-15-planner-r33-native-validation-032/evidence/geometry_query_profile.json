@@ -1,0 +1,823 @@
+{
+  "scope": "held-out historical world-boundary correspondence, NOT full foreground overlap or causal localization",
+  "code_commit": "3997ae12d9d7dd20ccbc21498356209311e802a6",
+  "gates_changed": false,
+  "source_pins": {
+    "paint_geometry": "0700b60cecf686c2a0f8055ce2be27ecd84a1049e6153e646ad56529b767c9aa",
+    "finite_support": "31378c81b46dbe8408337d59daaa634158b0965c33d3176987db97bae50729c4",
+    "curve_consensus": "73f9f93a599aa16299b276f62d7471c882ebf3f4df864d68d353640dc0ed647f",
+    "curve_consensus_compact": "f9c673f2815b719d2a83095c626716efac078f1cdba537483a09f5bbef74c5d1",
+    "curve_evidence": "7c500480134bd1f70c7a1348a50d8e56efc5fdb2722f304791ecf86fd4b8c665",
+    "curve_evidence_blocks": "d381c32ce20c0c126617a5be971fb4723c56b79898eea145b42a00cdbe31b893",
+    "curve_geometry_builder": "b48c7f65a479bbee9aa7018848437fded46ab0cc82464f3e93723f8b1b7a5cad",
+    "curve_rounding": "dea6e48dd8dbfadf9c87e000a935e09f2741482fb2a7ebe180dca592549e8ddf",
+    "curve_observation_adapter": "f67f3afbbdc633a240a23b0eb0992fb8edaa847aaeb71ccd4c664ca5036d7e2a",
+    "curve_reference": "72bae4842bd59036d8f717fa4f5fdbe07e3c431214ea7d92bffc910855992d9b",
+    "continuation_support": "178cb6dbaf5af39ae285bd00eb90a7ee2c95b93205c1f78971dc41f15e9b19e4",
+    "local_moments": "bf667e3a42e49afb14c00e26447c697403221c42ac3b41b60ec2da22febfa32f",
+    "curve_retained_state": "40ec071ac1307fbd954c1f8cf147f49ba0cf3792f7a3f8b74e640966af10f7a7",
+    "curve_endpoint_native": "d0aaca2c0a6c9349dc910d68c52c389a0576ad86da8aa985a47aff0a29c6bc9a",
+    "boundary_localization": "c7940e225b3b9127feafcd140f65db0ff80f495a17c5846ab30000ac6100808b"
+  },
+  "matcher_config": {
+    "max_anchor_points": 100000,
+    "max_input_scan_points": 200000,
+    "max_scan_points": 600,
+    "max_scan_support_points": 4000,
+    "min_scan_points": 30,
+    "min_inliers": 24,
+    "anchor_voxel_m": 0.08,
+    "scan_voxel_m": 0.1,
+    "hash_cell_m": 0.5,
+    "normal_radius_m": 0.45,
+    "normal_max_radius_m": 1.35,
+    "normal_min_points": 6,
+    "normal_connectivity_m": 0.22,
+    "normal_max_angle_rad": 0.5235987755982988,
+    "normal_max_variance_ratio": 0.15,
+    "normal_max_thickness_m": 0.3,
+    "max_patch_points": 512,
+    "max_scan_range_m": 30.0,
+    "match_distance_m": 0.65,
+    "inlier_distance_m": 0.15,
+    "min_overlap_ratio": 0.55,
+    "max_rmse_m": 0.1,
+    "huber_delta_m": 0.08,
+    "normal_diversity_ratio": 0.03,
+    "allow_longitudinal_correction": false,
+    "observable_eigen_ratio": 0.01,
+    "rotation_scale_m": 4.0,
+    "max_iterations": 6,
+    "convergence_translation_m": 0.001,
+    "convergence_yaw_rad": 0.0002,
+    "initial_max_translation_m": 0.45,
+    "initial_max_yaw_rad": 0.12,
+    "tracking_max_translation_m": 0.12,
+    "tracking_max_yaw_rad": 0.04,
+    "max_total_translation_m": 1.0,
+    "max_total_yaw_rad": 0.25,
+    "runtime_budget_ms": 40.0,
+    "motion_visual_frame_sigma_m": 0.05,
+    "motion_lateral_noise_m_sqrt_s": 0.05,
+    "motion_yaw_noise_rad_sqrt_s": 0.002,
+    "motion_initial_lateral_sigma_m": 0.05,
+    "motion_initial_yaw_sigma_rad": 0.02,
+    "motion_visual_reference_period_s": 0.1,
+    "refinement_resolution_m": 0.1,
+    "refinement_min_frame_votes": 3,
+    "refinement_window_s": 10.0,
+    "refinement_max_cells": 30000,
+    "refinement_max_frames": 256
+  },
+  "queries": [
+    {
+      "sequence": 156,
+      "past_frontier_ns": 18009999620,
+      "input_stamp_ns": 18119999617,
+      "input_sha256": "a0ea4ac5dc9a425e64380a8ff0193f013eba82e2b476ebd5c72ccbbb701a9eb5",
+      "valid_boundary_count": 1059,
+      "nominal_matches": 748,
+      "covered": 2,
+      "covered_fraction": 0.0018885741265344666,
+      "nominal_segments": 2065,
+      "blocker_boxes": 2547,
+      "query_wall_ms": 173.028,
+      "query_process_cpu_ms": 171.875,
+      "nominal_distance_quantiles_m": [
+        4.2221851256911025e-05,
+        0.004358143473052671,
+        0.19728878624714485,
+        0.6419031986426317
+      ]
+    },
+    {
+      "sequence": 160,
+      "past_frontier_ns": 18449999610,
+      "input_stamp_ns": 18559999608,
+      "input_sha256": "a7f1bbbaf04b57fda4aa73bbde10bc1b5822f6e1126835000ea412511dd1f963",
+      "valid_boundary_count": 1159,
+      "nominal_matches": 871,
+      "covered": 11,
+      "covered_fraction": 0.009490940465918895,
+      "nominal_segments": 2487,
+      "blocker_boxes": 2588,
+      "query_wall_ms": 197.956,
+      "query_process_cpu_ms": 203.125,
+      "nominal_distance_quantiles_m": [
+        1.53839387706639e-05,
+        0.004374124483604234,
+        0.20787007226459045,
+        0.6487242169748701
+      ]
+    },
+    {
+      "sequence": 164,
+      "past_frontier_ns": 18889999600,
+      "input_stamp_ns": 18999999598,
+      "input_sha256": "c4e52fa96d21f20fee27735574afcbaefb001cddf1579c611a1655dc55087e99",
+      "valid_boundary_count": 1428,
+      "nominal_matches": 1156,
+      "covered": 45,
+      "covered_fraction": 0.031512605042016806,
+      "nominal_segments": 4021,
+      "blocker_boxes": 3100,
+      "query_wall_ms": 283.6219,
+      "query_process_cpu_ms": 281.25,
+      "nominal_distance_quantiles_m": [
+        8.733644059961761e-06,
+        0.004722190210468,
+        0.04258970635226688,
+        0.6483981278189735
+      ]
+    }
+  ],
+  "preparation": [
+    {
+      "sequence": 151,
+      "prepare_wall_ms": 193.0729,
+      "prepare_process_cpu_ms": 203.125,
+      "profiler_enabled": false,
+      "total_support_records": 18858
+    },
+    {
+      "sequence": 152,
+      "prepare_wall_ms": 204.0649,
+      "prepare_process_cpu_ms": 203.125,
+      "profiler_enabled": false,
+      "total_support_records": 31524
+    },
+    {
+      "sequence": 153,
+      "prepare_wall_ms": 260.4826,
+      "prepare_process_cpu_ms": 250.0,
+      "profiler_enabled": false,
+      "total_support_records": 46253
+    },
+    {
+      "sequence": 154,
+      "prepare_wall_ms": 313.6569,
+      "prepare_process_cpu_ms": 296.875,
+      "profiler_enabled": false,
+      "total_support_records": 60559
+    },
+    {
+      "sequence": 155,
+      "prepare_wall_ms": 732.0162,
+      "prepare_process_cpu_ms": 734.375,
+      "profiler_enabled": false,
+      "total_support_records": 79118
+    },
+    {
+      "sequence": 156,
+      "prepare_wall_ms": 787.4446,
+      "prepare_process_cpu_ms": 781.25,
+      "profiler_enabled": false,
+      "total_support_records": 87448
+    },
+    {
+      "sequence": 157,
+      "prepare_wall_ms": 829.9659,
+      "prepare_process_cpu_ms": 828.125,
+      "profiler_enabled": false,
+      "total_support_records": 94829
+    },
+    {
+      "sequence": 158,
+      "prepare_wall_ms": 856.6844,
+      "prepare_process_cpu_ms": 859.375,
+      "profiler_enabled": false,
+      "total_support_records": 101431
+    },
+    {
+      "sequence": 159,
+      "prepare_wall_ms": 1001.2176,
+      "prepare_process_cpu_ms": 984.375,
+      "profiler_enabled": false,
+      "total_support_records": 108559
+    },
+    {
+      "sequence": 160,
+      "prepare_wall_ms": 2579.5042,
+      "prepare_process_cpu_ms": 2562.5,
+      "profiler_enabled": true,
+      "total_support_records": 115784
+    },
+    {
+      "sequence": 161,
+      "prepare_wall_ms": 1062.5328,
+      "prepare_process_cpu_ms": 1062.5,
+      "profiler_enabled": false,
+      "total_support_records": 124483
+    },
+    {
+      "sequence": 162,
+      "prepare_wall_ms": 1360.9555,
+      "prepare_process_cpu_ms": 1375.0,
+      "profiler_enabled": false,
+      "total_support_records": 133471
+    },
+    {
+      "sequence": 163,
+      "prepare_wall_ms": 1299.0594,
+      "prepare_process_cpu_ms": 1296.875,
+      "profiler_enabled": false,
+      "total_support_records": 143254
+    },
+    {
+      "sequence": 164,
+      "prepare_wall_ms": 1443.2876,
+      "prepare_process_cpu_ms": 1453.125,
+      "profiler_enabled": false,
+      "total_support_records": 155627
+    }
+  ],
+  "profile160": [
+    {
+      "file": "paint_geometry.py",
+      "line": 794,
+      "function": "prepare",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.0100893,
+      "cumulative_seconds": 2.5756386
+    },
+    {
+      "file": "paint_geometry.py",
+      "line": 1131,
+      "function": "_prepare_curves",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.0020039000000000003,
+      "cumulative_seconds": 2.5100421
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 478,
+      "function": "build_curve_geometry",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.008532900000000001,
+      "cumulative_seconds": 2.3232216
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 439,
+      "function": "_export_key",
+      "primitive_calls": 701,
+      "calls": 701,
+      "self_seconds": 0.006699900000000001,
+      "cumulative_seconds": 2.2906902000000002
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 153,
+      "function": "_state_box",
+      "primitive_calls": 649,
+      "calls": 649,
+      "self_seconds": 0.0317287,
+      "cumulative_seconds": 0.9041675
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.all>",
+      "primitive_calls": 143435,
+      "calls": 147340,
+      "self_seconds": 0.1210837,
+      "cumulative_seconds": 0.5097238000000001
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 661,
+      "function": "_remaining_boxes",
+      "primitive_calls": 52,
+      "calls": 52,
+      "self_seconds": 6.69e-05,
+      "cumulative_seconds": 0.49005970000000004
+    },
+    {
+      "file": "curve_envelope_batch.py",
+      "line": 445,
+      "function": "dispatch_remaining_boxes",
+      "primitive_calls": 52,
+      "calls": 52,
+      "self_seconds": 0.0002742,
+      "cumulative_seconds": 0.4899928
+    },
+    {
+      "file": "curve_envelope_batch.py",
+      "line": 409,
+      "function": "candidate_remaining_boxes",
+      "primitive_calls": 52,
+      "calls": 52,
+      "self_seconds": 0.0023067,
+      "cumulative_seconds": 0.48953290000000005
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 107,
+      "function": "_world_envelope",
+      "primitive_calls": 7533,
+      "calls": 7533,
+      "self_seconds": 0.015349600000000001,
+      "cumulative_seconds": 0.4809513
+    },
+    {
+      "file": "curve_envelope_batch.py",
+      "line": 239,
+      "function": "_candidate",
+      "primitive_calls": 52,
+      "calls": 52,
+      "self_seconds": 0.21193260000000003,
+      "cumulative_seconds": 0.47854860000000005
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 345,
+      "function": "_finite_piece",
+      "primitive_calls": 2741,
+      "calls": 2741,
+      "self_seconds": 0.037785200000000005,
+      "cumulative_seconds": 0.4716543
+    },
+    {
+      "file": "curve_retained_state.py",
+      "line": 82,
+      "function": "materialize",
+      "primitive_calls": 701,
+      "calls": 701,
+      "self_seconds": 0.0023197,
+      "cumulative_seconds": 0.41162170000000003
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 114,
+      "function": "<genexpr>",
+      "primitive_calls": 22599,
+      "calls": 22599,
+      "self_seconds": 0.0211232,
+      "cumulative_seconds": 0.38861880000000004
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 481,
+      "function": "_overlay",
+      "primitive_calls": 701,
+      "calls": 701,
+      "self_seconds": 0.0632753,
+      "cumulative_seconds": 0.3585007
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 476,
+      "function": "_endpoint",
+      "primitive_calls": 10964,
+      "calls": 10964,
+      "self_seconds": 0.0037385,
+      "cumulative_seconds": 0.3471638
+    },
+    {
+      "file": "curve_endpoint_native.py",
+      "line": 70,
+      "function": "dispatch",
+      "primitive_calls": 10964,
+      "calls": 10964,
+      "self_seconds": 0.0215674,
+      "cumulative_seconds": 0.34342530000000004
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 85,
+      "function": "_mul",
+      "primitive_calls": 42224,
+      "calls": 42224,
+      "self_seconds": 0.0867378,
+      "cumulative_seconds": 0.2722057
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 99,
+      "function": "_decode",
+      "primitive_calls": 22532,
+      "calls": 22532,
+      "self_seconds": 0.1206875,
+      "cumulative_seconds": 0.2603893
+    },
+    {
+      "file": "curve_endpoint_native.py",
+      "line": 53,
+      "function": "_unchanged",
+      "primitive_calls": 10964,
+      "calls": 10964,
+      "self_seconds": 0.0054846,
+      "cumulative_seconds": 0.2342944
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 224,
+      "function": "occurrence_normals",
+      "primitive_calls": 13705,
+      "calls": 13705,
+      "self_seconds": 0.0047237,
+      "cumulative_seconds": 0.20738510000000002
+    },
+    {
+      "file": "curve_endpoint_native.py",
+      "line": 54,
+      "function": "<genexpr>",
+      "primitive_calls": 241208,
+      "calls": 241208,
+      "self_seconds": 0.08433270000000001,
+      "cumulative_seconds": 0.20375620000000003
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 214,
+      "function": "occurrence_original",
+      "primitive_calls": 13705,
+      "calls": 13705,
+      "self_seconds": 0.0387991,
+      "cumulative_seconds": 0.20266140000000002
+    },
+    {
+      "file": "curve_rounding.py",
+      "line": 21,
+      "function": "step",
+      "primitive_calls": 237362,
+      "calls": 237362,
+      "self_seconds": 0.14322400000000002,
+      "cumulative_seconds": 0.18498060000000002
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 163,
+      "function": "include",
+      "primitive_calls": 12192,
+      "calls": 12192,
+      "self_seconds": 0.0502936,
+      "cumulative_seconds": 0.16076800000000002
+    },
+    {
+      "file": "curve_retained_state.py",
+      "line": 61,
+      "function": "stage",
+      "primitive_calls": 240,
+      "calls": 240,
+      "self_seconds": 0.0006614,
+      "cumulative_seconds": 0.131102
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 206,
+      "function": "gather_original",
+      "primitive_calls": 5191,
+      "calls": 5191,
+      "self_seconds": 0.0182246,
+      "cumulative_seconds": 0.127299
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.getattr>",
+      "primitive_calls": 737666,
+      "calls": 737666,
+      "self_seconds": 0.0893288,
+      "cumulative_seconds": 0.1250191
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 77,
+      "function": "_add",
+      "primitive_calls": 45142,
+      "calls": 45142,
+      "self_seconds": 0.029284900000000003,
+      "cumulative_seconds": 0.11665900000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "primitive_calls": 23131,
+      "calls": 23131,
+      "self_seconds": 0.015064600000000001,
+      "cumulative_seconds": 0.1132306
+    },
+    {
+      "file": "curve_consensus_compact.py",
+      "line": 102,
+      "function": "_prepare_frames",
+      "primitive_calls": 240,
+      "calls": 240,
+      "self_seconds": 0.0018529000000000002,
+      "cumulative_seconds": 0.11187680000000001
+    },
+    {
+      "file": "curve_consensus_compact.py",
+      "line": 65,
+      "function": "_chart_frame",
+      "primitive_calls": 240,
+      "calls": 240,
+      "self_seconds": 0.0009251000000000001,
+      "cumulative_seconds": 0.10795740000000001
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 92,
+      "function": "_div",
+      "primitive_calls": 15561,
+      "calls": 15561,
+      "self_seconds": 0.033193400000000005,
+      "cumulative_seconds": 0.10245080000000001
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 131,
+      "function": "_own",
+      "primitive_calls": 3626,
+      "calls": 3626,
+      "self_seconds": 0.004569,
+      "cumulative_seconds": 0.0937473
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 227,
+      "function": "own_original",
+      "primitive_calls": 3626,
+      "calls": 3626,
+      "self_seconds": 0.007510200000000001,
+      "cumulative_seconds": 0.08833400000000001
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 379,
+      "function": "_chart_frame",
+      "primitive_calls": 240,
+      "calls": 240,
+      "self_seconds": 0.0148801,
+      "cumulative_seconds": 0.07755630000000001
+    },
+    {
+      "file": "curve_consensus_compact.py",
+      "line": 152,
+      "function": "_inventory_parts",
+      "primitive_calls": 942,
+      "calls": 942,
+      "self_seconds": 0.0095589,
+      "cumulative_seconds": 0.073716
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "primitive_calls": 58005,
+      "calls": 58005,
+      "self_seconds": 0.07104500000000001,
+      "cumulative_seconds": 0.07104500000000001
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 525,
+      "function": "<genexpr>",
+      "primitive_calls": 30151,
+      "calls": 30151,
+      "self_seconds": 0.0192205,
+      "cumulative_seconds": 0.058108900000000005
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 120,
+      "function": "_unknown_affine",
+      "primitive_calls": 495,
+      "calls": 495,
+      "self_seconds": 0.0024596,
+      "cumulative_seconds": 0.057529300000000005
+    },
+    {
+      "file": "fromnumeric.py",
+      "line": 66,
+      "function": "_wrapreduction",
+      "primitive_calls": 24787,
+      "calls": 24787,
+      "self_seconds": 0.022386700000000002,
+      "cumulative_seconds": 0.057062800000000004
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 304,
+      "function": "inventory",
+      "primitive_calls": 942,
+      "calls": 942,
+      "self_seconds": 0.014095600000000002,
+      "cumulative_seconds": 0.053586800000000004
+    },
+    {
+      "file": "curve_envelope_batch.py",
+      "line": 217,
+      "function": "_world",
+      "primitive_calls": 104,
+      "calls": 104,
+      "self_seconds": 0.0011491000000000001,
+      "cumulative_seconds": 0.0491201
+    },
+    {
+      "file": "curve_consensus_compact.py",
+      "line": 131,
+      "function": "inventory",
+      "primitive_calls": 701,
+      "calls": 701,
+      "self_seconds": 0.0009982,
+      "cumulative_seconds": 0.0483164
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 101,
+      "function": "_projection",
+      "primitive_calls": 1980,
+      "calls": 1980,
+      "self_seconds": 0.0047293000000000005,
+      "cumulative_seconds": 0.044733800000000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'append' of 'list' objects>",
+      "primitive_calls": 448217,
+      "calls": 448217,
+      "self_seconds": 0.0443715,
+      "cumulative_seconds": 0.0443715
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 71,
+      "function": "_bounded",
+      "primitive_calls": 102927,
+      "calls": 102927,
+      "self_seconds": 0.0295643,
+      "cumulative_seconds": 0.0431368
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.sum>",
+      "primitive_calls": 11550,
+      "calls": 14341,
+      "self_seconds": 0.0142158,
+      "cumulative_seconds": 0.042666800000000005
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 87,
+      "function": "<genexpr>",
+      "primitive_calls": 211120,
+      "calls": 211120,
+      "self_seconds": 0.029696600000000004,
+      "cumulative_seconds": 0.040752500000000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method math.isfinite>",
+      "primitive_calls": 579612,
+      "calls": 579612,
+      "self_seconds": 0.0395953,
+      "cumulative_seconds": 0.0395953
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.len>",
+      "primitive_calls": 485005,
+      "calls": 485005,
+      "self_seconds": 0.0392551,
+      "cumulative_seconds": 0.0392551
+    },
+    {
+      "file": "curve_endpoint_native.py",
+      "line": 60,
+      "function": "_plain_state",
+      "primitive_calls": 10964,
+      "calls": 10964,
+      "self_seconds": 0.010573500000000001,
+      "cumulative_seconds": 0.039069200000000005
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 128,
+      "function": "_projection_bounds",
+      "primitive_calls": 2590,
+      "calls": 2590,
+      "self_seconds": 0.013222600000000001,
+      "cumulative_seconds": 0.038264700000000006
+    },
+    {
+      "file": "fromnumeric.py",
+      "line": 86,
+      "function": "_wrapreduction_any_all",
+      "primitive_calls": 18452,
+      "calls": 18452,
+      "self_seconds": 0.014517,
+      "cumulative_seconds": 0.0380505
+    },
+    {
+      "file": "curve_envelope_batch.py",
+      "line": 158,
+      "function": "_mul",
+      "primitive_calls": 676,
+      "calls": 676,
+      "self_seconds": 0.007315500000000001,
+      "cumulative_seconds": 0.0374972
+    },
+    {
+      "file": "fromnumeric.py",
+      "line": 3149,
+      "function": "min",
+      "primitive_calls": 12383,
+      "calls": 12383,
+      "self_seconds": 0.0070911,
+      "cumulative_seconds": 0.037058900000000006
+    },
+    {
+      "file": "curve_consensus.py",
+      "line": 124,
+      "function": "_dot",
+      "primitive_calls": 76413,
+      "calls": 76413,
+      "self_seconds": 0.036881300000000006,
+      "cumulative_seconds": 0.036881300000000006
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 236,
+      "function": "<genexpr>",
+      "primitive_calls": 18901,
+      "calls": 18901,
+      "self_seconds": 0.0067350000000000005,
+      "cumulative_seconds": 0.036737200000000005
+    },
+    {
+      "file": "__init__.py",
+      "line": 717,
+      "function": "__getattr__",
+      "primitive_calls": 44480,
+      "calls": 44480,
+      "self_seconds": 0.0356903,
+      "cumulative_seconds": 0.0356903
+    },
+    {
+      "file": "fromnumeric.py",
+      "line": 3011,
+      "function": "max",
+      "primitive_calls": 12157,
+      "calls": 12157,
+      "self_seconds": 0.0062118,
+      "cumulative_seconds": 0.032774700000000004
+    },
+    {
+      "file": "curve_observation_adapter.py",
+      "line": 17,
+      "function": "prepare_packets",
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.006686900000000001,
+      "cumulative_seconds": 0.032621500000000005
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 247,
+      "function": "_remaining",
+      "primitive_calls": 9920,
+      "calls": 9920,
+      "self_seconds": 0.0234192,
+      "cumulative_seconds": 0.032373700000000005
+    },
+    {
+      "file": "fromnumeric.py",
+      "line": 2548,
+      "function": "all",
+      "primitive_calls": 12416,
+      "calls": 12416,
+      "self_seconds": 0.005490500000000001,
+      "cumulative_seconds": 0.0316976
+    },
+    {
+      "file": "curve_evidence_blocks.py",
+      "line": 110,
+      "function": "<genexpr>",
+      "primitive_calls": 90128,
+      "calls": 90128,
+      "self_seconds": 0.0210613,
+      "cumulative_seconds": 0.0311196
+    },
+    {
+      "file": "curve_geometry_builder.py",
+      "line": 373,
+      "function": "<genexpr>",
+      "primitive_calls": 41115,
+      "calls": 41115,
+      "self_seconds": 0.0166909,
+      "cumulative_seconds": 0.030422200000000003
+    }
+  ],
+  "completed": true,
+  "sources_unchanged": true
+}

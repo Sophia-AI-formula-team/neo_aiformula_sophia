@@ -1,0 +1,125 @@
+{
+  "scope": "explicit Windows unit regression; not ROS/DDS, causal Engine or laps",
+  "attempts": [
+    {
+      "run_id": "r34_slab_unit_01",
+      "tests": 28,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "7baa606c63808dd23ca3a69596ce4ad48b061e0e4b09c2dddb617f10379f9366"
+    },
+    {
+      "run_id": "r34_slab_unit_02",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "5364f32cf44a851cbc973f4bff0e005203bd68293cdbe93eddf1ff000f6f69c1"
+    },
+    {
+      "run_id": "r34_slab_unit_03",
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "df5db1d20c83ae5ff4cc78d8244ba36db2b1d23e880d6140cb8dac3064cc9755"
+    },
+    {
+      "run_id": "r34_closed_unit_01",
+      "tests": 7,
+      "failures": 7,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "39ba157b6a775095c0ee176cf933264fae3fe8eb89fe96486005f3942b54420f"
+    },
+    {
+      "run_id": "r34_closed_unit_02",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "28f33bbd43ad9648a137c16d37c889ef85f12fe685379fdf9d59568be265018e"
+    },
+    {
+      "run_id": "r34_geometry_unit_04",
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "bad007bf8988af37f71d29fac99e891d6e0e4eb53b8abd12c1db706ede289aa8"
+    }
+  ],
+  "final": {
+    "tests": 4814,
+    "passed": 4812,
+    "failures": 0,
+    "errors": 0,
+    "skips": [
+      {
+        "classname": "workspace.src.aiformula.control.lane_mapping_lya_reference.test.test_supervisor",
+        "name": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+        "time": "0.000",
+        "reason": "Target Linux process-group test"
+      },
+      {
+        "classname": "workspace.src.aiformula.control.lane_mapping_lya_reference.test.test_curve_endpoint_native",
+        "name": "test_non_nearest_hardware_mode_declines",
+        "time": "0.000",
+        "reason": "glibc x86 rounding-mode probe"
+      }
+    ],
+    "sources_unchanged": true,
+    "source_files": 235,
+    "explicit_test_files": 130,
+    "wall_seconds": [
+      0.15939220000291243,
+      120.66206819999934
+    ],
+    "source_grammar": "six changed/new Python files parsed as3.8",
+    "native": {
+      "backend": "native",
+      "api_version": 1,
+      "radius_graph_api_version": 1,
+      "local_support_api_version": 1,
+      "nearest_api_version": 1,
+      "cross_section_weights_api_version": 1,
+      "local_moments_api_version": 1,
+      "local_geometry_api_version": 1,
+      "finite_projection_bounds_api_version": 1,
+      "finite_current_union_api_version": 1,
+      "finite_current_union_real_call_passed": true,
+      "source_sha256": "0f8befc007400635a4ec7b5c8344a767ef06b5728d25d9b27b73e6e7eee5901a",
+      "binary_sha256": "51231943bb189ce69bc2644f872b2832600d519d343d00a188e91a6c363d3f81",
+      "binary_name": "_lane_mapping_lya_native.cp313-win_amd64.pyd",
+      "python": "3.13.13 (tags/v3.13.13:01104ce, Apr  7 2026, 19:25:48) [MSC v.1944 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "installed_prefix_verified": false,
+      "real_calls_passed": true
+    },
+    "result_sha256": "b8761e077912f2727741a8eb6283d6d80a2c013e8c00053a71a710c484116bca",
+    "xml_sha256": "5b0b934a2e5638bd9b3b6275b5034dddaebdc346e3e1580754c06ffea90647cf"
+  },
+  "earlier_full": {
+    "tests": 4811,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "result_sha256": "7f17c6466f510d9df743b4460fd091e34b6d0bbac48d414e1c568827daae2681"
+  },
+  "process_identity": [
+    {
+      "pid": 36192,
+      "birth": "134365246352519640",
+      "exit_code": 0,
+      "elapsed_seconds": 0.15939220000291243
+    },
+    {
+      "pid": 57772,
+      "birth": "134365246354148266",
+      "exit_code": 0,
+      "elapsed_seconds": 120.66206819999934
+    }
+  ],
+  "processes_independently_absent": true
+}

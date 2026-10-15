@@ -436,7 +436,8 @@ def _overlay_record_bound(state):
     return 20 + max(0, len(events)-1) * (8 + 2*len(state.frames))
 
 
-def _export_key(state, domain, confirmed_owner, multiple_keys, cosine, *, retained):
+def _export_key(state, domain, confirmed_owner, multiple_keys, cosine, *, retained,
+                closed_support=False):
     """One key's transient work, released before the next key is materialized.
 
     Return finite output tuples and counters only, never a ConsensusPiece or a
@@ -461,6 +462,9 @@ def _export_key(state, domain, confirmed_owner, multiple_keys, cosine, *, retain
                     exported = _finite_piece(state, piece, interval, cosine)
                     if exported is not None:
                         local.append(exported)
+            if closed_support and local and not multiple_keys:
+                from .curve_closed_support import close_supported_seams
+                local, _ = close_supported_seams(state, domain, local, cosine)
         except ArithmeticError:
             local, rejected = [], True
     pending = state.status != "confirmed" or not confirmed_owner or not local
@@ -477,7 +481,7 @@ def _export_key(state, domain, confirmed_owner, multiple_keys, cosine, *, retain
 
 def build_curve_geometry(records, domains, states, edges, continuations, config,
                          source_frontier_ns, *, base_support_records, orphan_sources=(),
-                         retained=False):
+                         retained=False, closed_support=False):
     """Prepare a COMPLETE global bundle or reject before the caller commits.
 
     records must be stable record-ID order and include pending owners. All
@@ -486,6 +490,8 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
     """
     if type(retained) is not bool:
         raise ValueError("retained geometry mode must be boolean")
+    if type(closed_support) is not bool:
+        raise ValueError("closed source support mode must be boolean")
     if retained:
         from .curve_retained_state import RetainedCurveState, _require_retained
         distinct = {}
@@ -586,8 +592,11 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
                     != np.asarray((domain.origin, domain.tangent), dtype=np.float64).tobytes()
                                       or state.normal_cosine != cosine):
                 raise ValueError("curve/finite domain original creation chart differs")
+            options = dict(retained=retained)
+            if closed_support:
+                options["closed_support"] = True
             local, rejected, pending, key_boxes, remainder, error, key_status, scratch, overlay_records = _export_key(
-                state, domain, confirmed_owner, len(keys) > 1, cosine, retained=retained)
+                state, domain, confirmed_owner, len(keys) > 1, cosine, **options)
             overlay_scratch_peak = max(overlay_scratch_peak, scratch)
             overlay_logical_records += overlay_records
             if local:
@@ -645,6 +654,8 @@ def build_curve_geometry(records, domains, states, edges, continuations, config,
             overlay_scratch_bound_records=overlay_scratch_peak,
             reconstructed_overlay_logical_records=overlay_logical_records,
             representation_storage="raw_frames_sequential_overlay_experiment")
+    if closed_support:
+        metrics["geometry_model"] = "closed_original_source_support_experiment_r34"
     return BuiltCurveGeometry(geometry, permissions, MappingProxyType(metrics), total)
 
 

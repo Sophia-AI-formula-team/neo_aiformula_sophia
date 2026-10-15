@@ -279,6 +279,18 @@ CI 不代替 RViz GUI 的车端显示验收。
 
 ## 离线定位与降噪验证
 
+R34 开发检查点：`BoundaryConsensus(curve_geometry=True, curve_storage="streamed",
+curve_closed_support=True)` 可显式试验原始连续边界的数值接缝修复。
+仅同一 owner/side/signature、至少5个独立原始帧和1个可靠帧、原5票有限域完整覆盖时，
+才能共用相邻有限片段的已有端点；重算法向并按原方向门限检查。
+不同 face ID 的坐标巧合、真实轮廓缺口、域缺口及竞争 signature 均不靠连接消除。
+原始证据和加权容量门不变。`curve_competitor_slab` 只是未接入的距离界研究工具。
+
+上述选项默认关闭，**TeachMapEngine/ROS/control 尚未启用v5**。当前固定历史 world
+观测片段中直接边界查询改善，但完整计算仍秒级；不是当前进程的因果位姿求解，
+也不是原始完整前景加权重叠率或两圈定位误差。不得据此配置车端驾驶；准确结果见
+仓库 STATUS 和 session033。未改车、仿真、LYA参数及所有准入/时间门限。
+
 `scripts/mask_localization_replay.py` 不启动 ROS 或输出车辆命令，输出到包内新建的 `.artifacts/mask_localization_<UTC>_<ID>/`，不覆盖旧实验。额外的离线依赖是 `rosbags`（读取真实 bag）和 `matplotlib`（作图）；不是节点运行依赖。
 
 ```bash

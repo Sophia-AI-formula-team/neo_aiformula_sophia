@@ -730,7 +730,8 @@ class BoundaryConsensus:
     plus ALL unknown/pending competition. Latest actual faces remain available
     separately for audit; neither graph chords nor node means are v5 geometry.
     """
-    def __init__(self, config=None, *, curve_geometry=False, curve_storage="dense"):
+    def __init__(self, config=None, *, curve_geometry=False, curve_storage="dense",
+                 curve_closed_support=False):
         cfg = dict(CONSENSUS_DEFAULT_CONFIG)
         if config is not None:
             if set(config) - set(cfg):
@@ -756,6 +757,9 @@ class BoundaryConsensus:
             raise ValueError("retained-block storage requires explicit v5 development mode")
         self._curve_mode = curve_geometry
         self._curve_storage = curve_storage
+        if type(curve_closed_support) is not bool or (curve_closed_support and not curve_geometry):
+            raise ValueError("closed support requires explicit curve development mode")
+        self._curve_closed_support = curve_closed_support
         self._curve_states = MappingProxyType({})
         self._curve_orphan_sources = ()
         self._curve_reference = None
@@ -1205,9 +1209,12 @@ class BoundaryConsensus:
                 OrphanSourceFrame(retained_source, reliable_quad), available_before_ns=stamp)
         ordered = tuple(all_records[key] for key in sorted(all_records))
         base = max(segment_count, edge_count)+domain_count+continuation_count
+        build_options = {}
+        if self._curve_closed_support:
+            build_options["closed_support"] = True
         built = build_curve_geometry(ordered, all_domains, staged, all_edges,
             all_continuations, cfg, stamp, base_support_records=base,
-            orphan_sources=orphan_sources, retained=self._curve_storage == "streamed")
+            orphan_sources=orphan_sources, retained=self._curve_storage == "streamed", **build_options)
         reference = self._make_curve_reference(ordered, all_edges, built, stamp)
         return MappingProxyType(staged), orphan_sources, reference, built.inventory
 
