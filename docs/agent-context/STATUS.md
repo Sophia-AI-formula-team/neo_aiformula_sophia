@@ -2,6 +2,21 @@
 
 最后整理：2026-10-15。这里是索引，不是代替不可覆盖的原始记录。
 
+## R31已发布，精确代码CI为7/8；两圈验收仍未完成
+
+代码`f6a192e604d7ffb8ea18a5a29e3608557a568d26`、tag
+`lane-mapping-20261015-r31-rc1`及session027/028已推到正确neo仓库并回读。
+[发布与终态回执](receipts/2026-10-15-planner-r31-published-ci-result.md)。
+Branch Endpoint的4722单测/4Header/9个静止DDS场景171检查通过；tag Endpoint
+在第16帧fixture建图被拒绝，1error，原因被截断，Header/DDS未运行。
+不能称全部CI通过，也不能断言具体超时原因；失败不会用无改动重跑覆盖。
+
+[session029](sessions/2026-10-15-planner-r31-hotspots-029/SESSION.md)已封存
+全量CI摘要、profile与依赖复用测量。整key可复用仅约三到四成，不能假定缓存
+能满足原时限；仍在163帧容量拒绝。新的session030只开始诊断记录修复和
+实际删除可重建中间表示的设计；未改变权重、上限或启用v5控制。
+**验收不变，尚无新首圈/冻结/第二圈/轨迹误差或视频，不是可上车基线。**
+
 ## R31开发检查点：保留证据压缩与包络批处理，仍未通过验收
 
 已直接修改neo对应包，显式blocks开发模式实际接入；完整原始面、incident重复、

@@ -1,0 +1,519 @@
+{
+  "scope": "Single 155 prepare after 151..154 commits; cProfile overhead included. No Engine/laps.",
+  "code_commit": "f6a192e604d7ffb8ea18a5a29e3608557a568d26",
+  "source_pins": {
+    "paint_geometry": "0912c4623ae0748d674606e61b8affcb96ad94a56602a1ea2e963c47cc30ec2f",
+    "finite_support": "31378c81b46dbe8408337d59daaa634158b0965c33d3176987db97bae50729c4",
+    "curve_consensus": "bbe37632cfd9085cebcfe0943007b8d3bac7371b7762f3d72cc8eb285cb396ea",
+    "curve_consensus_compact": "57b74f8a62d22ff3ef78178002324b04c3c69816e1c56df4f96638352b451fee",
+    "curve_evidence": "7c500480134bd1f70c7a1348a50d8e56efc5fdb2722f304791ecf86fd4b8c665",
+    "curve_evidence_blocks": "af4ac0b6b4cc7726b07abc0334469412a0612854151c67bda17913a67d8cab02",
+    "curve_geometry_builder": "eed39b4d0a882b2ee1eda79a32ad4645f1a5ffe01137b1dbd4cfb08e334b4270",
+    "curve_rounding": "dea6e48dd8dbfadf9c87e000a935e09f2741482fb2a7ebe180dca592549e8ddf",
+    "curve_observation_adapter": "f67f3afbbdc633a240a23b0eb0992fb8edaa847aaeb71ccd4c664ca5036d7e2a",
+    "curve_reference": "72bae4842bd59036d8f717fa4f5fdbe07e3c431214ea7d92bffc910855992d9b",
+    "continuation_support": "178cb6dbaf5af39ae285bd00eb90a7ee2c95b93205c1f78971dc41f15e9b19e4",
+    "local_moments": "bf667e3a42e49afb14c00e26447c697403221c42ac3b41b60ec2da22febfa32f",
+    "curve_envelope_batch": "acef732118beaeddf0e32ecbbb6a963251dfb6a09528caf4a5927c421eaf469f"
+  },
+  "sources_unchanged": true,
+  "elapsed_with_profiler_seconds": 1.9086662999980035,
+  "total_support_records": 111828,
+  "top": [
+    {
+      "module": "paint_geometry.py",
+      "line": 794,
+      "function": "prepare",
+      "calls": 1,
+      "primitive_calls": 1,
+      "self_seconds": 0.0113173,
+      "cumulative_seconds": 1.9081796000000002
+    },
+    {
+      "module": "paint_geometry.py",
+      "line": 1131,
+      "function": "_prepare_curves",
+      "calls": 1,
+      "primitive_calls": 1,
+      "self_seconds": 0.0022256000000000003,
+      "cumulative_seconds": 1.8392413
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 426,
+      "function": "build_curve_geometry",
+      "calls": 1,
+      "primitive_calls": 1,
+      "self_seconds": 0.007780400000000001,
+      "cumulative_seconds": 1.3776016
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 605,
+      "function": "_remaining_boxes",
+      "calls": 48,
+      "primitive_calls": 48,
+      "self_seconds": 0.00010360000000000001,
+      "cumulative_seconds": 0.5208147000000001
+    },
+    {
+      "module": "curve_envelope_batch.py",
+      "line": 445,
+      "function": "dispatch_remaining_boxes",
+      "calls": 48,
+      "primitive_calls": 48,
+      "self_seconds": 0.0003399,
+      "cumulative_seconds": 0.5207111
+    },
+    {
+      "module": "curve_envelope_batch.py",
+      "line": 409,
+      "function": "candidate_remaining_boxes",
+      "calls": 48,
+      "primitive_calls": 48,
+      "self_seconds": 0.0034792,
+      "cumulative_seconds": 0.5202002
+    },
+    {
+      "module": "curve_envelope_batch.py",
+      "line": 239,
+      "function": "_candidate",
+      "calls": 48,
+      "primitive_calls": 48,
+      "self_seconds": 0.2208727,
+      "cumulative_seconds": 0.5074797
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 153,
+      "function": "_state_box",
+      "calls": 434,
+      "primitive_calls": 434,
+      "self_seconds": 0.018938700000000003,
+      "cumulative_seconds": 0.4911786
+    },
+    {
+      "module": "curve_consensus_compact.py",
+      "line": 76,
+      "function": "advance_curve",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.0029166,
+      "cumulative_seconds": 0.4026198
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 345,
+      "function": "_finite_piece",
+      "calls": 2065,
+      "primitive_calls": 2065,
+      "self_seconds": 0.0279497,
+      "cumulative_seconds": 0.3355794
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 442,
+      "function": "_endpoint",
+      "calls": 8260,
+      "primitive_calls": 8260,
+      "self_seconds": 0.0437313,
+      "cumulative_seconds": 0.2715827
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 476,
+      "function": "_overlay",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.0402029,
+      "cumulative_seconds": 0.25900500000000004
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 107,
+      "function": "_world_envelope",
+      "calls": 4321,
+      "primitive_calls": 4321,
+      "self_seconds": 0.0079393,
+      "cumulative_seconds": 0.2538459
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 40,
+      "function": "_decode",
+      "calls": 16791,
+      "primitive_calls": 16791,
+      "self_seconds": 0.0189215,
+      "cumulative_seconds": 0.21484240000000002
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 128,
+      "function": "_projection_bounds",
+      "calls": 15010,
+      "primitive_calls": 15010,
+      "self_seconds": 0.070243,
+      "cumulative_seconds": 0.2066144
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 114,
+      "function": "<genexpr>",
+      "calls": 12963,
+      "primitive_calls": 12963,
+      "self_seconds": 0.0117912,
+      "cumulative_seconds": 0.20527820000000002
+    },
+    {
+      "module": "curve_rounding.py",
+      "line": 21,
+      "function": "step",
+      "calls": 279542,
+      "primitive_calls": 279542,
+      "self_seconds": 0.1522901,
+      "cumulative_seconds": 0.1978929
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<method 'join' of 'bytes' objects>",
+      "calls": 17844,
+      "primitive_calls": 17844,
+      "self_seconds": 0.0166723,
+      "cumulative_seconds": 0.1885957
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 44,
+      "function": "<genexpr>",
+      "calls": 89457,
+      "primitive_calls": 89457,
+      "self_seconds": 0.028725200000000003,
+      "cumulative_seconds": 0.1646776
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 80,
+      "function": "get",
+      "calls": 83046,
+      "primitive_calls": 83046,
+      "self_seconds": 0.05388370000000001,
+      "cumulative_seconds": 0.1386089
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 85,
+      "function": "_mul",
+      "calls": 23267,
+      "primitive_calls": 23267,
+      "self_seconds": 0.0440102,
+      "cumulative_seconds": 0.1383021
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 163,
+      "function": "gather_original",
+      "calls": 3973,
+      "primitive_calls": 3973,
+      "self_seconds": 0.0130536,
+      "cumulative_seconds": 0.1341291
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 181,
+      "function": "occurrence_normals",
+      "calls": 10325,
+      "primitive_calls": 10325,
+      "self_seconds": 0.0034772,
+      "cumulative_seconds": 0.13217610000000002
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 171,
+      "function": "occurrence_original",
+      "calls": 10325,
+      "primitive_calls": 10325,
+      "self_seconds": 0.0267744,
+      "cumulative_seconds": 0.1286989
+    },
+    {
+      "module": "curve_consensus_compact.py",
+      "line": 65,
+      "function": "_chart_frame",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.0010058,
+      "cumulative_seconds": 0.11772750000000001
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method builtins.all>",
+      "calls": 59604,
+      "primitive_calls": 55264,
+      "self_seconds": 0.0335617,
+      "cumulative_seconds": 0.10245900000000001
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 163,
+      "function": "include",
+      "calls": 7333,
+      "primitive_calls": 7333,
+      "self_seconds": 0.0273656,
+      "cumulative_seconds": 0.087914
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "calls": 17547,
+      "primitive_calls": 17547,
+      "self_seconds": 0.011326800000000001,
+      "cumulative_seconds": 0.08522
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 379,
+      "function": "_chart_frame",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.014889000000000001,
+      "cumulative_seconds": 0.0755509
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 131,
+      "function": "_own",
+      "calls": 2488,
+      "primitive_calls": 2488,
+      "self_seconds": 0.0028545000000000003,
+      "cumulative_seconds": 0.0629851
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 184,
+      "function": "own_original",
+      "calls": 2488,
+      "primitive_calls": 2488,
+      "self_seconds": 0.0047481,
+      "cumulative_seconds": 0.059516000000000006
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 77,
+      "function": "_add",
+      "calls": 24263,
+      "primitive_calls": 24263,
+      "self_seconds": 0.014263300000000001,
+      "cumulative_seconds": 0.0576602
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 92,
+      "function": "_div",
+      "calls": 8816,
+      "primitive_calls": 8816,
+      "self_seconds": 0.0170656,
+      "cumulative_seconds": 0.052800200000000005
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "calls": 41266,
+      "primitive_calls": 41266,
+      "self_seconds": 0.0487563,
+      "cumulative_seconds": 0.0487563
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method numpy.frombuffer>",
+      "calls": 102129,
+      "primitive_calls": 102129,
+      "self_seconds": 0.047298900000000005,
+      "cumulative_seconds": 0.047298900000000005
+    },
+    {
+      "module": "curve_envelope_batch.py",
+      "line": 217,
+      "function": "_world",
+      "calls": 96,
+      "primitive_calls": 96,
+      "self_seconds": 0.00109,
+      "cumulative_seconds": 0.0445283
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 520,
+      "function": "<genexpr>",
+      "calls": 22715,
+      "primitive_calls": 22715,
+      "self_seconds": 0.0131698,
+      "cumulative_seconds": 0.0444553
+    },
+    {
+      "module": "curve_consensus_compact.py",
+      "line": 68,
+      "function": "<genexpr>",
+      "calls": 1494,
+      "primitive_calls": 1494,
+      "self_seconds": 0.0005662,
+      "cumulative_seconds": 0.0408166
+    },
+    {
+      "module": "curve_geometry_builder.py",
+      "line": 247,
+      "function": "_remaining",
+      "calls": 10895,
+      "primitive_calls": 10895,
+      "self_seconds": 0.030105000000000003,
+      "cumulative_seconds": 0.039838200000000004
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<method 'append' of 'list' objects>",
+      "calls": 382951,
+      "primitive_calls": 382951,
+      "self_seconds": 0.0358271,
+      "cumulative_seconds": 0.0358271
+    },
+    {
+      "module": "fromnumeric.py",
+      "line": 86,
+      "function": "_wrapreduction_any_all",
+      "calls": 17106,
+      "primitive_calls": 17106,
+      "self_seconds": 0.0132794,
+      "cumulative_seconds": 0.0354845
+    },
+    {
+      "module": "curve_observation_adapter.py",
+      "line": 17,
+      "function": "prepare_packets",
+      "calls": 1,
+      "primitive_calls": 1,
+      "self_seconds": 0.0072132,
+      "cumulative_seconds": 0.0349321
+    },
+    {
+      "module": "curve_envelope_batch.py",
+      "line": 158,
+      "function": "_mul",
+      "calls": 624,
+      "primitive_calls": 624,
+      "self_seconds": 0.006786800000000001,
+      "cumulative_seconds": 0.0339344
+    },
+    {
+      "module": "fromnumeric.py",
+      "line": 66,
+      "function": "_wrapreduction",
+      "calls": 15090,
+      "primitive_calls": 15090,
+      "self_seconds": 0.0124141,
+      "cumulative_seconds": 0.032554
+    },
+    {
+      "module": "finite_support.py",
+      "line": 618,
+      "function": "_advance_domain_validated",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.0010351000000000002,
+      "cumulative_seconds": 0.0303677
+    },
+    {
+      "module": "curve_consensus_compact.py",
+      "line": 109,
+      "function": "inventory",
+      "calls": 250,
+      "primitive_calls": 250,
+      "self_seconds": 0.003457,
+      "cumulative_seconds": 0.029113700000000003
+    },
+    {
+      "module": "fromnumeric.py",
+      "line": 2548,
+      "function": "all",
+      "calls": 11362,
+      "primitive_calls": 11362,
+      "self_seconds": 0.0047666,
+      "cumulative_seconds": 0.0288948
+    },
+    {
+      "module": "curve_consensus.py",
+      "line": 124,
+      "function": "_dot",
+      "calls": 66291,
+      "primitive_calls": 66291,
+      "self_seconds": 0.028834400000000003,
+      "cumulative_seconds": 0.028834400000000003
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<method 'reshape' of 'numpy.ndarray' objects>",
+      "calls": 119585,
+      "primitive_calls": 119585,
+      "self_seconds": 0.028606500000000003,
+      "cumulative_seconds": 0.028606500000000003
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method builtins.abs>",
+      "calls": 344034,
+      "primitive_calls": 344034,
+      "self_seconds": 0.026052600000000002,
+      "cumulative_seconds": 0.026052600000000002
+    },
+    {
+      "module": "finite_support.py",
+      "line": 648,
+      "function": "_advance_domain_arrays",
+      "calls": 249,
+      "primitive_calls": 249,
+      "self_seconds": 0.005168600000000001,
+      "cumulative_seconds": 0.025509100000000003
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method math.nextafter>",
+      "calls": 277483,
+      "primitive_calls": 277483,
+      "self_seconds": 0.0243242,
+      "cumulative_seconds": 0.0243242
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method numpy.asarray>",
+      "calls": 13005,
+      "primitive_calls": 13005,
+      "self_seconds": 0.0240467,
+      "cumulative_seconds": 0.0240467
+    },
+    {
+      "module": "curve_evidence_blocks.py",
+      "line": 28,
+      "function": "_layout",
+      "calls": 103810,
+      "primitive_calls": 103810,
+      "self_seconds": 0.023552100000000003,
+      "cumulative_seconds": 0.023552100000000003
+    },
+    {
+      "module": "~",
+      "line": 0,
+      "function": "<built-in method builtins.max>",
+      "calls": 225550,
+      "primitive_calls": 225550,
+      "self_seconds": 0.0217858,
+      "cumulative_seconds": 0.02308
+    }
+  ]
+}
