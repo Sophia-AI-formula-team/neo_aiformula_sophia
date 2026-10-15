@@ -2,7 +2,11 @@
 
 最后整理：2026-10-15。这里是索引，不是代替不可覆盖的原始记录。
 
-## R34进行中：已修复原始连续边界的数值接缝，仍不是实时/两圈通过
+## R34已发布开发检查点：数值接缝修复，仍不是实时/两圈通过
+
+代码`010c089e03d8952677f688656639e215b816984d`，tag`lane-mapping-20261015-r34-rc1`，
+正确neo仓库分支/tag回读一致。八项精确代码CI已触发，回执时均运行中，未称全绿。
+[发布回执](receipts/2026-10-15-planner-r34-published.md)。
 
 新显式开发选项`curve_closed_support=True`只在原始连续face/root、5+1独立帧和
 原5票有限域均支持时共用有限端点，重算方向并保留原方向门限。不同owner、
@@ -12,7 +16,7 @@ signature、真实轮廓/域缺口不合并；所有原始证据、票数、权�
 直接边界可用点由2/11/45增至191/185/137，**不是完整前景加权overlap或轨迹误差**。
 查询变快但prepare仍约0.98～1.55秒，未通过原时限。默认/Engine/control未切换。
 新几何47项单测通过；最终全量4812pass/2平台skip，130明确文件/235pins稳定。
-见[session033](sessions/2026-10-15-planner-oriented-competitors-r34-033/SESSION.md)，tag与CI回执待补。
+见[session033](sessions/2026-10-15-planner-oriented-competitors-r34-033/SESSION.md)及上方发布回执。
 更紧的chart距离界仅45→51，owner pooling假设仅45→49，均未作为运行修复接入。
 **无新Unity首圈/冻结/第二圈/误差/视频，验收标准不变。**
 
