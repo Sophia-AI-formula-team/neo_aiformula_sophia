@@ -198,3 +198,7 @@ def _inventory_parts(distinct, pieces, *, orphan_capsules=()):
     result["raw_plus_canonical_payload_bytes"] = (result["raw_payload_bytes"]
         + result["derived_canonical_payload_bytes"])
     return result
+
+
+from .curve_endpoint_native import _register_state_type as _register_endpoint_state
+_register_endpoint_state(CurveState, _SEAL)

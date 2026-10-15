@@ -2,7 +2,22 @@
 
 最后整理：2026-10-15。这里是索引，不是代替不可覆盖的原始记录。
 
+## R33原生端点源码检查点：等待CI编译和数值证明
+
+新增可选端点C API，保留原8次内移/向外舍入/坐标与domain检查及全部旧接口。
+受支持的factory类型与原helper绑定才进入C，未知FP模式/未认证结果走原scalar。
+本地93项回退测试通过、5项新native依赖测试跳过，5文件通过Python3.8语法检查。
+**新C尚无本地编译/执行证明，现存旧binary未替换。** Windows/Linux原生CI将
+强制执行1008分析输入oracle和完整曲线/存储回归。
+[封存源码记录031](sessions/2026-10-15-planner-r33-native-endpoint-031/SESSION.md)。
+待新tag和CI回读。车/仿真/LYA、默认Engine及验收门限未改；尚无两圈/误差/视频。
+
 ## R32：实际释放中间曲线表，片段容量通过；实时与两圈仍未通过
+
+已发布代码`3406b524c8e64fbe07d52d0e59d03d9815ea9e1b`，tag
+`lane-mapping-20261015-r32-rc1`，回读一致。CI终态7/8；Endpoint分支成功，
+tag38694464129失败，新版完整日志待逐项诊断。
+[发布回执](receipts/2026-10-15-planner-r32-published.md)。
 
 显式`curve_storage="streamed"`保留全部原始5+1证据，只逐key临时重建overlay；
 按原系数/200000上限计完整保留地图、最终导出及保守的单key overlay上界。
@@ -12,7 +27,7 @@
 162计数133471，164计数155627；仍需1.04–1.81秒，远超原时限。
 [记录与局限](sessions/2026-10-15-planner-r32-retention-030/SESSION.md)、
 [本地结果回执](receipts/2026-10-15-planner-r32-local-result.md)。
-待新tag发布/CI回读；不能从这段历史pose输入推断新因果定位或整圈效果。
+不能从这段历史pose输入推断新因果定位或整圈效果。
 **默认/Engine/control未切换，无新首圈/冻结/第二圈/误差/视频。验收标准不变。**
 
 ## R31已发布，精确代码CI为7/8；两圈验收仍未完成

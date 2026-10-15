@@ -109,3 +109,7 @@ def advance(previous, current, *, available_before_ns):
     _require_retained(previous)
     return compact._advance_prepared(
         previous, current, available_before_ns=available_before_ns)
+
+
+from .curve_endpoint_native import _register_state_type as _register_endpoint_state
+_register_endpoint_state(RetainedCurveState, _SEAL)

@@ -439,7 +439,7 @@ def _chart_frame(state, packet):
     return _ChartFrame(packet, 'known', tuple(pieces[i] for i in order))
 
 
-def _endpoint(state, lower, upper, intercept, slope, *, first):
+def _endpoint_scalar(state, lower, upper, intercept, slope, *, first):
     tangent = state.tangent
     normal = (-tangent[1], tangent[0])
     denominator = _dot(tangent, tangent)
@@ -471,6 +471,11 @@ def _endpoint(state, lower, upper, intercept, slope, *, first):
             if not lower < parameter < upper:
                 break
     raise ArithmeticError('cannot certify rounded endpoint inside original finite domain')
+
+
+def _endpoint(state, lower, upper, intercept, slope, *, first):
+    return _endpoint_native.dispatch(state, lower, upper, intercept, slope,
+        first=first, bindings=_ENDPOINT_BINDINGS)
 
 
 def _overlay(state, frames):
@@ -569,3 +574,11 @@ def advance_curve(previous, current, *, available_before_ns):
     if candidate.storage_units > previous.max_storage_units:
         raise ValueError('complete derived curve capacity exceeded; update rejected')
     return candidate
+
+
+# Registration stores only class/seal identities. It does not retain any map
+# state and avoids a circular import with compact/retained factory modules.
+from . import curve_endpoint_native as _endpoint_native
+import sys as _sys
+_endpoint_native._register_state_type(CurveState, _STATE_SEAL)
+_ENDPOINT_BINDINGS = _endpoint_native.bind_helpers(_sys.modules[__name__])

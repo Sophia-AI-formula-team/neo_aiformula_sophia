@@ -1792,7 +1792,144 @@ cleanup:
     return output;
 }
 
+/* Curve endpoint arithmetic has no v4 zero shortcuts. Each volatile store
+ * rounds one Python binary64 operation; do not contract multiply/add pairs.
+ * Optional acceleration declines without a Python error when it cannot prove
+ * the same eight-step inward endpoint. The caller then runs its scalar oracle.
+ */
+static double ce_add(double a, double b) { volatile double v = a+b; return v; }
+static double ce_sub(double a, double b) { volatile double v = a-b; return v; }
+static double ce_mul(double a, double b) { volatile double v = a*b; return v; }
+static double ce_div(double a, double b) { volatile double v = a/b; return v; }
+static double ce_min(double a, double b) { return b < a ? b : a; }
+static double ce_max(double a, double b) { return b > a ? b : a; }
+
+static int ce_environment(void)
+{
+#if FLT_EVAL_METHOD != 0
+    return 0;
+#elif defined(_MSC_VER) && defined(_M_X64)
+    __declspec(align(16)) unsigned char image[512];
+    uint16_t control;
+    uint32_t mxcsr;
+    /* FXSAVE reads both control words without changing the caller's mode. */
+    _fxsave64(image);
+    memcpy(&control, image, sizeof(control));
+    memcpy(&mxcsr, image+24, sizeof(mxcsr));
+    return (control & 0x0c00u) == 0 && (control & 0x003fu) == 0x003fu &&
+           (mxcsr & ((3u<<13) | (1u<<15) | (1u<<6))) == 0 &&
+           (mxcsr & 0x1f80u) == 0x1f80u;
+#elif defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+    uint16_t control;
+    uint32_t mxcsr;
+    __asm__ volatile("fnstcw %0" : "=m" (control));
+    __asm__ volatile("stmxcsr %0" : "=m" (mxcsr));
+    return (control & 0x0c00u) == 0 && (control & 0x003fu) == 0x003fu &&
+           (mxcsr & ((3u<<13) | (1u<<15) | (1u<<6))) == 0 &&
+           (mxcsr & 0x1f80u) == 0x1f80u;
+#elif defined(__aarch64__) && (defined(__GNUC__) || defined(__clang__))
+    uint64_t control;
+    __asm__ volatile("mrs %0, fpcr" : "=r" (control));
+    return (control & ((UINT64_C(3)<<22) | (UINT64_C(1)<<24) |
+                       UINT64_C(0x9f00) | UINT64_C(7))) == 0;
+#else
+    return 0;
+#endif
+}
+
+static int ce_projection(double x, double y, const double *origin,
+                         const double *tangent, double *lower, double *upper)
+{
+    double point[2], lo[2], hi[2];
+    int axis;
+    point[0] = x; point[1] = y;
+    for (axis=0; axis<2; ++axis) {
+        double delta = ce_sub(point[axis], origin[axis]);
+        double a = ce_mul(nextafter(delta, -INFINITY), tangent[axis]);
+        double b = ce_mul(nextafter(delta, INFINITY), tangent[axis]);
+        lo[axis] = nextafter(ce_min(a, b), -INFINITY);
+        hi[axis] = nextafter(ce_max(a, b), INFINITY);
+    }
+    *lower = nextafter(ce_add(lo[0], lo[1]), -INFINITY);
+    *upper = nextafter(ce_add(hi[0], hi[1]), INFINITY);
+    return isfinite(*lower) && isfinite(*upper);
+}
+
+static PyObject *curve_endpoint(PyObject *self, PyObject *args)
+{
+    PyObject *origin_obj, *tangent_obj, *lower_obj, *upper_obj;
+    PyObject *intercept_obj, *slope_obj, *first_obj, *objects[8];
+    double values[8], origin[2], tangent[2], normal[2], point[2];
+    double lower, upper, intercept, slope, denominator, parameter;
+    int index, axis, iteration, first;
+    (void)self;
+    if (!PyArg_ParseTuple(args, "OOOOOOO:curve_endpoint", &origin_obj, &tangent_obj,
+                         &lower_obj, &upper_obj, &intercept_obj, &slope_obj, &first_obj))
+        return NULL;
+    if (!PyTuple_CheckExact(origin_obj) || PyTuple_GET_SIZE(origin_obj) != 2 ||
+        !PyTuple_CheckExact(tangent_obj) || PyTuple_GET_SIZE(tangent_obj) != 2 ||
+        !PyBool_Check(first_obj)) {
+        PyErr_SetString(PyExc_TypeError, "curve endpoint needs two exact tuples and a bool direction");
+        return NULL;
+    }
+    objects[0] = PyTuple_GET_ITEM(origin_obj, 0);
+    objects[1] = PyTuple_GET_ITEM(origin_obj, 1);
+    objects[2] = PyTuple_GET_ITEM(tangent_obj, 0);
+    objects[3] = PyTuple_GET_ITEM(tangent_obj, 1);
+    objects[4] = lower_obj; objects[5] = upper_obj;
+    objects[6] = intercept_obj; objects[7] = slope_obj;
+    for (index=0; index<8; ++index) {
+        if (!PyFloat_CheckExact(objects[index])) {
+            PyErr_SetString(PyExc_TypeError, "curve endpoint coordinates must be exact built-in floats");
+            return NULL;
+        }
+    }
+    if (!ce_environment()) Py_RETURN_NONE;
+    for (index=0; index<8; ++index) {
+        values[index] = PyFloat_AS_DOUBLE(objects[index]);
+        if (!isfinite(values[index])) Py_RETURN_NONE;
+    }
+    origin[0]=values[0]; origin[1]=values[1];
+    tangent[0]=values[2]; tangent[1]=values[3];
+    normal[0]=-tangent[1]; normal[1]=tangent[0];
+    lower=values[4]; upper=values[5]; intercept=values[6]; slope=values[7];
+    if (!(lower < upper)) Py_RETURN_NONE;
+    denominator=ce_add(ce_mul(tangent[0], tangent[0]), ce_mul(tangent[1], tangent[1]));
+    if (!isfinite(denominator) || denominator <= 0.) Py_RETURN_NONE;
+    first=first_obj == Py_True;
+    parameter=first ? lower : upper;
+    for (iteration=0; iteration<8; ++iteration) {
+        double v=ce_add(intercept, ce_mul(slope, parameter));
+        double projection_lower, projection_upper, resolution=0., movement;
+        for (axis=0; axis<2; ++axis) {
+            double offset=ce_div(ce_add(ce_mul(tangent[axis], parameter),
+                                      ce_mul(normal[axis], v)), denominator);
+            point[axis]=ce_add(origin[axis], offset);
+            if (!isfinite(point[axis]) || fabs(point[axis]) > 1.e7) Py_RETURN_NONE;
+        }
+        if (!ce_projection(point[0], point[1], origin, tangent,
+                           &projection_lower, &projection_upper)) Py_RETURN_NONE;
+        if (projection_lower >= lower && projection_upper <= upper)
+            return Py_BuildValue("((dd)(dd))", point[0], point[1], projection_lower, projection_upper);
+        for (axis=0; axis<2; ++axis) {
+            double offset=ce_div(ce_add(ce_mul(tangent[axis], parameter),
+                                      ce_mul(normal[axis], v)), denominator);
+            double scale=ce_max(ce_max(fabs(origin[axis]), fabs(offset)), fabs(point[axis]));
+            double gap=ce_sub(nextafter(scale, INFINITY), scale);
+            resolution=ce_add(resolution, ce_mul(fabs(tangent[axis]), gap));
+        }
+        movement=ce_max(ce_max(resolution, first ? ce_sub(lower, projection_lower)
+                                                : ce_sub(projection_upper, upper)), 0.);
+        parameter=nextafter(first ? ce_add(parameter, movement) : ce_sub(parameter, movement),
+                            first ? INFINITY : -INFINITY);
+        if (!(lower < parameter && parameter < upper)) break;
+    }
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef methods[] = {
+    {"curve_endpoint", curve_endpoint, METH_VARARGS,
+     "Optional exact eight-step inward curve endpoint; None requests the original scalar fallback."},
     {"finite_current_union", finite_current_union, METH_VARARGS,
      "Exact current-frame finite union from immutable f64 segments and caller-admitted masks."},
     {"finite_projection_bounds", finite_projection_bounds, METH_VARARGS,
@@ -1836,6 +1973,7 @@ PyMODINIT_FUNC PyInit__lane_mapping_lya_native(void)
         PyModule_AddIntConstant(result, "LOCAL_GEOMETRY_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "FINITE_PROJECTION_BOUNDS_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "FINITE_CURRENT_UNION_API_VERSION", 1) < 0 ||
+        PyModule_AddIntConstant(result, "CURVE_ENDPOINT_API_VERSION", 1) < 0 ||
         PyModule_AddIntConstant(result, "MAX_CANDIDATES", MAX_CANDIDATES) < 0 ||
         PyModule_AddIntConstant(result, "MAX_POINTS", MAX_POINTS) < 0 ||
         PyModule_AddIntConstant(result, "MAX_QUERIES", MAX_QUERIES) < 0 ||

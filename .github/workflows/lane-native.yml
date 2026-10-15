@@ -40,6 +40,7 @@ jobs:
           mkdir native-evidence
           PYTHONPATH=. python scripts/verify_native.py --source native/lane_graph_native.c --output native-evidence/native.json
           python -m pytest test/test_native_graph_integration.py test/test_native_graph_kernel.py test/test_native_radius_graph.py test/test_native_local_support.py test/test_native_nearest.py test/test_native_cross_section.py test/test_native_local_moments.py test/test_native_local_geometry.py test/test_native_finite_projection.py test/test_native_current_union.py test/test_native_current_union_dispatch.py -q --junitxml=native-evidence/tests.xml
+          LANE_REQUIRE_CURVE_ENDPOINT_NATIVE=1 python -m pytest test/test_curve_endpoint_native.py test/test_curve_consensus.py test/test_curve_consensus_compact.py test/test_curve_retained_state.py test/test_curve_streamed_integration.py -q --junitxml=native-evidence/curve-tests.xml
           cp _lane_mapping_lya_native*.pyd native-evidence/ 2>/dev/null || cp _lane_mapping_lya_native*.so native-evidence/
       - uses: actions/upload-artifact@v4
         if: always()
