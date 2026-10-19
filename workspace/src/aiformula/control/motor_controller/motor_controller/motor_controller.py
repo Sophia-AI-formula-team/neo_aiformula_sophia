@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 import rclpy
 import math
+import json
+import time
+from rclpy.clock import Clock, ClockType
+from sensor_msgs.msg import Joy
+from std_msgs.msg import String
+from .gate import MotorGate, joystick_command
 import numpy as np
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -22,14 +28,30 @@ class MotorController(Node):
         publish_timer_loop_duration = self.get_parameter(
             'publish_timer_loop_duration').get_parameter_value().double_value
 
-        buffer_size = 10
-        self.twist_sub = self.create_subscription(Twist, 'sub_speed_command', self.twist_callback, buffer_size)
-        self.can_pub = self.create_publisher(Frame, 'pub_can', buffer_size)
-        self.publish_timer = self.create_timer(publish_timer_loop_duration, self.publish_canframe_callback)
+        self.gate = MotorGate(float(self.declare_parameter('command_timeout_sec', 0.5).value))
+        # Same configuration file and defaults as the existing teleop_twist_joy.
+        self.joy_settings = {}
+        for key, name, default in [
+            ('enable_button', 'enable_button', 6), ('enable_turbo_button', 'enable_turbo_button', 4),
+            ('axis_linear', 'axis_linear.x', 1), ('axis_angular', 'axis_angular.yaw', 3),
+            ('scale_linear', 'scale_linear.x', 3.5), ('scale_linear_turbo', 'scale_linear_turbo.x', 3.6),
+            ('scale_angular', 'scale_angular.yaw', 0.7), ('scale_angular_turbo', 'scale_angular_turbo.yaw', 1.0),
+        ]:
+            self.joy_settings[key] = self.declare_parameter(name, default).value
+        self.joy_sub = self.create_subscription(Joy,
+            '/aiformula_control/joy_node/joy_l2_throttle', self.joy_callback, 1)
+        self.session_sub = self.create_subscription(String, '/semantic_drive/motor_session', self.session_callback, 1)
+        self.status_sub = self.create_subscription(String, '/semantic_drive/map_status', self.status_callback, 1)
+        self.diagnostics_pub = self.create_publisher(String, '~/gate_status', 1)
+        self.last_diagnostics = -math.inf
+        self.steady_clock = Clock(clock_type=ClockType.STEADY_TIME)
+        self.twist_sub = self.create_subscription(Twist, 'sub_speed_command', self.twist_callback, 1)
+        self.can_pub = self.create_publisher(Frame, 'pub_can', 10)
+        self.publish_timer = self.create_timer(publish_timer_loop_duration, self.publish_canframe_callback, clock=self.steady_clock)
         self.frame_msg = Frame()
-        self.frame_msg.header.frame_id = "can0"        # Default can0
-        self.frame_msg.id = 0x210                      # MotorControler CAN ID : 0x210
-        self.frame_msg.dlc = 8 
+        self.frame_msg.header.frame_id = 'can0'
+        self.frame_msg.id = 0x210
+        self.frame_msg.dlc = 8
 
         # ---- Sigmoid 拟合参数（稳态点拟合）----
         # 左转(正向)：odom = Lp/(1+exp(-kp*(x-x0p))) - Cp
@@ -46,14 +68,38 @@ class MotorController(Node):
         self.Cn   = 1.6954783
 
     def twist_callback(self, msg):
-        rpm = self.toRefRPM(msg.linear.x, msg.angular.z)
-        cmd_right = self.toCanCmd(rpm[0])
-        cmd_left = self.toCanCmd(rpm[1])
-        can_data = cmd_right + cmd_left
-        self.frame_msg.data = can_data
+        self.gate.command((msg.linear.x, msg.angular.z), time.monotonic())
+
+    def joy_callback(self, msg):
+        try:
+            held, command = joystick_command(msg.axes, msg.buttons, self.joy_settings)
+        except (ValueError, TypeError):
+            return
+        self.gate.joy(held, command, time.monotonic())
+
+    def session_callback(self, msg):
+        self.gate.session_message(msg.data, self.get_clock().now().nanoseconds, time.monotonic())
+
+    def status_callback(self, msg):
+        self.gate.status(msg.data, self.get_clock().now().nanoseconds, time.monotonic())
 
     def publish_canframe_callback(self):
+        now = time.monotonic()
+        velocity = self.gate.output(self.get_clock().now().nanoseconds, now)
+        try:
+            rpm = self.toRefRPM(*velocity)
+            self.frame_msg.data = self.toCanCmd(rpm[0]) + self.toCanCmd(rpm[1])
+        except (ValueError, OverflowError):
+            self.frame_msg.data = [0] * 8
+            self.gate.reason = 'invalid_motor_conversion'
+        self.frame_msg.header.stamp = self.get_clock().now().to_msg()
         self.can_pub.publish(self.frame_msg)
+        if now - self.last_diagnostics >= 0.1:
+            self.diagnostics_pub.publish(String(data=json.dumps(dict(
+                reason=self.gate.reason, semantic_active=self.gate.semantic_active,
+                manual_held=self.gate.manual_held, command=list(velocity),
+                can_data=[int(v) for v in self.frame_msg.data]))))
+            self.last_diagnostics = now
 
     # --------- 工具：Sigmoid 反函数（把 odom(desired) 反推 cmd）---------
     @staticmethod
@@ -69,11 +115,19 @@ class MotorController(Node):
 #  w_left = V/r - (d/2r) * w    [rad/s]
 #  rpm = w * 60 / 2* pi [rpm]
 #  rpm = rpm * gear_ratio  [rpm]
-    
+
     def toRefRPM(self, linear_velocity, angular_velocity):  # Calc Motor ref rad/s
         # --- (0) 车辆层：理想 omega_des -> 反算需要的 omega_cmd（按正/负分别用Sigmoid） ---
+        if not all(math.isfinite(v) for v in (linear_velocity, angular_velocity)):
+            return [0.0, 0.0]
+        if abs(linear_velocity) <= 1e-9 and abs(angular_velocity) <= 1e-9:
+            return [0.0, 0.0]
         omega_des = angular_velocity
-        if omega_des >= 0.0:
+        # Zero desired yaw has no inverse in the positive sigmoid fit.
+        # Bypass it for straight driving; preserve both nonzero steering fits.
+        if abs(omega_des) <= 1e-9:
+            omega_cmd = 0.0
+        elif omega_des > 0.0:
             # 左转（正向）
             omega_cmd = self._inv_sigmoid(omega_des, self.Lp, self.kp, self.x0p, self.Cp)
         else:
@@ -94,7 +148,7 @@ class MotorController(Node):
         # --- (1.5) 轮速层补偿（保持你原有结构/参数/索引不变） ---
         # |w_meas| = a * max(|w_cmd| - w0, 0)  =>  w_cmd = sign(w_des)*(|w_des|/a + w0)
         a_left = 0.834
-        w0_left = 2.76 
+        w0_left = 2.76
         a_right = 0.844
         w0_right = 2.81
 
@@ -122,9 +176,14 @@ class MotorController(Node):
 def main(args=None):
     rclpy.init(args=args)
     motor_controller = MotorController()
-    rclpy.spin(motor_controller)
-    motor_controller.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(motor_controller)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        motor_controller.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

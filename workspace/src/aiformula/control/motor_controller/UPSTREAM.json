@@ -3,8 +3,8 @@
   "commit": "dd55f65ef2fe434512d9f7bf48fff7c17141fac3",
   "source_directory": "aiformula/control/motor_controller",
   "upstream_package_version": "0.0.0",
-  "neo_package_version": "0.2.1",
-  "algorithm_sha256": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742",
+  "neo_package_version": "0.4.1",
+  "algorithm_sha256": "7a6282c6a7e8f0215477da917f654fc39d15891c76a0b4209edeeb859519fd7d",
   "upstream_files": {
     "package.xml": "dbf2d32de586d312174fb5fd16fd2555a2abaf1715e40bc1795f33ef634b11d3",
     "setup.cfg": "161217f62732c479e81f2048ad58d6ece0edf172c9197135b91960bd1756229a",
@@ -22,15 +22,23 @@
     "Package version and dependency metadata",
     "MIT license attribution and import documentation",
     "Remove motortest entry point: upstream supplies no motortest module",
-    "Replace algorithm with user-supplied sigmoid steering compensation; upstream_files retain historical baseline hashes"
+    "Replace algorithm with user-supplied sigmoid steering compensation; upstream_files retain historical baseline hashes",
+    "Motor-side automatic red/green gate and independent manual priority with timeouts",
+    "Exact zero CAN payload and zero-yaw sigmoid bypass; preserve nonzero steering fits",
+    "Original launch and velocity topic retained; semantic lifecycle opts into MapAssist decisions without user flags",
+    "MapAssist 0.2.2 traffic-only stop decision releases motor on green independently of topo ABC/diagnostic command readiness"
   ],
   "excluded": [
     "Tracked Python bytecode caches"
   ],
   "upstream_algorithm_sha256": "224cee23e3151d94cdd5864963c57266b0ab2297ba68f155d24ce93193d44d0e",
   "active_source": {
-    "kind": "user_supplied_file",
+    "kind": "derived_from_user_supplied_file",
     "path": "/run/media/nanato/6718-316A/aiformula0124/aiformula/control/motor_controller/motor_controller/motor_controller.py",
-    "copied_byte_for_byte": true
-  }
+    "copied_byte_for_byte": false
+  },
+  "usb_algorithm_sha256": "022a4c6210a0fb9f8d2543ab9337a90ce117dae0f2bf230ff5904c88bec42742",
+  "current_version": "0.4.1",
+  "compatibility": "Legacy topics and default startup restored; optional semantic lifecycle; mapped Joy priority; zero fix",
+  "gate_sha256": "5051626c0497763d8aa6baab307d96b1330219876358968d1ecb110699905ac1"
 }

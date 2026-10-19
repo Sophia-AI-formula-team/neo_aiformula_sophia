@@ -1,7 +1,9 @@
-# motor_controller 0.2.1
+# motor_controller 0.4.1
 
-- 来源：用户指定的 `aiformula0124/aiformula/control/motor_controller/motor_controller/motor_controller.py`，原样导入；完整路径和 SHA256 见 `UPSTREAM.json`。
-- 改动：在原轮速补偿前增加正、负方向分别拟合的 Sigmoid 反函数转向补偿；ROS 话题与 CAN `0x210` 接口保持不变（右、左轮各一个小端有符号 int32）。
-- 验证：相同算法文件已在车上单包编译并核对安装哈希；用户反馈车辆可以转向。仓库元数据升为 0.2.1，车上此前构建的包元数据仍为 0.2.0。
-- 已知问题：按当前车轮参数，零指令 `v=0, ω=0` 会输出右轮 −63、左轮 +63 RPM；直行也可能产生差速。本次保留指定算法，未修复此问题，零指令停车尚不成立。
-- 上一版本保留在 PR #19；车上替换前备份为 `/home/control/aiformula_backups/20261012_motor_controller_usb`。历史上游哈希保留在 `UPSTREAM.json` 的 `upstream_files`。
+- 保留已验证 USB sigmoid 非零转向和 CAN 0x210 右/左轮 int32 小端编码；零速度输出全零，直行绕过 sigmoid 零点。
+- 原 allnodes、LYA、手柄入口不变，不需要额外参数。未启动 semantic 时直接使用原速度话题；命令超过 0.5 秒未更新输出零。
+- `ros2 run semantic_vehicle_wiring semantic` 启动红绿灯与 topo。红绿灯投票由 semantic 执行，motor 只执行其 stop/go。正常 Ctrl-C 退出后恢复普通 LYA；异常失联暂停自动行驶，重启 semantic 可恢复。
+- 手柄 L2/L1 使能优先，沿用原映射和速度话题；松开后需要新自动指令。开启 semantic 也不影响手柄接管。
+- 不按距离停车、不自动左转。未完成实车跑圈验收。历史来源见 UPSTREAM.json。
+
+0.4.1 修复绿灯后被 topo 的车道点/诊断速度状态持续拦住：motor 只读取 semantic 的 `traffic_stop_required`。需与 MapAssist 0.2.2 配套更新；LYA 仍须提供新鲜非零指令，绿灯不会重放停车前速度。
