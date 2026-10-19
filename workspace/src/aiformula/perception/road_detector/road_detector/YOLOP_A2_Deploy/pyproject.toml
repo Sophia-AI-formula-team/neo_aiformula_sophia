@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yolop-a2-runtime"
+version = "0.1.0"
+description = "Inference-only lane and object perception runtime for AI Formula"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = "MIT"
+dependencies = [
+    "numpy>=2.0",
+    "opencv-python>=4.10",
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3"]
+
+[tool.setuptools.packages.find]
+include = ["yolop_a2_runtime*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
