@@ -11,6 +11,7 @@ setup(
         (f"share/{package_name}", ["package.xml"]),
     ],
     install_requires=["setuptools", "numpy"],
+    python_requires=">=3.8",
     zip_safe=True,
     maintainer="ROS2 Light Avoidance",
     maintainer_email="user@example.com",

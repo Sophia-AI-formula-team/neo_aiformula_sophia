@@ -1,0 +1,56 @@
+map_assist 红绿灯逻辑与消息接线（2026-10-11）
+
+一、逻辑简述
+1. 首圈跟随视觉，同时记录 odom；与官方外圈节点匹配、融合并平滑，建立参考路线。
+2. 建图后，视觉方向合理时原样转发；持续偏离粗图时有限幅度修正。OA 避障期间不修正、不发三点。
+3. 红灯、绿灯都统计最近 0.5 秒的实际检测消息；至少 3 帧，首次或断流超过 0.5 秒后需等满一个观察窗口。
+4. 红色或绿色占窗口内全部消息的一半以上才确认；unknown 计入总帧数。平票、无多数、样本不足或断流时，当前判断为 unknown；已经红灯等待时仍等待，只有确认绿灯才放行。
+5. 没识别到灯也应逐帧发 unknown，不能重复发送缓存灯色来凑帧；检测断流或 unknown 不会解除已经触发的等待。
+6. 首圈确认红灯：停车等待；确认绿灯：等 0.2 秒及新的完整视觉三点、新的 LYA 命令后放行。
+7. 建图成功后确认红灯：先等待；定位可靠、距可用路口约 3 米内且有内部替代路线时，转入绕行。
+8. 不满足绕行条件就继续等待；不会自己先开到更远的路口。绕行三点由地图生成，仍交给原控制器跟踪。
+9. 已开始的绕行走完再恢复视觉；完成时若仍有新鲜、已确认的红灯，则重新等待并判断下一步。
+10. 不记录红灯位置或灯的 ID，也不保留“绕行过便永久忽略红灯”的标记；同一盏持续可见的红灯也可能再次触发。
+11. OA flag=true 时，map 不发三点，放行新鲜有效的 LYA 避障速度；红灯等待在 OA 结束后执行。
+
+二、map 怎样控制停车
+正常行驶/绕行：原样转发 LYA 的 Twist，不另外计算转速或速度。
+停车等待：拦下 LYA 的运动命令，向底盘发送全零 Twist，并持续保持零速。
+LYA 命令超过 0.5 秒没更新或数值非法：也输出零速度；OA 避障期间同样保留这个检查。
+所以必须让 LYA 的速度先经过 map；不能让另一个 LYA 同时直接向底盘发送速度。
+默认裸命令只开启构图和方向辅助。要使用红绿灯，按下文同时开启 traffic_control 和 velocity_gate。
+
+三、消息接线（均为默认绝对话题）
+lane_0927oa -> map：/original_processed_point_a、/original_processed_point_b、/original_processed_point_c（geometry_msgs/msg/Pose2D）
+map -> withoutkalman_0312：/processed_point_a、/processed_point_b、/processed_point_c（geometry_msgs/msg/Pose2D）
+OA -> withoutkalman_0312：避障时仍直接发布上述 /processed_point_a/b/c，不改 OA 输出。
+OA -> map：/lane_stop_flag（std_msgs/msg/Bool）；true=避障中，false=避障结束。
+withoutkalman_0312 -> LYA：/filtered_lane_pose、/filtered_omega_t（geometry_msgs/msg/Pose2D），保持原接线。
+LYA -> map：/map_assist/controller_cmd_vel（geometry_msgs/msg/Twist），通过启动参数重映射。
+map -> 底盘：/aiformula_control/game_pad/cmd_vel（geometry_msgs/msg/Twist），底盘仍订阅原话题。
+odom -> map：/aiformula_sensing/gyro_odometry_publisher/odom（nav_msgs/msg/Odometry），保持原接线。
+YOLOP 检测结果 -> map：/map_assist/traffic_light_input（std_msgs/msg/String），每帧 data 为 red、green 或 unknown。
+红绿灯话题目前是占位名，后续可改配置 traffic_light_topic；若 YOLOP 类型不同，需要转换消息类型及内容，不能只改话题名。
+
+四、启动命令（各终端已加载 ROS2 和工作区环境；每条命令一行）
+启动新的 lane：
+ros2 run lane_points lane_0927oa
+启动 map，开启红绿灯与速度转发控制：
+ros2 run semantic_local_planner_ros map_assist --ros-args -p enable_traffic_control:=true -p enable_velocity_gate:=true
+启动原三点处理节点：
+ros2 run kalman_filter withoutkalman_0312
+启动原 LYA，将速度改发给 map（替代原 LYA 启动命令，只启动一个 LYA）：
+ros2 run trajectory_follower lya_follower_connected_omegat_global --ros-args -r /aiformula_control/game_pad/cmd_vel:=/map_assist/controller_cmd_vel
+OA、odom、YOLOP、底盘及其余原节点按原方式启动，不需要语义门控节点。
+
+五、简单检查（可先只检查话题，不连接底盘）
+查看当前等待/绕行/速度放行原因：
+ros2 topic echo /map_assist/status
+持续模拟红灯（至少运行 0.5 秒，然后 Ctrl+C）：
+ros2 topic pub -r 10 /map_assist/traffic_light_input std_msgs/msg/String "{data: red}"
+持续模拟绿灯（同上）：
+ros2 topic pub -r 10 /map_assist/traffic_light_input std_msgs/msg/String "{data: green}"
+观察底盘速度话题：
+ros2 topic echo /aiformula_control/game_pad/cmd_vel
+无 OA 避障且未建图时：红灯确认后 traffic_mode=wait，输出零速；绿灯确认后允许恢复，实际运动仍需新的视觉三点及 LYA 速度。
+手动模拟时只保留一个灯色发布来源，避免测试消息和 YOLOP 消息混入同一个投票窗口。
