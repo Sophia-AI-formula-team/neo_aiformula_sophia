@@ -1,0 +1,58 @@
+{
+  "calibration": {
+    "area_buckets": {
+      "0": {
+        "f1": 0.2207621550591327,
+        "fn": 498,
+        "fp": 95,
+        "precision": 0.4692737430167598,
+        "recall": 0.14432989690721648,
+        "tp": 84
+      },
+      "1024": {
+        "f1": 0.6891891891891891,
+        "fn": 28,
+        "fp": 18,
+        "precision": 0.7391304347826086,
+        "recall": 0.6455696202531646,
+        "tp": 51
+      },
+      "4096": {
+        "f1": 0.8656716417910447,
+        "fn": 4,
+        "fp": 5,
+        "precision": 0.8529411764705882,
+        "recall": 0.8787878787878788,
+        "tp": 29
+      }
+    },
+    "cone_score": 0.5,
+    "iou_threshold": 0.5,
+    "validation_split": "YOLOP_A2/dataset/object_detection/val"
+  },
+  "format_version": 1,
+  "lane": {
+    "bytes": 20921608,
+    "path": "weights/lane_epoch_282.pth",
+    "sha256": "ac2336709034f89b8a7d69d0d7af158e677964699d41cc3520c08d16dc691bfe",
+    "source_path": "YOLOP_A2/weights/lane_epoch_282.pth",
+    "source_sha256": "d8737b4bd93a3b4bdd76cca92753b61d9f3ed47271aba1870fe544ef0bc2682a"
+  },
+  "object": {
+    "bytes": 77867961,
+    "path": "weights/object_detector_usable.pth",
+    "sha256": "5ef0574078014c0ac9d97c21539a31435e1c02499d57a944c02e07589a231fe0",
+    "source_epoch": 20,
+    "source_path": "YOLOP_A2/weights/object_detector_usable.pth",
+    "source_sha256": "1fe46d3c6b1c0cdb7a5ba890a50fcb1a126147ff5102b5475a150ad0a5b21a1d"
+  },
+  "thresholds": {
+    "cone_score": 0.5,
+    "object_score": 0.5
+  },
+  "training_payload_excluded": [
+    "optimizer",
+    "optimizer_state",
+    "metrics"
+  ]
+}
