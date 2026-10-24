@@ -1,0 +1,96 @@
+{
+  "schema": "anonymous_quantized_curve_candidate/v1",
+  "revision": 2,
+  "prepared_utc": "2026-10-12T03:08:53.8988035Z",
+  "state": "static_review_repair_only_not_installed",
+  "supersedes_source_only_manifest": "manifest.json",
+  "enabled_default": false,
+  "tests": {
+    "prepared_method_count": 27,
+    "initial_count": 20,
+    "review_additions": 7,
+    "executed": false,
+    "passed": null,
+    "python_import_executed": false,
+    "ast_executed": false,
+    "image_computation_executed": false
+  },
+  "repairs": [
+    "normal_angular_cone_and_position_bound_both_in_separation_interval",
+    "unordered_paint_pair_equivalence_single_independent_representative"
+  ],
+  "files": [
+    {
+      "path": "observer.py",
+      "bytes": 21695,
+      "sha256": "9ba0a4c5ae9c352b0d0185ab017387e4cbf61d30f75fa3ffa594489d5162cea8"
+    },
+    {
+      "path": "pixel_projection.py",
+      "bytes": 4081,
+      "sha256": "9acad1dd27a5f7390ffac3bd345473ebc4f809975ae97925afc32fd37258ea3f"
+    },
+    {
+      "path": "test_observer_quantized_curve.py",
+      "bytes": 15132,
+      "sha256": "6257487526ce53f9188e0a97f510b185a122ec5259ba07b96af1f91c24497555"
+    },
+    {
+      "path": "DESIGN.md",
+      "bytes": 6865,
+      "sha256": "649401bc79b5aac09a260496fb29c529b3677eec8fe49e23c539de497822caee"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2797,
+      "sha256": "d138a8cf5b0eb1754a9bc75db6d815dbfcf9fa51cec8b62fa03929d4e250d497"
+    },
+    {
+      "path": "REVIEW_FINDINGS_AND_REPAIR.md",
+      "bytes": 3017,
+      "sha256": "8aea9d5a132db9ea9cdfa3026f7ea0ce64580c8720aac65c92ad91b81aeed85e"
+    },
+    {
+      "path": "README.review2.md",
+      "bytes": 1920,
+      "sha256": "5078a61a0da1661d166e5690c2db3089af4410d510a7394fb2cf753c8c6eda5b"
+    }
+  ],
+  "preserved_initial_freeze": [
+    {
+      "path": "observer.before_review.py",
+      "sha256": "edde49218cdbe243e7e4d756c1f219d03d510f63d8ce70cb28aed57a781b54a5",
+      "matches_initial_freeze": true
+    },
+    {
+      "path": "test_observer_quantized_curve.before_review.py",
+      "sha256": "fa147998826e2a29463254a4a47b4e151a4e3a930141ae882b0209f1496ab90c",
+      "matches_initial_freeze": true
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "f6a063ae17e9023fe905a1d35ae15fa78bec3fc1152d6e5b75bfa9d3fb80df5d",
+      "matches_initial_freeze": true
+    }
+  ],
+  "protected_checks": [
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_left_turn_20261012\\staging\\official_observer_curve\\observer.py",
+      "sha256": "0eb6ccb6c2b44a7061229e888982053502f19f8d4cf7f6c73f1f09e4d6a8c300",
+      "matches_frozen": true
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_left_turn_20261012\\staging\\official_observer_curve\\pixel_projection.py",
+      "sha256": "9acad1dd27a5f7390ffac3bd345473ebc4f809975ae97925afc32fd37258ea3f",
+      "matches_frozen": true
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_left_turn_20261012\\staging\\official_observer_curve\\CURVE_PAIR_AND_TEMPORAL_SUPPORT_REVIEW.md",
+      "sha256": "301495141610ce8b431b6963dd84b568640a775a19a37c2be259d85a2f0dad9a",
+      "matches_frozen": true
+    }
+  ],
+  "protected_check_scope": "Only these three previous-observer files were hashed; no claim of whole-tree equality",
+  "execution_owner": "root",
+  "no_live_source_written": true
+}

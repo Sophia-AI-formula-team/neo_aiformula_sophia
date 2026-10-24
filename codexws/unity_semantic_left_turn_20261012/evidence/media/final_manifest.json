@@ -1,0 +1,87 @@
+{
+  "created_utc": "2026-10-11T21:48:45.2327377Z",
+  "status": "encoded; full decode passed; ten-frame contact sheet visually reviewed",
+  "single_combined_encode": true,
+  "encode_exit_code": 0,
+  "frames": 2441,
+  "duration_sec": 162.73333333333332,
+  "fps": 15,
+  "resolution": [
+    1280,
+    960
+  ],
+  "source_playback_speed": 1,
+  "waits_preserved": true,
+  "observer_unobscured": true,
+  "visual_review_scope": "Ten contact-sheet previews, including both terminal frames; not every video frame",
+  "failure_titles": [
+    "INNER FAIL - lane support lost",
+    "OUTER FAIL - fusion rejected"
+  ],
+  "decode_stderr": "",
+  "source_encoder_sha256": "889a952a9c229d167b8b54100290db98def2f5a8cd40ca88137e8f5c7d1e32af",
+  "wrapper_sha256": "84eaaed782dc4f8bf08f353e0c804cd47c54347348818dae55e85a9e1ce431cc",
+  "active_model_workers": 0,
+  "active_encoder_python": 0,
+  "active_ffmpeg": 0,
+  "cpu_window_returned": true,
+  "process_check_scope": "Exact RoadDetector/worker.py and SemanticPlanning/semantic_worker.py command paths; encode_failure_case.py and named ffmpeg process",
+  "segments": [
+    {
+      "name": "INNER FAIL - lane support lost",
+      "source": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\exact_inner_red_detour",
+      "source_wall_start": 0.07360290000360692,
+      "source_wall_end": 29.368866299999354,
+      "source_duration_sec": 29.295263399995747,
+      "output_frames": 441,
+      "output_duration_sec": 29.4,
+      "rounding_sec": 0.10473660000425156,
+      "accepted": false,
+      "reason": "Follower: Lost predicted lanes; upstream default-straight rejected"
+    },
+    {
+      "name": "OUTER FAIL - fusion rejected",
+      "source": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\exact_outer_red_detour",
+      "source_wall_start": 0.07080789999599801,
+      "source_wall_end": 133.33704690000013,
+      "source_duration_sec": 133.26623900000413,
+      "output_frames": 2000,
+      "output_duration_sec": 133.33333333333334,
+      "rounding_sec": 0.06709433332920867,
+      "accepted": false,
+      "reason": "Stopped without 0.1 m progress for 15 simulation seconds"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.mp4",
+      "bytes": 62564766,
+      "sha256": "4a69d971f7209ace9e712b1e5b5670948e521f1282989f71b051d7c2f390c336"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.contact.jpg",
+      "bytes": 694708,
+      "sha256": "28f13c8943fbc7a7ba98378d72f05195fff44e689a5c95cddf9a41706c907450"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.verification.json",
+      "bytes": 104015,
+      "sha256": "e9818a215bdd128039ceab72f1656701e9c445e60592a57acd6de2395553d864"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.decode.json",
+      "bytes": 360,
+      "sha256": "0172c3f5edff37e17bb30642ad0030c2670c231b49be8127a0343268bc0e55de"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.encode.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\media\\exact_detour_failures\\exact_same_chain_detour_failure.runner.json",
+      "bytes": 1983,
+      "sha256": "707493672dbe7de247e817fa73923a24366835097da80b41d89a8b7015c54d3b"
+    }
+  ]
+}

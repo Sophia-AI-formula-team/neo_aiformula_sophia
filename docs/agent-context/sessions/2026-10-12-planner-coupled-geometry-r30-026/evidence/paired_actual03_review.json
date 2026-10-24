@@ -1,0 +1,205 @@
+{
+  "kind": "independent_static_post_execution_review_actual03",
+  "scope": "offline_actual_primary_proposal_diagnostic_not_runtime_or_two_lap_acceptance",
+  "review_execution": "PowerShell_read_hash_json_regex_exact_membership_only_no_Python_or_solver",
+  "evidence": {
+    "driver_sha256": "b16d41fd9aa0ac242e17eadd670d440126d67ae9fe20d43d619137ff3c608174",
+    "parent_result_sha256": "438df0101f9bdb5c51995976cc71ec5e2dc3b2970488cdc706fe764243450c3b",
+    "summary_sha256": "b47a0567b9d313a58fd4d431ccd603dc5fc8e796b66b0b074e032a0df7cf3489",
+    "historical_fit_sha256": "d367d48e4b0e9afbd5c6fe7e18f349211ff7906dcc74b0a8d4706c2ea05a8679",
+    "historical_footprint_sha256": "eb03d1ceb011c2419c4c8a25fb1cf8e40f7cb3c084d714d9d39b7a065e181d17",
+    "historical_source_storage": "byte_identical_source_revision_03",
+    "post_run_fit_sha256": "597703b0a408b462807df57ece9e17787f322a167632ea44558c1765b3daa47c",
+    "post_run_fit_executed_for_actual03": false,
+    "source_before_after_bindings": 131,
+    "unchanged_during_recorded_run": true,
+    "current_source_json_hashes_matched_at_pre_edit_checkpoint": 104,
+    "frozen_executed_sources_full_read_and_hash_verified": 2,
+    "json_files_whole_parsed": 86,
+    "declared_json_receipt_hash_links_matched": 75,
+    "actual03_text_logs_hash_checked": 2,
+    "remaining_npz_zip_other_log_bindings_not_independently_opened_or_hashed": 25,
+    "review_is_not_pre_execution_gate": true
+  },
+  "inventory": {
+    "cases": 22,
+    "cuts": 40,
+    "primary_roles": 80,
+    "center_occurrences": 1528,
+    "WB_occurrences": 3056,
+    "zero_cut_cases": 10
+  },
+  "invariants": {
+    "original_four_preserved": true,
+    "original_whole_side_packets_equal_both_old_policies": 80,
+    "whole_side_packet_comparisons": 160,
+    "original_cut_field_comparisons": 800,
+    "support_descriptor_shapes_checked": 320,
+    "source_complete_primary_roles": 80,
+    "exact_q_values_order_equal_policy02": true,
+    "exact_q_count": 200,
+    "original_P_plane_checks_pass": 800,
+    "finite_chart_membership_checks_pass": 400,
+    "raw_npz_arrays_read_by_reviewer": false,
+    "whole_joint_interval_operators_rebuilt_by_reviewer": false,
+    "original_status_totals": {
+      "P": {
+        "yes": 4,
+        "no": 31,
+        "unknown": 5
+      },
+      "Q": {
+        "yes": 0,
+        "no": 1,
+        "unknown": 39
+      },
+      "P_intersect_Q": {
+        "yes": 0,
+        "no": 1,
+        "unknown": 39
+      },
+      "nominal_WB_side_labels": {
+        "yes": 69,
+        "no": 11,
+        "unknown": 0
+      }
+    },
+    "original_rounded_fit_labels_certified": false,
+    "domain_growth": 0,
+    "dropped_occurrences": 0,
+    "gate_changes": 0,
+    "adoptions": 0,
+    "map_writes": 0
+  },
+  "actual03": {
+    "candidate_positive": 22,
+    "original_positive_preserved": 4,
+    "new_beyond_original": 18,
+    "unknown": 18,
+    "helper_sides": 400,
+    "helper_side_yes": 284,
+    "helper_side_pool_unknown": 107,
+    "helper_side_pivot_budget_unknown": 9,
+    "paired_all_WB_hypotheses": 93,
+    "joint_calls": 279,
+    "joint_report_yes": 279,
+    "joint_report_independently_verified": 279,
+    "QP_systems": 1461,
+    "QP_pivots": 416,
+    "QP_full_scans": 709,
+    "rounding_packets": 7668,
+    "exact_label_substitutions": 383,
+    "all_counter_coverage_complete": true,
+    "side_counter_equalities_checked": 2000,
+    "unchanged_chart_field_comparisons": 744,
+    "planned_q_per_cut": 5,
+    "max_pivots": 24,
+    "radius_fractions": [
+      0.0001,
+      0.000001,
+      1e-8
+    ],
+    "neo_source_executions": 2,
+    "production_joint_checker_executed": false,
+    "exact_D_joint_checker_used": true,
+    "mapping_or_extractor_imports": 0,
+    "extractor_calls": 0,
+    "native_calls": 0,
+    "Unity_calls": 0,
+    "recorded_exit_code": 0,
+    "recorded_retries": 0,
+    "recorded_child_stopped": true,
+    "recorded_stop_attempted": false,
+    "child_s_diagnostic_only": 4.647816699987743,
+    "parent_s_diagnostic_only": 5.089056300057564
+  },
+  "comparison": {
+    "policy01": {
+      "positive": 19,
+      "unknown": 21,
+      "retained_by03": 19,
+      "new03_positive": 3
+    },
+    "policy02": {
+      "positive": 24,
+      "unknown": 16,
+      "retained_by03": 22,
+      "regressed_to_unknown": 2,
+      "new03_positive": 0,
+      "remaining_old_unknown": 16
+    },
+    "no_effect_loss_replacement_blocked": true,
+    "no_runtime_acceptance": true
+  },
+  "regressions": [
+    {
+      "case": "longcap_phase_0.0",
+      "cut": 1,
+      "policy02_yes_q": [
+        1
+      ],
+      "neo03_q_sides": [
+        "Y/F",
+        "F/Y",
+        "Y/F",
+        "F/B",
+        "F/F"
+      ],
+      "pool_failed_sides": 6,
+      "budget_failed_sides": 1,
+      "both_WB_hypotheses": 0,
+      "joint_calls": 0
+    },
+    {
+      "case": "arc_0.6_phase_0.0",
+      "cut": 2,
+      "policy02_yes_q": [
+        2,
+        3
+      ],
+      "neo03_q_sides": [
+        "F/Y",
+        "F/Y",
+        "F/Y",
+        "F/Y",
+        "F/Y"
+      ],
+      "pool_failed_sides": 5,
+      "budget_failed_sides": 0,
+      "both_WB_hypotheses": 0,
+      "joint_calls": 0
+    }
+  ],
+  "remaining_unknown": {
+    "cuts": 18,
+    "pool_failed_sides": 87,
+    "pivot_budget_failed_sides": 8,
+    "both_WB_hypotheses": 0,
+    "joint_calls": 0,
+    "failed_stage": "bounded_proposal_QP_before_rounding_and_joint_for_failed_sides",
+    "global_infeasibility_proven": false,
+    "individual_rejected_KKT_answers_persisted": false
+  },
+  "unit03": {
+    "static_methods": 58,
+    "unique_executed_ids": 58,
+    "testsRun": 58,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "source_bindings": 4,
+    "source_maps_and_hashes_equal": true,
+    "parent_sha256": "69612de92a2aceccebf949e6efe341048e70d40055891c7f34a4017668fa650b",
+    "child_sha256": "c3ec9a6fb971a7d02cbe65c65eaf923448e32dbc4e674d78846e66c1c5d561cb",
+    "scope": "artificial_independent_nominal_proposal_not_actual_packet_runtime_or_Foxy_build"
+  },
+  "limitations": [
+    "nominal_saved_world_all_label_contract_not_original_rounded_fit_program",
+    "binary_inputs_not_independently_opened",
+    "certificate_reports_checked_not_builder_or_verifier_rerun",
+    "two_numerical_regressions_are_not_global_no",
+    "single_offline_batch_times_not_WCET_or_speedup_certificate",
+    "no_car_sim_parameter_changes_no_laps_no_error_metrics_no_video"
+  ],
+  "redaction": "no_absolute_paths_hostnames_usernames_process_ids_or_raw_geometry_packets"
+}

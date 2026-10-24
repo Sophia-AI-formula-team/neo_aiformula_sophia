@@ -30,6 +30,12 @@ LEFT_PRIMITIVES = {
     PrimitiveName.STRONG_LEFT.value,
     PrimitiveName.LEFT_THEN_ALIGN.value,
 }
+RIGHT_PRIMITIVES = {
+    PrimitiveName.SMALL_RIGHT.value,
+    PrimitiveName.MEDIUM_RIGHT.value,
+    PrimitiveName.STRONG_RIGHT.value,
+    PrimitiveName.RIGHT_THEN_ALIGN.value,
+}
 CSV_COLUMNS = [
     "primitive_name",
     "valid",
@@ -61,6 +67,7 @@ def make_masks(scenario: str, height: int, width: int) -> tuple[np.ndarray, np.n
         road[int(height * 0.42) :, int(width * 0.16) : int(width * 0.48)] = 255
     elif scenario == "red_gate_left_blocked":
         offroad[int(height * 0.42) :, : int(width * 0.58)] = 255
+        offroad[int(height * 0.42) :, int(width * 0.58) :] = 255
     else:
         raise ValueError(f"Unknown scenario: {scenario}")
     return road, offroad
@@ -147,11 +154,13 @@ def assert_scenario(scenario: str, selected_name: str, details: dict) -> None:
         assert selected_name == PrimitiveName.STOP.value
         assert all(
             details[name]["valid"] is False and details[name]["lethal_hit"] is True
-            for name in LEFT_PRIMITIVES
+            for name in LEFT_PRIMITIVES | RIGHT_PRIMITIVES
         )
     elif scenario == "red_gate_left_open":
         valid_left = [name for name in LEFT_PRIMITIVES if details[name]["valid"]]
+        valid_right = [name for name in RIGHT_PRIMITIVES if details[name]["valid"]]
         assert valid_left, "Expected at least one valid left primitive"
+        assert valid_right, "Expected at least one valid right primitive"
         assert selected_name != PrimitiveName.STOP.value
         assert selected_name != PrimitiveName.SLOW_FORWARD.value
         assert selected_name in LEFT_PRIMITIVES

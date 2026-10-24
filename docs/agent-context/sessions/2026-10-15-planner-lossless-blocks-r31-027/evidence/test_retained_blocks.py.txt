@@ -1,0 +1,272 @@
+"""Explicit isolated unittest; independent dense-source byte/lifetime oracles."""
+import gc
+import unittest
+import weakref
+import numpy as np
+from lane_mapping_lya_reference import curve_evidence as original
+import retained_blocks as candidate
+
+
+def fixture(stamp=100, *, noncanonical=False):
+    count = 8
+    links = np.full((count, 2), -1, np.int64)
+    for first in range(6):
+        links[first, 1] = first + 1
+        links[first + 1, 0] = first
+    owners = np.array([10, 10, 20, 20, -1, 30, 30, 10], np.int64)
+    valid = owners >= 0
+    roots = np.column_stack((np.arange(count, dtype=np.float64), np.zeros(count)))
+    roots[1, 1] = -0.0
+    roots.view(np.uint64)[4, 0] = np.uint64(0x7ff8000000000042)
+    normals = np.tile([0., 1.], (count, 1))
+    normals[4] = np.nan
+    quads = np.stack([np.array([[i, 0.], [i+.1, 0.], [i+.1, .1], [i, .1]])
+                      for i in range(count)])
+    quad_valid, reliable = np.ones(count, np.bool_), valid.copy()
+    if noncanonical:
+        valid.view(np.uint8)[0] = 255
+        reliable.view(np.uint8)[0] = 2
+        quad_valid.view(np.uint8)[0] = 128
+        quad_valid.view(np.uint8)[4] = 128
+        valid.view(np.uint8)[2] = 128
+        reliable.view(np.uint8)[2] = 255
+        quad_valid.view(np.uint8)[2] = 2
+    source = original.SourceFrame(stamp, np.arange(count, dtype=np.int64), links,
+        np.array([0, 0, 0, 0, 0, 0, 0, 1], np.int64), owners, roots, normals,
+        quads, quad_valid, reliable, valid)
+    rows = (
+        (10, (-1, 20), [1, 2, 2], [[0, 1], [1, 2], [1, 2]]),
+        (20, (10, -1), [1, 2], [[2, 3], [1, 2]]),
+        (30, (-1, -1), [1], [[5, 6]]),
+    )
+    packets = tuple(original.PairPacket(source, owner, 1, signature,
+        np.array(roles, np.uint8), np.array(indices, np.int64).reshape(-1, 2))
+        for owner, signature, roles, indices in rows)
+    return source, packets
+
+
+class RetainedBlocksTests(unittest.TestCase):
+    def test_multiple_nonadjacent_unowned_faces_keep_every_complete_row(self):
+        source, old = fixture(noncanonical=True)
+        args = {name: getattr(source, name).copy() for name, _, _ in original._FIELDS}
+        args['endpoint_owners'][7] = -1
+        args['valid'][7] = False
+        args['reliable'][7] = False
+        args['quad_valid'].view(np.uint8)[7] = 255
+        sparse = original.SourceFrame(stamp_ns=source.stamp_ns, **args)
+        packet = original.PairPacket(sparse, old[0].owner_id, 1, old[0].signature,
+                                     old[0].roles, old[0].face_indices)
+        expected = {face: {name: getattr(sparse, name)[face:face+1].tobytes()
+                           for name, _, _ in original._FIELDS} for face in (4, 7)}
+        (retained,), capsule = candidate.project_frame(sparse, (packet,))
+        del source, old, sparse, packet, args, capsule
+        gc.collect()
+        self.assertEqual([b.face_id for b in retained.lease.unowned.blocks], [4, 7])
+        for block in retained.lease.unowned.blocks:
+            for name, gold in expected[block.face_id].items():
+                self.assertEqual(block.get(name).tobytes(), gold)
+
+    def test_isolated_valid_root_with_invalid_quad_keeps_complete_placeholder(self):
+        source, old = fixture()
+        args = {name: getattr(source, name).copy() for name, _, _ in original._FIELDS}
+        args['quad_valid'][7] = False
+        args['quads'].view(np.uint64)[7, 0, 0] = np.uint64(0x7ff8000000000043)
+        sparse = original.SourceFrame(stamp_ns=source.stamp_ns, **args)
+        packet = original.PairPacket(sparse, old[0].owner_id, 1, old[0].signature,
+                                     old[0].roles, old[0].face_indices)
+        (retained,), _ = candidate.project_frame(sparse, (packet,))
+        block = next(b for b in retained.lease.own_blocks if b.face_id == 7)
+        for name, _, _ in original._FIELDS:
+            self.assertEqual(block.get(name).tobytes(), getattr(sparse, name)[7:8].tobytes())
+        self.assertNotIn(7, retained.face_indices)
+
+    def test_noncanonical_opposite_incident_endpoint_keeps_raw_flags(self):
+        source, old = fixture(noncanonical=True)
+        new, _ = candidate.project_frame(source, old)
+        opposite = next(b for b in new[0].lease.required_blocks if b.face_id == 2)
+        self.assertNotIn(2, [b.face_id for b in new[0].lease.own_blocks])
+        for name in ('valid', 'reliable', 'quad_valid'):
+            with self.subTest(field=name):
+                self.assertEqual(opposite.get(name).tobytes(),
+                                 getattr(source, name)[2:3].tobytes())
+                self.assertEqual(new[0].gather_original(name).tobytes(),
+                                 getattr(source, name)[old[0].face_indices].tobytes())
+
+    def test_noncanonical_bool_owned_row_and_pair_preserve_raw_bytes(self):
+        source, old = fixture(noncanonical=True)
+        new, _ = candidate.project_frame(source, old)
+        block = next(b for b in new[0].lease.own_blocks if b.face_id == 0)
+        for name in ('valid', 'reliable', 'quad_valid'):
+            with self.subTest(field=name):
+                # A scalar bool getitem would normalize the gold too. Use a
+                # complete one-row ndarray slice, independently of candidate.
+                self.assertEqual(block.get(name).tobytes(),
+                                 getattr(source, name)[0:1].tobytes())
+                self.assertEqual(new[0].gather_original(name).tobytes(),
+                                 getattr(source, name)[old[0].face_indices].tobytes())
+
+    def test_noncanonical_unowned_quad_flag_survives_state_only_reference(self):
+        source, old = fixture(noncanonical=True)
+        new, capsule = candidate.project_frame(source, old)
+        expected = source.quad_valid[4:5].tobytes()
+        retained = new[0]
+        del source, old, new, capsule
+        gc.collect()
+        self.assertEqual(retained.lease.unowned.blocks[0].get('quad_valid').tobytes(), expected)
+
+    def test_noncanonical_boolean_payload_decodes_after_dense_source_release(self):
+        source, old = fixture(noncanonical=True)
+        expected = {name: getattr(source, name)[old[0].face_indices].tobytes()
+                    for name in ('valid', 'reliable', 'quad_valid')}
+        refs = [weakref.ref(source)] + [weakref.ref(getattr(source, name))
+                                        for name, _, _ in original._FIELDS]
+        new, capsule = candidate.project_frame(source, old)
+        retained = new[0]
+        del source, old, new, capsule
+        gc.collect()
+        self.assertTrue(all(ref() is None for ref in refs))
+        for name, gold in expected.items():
+            with self.subTest(field=name):
+                self.assertEqual(retained.gather_original(name).tobytes(), gold)
+
+    def test_all_ten_original_pair_fields_exact_dtype_shape_bytes(self):
+        source, old = fixture()
+        new, capsule = candidate.project_frame(source, old)
+        for gold, projected in zip(old, new):
+            self.assertEqual((gold.owner_id, gold.signed_side, gold.signature,
+                              gold.stamp_ns, gold._has_reliable),
+                (projected.owner_id, projected.signed_side, projected.signature,
+                 projected.stamp_ns, projected._has_reliable))
+            for name, _, _ in original._FIELDS:
+                expected = getattr(source, name)[gold.face_indices]
+                actual = projected.gather_original(name)
+                self.assertEqual(actual.dtype, expected.dtype)
+                self.assertEqual(actual.shape, expected.shape)
+                self.assertEqual(actual.tobytes(), expected.tobytes())
+                self.assertFalse(actual.flags.writeable)
+            self.assertEqual(projected.roles.tobytes(), gold.roles.tobytes())
+            self.assertEqual(projected.face_indices.tobytes(), gold.face_indices.tobytes())
+        self.assertEqual(len(capsule.blocks), 1)
+
+    def test_isolated_own_face_not_in_any_pair_is_retained(self):
+        source, old = fixture()
+        new, _ = candidate.project_frame(source, old)
+        self.assertEqual([block.face_id for block in new[0].lease.own_blocks], [0, 1, 7])
+        for block in new[0].lease.own_blocks:
+            for name, _, _ in original._FIELDS:
+                self.assertEqual(block.get(name).tobytes(),
+                                 getattr(source, name)[block.face_id:block.face_id+1].tobytes())
+
+    def test_order_multiplicity_and_cross_owner_face_shared_not_deduplicated(self):
+        source, old = fixture()
+        new, _ = candidate.project_frame(source, old)
+        self.assertEqual(new[0].face_indices.tolist(), [[0, 1], [1, 2], [1, 2]])
+        self.assertEqual(new[0].roles.tolist(), [1, 2, 2])
+        first = {b.face_id: b for b in new[0].lease.required_blocks}
+        second = {b.face_id: b for b in new[1].lease.required_blocks}
+        self.assertIs(first[1], second[1])
+        self.assertIs(first[2], second[2])
+        self.assertEqual([b.face_id for b in new[0].lease.required_blocks], [0, 1, 2, 7])
+
+    def test_invalid_root_valid_unowned_quad_and_nan_payload_preserved(self):
+        source, old = fixture()
+        new, capsule = candidate.project_frame(source, old)
+        self.assertEqual([b.face_id for b in capsule.blocks], [4])
+        for packet in new:
+            self.assertIs(packet.lease.unowned, capsule)
+        block = capsule.blocks[0]
+        for name, _, _ in original._FIELDS:
+            self.assertEqual(block.get(name).tobytes(), getattr(source, name)[4:5].tobytes())
+        self.assertEqual(block.get('model_roots').view(np.uint64)[0],
+                         np.uint64(0x7ff8000000000042))
+
+    def test_actual_source_arrays_and_object_release_while_leases_decode(self):
+        source, old = fixture()
+        expected = {name: getattr(source, name)[old[0].face_indices].tobytes()
+                    for name, _, _ in original._FIELDS}
+        refs = [weakref.ref(source)] + [weakref.ref(getattr(source, name))
+                                        for name, _, _ in original._FIELDS]
+        new, capsule = candidate.project_frame(source, old)
+        retained = new[0]
+        del source, old, new, capsule
+        gc.collect()
+        self.assertTrue(all(ref() is None for ref in refs))
+        for name, _, _ in original._FIELDS:
+            self.assertEqual(retained.gather_original(name).tobytes(), expected[name])
+
+    def test_unused_other_owner_blocks_are_released_not_hidden_in_header(self):
+        source, old = fixture()
+        new, capsule = candidate.project_frame(source, old)
+        other = next(b for b in new[2].lease.required_blocks if b.face_id == 5)
+        ref = weakref.ref(other)
+        retained = new[0]
+        del source, old, new, capsule, other
+        gc.collect()
+        self.assertIsNone(ref())
+        inv = candidate.inventory((retained,))
+        self.assertEqual(inv['retained_complete_faces'], 5)  # own0/1/7 + incident2 + unowned4
+        self.assertEqual(inv['face_payload_bytes'], 5 * 139)
+        self.assertEqual(inv['legacy_source_packet_weighted_charge'], 9 + 10 + 2*3)
+        self.assertFalse(inv['heap_or_runtime_acceptance'])
+
+    def test_unowned_capsule_survives_without_external_orphan_history(self):
+        source, old = fixture()
+        new, capsule = candidate.project_frame(source, old)
+        ref = weakref.ref(capsule)
+        retained = new[0]
+        del source, old, new, capsule
+        gc.collect()
+        self.assertIs(ref(), retained.lease.unowned)
+        self.assertEqual(candidate.inventory((retained,))['retained_complete_faces'], 5)
+
+    def test_empty_packet_still_keeps_own_and_unowned_rows(self):
+        source, _ = fixture()
+        old = original.PairPacket(source, 10, 1, (-1, -1),
+            np.empty(0, np.uint8), np.empty((0, 2), np.int64))
+        (new,), _ = candidate.project_frame(source, (old,))
+        self.assertEqual([b.face_id for b in new.lease.own_blocks], [0, 1, 7])
+        for name, _, tail in original._FIELDS:
+            self.assertEqual(new.gather_original(name).shape, (0, 2) + tail)
+        self.assertEqual(candidate.inventory((new,))['retained_complete_faces'], 4)
+
+    def test_distinct_same_stamp_source_events_never_merge(self):
+        first_source, first_old = fixture()
+        second_source, second_old = fixture()
+        first, _ = candidate.project_frame(first_source, first_old)
+        second, _ = candidate.project_frame(second_source, second_old)
+        self.assertIsNot(first[0].lease.frame, second[0].lease.frame)
+        self.assertEqual(candidate.inventory((first[0], second[0]))['source_events'], 2)
+
+    def test_other_source_packet_and_duplicate_key_rejected(self):
+        first_source, first_old = fixture()
+        _, second_old = fixture()
+        with self.assertRaisesRegex(ValueError, 'original source event'):
+            candidate.project_frame(first_source, second_old)
+        with self.assertRaisesRegex(ValueError, 'duplicate key'):
+            candidate.project_frame(first_source, (first_old[0], first_old[0]))
+
+    def test_all_face_field_views_and_original_sources_remain_immutable(self):
+        source, old = fixture()
+        before = tuple(getattr(source, name).tobytes() for name, _, _ in original._FIELDS)
+        new, _ = candidate.project_frame(source, old)
+        for block in new[0].lease.required_blocks:
+            self.assertEqual(len(block.payload), 139)
+            for name, _, _ in original._FIELDS:
+                view = block.get(name)
+                self.assertFalse(view.flags.writeable)
+                with self.assertRaises(ValueError):
+                    view.setflags(write=True)
+        self.assertEqual(before, tuple(getattr(source, name).tobytes()
+                                      for name, _, _ in original._FIELDS))
+
+    def test_zero_packets_retains_only_complete_unowned_capsule(self):
+        source, _ = fixture()
+        new, capsule = candidate.project_frame(source, ())
+        self.assertEqual(new, ())
+        inv = candidate.inventory((), (capsule,))
+        self.assertEqual(inv['retained_complete_faces'], 1)
+        self.assertEqual(inv['legacy_source_packet_weighted_charge'], 9)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

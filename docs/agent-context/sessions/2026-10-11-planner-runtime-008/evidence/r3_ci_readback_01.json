@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "kind": "github_read_only_ci_readback",
+  "repository": {
+    "name": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "id": 1303517209,
+    "verified": true
+  },
+  "commit": "d49f3c3352f2f7bfb670ea66bcc70cf4e18aae0e",
+  "tag": "lane-mapping-20261011-r3",
+  "branch": "repair/lane-keyframe-transaction-20261011",
+  "methods": [
+    "gh api repository identity",
+    "gh run list --commit exact_sha",
+    "gh run view --json jobs",
+    "gh run view --log / --log-failed (filtered excerpts)",
+    "gh api runs/{run_id}/artifacts"
+  ],
+  "external_mutations": [],
+  "artifact_downloads": 0,
+  "runtime_source_or_sealed_session_edits": 0,
+  "summary": {
+    "runs": 6,
+    "success": 2,
+    "failure": 4,
+    "all_completed": true,
+    "foxy_builds_succeeded": true,
+    "foxy_workflows_passed": false,
+    "dds_executed": false
+  },
+  "failure": {
+    "test": "test/test_cell_grouping.py::test_exact_unique_inverse_counts_for_boundary_cases[rows0]",
+    "where": "test oracle np.unique(keys, axis=0, return_inverse=True, return_counts=True)",
+    "keys_shape": [
+      0,
+      2
+    ],
+    "keys_dtype": "int64",
+    "numpy_apt_version": "1:1.17.4-5ubuntu3.1",
+    "python": "3.8.10",
+    "pytest": "4.6.9",
+    "exception": "ValueError: cannot reshape array of size 0 into shape (0,newaxis)",
+    "source": "/usr/lib/python3/dist-packages/numpy/lib/arraysetops.py:274: ar = ar.reshape(orig_shape[0], -1)",
+    "classification": "Test-oracle compatibility failure; production _unique_cells has explicit empty path. No runtime change implemented in this readback.",
+    "suggestion": "Define empty int64 unique/inverse/counts expected outputs explicitly; retain nonempty NumPy oracle and empty-case production assertions. Do not skip/delete empty test."
+  },
+  "runs": [
+    {
+      "id": 38072857986,
+      "ref": "branch",
+      "workflow": "Lane teach-repeat (ROS 2 Foxy)",
+      "conclusion": "failure",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072857986",
+      "build_packages": 4,
+      "build_seconds": 11.4,
+      "unit_tests": {
+        "reference": {
+          "collected": 520,
+          "passed": 519,
+          "failed": 1,
+          "skipped": 0
+        },
+        "fixed": {
+          "collected": 0
+        },
+        "dds": "not_reached",
+        "road_detector_header": "not_reached",
+        "upstream_lya_runtime": "not_reached"
+      },
+      "reference_seconds": 17,
+      "artifacts": [
+        {
+          "id": 11677681209,
+          "name": "lane-foxy-validation",
+          "size_in_bytes": 144780,
+          "digest": "sha256:826801da4882133186c643a353059a698fb33ce89a9bdec00712889a1e7d0c20",
+          "expired": false,
+          "downloaded": false,
+          "expires_date_utc": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": 38072858045,
+      "ref": "tag",
+      "workflow": "Lane teach-repeat (ROS 2 Foxy)",
+      "conclusion": "failure",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072858045",
+      "build_packages": 4,
+      "build_seconds": 12.7,
+      "unit_tests": {
+        "reference": {
+          "collected": 520,
+          "passed": 519,
+          "failed": 1,
+          "skipped": 0
+        },
+        "fixed": {
+          "collected": 0
+        },
+        "dds": "not_reached",
+        "road_detector_header": "not_reached",
+        "upstream_lya_runtime": "not_reached"
+      },
+      "reference_seconds": 18,
+      "artifacts": [
+        {
+          "id": 11677835398,
+          "name": "lane-foxy-validation",
+          "size_in_bytes": 145101,
+          "digest": "sha256:91f1743529574d489dc94edb0522b619e45d3f34932e94df352c5b7b8e29302f",
+          "expired": false,
+          "downloaded": false,
+          "expires_date_utc": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": 38072857957,
+      "ref": "branch",
+      "workflow": "Endpoint GNSS (ROS 2 Foxy)",
+      "conclusion": "failure",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072857957",
+      "build_packages": 5,
+      "build_seconds": 12.6,
+      "unit_tests": {
+        "reference": {
+          "collected": 520,
+          "passed": 519,
+          "failed": 1,
+          "skipped": 0
+        },
+        "fixed": {
+          "collected": 0
+        },
+        "dds": "not_reached",
+        "road_detector_header": "not_reached",
+        "upstream_lya_runtime": "not_reached",
+        "gnss": {
+          "collected": 359,
+          "passed": 359,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      "reference_seconds": 17.94,
+      "gnss_seconds": 9.19,
+      "artifacts": [
+        {
+          "id": 11677451657,
+          "name": "lane-endpoint-gnss-foxy-validation",
+          "size_in_bytes": 171396,
+          "digest": "sha256:bbdebf567c44ac7692e48b55f694c0e297f7c71bfcd343cd981d16de0f601e93",
+          "expired": false,
+          "downloaded": false,
+          "expires_date_utc": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": 38072858043,
+      "ref": "tag",
+      "workflow": "Endpoint GNSS (ROS 2 Foxy)",
+      "conclusion": "failure",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072858043",
+      "build_packages": 5,
+      "build_seconds": 14.3,
+      "unit_tests": {
+        "reference": {
+          "collected": 520,
+          "passed": 519,
+          "failed": 1,
+          "skipped": 0
+        },
+        "fixed": {
+          "collected": 0
+        },
+        "dds": "not_reached",
+        "road_detector_header": "not_reached",
+        "upstream_lya_runtime": "not_reached",
+        "gnss": {
+          "collected": 359,
+          "passed": 359,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      "reference_seconds": 20.16,
+      "gnss_seconds": 10.19,
+      "artifacts": [
+        {
+          "id": 11677576462,
+          "name": "lane-endpoint-gnss-foxy-validation",
+          "size_in_bytes": 172555,
+          "digest": "sha256:38423f518f5c461cf80acc75e8432a2ad60d131b3ab5b553084756325408eb61",
+          "expired": false,
+          "downloaded": false,
+          "expires_date_utc": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": 38072857949,
+      "ref": "branch",
+      "workflow": "Agent handoff integrity",
+      "conclusion": "success",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072857949",
+      "matrix": [
+        {
+          "os": "ubuntu-latest",
+          "python": "3.13",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "ubuntu-latest",
+          "python": "3.8",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "windows-latest",
+          "python": "3.13",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "windows-latest",
+          "python": "3.8",
+          "passed": 33,
+          "failed": 0
+        }
+      ],
+      "unique_tests": 33,
+      "test_executions": 132,
+      "artifacts": []
+    },
+    {
+      "id": 38072858006,
+      "ref": "tag",
+      "workflow": "Agent handoff integrity",
+      "conclusion": "success",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38072858006",
+      "matrix": [
+        {
+          "os": "ubuntu-latest",
+          "python": "3.13",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "ubuntu-latest",
+          "python": "3.8",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "windows-latest",
+          "python": "3.13",
+          "passed": 33,
+          "failed": 0
+        },
+        {
+          "os": "windows-latest",
+          "python": "3.8",
+          "passed": 33,
+          "failed": 0
+        }
+      ],
+      "unique_tests": 33,
+      "test_executions": 132,
+      "artifacts": []
+    }
+  ],
+  "artifact_total": {
+    "count": 4,
+    "size_in_bytes": 633832,
+    "content_not_downloaded_or_inspected": true
+  },
+  "subsequent_authorized_test_only_fix": {
+    "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_cell_grouping.py",
+    "sha256": "b13fe79212b4079e55ba217fcc1c012e3bf1cd1552c9a19de37ce53cb0ca2b1d",
+    "change": "For empty int64 Nx2 input only, explicitly construct expected empty unique (0,2), inverse (0,), and counts (0,) arrays. Retain dtype, shape, byte-equality, input immutability, reconstruction, sum and bincount assertions. Nonempty cases retain unchanged NumPy oracle.",
+    "test_removed_or_skipped": false,
+    "runtime_source_changed": false,
+    "local_python": "3.13.13",
+    "local_numpy": "2.4.4",
+    "environment": {"PYTHONDONTWRITEBYTECODE": "1"},
+    "command": "python -m pytest -q -p no:cacheprovider workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_cell_grouping.py",
+    "result": {"passed": 27, "failed": 0, "skipped": 0, "exit_code": 0, "pytest_seconds": 0.21},
+    "diff_check_command": "git diff --check -- workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_cell_grouping.py",
+    "diff_check_exit_code": 0,
+    "command_batch_wall_seconds": 1.0081092,
+    "new_foxy_ci_executed": false,
+    "commit_or_push_performed": false,
+    "immutable_r3_failure_record_preserved": true,
+    "notes": "The local pass is not validation on NumPy 1.17.4. Original R3 branch/tag runs remain failed; a later commit/tag needs its own automatic Foxy CI."
+  },
+  "limitations": [
+    "Build success is distinct from workflow success.",
+    "DDS/header/LYA runtime scripts were not reached after colcon test failure.",
+    "Branch and tag are duplicate executions of the same source commit, not additional unique tests.",
+    "No simulated lap or real-vehicle acceptance inferred.",
+    "This file is outside sealed session007."
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "kind": "independent_static_readback_review_actual04_and_unit05",
+  "review_is_post_execution": true,
+  "review_is_not_prerequisite_or_adoption_authority": true,
+  "evidence": {
+    "driver_sha256": "63b9dd53e2a2de042c633b2589a0e5896419738f74e89a3c4e8cf8601f4ec39f",
+    "parent_sha256": "169c875a04cf8c72fde429eb28cb77a5bbc9fe6c404727746f2aabc60e7b14ae",
+    "summary_sha256": "a15029f1d69a500e978e9fff98455833ac7682c583db0531c062bb0c4a1939eb",
+    "fit_sha256": "597703b0a408b462807df57ece9e17787f322a167632ea44558c1765b3daa47c",
+    "footprint_sha256": "eb03d1ceb011c2419c4c8a25fb1cf8e40f7cb3c084d714d9d39b7a065e181d17",
+    "provisional_driver_sha256": "f944ec37e7cb9373a522279096b7ad597dc9c659b7b2bd22fdc9bbef5554dbcb",
+    "provisional_none_gate_not_executed_by_reviewer": true,
+    "final_driver_whole_normalized_equal_frozen03_except_reviewed_blocks": true,
+    "bound_inputs_and_sources": 132,
+    "all_before_after_maps_equal": true,
+    "current_py_json_hashes_checked": 105,
+    "text_logs_read_and_hash_checked": 2,
+    "other_NPZ_ZIP_historical_logs_not_independently_read_or_hashed": 25,
+    "whole_json_files_parsed": 114,
+    "declared_json_receipt_hash_relationships_checked": 100
+  },
+  "inventory": {
+    "cases": 22,
+    "cuts": 40,
+    "primary_roles": 80,
+    "center_occurrences": 1528,
+    "WB_occurrences": 3056,
+    "zero_cut_cases": 10
+  },
+  "invariants": {
+    "all_original_four_preserved": true,
+    "whole_original_side_packets_unchanged_against01_02_03": 80,
+    "whole_packet_comparisons": 240,
+    "protected_cut_field_comparisons": 1200,
+    "support_descriptor_shape_checks": 320,
+    "exact_q_slots_unchanged_from02_and03": 200,
+    "original_P_exact_plane_checks": 800,
+    "finite_chart_membership_checks": 400,
+    "domain_growth": 0,
+    "original_status_totals": {
+      "P": {
+        "yes": 4,
+        "no": 31,
+        "unknown": 5
+      },
+      "Q": {
+        "yes": 0,
+        "no": 1,
+        "unknown": 39
+      },
+      "P_intersect_Q": {
+        "yes": 0,
+        "no": 1,
+        "unknown": 39
+      },
+      "nominal_WB_side_labels": {
+        "yes": 69,
+        "no": 11,
+        "unknown": 0
+      }
+    },
+    "raw_binary_packets_independently_read": false,
+    "original_rounded_fit_program_certified": false,
+    "final_labels_fit_rounding_and_five_locations_source_blocks_unchanged": true
+  },
+  "actual04": {
+    "positive": 25,
+    "original_protected_positive": 4,
+    "additional_positive": 21,
+    "unknown": 15,
+    "complete_q_slots_per_cut": 5,
+    "helper_sides": 400,
+    "side_yes": 293,
+    "side_pool_unknown": 104,
+    "side_no_certified_27_packet": 3,
+    "side_pivot_budget_unknown": 0,
+    "complete_paired_WB_hypotheses": 102,
+    "joint_calls": 306,
+    "joint_yes_and_independently_verified_reports": 306,
+    "joint_interval_operators_rebuilt_by_reviewer": false,
+    "unchanged_paired_chart_field_checks": 816,
+    "QP_systems": 2315,
+    "QP_pivots": 434,
+    "QP_full_scans": 730,
+    "rounding_packets": 7992,
+    "exact_label_substitutions": 848,
+    "all_counter_coverage_complete": true,
+    "raw_adapter_counter_equalities": 2000,
+    "max_pivots": 24,
+    "radius_fractions": [
+      0.0001,
+      0.000001,
+      1e-8
+    ],
+    "fit_footprint_raw_executions": 2,
+    "production_joint_checker_executed": false,
+    "exact_D_joint_checker_used": true,
+    "exit_code": 0,
+    "failure": null,
+    "retries": 0,
+    "own_child_stopped": true,
+    "own_stop_attempted": false,
+    "child_s_diagnostic_only": 4.89162499998929,
+    "parent_s_diagnostic_only": 5.332938899984583,
+    "map_writes": 0,
+    "adoptions": 0,
+    "gate_changes": 0,
+    "dropped_occurrences": 0,
+    "mapping_extractor_imports": 0,
+    "native_calls": 0,
+    "Unity_calls": 0
+  },
+  "preservation": {
+    "from01": {
+      "positive_retained": 19,
+      "unknown_to_positive": 6,
+      "positive_to_unknown": 0
+    },
+    "from02": {
+      "positive_retained": 24,
+      "unknown_to_positive": 1,
+      "positive_to_unknown": 0
+    },
+    "from03": {
+      "positive_retained": 22,
+      "unknown_to_positive": 3,
+      "positive_to_unknown": 0
+    },
+    "restored03_losses": [
+      {
+        "case": "longcap_phase_0.0",
+        "cut": 1,
+        "certified_q": [
+          1
+        ]
+      },
+      {
+        "case": "arc_0.6_phase_0.0",
+        "cut": 2,
+        "certified_q": [
+          2,
+          3
+        ]
+      }
+    ],
+    "only_new_positive_vs02": {
+      "case": "arc_0.6_phase_0.0",
+      "cut": 1,
+      "certified_q": [
+        2,
+        3
+      ]
+    }
+  },
+  "remaining_unknown": {
+    "cuts": 15,
+    "pool_failed_sides": 78,
+    "both_WB_hypotheses": 0,
+    "joint_calls": 0,
+    "not_global_infeasibility": true,
+    "rows": [
+      {
+        "case": "longcap_phase_0.0",
+        "cut": 0,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "longcap_phase_0.0",
+        "cut": 2,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "longcap_phase_0.35",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "longcap_phase_0.35",
+        "cut": 2,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "longcap_phase_0.35",
+        "cut": 3,
+        "pool_failed_sides": 8
+      },
+      {
+        "case": "shortcap_1_phase_0.0",
+        "cut": 0,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_1_phase_0.0",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_1_phase_0.35",
+        "cut": 0,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_1_phase_0.35",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_5_phase_0.0",
+        "cut": 0,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_5_phase_0.0",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_5_phase_0.35",
+        "cut": 0,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "shortcap_5_phase_0.35",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "arc_0.6_phase_0.35",
+        "cut": 1,
+        "pool_failed_sides": 5
+      },
+      {
+        "case": "arc_0.6_phase_0.35",
+        "cut": 2,
+        "pool_failed_sides": 5
+      }
+    ]
+  },
+  "rounding_unknowns_in_otherwise_positive_cuts": [
+    {
+      "case": "longcap_phase_0.0",
+      "cut": 3,
+      "q": 0,
+      "side": "left",
+      "packets": 27,
+      "exact_substitutions": 27
+    },
+    {
+      "case": "arc_0.6_phase_0.0",
+      "cut": 3,
+      "q": 1,
+      "side": "right",
+      "packets": 27,
+      "exact_substitutions": 27
+    },
+    {
+      "case": "arc_0.6_phase_0.35",
+      "cut": 3,
+      "q": 2,
+      "side": "right",
+      "packets": 27,
+      "exact_substitutions": 27
+    }
+  ],
+  "unit05": {
+    "testsRun": 69,
+    "source_methods_match_unique_actual_IDs": 69,
+    "old_suite": 58,
+    "new_suite": 11,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "new_actual_registry": "r30_independent_paired_curve_roundoff_test_01.PairedCurveRoundoffTests",
+    "five_current_bindings_and_before_after_equal": true,
+    "parent_sha256": "c289239be6b1d12ce89aca15ddf7dab0f8a545d7301ea1b6f53b74c4b0c62e36",
+    "child_sha256": "fcbb58273e3b475342e8ffa05db61bcfc00d2f390c2c81f57ed650207e067c23",
+    "driver_sha256": "99667a5b2556bd849102e598173fa83637fe0c07bf4976e857e0f6d8d6f45b5f",
+    "new_test_sha256": "2abc09acc54128b1e561f603809278a5005107fafb0379a7669152eb6697749d",
+    "gate_class_counts_and_actual_receipt_source_links_match": true,
+    "exit_code": 0,
+    "retries": 0,
+    "child_stopped": true,
+    "parent_s_diagnostic_only": 1.4699217999586836,
+    "child_s_diagnostic_only": 1.343573699996341,
+    "scope": "artificial_independent_nominal_proposal_not_ROS_build_runtime_or_vehicle"
+  },
+  "scope_limits": [
+    "no_independent_NPZ_read",
+    "no_Python_AST_tests_solver_native_Unity_execution_by_reviewer",
+    "no_rerun",
+    "no_source_or_old_evidence_edit",
+    "no_runtime_WCET_or_statistical_speedup",
+    "no_scene_car_sim_parameter_change",
+    "no_adoption_two_laps_error_metrics_or_video_claim",
+    "nominal_saved_world_labels_not_original_rounded_fit_program"
+  ],
+  "redaction": "no_absolute_paths_usernames_process_ids_or_raw_geometry_values"
+}

@@ -1,0 +1,90 @@
+map_assist:
+  ros__parameters:
+    odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
+    avoidance_flag_topic: /lane_stop_flag
+    # Normal cold start, before OA begins avoidance; later ownership follows its real flag.
+    # For a mid-run restart with unknown OA state, override this to false.
+    avoidance_initially_idle: true
+    input_point_a_topic: /original_processed_point_a
+    input_point_b_topic: /original_processed_point_b
+    input_point_c_topic: /original_processed_point_c
+    output_point_a_topic: /processed_point_a
+    output_point_b_topic: /processed_point_b
+    output_point_c_topic: /processed_point_c
+    branch_active_topic: /map_assist/branch_active
+    reset_topic: /map_assist/reset
+    status_topic: /map_assist/status
+    reference_path_topic: /map_assist/path
+
+    # Empty automatically uses the official OSM installed with this package.
+    topomap_path: ""
+    # Empty selects the supplied map's first closed outer way; start/direction are inferred.
+    route_node_ids: ""
+
+    angle_tolerance_deg: 15.0
+    progress_tolerance_m: 1.0
+    persistence_frames: 5
+    max_correction_deg: 8.0
+    max_step_deg: 2.0
+    enable_correction: true
+
+    sample_spacing_m: 0.2
+    smooth_window_m: 1.0
+    max_detour_gap_m: 2.0
+    min_lap_distance_m: 40.0
+    lap_closure_radius_m: 1.5
+    lap_closure_heading_deg: 25.0
+    match_window_m: 3.0
+    max_match_distance_m: 1.5
+    max_odom_speed_mps: 4.0
+    max_odom_yaw_rate_radps: 3.0
+    max_odom_position_std_m: 1.0
+    max_odom_yaw_std_deg: 20.0
+    max_odom_gap_sec: 2.0
+    max_recorded_samples: 20000
+
+    publish_rate_hz: 20.0
+    point_timeout_sec: 0.5
+    max_point_skew_sec: 0.15
+    odom_timeout_sec: 0.5
+    # Latch the real flag; resume only after False and a fresh complete triplet.
+    resume_delay_sec: 0.2
+
+    # map_drive.launch.py enables these and remaps the existing LYA output.
+    # Standalone map_assist.launch.py retains point-only assistance by default.
+    enable_traffic_control: false
+    # Stable red waits; fresh stable green resumes. No automatic detour.
+    traffic_policy: stop_wait
+    traffic_light_topic: /map_assist/traffic_light_input
+    # Both red and green require a strict majority of real detector frames.
+    traffic_vote_window_sec: 0.5
+    traffic_vote_min_samples: 3
+    # Historical distance approach requires explicit traffic_policy: legacy.
+    enable_signal_approach: false
+    signal_observation_topic: /map_assist/signal_observation
+    signal_observation_timeout_sec: 0.5
+    target_stop_distance_m: 8.5
+    approach_max_speed_mps: 0.8
+    approach_deceleration_mps2: 1.0
+    approach_latency_sec: 0.2
+    approach_stop_tolerance_m: 0.1
+    enable_velocity_gate: false
+    input_cmd_vel_topic: /map_assist/controller_cmd_vel
+    output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel
+    cmd_vel_timeout_sec: 0.5
+
+    # Matching errors are in odom metres. Official drawing scale does not set odom scale.
+    alignment_max_rmse_m: 3.0
+    alignment_ambiguity_margin_m: 0.3
+    # Match outer turn/node features, constrain shape in odom coordinates, then smooth.
+    fusion_node_search_m: 4.0
+    fusion_feature_window_m: 2.0
+    fusion_shape_weight: 0.25
+    fusion_max_displacement_m: 0.75
+
+    # Only enter a graph alternative near its junction; never connect across open ground.
+    detour_entry_radius_m: 3.0
+    detour_waypoint_radius_m: 0.8
+    detour_max_cross_track_m: 2.0
+    detour_lookahead_m: 0.5
+    detour_point_spacing_m: 0.5

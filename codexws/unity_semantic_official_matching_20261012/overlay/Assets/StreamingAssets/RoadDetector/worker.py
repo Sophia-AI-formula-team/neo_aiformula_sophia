@@ -1,0 +1,254 @@
+"""Private stdio RGB inference adapter, with optional read-only LYA candidates."""
+import argparse
+import base64
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import time
+
+PACKAGE = Path(__file__).resolve().parent / "a3-v14"
+WEIGHT_SHA256 = "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c"
+MAX_LINE = 24 * 1024 * 1024
+
+
+def verify_package():
+    manifest = json.loads((PACKAGE / "weights/manifest.json").read_text(encoding="utf-8"))
+    weights = PACKAGE / "weights/shared_best.pth"
+    with weights.open("rb") as source:
+        digest = hashlib.file_digest(source, "sha256").hexdigest()
+    if digest != WEIGHT_SHA256 or manifest["sha256"] != digest:
+        raise ValueError("a3-v14 checkpoint SHA256 mismatch")
+    if manifest["provenance"]["tag"] != "a3-v14" or manifest["provenance"]["step"] != 16384:
+        raise ValueError("Wrong A3 model provenance")
+    return weights
+
+
+def decode_request(line):
+    import cv2
+    import numpy as np
+    if len(line) > MAX_LINE:
+        raise ValueError("Input frame exceeds transport limit")
+    request = json.loads(line)
+    sequence = request.get("sequence")
+    if type(sequence) is not int or sequence < 1:
+        raise ValueError("Invalid frame sequence")
+    png = base64.b64decode(request["png"], validate=True)
+    # Validate dimensions before OpenCV allocates the decoded image.
+    if png[:8] != b"\x89PNG\r\n\x1a\n" or len(png) < 24:
+        raise ValueError("Expected PNG input")
+    width, height = int.from_bytes(png[16:20], "big"), int.from_bytes(png[20:24], "big")
+    if not (2 <= width <= 4096 and 2 <= height <= 4096):
+        raise ValueError("Unsupported RGB dimensions")
+    image = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_COLOR)
+    if image is None or image.shape[:2] != (height, width):
+        raise ValueError("Invalid PNG pixels")
+    return sequence, image, hashlib.sha256(png).hexdigest()
+
+
+def encode_png(image):
+    import cv2
+    ok, pixels = cv2.imencode(".png", image, [cv2.IMWRITE_PNG_COMPRESSION, 1])
+    if not ok:
+        raise RuntimeError("PNG encoding failed")
+    return base64.b64encode(pixels).decode("ascii")
+
+
+def validate_capture_metadata(value, sequence, digest, control=None):
+    """Echo v2 image exposure provenance only; never relabel Body as image pose.
+
+    This does not establish age admission or a junction observation. The caller
+    must gate later consumers against capture time, epoch and original identity.
+    """
+    def require(condition, reason):
+        if not condition:
+            raise ValueError(reason)
+
+    def finite(number):
+        return type(number) in (int, float) and math.isfinite(number)
+
+    def vector(value, length):
+        return type(value) is list and len(value) == length and all(finite(x) for x in value)
+
+    def camera(value):
+        require(type(value) is dict and set(value) == {"K", "R", "t"}, "invalid_camera_fields")
+        require(vector(value["K"], 9) and vector(value["R"], 9) and vector(value["t"], 3), "nonfinite_camera")
+        require(value["K"][0] > 0 and value["K"][4] > 0 and value["K"][6:] == [0, 0, 1], "invalid_intrinsics")
+
+    def snapshot(value):
+        require(type(value) is dict, "invalid_snapshot")
+        base = {"sim_time", "repository_projection", "camera", "body_available",
+                "render_root_position_unity", "render_root_quaternion_xyzw"}
+        require(type(value.get("body_available")) is bool, "invalid_body_available")
+        require(finite(value.get("sim_time")) and value["sim_time"] >= 0, "invalid_snapshot_time")
+        require(type(value.get("repository_projection")) is bool, "invalid_projection_flag")
+        camera(value.get("camera"))
+        require(vector(value.get("render_root_position_unity"), 3), "nonfinite_render_root_position_unity")
+        require(vector(value.get("render_root_quaternion_xyzw"), 4), "nonfinite_render_root_quaternion_xyzw")
+        require(abs(sum(x*x for x in value["render_root_quaternion_xyzw"]) - 1) <= .001, "invalid_quaternion")
+        if not value["body_available"]:
+            require(set(value) == base, "invalid_missing_body_fields")
+            return
+        fields = {"body_position_unity": 3, "body_quaternion_xyzw": 4, "body_euler_unity_deg": 3}
+        require(set(value) == base | set(fields), "invalid_snapshot_fields")
+        for name, size in fields.items():
+            require(vector(value[name], size), "nonfinite_" + name)
+        require(abs(sum(x*x for x in value["body_quaternion_xyzw"]) - 1) <= .001, "invalid_quaternion")
+
+    def body_coincides(snapshot_value):
+        return (snapshot_value["body_available"]
+                and snapshot_value["body_position_unity"] == snapshot_value["render_root_position_unity"]
+                and snapshot_value["body_quaternion_xyzw"] == snapshot_value["render_root_quaternion_xyzw"])
+
+    def horizontal_forward(q):
+        return 2*(q[0]*q[2]+q[3]*q[1]), 1-2*(q[0]*q[0]+q[1]*q[1])
+
+    try:
+        keys = {"schema", "valid", "reason", "sequence", "epoch", "clock_kind", "capture_time",
+                "capture_realtime_sec", "rgb_sha256", "camera", "image_pose", "body_image_coincident",
+                "before", "after"}
+        require(type(value) is dict and set(value) == keys, "invalid_capture_fields")
+        require(value["schema"] == "aiformula_junction_capture/v2", "invalid_schema")
+        require(type(value["valid"]) is bool, "invalid_validity_flag")
+        require(type(value["sequence"]) is int and value["sequence"] == sequence and sequence > 0, "capture_sequence_mismatch")
+        require(type(value["epoch"]) is int and value["epoch"] >= 0, "invalid_epoch")
+        require(value["clock_kind"] == "unity_time_as_double", "invalid_clock")
+        require(finite(value["capture_realtime_sec"]) and value["capture_realtime_sec"] >= 0, "invalid_realtime")
+        require(type(value["rgb_sha256"]) is str and value["rgb_sha256"] == digest
+                and len(digest) == 64 and all(x in "0123456789abcdef" for x in digest), "capture_rgb_mismatch")
+        camera(value["camera"])
+        before, after = value["before"], value["after"]
+        snapshot(before)
+        snapshot(after)
+        require(value["camera"] == before["camera"], "capture_calibration_mismatch")
+        coincidence = body_coincides(before) and body_coincides(after)
+        require(type(value["body_image_coincident"]) is bool
+                and value["body_image_coincident"] == coincidence, "body_image_coincidence_mismatch")
+        stable_fields = ("sim_time", "repository_projection", "camera",
+                         "render_root_position_unity", "render_root_quaternion_xyzw")
+        reason = "image_pose_stable"
+        if any(before[key] != after[key] for key in stable_fields):
+            reason = "image_pose_time_or_calibration_changed_during_capture"
+        elif not before["repository_projection"]:
+            reason = "repository_projection_disabled"
+        else:
+            forward_x, forward_z = horizontal_forward(before["render_root_quaternion_xyzw"])
+            if forward_x*forward_x + forward_z*forward_z <= 1e-12:
+                reason = "image_heading_unavailable"
+        require(value["reason"] == reason and value["valid"] == (reason == "image_pose_stable"), "inconsistent_capture_validity")
+        if value["valid"]:
+            require(finite(value["capture_time"]) and value["capture_time"] == before["sim_time"], "capture_time_mismatch")
+            pose = value["image_pose"]
+            require(type(pose) is dict and set(pose) == {"source", "coordinate_frame", "position_unity",
+                    "quaternion_xyzw", "planar"}, "invalid_image_pose_fields")
+            require(pose["source"] == "unity_render_root" and pose["coordinate_frame"] == "unity_world",
+                    "invalid_image_pose_source")
+            position, q = before["render_root_position_unity"], before["render_root_quaternion_xyzw"]
+            require(vector(pose["position_unity"], 3) and vector(pose["quaternion_xyzw"], 4)
+                    and pose["position_unity"] == position and pose["quaternion_xyzw"] == q,
+                    "image_pose_snapshot_mismatch")
+            planar = pose["planar"]
+            require(type(planar) is dict and set(planar) == {"frame", "x", "y", "yaw"}
+                    and planar["frame"] == "render_root_in_odom_axes"
+                    and all(finite(planar[key]) for key in ("x", "y", "yaw")), "invalid_image_planar_pose")
+            expected_yaw = -math.atan2(*horizontal_forward(q))
+            yaw_error = math.atan2(math.sin(planar["yaw"]-expected_yaw), math.cos(planar["yaw"]-expected_yaw))
+            require(planar["x"] == position[2] and planar["y"] == -position[0] and abs(yaw_error) <= 1e-5,
+                    "image_coordinate_mismatch")
+        else:
+            require(value["capture_time"] is None and value["image_pose"] is None, "invalid_capture_must_not_authorize_pose")
+        if control is not None:
+            require(type(control) is dict and type(control.get("epoch")) is int
+                    and control["epoch"] == value["epoch"], "lane_epoch_mismatch")
+            require(control.get("camera") == value["camera"], "lane_calibration_mismatch")
+            if value["valid"]:
+                require(finite(control.get("sim_time")) and control["sim_time"] == value["capture_time"], "lane_capture_time_mismatch")
+        # Preserve JSON field values. In particular no receive-time pose or new timestamp.
+        return value
+    except (KeyError, TypeError, ValueError, OverflowError) as error:
+        return dict(schema="aiformula_junction_capture/v2", valid=False,
+                    reason="capture_metadata_rejected:" + str(error))
+
+
+def infer(model, line, pipeline_state=None):
+    sequence, image, digest = decode_request(line)
+    request = json.loads(line)
+    began = time.perf_counter()
+    output = model.predict(image)
+    payload = output.detections_payload()
+    overlay = output.combined_overlay
+    if request.get("signal_panel_rgb") is True and pipeline_state is not None:
+        from signal_panel_rgb import SignalPanelRGBTracker, draw_panel_overlay
+        tracker = pipeline_state.setdefault("signal_panel", SignalPanelRGBTracker())
+        # The same current camera validates RGB identity and range. Missing
+        # calibration fails closed for RGB while preserving independent A3.
+        calibration = (request.get("lane_control") or {}).get("camera") or {}
+        evidence = tracker.update(image, output.traffic_light_state, output.detections, sequence,
+                                  calibration=calibration)
+        payload.update(traffic_light_original=output.traffic_light_state,
+                       traffic_light_state=evidence["state"], traffic_light_source=evidence["source"],
+                       signal_panel=evidence)
+        # Range uses this frame's observed panel and the existing camera calibration.
+        # Installation dimensions are explicit model calibration, never lamp pose/truth.
+        from signal_panel_range import estimate_panel_range
+        payload["signal_range"] = estimate_panel_range(evidence, calibration, image.shape)
+        overlay = draw_panel_overlay(overlay, evidence)
+    reply = dict(type="frame", sequence=sequence, width=image.shape[1], height=image.shape[0],
+                input_sha256=digest, inference_ms=(time.perf_counter() - began) * 1000,
+                overlay=encode_png(overlay), lane=encode_png(output.lane_mask),
+                obstacles=encode_png(output.obstacle_mask), **payload)
+    control = request.get("lane_control")
+    if control is not None and pipeline_state is not None:
+        try:
+            from upstream_adapter import Pipeline
+            if pipeline_state.get("epoch") != control["epoch"]:
+                pipeline_state.update(epoch=control["epoch"], pipeline=Pipeline())
+            reply["lane_control"] = pipeline_state["pipeline"].process(output.lane_mask, dict(control, sequence=sequence))
+        except Exception as error:
+            reply["lane_control"] = dict(valid=False, supported=False, error=f"{type(error).__name__}: {error}")
+    if "junction_capture" in request:
+        reply["junction_capture"] = validate_capture_metadata(request["junction_capture"], sequence, digest, control)
+    return reply
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
+    args = parser.parse_args()
+    protocol = sys.stdout
+    sys.stdout = sys.stderr  # Dependency diagnostics cannot corrupt protocol stdout.
+    def send(value):
+        protocol.write(json.dumps(value, separators=(",", ":"), allow_nan=False) + "\n")
+        protocol.flush()
+    try:
+        weights = verify_package()
+        sys.path.insert(0, str(PACKAGE))
+        sys.path.insert(0, str(PACKAGE.parent.parent / "VisionLaneFollower"))
+        import torch
+        from yolop_a3_runtime import PerceptionModel
+        torch.set_num_threads(min(4, os.cpu_count() or 1))
+        if os.environ.get("AIFORMULA_PERCEPTION_DETERMINISTIC") == "1":
+            torch.use_deterministic_algorithms(True)
+            torch.backends.cudnn.benchmark = False
+        model = PerceptionModel(weights, device=args.device, score_threshold=.5)
+        send(dict(type="ready", model="a3-v14", sha256=WEIGHT_SHA256,
+                  device=str(model.device), torch=torch.__version__))
+        pipeline_state = {}
+        while True:
+            line = sys.stdin.buffer.readline(MAX_LINE + 1)
+            if not line:
+                return 0
+            try:
+                send(infer(model, line, pipeline_state))
+            except Exception as error:
+                send(dict(type="error", message=f"{type(error).__name__}: {error}"))
+                return 1
+    except Exception as error:
+        send(dict(type="error", message=f"{type(error).__name__}: {error}"))
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,358 @@
+"""Independent complete-window quadratic label classification tests.
+
+Mathematical module only, not extraction, mapping,
+normal identifiability, sensor evidence or runtime acceptance. Expected signs
+come solely from Fraction of the supplied binary64 numbers. No implementation
+interval helper, exact helper, fit or curvefit prototype supplies expectations.
+"""
+from fractions import Fraction
+import math
+
+import numpy as np
+import pytest
+
+from lane_mapping_lya_reference import quadratic_labels as subject
+
+CONSISTENT, VIOLATION, UNRESOLVED = 0, 1, 2
+
+
+def residual(point, origin, normal, coefficients, scale):
+    """Independent rational expression, expanded degree two (not Horner)."""
+    p = [Fraction(float(v)) for v in point]
+    o = [Fraction(float(v)) for v in origin]
+    n = [Fraction(float(v)) for v in normal]
+    a, b, c = [Fraction(float(v)) for v in coefficients]
+    s = Fraction(float(scale))
+    x, y = p[0]-o[0], p[1]-o[1]
+    u = (x*n[1]-y*n[0])/s
+    return x*n[0]+y*n[1]-a-b*u-c*u*u
+
+
+def exact_status(values):
+    origins, normals, coefficients, scales, white, black, owners = values
+    result = []
+    for chart in range(len(origins)):
+        rows = [i for i, owner in enumerate(owners) if int(owner) == chart]
+        valid_chart = (all(math.isfinite(float(v)) for v in origins[chart]) and
+                       all(math.isfinite(float(v)) for v in normals[chart]) and
+                       all(math.isfinite(float(v)) for v in coefficients[chart]) and
+                       math.isfinite(float(scales[chart])) and float(scales[chart]) > 0. and
+                       any(float(v) != 0. for v in normals[chart]))
+        valid_rows = all(math.isfinite(float(v)) for i in rows
+                         for point in (white[i], black[i]) for v in point)
+        if not rows or not valid_chart or not valid_rows:
+            result.append(UNRESOLVED)
+            continue
+        violated = any(residual(white[i], origins[chart], normals[chart],
+                               coefficients[chart], scales[chart]) > 0 or
+                       residual(black[i], origins[chart], normals[chart],
+                                coefficients[chart], scales[chart]) < 0 for i in rows)
+        result.append(VIOLATION if violated else CONSISTENT)
+    return np.asarray(result, dtype=np.uint8)
+
+
+def fingerprint(values):
+    return tuple((v.dtype.str, v.shape, v.strides, v.flags.writeable, v.tobytes())
+                 for v in values)
+
+
+def classify(values, expected=None):
+    before = fingerprint(values)
+    result = subject.classify_quadratic_labels(*values)
+    assert fingerprint(values) == before, "classification mutated an input"
+    assert isinstance(result, np.ndarray)
+    assert result.dtype == np.uint8 and result.shape == (len(values[0]),)
+    assert np.all(np.isin(result, [CONSISTENT, VIOLATION, UNRESOLVED]))
+    if expected is None:
+        expected = exact_status(values)
+    np.testing.assert_array_equal(result, np.asarray(expected, dtype=np.uint8))
+    return result
+
+
+def simple(white=None, black=None, owners=None, charts=1):
+    if white is None:
+        white = [[0., -.25], [.5, -.25]]
+    if black is None:
+        black = [[0., .25], [.5, .25]]
+    white = np.asarray(white, dtype=np.float64).reshape(-1, 2)
+    black = np.asarray(black, dtype=np.float64).reshape(-1, 2)
+    if owners is None:
+        owners = np.zeros(len(white), dtype=np.int64)
+    return [np.zeros((charts, 2)), np.tile([0., 1.], (charts, 1)),
+            np.zeros((charts, 3)), np.ones(charts), white, black,
+            np.asarray(owners, dtype=np.int64)]
+
+
+def label_pair(origin, normal, coefficients, scale, u, margin):
+    # Independent fixture geometry. Fraction oracle checks the ACTUAL rounded
+    # points, not an assumed symbolic relation after this float construction.
+    normal = np.asarray(normal, dtype=float)
+    tangent = np.array([normal[1], -normal[0]])
+    norm2 = float(normal[0]*normal[0]+normal[1]*normal[1])
+    a, b, c = coefficients
+    h = a+b*u+c*u*u
+    return tuple(np.asarray(origin) + (scale*u*tangent+(h+offset)*normal)/norm2
+                 for offset in (-margin, margin))
+
+
+def test_numeric_status_contract_and_unobserved_charts():
+    assert (subject.CONSISTENT, subject.INCONSISTENT, subject.UNRESOLVED) == (0, 1, 2)
+    values = simple(owners=[2, 0], charts=4)
+    classify(values, [0, 2, 0, 2])
+
+
+@pytest.mark.parametrize("charts", [0, 1, 3])
+def test_empty_pairs_are_unresolved_not_consistent(charts):
+    values = simple([], [], [], charts=charts)
+    classify(values, [2]*charts)
+
+
+def test_every_member_matters_seed_good_but_last_white_is_bad():
+    values = simple([[0., -.1], [.5, -.1], [1., .125]],
+                    [[0., .1], [.5, .1], [1., .25]])
+    assert exact_status([*values[:4], values[4][:1], values[5][:1], values[6][:1]])[0] == 0
+    classify(values, [1])
+
+
+def test_every_member_matters_seed_good_but_other_black_is_bad():
+    values = simple([[0., -.1], [.5, -.25]], [[0., .1], [.5, -.125]])
+    classify(values, [1])
+
+
+def test_unsorted_owners_cannot_leak_last_chart_status():
+    values = simple([[0., -.1], [0., .2], [1., -.1], [1., -.1]],
+                    [[0., .1], [0., .3], [1., .1], [1., .1]],
+                    [2, 0, 2, 1], charts=4)
+    classify(values, [1, 0, 0, 2])
+
+
+def test_exact_contact_of_both_labels_is_legal():
+    values = simple([[.5, .125], [-.5, .125]], [[.5, .125], [-.5, .125]])
+    values[2][0] = [0., 0., .5]
+    assert all(residual(p, values[0][0], values[1][0], values[2][0], 1.) == 0
+               for p in np.concatenate((values[4], values[5])))
+    classify(values, [0])
+
+
+@pytest.mark.parametrize("side,direction,expected", [
+    ("white", -math.inf, 0), ("white", math.inf, 1),
+    ("black", -math.inf, 1), ("black", math.inf, 0)])
+def test_one_ulp_sides_have_no_epsilon(side, direction, expected):
+    values = simple([[.5, .125]], [[.5, .125]])
+    values[2][0] = [0., 0., .5]
+    values[4 if side == "white" else 5][0, 1] = np.nextafter(.125, direction)
+    classify(values, [expected])
+
+
+@pytest.mark.parametrize("tiny", [0., -0., float.fromhex("0x0.0000000000001p-1022"),
+                                  -float.fromhex("0x0.0000000000001p-1022")])
+def test_signed_zero_and_subnormal_labels(tiny):
+    values = simple([[0., tiny]], [[0., tiny]])
+    classify(values, [0 if tiny == 0. else 1])
+
+
+@pytest.mark.parametrize("seed", [3, 107, 991])
+def test_random_complete_windows_fraction_oracle(seed):
+    rng = np.random.RandomState(seed)
+    count = 7
+    origins = rng.randint(-8, 9, (count, 2)).astype(float)/8.
+    normals = np.array([(0., 1.), (1., 0.), (.6, .8), (-.6, .8),
+                        (0., -1.), (.8, -.6), (1., 1.)])
+    coefficients = rng.randint(-4, 5, (count, 3)).astype(float)/16.
+    scales = np.array([.125, .5, 1., 2., 4., .25, 8.])
+    white, black, owners = [], [], []
+    for owner in range(count):
+        for u in rng.randint(-8, 9, 13).astype(float)/8.:
+            w, b = label_pair(origins[owner], normals[owner], coefficients[owner],
+                              scales[owner], u, .125)
+            white.append(w); black.append(b); owners.append(owner)
+        if owner % 3 == 1:
+            white[-1] = black[-1].copy()  # definite contrary WHITE label
+    order = rng.permutation(len(owners))
+    values = [origins, normals, coefficients, scales,
+              np.asarray(white)[order], np.asarray(black)[order],
+              np.asarray(owners, dtype=np.int64)[order]]
+    expected = exact_status(values)
+    assert set(expected.tolist()) == {0, 1}
+    classify(values, expected)
+
+
+@pytest.mark.parametrize("turn", [0, 1, 2, 3])
+@pytest.mark.parametrize("factor", [.125, 1., 8.])
+def test_exact_quarter_rotation_translation_and_scale(turn, factor):
+    rotation = [np.eye(2), np.array([[0., -1.], [1., 0.]]),
+                -np.eye(2), np.array([[0., 1.], [-1., 0.]])][turn]
+    values = simple([[-1., -.25], [.5, -.25]], [[-1., .25], [.5, .25]])
+    translation = np.array([.125, -.375])
+    values[0] = (values[0] @ rotation.T)*factor+translation
+    values[1] = values[1] @ rotation.T
+    values[2] *= factor
+    values[3] *= factor
+    values[4] = (values[4] @ rotation.T)*factor+translation
+    values[5] = (values[5] @ rotation.T)*factor+translation
+    classify(values, [0])
+
+
+@pytest.mark.parametrize("angle", [.17, -.8, 1.1])
+def test_non_dyadic_rotated_quadratic_uses_actual_float_labels(angle):
+    c, s = math.cos(angle), math.sin(angle)
+    normal = (-s, c)
+    origin, coeff, scale = (1.25, -.5), (.125, -.25, .0625), .5
+    pairs = [label_pair(origin, normal, coeff, scale, u, .125)
+             for u in (-1., -.5, 0., .5, 1.)]
+    values = [np.array([origin]), np.array([normal]), np.array([coeff]),
+              np.array([scale]), np.array([v[0] for v in pairs]),
+              np.array([v[1] for v in pairs]), np.zeros(len(pairs), dtype=np.int64)]
+    classify(values, [0])
+
+
+@pytest.mark.parametrize("field", [0, 1, 2, 3, 4, 5])
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_nonfinite_input_invalidates_only_own_chart(field, value):
+    values = simple(owners=[0, 1], charts=2)
+    values[field].flat[0] = value
+    classify(values, [2, 0])
+
+
+@pytest.mark.parametrize("scale", [0., -0., -1., -math.inf])
+def test_nonpositive_scale_is_unresolved(scale):
+    values = simple()
+    values[3][0] = scale
+    classify(values, [2])
+
+
+def test_zero_normal_unresolved_nonunit_nonzero_chart_not_forbidden():
+    values = simple(charts=2, owners=[0, 1])
+    values[1] = np.array([[0., 0.], [0., 2.]])
+    classify(values, [2, 0])
+
+
+def test_overflow_bound_is_unresolved_not_a_false_certificate():
+    huge = float.fromhex("0x1.fffffffffffffp+1023")
+    values = simple([[huge, -1.]], [[huge, 1.]])
+    values[0][0, 0] = -huge
+    values[2][0, 2] = 1.
+    # Exact rational residuals are finite and both negative, but the fast
+    # enclosure overflows. Contract permits unresolved rather than false pass.
+    assert exact_status(values).tolist() == [1]
+    classify(values, [2])
+
+
+def test_unresolved_row_cannot_be_erased_by_another_certified_pair():
+    tiny = float.fromhex("0x0.0000000000001p-1022")
+    values = simple([[0., -1.], [1., -1.]], [[0., 1.], [1., 1.]])
+    values[3][0] = tiny
+    # First pair can be certified; second chart coordinate overflows. Exact
+    # zero polynomial is consistent, but nonfinite interval work cannot prove it.
+    assert exact_status(values).tolist() == [0]
+    classify(values, [2])
+
+
+def test_definite_violation_is_not_erased_by_later_unresolved_arithmetic():
+    tiny = float.fromhex("0x0.0000000000001p-1022")
+    values = simple([[0., .25], [1., -1.]], [[0., .5], [1., 1.]])
+    values[3][0] = tiny
+    classify(values, [1])
+
+
+@pytest.mark.parametrize("field", range(6))
+@pytest.mark.parametrize("dtype", [np.bool_, np.complex128, object, "U8"])
+def test_forbidden_numeric_dtypes(field, dtype):
+    values = simple()
+    values[field] = values[field].astype(dtype)
+    before = fingerprint(values)
+    with pytest.raises(ValueError):
+        subject.classify_quadratic_labels(*values)
+    assert fingerprint(values) == before
+
+
+def test_large_integer_rounding_is_not_silent():
+    values = simple()
+    values[0] = np.array([[2**53+1, 0]], dtype=np.int64)
+    with pytest.raises(ValueError, match="integer label conversion must be exact"):
+        subject.classify_quadratic_labels(*values)
+
+
+def test_unsigned_overflow_conversion_is_not_silent():
+    values = simple()
+    values[0] = np.array([[2**64-1, 0]], dtype=np.uint64)
+    with pytest.raises(ValueError, match="integer label conversion must be exact"):
+        subject.classify_quadratic_labels(*values)
+
+
+def test_exact_integer_arrays_accepted_without_mutation():
+    values = simple([[0., -1.], [1., -1.]], [[0., 1.], [1., 1.]])
+    values[:6] = [v.astype(np.int64) for v in values[:6]]
+    classify(values, [0])
+
+
+@pytest.mark.parametrize("which", ["origin1d", "origin3col", "normal1d", "normal-count",
+    "coefficient2col", "coefficient1d", "scale-column", "white1d", "white3col",
+    "black-count", "owner-column", "owner-count"])
+def test_bad_shape_rejected(which):
+    values = simple()
+    if which == "origin1d": values[0] = values[0][0]
+    elif which == "origin3col": values[0] = np.zeros((1, 3))
+    elif which == "normal1d": values[1] = values[1][0]
+    elif which == "normal-count": values[1] = np.zeros((2, 2))
+    elif which == "coefficient2col": values[2] = np.zeros((1, 2))
+    elif which == "coefficient1d": values[2] = values[2][0]
+    elif which == "scale-column": values[3] = values[3][:, None]
+    elif which == "white1d": values[4] = values[4].ravel()
+    elif which == "white3col": values[4] = np.zeros((2, 3))
+    elif which == "black-count": values[5] = values[5][:1]
+    elif which == "owner-column": values[6] = values[6][:, None]
+    elif which == "owner-count": values[6] = values[6][:1]
+    before = fingerprint(values)
+    with pytest.raises(ValueError):
+        subject.classify_quadratic_labels(*values)
+    assert fingerprint(values) == before
+
+
+@pytest.mark.parametrize("owners", [
+    np.array([-1, 0], dtype=np.int64), np.array([0, 1], dtype=np.int64),
+    np.array([0, 2**64-1], dtype=np.uint64), np.array([0., 0.]),
+    np.array([False, False]), np.array(["0", "0"]), np.array([0, 0], dtype=object)])
+def test_owner_type_range_and_no_wrap(owners):
+    values = simple()
+    values[6] = owners
+    before = fingerprint(values)
+    with pytest.raises(ValueError):
+        subject.classify_quadratic_labels(*values)
+    assert fingerprint(values) == before
+
+
+def test_capacity_boundary_both_charts_and_labels(monkeypatch):
+    assert subject.MAX_LABEL_PAIRS == 200000
+    # Bounded unit checks of the SAME guard, not a performance benchmark.
+    monkeypatch.setattr(subject, "MAX_LABEL_PAIRS", 3)
+    classify(simple([[0., -.25]]*3, [[0., .25]]*3, [0, 1, 2], charts=3), [0, 0, 0])
+    for values in (simple(charts=4), simple([[0., -.25]]*4, [[0., .25]]*4)):
+        before = fingerprint(values)
+        with pytest.raises(ValueError, match="capacity"):
+            subject.classify_quadratic_labels(*values)
+        assert fingerprint(values) == before
+
+
+@pytest.mark.parametrize("kind", ["readonly", "strided", "float32", "big-endian"])
+def test_legal_layouts_and_types_no_input_mutation(kind):
+    values = simple()
+    if kind == "readonly":
+        for value in values:
+            value.flags.writeable = False
+    elif kind == "strided":
+        values = [np.repeat(v, 2, axis=0)[::2] for v in values]
+    elif kind == "float32":
+        values[:6] = [v.astype(np.float32) for v in values[:6]]
+    else:
+        values[:6] = [v.astype(">f8") for v in values[:6]]
+        values[6] = values[6].astype(">i8")
+    classify(values, [0])
+
+
+def test_duplicate_pairs_and_order_do_not_hide_violation():
+    values = simple([[0., -.25], [1., .125]], [[0., .25], [1., .25]])
+    expected = classify(values, [1])
+    for order in ([1, 0], [0, 1, 0, 1]):
+        changed = values[:4]+[v[order].copy() for v in values[4:]]
+        np.testing.assert_array_equal(classify(changed), expected)

@@ -1,0 +1,49 @@
+{
+  "scope": "Independent reviewer found raw-bool loss in the isolated storage prototype; no production change",
+  "initial12_result_preserved": "RESULT.json",
+  "defect": "source[name][face] produces np.bool_ scalar and normalizes noncanonical true bytes255/2/128; older own-row scalar oracle could normalize too. Original SourceFrame accepts and preserves those bytes.",
+  "red": {
+    "candidate_sha256": "906d9506bfd07d6b2d53d4bfb3595d2d873c89b5d43ccf13505f96501f88f5a1",
+    "test_sha256": "e3223512c17f4d47c97b086aa724b3f7f39158b5ea82468d5cf1d5a90a7f3652",
+    "methods": 3,
+    "failure_entries_including_subtests": 7,
+    "errors": 0,
+    "skips": 0,
+    "reported_s": 0.008,
+    "exit_code": 1,
+    "runs": 1
+  },
+  "fix": "Copy complete ndarray row source[name][face:face+1].tobytes, never scalar bool; no geometry/order/gate change",
+  "green_same_test_source": {
+    "candidate_sha256": "bae3efa9d89a600bf076c92c73f272ca6081e55918b2dab697e876cd5b407512",
+    "test_sha256": "e3223512c17f4d47c97b086aa724b3f7f39158b5ea82468d5cf1d5a90a7f3652",
+    "all_methods": 15,
+    "passed": 15,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "reported_s": 0.018,
+    "exit_code": 0,
+    "pid": 41864,
+    "birth": "not_recorded",
+    "independently_absent_after_exit": true,
+    "runs": 1
+  },
+  "final_oracle_strengthening": {
+    "candidate_sha256_unchanged": "bae3efa9d89a600bf076c92c73f272ca6081e55918b2dab697e876cd5b407512",
+    "test_sha256": "804872c205659a0598bb4d107a8c852fd89f158d98945ac775b4184c62b89b36",
+    "change": "Two older scalar byte oracles now use full ndarray row slices; add opposite-owner incident-endpoint noncanonical flags and one explicit16th method",
+    "tests": 16,
+    "passed": 16,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "reported_s": 0.021,
+    "exit_code": 0,
+    "pid": 46784,
+    "birth": "not_recorded",
+    "independently_absent_after_exit": true,
+    "runs": 1
+  },
+  "evidence_limits": "Raw-bool red subtests stop at first failed assertion; red does not claim later statements in those subtests executed. Ordinary imports only. Weakrefs prove observed original objects/ndarrays and one unretained block collectible, not independently all old backing bytes/heap. Exactly one complete projection per source event is a caller obligation not enforced here. No5+1 retention/transaction/builder/corpus/Engine/runtime acceptance or physical speed/memory result."
+}

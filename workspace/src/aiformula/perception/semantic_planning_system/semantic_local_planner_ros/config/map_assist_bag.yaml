@@ -1,0 +1,18 @@
+# Old-topic bag replay: select this file explicitly with --params-file.
+# Bare ros2 run loads map_assist.yaml for the vehicle instead.
+/**:
+  ros__parameters:
+    # Wall time supports ordinary 1x playback, including Foxy without --clock.
+    use_sim_time: false
+    topomap_path: ""  # Empty resolves to the official OSM installed with this package.
+    enable_correction: false
+    enable_traffic_control: false
+    enable_velocity_gate: false
+    # The recording must begin outside avoidance; later events use the real flag.
+    avoidance_initially_idle: true
+    input_point_a_topic: /processed_point_a
+    input_point_b_topic: /processed_point_b
+    input_point_c_topic: /processed_point_c
+    output_point_a_topic: /map_assist/debug_point_a
+    output_point_b_topic: /map_assist/debug_point_b
+    output_point_c_topic: /map_assist/debug_point_c

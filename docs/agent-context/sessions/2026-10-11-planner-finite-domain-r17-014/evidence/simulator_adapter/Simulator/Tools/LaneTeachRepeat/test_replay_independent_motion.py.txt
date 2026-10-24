@@ -1,0 +1,193 @@
+"""Independent replay uses recorded clocks and the exact acknowledged pose prefix."""
+import copy
+import json
+import os
+from pathlib import Path
+from types import SimpleNamespace
+import unittest
+import uuid
+
+import numpy as np
+
+from motion_channel import Admission, ClockSnapshot, MotionChannel, PROTOCOL, source_ns
+from replay_observed_keyframe import RecordedIndependentMotion, load_core, map_prior, pose_digest
+
+
+class RecordingOdometry:
+    def __init__(self, config=None):
+        self.calls, self.count = [], 0
+
+    def accept_gyro(self, *args):
+        self.calls.append(("gyro", args))
+
+    def accept_wheels(self, *args):
+        self.calls.append(("wheels", args))
+        self.count += 1
+        return SimpleNamespace(stamp_ns=args[0], gyro_stamp_ns=args[0],
+                               x=float(self.count), y=0., yaw=0., speed=0., yaw_rate=0.)
+
+
+def observed_frame(sequence=1, stamp=.0, epoch="0" * 32):
+    sensor = 10_000_000_000 + sequence * 10_000_000
+    row = dict(sequence=sequence, stamp=stamp, received_qpc=sensor,
+               left_rpm=1., right_rpm=2., gyro_z=.01)
+    timing = dict(sequence=sequence, source_ns=source_ns(stamp), source_now_ns=source_ns(stamp + .01),
+                  source_clock_published_qpc=sensor + 500,
+                  sensor_received_qpc=sensor, sent_qpc=sensor + 100, arrival_qpc=sensor + 200,
+                  consumed_qpc=sensor + 600, committed_qpc=sensor + 800,
+                  source_age_ms=10., arrival_age_ms=.0002, receipt_age_ms=.0006,
+                  queue_age_ms=.0004, processing_ms=.0002)
+    return dict(sequence=sequence, image_stamp_ns=source_ns(stamp + .02), sensor_stamp_ns=source_ns(stamp),
+                receipt_ns=987654321000, motion=[row], motion_timing=[timing],
+                image_motion_binding=dict(epoch=epoch, generation=0,
+                                          capture_qpc=sensor + 1000, motion_tail_sequence=sequence))
+
+
+class IndependentReplayContract(unittest.TestCase):
+    def setUp(self):
+        self.odometer = RecordingOdometry()
+        self.replay = RecordedIndependentMotion(self.odometer, 1_000_000_000, "0" * 32, 0)
+
+    def test_exact_sensor_receipt_source_now_and_consumption_not_image_clock(self):
+        frame = observed_frame()
+        self.replay.consume(frame)
+        raw, timing = frame["motion"][0], frame["motion_timing"][0]
+        self.assertEqual(self.odometer.calls, [
+            ("gyro", (source_ns(raw["stamp"]), raw["received_qpc"], raw["gyro_z"])),
+            ("wheels", (source_ns(raw["stamp"]), raw["received_qpc"], 1., 2.,
+                        timing["source_now_ns"], timing["consumed_qpc"]))])
+        self.assertNotEqual(timing["source_now_ns"], frame["image_stamp_ns"])
+        self.assertNotEqual(timing["consumed_qpc"], frame["receipt_ns"])
+
+    def test_qpc_frequency_conversion_is_integer_and_not_relabelled(self):
+        frame = observed_frame()
+        replay = RecordedIndependentMotion(self.odometer, 10_000_000, "0" * 32, 0)
+        replay.consume(frame)
+        self.assertEqual(self.odometer.calls[0][1][1], frame["motion"][0]["received_qpc"] * 100)
+        self.assertEqual(self.odometer.calls[1][1][-1], frame["motion_timing"][0]["consumed_qpc"] * 100)
+
+    def test_no_current_or_future_sample_beyond_capture_tail(self):
+        frame = observed_frame()
+        later = observed_frame(2, .01)
+        frame["motion"].extend(later["motion"])
+        frame["motion_timing"].extend(later["motion_timing"])
+        with self.assertRaisesRegex(ValueError, "acknowledged contiguous prefix"):
+            self.replay.consume(frame)
+        self.assertEqual(self.replay.sequence, 1)
+
+    def test_tail_can_be_reused_without_reintegrating_or_latest_substitution(self):
+        frame = observed_frame()
+        first = self.replay.consume(frame)
+        frame["motion"], frame["motion_timing"] = [], []
+        frame["image_stamp_ns"] += 10_000_000
+        frame["image_motion_binding"]["capture_qpc"] += 1_000_000
+        self.assertIs(first, self.replay.consume(frame))
+        self.assertEqual(len(self.odometer.calls), 2)
+
+    def test_missing_skipped_repeated_and_regressed_sequences_fail(self):
+        for mutation in ("missing", "skipped", "repeated", "regressed"):
+            replay = RecordedIndependentMotion(RecordingOdometry(), 1_000_000_000, "0" * 32, 0)
+            frame = observed_frame()
+            if mutation == "missing":
+                frame["motion"] = frame["motion_timing"] = []
+            elif mutation == "skipped":
+                frame = observed_frame(2, .01)
+            else:
+                replay.consume(frame)
+                frame = observed_frame(1, .02)
+                if mutation == "regressed":
+                    frame["image_motion_binding"]["motion_tail_sequence"] = 0
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                replay.consume(frame)
+
+    def test_future_receipt_arrival_commit_and_source_samples_fail(self):
+        for field in ("received_qpc", "arrival_qpc", "committed_qpc", "stamp"):
+            frame = observed_frame()
+            if field == "received_qpc":
+                frame["motion"][0][field] = frame["image_motion_binding"]["capture_qpc"] + 1
+            elif field == "stamp":
+                frame["motion"][0][field] = .03
+                frame["motion_timing"][0]["source_ns"] = source_ns(.03)
+            else:
+                frame["motion_timing"][0][field] = frame["image_motion_binding"]["capture_qpc"] + 1
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.replay.consume(frame)
+
+    def test_unlogged_truth_and_unknown_motion_fields_are_rejected(self):
+        frame = observed_frame()
+        frame["motion"][0]["world_pose"] = [99., 99., 0.]
+        with self.assertRaisesRegex(ValueError, "unexpected recorded motion"):
+            self.replay.consume(frame)
+
+    def test_exact_tail_age_100ms_boundary_not_relaxed(self):
+        frame = observed_frame()
+        frame["image_stamp_ns"] = source_ns(.1)
+        self.replay.consume(frame)
+        frame = observed_frame()
+        frame["image_stamp_ns"] = source_ns(.100000001)
+        replay = RecordedIndependentMotion(RecordingOdometry(), 1_000_000_000, "0" * 32, 0)
+        with self.assertRaisesRegex(ValueError, "within 100 ms"):
+            replay.consume(frame)
+
+    def test_epoch_generation_and_original_sample_stamp_must_match(self):
+        for field, value in (("epoch", "1" * 32), ("generation", 1), ("sensor_stamp_ns", 123)):
+            frame = observed_frame()
+            target = frame if field == "sensor_stamp_ns" else frame["image_motion_binding"]
+            target[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.replay.consume(frame)
+
+    def test_actual_runtime_motion_channel_and_replay_call_same_odometer_arguments(self):
+        epoch = uuid.uuid4().hex
+        now = 12_000_000_000
+        clock = SimpleNamespace(read=lambda _: ClockSnapshot(epoch, 0, source_ns(.02), now - 100, 1_000_000_000), close=lambda: None)
+        events = []
+        channel = MotionChannel(SimpleNamespace(Odometry=RecordingOdometry), events.append, Admission(),
+            clock_factory=lambda *_: clock, counter=lambda: now, frequency=1_000_000_000, watchdog=False)
+        request = dict(protocol=PROTOCOL, epoch=epoch, generation=0, qpc_frequency=1_000_000_000,
+            sent_qpc=now - 200, sensor_calibration=dict(wheel_diameter_m=.254, motor_to_wheel_ratio=1.),
+            samples=[dict(sequence=1, stamp=.01, received_qpc=now - 300, left_rpm=1., right_rpm=2., gyro_z=.03)])
+        try:
+            channel.ingest(request, arrival_qpc=now - 150)
+            motion = events[-1]
+            frame = dict(image_stamp_ns=source_ns(.03), sensor_stamp_ns=source_ns(.01),
+                motion=motion["samples"], motion_timing=motion["timing"],
+                image_motion_binding=dict(epoch=epoch, generation=0, capture_qpc=now + 1, motion_tail_sequence=1))
+            replay = RecordedIndependentMotion(RecordingOdometry(), 1_000_000_000, epoch, 0)
+            sample = replay.consume(frame)
+            self.assertEqual(replay.odometry.calls, channel.odometry.calls)
+            request.update(capture_qpc=now + 1, motion_tail_sequence=1)
+            runtime_pose = channel.pose_for_image(request, source_ns(.03), arrival_qpc=now + 2)
+            self.assertEqual(sample.__dict__, runtime_pose.sample.__dict__)
+        finally:
+            channel.close()
+
+
+class ActualRecordedIndependentPrefix(unittest.TestCase):
+    def test_available_trial18_recomputes_all_raw_and_map_prior_digests(self):
+        simulator = Path(__file__).resolve().parents[2]
+        fixture_path = simulator.parent / "workspace/diagnostics/lane_teach_repeat_20261011/trial18_analysis/observed_prefix.json"
+        repo = os.environ.get("LANE_TEST_REPO")
+        if not fixture_path.is_file() or not repo:
+            self.skipTest("local recorded fixture and explicit production source required")
+        fixture = json.loads(fixture_path.read_text())
+        modules, _, _, _ = load_core(Path(repo))
+        odometry = modules["lane_mapping_fixed_gnss.motion"].CausalWheelGyroOdometry(
+            {"wheel_diameter_m": fixture["sensor_calibration"]["wheel_diameter_m"]})
+        replay = RecordedIndependentMotion(odometry, fixture["qpc_frequency"], fixture["epoch"], fixture["generation"])
+        origin, checked = None, 0
+        for frame in fixture["frames"]:
+            sample = replay.consume(frame)
+            raw = np.array([sample.x, sample.y, sample.yaw])
+            self.assertEqual(pose_digest(raw), frame["raw_odom_digest"])
+            if "prior_digest" in frame:
+                origin = raw.copy() if origin is None else origin
+                self.assertEqual(pose_digest(map_prior(raw, origin)), frame["prior_digest"])
+                checked += 1
+        self.assertEqual(replay.sequence, 4505)
+        self.assertEqual(checked, 107)
+        self.assertEqual(odometry.reset_count, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

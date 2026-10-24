@@ -1,16 +1,31 @@
-# AI Formula Sophia
+# Sophia AI Formula ROS 2 Snapshot
 
-Runnable ROS 2 source snapshot from the Sophia vehicle computer, captured on 2026-07-17 JST.
+## Integrated source state (2026-10-25)
+
+The default vehicle launcher retains A3 V14 and current camera/gamepad settings. `motor_controller` 0.4.1 is the only buildable motor package; complete `motor_controller_old_bkup` 0.2.1 and `motor_controller_new_bkup` 0.4.1 snapshots remain beside it with restore metadata in [motor_controller_versions.json](workspace/src/aiformula/control/motor_controller_versions.json).
+
+PR #18 is preserved in the [dated left-turn experiment archive](codexws/unity_semantic_left_turn_20261012/README.md), default-disabled and excluded from colcon. See the [experiment index](codexws/README.md) and [integration receipt](docs/agent-context/receipts/2026-10-25-planner-merge-all-035.md). Historical acceptance limits remain recorded separately.
+
+This student-maintained repository contains a public ROS 2 source snapshot used for AI Formula research in Sophia University's Control Engineering Laboratory. It is provided for research reference and is not an official Honda or Sophia University software release.
+
+## Lane teach/repeat and agent handoff
+
+The canonical destination is **Sophia-AI-formula-team/neo_aiformula_sophia**
+(repository ID 1303517209), branch `feat/causal-lane-teach-repeat`.
+Start with [AGENT_CONTEXT.md](AGENT_CONTEXT.md), [current handoff](docs/agent-context/STATUS.md)
+and [experiment recording/upload protocol](docs/agent-context/PROTOCOL.md).
+The three lane-mapping packages are under `workspace/src/aiformula/control/`, beside LYA.
+GNSS in `_gnss` is only a fixed-route start check, never a mapping input.
+CI and handoff receipts do not authorize driving the vehicle.
 
 ## Repository layout
 
-- `workspace/src/aiformula`: the ROS 2 workspace source tree from `/home/workspace/src/aiformula` on the vehicle.
+- `workspace/src/aiformula`: the ROS 2 workspace source tree for vehicle integration, sensing, perception, control, launch, and supporting packages.
 - `workspace/src/aiformula/control`: motor control, correction training, end-to-end control, GNSS following, PID control, and trajectory-following packages.
-- `dependencies`: the source and platform dependency tree from `/home/dependencies`, including VectorNav, the ZED ROS 2 wrapper, ros2_socketcan, ZED X driver/configuration files, and captured package reports.
+- `dependencies`: vendored source and platform records, including VectorNav, the ZED ROS 2 wrapper, ros2_socketcan, and captured package-version reports.
 - `legacy/control`: archived control code kept for reference and excluded from active workspace builds.
-- `codexws`: debug reports, test tools, patches, and source snapshots. `COLCON_IGNORE` prevents these diagnostic copies from creating duplicate ROS packages during a workspace build.
 
-Generated `build/`, `install/`, `log/`, Python caches, bags, and diagnostic run outputs are intentionally excluded.
+Generated `build/`, `install/`, `log/`, Python caches, bag recordings, and internal debug reports are not part of the public tree.
 
 ## Target platform
 
@@ -20,7 +35,7 @@ Generated `build/`, `install/`, `log/`, Python caches, bags, and diagnostic run 
 - CUDA 11.4 and cuDNN 8.6
 - ZED SDK 4.1.4 and ZED X driver package 1.0.5
 
-See `dependencies/README.md` for the full captured dependency state.
+See `dependencies/README.md` for the captured dependency state. Hardware-specific SDKs, drivers, and permissions must be configured separately.
 
 ## Build
 
@@ -31,11 +46,11 @@ colcon build --base-paths dependencies workspace/src --symlink-install
 source install/local_setup.bash
 ```
 
-The ZED SDK, Jetson camera driver, CUDA stack, and physical device permissions must be installed separately; rosdep does not provide them.
+The ZED SDK, Jetson camera driver, CUDA stack, and physical-device permissions must be installed separately; `rosdep` does not provide them.
 
 ## Run
 
-Bring up the configured vehicle interfaces, then launch the consolidated stack:
+On a properly configured vehicle, the consolidated stack can be launched with:
 
 ```bash
 source /opt/ros/foxy/setup.bash
@@ -49,8 +64,32 @@ LYA is intentionally separate from allnodes:
 ros2 run trajectory_follower lya_0221
 ```
 
-The launch controls real CAN-connected hardware. Verify the vehicle is safely suspended before starting motor control.
+This launch can actuate real CAN-connected hardware. Use it only with an emergency stop available and the vehicle secured for testing.
 
-## 2026-07-17 lane fix
+## Provenance and contribution boundary
 
-The deployed lane-line publisher scales its 1920-pixel `min_component_pixels` threshold to the incoming image width. At 640 pixels the threshold is 60 instead of 180. The test image produced 9 finite, non-zero points in each left, center, and right cloud. Details are in `codexws/DEBUG_REPORT_2026-07-17.md` and its Chinese version.
+This is an aggregated workspace rather than a record of single-author development. Its commit history documents public snapshot curation and later integration changes, but it does not establish original authorship of every package.
+
+Owen Zi-Wen Zhou maintains the public snapshot and has contributed repository curation, integration, and documentation work recorded in the commit history. Earlier team code and vendored upstream projects retain their original authorship and license terms; repository ownership does not imply sole authorship.
+
+Before publishing new material, remove credentials, private network or device details, internal deployment logs, bag recordings, and data or model files that are not cleared for redistribution.
+
+## License
+
+See [LICENSE](LICENSE) for the repository license. Vendored projects and other third-party material may carry separate licenses and notices.
+
+## Semantic integration (2026-10-12)
+
+The existing vehicle launch remains unchanged. The new semantic wiring has a
+dedicated native ROS **shadow** entry, with private intermediate topics and a
+signal capture receiver/command watchdog under `control/semantic_drive_bridge`.
+It does not launch motor control or teleop. Native perception calibration and
+stamped lane/controller provenance still need target commissioning.
+
+- [Semantic deployment and agent handoff](workspace/src/aiformula/perception/semantic_planning_system/README.md)
+- [Native shadow launch guide](workspace/src/aiformula/launchers/SEMANTIC_DEPLOYMENT.md)
+- [Verified Unity source overlay, installation and rollback](codexws/unity_semantic_integration/README.md)
+
+The Unity archive preserves four final63 red/green inner/outer runs; red stop
+distances were 8.636 m and 8.603 m with the original camera. It is an explicitly
+separate simulation delivery, not ROS DDS or physical vehicle acceptance.

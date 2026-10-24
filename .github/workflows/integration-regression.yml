@@ -1,0 +1,63 @@
+name: Integrated semantic and motor contracts
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'workspace/src/aiformula/control/**'
+      - 'workspace/src/aiformula/perception/semantic_planning_system/**'
+      - 'workspace/src/aiformula/launchers/**'
+      - '.github/workflows/integration-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'workspace/src/aiformula/control/**'
+      - 'workspace/src/aiformula/perception/semantic_planning_system/**'
+      - 'workspace/src/aiformula/launchers/**'
+      - '.github/workflows/integration-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux-offline-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Install isolated CI test dependencies
+        run: python -m pip install 'pytest==8.3.5' 'PyYAML==6.0.2' 'numpy==1.24.4' 'opencv-python-headless==4.10.0.84'
+      - name: Run production callback and source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$(python - <<'PY'
+          from pathlib import Path
+          control = Path('workspace/src/aiformula/control')
+          semantic = Path('workspace/src/aiformula/perception/semantic_planning_system')
+          roots = [p for parent in (control, semantic) for p in sorted(parent.iterdir())
+                   if p.is_dir() and not p.name.endswith('_bkup')]
+          roots += [p / suffix for p in roots[:] for suffix in ('test', 'tests') if (p / suffix).is_dir()]
+          print(':'.join(str(p.resolve()) for p in roots))
+          PY
+          )"
+          python -m pytest -q --import-mode=importlib --junitxml=work/integration.xml \
+            workspace/src/aiformula/control/motor_controller/tests/test_gate.py \
+            workspace/src/aiformula/control/semantic_drive_bridge/tests \
+            workspace/src/aiformula/control/semantic_vehicle_wiring/tests \
+            workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_neo_contract.py \
+            workspace/src/aiformula/perception/road_detector/test/test_output_contract.py \
+            workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests \
+            workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-offline-integration-contracts
+          path: work/integration.xml
+          retention-days: 14

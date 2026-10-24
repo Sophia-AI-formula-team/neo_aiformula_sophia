@@ -1,0 +1,316 @@
+"""Schema3 preserves raw sensors and timing; expected attitude is comparison only."""
+import copy
+from dataclasses import replace
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+import subprocess
+from types import SimpleNamespace
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import numpy as np
+
+from motion_channel import IMU_PROTOCOL, PROTOCOL, source_ns
+from replay_observed_keyframe import (CORE_NAMES, IMU_CORE_NAMES, RecordedIndependentMotion,
+    export_fixture, load_core, non_timing_mapping, raw_attitude_evidence, replay_fixture,
+    verify_raw_imu_frame)
+from test_replay_independent_motion import RecordingOdometry, observed_frame
+
+
+def imu_frame(index=1, stamp=0.):
+    frame = observed_frame(index, stamp)
+    row = frame["motion"][0]
+    row.pop("gyro_z")
+    row.update(gyro_xyz=[.001, .002, .003], accel_xyz=[0., 0., 9.80665], output_held=True)
+    return frame
+
+
+class RecordingImu(RecordingOdometry):
+    def accept_imu(self, *args):
+        self.calls.append(("imu", args))
+
+
+class RawImuReplayContract(unittest.TestCase):
+    def make_replay(self):
+        return RecordedIndependentMotion(RecordingImu(), 1_000_000_000, "0"*32, 0, protocol=IMU_PROTOCOL)
+
+    def test_exact_raw_vectors_hold_evidence_and_both_real_clocks(self):
+        replay, frame = self.make_replay(), imu_frame()
+        replay.consume(frame)
+        row, timing = frame["motion"][0], frame["motion_timing"][0]
+        self.assertEqual(replay.odometry.calls, [
+            ("imu", (source_ns(0.), row["received_qpc"], (.001, .002, .003),
+                     (0., 0., 9.80665), True, timing["source_now_ns"], timing["consumed_qpc"])),
+            ("wheels", (source_ns(0.), row["received_qpc"], 1., 2.,
+                        timing["source_now_ns"], timing["consumed_qpc"]))])
+
+    def test_v2_cannot_accept_legacy_z_or_truth_pose_fields(self):
+        for change in ("legacy", "extra"):
+            frame = imu_frame()
+            if change == "legacy":
+                frame["motion"] = observed_frame()["motion"]
+            else:
+                frame["motion"][0]["orientation"] = [0., 0., 0., 1.]
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, "unexpected recorded motion"):
+                self.make_replay().consume(frame)
+
+    def test_v1_cannot_silently_accept_v2_sensor_rows(self):
+        replay = RecordedIndependentMotion(RecordingOdometry(), 1_000_000_000, "0"*32, 0)
+        with self.assertRaisesRegex(ValueError, "unexpected recorded motion"):
+            replay.consume(imu_frame())
+
+    def test_malformed_sensor_vectors_and_nonboolean_hold_never_call_odometry(self):
+        for key, value in (("gyro_xyz", [0, 0]), ("gyro_xyz", [0, True, 0]),
+                           ("gyro_xyz", [0, float("nan"), 0]), ("accel_xyz", [0, 0, float("inf")]),
+                           ("gyro_xyz", "000"), ("output_held", 1)):
+            replay, frame = self.make_replay(), imu_frame()
+            frame["motion"][0][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                replay.consume(frame)
+            self.assertEqual(replay.odometry.calls, [])
+
+    def test_future_source_receipt_commit_and_tail_remain_rejected(self):
+        for change in ("source", "receipt", "commit", "tail", "clock"):
+            replay, frame = self.make_replay(), imu_frame()
+            row, timing = frame["motion"][0], frame["motion_timing"][0]
+            if change == "source":
+                row["stamp"] = .03
+                timing["source_ns"] = source_ns(.03)
+            if change == "receipt": row["received_qpc"] += 100_000
+            if change == "commit": timing["committed_qpc"] += 100_000
+            if change == "tail": frame["image_motion_binding"]["motion_tail_sequence"] = 2
+            if change == "clock": timing["source_clock_published_qpc"] = timing["consumed_qpc"]+1
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                replay.consume(frame)
+
+    def test_repeated_tail_uses_same_sample_without_new_imu_call(self):
+        replay, frame = self.make_replay(), imu_frame()
+        sample = replay.consume(frame)
+        frame["motion"], frame["motion_timing"] = [], []
+        frame["image_stamp_ns"] += 10_000_000
+        frame["image_motion_binding"]["capture_qpc"] += 10_000_000
+        self.assertIs(sample, replay.consume(frame))
+        self.assertEqual(len(replay.odometry.calls), 2)
+
+    def test_non_timing_comparison_keeps_every_gate_and_state(self):
+        result = dict(processing_ms=5., pose_xyyaw=[1., 2., 3.], metrics=dict(elapsed_ms=4.,
+            pre_match_engine_ms=1., runtime_budget_ms=40., source_stamp_ns=123,
+            reference_attempts=[dict(metrics=dict(elapsed_ms=3., inlier_ratio=.6))]))
+        changed = copy.deepcopy(result)
+        changed["processing_ms"] = 9.
+        changed["metrics"]["reference_attempts"][0]["metrics"]["elapsed_ms"] = 7.
+        self.assertEqual(non_timing_mapping(result), non_timing_mapping(changed))
+        changed["metrics"]["runtime_budget_ms"] = 41.
+        self.assertNotEqual(non_timing_mapping(result), non_timing_mapping(changed))
+
+    def test_schema3_replay_rejects_missing_motion_factor_before_loading_core(self):
+        fixture = dict(schema_version=3, kind="observed_raw_imu_mask_prefix",
+                       motion_transport=IMU_PROTOCOL, projection="causal_raw_imu_level_plane")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/"fixture.json"
+            path.write_text(json.dumps(fixture))
+            with patch("replay_observed_keyframe.load_core", side_effect=AssertionError("not yet")):
+                with self.assertRaisesRegex(ValueError, "requires --motion-factor"):
+                    replay_fixture(path, Path(directory), None, Path(directory)/"out.json")
+
+    def test_candidate_mode_cannot_relax_legacy_or_implicit_schema(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/"fixture.json"
+            path.write_text(json.dumps(dict(schema_version=2,
+                kind="observed_independent_motion_mask_prefix", motion_transport=PROTOCOL)))
+            with patch("replay_observed_keyframe.load_core", side_effect=AssertionError("not yet")):
+                with self.assertRaisesRegex(ValueError, "explicit schema3"):
+                    replay_fixture(path, Path(directory), None, Path(directory)/"out.json",
+                                   candidate_evaluation=True)
+
+    def test_awaiting_protocol_dispatches_only_one_actually_observed_protocol(self):
+        startup = dict(event="startup", motion_transport="awaiting_motion_protocol", provenance={})
+        with tempfile.TemporaryDirectory() as directory:
+            backend = Path(directory)
+            events = backend/"events.jsonl"
+            for protocol in (PROTOCOL, IMU_PROTOCOL):
+                events.write_text(json.dumps(startup)+"\n"+json.dumps(dict(event="motion", protocol=protocol)))
+                with patch("replay_observed_keyframe.export_independent_fixture", return_value="dispatched") as call:
+                    self.assertEqual(export_fixture(backend, backend, backend/"out", backend), "dispatched")
+                    self.assertEqual(call.call_count, 1)
+            events.write_text(json.dumps(startup)+"\n"+"\n".join(json.dumps(dict(event="motion", protocol=p))
+                               for p in (PROTOCOL, IMU_PROTOCOL)))
+            with self.assertRaisesRegex(ValueError, "one locked"):
+                export_fixture(backend, backend, backend/"out", backend)
+
+
+class RealRawImuReplay(unittest.TestCase):
+    def setUp(self):
+        # The diagnostic loader deliberately installs selected Git modules.
+        # Confine that global state to this test, including assertion failures;
+        # later adapter tests must import the actual worktree, not R8 blobs.
+        modules = patch.dict(sys.modules)
+        paths = patch.object(sys, "path", list(sys.path))
+        modules.start()
+        self.addCleanup(modules.stop)
+        paths.start()
+        self.addCleanup(paths.stop)
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.environ.get("LANE_TEST_REPO"):
+            raise unittest.SkipTest("set LANE_TEST_REPO")
+        cls.repo = Path(os.environ["LANE_TEST_REPO"])
+
+    def assert_source_identity(self, expected, *, revision=None, raw_imu=False):
+        modules, hashes, text_hashes, resolved = load_core(self.repo, revision, raw_imu=raw_imu)
+        self.assertEqual(tuple(modules), expected)
+        self.assertEqual(resolved, revision)
+        paths = tuple('workspace/src/aiformula/control/' + name.split('.')[0] + '/' +
+                      name.replace('.', '/') + '.py' for name in expected)
+        self.assertEqual(tuple(hashes), paths)
+        self.assertEqual(tuple(text_hashes), paths)
+        for name, relative in zip(expected, paths):
+            data = (subprocess.check_output(['git', '-C', str(self.repo), 'show', revision + ':' + relative])
+                    if revision else (self.repo / relative).read_bytes())
+            self.assertEqual(modules[name].__name__, name)
+            self.assertEqual(modules[name].__package__, name.split('.')[0])
+            self.assertEqual(modules[name].__file__,
+                'git:' + revision + ':' + relative if revision else str(self.repo / relative))
+            self.assertEqual(hashes[relative], hashlib.sha256(data).hexdigest())
+            self.assertEqual(text_hashes[relative]['raw'], hashes[relative])
+        return modules
+
+    def test_historical_r8_keeps_exact_four_or_seven_sources_and_order(self):
+        # Pin a pre-boundary implementation, rather than inferring "legacy"
+        # from today's moving worktree or weakening this to a length check.
+        expected = ('lane_mapping_lya_reference.mapping_core',
+                    'lane_mapping_lya_reference.mask_localization',
+                    'lane_mapping_fixed_gnss.motion', 'lane_mapping_fixed_gnss.mapping')
+        imu_expected = expected + ('lane_mapping_fixed_gnss.attitude',
+            'lane_mapping_fixed_gnss.imu_motion', 'lane_mapping_lya_reference.tilted_projection')
+        self.assertEqual(CORE_NAMES, expected)
+        self.assertEqual(IMU_CORE_NAMES, imu_expected)
+        revision = 'ae7e27b909319a49285d50b3e4b3b7aa4789ddaf'
+        self.assert_source_identity(expected, revision=revision)
+        self.assert_source_identity(imu_expected, revision=revision, raw_imu=True)
+
+    def test_historical_r12_keeps_exact_seven_or_nine_sources_and_order(self):
+        # The new helper is a real source dependency, not a retroactive change
+        # to recordings made with the published R12 implementation.
+        expected = ('lane_mapping_lya_reference.mapping_core',
+                    'lane_mapping_lya_reference.tilted_projection',
+                    'lane_mapping_lya_reference.paint_geometry',
+                    'lane_mapping_lya_reference.mask_localization',
+                    'lane_mapping_lya_reference.boundary_localization',
+                    'lane_mapping_fixed_gnss.motion', 'lane_mapping_fixed_gnss.mapping')
+        revision = '37119203ff84f1fcda71222b292d1edd3756008b'
+        self.assert_source_identity(expected, revision=revision)
+        self.assert_source_identity(expected + ('lane_mapping_fixed_gnss.attitude',
+                                    'lane_mapping_fixed_gnss.imu_motion'), revision=revision, raw_imu=True)
+
+    def test_current_boundary_dependencies_keep_exact_nine_or_eleven_sources_and_order(self):
+        # Dependency loading is not feature selection. Boundary routing itself
+        # still requires recorded identity or explicit candidate opt-in, tested
+        # by test_boundary_replay; old fixtures must not change models silently.
+        expected = ('lane_mapping_lya_reference.mapping_core',
+                    'lane_mapping_lya_reference.tilted_projection',
+                    'lane_mapping_lya_reference.corner_brackets',
+                    'lane_mapping_lya_reference.finite_support',
+                    'lane_mapping_lya_reference.paint_geometry',
+                    'lane_mapping_lya_reference.mask_localization',
+                    'lane_mapping_lya_reference.boundary_localization',
+                    'lane_mapping_fixed_gnss.motion', 'lane_mapping_fixed_gnss.mapping')
+        modules = self.assert_source_identity(expected)
+        geometry = modules['lane_mapping_lya_reference.paint_geometry']
+        self.assertEqual(geometry.BOUNDARY_VERSION, 3)
+        self.assertEqual(geometry.TOPOLOGY_REPRESENTATION, 'confirmed_contour_node_chords_v1')
+        self.assertEqual(geometry.CERTIFIED_MODEL_REPRESENTATION, 'confirmed_creation_chart_domains_v1')
+        self.assertEqual(tuple(geometry.BoundaryReference.__dataclass_fields__)[-11:],
+                         ('directed_edges', 'edge_frame_votes', 'edge_reliable_votes', 'edge_last_stamp_ns',
+                          'full_in_degree', 'full_out_degree', 'certified_model_segments',
+                          'certified_model_owner', 'certified_model_frame_votes',
+                          'certified_model_reliable_votes', 'certified_model_last_stamp_ns'))
+        self.assert_source_identity(expected + ('lane_mapping_fixed_gnss.attitude',
+                                    'lane_mapping_fixed_gnss.imu_motion'), raw_imu=True)
+
+    def test_real_raw_initializer_exact_state_and_comparison_is_not_estimator_input(self):
+        modules, _, _, _ = load_core(self.repo, raw_imu=True)
+        odom = modules["lane_mapping_fixed_gnss.imu_motion"].CausalImuWheelOdometry()
+        replay = RecordedIndependentMotion(odom, 1_000_000_000, "0"*32, 0, protocol=IMU_PROTOCOL)
+        first = None
+        for i in range(112):
+            # Use original test timing spacing at 10ms, never invented frame receipt.
+            frame = imu_frame(i+1, i*.01)
+            frame["motion"][0].update(left_rpm=0., right_rpm=0.)
+            sample = replay.consume(frame)
+            if i == 0:
+                first = raw_attitude_evidence(sample)
+            frame["raw_odom_expected"] = [sample.x, sample.y, sample.yaw]
+            frame["raw_attitude_expected"] = raw_attitude_evidence(sample)
+            verify_raw_imu_frame(sample, frame)
+        self.assertEqual(first, dict(required=True, ready=False))
+        self.assertTrue(frame["raw_attitude_expected"]["ready"])
+        prior = odom.attitude_tracker.last_sample
+        frame["raw_attitude_expected"]["up_body"][0] += .1
+        with self.assertRaisesRegex(ValueError, "exact recomputed raw attitude"):
+            verify_raw_imu_frame(sample, frame)
+        self.assertIs(odom.attitude_tracker.last_sample, prior)
+        self.assertEqual(prior.up_body, (0., 0., 1.))
+        frame["raw_attitude_expected"] = raw_attitude_evidence(sample)
+        frame["raw_odom_expected"][0] = 999.
+        with self.assertRaisesRegex(ValueError, "exact recomputed raw odometry"):
+            verify_raw_imu_frame(sample, frame)
+        # A named candidate comparison reports the difference, never substitutes
+        # recorded output for a recomputed state or changes default verification.
+        frame["raw_attitude_expected"]["up_body"][0] += .1
+        comparison = verify_raw_imu_frame(sample, frame, candidate_evaluation=True)
+        self.assertEqual(comparison, dict(raw_odometry_exact=False, raw_attitude_exact=False))
+        self.assertIs(odom.attitude_tracker.last_sample, prior)
+        for field, value in (("stamp_ns", sample.stamp_ns+1),
+                             ("received_steady_ns", sample.received_steady_ns+1)):
+            if field == "stamp_ns":
+                bad_attitude = replace(sample.attitude, stamp_ns=value)
+            else:
+                bad_source = replace(sample.attitude.source, received_steady_ns=value)
+                bad_attitude = replace(sample.attitude, source=bad_source)
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "bound|future"):
+                verify_raw_imu_frame(replace(sample, attitude=bad_attitude), frame,
+                                     candidate_evaluation=True)
+        frame["recorded_decision"] = {"accepted": True}
+        with self.assertRaisesRegex(ValueError, "no initialized"):
+            verify_raw_imu_frame(replace(sample, attitude=None), frame, candidate_evaluation=True)
+
+    def test_recorded_r8_trial27_recomputes_all_exact_tail_states_and_initialization(self):
+        path = (Path(__file__).resolve().parents[2].parent /
+                "workspace/diagnostics/lane_teach_repeat_20261011/trial27_analysis/observed_prefix.json")
+        if not path.is_file():
+            self.skipTest("local trial27 schema3 fixture required")
+        fixture = json.loads(path.read_text())
+        self.assertEqual((fixture["schema_version"], fixture["motion_transport"]), (3, IMU_PROTOCOL))
+        # Pin the historical algorithm: changing initialization must not rewrite
+        # its recorded outputs or turn this into a loose candidate comparison.
+        modules, _, _, revision = load_core(self.repo,
+            "ae7e27b909319a49285d50b3e4b3b7aa4789ddaf", raw_imu=True)
+        self.assertEqual(revision, "ae7e27b909319a49285d50b3e4b3b7aa4789ddaf")
+        odom = modules["lane_mapping_fixed_gnss.imu_motion"].CausalImuWheelOdometry(
+            {"wheel_diameter_m": fixture["sensor_calibration"]["wheel_diameter_m"]})
+        replay = RecordedIndependentMotion(odom, fixture["qpc_frequency"], fixture["epoch"], 0,
+                                           protocol=IMU_PROTOCOL)
+        ready, unready = 0, 0
+        for frame in fixture["frames"]:
+            sample = replay.consume(frame)
+            verify_raw_imu_frame(sample, frame)
+            if sample.attitude is None:
+                unready += 1
+                self.assertNotIn("recorded_decision", frame)
+            else:
+                ready += 1
+                self.assertEqual(sample.attitude.source_stamp_ns, sample.gyro_stamp_ns)
+        self.assertGreater(unready, 0)
+        self.assertEqual(ready+unready, 407)
+        self.assertEqual(replay.sequence, 4471)
+        self.assertEqual(odom.reset_count, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

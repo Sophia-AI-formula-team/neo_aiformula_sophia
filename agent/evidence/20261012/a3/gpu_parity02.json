@@ -1,0 +1,33 @@
+{
+  "image": "shadow_images01/camera.png",
+  "frame_sha256": "32d3c6da1069d42357238cbbd20f163d1c2c9399f40751f2a79897b7fcd5749f",
+  "source_shape": [
+    360,
+    640,
+    3
+  ],
+  "contract": {
+    "version": 1,
+    "name": "a3_original_native",
+    "min_size": 640,
+    "max_size": 1280,
+    "size_divisible": 32,
+    "resize": "torch_bilinear",
+    "padding": "bottom_right_zero_normalized",
+    "normalize": "imagenet",
+    "restore": "torch_logits_crop_resize_align_corners_false",
+    "threshold": 0.5
+  },
+  "encoder_traversals": {
+    "reference": 1,
+    "installed": 1
+  },
+  "lane_pixel_differences": 0,
+  "detection_count": 0,
+  "boxes_equal": true,
+  "scores_equal": true,
+  "labels_equal": true,
+  "max_box_difference": 0.0,
+  "deterministic": true,
+  "tf32": false
+}

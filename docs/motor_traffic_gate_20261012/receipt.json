@@ -1,0 +1,239 @@
+{
+  "source_files_verified": 50,
+  "installed_modules": {
+    "motor_controller.motor_controller": {
+      "path": "/home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/motor_controller.py",
+      "sha256": "4186afe1fee861799b61bcf168c84ec482ab904226fb1600ecc0a18245d0a65b"
+    },
+    "motor_controller.gate": {
+      "path": "/home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/gate.py",
+      "sha256": "4727d7942f5f83000b41a9ca03a0029723c169e7fd5fa95484ad3f1794b70f39"
+    },
+    "semantic_local_planner_ros.map_assist": {
+      "path": "/home/workspace/build/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py",
+      "sha256": "b587e4785a78f9e55651f6c8d2e5948f56c9f7a1171d1863b2f391ff5b60256e"
+    },
+    "semantic_vehicle_wiring.capture": {
+      "path": "/home/workspace/build/semantic_vehicle_wiring/semantic_vehicle_wiring/capture.py",
+      "sha256": "b4493e379192a469ab893454b0c7eaa421e308d862c686845459591533e75b2d"
+    }
+  },
+  "package_versions": {
+    "motor_controller": "0.3.0",
+    "semantic_local_planner_ros": "0.2.1",
+    "semantic_planner_core": "0.2.0",
+    "semantic_drive_bridge": "0.1.0",
+    "semantic_vehicle_wiring": "0.1.0"
+  },
+  "deployment_motion_inhibited": true,
+  "drive_processes": [],
+  "backup": "/home/control/aiformula_backups/20261012_motor_traffic_gate",
+  "vehicle_lap_test": "NOT_PERFORMED",
+  "hardware_CAN_test": "ZERO_COMMAND_ONLY_INHIBITED_STARTUP",
+  "tests": {
+    "motor_gate_policy_local": 23,
+    "motor_gate_policy_installed_python38": 23,
+    "topo_node_callback_unit": 108,
+    "topo_core_unit": 100,
+    "isolated_real_ROS_DDS": 20
+  },
+  "dds": {
+    "domain": 93,
+    "localhost_only": true,
+    "can_output": "/gate_acceptance/can",
+    "no_socketcan_process": true,
+    "vehicle_moved": false,
+    "total_CAN_frames": 2227,
+    "cases": [
+      {
+        "case": "deployment_inhibit",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "automatic_go",
+        "pass_": true,
+        "tail_frames": 21,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "stable_red_stop",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "unknown_after_red_holds",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "green_go",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "zero_command_zero_CAN",
+        "pass_": true,
+        "tail_frames": 21,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "negative_steering_CAN",
+        "pass_": true,
+        "tail_frames": 19,
+        "rpm": [
+          48,
+          206
+        ]
+      },
+      {
+        "case": "manual_priority_red",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          93,
+          -132
+        ]
+      },
+      {
+        "case": "manual_zero_owns_control",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "manual_joy_loss_holds",
+        "pass_": true,
+        "tail_frames": 19,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "release_at_red_still_stops",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "green_restores_auto",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "LYA_timeout_zero",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "LYA_fresh_resumes",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "camera_loss_zero",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "fresh_camera_resumes",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "multiple_auto_publishers_hold",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      },
+      {
+        "case": "sole_publisher_resumes",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          212,
+          44
+        ]
+      },
+      {
+        "case": "nonzero_sigmoid_regression_and_zero_fix",
+        "pass_": true
+      },
+      {
+        "case": "semantic_process_loss_stops",
+        "pass_": true,
+        "tail_frames": 20,
+        "rpm": [
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "inhibited_startup": {
+    "passed": true,
+    "motion_enabled": false,
+    "all_CAN_zero": true,
+    "CAN_frames": 767,
+    "gate_status_frames": 73,
+    "odom_samples": 145,
+    "max_abs_reported_speed": 0.0,
+    "max_abs_reported_yaw_rate": 0.001655706026397962,
+    "LYA_started": false,
+    "physical_lap_performed": false,
+    "scope": "Explicitly inhibited allnodes startup, only zero CAN commands",
+    "launch_exit": 0
+  }
+}

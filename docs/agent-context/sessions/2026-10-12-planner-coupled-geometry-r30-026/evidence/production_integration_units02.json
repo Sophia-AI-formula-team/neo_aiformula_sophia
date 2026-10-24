@@ -1,0 +1,74 @@
+{
+  "status": "pass_narrow_production_units_only",
+  "run": "production_integration_units_run_02",
+  "prior_failed_run": {
+    "run": "run_01",
+    "tests": 0,
+    "cause": "pytest cross-volume collection encountered Windows compatibility junction; no test method executed",
+    "source_unchanged": true,
+    "preserved": true
+  },
+  "methods": 71,
+  "suites": {
+    "production_normal": 13,
+    "corner_batch": 21,
+    "curve_reference": 29,
+    "curve_numeric_guards": 8
+  },
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "method_ledger_exact": true,
+  "pins": 27,
+  "source_unchanged": true,
+  "parent": {
+    "pid": 25960,
+    "birth_filetime_100ns": "134362573945376647"
+  },
+  "child": {
+    "pid": 67516,
+    "birth_filetime_100ns": "134362573947484360"
+  },
+  "exit_code": 0,
+  "primary_seconds": 30,
+  "stop_seconds": 5,
+  "stop_attempted": false,
+  "retries": 0,
+  "elapsed_s": 2.831878400000278,
+  "independent_both_absent": true,
+  "parent_result_sha256": "8b950a00d9813a58c204f219efef024eee4bd7ed8c964a5b976be65ee3446b51",
+  "child_result_sha256": "10e9be306935777780b6cb782a49160029019399694025ffdeaf4e3feef4802a",
+  "manifest_sha256": "bb2662f135d53349ed4d3ce652ed175524a19bb538fe016c80928421f2314376",
+  "production_bindings": {
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/__init__.py": "a5103feb089958eb55ebc7940e0858180a184091a679884c25667ca4ba175e7c",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/attitude.py": "09b2d103105086d1d04ce50b233efa4d3c995284f5bd45072d675a9a2ed3b033",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/imu_motion.py": "bacd494e55f9cc0fc7a3e8b19694138aad84af03d341de49885d5cedcf9fea2d",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "a2171210d68c1d3d55e67cf2e826914f109f382280a7dbdc67a05571da574b88",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/motion.py": "725f042ee6270c9cdb9b7cb232181a3dda7c2705f76020d90df9b06247aef3c7",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/_lane_mapping_lya_native.cp313-win_amd64.pyd": "f2f9712754f8cecaae379af5355c8aa82b3a28855fa2da2d0ce949ddf339ef45",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/__init__.py": "29bd7278966cfae838211b18769e8349e49c3a3518c71939ba8cba79b4256d5c",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py": "dc5d3aca87e891916494916be7441cc484f4bc1288b4e1240ea875003bf724a4",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/continuation_support.py": "178cb6dbaf5af39ae285bd00eb90a7ee2c95b93205c1f78971dc41f15e9b19e4",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py": "42b3cd5ca3815b12ebc338e2cb57a9fbb44fe7065f3e87217a145439c1a459c6",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_direction.py": "d5c003046630e9fa154f21b0655ba3add2fe21fc6919717dc8727d39508b71cb",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/curve_reference.py": "65233cfb67034f6daece77ab84c2dc4b38f6cfd0f57bf4474e688adf3d393340",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py": "93a918576d1d0cef491b714faf3f5c3da62fe05c2b59e2ce070e94ed53f4c015",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/footprint_geometry.py": "eb03d1ceb011c2419c4c8a25fb1cf8e40f7cb3c084d714d9d39b7a065e181d17",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/local_moments.py": "bf667e3a42e49afb14c00e26447c697403221c42ac3b41b60ec2da22febfa32f",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py": "ef2cc93dcdcb07c861a9f21d9ae0d7fb061f33f5772a48044671e1875ef09128",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py": "11f33a2ddf239c668dd5ecc4a233f12fa9f085e14469863636bf9a623abe8935",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py": "ab88fa463d0ac829d833474c189fdd307499a4890bfaa3a9cc1a5b7aafa70bea",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/quantized_ribbon.py": "27996860b0564735dc3ca641f9a074eb48a2c436490c022b1f4ca806b77eb0f9",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/ribbon_observation.py": "9defdec8a9b70510820ff7a3464271920309d19170996b44c5be86babb608407",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/tilted_projection.py": "63131d278ceecb9dd7581f00c040cf1fadf739750e38dd586cc6e21d6b454b62",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_corner_bracket_batch.py": "bddede3b6a75a6af458bd6d4edb38a40d56e3a432139beec442ecb28376dd35e",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_frame_normal_admission.py": "8b713cb7452074d259e7a50e52f99703b4ee3965a743ef94ec018897e35d0ca9"
+  },
+  "limits": [
+    "Does not cover subsequent producer paint changes or bundle integration.",
+    "No causal runtime deadline, full regression, new Unity lap, frozen route or second-lap acceptance.",
+    "No vehicle/simulation/LYA parameter change; no Unity operation performed.",
+    "Normal native recorder units supply no geometric oracle; corner synthetic masks and numeric Fraction tests are narrow evidence."
+  ]
+}

@@ -1,0 +1,143 @@
+[
+  {
+    "pr": 8,
+    "branch": "agent/portfolio-refresh-20260806",
+    "head": "71bd3845e9defe470d7d3bbd753edb7dba3b58cd",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "b7ac4d30c517e0361befac1ea0b29582e716a965"
+  },
+  {
+    "pr": 11,
+    "branch": "feat/yolop-a2-deploy-20261005",
+    "head": "06fa28bdc09c731249428b7d81850d23e4e216a3",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "1820f72b4b0cbf4aab25572083de8187256cd60b"
+  },
+  {
+    "pr": 9,
+    "branch": "integration/live-yolop-20261005",
+    "head": "9bb229bd7071f96f01aa30fcc5d55b28752ec877",
+    "conflicts": [
+      "workspace/src/aiformula/launchers/launch/allnodes.launch.py"
+    ],
+    "resolution": "retain latest main launcher",
+    "merge_commit": "6dd4672c187a822ae3381f27e8fa09090e98318c"
+  },
+  {
+    "pr": 15,
+    "branch": "feat/semantic-planning-sync-20261011",
+    "head": "5bc52e05329d7fe642f219d32a578d04d2b7f668",
+    "conflicts": [
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/MAP_ASSIST.md",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/config/map_assist.yaml",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/config/map_assist_bag.yaml",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/lane_points_mux_node.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/planned_lane_points_adapter_node.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_map_assist.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/anchored_topology.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/rough_topology.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/route_fusion.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/topology_alignment.py",
+      "workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_route.py"
+    ],
+    "resolution": "retain 2026-10-11 semantic update over 2026-10-05 A2 snapshot",
+    "merge_commit": "8af7f7d3815b0e3580dd4383d09a0703ac323b04"
+  },
+  {
+    "pr": 16,
+    "branch": "fix/semantic-distance-stop-20261012",
+    "head": "63eec2da9f9d2ef90e1db29ce2c6c0b3c1a18a96",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "65c1a0f943d8fde9256629086101c6ceae2366c9"
+  },
+  {
+    "pr": 17,
+    "branch": "feat/semantic-neo-integration-20261012",
+    "head": "434fdc43d00399808adf7e548d491a5dfdc5bffa",
+    "conflicts": [
+      "README.md"
+    ],
+    "resolution": "preserve provenance cleanup and append latest semantic guide",
+    "merge_commit": "ef4fbbb0e2b33e73e82e6886b1c5ba1235f466fe"
+  },
+  {
+    "pr": 18,
+    "branch": "test/semantic-left-turn-20261012",
+    "head": "b7872771e34bbafc481c811dadb01072fc524da9",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "8237a3388bd85ffe126987b063011ec50121f19f"
+  },
+  {
+    "pr": 21,
+    "branch": "fix/semantic-official-junction-match-20261012",
+    "head": "7ef9af132811d5e5f1b19f6d3918f87d5801f372",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "820581b4ffaf12a4b6f8b41b4e0b9e235896c8bd"
+  },
+  {
+    "pr": 22,
+    "branch": "feat/semantic-bbox-distance-20261012",
+    "head": "fcf9389470a97cc9d2890556319cfbc6bc77462d",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "e312a8719b4234dbc04882369f654204a61fc9e3"
+  },
+  {
+    "pr": 23,
+    "branch": "fix/topo-stable-red-wait-20261012",
+    "head": "6caa6a8dd5186df2523e709836c2da2884ee2fff",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "992a078547e1a9d2d176215848d2ee0d4d9f0b64"
+  },
+  {
+    "pr": 24,
+    "branch": "feat/vehicle-motor-traffic-gate-20261012",
+    "head": "67aa5ad3abc0c93559f53306f54334353ba56eb5",
+    "conflicts": [
+      "workspace/src/aiformula/launchers/launch/allnodes.launch.py"
+    ],
+    "resolution": "retain latest main launcher",
+    "merge_commit": "87a601d8602c18392805c1022dbb772f3a0d63bb"
+  },
+  {
+    "pr": 25,
+    "branch": "feat/topo-checkpoint-diagnostics-20261013",
+    "head": "ed8e397ae41732877dfef334f0b89f98c0b20ae8",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "8c71296c67a157dcd1448a8ffece849841434159"
+  },
+  {
+    "pr": 26,
+    "branch": "feat/unity-neo-topo-20261015",
+    "head": "da1c6d63d0863ac829fce7f59f6633c60886ba89",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "cd88657fc08724743cb6838d6757a89edaea8550"
+  },
+  {
+    "pr": null,
+    "branch": "feat/causal-lane-teach-repeat",
+    "head": "85ddb70209e6c346c422f9ae8b2a88cb49da72e0",
+    "conflicts": [
+      "AGENTS.md"
+    ],
+    "resolution": "retain scoped lane instructions and archive historical A2 instructions with current-state notice",
+    "merge_commit": "00e5c6f05ec5e6137ad72a7aeb6b656397e3d495"
+  },
+  {
+    "pr": null,
+    "branch": "repair/lane-keyframe-transaction-20261011",
+    "head": "996865092f9efb1426fad0c61cb739749f34a10d",
+    "conflicts": [],
+    "resolution": "automatic",
+    "merge_commit": "afdd1d9541009938cd7b217e21bad4fd573241af"
+  }
+]

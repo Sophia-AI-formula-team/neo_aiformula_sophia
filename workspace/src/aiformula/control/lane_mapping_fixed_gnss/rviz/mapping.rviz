@@ -1,0 +1,51 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Fixed Frame: lane_teach_local
+    Frame Rate: 15
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 60
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Confirmed teach consensus
+      Enabled: true
+      Topic:
+        Value: /lane_learning_gnss/consensus
+        Durability Policy: Transient Local
+      Size (m): 0.08
+      Color Transformer: FlatColor
+      Color: 240; 220; 30
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Repeat denoised consensus
+      Enabled: true
+      Topic:
+        Value: /lane_learning_gnss/refined_consensus
+        Durability Policy: Transient Local
+      Size (m): 0.08
+      Color Transformer: FlatColor
+      Color: 50; 240; 130
+    - Class: rviz_default_plugins/Path
+      Name: Fixed route
+      Enabled: true
+      Topic:
+        Value: /lane_learning_gnss/route
+        Durability Policy: Transient Local
+      Color: 40; 180; 250
+    - Class: rviz_default_plugins/Pose
+      Name: Local pose
+      Enabled: true
+      Topic:
+        Value: /lane_learning_gnss/pose
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 20
+      Angle: 0
+      X: 0
+      Y: 0

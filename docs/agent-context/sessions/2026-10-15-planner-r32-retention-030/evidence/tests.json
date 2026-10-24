@@ -1,0 +1,110 @@
+{
+  "scope": "Windows local explicit tests; no Engine replay or laps",
+  "python": "3.13.13",
+  "numpy": "2.4.4",
+  "pytest": "8.4.2",
+  "tests": 4758,
+  "passed": 4757,
+  "failures": 0,
+  "errors": 0,
+  "skipped": [
+    {
+      "classname": "workspace.src.aiformula.control.lane_mapping_lya_reference.test.test_supervisor",
+      "name": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+      "time": "0.000",
+      "reason": "Target Linux process-group test"
+    }
+  ],
+  "pytest_seconds": 101.91,
+  "source_file_count": 229,
+  "explicit_test_file_count": 127,
+  "source_pins_stable": true,
+  "original_result_sha256": "fc74b37daddda33c05476c4567d3f0d335550eb0f2d50f450f012280f015c939",
+  "original_xml_sha256": "5a75b745f5d87200a28d17374c5c68b8a8d4474ab801cd34705a5cbc2c78ab7a",
+  "native": {
+    "backend": "native",
+    "api_version": 1,
+    "radius_graph_api_version": 1,
+    "local_support_api_version": 1,
+    "nearest_api_version": 1,
+    "cross_section_weights_api_version": 1,
+    "local_moments_api_version": 1,
+    "local_geometry_api_version": 1,
+    "finite_projection_bounds_api_version": 1,
+    "finite_current_union_api_version": 1,
+    "finite_current_union_real_call_passed": true,
+    "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+    "binary_sha256": "f2f9712754f8cecaae379af5355c8aa82b3a28855fa2da2d0ce949ddf339ef45",
+    "binary_name": "_lane_mapping_lya_native.cp313-win_amd64.pyd",
+    "python": "3.13.13 (tags/v3.13.13:01104ce, Apr  7 2026, 19:25:48) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "installed_prefix_verified": false,
+    "real_calls_passed": true
+  },
+  "focused_attempts": [
+    {
+      "scope": "initial_integration",
+      "raw_xml_sha256": "49fc4c735ddd99c8220e3a024155a9639c41125d23b56180dc28384ba7d44c66",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "discarded_overlay_bound",
+      "raw_xml_sha256": "c9aa29e36eef513a7f47ae9271b80c409fa2d5a82a5a2cc357ef6d41459bc847",
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "single_overlay_stage",
+      "raw_xml_sha256": "c7563e6a29db77b3d09368c7a482a8bf916875a838f3c11b6bf307135ad9c8a6",
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "byte_gather",
+      "raw_xml_sha256": "c33b933751e0023963fa847af1453d1d38ac4f4252972d4c676eef49e1609e94",
+      "tests": 92,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "failure_logging",
+      "raw_xml_sha256": "9f66802c8e1f2365b9237a8ef7cb62c397a06551a4fc8017ba7b6faf7797ca9b",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "process_receipts": [
+    {
+      "name": "native",
+      "pid": 45140,
+      "birth": "134365196657717550",
+      "exit_code": 0,
+      "elapsed_seconds": 0.15271400000347057,
+      "stopped": false
+    },
+    {
+      "name": "pytest",
+      "pid": 38204,
+      "birth": "134365196659277637",
+      "exit_code": 0,
+      "elapsed_seconds": 103.23516860000382,
+      "stopped": false
+    }
+  ],
+  "limits": [
+    "Original Linux process-group test skipped on Windows.",
+    "One intentional strict-policy nextafter underflow warning.",
+    "Source file pins, not a complete interpreter/imported-byte closure proof.",
+    "Raw commands/XML and all original logs remain local."
+  ]
+}

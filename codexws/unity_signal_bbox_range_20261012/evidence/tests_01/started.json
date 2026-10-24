@@ -1,0 +1,35 @@
+{
+  "parent_pid": 22752,
+  "parent_birth": {
+    "filetime_100ns": "134362575487531434",
+    "utc": "2026-10-12T05:45:48.753143+00:00",
+    "source": "GetProcessTimes_on_owned_process_handle"
+  },
+  "source_before": {
+    "test_bbox_range.py": "b7e17ed0038e964c30f8e1c95d4add42884b80cb3527845514af76b4beb55dc7",
+    "install.py": "fb3f47dec2e0cf6f5086028205f423fbcc6f5558af5c9216a65f83b3d411da6a",
+    "manifest.json": "3aa92cd4c83fcb67d776dedb2ff046031ae359c148adb67ee8774ae428d91d4f",
+    "overlay/signal_bbox_range.py": "5d02b2223554edefe91c9e20d694f43209f7d7bca64d2a6591fd7b1a920e1ffb",
+    "overlay/signal_bbox_range.json": "499549cae01e2476fbe1fea83a7e40d5d40e29778e5b45d21b1c95a18273ec56",
+    "before/signal_panel_range.py": "baf09f79cd0649b05e8d1acd90e6a9395bd7361d00e2b8ff51f6f20dd54d4ce7",
+    "before/worker.py": "bf50643792b2c998a179bdab47ddc9e9400ee3d009de704a1e14d1e3cd328469"
+  },
+  "helper_sha256": "c70c04b7d67b417cf3854619a945b5aaf3ca785953c401c79e35737100a61722",
+  "driver_sha256": "48d5e5208a728dd2c081d1176e6aff312819785109c288d5de0e209db92b72ae",
+  "auto_retry": false,
+  "primary_limit_sec": 10,
+  "cleanup_limit_sec": 5,
+  "child_pid": 23484,
+  "child_birth": {
+    "filetime_100ns": "134362575488605360",
+    "utc": "2026-10-12T05:45:48.860537+00:00",
+    "source": "GetProcessTimes_on_owned_process_handle"
+  },
+  "initial_thread": {
+    "tid": 25452,
+    "owner_pid": 23484,
+    "creation_filetime_100ns": "134362575488605374",
+    "enumeration": "Toolhelp unique owned thread while initial process suspended",
+    "query": "OpenThread/GetProcessIdOfThread/GetThreadId/GetThreadTimes"
+  }
+}

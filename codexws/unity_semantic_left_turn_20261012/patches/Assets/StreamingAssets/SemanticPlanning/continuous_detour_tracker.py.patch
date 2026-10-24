@@ -1,0 +1,210 @@
+--- final63/Assets/StreamingAssets/SemanticPlanning/continuous_detour_tracker.py
++++ candidate/Assets/StreamingAssets/SemanticPlanning/continuous_detour_tracker.py
+@@ -0,0 +1,207 @@
++"""Opt-in calibrated-map polyline tracking; no geometry generation or pose edits.
++
++This staged adapter does not change the upstream DetourTracker. Its positional
++constructor and update(x, y, yaw) contract are compatible with that tracker and
++results use the upstream DetourResult type. ABC preview follows *route arclength*
++across segment boundaries. Only the final route endpoint can compress preview.
++
++Projection searches a contiguous forward arclength window of at most 2 metres,
++never the whole route. A rejected observation changes no tracking state. A large
++pose jump, exhausted projection window, or behind-body target requires the caller
++to stop/relocalize explicitly; repeated rejected input cannot ratchet progress.
++
++The supplied route must already have reviewed smooth geometry (the intended
++calibration uses R=3 m turns). This class cannot establish road clearance, correct
++a sharp corner, distinguish nearby route branches *inside* its local window, or
++prove freshness: the compatible API has no sequence or timestamp. The caller must
++gate fresh odometry/configuration/commands and reset on an explicit new route.
++Passing geometrically supplied test poses is only offline unit evidence.
++"""
++
++from __future__ import annotations
++
++from bisect import bisect_right
++import math
++from typing import Optional, Sequence, Tuple, TYPE_CHECKING
++
++if TYPE_CHECKING:
++    from semantic_planner_core.traffic_route import DetourResult
++
++Point = Tuple[float, float]
++_EPS = 1e-6
++_PROJECTION_EPS = 1e-9
++_HARD_MAX_ADVANCE_M = 2.0
++
++
++class ContinuousDetourTracker:
++    """Bounded local progress with continuous three-point body-frame preview.
++
++    ``max_advance_m`` is an additional keyword-only limit in (0, 2]. It also
++    limits translation between accepted poses, including entry from the route's
++    first point. Choose a smaller value only when consistent with the caller's
++    speed and update interval. It is a per-update gate, not a velocity watchdog.
++    ``waypoint_radius_m`` now applies only to the terminal endpoint.
++    """
++
++    def __init__(self, points: Sequence[Point], waypoint_radius_m: float = 1.0,
++                 max_cross_track_m: float = 3.0, lookahead_m: float = 0.5,
++                 spacing_m: float = 0.5, entry_radius_m: Optional[float] = None,
++                 *, max_advance_m: float = 2.0) -> None:
++        if entry_radius_m is None:
++            entry_radius_m = waypoint_radius_m
++        try:
++            limits = tuple(float(value) for value in (
++                waypoint_radius_m, max_cross_track_m, lookahead_m, spacing_m,
++                entry_radius_m, max_advance_m))
++            if not all(math.isfinite(value) and value > 0.0 for value in limits):
++                raise ValueError("Tracker distances must be finite and positive")
++            route = []
++            for value in points:
++                if len(value) != 2:
++                    raise ValueError("Expected two coordinates per point")
++                point = (float(value[0]), float(value[1]))
++                if not all(math.isfinite(coordinate) for coordinate in point):
++                    raise ValueError("Route coordinates must be finite")
++                route.append(point)
++        except (TypeError, IndexError, OverflowError) as exc:
++            raise ValueError("Expected finite coordinates and tracker distances") from exc
++        if len(route) < 2:
++            raise ValueError("A detour needs at least two points")
++        if limits[-1] > _HARD_MAX_ADVANCE_M:
++            raise ValueError("max_advance_m must not exceed the hard 2 metre bound")
++        (self.waypoint_radius_m, self.max_cross_track_m, self.lookahead_m,
++         self.spacing_m, self.entry_radius_m, self.max_advance_m) = limits
++        cumulative = [0.0]
++        for start, end in zip(route, route[1:]):
++            length = math.dist(start, end)
++            total = cumulative[-1] + length
++            if (not math.isfinite(length) or length <= _EPS
++                    or not math.isfinite(total)
++                    or total - cumulative[-1] <= _EPS):
++                raise ValueError("Detour segments must have resolvable nonzero finite length")
++            cumulative.append(total)
++        # Snapshot configuration; later edits of the caller's lists cannot leave
++        # cached arclengths describing a different route.
++        self.points = tuple(route)
++        self.cumulative_m = tuple(cumulative)
++        self.length_m = cumulative[-1]
++        self.reset()
++
++    def reset(self) -> None:
++        self.started = False
++        self.done = False
++        self.segment_index = 0
++        self.progress_m = 0.0
++        self._accepted_position: Optional[Point] = None
++
++    def _result(self, points, done: bool, reason: str,
++                index: Optional[int] = None, progress: Optional[float] = None) -> DetourResult:
++        # Lazy import keeps configuration inspection independent of package setup.
++        from semantic_planner_core.traffic_route import DetourResult
++        return DetourResult(points, done, reason,
++                            self.segment_index if index is None else index,
++                            self.progress_m if progress is None else progress)
++
++    def _unavailable(self, reason: str) -> DetourResult:
++        return self._result([], False, reason)
++
++    def _index_at(self, distance: float) -> int:
++        return min(len(self.points) - 2,
++                   max(0, bisect_right(self.cumulative_m, distance) - 1))
++
++    def _point_at(self, distance: float) -> Point:
++        index = self._index_at(distance)
++        start, end = self.points[index:index + 2]
++        length = self.cumulative_m[index + 1] - self.cumulative_m[index]
++        fraction = (distance - self.cumulative_m[index]) / length
++        return (start[0] + fraction * (end[0] - start[0]),
++                start[1] + fraction * (end[1] - start[1]))
++
++    def _local_projection(self, position: Point, upper: float):
++        """Search only segments intersecting [committed progress, upper]."""
++        first, last = self._index_at(self.progress_m), self._index_at(upper)
++        best = None
++        for index in range(first, last + 1):
++            low = max(self.progress_m, self.cumulative_m[index])
++            high = min(upper, self.cumulative_m[index + 1])
++            if high < low:
++                continue
++            start, end = self.points[index:index + 2]
++            length = self.cumulative_m[index + 1] - self.cumulative_m[index]
++            ux, uy = (end[0] - start[0]) / length, (end[1] - start[1]) / length
++            raw = self.cumulative_m[index] + (
++                (position[0] - start[0]) * ux + (position[1] - start[1]) * uy)
++            progress = max(low, min(high, raw))
++            point = (start[0] + (progress - self.cumulative_m[index]) * ux,
++                     start[1] + (progress - self.cumulative_m[index]) * uy)
++            distance = math.dist(position, point)
++            # At an exact crossing/tie keep the earliest local station.
++            if (best is None or distance < best[1] - _PROJECTION_EPS
++                    or (abs(distance - best[1]) <= _PROJECTION_EPS and progress < best[0])):
++                best = (progress, distance)
++        return best
++
++    def update(self, x: float, y: float, yaw: float) -> DetourResult:
++        try:
++            if not all(math.isfinite(value) for value in (x, y, yaw)):
++                return self._unavailable("invalid_pose")
++        except (TypeError, ValueError, OverflowError):
++            return self._unavailable("invalid_pose")
++        if self.done:
++            return self._result([], True, "done")
++        position = (x, y)
++        if not self.started and math.dist(position, self.points[0]) > self.entry_radius_m:
++            return self._unavailable("entry_not_reached")
++        previous_position = self._accepted_position if self.started else self.points[0]
++        if math.dist(position, previous_position) > self.max_advance_m + _PROJECTION_EPS:
++            return self._unavailable("pose_step_exceeded")
++        upper = min(self.length_m, self.progress_m + self.max_advance_m)
++        progress, cross_track = self._local_projection(position, upper)
++        if not all(math.isfinite(value) for value in (progress, cross_track)):
++            return self._unavailable("invalid_projection")
++        if cross_track > self.max_cross_track_m:
++            return self._unavailable("cross_track_exceeded")
++        if upper < self.length_m and progress >= upper - _PROJECTION_EPS:
++            # Do not accept a projection artificially clipped by the advance
++            # window when the pose lies forward of its outgoing tangent.
++            boundary = self._point_at(upper)
++            index = self._index_at(upper)
++            start, end = self.points[index:index + 2]
++            length = self.cumulative_m[index + 1] - self.cumulative_m[index]
++            forward = ((x - boundary[0]) * (end[0] - start[0])
++                       + (y - boundary[1]) * (end[1] - start[1])) / length
++            if forward > _PROJECTION_EPS:
++                return self._unavailable("projection_window_exhausted")
++        remaining = self.length_m - progress
++        # Reaching a nearby future endpoint at a crossing is insufficient. The
++        # terminal station itself must fit in this call's bounded local window.
++        if (self.length_m <= upper and remaining <= self.waypoint_radius_m
++                and math.dist(position, self.points[-1]) <= self.waypoint_radius_m):
++            self.started = self.done = True
++            self.segment_index = len(self.points) - 2
++            self.progress_m = self.length_m
++            self._accepted_position = position
++            return self._result([], True, "done")
++        if remaining <= 3.0 * _EPS:
++            return self._unavailable("terminal_not_reached")
++        first = min(self.lookahead_m, remaining / 3.0)
++        second = min(first + self.spacing_m, (first + remaining) / 2.0)
++        third = min(second + self.spacing_m, remaining)
++        c, s = math.cos(yaw), math.sin(yaw)
++        targets = []
++        for offset in (first, second, third):
++            target_world = self._point_at(progress + offset)
++            dx, dy = target_world[0] - x, target_world[1] - y
++            target = (c * dx + s * dy, -s * dx + c * dy)
++            if not all(math.isfinite(value) for value in target):
++                return self._unavailable("invalid_target")
++            if target[0] < -_EPS:
++                return self._unavailable("target_behind_vehicle")
++            targets.append(target)
++        if any(math.dist(a, b) <= _EPS for a, b in zip(targets, targets[1:])):
++            return self._unavailable("insufficient_forward_route")
++        self.started = True
++        self.segment_index = self._index_at(progress)
++        self.progress_m = progress
++        self._accepted_position = position
++        return self._result(targets, False, "tracking")

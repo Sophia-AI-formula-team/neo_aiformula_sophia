@@ -1,0 +1,69 @@
+Trial18 schema2: independent motion plus captured mask replay
+
+This is an offline diagnostic, not a completed lap or runtime transport test.
+The fixture contains 410 chronological image motion bindings, 4505 raw model
+wheel/gyro samples and 107 exact 640x360 binary-mask PNGs for mapping images
+304 through410. Warmup motion is retained. PNGs have only IHDR/IDAT/IEND chunks;
+all channels are identical and contain only0/255. No RGB scene, human image,
+raw world pose, course, GNSS observation or controller command is included.
+
+Original per-sample QPC receipt, arrival, consumption and commit fields are
+evidence, not synthetic replacement clocks. Replayed odometry must match the
+stored digests. Image capture binds an exact acknowledged motion tail; latest
+or future motion cannot substitute. Mapping stops at its first rejection.
+
+Dependency packaging
+  replay_observed_keyframe.py.txt imports motion_channel. Both source files are
+  byte-for-byte copies with .txt suffixes for the evidence whitelist. Restore
+  ordinary .py names only in a NEW local tools directory; do not edit evidence.
+  Use an existing Python environment with NumPy and Pillow, plus Git. Do not
+  install dependencies, start Unity, ROS, a server or vehicle control for replay.
+  Importing motion_channel defines functions/classes only. Replay uses its pure
+  protocol/timestamp helpers; it never creates the live Windows clock reader.
+
+PowerShell procedure from the neo repository root after session008 is published
+  $evidence = 'docs/agent-context/sessions/2026-10-11-planner-runtime-008/evidence'
+  New-Item -ItemType Directory -Path 'trial18-replay-tools' -ErrorAction Stop
+  Copy-Item -LiteralPath "$evidence/replay_observed_keyframe.py.txt" -Destination 'trial18-replay-tools/replay_observed_keyframe.py'
+  Copy-Item -LiteralPath "$evidence/motion_channel.py.txt" -Destination 'trial18-replay-tools/motion_channel.py'
+  python -B trial18-replay-tools/replay_observed_keyframe.py replay --fixture "$evidence/observed_prefix.json" --repo . --revision d49f3c3352f2f7bfb670ea66bcc70cf4e18aae0e --output trial18-r3-replay-local.json
+
+The tool directory and output must be NEW. Never overwrite a prior attempt.
+For this R4 checkpoint, use --revision lane-mapping-20261011-r4 once the
+append-only publication receipt confirms that tag. Before publication, omit
+--revision and require the final source hashes recorded in final_checks.json.
+Do not silently substitute a later implementation for an archived report.
+
+Recorded outcomes, unchanged real-clock budgets
+  r3_causal_01:107/107 accepted offline; actual runtime trial18 had106/107.
+  Earlier cache01/02:107/107; cache03:106/107, image410 processing_deadline,
+  81.892ms >80ms. Full earlier reports remain local; their exact hashes, sizes,
+  outcomes and all-frame statistics are in scan_cache_review.summary.json.
+  The earlier reports record matcher SHA256
+  0424943d4f078ffb0b2078df3218a5fe0de05e36410f6e3a03f125c080c4053e.
+  Included r4_batched_01/02/03 each accept107/107; all reported poses are exactly
+  equal to pinned R3 numerically and as little-endian float64 bytes. Their
+  matcher source SHA256 is
+  ddc1a027378246d643f65de60636a95e7e51b21a4cb064369d1d9183c35cc58a.
+  This is the final R4 source checkpoint, not a runtime pass or full-lap claim.
+  Terminal match times improve, but engine p95 worsens in two batch runs and
+  matcher p95 worsens in all three; the full p50/p95/max comparison is retained.
+  Real clocks remain40ms/matcher and80ms/engine. Earlier rejection on another
+  host is a recorded failure, not permission to disable deadlines or skip frames.
+
+Interpretation and reproducibility limits
+  All replay masks and priors belong to this captured development trajectory.
+  A changed controller's new trajectory is not being replayed. This is not an
+  independent held-out dataset or proof of new-lap geometry/localization quality.
+  HTTP image arrival and every MMF/commit-guard read instant were not logged.
+  No continuous watchdog,200ms admission scheduler, generation-lock interleaving
+  or runtime stopping behavior can be inferred from these offline passes.
+  Recorded HTTP-write completion is not Unity acknowledgement or actuation.
+  The earlier replay01 report predates explicit timing-limit output fields;
+  preserve it as historical evidence, not a claim of identical tool provenance.
+  The profiler summary omits raw paths and most entries. It is not a standalone
+  reproduction of the original profiling run. All raw diagnostic inputs remain
+  local, are not package payloads and have not been approved for public upload.
+  components_batch_01.json is a retained21-case microbenchmark/equivalence
+  report, not a new live run. Its prototype source is not included and its
+  own captured path ended with a matcher timeout. Do not call it runtime pass.

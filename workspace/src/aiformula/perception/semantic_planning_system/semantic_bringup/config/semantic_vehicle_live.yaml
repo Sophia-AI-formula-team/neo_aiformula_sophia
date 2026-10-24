@@ -1,0 +1,158 @@
+color_semantic_mask_node:
+  ros__parameters:
+    image_topic: /aiformula_sensing/zed_node/left_image/undistorted
+    road_mask_topic: /semantic_perception/road_mask
+    offroad_mask_topic: /semantic_perception/offroad_mask
+    debug_image_topic: /semantic_perception/color_mask_debug
+    road_roi_top_ratio: 0.35
+    offroad_roi_top_ratio: 0.10
+    road_value_max: 80
+    road_saturation_max: 120
+    green_h_min: 35
+    green_h_max: 90
+    green_s_min: 45
+    green_v_min: 35
+    morph_kernel_size: 5
+
+red_pixel_traffic_light_adapter_node:
+  ros__parameters:
+    red_pixels_topic: /red_pixels_count
+    traffic_light_state_topic: /traffic_light/state
+    red_pixel_threshold: 600
+    clear_pixel_threshold: 100
+    stale_timeout_sec: 0.5
+    publish_unknown_when_stale: true
+    publish_rate_hz: 10.0
+
+traffic_light_gate_node:
+  ros__parameters:
+    red_stable_frames: 3
+    green_stable_frames: 3
+    publish_rate_hz: 10.0
+    traffic_light_state_topic: /traffic_light/state
+    odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
+    semantic_constraints_topic: /semantic_constraints
+    theta_ref_topic: /theta_ref
+
+local_costmap_node:
+  ros__parameters:
+    low_cost: 20
+    unknown_cost: 180
+    lethal_cost: 255
+    red_forward_center_x_ratio: 0.5
+    red_forward_width_ratio: 0.20
+    red_forward_top_y_ratio: 0.25
+    red_forward_bottom_y_ratio: 0.62
+    mask_stale_timeout_sec: 0.5
+    publish_rate_hz: 10.0
+    fallback_height: 120
+    fallback_width: 160
+    fallback_cost: 255
+    road_mask_topic: /semantic_perception/road_mask
+    offroad_mask_topic: /semantic_perception/offroad_mask
+    lane_guidance_mask_topic: /lane_guidance_mask
+    semantic_constraints_topic: /semantic_constraints
+    local_costmap_topic: /local_semantic_costmap
+    local_costmap_debug_topic: /local_semantic_costmap_debug
+    costmap_health_topic: /local_semantic_costmap_health
+
+local_primitive_planner_node:
+  ros__parameters:
+    planner_rate_hz: 10.0
+    primitive_duration_sec: 1.0
+    small_left_w: 0.30
+    medium_left_w: 0.55
+    strong_left_w: 0.85
+    slow_forward_v: 0.45
+    diversion_v: 0.28
+    heading_weight: 0.8
+    smoothness_weight: 0.4
+    curvature_weight: 0.3
+    semantic_cost_weight: 1.0
+    progress_weight: 0.25
+    left_preference_bonus: 0.12
+    right_preference_penalty: 0.0
+    local_costmap_topic: /local_semantic_costmap
+    semantic_constraints_topic: /semantic_constraints
+    theta_ref_topic: /theta_ref
+    odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
+    selected_primitive_topic: /selected_primitive
+    selected_path_debug_topic: /selected_path_debug
+    planner_cmd_vel_topic: /planner_cmd_vel
+    planner_score_debug_topic: /planner_score_debug
+    primitive_markers_topic: /semantic_planner/primitive_markers
+    marker_frame_id: base_footprint
+    marker_forward_scale_m: 5.0
+    marker_lateral_scale_m: 3.0
+
+planned_lane_points_adapter_node:
+  ros__parameters:
+    selected_path_debug_topic: /selected_path_debug
+    selected_primitive_topic: /selected_primitive
+    semantic_constraints_topic: /semantic_constraints
+    semantic_point_a_topic: /semantic_planner/processed_point_a
+    semantic_point_b_topic: /semantic_planner/processed_point_b
+    semantic_point_c_topic: /semantic_planner/processed_point_c
+    publish_rate_hz: 10.0
+    stale_timeout_sec: 0.5
+    publish_only_when_diversion_active: false
+    publish_zero_when_stop: true
+    vehicle_forward_scale_m: 5.0
+    vehicle_lateral_scale_m: 3.0
+    point_a_path_fraction: 0.0
+    point_b_path_fraction: 0.5
+    point_c_path_fraction: 1.0
+    theta_mode: zero
+
+lane_points_mux_node:
+  ros__parameters:
+    original_point_a_topic: /original_processed_point_a
+    original_point_b_topic: /original_processed_point_b
+    original_point_c_topic: /original_processed_point_c
+    semantic_point_a_topic: /semantic_planner/processed_point_a
+    semantic_point_b_topic: /semantic_planner/processed_point_b
+    semantic_point_c_topic: /semantic_planner/processed_point_c
+    output_point_a_topic: /processed_point_a
+    output_point_b_topic: /processed_point_b
+    output_point_c_topic: /processed_point_c
+    semantic_constraints_topic: /semantic_constraints
+    costmap_health_topic: /local_semantic_costmap_health
+    lane_recovery_state_topic: /lane_recovery_state
+    selected_primitive_topic: /selected_primitive
+    mux_state_topic: /semantic_planner/lane_points_mux_state
+    lane_stop_flag_topic: /lane_stop_flag
+    speed_limit_topic: /semantic_planner/speed_limit
+    publish_rate_hz: 10.0
+    stale_timeout_sec: 0.5
+    require_recoverable_after_diversion: true
+    publish_zero_when_blocked: true
+    publish_speed_limit: true
+    normal_speed_limit_mps: 0.45
+    search_speed_limit_mps: 0.18
+    stop_speed_limit_mps: 0.0
+    min_semantic_point_x_m: 0.05
+    max_semantic_point_x_m: 5.5
+    max_abs_semantic_point_y_m: 2.2
+
+lane_recovery_gate_node:
+  ros__parameters:
+    stable_required_frames: 5
+    min_confidence: 0.65
+    horizontal_angle_threshold_deg: 15.0
+    max_center_jump_ratio: 0.18
+    lane_result_topic: /lane_result
+    semantic_constraints_topic: /semantic_constraints
+    lane_recovery_state_topic: /lane_recovery_state
+
+safety_supervisor_node:
+  ros__parameters:
+    max_linear_velocity: 0.55
+    max_angular_velocity: 0.85
+    costmap_stale_timeout_sec: 0.5
+    allow_cmd_clamping: true
+    planner_cmd_vel_topic: /planner_cmd_vel
+    local_costmap_topic: /local_semantic_costmap
+    semantic_constraints_topic: /semantic_constraints
+    selected_primitive_topic: /selected_primitive
+    output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel
+    safety_state_topic: /safety_state

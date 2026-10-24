@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "result": "development checkpoint; not accepted for driving",
+  "base_commit": "01442bbf75cb68213dff3c05b88f3bef8639a877",
+  "scope": "Causal mask geometry and representation; no vehicle, simulation, camera, teacher speed or original gate changes",
+  "full_regression": {
+    "first": {"passed": 3416, "failed": 1, "skipped": 1, "reason": "new test incorrectly expected reliable counters above original saturation of one"},
+    "post_fixture": {"passed": 3417, "failed": 0, "skipped": 1, "process_seconds": 101.2500929, "pytest_seconds": 100.13, "unchanged_source_files": 181},
+    "summary_sha256": "d010d211365e75bbb5d3c91f903bec516f0ae6bf2262a1ab038f139975303984",
+    "junit_sha256": "ec981cd2f7917e3aad8552b0977213e805f691e3445783503e1d0b110dabc42e",
+    "excluded": "unintegrated test_quantized_curve_fit.py only",
+    "skip": "Linux process-group test on Windows",
+    "native_api_real_calls": 8,
+    "native_c_sha256": "0c54086e66554c8e9c96b48893e4b19c076c8a747b8f2cf08d6ad216fdeca12d",
+    "native_binary_sha256": "690e7b900844f44f0d21cf1ba41dd903c437a36ac8053a41ea0f9f44a87a7f83"
+  },
+  "original_development_cases": {
+    "passed": 0,
+    "planned_per_case": 509,
+    "diagnostic_budget_ms": 2000,
+    "runtime_claim": false,
+    "accepted": [69, 435, 13, 413],
+    "reasons": ["match_insufficient_overlap", "combined boundary finite-domain capacity", "match_insufficient_final_inliers", "combined boundary finite-domain capacity"],
+    "raw_lateral_rmse_m": [0.00795796, 0.01463585, 0.000578194, 0.01446550],
+    "corrected_lateral_rmse_m": [0.00265213, 0.02210842, 0.000200340, 0.01880243],
+    "map_radial_rmse_m": [0.00671424, 0.0239063, 0.00577796, 0.0207977],
+    "map_radial_max_m": [0.0190121, 0.0520290, 0.0146409, 0.0492295],
+    "report_sha256": "1ec12cede9af6327c192012b37000da530c20c584ff2e55d2f5129df1e3f66de"
+  },
+  "strict_recorded_prefix": {
+    "attempted": 12, "accepted": 11, "available": 111,
+    "failed_sequence": 162, "reason": "processing_deadline",
+    "engine_ms": 81.35920000495389, "limit_ms": 80,
+    "match_ms": 21.8383, "match_limit_ms": 40,
+    "failed_frame_committed": false, "integrity_checks_passed": 21,
+    "all_accepted_are_bootstrap": true,
+    "full_lanesession_200ms_measured": false,
+    "report_sha256": "6a34988bf602783b3bf9151274a4d7206024dca26cd6816ac3553d88a3aae4d9"
+  },
+  "fixed_mask_audit": {
+    "cases": 22, "extractions": 44, "exceptions": 0,
+    "old_24_fields_byte_exact_cases": 22,
+    "geometric_all_pass": false,
+    "finding": "Legacy cap/corner normals can be wrong by 60-90 degrees; new fragments retain and extend their finite influence within one pixel footprint",
+    "maximum_sampled_error_mm": 52.673,
+    "report_sha256": "bac0308a4e44862bb8dad04b3c1566b55fb46358cd0a5b4bbd3fa97f3f54114d"
+  },
+  "adapters": {"passed": 52, "failed": 2, "reason": "unchanged historical R8/R12 native source mismatch with newer installed native binary; no bypass"},
+  "actual_drive": {"new_run": false, "latest": "failed trial28", "teach_lap": false, "frozen_route": false, "repeat_lap": false, "new_two_lap_video": false},
+  "publication": {"repository": "Sophia-AI-formula-team/neo_aiformula_sophia", "repository_id": 1303517209, "branch": "repair/lane-keyframe-transaction-20261011", "ci_result": "pending exact commit readback"},
+  "privacy": "Raw masks, NPZ histories, full absolute-path logs and videos stay local; only reviewed summaries and simulator source afterimages included"
+}

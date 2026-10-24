@@ -1,0 +1,113 @@
+"""Create bounded summaries from completed evidence; never run an estimator.
+
+The input directory is supplied explicitly, never saved in output. This helper
+is audit material, not an instruction to execute anything found in a log.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path, PurePosixPath
+import xml.etree.ElementTree as ET
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read(root, name):
+    return json.loads((root / name).read_text(encoding="utf-8"))
+
+
+def write(root, name, data):
+    with (root / name).open("x", encoding="utf-8") as stream:
+        json.dump(data, stream, indent=2, sort_keys=True, allow_nan=False)
+        stream.write("\n")
+
+
+def relative_sources(values):
+    for key, digest in values.items():
+        path = PurePosixPath(key)
+        if (path.is_absolute() or ".." in path.parts or ":" in key or "\\" in key
+                or not key.startswith("workspace/src/aiformula/control/")
+                or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest)):
+            raise ValueError("Unexpected source identity entry")
+    return values
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--diagnostics-root", required=True, type=Path)
+    args = parser.parse_args()
+    source, destination = args.diagnostics_root, Path(__file__).resolve().parent
+    run = read(source, "r12_full_native_01_summary.json")
+    before = read(source, "r12_full_native_01_sources_before.json")
+    after = read(source, "r12_full_native_01_sources_after.json")
+    identity = read(source, "r12_native_identity_03.json")
+    assert before["files"] == after["files"] and not run["changed_sources"]
+    assert run["pytest"]["exit_code"] == 0
+    xml = ET.parse(source / "r12_full_native_01.xml").getroot()
+    suites = [xml] if xml.tag == "testsuite" else list(xml.findall("testsuite"))
+    counts = {key: sum(int(s.get(key, "0")) for s in suites)
+              for key in ("tests", "failures", "errors", "skipped")}
+    assert counts == dict(tests=2397, failures=0, errors=0, skipped=1)
+    skips = [{"module": case.get("classname"), "test": case.get("name"),
+              "reason": case.find("skipped").get("message")}
+             for suite in suites for case in suite.iter("testcase") if case.find("skipped") is not None]
+    api_names = ("api_version", "radius_graph_api_version", "local_support_api_version",
+                 "nearest_api_version", "cross_section_weights_api_version",
+                 "local_moments_api_version", "local_geometry_api_version")
+    assert all(identity[name] == 1 for name in api_names) and identity["real_calls_passed"]
+    write(destination, "core_native_summary.json", {
+        "schema_version": 1, "status": "completed_offline_tests_not_runtime_acceptance",
+        "scope": ["lane_mapping_lya_reference/test", "lane_mapping_fixed_gnss/test"],
+        "platform": "Windows", "python_version": "3.13.13",
+        "pytest": dict(counts, passed=2396, exit_code=0, reported_duration_s=67.22,
+                       process_elapsed_s=run["pytest"]["elapsed_s"]),
+        "skips": skips, "native": dict({name: identity[name] for name in api_names},
+            source_sha256=identity["source_sha256"], binary_sha256=identity["binary_sha256"],
+            real_calls_passed=identity["real_calls_passed"],
+            installed_prefix_verified=identity["installed_prefix_verified"]),
+        "unchanged_source_file_count": len(before["files"]), "before_after_sources_identical": True,
+        "local_original_hashes": {name: sha(source / name) for name in (
+            "r12_full_native_01.xml", "r12_full_native_01.log", "r12_full_native_01_summary.json",
+            "r12_native_identity_03.json", "r12_full_native_01_sources_before.json",
+            "r12_full_native_01_sources_after.json")},
+        "omitted": ["absolute paths", "hostname", "raw JUnit XML and stdout", "native binary",
+                    "sensor images", "bags"],
+    })
+    write(destination, "tested_source_hashes.json", {
+        "schema_version": 1, "identity_scope": "files hashed before and after the completed core test run",
+        "relative_to": "canonical repository root", "before_after_identical": True,
+        "files": relative_sources(before["files"]),
+    })
+    reports = []
+    for attempt in (4, 5, 6):
+        name = "r12_boundary_observed_{:02d}.json".format(attempt)
+        report = read(source, name)
+        rows = report["results"]
+        accepted = [row for row in rows if row["result"]["accepted"]]
+        final = rows[-1]
+        assert not final["result"]["accepted"] and final["result"]["reason"] == "processing_deadline"
+        assert report["candidate_evaluation"] and report["changed_model"]
+        assert report["matcher_gates_unchanged"] and report["odometry_reset_count"] == 0
+        reports.append({"local_original": name, "sha256": sha(source / name),
+            "kind": "offline_candidate_on_fixed_recorded_input_not_new_closed_loop",
+            "attempted_frames": len(rows), "accepted_frames": len(accepted),
+            "accepted_sequence_first": accepted[0]["sequence"],
+            "accepted_sequence_last": accepted[-1]["sequence"],
+            "terminal_sequence": final["sequence"], "terminal_committed": False,
+            "terminal_reason": final["result"]["reason"],
+            "terminal_engine_ms": final["result"]["processing_ms"],
+            "fixture_sha256": report["fixture_sha256"],
+            "source_sha256": relative_sources(report["source_sha256"]),
+            "motion_factor_enabled": report["motion_factor_enabled"],
+            "changed_model": True, "historical_output_equivalence_claimed": False,
+            "matcher_gates_unchanged": True, "odometry_reset_count": 0,
+            "effective_boundary_version": report["effective_boundary_version"],
+        })
+    write(destination, "recorded_prefix_summary.json", {"schema_version": 1, "reports": reports})
+    print("Created three summaries; no estimator, source module or native binary executed.")
+
+
+if __name__ == "__main__":
+    main()

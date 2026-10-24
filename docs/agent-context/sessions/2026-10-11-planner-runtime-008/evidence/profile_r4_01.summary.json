@@ -1,0 +1,133 @@
+{
+  "scope": "profile only; profiler adds overhead; unchanged deadlines",
+  "script_sha256": "a572c7269140ef5be7e4c20ae80f2f17fecc655b7c99ef7de2a8b1e6c2b5ab11",
+  "tool_sha256": "874fa54b6bde4b8584b5447ba0c998a00b9899e2c4211f0b07a88aa7254a40e1",
+  "fixture_sha256": "ade7b16987374e874358f9ac88babd1b42f8c9e4f92317933debaf1d4aa3ec2b",
+  "source_sha256": {
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py": "bc0c6af9095325f455fcc93516fb4de3aa22f6f42f3a0663b015bb97946b12bd",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py": "0424943d4f078ffb0b2078df3218a5fe0de05e36410f6e3a03f125c080c4053e",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/motion.py": "725f042ee6270c9cdb9b7cb232181a3dda7c2705f76020d90df9b06247aef3c7",
+    "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "0cd2f1e8d2c6dc906881d06785292cd2fa113a6cc5f0a6a170b5bed65d9c7aab"
+  },
+  "captured_stamps": [
+    46059998993
+  ],
+  "replay": {
+    "report": "profile_r4_01_replay.json",
+    "all_prefix_frames_accepted": false,
+    "observed_decisions_reproduced": true,
+    "mapping_frames": 107,
+    "last_sequence": 410,
+    "last_reason": "match_runtime_budget_exceeded",
+    "sha256": "0df0b563a7030dbb09d394f7f80231f7fb922a287e8b29edab802bac655a5d69"
+  },
+  "kind": "reviewed_profile_summary_not_runtime_benchmark",
+  "source": {
+    "filename": "profile_r4_01.json",
+    "bytes": 41489,
+    "sha256": "fc3f011ab40dae4d12067117e44739ea6c2c1da7233393f139e57654459e113a"
+  },
+  "hotspots": [
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py",
+      "line": 247,
+      "name": "process",
+      "calls": 1,
+      "own_ms": 0.24050000000000002,
+      "cumulative_ms": 80.54950000000001
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py",
+      "line": 198,
+      "name": "_match_reference",
+      "calls": 1,
+      "own_ms": 0.1305,
+      "cumulative_ms": 80.26310000000001
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 302,
+      "name": "__init__",
+      "calls": 3,
+      "own_ms": 16.1116,
+      "cumulative_ms": 66.6321
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 876,
+      "name": "match",
+      "calls": 1,
+      "own_ms": 1.2888000000000002,
+      "cumulative_ms": 40.5478
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py",
+      "line": 161,
+      "name": "_prepare_matcher",
+      "calls": 1,
+      "own_ms": 0.04680000000000001,
+      "cumulative_ms": 39.5738
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 749,
+      "name": "fork_with_anchor",
+      "calls": 1,
+      "own_ms": 0.0058000000000000005,
+      "cumulative_ms": 39.358000000000004
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 693,
+      "name": "__init__",
+      "calls": 1,
+      "own_ms": 0.026000000000000002,
+      "cumulative_ms": 39.2648
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 421,
+      "name": "_past_direction_support",
+      "calls": 1,
+      "own_ms": 0.9522,
+      "cumulative_ms": 21.8109
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 558,
+      "name": "_components",
+      "calls": 3,
+      "own_ms": 12.8117,
+      "cumulative_ms": 18.953900000000004
+    },
+    {
+      "file": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "line": 469,
+      "name": "_local_support",
+      "calls": 160,
+      "own_ms": 6.820600000000001,
+      "cumulative_ms": 10.735700000000001
+    },
+    {
+      "file": "external/fromnumeric.py",
+      "line": 2304,
+      "name": "sum",
+      "calls": 1993,
+      "own_ms": 1.1851,
+      "cumulative_ms": 9.6196
+    },
+    {
+      "file": "external/fromnumeric.py",
+      "line": 66,
+      "name": "_wrapreduction",
+      "calls": 2001,
+      "own_ms": 1.6745,
+      "cumulative_ms": 8.2498
+    }
+  ],
+  "privacy_note": "Top 12 entries only; absolute roots removed, core filenames made repository-relative. Raw profiler data remain local.",
+  "limits": [
+    "Profiling adds overhead; its failed profiled replay is retained as metadata, not an uninstrumented runtime benchmark.",
+    "The profiled replay JSON is not included; this is a selected hotspot summary, not an independent reproducible profiler capture."
+  ]
+}

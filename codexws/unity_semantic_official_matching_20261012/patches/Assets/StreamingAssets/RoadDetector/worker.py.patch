@@ -1,0 +1,142 @@
+--- final63/Assets/StreamingAssets/RoadDetector/worker.py
++++ capture-v2/Assets/StreamingAssets/RoadDetector/worker.py
+@@ -3,6 +3,7 @@
+ import base64
+ import hashlib
+ import json
++import math
+ import os
+ from pathlib import Path
+ import sys
+@@ -53,6 +54,122 @@
+     if not ok:
+         raise RuntimeError("PNG encoding failed")
+     return base64.b64encode(pixels).decode("ascii")
++
++
++def validate_capture_metadata(value, sequence, digest, control=None):
++    """Echo v2 image exposure provenance only; never relabel Body as image pose.
++
++    This does not establish age admission or a junction observation. The caller
++    must gate later consumers against capture time, epoch and original identity.
++    """
++    def require(condition, reason):
++        if not condition:
++            raise ValueError(reason)
++
++    def finite(number):
++        return type(number) in (int, float) and math.isfinite(number)
++
++    def vector(value, length):
++        return type(value) is list and len(value) == length and all(finite(x) for x in value)
++
++    def camera(value):
++        require(type(value) is dict and set(value) == {"K", "R", "t"}, "invalid_camera_fields")
++        require(vector(value["K"], 9) and vector(value["R"], 9) and vector(value["t"], 3), "nonfinite_camera")
++        require(value["K"][0] > 0 and value["K"][4] > 0 and value["K"][6:] == [0, 0, 1], "invalid_intrinsics")
++
++    def snapshot(value):
++        require(type(value) is dict, "invalid_snapshot")
++        base = {"sim_time", "repository_projection", "camera", "body_available",
++                "render_root_position_unity", "render_root_quaternion_xyzw"}
++        require(type(value.get("body_available")) is bool, "invalid_body_available")
++        require(finite(value.get("sim_time")) and value["sim_time"] >= 0, "invalid_snapshot_time")
++        require(type(value.get("repository_projection")) is bool, "invalid_projection_flag")
++        camera(value.get("camera"))
++        require(vector(value.get("render_root_position_unity"), 3), "nonfinite_render_root_position_unity")
++        require(vector(value.get("render_root_quaternion_xyzw"), 4), "nonfinite_render_root_quaternion_xyzw")
++        require(abs(sum(x*x for x in value["render_root_quaternion_xyzw"]) - 1) <= .001, "invalid_quaternion")
++        if not value["body_available"]:
++            require(set(value) == base, "invalid_missing_body_fields")
++            return
++        fields = {"body_position_unity": 3, "body_quaternion_xyzw": 4, "body_euler_unity_deg": 3}
++        require(set(value) == base | set(fields), "invalid_snapshot_fields")
++        for name, size in fields.items():
++            require(vector(value[name], size), "nonfinite_" + name)
++        require(abs(sum(x*x for x in value["body_quaternion_xyzw"]) - 1) <= .001, "invalid_quaternion")
++
++    def body_coincides(snapshot_value):
++        return (snapshot_value["body_available"]
++                and snapshot_value["body_position_unity"] == snapshot_value["render_root_position_unity"]
++                and snapshot_value["body_quaternion_xyzw"] == snapshot_value["render_root_quaternion_xyzw"])
++
++    def horizontal_forward(q):
++        return 2*(q[0]*q[2]+q[3]*q[1]), 1-2*(q[0]*q[0]+q[1]*q[1])
++
++    try:
++        keys = {"schema", "valid", "reason", "sequence", "epoch", "clock_kind", "capture_time",
++                "capture_realtime_sec", "rgb_sha256", "camera", "image_pose", "body_image_coincident",
++                "before", "after"}
++        require(type(value) is dict and set(value) == keys, "invalid_capture_fields")
++        require(value["schema"] == "aiformula_junction_capture/v2", "invalid_schema")
++        require(type(value["valid"]) is bool, "invalid_validity_flag")
++        require(type(value["sequence"]) is int and value["sequence"] == sequence and sequence > 0, "capture_sequence_mismatch")
++        require(type(value["epoch"]) is int and value["epoch"] >= 0, "invalid_epoch")
++        require(value["clock_kind"] == "unity_time_as_double", "invalid_clock")
++        require(finite(value["capture_realtime_sec"]) and value["capture_realtime_sec"] >= 0, "invalid_realtime")
++        require(type(value["rgb_sha256"]) is str and value["rgb_sha256"] == digest
++                and len(digest) == 64 and all(x in "0123456789abcdef" for x in digest), "capture_rgb_mismatch")
++        camera(value["camera"])
++        before, after = value["before"], value["after"]
++        snapshot(before)
++        snapshot(after)
++        require(value["camera"] == before["camera"], "capture_calibration_mismatch")
++        coincidence = body_coincides(before) and body_coincides(after)
++        require(type(value["body_image_coincident"]) is bool
++                and value["body_image_coincident"] == coincidence, "body_image_coincidence_mismatch")
++        stable_fields = ("sim_time", "repository_projection", "camera",
++                         "render_root_position_unity", "render_root_quaternion_xyzw")
++        reason = "image_pose_stable"
++        if any(before[key] != after[key] for key in stable_fields):
++            reason = "image_pose_time_or_calibration_changed_during_capture"
++        elif not before["repository_projection"]:
++            reason = "repository_projection_disabled"
++        else:
++            forward_x, forward_z = horizontal_forward(before["render_root_quaternion_xyzw"])
++            if forward_x*forward_x + forward_z*forward_z <= 1e-12:
++                reason = "image_heading_unavailable"
++        require(value["reason"] == reason and value["valid"] == (reason == "image_pose_stable"), "inconsistent_capture_validity")
++        if value["valid"]:
++            require(finite(value["capture_time"]) and value["capture_time"] == before["sim_time"], "capture_time_mismatch")
++            pose = value["image_pose"]
++            require(type(pose) is dict and set(pose) == {"source", "coordinate_frame", "position_unity",
++                    "quaternion_xyzw", "planar"}, "invalid_image_pose_fields")
++            require(pose["source"] == "unity_render_root" and pose["coordinate_frame"] == "unity_world",
++                    "invalid_image_pose_source")
++            position, q = before["render_root_position_unity"], before["render_root_quaternion_xyzw"]
++            require(vector(pose["position_unity"], 3) and vector(pose["quaternion_xyzw"], 4)
++                    and pose["position_unity"] == position and pose["quaternion_xyzw"] == q,
++                    "image_pose_snapshot_mismatch")
++            planar = pose["planar"]
++            require(type(planar) is dict and set(planar) == {"frame", "x", "y", "yaw"}
++                    and planar["frame"] == "render_root_in_odom_axes"
++                    and all(finite(planar[key]) for key in ("x", "y", "yaw")), "invalid_image_planar_pose")
++            expected_yaw = -math.atan2(*horizontal_forward(q))
++            yaw_error = math.atan2(math.sin(planar["yaw"]-expected_yaw), math.cos(planar["yaw"]-expected_yaw))
++            require(planar["x"] == position[2] and planar["y"] == -position[0] and abs(yaw_error) <= 1e-5,
++                    "image_coordinate_mismatch")
++        else:
++            require(value["capture_time"] is None and value["image_pose"] is None, "invalid_capture_must_not_authorize_pose")
++        if control is not None:
++            require(type(control) is dict and type(control.get("epoch")) is int
++                    and control["epoch"] == value["epoch"], "lane_epoch_mismatch")
++            require(control.get("camera") == value["camera"], "lane_calibration_mismatch")
++            if value["valid"]:
++                require(finite(control.get("sim_time")) and control["sim_time"] == value["capture_time"], "lane_capture_time_mismatch")
++        # Preserve JSON field values. In particular no receive-time pose or new timestamp.
++        return value
++    except (KeyError, TypeError, ValueError, OverflowError) as error:
++        return dict(schema="aiformula_junction_capture/v2", valid=False,
++                    reason="capture_metadata_rejected:" + str(error))
+ 
+ 
+ def infer(model, line, pipeline_state=None):
+@@ -91,6 +208,8 @@
+             reply["lane_control"] = pipeline_state["pipeline"].process(output.lane_mask, dict(control, sequence=sequence))
+         except Exception as error:
+             reply["lane_control"] = dict(valid=False, supported=False, error=f"{type(error).__name__}: {error}")
++    if "junction_capture" in request:
++        reply["junction_capture"] = validate_capture_metadata(request["junction_capture"], sequence, digest, control)
+     return reply
+ 
+ 

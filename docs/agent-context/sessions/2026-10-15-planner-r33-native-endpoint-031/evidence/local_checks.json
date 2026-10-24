@@ -1,0 +1,33 @@
+{
+  "scope": "Source checkpoint for CI compilation; new C kernel not executed locally",
+  "base_code_sha": "3406b524c8e64fbe07d52d0e59d03d9815ea9e1b",
+  "python": "3.13.13",
+  "fallback_tests": {"passed": 93, "skipped": 5, "failures": 0, "errors": 0, "seconds": 0.99},
+  "skips": "All five tests requiring the not-yet-built curve endpoint API",
+  "raw_junit_sha256": "551e655269a1be6e842dbd167a7b43789dd0c40a5a3232fb208fb14903a05580",
+  "prior_fallback_attempt": {"passed": 93, "skipped": 5, "seconds": 0.95},
+  "test_correction_before_native_run": "Replaced a supposed failure case that scalar evaluation showed was certifiable; added subnormal domains to full native oracle matrix.",
+  "python38_grammar_files_passed": 5,
+  "native_oracle_cases_configured": 1008,
+  "native_oracle_executed": false,
+  "legacy_native_callables_preserved": 11,
+  "legacy_capability_versions_preserved": 9,
+  "new_capability": "CURVE_ENDPOINT_API_VERSION=1",
+  "local_cpp_toolchain": "VS Community present without C++ tools; no compiler found or installed",
+  "local_docker": "daemon unavailable; no container started",
+  "local_binary": "existing API9 binary unchanged; its source digest differs from the new C source until CI builds it",
+  "source_sha256": {
+    "native/lane_graph_native.c": "0f8befc007400635a4ec7b5c8344a767ef06b5728d25d9b27b73e6e7eee5901a",
+    "lane_mapping_lya_reference/curve_endpoint_native.py": "d0aaca2c0a6c9349dc910d68c52c389a0576ad86da8aa985a47aff0a29c6bc9a",
+    "lane_mapping_lya_reference/curve_consensus.py": "73f9f93a599aa16299b276f62d7471c882ebf3f4df864d68d353640dc0ed647f",
+    "lane_mapping_lya_reference/curve_consensus_compact.py": "f9c673f2815b719d2a83095c626716efac078f1cdba537483a09f5bbef74c5d1",
+    "lane_mapping_lya_reference/curve_retained_state.py": "40ec071ac1307fbd954c1f8cf147f49ba0cf3792f7a3f8b74e640966af10f7a7",
+    "test/test_curve_endpoint_native.py": "bde45ac32124e0ee86c81df5e437abfdf18402030154ad0a5038b19813eff9dd"
+  },
+  "limits": [
+    "Native source/binary/numerical acceptance awaits exact-code CI compilation and tests.",
+    "No new complete latency benchmark, causal Engine run, Unity lap, freeze, second lap, error metrics or video.",
+    "No dependency installation, C binary replacement, vehicle/simulation parameter change or control-mode enablement.",
+    "Raw commands and XML remain local; no raw inputs, GNSS coordinates or personal paths published."
+  ]
+}

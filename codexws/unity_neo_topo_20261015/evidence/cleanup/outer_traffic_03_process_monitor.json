@@ -1,0 +1,33 @@
+{
+  "name": "outer_traffic_03",
+  "run_result_observed": true,
+  "observation_only": true,
+  "elapsed_sec": 31.1078733,
+  "workers": [
+    {
+      "pid": 21384,
+      "parent_pid": 25028,
+      "birth_filetime": "134364670131486460",
+      "command": "\"C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -B E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\trials\\run_neo_trial.py outer_traffic_03 --kind traffic --lane outer --output-root E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs --source-root \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\source\" --motor-gate-source \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\motor_gate.py\" --worker-root \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\" --simulator \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\" --bridge-script \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\tools\\invoke_unity_bridge.py\" --expected-harness-sha256 c7dfc35da6bb058da575915c5a67d7d55b76ee9042b298eb7735b303067ae005 --lane-recovery-mode baseline",
+      "first_seen_utc": "2026-10-14T15:56:54.2123830Z",
+      "same_identity_present": false
+    },
+    {
+      "pid": 32360,
+      "parent_pid": 9828,
+      "birth_filetime": "134364670170931690",
+      "command": "\"E:/Mess/Projects/Programming/aiformula/YOLOP/YOLOP_A2/.venv/Scripts/python.exe\" -B -u \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\semantic_worker.py\" --source-root \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\source\" --vision-root \"C:/Users/PC/OneDrive - Sophia Univ. Students/Main/SOPHIA/Y4T1/Research/Demo_LaneLineTrainer/Simulator/Assets/StreamingAssets\\VisionLaneFollower\" --motor-gate-source \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\motor_gate.py\" --checkpoint-root \"E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\" --checkpoint-path \"E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json\" --traffic-policy stop_wait",
+      "first_seen_utc": "2026-10-14T15:56:58.6504425Z",
+      "same_identity_present": false
+    },
+    {
+      "pid": 47052,
+      "parent_pid": 32360,
+      "birth_filetime": "134364670171195570",
+      "command": "\"C:\\Users\\PC\\Downloads\\StabilityMatrix-win-x64\\Data\\Assets\\Python\\cpython-3.12.10-windows-x86_64-none\\python.exe\" -B -u \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\semantic_worker.py\" --source-root \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\source\" --vision-root \"C:/Users/PC/OneDrive - Sophia Univ. Students/Main/SOPHIA/Y4T1/Research/Demo_LaneLineTrainer/Simulator/Assets/StreamingAssets\\VisionLaneFollower\" --motor-gate-source \"C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanningNeo20261015\\motor_gate.py\" --checkpoint-root \"E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\" --checkpoint-path \"E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json\" --traffic-policy stop_wait",
+      "first_seen_utc": "2026-10-14T15:56:58.6504991Z",
+      "same_identity_present": false
+    }
+  ],
+  "all_observed_workers_absent": true
+}

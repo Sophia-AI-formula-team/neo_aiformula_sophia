@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-15",
+  "evidence_level": "diagnostic_cProfile_not_runtime_or_driving",
+  "valid_actual14": false,
+  "complete_sequences": [
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158,
+    159
+  ],
+  "started_incomplete_sequence": 160,
+  "source_pins": 121,
+  "source_unchanged": true,
+  "primary_seconds": 45,
+  "stop_seconds": 5,
+  "retries": 0,
+  "elapsed_s": 45.144075600022916,
+  "parent": {
+    "pid": 36376,
+    "birth": "134364677308201197",
+    "independently_absent": true
+  },
+  "child": {
+    "pid": 42640,
+    "birth": "134364677312328618",
+    "stop_attempted": true,
+    "independently_absent": true
+  },
+  "cumulative_through_sequence": 159,
+  "prepare_seconds_with_profiler": 34.8348825,
+  "builder_seconds_inclusive": 30.868980200000003,
+  "pending_complement_envelope_seconds_inclusive": 24.490886200000002,
+  "pending_complement_fraction_of_prepare": 0.7030563745980771,
+  "source_boxes_seconds_inclusive": 18.8278548,
+  "scalar_step_calls": 8503028,
+  "scalar_step_self_seconds": 10.221394400000001,
+  "state_box_seconds_inclusive": 4.7083367,
+  "profile_restore_receipt_present": false,
+  "child_result_present": false,
+  "notes": "ALL original151..164 inputs preselected; compact diagnostics no old huge full-graph serialization. Hard deadline stopped160 in flight. Inclusive function costs overlap and must not be summed. No production function replaced. Profiling overhead included; no80/40/200ms pass or two-lap claim."
+}

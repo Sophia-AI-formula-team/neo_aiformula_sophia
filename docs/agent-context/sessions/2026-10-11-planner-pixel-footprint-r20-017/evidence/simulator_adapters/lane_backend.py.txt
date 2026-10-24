@@ -1,0 +1,1559 @@
+"""Loopback-only Unity sensor adapter for the existing lane teach/repeat cores.
+
+This is not a ROS transport and never accepts a global pose or a known course.
+Run with --repo <neo feature checkout> --output <new diagnostic directory>.
+The simulation owns physics and camera calibration; this adapter owns only
+sensor conversion, causal algorithm execution and command selection.
+"""
+from __future__ import annotations
+
+import argparse
+import ast
+import base64
+from collections import Counter, deque
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from dataclasses import asdict, replace
+import hashlib
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
+import importlib
+import io
+import json
+import math
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import threading
+import time
+from types import SimpleNamespace
+import uuid
+
+import numpy as np
+from PIL import Image
+
+
+MAX_REQUEST_BYTES = 12 * 1024 * 1024
+SOURCE_EPOCH_NS = 1_000_000_000
+ACTIVE_PHASES = {"TEACH", "STOPPING", "PREPARE", "ACQUIRE", "REPEAT"}
+# Adapter algorithm policy only: a short, newly growing confirmed anchor must
+# refresh before a moving camera leaves its support. Production still prepares
+# each index from strictly past confirmed cells and enforces its unchanged
+# observability, innovation, evidence-vote and processing-budget gates.
+TEACH_MAP_CONFIG = {"keyframe_refresh_s": .25, "keyframe_refresh_distance_m": .25}
+# Authored semantic paint is 7 mm above nominal physical tire contact. This
+# describes the observed surface, not a change to camera, vehicle or physics.
+OBSERVATION_PLANE_OFFSET_M = .007
+OBSERVATION_PLANE_SOURCE = "authored_semantic_paint_above_nominal_contact_v1"
+
+
+def finite_number(value, name):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(name + " must be a finite number")
+    try:
+        converted = float(value)
+    except (ValueError, TypeError, OverflowError) as error:
+        raise ValueError(name + " must be a finite number") from error
+    if not math.isfinite(converted):
+        raise ValueError(name + " must be a finite number")
+    return converted
+
+
+def source_ns(seconds):
+    value = finite_number(seconds, "simulation timestamp")
+    if value < 0 or value > 86400:
+        raise ValueError("simulation timestamp outside 0..86400 seconds")
+    return SOURCE_EPOCH_NS + round(value * 1e9)
+
+
+def json_safe(value):
+    if isinstance(value, np.ndarray):
+        return json_safe(value.tolist())
+    if isinstance(value, np.generic):
+        return json_safe(value.item())
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def wrap(value):
+    return math.atan2(math.sin(value), math.cos(value))
+
+
+def load_teacher(source_path, reference_speed, maximum_yaw):
+    """Extract the audited arithmetic itself, not a second hand-maintained law.
+
+    The slice has no ROS/TF/IO calls. Source changes that move its explicit
+    boundaries fail startup; source bytes and extracted AST are logged.
+    """
+    tree = ast.parse(source_path.read_text(encoding="utf-8-sig"))
+    follower = next(node for node in tree.body if isinstance(node, ast.ClassDef)
+                    and node.name == "TrajectoryFollower")
+    callback = next(node for node in follower.body if isinstance(node, ast.FunctionDef)
+                    and node.name == "trajectory_callback")
+    initial = next(node for node in follower.body if isinstance(node, ast.FunctionDef)
+                   and node.name == "__init__")
+    gains_call = next(node for node in ast.walk(initial) if isinstance(node, ast.Call)
+                      and isinstance(node.func, ast.Name) and node.func.id == "LYAController")
+    gains = {keyword.arg: ast.literal_eval(keyword.value) for keyword in gains_call.keywords
+             if keyword.arg in {"lambda_v", "lambda_a", "k1", "k2"}}
+    if set(gains) != {"lambda_v", "lambda_a", "k1", "k2"}:
+        raise ValueError("LYA source gains are no longer explicit numeric constants")
+    begin = next(index for index, node in enumerate(callback.body)
+                 if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                 and node.targets[0].id == "dx")
+    end = next(index for index in range(begin, len(callback.body))
+               if isinstance(callback.body[index], ast.Expr))
+    body = callback.body[begin:end]
+    allowed_calls = {"sqrt", "atan2", "sin", "cos", "abs", "max", "min"}
+    for node in ast.walk(ast.Module(body=body, type_ignores=[])):
+        if isinstance(node, ast.Call):
+            name = node.func.id if isinstance(node.func, ast.Name) else getattr(node.func, "attr", "")
+            if name not in allowed_calls:
+                raise ValueError("unexpected call in extracted LYA arithmetic: " + name)
+    args = [ast.arg(arg=name) for name in (
+        "self", "target_x", "target_y", "phi_t", "current_x", "current_y", "current_yaw")]
+    function = ast.FunctionDef(name="teacher_arithmetic",
+        args=ast.arguments(posonlyargs=[], args=args, kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=body + [ast.Return(ast.Tuple([ast.Name("v", ast.Load()), ast.Name("omega", ast.Load())], ast.Load()))],
+        decorator_list=[])
+    module = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+    namespace = {"math": math}
+    exec(compile(module, str(source_path), "exec"), namespace)
+    controller = SimpleNamespace(lya=SimpleNamespace(v_t=reference_speed, omega_t=0., **gains),
+                                 omega_max=maximum_yaw)
+
+    def command(target, omega_t):
+        controller.lya.omega_t = finite_number(omega_t, "teacher reference yaw rate")
+        values = [finite_number(item, "teacher target") for item in target]
+        return namespace["teacher_arithmetic"](controller, *values, 0., 0., 0.)
+
+    return command, dict(gains=gains, arithmetic_ast_sha256=hashlib.sha256(
+        ast.dump(module).encode()).hexdigest())
+
+
+def archive_core_sources(core, snapshot_dir):
+    """Archive exactly the declared core bytes, never unrelated prototypes.
+
+    Verify every source before writing; read each file once so the stored bytes
+    cannot differ from the bytes checked against startup's source manifest.
+    """
+    entries = []
+    for relative, expected in core.provenance["source_sha256"].items():
+        if Path(relative).anchor or ".." in Path(relative).parts:
+            raise ValueError("core snapshot requires repository-relative source paths")
+        source = (core.repo / relative).resolve(strict=True)
+        source.relative_to(core.repo.resolve(strict=True))
+        data = source.read_bytes()
+        if hashlib.sha256(data).hexdigest() != expected:
+            raise ValueError("core source changed before snapshot: " + relative)
+        entries.append((relative, expected, data))
+    archived = {}
+    for relative, expected, data in entries:
+        destination = Path(snapshot_dir) / "core" / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with destination.open("xb") as stream:
+            stream.write(data)
+        archived["core/" + relative] = expected
+    return archived
+
+
+class ProductionCore:
+    def __init__(self, repo, reference_override=None):
+        self.repo = Path(repo).resolve(strict=True)
+        control = self.repo / "workspace/src/aiformula/control"
+        for name in ("lane_mapping_lya_reference", "lane_mapping_fixed_gnss", "trajectory_follower"):
+            package = control / name
+            if not package.is_dir():
+                raise ValueError("missing production package: " + str(package))
+            sys.path.insert(0, str(package))
+        modules = {}
+        for name in ("lane_mapping_lya_reference.mapping_core", "lane_mapping_lya_reference.mask_localization",
+                     "lane_mapping_lya_reference.tilted_projection",
+                     "lane_mapping_lya_reference.paint_geometry", "lane_mapping_lya_reference.boundary_localization",
+                     "lane_mapping_lya_reference.route", "lane_mapping_lya_reference.controller",
+                     "lane_mapping_fixed_gnss.attitude", "lane_mapping_fixed_gnss.imu_motion",
+                     "lane_mapping_fixed_gnss.motion", "lane_mapping_fixed_gnss.mapping",
+                     "lane_mapping_fixed_gnss.bundle", "trajectory_follower.lya_profile"):
+            module = importlib.import_module(name)
+            path = Path(module.__file__).resolve()
+            if not path.is_relative_to(self.repo):
+                raise ValueError("an already-imported package belongs to another checkout: " + str(path))
+            modules[name] = module
+        # Lazy contour helpers must still be pinned before the first image.
+        # Older immutable paint sources do not acquire new dependencies, and
+        # unused worktree prototypes are not swept into the source manifest.
+        helper_names = ("corner_brackets", "finite_support", "quantized_ribbon", "ribbon_observation",
+                        "footprint_geometry")
+        visited, visiting = set(), set()
+
+        def collect_helpers(name):
+            if name in visiting:
+                raise ValueError("cyclic paint helper dependency: " + name)
+            if name in visited:
+                return
+            visiting.add(name)
+            source = self.repo / "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference" / (name.rsplit(".", 1)[1] + ".py")
+            imports = {node.module for node in ast.walk(ast.parse(source.read_bytes()))
+                       if isinstance(node, ast.ImportFrom) and node.level == 1}
+            for helper in helper_names:
+                if helper in imports:
+                    collect_helpers("lane_mapping_lya_reference." + helper)
+            module = importlib.import_module(name)
+            if not Path(module.__file__).resolve().is_relative_to(self.repo):
+                raise ValueError("an already-imported helper belongs to another checkout: " + str(module.__file__))
+            modules[name] = module
+            visiting.remove(name)
+            visited.add(name)
+
+        collect_helpers("lane_mapping_lya_reference.paint_geometry")
+        self.GroundLookup = modules["lane_mapping_lya_reference.mapping_core"].GroundLookup
+        self.TiltedGroundLookup = modules["lane_mapping_lya_reference.tilted_projection"].TiltedGroundLookup
+        self.Localizer = modules["lane_mapping_lya_reference.mask_localization"].LaneMapLocalizer
+        self.BoundaryLocalizer = modules["lane_mapping_lya_reference.boundary_localization"].BoundaryLaneLocalizer
+        self.extract_boundary_observation = modules["lane_mapping_lya_reference.paint_geometry"].extract_boundary_observation
+        boundary_version = getattr(modules["lane_mapping_lya_reference.paint_geometry"], "BOUNDARY_VERSION", None)
+        boundary_topology = getattr(modules["lane_mapping_lya_reference.paint_geometry"], "TOPOLOGY_REPRESENTATION", None)
+        certified_representation = getattr(modules["lane_mapping_lya_reference.paint_geometry"],
+                                           "CERTIFIED_MODEL_REPRESENTATION", None)
+        if (type(boundary_version) is not int or boundary_version not in (2, 3)
+                or boundary_topology != "confirmed_contour_node_chords_v1"):
+            raise ValueError("production full-mask mapping requires observed boundary graph version 2 or 3")
+        if boundary_version == 3 and certified_representation != "confirmed_creation_chart_domains_v1":
+            raise ValueError("production boundary version 3 requires the certified creation-chart contract")
+        self.build_route = modules["lane_mapping_lya_reference.route"].build_route
+        self.Controller = modules["lane_mapping_lya_reference.controller"].ClosedRouteController
+        self.Pose = modules["lane_mapping_lya_reference.controller"].Pose
+        self.Odometry = modules["lane_mapping_fixed_gnss.motion"].CausalWheelGyroOdometry
+        self.ImuOdometry = modules["lane_mapping_fixed_gnss.imu_motion"].CausalImuWheelOdometry
+        self.MapEngine = modules["lane_mapping_fixed_gnss.mapping"].TeachMapEngine
+        self.build_bundle = modules["lane_mapping_fixed_gnss.bundle"].build_bundle
+        profile = modules["trajectory_follower.lya_profile"]
+        self.source_reference = profile.REFERENCE_SPEED_MPS
+        self.reference = self.source_reference if reference_override is None else finite_number(
+            reference_override, "explicit reference override")
+        self.maximum_teacher_yaw = profile.MAX_YAW_RATE_RPS
+        if not 0 < self.reference <= modules["lane_mapping_fixed_gnss.motion"].DEFAULT_CONFIG["max_speed_mps"]:
+            raise ValueError("LYA reference conflicts with the unchanged production raw-motion speed gate")
+        teacher_path = control / "trajectory_follower/trajectory_follower/lya_0221.py"
+        self.teacher, teacher_evidence = load_teacher(teacher_path, self.reference, self.maximum_teacher_yaw)
+        source_files = [Path(module.__file__) for module in modules.values()] + [teacher_path]
+        graph_module = modules["lane_mapping_lya_reference.mask_localization"]
+        graph_info = (graph_module.graph_backend_info() if hasattr(graph_module, "graph_backend_info")
+                      else dict(backend="python", api_version=None, source_sha256=None))
+        if graph_info["backend"] == "native":
+            native_source = control / "lane_mapping_lya_reference/native/lane_graph_native.c"
+            native_setup = control / "lane_mapping_lya_reference/setup.py"
+            native_binary = Path(graph_module._GRAPH_NATIVE.__file__).resolve(strict=True)
+            native_relative = native_binary.relative_to(self.repo)
+            if graph_info["source_sha256"] != hashlib.sha256(native_source.read_bytes()).hexdigest():
+                raise ValueError("native extension was built from different C source")
+            graph_info = dict(graph_info, binary_relative=native_relative.as_posix(),
+                              binary_sha256=hashlib.sha256(native_binary.read_bytes()).hexdigest(),
+                              python_version=sys.version)
+            source_files.extend((native_source, native_setup))
+        head = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD"],
+                              check=True, capture_output=True, text=True).stdout.strip()
+        self.provenance = dict(repo_head=head, reference_source_mps=self.source_reference,
+            reference_effective_mps=self.reference, reference_overridden=reference_override is not None,
+            source_sha256={str(path.relative_to(self.repo)).replace("\\", "/"):
+                hashlib.sha256(path.read_bytes()).hexdigest() for path in source_files},
+            teacher=teacher_evidence, teach_map_adapter_overrides=dict(TEACH_MAP_CONFIG),
+            graph_acceleration=graph_info,
+            feature_representation="paint_boundary_v1",
+            boundary_version=boundary_version, boundary_topology=boundary_topology,
+            ros_transport=False, gnss_used=False,
+            truth_pose_input=False, route_prior_input=False)
+        if boundary_version == 3:
+            self.provenance["certified_model_representation"] = certified_representation
+
+
+class VisualFitError(ValueError):
+    """Rejected current-image fit with bounded, exact selected-point evidence."""
+    def __init__(self, reason, diagnostics):
+        super().__init__(reason)
+        self.diagnostics = json_safe(diagnostics)
+
+
+TEACH_ASSOCIATION_CONFIG = {
+    # Explicit visual-adapter tuning, not measured vehicle/track constants.
+    # A missing dash may be bridged for association, never filled with points.
+    "maximum_observation_gap_m": 3.0,
+    "maximum_prediction_residual_m": .25,
+    "maximum_heading_change_rad": .35,
+    "maximum_absolute_heading_rad": .9,
+    "prediction_support_bins": 6,
+    "minimum_tangent_span_m": .45,
+    "prediction_huber_residual_m": .08,
+    "prediction_fit_iterations": 3,
+    "ambiguous_residual_margin_m": .05,
+    "protected_nearest_bins_per_side": 3,
+    "maximum_consecutive_unassociated_bins": 2,
+}
+
+
+def _observed_line(points):
+    """Fit point residuals, not equally weighted noisy pairwise derivatives.
+
+    A clipped dash can supply three near points and one point across a gap.
+    Equal weighting of all six pairwise slopes then gives the tiny, noisy near
+    baselines half the total weight. Fit the actual observations instead, with
+    centered/scaled x for conditioning and the existing .08 m Huber convention.
+    Huber is a bounded adapter loss, not calibrated measurement covariance.
+    """
+    values = np.asarray(points, dtype=float)
+    center, scale = float(np.mean(values[:, 0])), float(np.ptp(values[:, 0]))
+    if scale <= 1e-9:
+        return 0., float(np.median(values[:, 1]))
+    design = np.column_stack(((values[:, 0] - center) / scale, np.ones(len(values))))
+    weight = np.ones(len(values))
+    for _ in range(TEACH_ASSOCIATION_CONFIG["prediction_fit_iterations"]):
+        root_weight = np.sqrt(weight)
+        coefficients = np.linalg.lstsq(design * root_weight[:, None], values[:, 1] * root_weight,
+                                      rcond=None)[0]
+        residual = values[:, 1] - design @ coefficients
+        weight = np.minimum(1., TEACH_ASSOCIATION_CONFIG["prediction_huber_residual_m"]
+                            / np.maximum(np.abs(residual), 1e-9))
+    slope = float(coefficients[0] / scale)
+    return slope, float(coefficients[1] - slope * center)
+
+
+def _associate_current_boundaries(points):
+    """Choose supported current-frame chains, not a new lane in every x bin.
+
+    The nearest candidate seeds each side. Subsequent candidates must continue
+    that observed chain; no restart beyond a dash gap, past-frame width, image,
+    pose, or authored track geometry is used. All discarded candidates remain
+    in diagnostics. They are NOT post-association fit outliers/map evidence.
+    """
+    cfg = TEACH_ASSOCIATION_CONFIG
+    rows = {0: [], 1: []}
+    if len(points):
+        bins = np.floor(points[:, 0] / .15).astype(int)
+        for cell in np.unique(bins):
+            selected = points[bins == cell]
+            selected = selected[np.argsort(selected[:, 1])]
+            groups = np.split(selected, np.flatnonzero(np.diff(selected[:, 1]) > .25) + 1)
+            centers = [np.median(group, axis=0) for group in groups if len(group) >= 2]
+            for side in (0, 1):
+                candidates = [center for center in centers if (center[1] > .20 if side else center[1] < -.20)]
+                if candidates:
+                    rows[side].append(candidates)
+    bands, records, seed_failures, continuity_failures = {0: [], 1: []}, [], [], []
+    for side in (0, 1):
+        chain = bands[side]
+        disconnected_bins = 0
+        # A two-bin clipped dash cannot determine a tangent for a 3 m gap:
+        # centimetres of edge quantization would become metres of extrapolation.
+        # Estimate an initial robust tangent from a bounded near-to-far set in
+        # THIS image. These are hypotheses, not automatically admitted inputs;
+        # each still has to pass continuity and the final protected-near fit.
+        seed = []
+        for candidates in rows[side][:cfg["prediction_support_bins"]]:
+            nearest = min(candidates, key=lambda point: (abs(point[1]), point[0]))
+            if seed and nearest[0] - seed[-1][0] > cfg["maximum_observation_gap_m"]:
+                break
+            seed.append(nearest)
+        seed_line = _observed_line(seed) if seed else (0., 0.)
+        for row_index, candidates in enumerate(rows[side]):
+            if chain:
+                recent = np.asarray(chain[-cfg["prediction_support_bins"]:])
+                use_chain_tangent = recent[-1, 0] - recent[0, 0] >= cfg["minimum_tangent_span_m"]
+                slope, intercept = _observed_line(recent) if use_chain_tangent else seed_line
+                prediction_source = "associated_current_frame_support" if use_chain_tangent else "current_frame_seed_hypothesis"
+                accepted_support_residual = float(np.max(np.abs(recent[:, 1] - (slope * recent[:, 0] + intercept))))
+            else:
+                slope, intercept = seed_line
+                prediction_source = "axis_near_seed"
+                accepted_support_residual = 0.
+            eligible, details = [], []
+            for candidate in candidates:
+                gap = 0. if not chain else float(candidate[0] - chain[-1][0])
+                prediction = 0. if not chain else float(slope * candidate[0] + intercept)
+                residual = abs(float(candidate[1]) - prediction)
+                reason = "eligible"
+                if chain:
+                    # A direction is estimated over the visible support span,
+                    # not by differentiating adjacent 15 cm noisy pixel bins.
+                    heading = math.atan2(float(candidate[1] - recent[0, 1]), float(candidate[0] - recent[0, 0]))
+                    if accepted_support_residual > cfg["maximum_prediction_residual_m"]:
+                        reason = "predictor_inconsistent_with_accepted_support"
+                    elif gap <= 0 or gap > cfg["maximum_observation_gap_m"]:
+                        reason = "observation_gap"
+                    elif residual > cfg["maximum_prediction_residual_m"]:
+                        reason = "prediction_residual"
+                    elif abs(heading) > cfg["maximum_absolute_heading_rad"]:
+                        reason = "absolute_heading"
+                    elif len(chain) >= 3 and abs(heading - math.atan(slope)) > cfg["maximum_heading_change_rad"]:
+                        reason = "heading_change"
+                detail = dict(side_left=side, point=candidate.tolist(), row_index=row_index,
+                              prediction_y_m=None if not chain else prediction,
+                              prediction_residual_m=None if not chain else residual,
+                              prediction_source=prediction_source,
+                              accepted_support_prediction_residual_m=accepted_support_residual,
+                              gap_m=gap, associated=False, reason=reason)
+                details.append(detail)
+                if reason == "eligible":
+                    eligible.append((residual, candidate, detail))
+            eligible.sort(key=lambda item: (item[0], item[1][0], item[1][1]))
+            ambiguous = (len(eligible) > 1
+                         and eligible[1][0] - eligible[0][0] < cfg["ambiguous_residual_margin_m"])
+            if eligible and not ambiguous:
+                _, chosen, detail = eligible[0]
+                chain.append(chosen)
+                detail.update(associated=True, reason="near_seed" if len(chain) == 1 else "chain_continuation")
+                disconnected_bins = 0
+            elif row_index < cfg["protected_nearest_bins_per_side"]:
+                seed_failures.append(dict(side_left=side, row_index=row_index,
+                                          reason="ambiguous_near_support" if ambiguous else "disconnected_near_support"))
+            elif chain and any(0 < detail["gap_m"] <= cfg["maximum_observation_gap_m"] for detail in details):
+                # An abruptly broken observed boundary cannot silently become a
+                # successful shorter fit. Distinguish repeated contradictory
+                # near-continuations from unrelated paint beyond a genuine gap.
+                disconnected_bins += 1
+                if disconnected_bins == cfg["maximum_consecutive_unassociated_bins"] + 1:
+                    continuity_failures.append(dict(side_left=side, row_index=row_index,
+                        consecutive_unassociated_bins=disconnected_bins, reason="repeated_broken_continuation"))
+            else:
+                disconnected_bins = 0
+            for detail in details:
+                if detail["reason"] == "eligible":
+                    detail["reason"] = "ambiguous_candidates" if ambiguous else "less_consistent_candidate"
+            records.extend(details)
+    diagnostics = dict(association_policy="current_frame_near_supported_bounded_continuity",
+        association_tuning=dict(cfg), association_tuning_provenance="adapter_design_not_vehicle_measurement",
+        association_candidates=records, association_near_support_failures=seed_failures,
+        association_continuity_failures=continuity_failures,
+        association_candidate_count=len(records),
+        association_selected_count=sum(len(bands[side]) for side in (0, 1)),
+        association_unselected_count=sum(not record["associated"] for record in records),
+        association_unselected_reasons=dict(Counter(record["reason"] for record in records if not record["associated"])),
+        association_history_frames=0, association_generated_points=0,
+        fit_outlier_budget_scope="associated_chain_only; unassociated candidates are separately audited")
+    return bands, diagnostics
+
+
+def visual_target(points, sensitivity=None):
+    """Fit two current-image boundaries without demanding simultaneous paint.
+
+    虚线在很多横截面没有像素，不能先逐截面配对再判断“两条线”。这里分别
+    汇总左右观测，再拟合局部平行边界的公共二次项/切向和各自截距。它是当前
+    图像的控制目标估计，不会把拟合/补间点送入建图。没有沿用旧帧或赛道先验。
+    """
+    points = np.asarray(points, dtype=float)
+    if points.ndim != 2 or points.shape[1] != 2 or not np.all(np.isfinite(points)):
+        raise ValueError("visual target points must be finite Nx2")
+    sensitivity = np.zeros(len(points)) if sensitivity is None else np.asarray(sensitivity, dtype=float)
+    if (sensitivity.shape != (len(points),) or not np.all(np.isfinite(sensitivity))
+            or np.any(sensitivity < 0)):
+        raise ValueError("visual target sensitivity must be finite nonnegative aligned values")
+    # Teacher fitting can use the projector's stable candidate tier (<= .5),
+    # with reduced influence for sensitive far points. Mapping's reliable-vote
+    # tier and repeat localization remain unchanged at .1 m per pixel.
+    points = np.column_stack((points, sensitivity))
+    # This is a teacher observation-selection window, not a map projection ROI.
+    points = points[(points[:, 0] > .25) & (np.abs(points[:, 1]) < 5.) & (points[:, 2] <= .5)]
+    bands, association = _associate_current_boundaries(points)
+    diagnostics = dict(fit_assumption="current_image_locally_parallel_quadratic_boundaries",
+        map_points_generated_by_fit=0, observation_source="current_mask_only",
+        sensitivity_weighting="inverse_0.02_plus_J4_per_side_normalized_not_covariance",
+        sensitivity_weight_floor_m_per_px=.02, sensitivity_is_calibrated_covariance=False,
+        selected_right_xy_sensitivity=np.asarray(bands[0]).tolist(),
+        selected_left_xy_sensitivity=np.asarray(bands[1]).tolist(),
+        fit_points=[],
+        fit_points_columns=["x_m", "y_m", "J4_m_per_px", "side_left", "residual_m", "inlier"],
+        inlier_policy=dict(max_point_residual_m=.15, maximum_dropped_bin_fraction_per_side=.2,
+                           minimum_retained_weight_fraction_per_side=.8, protected_nearest_bins_per_side=3))
+    diagnostics.update(association)
+
+    def reject(reason):
+        raise VisualFitError(reason, diagnostics)
+
+    if any(len(bands[side]) < 3 for side in (0, 1)):
+        reject("current mask does not show a supported two-sided corridor")
+    if diagnostics["association_near_support_failures"]:
+        reject("current mask lane association has ambiguous or disconnected nearest support")
+    if diagnostics["association_continuity_failures"]:
+        reject("current mask lane association repeatedly loses observed continuity")
+    right, left = np.asarray(bands[0]), np.asarray(bands[1])
+    support = [[float(np.min(band[:, 0])), float(np.max(band[:, 0]))] for band in (right, left)]
+    overlap = [max(span[0] for span in support), min(span[1] for span in support)]
+    if (any(span[1] - span[0] < .45 for span in support)
+            or max(span[1] for span in support) - min(span[0] for span in support) < 1.5
+            or overlap[1] - overlap[0] < .30):
+        reject("observed lane boundaries lack usable longitudinal support/overlap")
+    observed = np.vstack((right, left))
+    is_left = np.concatenate((np.zeros(len(right)), np.ones(len(left))))
+    design = np.column_stack((observed[:, 0] ** 2, observed[:, 0], 1 - is_left, is_left))
+    # Equal per-side total weight keeps the long solid line from drowning out a
+    # shorter visible dash. Huber weights only affect this fit, never map votes.
+    # J4 is geometric sensitivity (m/px), not calibrated measurement sigma.
+    # Inverse-J is a conservative leverage weight, NOT an inverse-variance
+    # likelihood. Squaring it unjustifiably lets a few near bins dominate the
+    # shared local-curve approximation and can reject consistent far dashes.
+    # The explicit .02 m/px floor bounds leverage; equal side totals prevent a
+    # solid line overwhelming a dash. This is one fixed rule, no per-frame
+    # weight search, cached lane width, calibrated covariance or future image.
+    base_weight = 1. / (.02 + observed[:, 2])
+    base_weight[:len(right)] *= .5 / np.sum(base_weight[:len(right)])
+    base_weight[len(right):] *= .5 / np.sum(base_weight[len(right):])
+    def fit(keep):
+        selected_weight = base_weight * keep
+        for side in (0, 1):
+            side_mask = is_left == side
+            selected_weight[side_mask] *= .5 / np.sum(selected_weight[side_mask])
+        weight = selected_weight.copy()
+        for _ in range(3):
+            coefficients, _, rank, _ = np.linalg.lstsq(design * np.sqrt(weight[:, None]),
+                                                      observed[:, 1] * np.sqrt(weight), rcond=None)
+            if rank != 4:
+                reject("current mask boundary fit is rank deficient")
+            residual = observed[:, 1] - design @ coefficients
+            weight = selected_weight * np.minimum(1., .08 / np.maximum(np.abs(residual), 1e-9))
+        return coefficients, residual
+
+    keep = np.ones(len(observed), dtype=bool)
+    coefficients, residual = fit(keep)
+    diagnostics["unfiltered_side_fit_rmse_m"] = [float(np.sqrt(np.mean(residual[is_left == side] ** 2)))
+                                                 for side in (0, 1)]
+    # A dash gap can expose an adjacent painted boundary in one forward bin.
+    # Huber weights alone do not identify that association: explicitly exclude
+    # inconsistent observations, never invent a replacement point. At most 20%
+    # of either side and 20% of its sensitivity weight may be removed; all three
+    # nearest supported bins must remain. These checks prevent accepting a far
+    # outer lane by discarding the near lane. There is no temporal width cache.
+    for _ in range(3):
+        selected = keep & (np.abs(residual) <= .15)
+        diagnostics["fit_points_columns"] = ["x_m", "y_m", "J4_m_per_px", "side_left", "residual_m", "inlier"]
+        diagnostics["fit_points"] = np.column_stack((observed, is_left, residual, selected)).tolist()
+        fractions, weights = [], []
+        for side in (0, 1):
+            side_mask = is_left == side
+            side_indices = np.flatnonzero(side_mask)
+            fraction = 1. - float(np.mean(selected[side_mask]))
+            retained = float(np.sum(base_weight[side_mask & selected]) / np.sum(base_weight[side_mask]))
+            fractions.append(fraction)
+            weights.append(retained)
+            if (fraction > .20 + 1e-12 or retained < .80
+                    or not np.all(selected[side_indices[:3]])):
+                diagnostics.update(dropped_bin_fraction_per_side=fractions, retained_weight_fraction_per_side=weights)
+                reject("current mask lane association loses too much or nearest support")
+        diagnostics.update(dropped_bin_fraction_per_side=fractions, retained_weight_fraction_per_side=weights)
+        if np.array_equal(selected, keep):
+            break
+        keep = selected
+        coefficients, residual = fit(keep)
+    if np.any(np.abs(residual[keep]) > .15):
+        reject("current mask supported boundary residual exceeds 0.15 m")
+    diagnostics["fit_points"] = np.column_stack((observed, is_left, residual, keep)).tolist()
+    right, left = observed[(is_left == 0) & keep], observed[(is_left == 1) & keep]
+    support = [[float(np.min(band[:, 0])), float(np.max(band[:, 0]))] for band in (right, left)]
+    overlap = [max(span[0] for span in support), min(span[1] for span in support)]
+    if (any(len(band) < 3 for band in (right, left)) or any(span[1] - span[0] < .45 for span in support)
+            or max(span[1] for span in support) - min(span[0] for span in support) < 1.5
+            or overlap[1] - overlap[0] < .30):
+        reject("supported lane boundaries lack usable longitudinal support/overlap")
+    rmse = float(np.sqrt(np.mean(residual[keep] ** 2)))
+    side_rmse = [float(np.sqrt(np.mean(residual[(is_left == side) & keep] ** 2))) for side in (0, 1)]
+    if max(side_rmse) > .15:
+        reject("current mask boundary fit exceeds 0.15 m residual")
+    quadratic, linear, right_offset, left_offset = coefficients
+    width = float(left_offset - right_offset)
+    if not 1. <= width <= 5.:
+        reject("current mask fitted lane width outside 1..5 m")
+    # Lookahead is the closest jointly observed location, at least 1 m. Thus a
+    # front camera that first sees its dashed boundary at 3 m does not invent a
+    # 1 m target. This is an explicit visual-adapter assumption, not a speed override.
+    target_x = max(1., overlap[0])
+    if target_x > overlap[1]:
+        reject("no observed support for a forward LYA target")
+    slope = 2 * quadratic * target_x + linear
+    curvature = float(2 * quadratic / (1 + slope ** 2) ** 1.5)
+    center_y = quadratic * target_x ** 2 + linear * target_x + (left_offset + right_offset) * .5
+    target = (float(target_x), float(center_y), math.atan(float(slope)))
+    diagnostics.update(corridor_bins=int(np.count_nonzero(keep)), fit_rmse_m=rmse,
+        side_fit_rmse_m=side_rmse, right_support_x_m=support[0], left_support_x_m=support[1],
+        joint_support_x_m=overlap, lookahead_m=target_x,
+        fit_assumption="current_image_locally_parallel_quadratic_boundaries",
+        sensitivity_weighting="inverse_0.02_plus_J4_per_side_normalized_not_covariance",
+        maximum_used_sensitivity_m_per_px=float(np.max(observed[keep, 2])),
+        candidate_tier_bins=int(np.count_nonzero(observed[keep, 2] > .1)),
+        map_points_generated_by_fit=0, observed_width_m=width,
+        target_body=list(target), curvature_1pm=curvature)
+    return target, curvature, diagnostics
+
+
+class Journal:
+    def __init__(self, directory):
+        self.directory = Path(directory).resolve()
+        self.directory.mkdir(parents=True, exist_ok=False)
+        self.stream = (self.directory / "events.jsonl").open("x", encoding="utf-8", buffering=1)
+        self.lock = threading.Lock()
+
+    def __call__(self, event):
+        encoded = json.dumps(json_safe(event), allow_nan=False, separators=(",", ":")) + "\n"
+        with self.lock:
+            self.stream.write(encoded)
+            self.stream.flush()
+
+    def close(self):
+        with self.lock:
+            self.stream.close()
+
+    def save_refinement(self, points, votes, *, sequence, stamp_ns, route, anchor):
+        """Separate derived layer: it cannot replace the frozen driving geometry."""
+        route_bytes = json.dumps(json_safe(route), sort_keys=True, allow_nan=False).encode()
+        record = dict(schema_version=1, kind="repeat_observation_consensus",
+            source_frontier_ns=stamp_ns, sequence=sequence, uses_refinement_for_matching=False,
+            modifies_frozen_route=False, route_sha256=hashlib.sha256(route_bytes).hexdigest(),
+            frozen_anchor_sha256=hashlib.sha256(np.asarray(anchor, dtype=np.float64).tobytes()).hexdigest(),
+            points=np.asarray(points).tolist(), votes=np.asarray(votes).tolist())
+        path = self.directory / ("repeat_refinement_" + uuid.uuid4().hex[:12] + ".json")
+        with path.open("x", encoding="utf-8") as stream:
+            json.dump(record, stream, allow_nan=False, separators=(",", ":"))
+            stream.flush()
+        return path
+
+
+class LaneSession:
+    """Single-owner, fail-closed simulation state; reset is always explicit."""
+    def __init__(self, core, journal, *, clock=time.monotonic_ns, frontend=None, motion_channel_factory=None):
+        self.core, self.journal, self.clock = core, journal, clock
+        self.image_lock = threading.Lock()
+        # An instance is owned by exactly one session. None retains the old
+        # paired-fit path for explicit historical replay and its unit fixtures;
+        # the CLI defaults to the complete pinned upstream image frontend.
+        self.frontend = frontend
+        self.admission = self.motion_channel = None
+        self.image_generation = 0
+        self.image_receipt_ns = None
+        self.image_capture_qpc = None
+        if motion_channel_factory is not None:
+            from motion_channel import Admission
+            self.admission = Admission()
+            self.motion_channel = motion_channel_factory(core, journal, self.admission)
+        # The simulator reports wheel RPM after its shaft-to-wheel conversion.
+        # .254 m and ratio 1 are encoder calibration, not edits to plant/radii.
+        self.sensor = {"wheel_diameter_m": .254, "motor_to_wheel_ratio": 1.0}
+        self.motion = core.Odometry({"wheel_diameter_m": self.sensor["wheel_diameter_m"]})
+        self.engine = None
+        self.phase, self.reason = "WARMUP", "waiting for stationary sensor/mask bootstrap"
+        self.sequence = -1
+        self.last_sim_ns = self.last_receipt_ns = None
+        self.last_response = None
+        self.last_request_digest = None
+        self.calibration = self.lookup = None
+        self.sample = None
+        self.poses = deque(maxlen=256)
+        self.estimated = np.zeros(3)
+        self.travel = self.turn = 0.
+        self.last_path_pose = None
+        self.left_start = False
+        self.stop_since_ns = None
+        self.start_ns = None
+        self.start_pose = None
+        self.map_origin_pose = None
+        self.prepare_executor = self.prepare_future = None
+        self.prepare_tracking_state = self.prepare_matcher_state = None
+        self.repeat_streak = 0
+        self.ready_for_start = False
+        self.start_requested = False
+        self.matcher = self.controller = self.route = None
+        self.snapshot = None
+        self.route_snapshot = None
+        self.lap_trace_count = self.lap_trace_stamp_ns = self.lap_trace_pose = None
+        self.last_control_ns = None
+        self.counts = Counter()
+        self.map_preview = []
+        self.refined_preview = []
+        self.journal(dict(event="startup", provenance=core.provenance, sensor_calibration=self.sensor,
+            motion_transport="legacy-image-batch-replay" if self.motion_channel is None else "awaiting_motion_protocol",
+            teacher_frontend="paired" if frontend is None else "upstream",
+            teacher_frontend_provenance=None if frontend is None else frontend.provenance,
+            teacher_frontend_epoch=None if frontend is None else frontend.epoch,
+            sensor_note="simulated wheel/model RPM and raw IMU; no world pose or INS orientation", phase=self.phase))
+
+    def _uses_raw_attitude(self):
+        return (self.motion_channel is not None
+                and self.motion_channel.protocol == "independent-motion-imu-v2")
+
+    def _attitude_metadata(self):
+        attitude = None if self.sample is None else getattr(self.sample, "attitude", None)
+        if attitude is None:
+            return dict(required=self._uses_raw_attitude(), ready=False)
+        return dict(required=True, ready=True, stamp_ns=attitude.stamp_ns,
+                    imu_source_stamp_ns=attitude.source_stamp_ns,
+                    imu_received_steady_ns=attitude.received_steady_ns,
+                    up_body=list(attitude.up_body), gyro_bias=list(attitude.gyro_bias),
+                    initialization=asdict(attitude.initialization),
+                    dynamic_acceleration_used=False, ins_orientation_used=False,
+                    ground_assumption="level plane through base origin; no heave compensation")
+
+    def hold(self, reason):
+        if self.admission is not None:
+            self.admission.revoke(reason)
+        self.phase, self.reason = "HOLD", str(reason)
+        self.ready_for_start = False
+        self.start_requested = False
+        # A transport fault must also revoke an earlier moving HTTP response.
+        self.last_response = None
+        if self.prepare_executor is not None:
+            # An immutable diagnostic build may finish, but a late worker result
+            # must never rearm this terminal session or publish a moving command.
+            self.prepare_executor.shutdown(wait=False, cancel_futures=True)
+            self.prepare_executor = None
+
+    @contextmanager
+    def _commit_guard(self):
+        if self.admission is None:
+            yield True
+            return
+        with self.admission.guard(self.image_generation):
+            self.motion_channel.check_health()
+            if self.image_receipt_ns is not None and self.clock() - self.image_receipt_ns > 200_000_000:
+                raise RuntimeError("processing exceeded 200 ms motion freshness budget")
+            if self.image_capture_qpc is not None:
+                from motion_channel import ticks_ns
+                age = ticks_ns(self.motion_channel.counter() - self.image_capture_qpc,
+                               self.motion_channel.frequency)
+                if not 0 <= age <= 200_000_000:
+                    raise RuntimeError("image capture exceeded 200 ms freshness budget")
+            yield True
+
+    def _check_motion(self):
+        if self.motion_channel is not None:
+            self.motion_channel.check_health()
+            with self._commit_guard():
+                pass
+
+    def _sensor_calibration(self, supplied):
+        if supplied is None:
+            return
+        expected = {"wheel_diameter_m": .254, "motor_to_wheel_ratio": 1.0}
+        if not isinstance(supplied, dict) or set(supplied) != set(expected):
+            raise ValueError("sensor calibration requires wheel_diameter_m and motor_to_wheel_ratio")
+        values = {key: finite_number(supplied[key], "sensor calibration " + key) for key in expected}
+        if any(abs(values[key] - expected[key]) > 1e-6 for key in expected):
+            raise ValueError("sensor calibration differs from wheel-RPM/.254m/ratio1 adapter")
+        if self.sample is not None:
+            if values != self.sensor:
+                raise ValueError("sensor calibration changed within a run")
+            return
+        # Unity serializes float32 geometry as a nearby double. Preserve that
+        # observed calibration in the odometer; do not round or modify the car.
+        self.sensor = values
+        self.motion = self.core.Odometry({"wheel_diameter_m": values["wheel_diameter_m"]})
+        self.journal(dict(event="sensor_calibration", measured_values=values,
+                          nominal_adapter=expected, admission_tolerance=1e-6))
+
+    def _camera(self, camera):
+        base_fields = {"width", "height", "K", "T_base_camera"}
+        plane_fields = {"observation_plane_offset_m", "observation_plane_source"}
+        if not isinstance(camera, dict) or set(camera) not in (base_fields, base_fields | plane_fields):
+            raise ValueError("camera requires width, height, K, T_base_camera and optionally both observation-plane fields")
+        plane_kwargs = {}
+        if plane_fields <= set(camera):
+            offset = finite_number(camera["observation_plane_offset_m"], "observation-plane offset")
+            if (offset != OBSERVATION_PLANE_OFFSET_M
+                    or camera["observation_plane_source"] != OBSERVATION_PLANE_SOURCE):
+                raise ValueError("observation-plane calibration differs from authored semantic paint")
+            if not self._uses_raw_attitude():
+                raise ValueError("observation-plane calibration requires raw IMU protocol; no flat fallback")
+            plane_kwargs["plane_offset_m"] = offset
+        width, height = camera["width"], camera["height"]
+        if (type(width) is not int or type(height) is not int or min(width, height) < 2
+                or width * height > 2_000_000):
+            raise ValueError("camera dimensions outside image budget")
+        intrinsic = np.asarray(camera["K"], dtype=float).reshape(3, 3)
+        transform = np.asarray(camera["T_base_camera"], dtype=float).reshape(4, 4)
+        rotation = transform[:3, :3]
+        if (not np.all(np.isfinite(intrinsic)) or not np.all(np.isfinite(transform))
+                or intrinsic[0, 0] <= 0 or intrinsic[1, 1] <= 0
+                or not np.allclose(intrinsic[2], [0., 0., 1.])
+                or not np.allclose(transform[3], [0., 0., 0., 1.])
+                or not np.allclose(rotation.T @ rotation, np.eye(3), atol=1e-5)
+                or abs(np.linalg.det(rotation) - 1.) > 1e-5):
+            raise ValueError("camera K/rigid optical-frame transform invalid")
+        canonical = dict(width=width, height=height, K=intrinsic.ravel().tolist(),
+                         T_base_camera=transform.ravel().tolist())
+        if plane_kwargs:
+            canonical.update(observation_plane_offset_m=offset,
+                             observation_plane_source=OBSERVATION_PLANE_SOURCE)
+        if self.calibration is not None and canonical != self.calibration:
+            raise ValueError("camera calibration changed within a run")
+        if self.lookup is None:
+            lookup_class = self.core.TiltedGroundLookup if self._uses_raw_attitude() else self.core.GroundLookup
+            self.lookup = lookup_class(width, height, intrinsic, transform, .5, **plane_kwargs)
+            self.calibration = canonical
+            self.journal(dict(event="calibration", camera=canonical,
+                              projection="causal_raw_imu_level_plane" if self._uses_raw_attitude() else "static_plane"))
+
+    def _motion(self, rows, stamp, receipt):
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 512:
+            raise ValueError("motion must contain 1..512 causal samples")
+        for row in rows:
+            if not isinstance(row, dict) or set(row) != {"stamp", "left_rpm", "right_rpm", "gyro_z"}:
+                raise ValueError("motion fields must be stamp,left_rpm,right_rpm,gyro_z")
+            sample_stamp = source_ns(row["stamp"])
+            if sample_stamp > stamp:
+                raise ValueError("future motion sample relative to image")
+            self.motion.accept_gyro(sample_stamp, receipt, row["gyro_z"])
+            self.sample = self.motion.accept_wheels(sample_stamp, receipt,
+                row["left_rpm"] / self.sensor["motor_to_wheel_ratio"],
+                row["right_rpm"] / self.sensor["motor_to_wheel_ratio"], stamp, receipt)
+            self.poses.append(self.sample)
+            if self.sample.speed < .05 and abs(self.sample.yaw_rate) < .05:
+                if self.stop_since_ns is None:
+                    self.stop_since_ns = sample_stamp
+            else:
+                self.stop_since_ns = None
+        if stamp - self.sample.stamp_ns > 100_000_000:
+            raise ValueError("mask has no past motion within 100 ms")
+
+    def _mask(self, encoded, *, return_image=False):
+        if not isinstance(encoded, str) or len(encoded) > 10 * 1024 * 1024:
+            raise ValueError("mask PNG payload outside budget")
+        data = base64.b64decode(encoded, validate=True)
+        with Image.open(io.BytesIO(data)) as image:
+            expected = (self.calibration["width"], self.calibration["height"])
+            if image.format != "PNG" or image.size != expected or image.mode not in ("L", "RGB", "RGBA"):
+                raise ValueError("mask PNG dimensions/format do not match calibration")
+            array = np.asarray(image)
+            if array.ndim == 3:
+                if not np.array_equal(array[:, :, 0], array[:, :, 1]) or not np.array_equal(array[:, :, 0], array[:, :, 2]):
+                    raise ValueError("RGB mask must have identical grayscale channels")
+                array = array[:, :, 0]
+        self.counts["mask_frames"] += 1
+        if self._uses_raw_attitude():
+            attitude = getattr(self.sample, "attitude", None)
+            if attitude is None:
+                if self.phase != "WARMUP":
+                    raise ValueError("active frame has no initialized raw IMU attitude")
+                # Still validate/hash the actual image, but do not project it
+                # using invented level attitude while the raw IMU initializes.
+                result = (np.empty((0, 2)), np.empty(0), dict(
+                    raw_pixels=int(np.count_nonzero(array > 127)), metric_pixels=0, stable_pixels=0,
+                    mask_sha256=hashlib.sha256(data).hexdigest(), projection_waiting_for_raw_imu=True))
+                return result + (array,) if return_image else result
+            if attitude.stamp_ns != self.sample.stamp_ns:
+                raise ValueError("projection attitude is not bound to selected motion source")
+            points, sensitivity, counts = self.lookup.project_mask_with_sensitivity(array, 127, attitude.up_body)
+        else:
+            points, sensitivity, counts = self.lookup.project_mask_with_sensitivity(array, 127)
+        result = (points, sensitivity, dict(raw_pixels=counts.raw_pixels, metric_pixels=counts.metric_pixels,
+            stable_pixels=counts.stable_pixels, mask_sha256=hashlib.sha256(data).hexdigest()))
+        # The map always receives the full calibrated mask projection above.
+        # Only the teacher consumes the image; its ROI/clouds are never map input.
+        return result + (array,) if return_image else result
+
+    def _stopped(self, stamp):
+        return self.stop_since_ns is not None and stamp - self.stop_since_ns >= 1_000_000_000
+
+    def queue_start(self):
+        """Operator request only: the bridge must claim command ownership first.
+
+        No Unity editor evaluation is needed while physics is running. This
+        request does not create a map, advance phase or send a motion command.
+        """
+        if self.admission is not None and self.admission.reason is not None:
+            return False, "motion admission revoked; explicit new run required"
+        if self.phase != "WARMUP" or not self.ready_for_start:
+            return False, "start requires ready stationary WARMUP"
+        now = self.clock()
+        if self.last_receipt_ns is None or not 0 <= now - self.last_receipt_ns <= 500_000_000:
+            return False, "start requires sensor reception within 500 ms"
+        if not self.start_requested:
+            self.journal(dict(event="operator_start_queued", received_monotonic_ns=now,
+                latest_sequence=self.sequence, latest_source_ns=self.last_sim_ns,
+                phase=self.phase, teacher_command_enabled=False))
+            self.start_requested = True
+        return True, "queued; bridge ownership and next operation=start required"
+
+    def status(self):
+        latest_time = 0. if self.last_sim_ns is None else (self.last_sim_ns - SOURCE_EPOCH_NS) * 1e-9
+        last = self.last_response or {}
+        details = dict(last.get("metrics", {}), provenance=self.core.provenance,
+                       last_processed_sim_time=last.get("sim_time"),
+                       command_is_last_issued_not_live_measurement=True,
+                       reception_age_ms=None if self.last_receipt_ns is None else
+                       (self.clock() - self.last_receipt_ns) * 1e-6)
+        moving = self.phase in {"TEACH", "REPEAT"} and last.get("phase") == self.phase
+        return self.response(latest_time, details,
+                             last.get("v", 0.) if moving else 0., last.get("w", 0.) if moving else 0.)
+
+    def _prior(self):
+        raw = np.array([self.sample.x, self.sample.y, self.sample.yaw])
+        if self.map_origin_pose is None:
+            return raw
+        origin = self.map_origin_pose
+        dx, dy = raw[:2] - origin[:2]
+        c, s = math.cos(origin[2]), math.sin(origin[2])
+        return np.array([c * dx + s * dy, -s * dx + c * dy, wrap(raw[2] - origin[2])])
+
+    def _map_frame(self, points, sensitivity, prior, stamp, metrics):
+        kwargs = {} if self.admission is None else {"commit_guard": self._commit_guard}
+        kwargs.update(self._boundary_kwargs(stamp))
+        # The source interval belongs to the capture-acknowledged raw-motion
+        # tail, not the later image or HTTP clock. Do not relabel its timestamp.
+        result = self.engine.process(points, sensitivity, prior, stamp,
+                                     motion_source_stamp_ns=self.sample.stamp_ns, **kwargs)
+        metrics["mapping"] = json_safe(result)
+        self.estimated = np.asarray(result["pose_xyyaw"])
+        if not result["accepted"]:
+            self.journal(dict(event="mapping_rejected", sequence=self.sequence,
+                stamp_ns=stamp, map_frame_prior=prior.tolist(), mapping=json_safe(result),
+                teacher_observation=metrics.get("teacher_observation"), phase=self.phase,
+                action="HOLD; no teacher command or map continuation"))
+            raise ValueError("teach map rejected: " + result["reason"])
+
+    def _boundary_kwargs(self, stamp):
+        if getattr(self.core, "provenance", {}).get("feature_representation") != "paint_boundary_v1":
+            return {}  # Historical isolated XY cores, not the production loader.
+        observation = getattr(self, "boundary_observation", None)
+        if observation is None or observation.source_stamp_ns != stamp:
+            raise ValueError("full-mask boundary observation missing or from another image")
+        return {"boundary_observation": observation}
+
+    def _teach(self, points, sensitivity, stamp, start_requested, diagnostics=None, *, image=None):
+        prior = self._prior()
+        # Share this frame's diagnostics with step so an exception cannot erase
+        # the rejected production match and the valid current-image observation.
+        metrics = {} if diagnostics is None else diagnostics
+        try:
+            if self.frontend is None:
+                target, curvature, visual = visual_target(points, sensitivity)
+                omega_t = self.core.reference * curvature
+                visual = dict(visual, frontend="paired", omega_t=omega_t)
+            else:
+                # The pinned LYA frontend keeps its original four-field camera
+                # contract and body-origin projection. Observation-plane metadata
+                # belongs to the mapper; never disguise it as modified camera T.
+                teacher_camera = {key: self.calibration[key]
+                                  for key in ("width", "height", "K", "T_base_camera")}
+                observation = self.frontend.process(image, teacher_camera, self.sequence, stamp)
+                target, omega_t = observation["target"], observation["omega_t"]
+                visual = dict(observation["metadata"], frontend="upstream",
+                    target_body=target, omega_t=omega_t, counts=observation["counts"],
+                    mode=observation["mode"], map_points_generated_by_fit=0,
+                    projection_assumption="pinned upstream body-origin plane; no observation-plane or raw-attitude correction")
+        except ValueError as error:
+            if not hasattr(error, "diagnostics"):
+                raise
+            metrics["teacher_observation"] = json_safe(error.diagnostics)
+            self.journal(dict(event="visual_rejected", sequence=self.sequence, stamp_ns=stamp,
+                reason=str(error), diagnostics=json_safe(error.diagnostics), action="HOLD"))
+            raise
+        metrics["teacher_observation"] = visual
+        if self.phase == "WARMUP":
+            self.estimated = prior.copy()
+            self.ready_for_start = self._stopped(stamp)
+            self.reason = "ready for explicit Start" if self.ready_for_start else "stationary sensor/vision warmup"
+            if not start_requested:
+                return 0., 0., metrics
+            if not self.ready_for_start:
+                raise ValueError("Start requires one second stopped with a valid current-image corridor")
+            # No map exists before this explicit start. Production's 5 s / 2 m
+            # bootstrap budget measures the moving teach run, not user UI wait.
+            self.engine = self.core.MapEngine(config=TEACH_MAP_CONFIG)
+            self.phase, self.reason, self.start_ns = "TEACH", "mask-derived LYA teach", stamp
+            self.start_pose = prior.copy()
+            # Choose the teach-start coordinate frame once, before the first
+            # map observation. Keep raw sensor continuity and strict timestamps;
+            # no reset or subsequent map reanchoring occurs.
+            self.map_origin_pose = prior.copy()
+            prior = self._prior()
+            self.journal(dict(event="teach_frame_origin", stamp_ns=stamp,
+                raw_odom_origin=self.map_origin_pose.tolist(),
+                map_origin=[0., 0., 0.], raw_odometry_reset=False))
+            self.ready_for_start = False
+            self.last_path_pose = prior.copy()
+        self._map_frame(points, sensitivity, prior, stamp, metrics)
+        if self.last_path_pose is not None:
+            self.travel += float(np.linalg.norm(prior[:2] - self.last_path_pose[:2]))
+            self.turn += wrap(prior[2] - self.last_path_pose[2])
+        self.last_path_pose = prior.copy()
+        distance, heading_error = self._closure_error(self.estimated)
+        self.left_start = self.left_start or distance > 6.
+        metrics.update(teach_travel_m=self.travel, cumulative_gyro_turn_rad=self.turn,
+                       estimated_start_distance_m=distance,
+                       estimated_start_heading_error_rad=heading_error,
+                       teach_start_raw_odom_pose=self.start_pose.tolist())
+        if (self.left_start and self.travel > 30. and stamp - self.start_ns > 15_000_000_000
+                and abs(self.turn) > 5.0 and distance < .6 and abs(heading_error) < .35):
+            self._lock_lap_trace(metrics["mapping"], stamp)
+            self.phase, self.reason = "STOPPING", "odometry/mask lap closure candidate; settling"
+            return 0., 0., metrics
+        speed, yaw = self.core.teacher(target, omega_t)
+        if not math.isfinite(speed) or not math.isfinite(yaw) or speed < 0 or speed > 3.:
+            raise ValueError("LYA command conflicts with unchanged motion admission range")
+        return speed, yaw, metrics
+
+    def _lock_lap_trace(self, mapping, stamp):
+        """Record one causal lap boundary; braking observations remain map evidence."""
+        if self.lap_trace_count is not None:
+            raise ValueError("lap trace frontier is already locked")
+        count = mapping.get("trace_points")
+        pose = np.asarray(mapping.get("pose_xyyaw"), dtype=float)
+        if (self.phase != "TEACH" or mapping.get("accepted") is not True
+                or mapping.get("stamp_ns") != stamp or type(count) is not int or count < 1
+                or pose.shape != (3,) or not np.all(np.isfinite(pose))):
+            raise ValueError("lap trace frontier requires this accepted teach observation")
+        self.lap_trace_count, self.lap_trace_stamp_ns = count, int(stamp)
+        self.lap_trace_pose = tuple(float(value) for value in pose)
+        self.journal(dict(event="lap_trace_locked", sequence=self.sequence,
+            trace_points=count, trace_source_frontier_ns=int(stamp),
+            closure_pose_xyyaw=self.lap_trace_pose, reason="first admitted causal closure candidate",
+            stopping_observations_retained=True, future_trace_selection=False))
+
+    def _closure_error(self, current_pose):
+        if self.start_pose is None:
+            raise ValueError("lap closure requires an explicit teach start")
+        # Mapping/route coordinates are teach-start-relative, even if manual
+        # WARMUP moved within the continuous raw odometer frame beforehand.
+        return (float(np.linalg.norm(np.asarray(current_pose)[:2])), wrap(float(current_pose[2])))
+
+    def _prepare_repeat(self):
+        if (self.lap_trace_count is None or self.lap_trace_stamp_ns is None
+                or self.lap_trace_pose is None):
+            raise ValueError("route preparation requires a locked causal lap trace frontier")
+        self.snapshot = self.engine.freeze()
+        if (not 1 <= self.lap_trace_count <= len(self.snapshot.trace)
+                or self.lap_trace_stamp_ns > self.snapshot.source_frontier_ns
+                or not np.array_equal(self.snapshot.trace[self.lap_trace_count - 1], self.lap_trace_pose)):
+            raise ValueError("locked lap trace frontier does not match the frozen map")
+        # Full stopping geometry remains immutable in snapshot and the journal.
+        # Only route ORDER ends at the previously admitted closure observation:
+        # including the later braking tail could double back across the seam.
+        # The route still uses the complete, now-past confirmed stopping map.
+        handoff = dict(route_trace_points=self.lap_trace_count,
+            route_trace_source_frontier_ns=self.lap_trace_stamp_ns,
+            full_trace_points=len(self.snapshot.trace),
+            map_source_frontier_ns=self.snapshot.source_frontier_ns,
+            stopped_pose_xyyaw=self.snapshot.trace[-1].tolist(),
+            stopping_observations_retained=True, future_trace_selection=False)
+        # Capture only O(1) committed state on this single owner. Full-map index
+        # construction remains in the worker so stopped PREPARE heartbeats do
+        # not wait for it. No pose reset or fresh-acquisition gate reopening.
+        state = self.engine.capture_repeat_state()
+        self.prepare_tracking_state = state
+        self.prepare_matcher_state = (state.correction_se2, state.last_accepted_stamp_ns,
+                                      state.last_seen_stamp_ns, 0, state.motion_information)
+        motion_state = state.motion_information
+        handoff["matcher_seed"] = dict(correction_se2=list(state.correction_se2),
+            last_accepted_stamp_ns=state.last_accepted_stamp_ns,
+            last_seen_stamp_ns=state.last_seen_stamp_ns,
+            motion_information=None if motion_state is None else dict(
+                source_stamp_ns=motion_state.source_stamp_ns,
+                raw_prior_xyyaw=list(motion_state.raw_prior_xyyaw),
+                covariance=[list(row) for row in motion_state.covariance],
+                model="engineering_projected_lateral_yaw_not_calibrated_covariance"),
+            same_continuous_session=True, counts_as_repeat_confirmation=False)
+        self.route_snapshot = replace(self.snapshot, trace=self.snapshot.trace[:self.lap_trace_count],
+            stats=dict(self.snapshot.stats, adapter_handoff=handoff))
+        self.phase, self.reason = "PREPARE", "stopped; building frozen route with zero-command heartbeats"
+        self.prepare_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="lane-route")
+        self.prepare_future = self.prepare_executor.submit(self._build_repeat, self.route_snapshot, state)
+        self.journal(dict(event="route_preparation_started", sequence=self.sequence,
+            frozen_map_points=len(self.snapshot.consensus_xy), teacher_enabled=False,
+            handoff=handoff, full_trace_xyyaw=self.snapshot.trace.tolist()))
+
+    @staticmethod
+    def _frozen_matcher_state(matcher):
+        return (tuple(matcher.correction_se2), matcher.last_accepted_stamp_ns,
+                matcher.last_seen_stamp_ns, matcher.committed_frames,
+                matcher.capture_tracking_state().motion_information)
+
+    def _build_repeat(self, snapshot, state):
+        # Worker owns only this frozen snapshot. No future sensor observations,
+        # live engine state or vehicle truth may enter route construction.
+        reference = getattr(snapshot, "boundary_reference", None)
+        if (getattr(self.core, "provenance", {}).get("feature_representation") == "paint_boundary_v1"
+                and reference is None):
+            raise ValueError("boundary runtime requires a frozen boundary reference")
+        config = {"reference_speed_mps": self.core.reference, "max_speed_mps": self.core.reference}
+        route = self.core.build_route(snapshot.trace, snapshot.consensus_xy, config)
+        controller = self.core.Controller(route, maximum_speed=self.core.reference,
+                                               reference_speed_mps=self.core.reference)
+        handoff = snapshot.stats.get("adapter_handoff")
+        if not isinstance(handoff, dict):
+            raise ValueError("route preparation lacks frozen stopping-pose evidence")
+        stopped = np.asarray(handoff.get("stopped_pose_xyyaw"), dtype=float)
+        if stopped.shape != (3,) or not np.all(np.isfinite(stopped)):
+            raise ValueError("frozen stopping-pose evidence is invalid")
+        head = controller.samples[0]
+        distance = math.hypot(stopped[0] - head["x_m"], stopped[1] - head["y_m"])
+        heading = abs(wrap(stopped[2] - head["yaw_rad"]))
+        # Do not rotate the route, increase the original attachment gates or arm
+        # the controller here. Three later stationary mask confirmations and the
+        # real attach() remain mandatory even when this conservative check passes.
+        if distance > controller.start_distance or heading > controller.start_heading_error:
+            raise ValueError("stopped pose is outside original route start gate: "
+                "distance={:.6g}m (limit={:.6g}), heading={:.6g}rad (limit={:.6g})".format(
+                    distance, controller.start_distance, heading, controller.start_heading_error))
+        matcher_type = self.core.Localizer if reference is None else self.core.BoundaryLocalizer
+        matcher = matcher_type.from_tracking_state(snapshot.consensus_xy if reference is None else reference, state)
+        bundle = None
+        if isinstance(self.journal, Journal):
+            bundle = str(self.core.build_bundle(self.journal.directory / "maps", snapshot,
+                dict(camera=self.calibration, sensor_calibration=self.sensor), config))
+        return route, controller, matcher, bundle
+
+    def _finish_prepare(self, stamp):
+        if not self._stopped(stamp):
+            raise ValueError("route preparation requires stationary vehicle")
+        if self.prepare_future is None:
+            raise ValueError("route preparation has no worker")
+        if not self.prepare_future.done():
+            return
+        try:
+            route, controller, matcher, bundle = self.prepare_future.result()
+            reference = getattr(self.snapshot, "boundary_reference", None)
+            if (getattr(self.core, "provenance", {}).get("feature_representation") == "paint_boundary_v1"
+                    and reference is None):
+                raise ValueError("boundary runtime requires a frozen boundary reference")
+            if (self.prepare_tracking_state is None or
+                    not matcher.matches_anchor_source(self.snapshot.consensus_xy if reference is None else reference) or
+                    matcher.config != dict(self.prepare_tracking_state.config) or
+                    self._frozen_matcher_state(matcher) != self.prepare_matcher_state):
+                raise ValueError("frozen matcher handoff changed during route preparation")
+            with self._commit_guard():
+                self.route, self.controller, self.matcher = route, controller, matcher
+        except Exception as error:
+            raise RuntimeError("frozen route preparation failed: " + str(error)) from error
+        finally:
+            if self.prepare_executor is not None:
+                self.prepare_executor.shutdown(wait=False)
+                self.prepare_executor = None
+        self.phase, self.reason = "ACQUIRE", "teacher disabled; three stationary visual confirmations required"
+        self.journal(dict(event="route_ready", route=self.route, bundle=bundle,
+            frozen_map_points=len(self.snapshot.consensus_xy), teacher_enabled=False))
+
+    def _repeat(self, points, sensitivity, stamp, receipt, diagnostics=None):
+        if self.phase == "ACQUIRE" and not self._stopped(stamp):
+            raise ValueError("initial visual acquisition requires stationary vehicle")
+        prior = self._prior()
+        started = self.clock()
+        result = self.matcher.match(points[sensitivity <= .1], prior, stamp,
+                                    prior_stamp_ns=self.sample.stamp_ns, commit=False,
+                                    scan_support_xy=points,
+                                    scan_sensitivity=sensitivity[sensitivity <= .1],
+                                    motion_source_stamp_ns=self.sample.stamp_ns,
+                                    **self._boundary_kwargs(stamp))
+        elapsed_ms = (self.clock() - started) * 1e-6
+        metrics = {} if diagnostics is None else diagnostics
+        metrics.update(localization=json_safe(result.metrics), match_compute_ms=elapsed_ms)
+        failure = result.reason if not result.accepted else "match exceeded 40 ms budget" if elapsed_ms > 40. else None
+        if failure is None:
+            self._check_motion()
+            with self._commit_guard():
+                if not self.matcher.commit(result):
+                    failure = "localizer commit rejected"
+        if failure is not None:
+            metrics["localization_rejection"] = failure
+            self.journal(dict(event="repeat_localization_rejected", sequence=self.sequence,
+                stamp_ns=stamp, phase=self.phase, reason=failure,
+                map_frame_prior=prior.tolist(), localization=json_safe(result.metrics),
+                match_compute_ms=elapsed_ms, action="HOLD; no command or refinement commit"))
+            raise ValueError("repeat visual lock rejected: " + failure)
+        self.estimated = self.matcher.correct(prior)
+        refined, votes = self.matcher.refined_points_and_votes()
+        stride = max(1, math.ceil(len(refined) / 2000))
+        self.refined_preview = refined[::stride].tolist()
+        self.counts["refined_cells"] = len(refined)
+        pose = self.core.Pose(*self.estimated, self.sample.speed, stamp, receipt)
+        if self.phase == "ACQUIRE":
+            self.repeat_streak += 1
+            if self.repeat_streak >= 3:
+                self.controller.attach(pose)
+                self.phase, self.reason = "REPEAT", "frozen route; mask localization; teacher disabled"
+                self.last_control_ns = stamp
+            return 0., 0., metrics
+        dt = (stamp - self.last_control_ns) * 1e-9
+        self.last_control_ns = stamp
+        command = self.controller.update(pose, dt)
+        metrics["controller"] = dict(self.controller.last_metrics)
+        if self.controller.progress >= self.controller.length:
+            self.phase, self.reason = "COMPLETE", "one fixed-route repeat completed"
+            refinement_path = None
+            if isinstance(self.journal, Journal):
+                refinement_path = str(self.journal.save_refinement(refined, votes,
+                    sequence=self.sequence, stamp_ns=stamp, route=self.route,
+                    anchor=self.snapshot.consensus_xy))
+            self.journal(dict(event="repeat_complete", stamp_ns=stamp,
+                refined_cells=len(refined), refinement_path=refinement_path,
+                frozen_route_modified=False, uses_refinement_for_matching=False))
+            return 0., 0., metrics
+        return command.speed, command.yaw_rate, metrics
+
+    def response(self, sim_time, metrics=None, speed=0., yaw=0.):
+        revoked = self.admission is not None and self.admission.reason is not None
+        return dict(sequence=self.sequence, sim_time=sim_time, phase="HOLD" if revoked else self.phase,
+            protocol=None if self.motion_channel is None else self.motion_channel.protocol,
+            epoch=None if self.motion_channel is None else self.motion_channel.epoch,
+            generation=None if self.motion_channel is None else self.motion_channel.publisher_generation,
+            v=0. if revoked else float(speed), w=0. if revoked else float(yaw),
+            reason=self.admission.reason if revoked else self.reason,
+            start_requested=False if revoked else self.start_requested, map_points=self.map_preview,
+            refined_map_points=self.refined_preview,
+            estimated_pose=self.estimated.tolist(), metrics=json_safe(dict(metrics or {},
+                reference_speed_mps=self.core.reference, teacher_enabled=not revoked and self.phase == "TEACH",
+                ready_for_start=False if revoked else self.ready_for_start,
+                raw_odom_pose=None if self.sample is None else [self.sample.x, self.sample.y, self.sample.yaw],
+                map_frame_raw_prior=None if self.sample is None else self._prior().tolist(),
+                raw_odom_map_origin=None if self.map_origin_pose is None else self.map_origin_pose.tolist(),
+                sensor_stamp_ns=None if self.sample is None else self.sample.stamp_ns,
+                sensor_gyro_stamp_ns=None if self.sample is None else self.sample.gyro_stamp_ns,
+                raw_attitude=self._attitude_metadata(),
+                source_epoch_offset_ns=SOURCE_EPOCH_NS,
+                map_cells=self.counts["map_cells"], wheel_model_sensor=True,
+                refined_cells=self.counts["refined_cells"],
+                truth_pose_used=False, frozen_route_available=self.route is not None)))
+
+    def step(self, request, *, arrival_qpc=None):
+        receipt = self.clock()
+        self.image_receipt_ns = receipt
+        self.image_capture_qpc = None
+        operation = request.get("operation", "step") if isinstance(request, dict) else "invalid"
+        metrics, speed, yaw = {}, 0., 0.
+        sim_time = request.get("sim_time", 0.) if isinstance(request, dict) else 0.
+        request_digest = None
+        runtime_entry = None
+        try:
+            allowed = {"operation", "sequence", "sim_time", "camera", "mask_png", "sensor_calibration"}
+            allowed.update({"motion"} if self.motion_channel is None else
+                {"protocol", "epoch", "generation", "capture_qpc", "motion_tail_sequence"})
+            if not isinstance(request, dict) or set(request) - allowed:
+                raise ValueError("unexpected step fields; global pose/course data are prohibited")
+            if self.admission is not None:
+                self._check_motion()
+                self.image_generation = self.admission.generation
+                runtime_entry = self.motion_channel.pose_for_image(request, source_ns(sim_time),
+                                                                   arrival_qpc=arrival_qpc)
+                self.image_capture_qpc = request["capture_qpc"]
+                self._check_motion()
+            sequence = request["sequence"]
+            if type(sequence) is not int or sequence < 0:
+                raise ValueError("sequence must be a nonnegative integer")
+            request_digest = hashlib.sha256(json.dumps(request, allow_nan=False,
+                sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            if sequence == self.sequence and self.last_response is not None:
+                # Idempotent HTTP retry never becomes an additional map vote.
+                if request_digest != self.last_request_digest:
+                    raise ValueError("same sequence contains different request data")
+                with self._commit_guard():
+                    return self.last_response
+            if sequence <= self.sequence:
+                raise ValueError("sequence regressed")
+            self.sequence = sequence
+            stamp = source_ns(sim_time)
+            if self.last_sim_ns is not None and stamp <= self.last_sim_ns:
+                raise ValueError("simulation image time must strictly increase")
+            if operation not in {"step", "start", "stop"}:
+                raise ValueError("unknown operation; reset is a separate explicit endpoint")
+            if operation == "start":
+                self.start_requested = False
+            if self.phase in ACTIVE_PHASES and self.last_receipt_ns is not None and receipt - self.last_receipt_ns > 500_000_000:
+                raise ValueError("loopback input reception gap exceeded 500 ms")
+            if operation == "stop":
+                self.hold("explicit operator stop; new run required")
+            if self.phase in {"HOLD", "COMPLETE"}:
+                return self._record(request, request_digest, receipt, operation, self.response(sim_time))
+            if self.motion_channel is None:
+                self._sensor_calibration(request.get("sensor_calibration"))
+            else:
+                if request.get("sensor_calibration") != self.motion_channel.sensor:
+                    raise ValueError("image/motion sensor calibration differs")
+                self.sensor = dict(self.motion_channel.sensor)
+            self._camera(request["camera"])
+            if self.motion_channel is None:
+                self._motion(request["motion"], stamp, receipt)
+            else:
+                self.sample, self.stop_since_ns = runtime_entry.sample, runtime_entry.stopped_since_ns
+            points, sensitivity, metrics, image = self._mask(request["mask_png"], return_image=True)
+            self.boundary_observation = None
+            if (not metrics.get("projection_waiting_for_raw_imu")
+                    and getattr(self.core, "provenance", {}).get("feature_representation") == "paint_boundary_v1"):
+                normal = self.sample.attitude.up_body if self._uses_raw_attitude() else (0., 0., 1.)
+                self.boundary_observation = self.core.extract_boundary_observation(
+                    image, self.lookup, normal, stamp, threshold=127)
+                metrics["boundary_observation"] = dict(representation="paint_boundary_v1",
+                    boundary_version=self.core.provenance["boundary_version"],
+                    source_stamp_ns=stamp, edges=len(self.boundary_observation.points),
+                    reliable_edges=int(np.count_nonzero(self.boundary_observation.reliable)))
+            if metrics.get("projection_waiting_for_raw_imu"):
+                if operation == "start":
+                    raise ValueError("start requires initialized raw IMU attitude")
+                self.ready_for_start = False
+                self.reason = "waiting for stationary raw IMU initialization; no mapping or driving"
+            elif self.phase in {"WARMUP", "TEACH"}:
+                speed, yaw, details = self._teach(points, sensitivity, stamp, operation == "start", metrics,
+                                                 image=image)
+                metrics.update(details)
+            elif self.phase == "STOPPING":
+                self._map_frame(points, sensitivity, self._prior(), stamp, metrics)
+                if self._stopped(stamp):
+                    self._prepare_repeat()
+            elif self.phase == "PREPARE":
+                self._finish_prepare(stamp)
+            else:
+                speed, yaw, details = self._repeat(points, sensitivity, stamp, receipt, metrics)
+                metrics.update(details)
+            map_points = np.empty((0, 2)) if self.engine is None else self.engine.consensus_points_and_votes()[0]
+            self.counts["map_cells"] = len(map_points)
+            stride = max(1, math.ceil(len(map_points) / 2000))
+            self.map_preview = map_points[::stride].tolist()
+            self.last_sim_ns, self.last_receipt_ns = stamp, receipt
+            self._check_motion()
+        except (ValueError, TypeError, KeyError, OSError, RuntimeError, StopIteration) as error:
+            self.hold(type(error).__name__ + ": " + str(error))
+            speed = yaw = 0.
+        if self.phase in ACTIVE_PHASES and self.clock() - receipt > 200_000_000:
+            self.hold("processing exceeded 200 ms motion freshness budget")
+            speed = yaw = 0.
+        if self.admission is not None and self.admission.reason is not None:
+            self.hold(self.admission.reason)
+        # Journal IO is deliberately outside the short admission lock. Both the
+        # returned response and cached retry are rechecked after its write.
+        response = self._record(request, request_digest, receipt, operation,
+                                self.response(sim_time, metrics, speed, yaw))
+        if self.admission is not None:
+            with self.admission.lock:
+                if self.admission.reason is not None:
+                    self.hold(self.admission.reason)
+                    response = self.response(sim_time, metrics)
+                    self.last_response = response
+        return response
+
+    def _record(self, request, digest, receipt, operation, response):
+        try:
+            self.journal(dict(event="step", received_monotonic_ns=receipt,
+                processing_ms=(self.clock() - receipt) * 1e-6, operation=operation,
+                request_sha256=digest,
+                motion_transport="legacy-image-batch-replay" if self.motion_channel is None else self.motion_channel.protocol,
+                response_stage="final_legacy" if self.motion_channel is None else "prepared_after_compute",
+                image_motion_binding={key: request.get(key) for key in
+                    ("epoch", "generation", "capture_qpc", "motion_tail_sequence")} if self.motion_channel else None,
+                motion=request.get("motion", []) if isinstance(request, dict) else [],
+                response=response))
+        except (OSError, ValueError) as error:
+            self.hold("journal failure: " + str(error))
+            response = self.response(response["sim_time"])
+        self.last_response = response
+        self.last_request_digest = digest
+        return response
+
+
+def make_handler(core, journal, frontend_factory=None, motion_channel_factory=None):
+    def new_session():
+        return LaneSession(core, journal, frontend=None if frontend_factory is None else frontend_factory(),
+                           motion_channel_factory=motion_channel_factory)
+
+    class Handler(BaseHTTPRequestHandler):
+        session = new_session()
+        session_lock = threading.Lock()
+        reset_lock = threading.Lock()
+        retired_epochs = set()
+
+        def _send(self, code, payload):
+            encoded = json.dumps(json_safe(payload), allow_nan=False).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+
+        def do_GET(self):
+            if self.path != "/status":
+                return self._send(404, {"error": "unknown endpoint"})
+            self._send(200, self.session.status())
+
+        def do_POST(self):
+            self.connection.settimeout(1.)
+            # Bind the request BEFORE reading its body. An old request may fail
+            # after reset, but must never revoke the replacement session.
+            with self.session_lock:
+                session = self.session
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= MAX_REQUEST_BYTES:
+                    raise ValueError("request byte budget exceeded")
+                body = self.rfile.read(length)
+                if len(body) != length:
+                    raise ValueError("incomplete request")
+                arrival_qpc = None if session.motion_channel is None else session.motion_channel.counter()
+                request = json.loads(body, parse_constant=lambda value: (_ for _ in ()).throw(
+                    ValueError("nonfinite JSON number: " + value)))
+                if not isinstance(request, dict):
+                    raise ValueError("request must be a JSON object")
+                with self.session_lock:
+                    retired = session is not self.session or request.get("epoch") in self.retired_epochs
+                if retired:
+                    return self._send(409, {"phase": "HOLD", "reason": "request belongs to retired session/epoch"})
+                if self.path == "/motion":
+                    if session.motion_channel is None:
+                        raise ValueError("independent motion endpoint disabled in legacy replay")
+                    if request.get("epoch") in self.retired_epochs:
+                        return self._send(409, {"phase": "HOLD", "reason": "retired motion epoch"})
+                    return self._send(200, session.motion_channel.ingest(request, arrival_qpc=arrival_qpc))
+                if self.path == "/stop":
+                    if (not isinstance(request, dict) or set(request) - {"confirm", "epoch"}
+                            or request.get("confirm") != "stop_trial"):
+                        raise ValueError("stop requires confirm=stop_trial")
+                    if "epoch" in request and (session.motion_channel is None or
+                                               request["epoch"] != session.motion_channel.epoch):
+                        return self._send(409, {"phase": "HOLD", "reason": "stop belongs to another epoch"})
+                    if session.admission is not None:
+                        session.admission.revoke("explicit operator stop; new run required")
+                    else:
+                        session.hold("explicit operator stop; new run required")
+                    journal(dict(event="transport_stop", epoch=request.get("epoch"),
+                                 reason="explicit operator stop; new run required"))
+                    return self._send(200, session.status())
+                if self.path == "/start":
+                    if request != {"confirm": "start_trial"}:
+                        return self._send(400, {"queued": False, "reason": "start requires confirm=start_trial"})
+                    queued, reason = session.queue_start()
+                    return self._send(200 if queued else 409, dict(queued=queued, reason=reason,
+                        phase=session.phase, start_requested=session.start_requested))
+                if self.path == "/reset":
+                    if request != {"confirm": "new_run"}:
+                        raise ValueError("reset requires confirm=new_run")
+                    old = session
+                    with self.reset_lock:
+                        with self.session_lock:
+                            current = old is self.session
+                        if not current:
+                            return self._send(409, {"error": "session already reset"})
+                        if old.phase in ACTIVE_PHASES and not (old.admission and old.admission.reason):
+                            return self._send(409, {"error": "stop active run before explicit reset"})
+                        if old.admission is not None:
+                            old.admission.revoke("explicit reset; previous session retired")
+                        else:
+                            old.hold("explicit reset; previous session retired")
+                        replacement = new_session()
+                        with self.session_lock:
+                            if old.motion_channel is not None and old.motion_channel.epoch is not None:
+                                self.retired_epochs.add(old.motion_channel.epoch)
+                            type(self).session = replacement
+                        if old.motion_channel is not None:
+                            old.motion_channel.close()
+                    journal(dict(event="transport_reset", previous_epoch=None if old.motion_channel is None
+                                 else old.motion_channel.epoch, previous_session_revoked=True))
+                    return self._send(200, {"phase": "WARMUP", "reason": "explicit new run"})
+                if self.path != "/step":
+                    return self._send(404, {"error": "unknown endpoint"})
+                if isinstance(request, dict) and request.get("epoch") in self.retired_epochs:
+                    return self._send(409, {"phase": "HOLD", "reason": "retired image epoch"})
+                # Single image owner. A concurrent duplicate is not queued and
+                # cannot race frontend state; motion and stop do not take this lock.
+                if not session.image_lock.acquire(blocking=False):
+                    raise ValueError("concurrent image request rejected")
+                try:
+                    response = session.step(request, arrival_qpc=arrival_qpc)
+                    if session.admission is not None:
+                        with session.admission.lock:
+                            if session.admission.reason and response.get("phase") != "HOLD":
+                                response = dict(response, phase="HOLD", v=0., w=0.,
+                                    reason=session.admission.reason, start_requested=False,
+                                    metrics=dict(response.get("metrics", {}),
+                                        teacher_enabled=False, ready_for_start=False))
+                    self._send(200, response)
+                    if session.motion_channel is not None:
+                        # IO holds the image owner only, never motion admission.
+                        # Geometry stays bound to this exact computed frame.
+                        journal(dict(event="command_delivery", protocol=session.motion_channel.protocol,
+                            epoch=session.motion_channel.epoch, delivered_qpc=session.motion_channel.counter(),
+                            delivery_stage="http_write_completed_not_unity_ack", response=response))
+                finally:
+                    session.image_lock.release()
+            except (ValueError, TypeError, OSError, RuntimeError, KeyError) as error:
+                if session.admission is not None:
+                    session.admission.revoke("transport rejected: " + str(error))
+                else:
+                    session.hold("transport rejected: " + str(error))
+                self._send(400, session.response(0.))
+
+        def log_message(self, *_):
+            pass
+
+    return Handler
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", required=True)
+    parser.add_argument("--output", required=True, help="new, non-existing evidence directory")
+    parser.add_argument("--port", type=int, default=8769)
+    parser.add_argument("--config", type=Path, help="optional JSON with explicit reference_speed_mps only")
+    parser.add_argument("--teacher-frontend", choices=("upstream", "paired"), default="upstream",
+                        help="complete pinned image frontend (default); paired is historical replay only")
+    parser.add_argument("--motion-transport", choices=("independent", "legacy"), default="independent",
+                        help="independent QPC/source-clock runtime protocol; legacy is historical replay only")
+    args = parser.parse_args()
+    config = {} if args.config is None else json.loads(args.config.read_text(encoding="utf-8"))
+    if not isinstance(config, dict) or set(config) - {"reference_speed_mps"}:
+        parser.error("config supports only an explicit reference_speed_mps override")
+    core = ProductionCore(args.repo, config.get("reference_speed_mps"))
+    frontend_factory = None
+    frontend_inventory = None
+    if args.teacher_frontend == "upstream":
+        from upstream_teacher import CausalLyaFrontend
+        frontend_factory = lambda: CausalLyaFrontend(epoch=uuid.uuid4().hex)
+        frontend_inventory = frontend_factory()
+        core.provenance["teacher_frontend_provenance"] = frontend_inventory.provenance
+    core.provenance["teacher_frontend"] = args.teacher_frontend
+    journal = Journal(args.output)
+    snapshot_dir = journal.directory / "source_snapshot"
+    snapshot_dir.mkdir()
+    core.provenance["core_source_snapshot_sha256"] = archive_core_sources(core, snapshot_dir)
+    graph_info = core.provenance["graph_acceleration"]
+    if graph_info["backend"] == "native":
+        native_binary = core.repo / graph_info["binary_relative"]
+        if hashlib.sha256(native_binary.read_bytes()).hexdigest() != graph_info["binary_sha256"]:
+            raise ValueError("native binary changed before snapshot")
+        native_snapshot = snapshot_dir / "native_binary"
+        native_snapshot.mkdir()
+        shutil.copy2(native_binary, native_snapshot / native_binary.name)
+    simulator_root = Path(__file__).resolve().parents[2]
+    sources = sorted(Path(__file__).parent.glob("*.py"))
+    sources.append(simulator_root /
+                   "Assets/AIFormula/Runtime/Control/AIFormulaLaneRuntimeBridge.cs")
+    if frontend_inventory is not None:
+        sources.extend(frontend_inventory.source_files)
+    source_hashes = {}
+    for source in sorted(set(sources)):
+        if source.is_file():
+            # Preserve __file__-relative imports, pinned sources and licenses.
+            # No weights or generated upstream clouds belong in this snapshot.
+            relative = source.relative_to(simulator_root)
+            destination = snapshot_dir / "simulator" / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+            source_hashes["simulator/" + relative.as_posix()] = hashlib.sha256(source.read_bytes()).hexdigest()
+    core.provenance["adapter_source_sha256"] = source_hashes
+    motion_factory = None
+    if args.motion_transport == "independent":
+        from motion_channel import MotionChannel
+        motion_factory = lambda *values: MotionChannel(*values, required_protocol="independent-motion-imu-v2")
+    core.provenance["motion_transport"] = args.motion_transport
+    handler = make_handler(core, journal, frontend_factory, motion_factory)
+    server_type = HTTPServer if motion_factory is None else ThreadingHTTPServer
+    server = server_type(("127.0.0.1", args.port), handler)
+    print(json.dumps(dict(event="listening", address=server.server_address, provenance=core.provenance)), flush=True)
+    try:
+        server.serve_forever(poll_interval=.1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        if handler.session.motion_channel is not None:
+            handler.session.motion_channel.close()
+        journal.close()
+
+
+if __name__ == "__main__":
+    main()

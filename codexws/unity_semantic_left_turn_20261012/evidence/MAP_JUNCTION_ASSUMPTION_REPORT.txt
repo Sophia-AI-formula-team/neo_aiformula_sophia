@@ -1,0 +1,175 @@
+Static map / route-fusion assumption report — 2026-10-12
+
+Decision: REPAIR the map-observation contract before claiming red-detour learning.
+No map assets, runtime source, Unity state or control inputs were changed. This
+report uses source geometry, OSM adjacency and elementary angle calculations.
+No unavailable similarity transform was inverted or used as a world truth.
+
+Sources
+SEM = E:/Mess/Projects/Programming/aiformula/workspace/semantic_stop_20261012/repo/
+      workspace/src/aiformula/perception/semantic_planning_system
+SIMPROJECT = C:/Users/PC/OneDrive - Sophia Univ. Students/Main/SOPHIA/Y4T1/
+             Research/Demo_LaneLineTrainer
+- SEM/semantic_local_planner_ros/config/aiformula_topomap.osm
+- SEM/semantic_planner_core/semantic_planner_core/rough_topology.py
+- SEM/semantic_planner_core/semantic_planner_core/route_fusion.py
+- SEM/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
+- SIMPROJECT/workspace/tools/build_track_surface.py
+- SIMPROJECT/Simulator/Assets/TrainingEnvironment/FlagPanel/README.md
+
+1. What the official graph actually declares
+
+IDs below abbreviate 10000000000..10000000006 as 00..06.
+OSM:42-49 declares outer cycle 00-01-02-03-04-00. OSM:52-68 adds
+01-05-04, 02-06-05-00 and 03-06. Therefore:
+
+Outer node | outer neighbours | internal branch | graph degree
+00         | 04,01            | 05              | 3
+01         | 00,02            | 05              | 3
+02         | 01,03            | 06              | 3
+03         | 02,04            | 06              | 3
+04         | 03,00            | 05              | 3
+05         | --               | 00,01,04,06     | 4
+06         | --               | 02,03,05        | 3
+
+All five outer nodes are graph junctions. None is tagged as a bend apex, a turn
+landmark, a signal, or a measured lane center. The extra 00000000000 origin is
+isolated and does not belong to the route. rough_topology.py:1-7 explicitly says
+the straight segments are connectivity/chord geometry, not measured lane centers;
+XML order does not declare race route/direction. from_osm:111-152 reads local_xy
+and adjacency; it does not preserve a junction/bend observation-role schema.
+
+The official local_xy sketch and connectivity suggest this correspondence:
+00 west branch; 01 south/diagonal branch; 02 east branch; 03 north-east branch;
+04 north-west branch; 05 central four-way; 06 eastern internal T.
+This is an EMBEDDING/CONNECTIVITY INTERPRETATION, not an accepted node-to-Unity
+registration. Do not assign runtime IDs to measured world positions from it.
+
+2. Unity geometry supports five outer junctions, but only four outer bends
+
+build_track_surface.py:156 constructs a perimeter from FOUR scaffold corners,
+with four circular fillets; :161-167 constructs the five islands. There are five
+openings from the outer road into the inter-island network:
+
+- West: between NW island and SW island, branch-axis CAD y about366.05 ->
+  world z about9.004. Its outer-road continuation is the west straight.
+- South/diagonal: between SW island and large SE island, branch-axis CAD x
+  about700 -> world x about17.116. It joins the southwest diagonal straight,
+  between the SW and SE fillets, rather than a separate fifth bend.
+- East: between NE island and large SE island. Relevant island-boundary z
+  values are13.414085 (NE bottom) and5.315493 (SE top). Fillets widen the mouth;
+  these are useful section bounds, not a fully certified junction polygon.
+- North-east: gap central island x823.8 to NE island x869.5, axis CAD x846.65
+  -> world x42.934859, entering the north horizontal straight.
+- North-west: gap NW island x678.3 to central island x721.6, axis CAD x699.95
+  -> world x17.107394, also entering that same north straight.
+
+At each of these entries an outer-loop vehicle can continue without a geometric
+heading change. A decision to enter the internal branch does cause a turn, but
+the first learning lap stays on the outer continuation. Rounded road boundaries
+at an opening do not establish a turn in the driven outer-lap center trajectory.
+
+The four actual external bends occur BETWEEN the junctions: under the sketch
+interpretation, SW on00-01, SE on01-02, NE on02-03, NW on04-00;03-04 is north
+straight. This explains why the five junction-to-junction CHORDS form a pentagon
+although the physical outer road has four rounded corners.
+
+3. Which junction is before the current signal
+
+FlagPanel/README.md:18-20 fixes the sole current panel at world(76.5,-.046,15),
+facing -Z. For the tested +Z east-road approach, the east-to-west internal opening
+between NE and SE islands is immediately before the signal plane. The north-east
+entry is beyond the NE bend; the west, north-west and south/diagonal entries are
+elsewhere. These other entries are not additional lamps or light-controlled
+junctions in the current scene.
+
+The structural map interpretation associates the pre-signal entry with02 and the
+internal route02-06-03, but the current unavailable mapping does NOT prove this
+association. An 8-9m front-gap stop alone also does not prove the car lies inside
+the planner's3m entry-radius gate: front gap and root-to-junction distance differ,
+and there is currently no accepted measured junction location to compare.
+
+4. Algorithm mismatch, independently of map scale
+
+route_fusion.py:84-137 treats every official outer node as an observed turn.
+- :95-100 uses the angle between incident official CHORDS; nearly straight
+  nodes(<8deg) are rejected outright as node_has_no_observable_turn.
+- :101-114 seeds by normalized chord progress, searches only +/-4m by default,
+  and measures the turn of recorded points at s-2m,s,s+2m.
+- :115 requires the same sign and at least max(.10rad, .25*expected).
+- :128-136 requires all five inferred turn locations to occur separately/orderly.
+
+Official chord angles and minimum local measured turn:
+node00:85.219239deg -> >=21.304810deg
+node01:79.804067deg -> >=19.951017deg
+node02:99.095002deg -> >=24.773751deg
+node03:49.628996deg -> >=12.407249deg
+node04:46.252695deg -> >=11.563174deg
+
+Two distinct contract problems follow:
+A. Junction position is not a bend observation. A correct outer-lap traversal of
+   an actual straight T junction supplies no required signed corner at that node.
+B. Feature scale differs. For a constant-radius arc R, the three-point chord
+   turn with +/-2m arc-length samples is approximately2/R radians, not the total
+   bend angle. At R15..23m it is only about5..8deg. Thus even a correctly located
+   broad bend may fail those11.6..24.8deg minimums. Jagged tracking could create
+   an accidental stronger feature; that would not establish correct junction ID.
+
+The failure is not repaired by better scale, more laps on the same geometry,
+relaxing the RMSE/turn threshold, enlarging search until it finds another corner,
+or pretending unavailable alignment parameters are an accepted localization.
+route_fusion.py:225-228 itself says consumers must use accepted final node
+positions/progress, not the retained similarity's original-node coordinates.
+
+5. Smallest coherent repair candidates for a decision
+
+A. Explicit simulator map input, with separate geometry and decision roles.
+   Preserve the official file. Add a versioned simulator-specific input only
+   after approval, with declared coordinate frame/provenance/metric assumptions.
+   Distinguish bend landmarks (used for shape/phase registration) from traffic
+   junction IDs (used for connectivity/entry/blocked-edge decisions). Curved edge
+   geometry or tangent metadata must prevent junction-to-junction chords from
+   inventing turn features. The genuine odometry lap remains the recorded route;
+   map-based junction positions must be labeled prior-map-derived, not learned.
+
+   Config-only coordinate replacement is insufficient today: accurate collinear
+   north junctions trigger node_has_no_observable_turn. Selecting only four bend
+   nodes via route_node_ids is also insufficient: map_assist.py:688-707 considers
+   only that outer list as detour entrances and could start at bends instead of
+   actual branch junctions. Separate landmark matching from junction eligibility.
+
+   Straight-junction association requires either:
+   - accepted, unambiguous registration from independent geometric landmarks,
+     metric-prior branch position and known scale with bounded uncertainty,
+     unique projection onto the correct trusted outer segment, tangent/branch
+     side/order agreement, and separation from neighbouring junctions; OR
+   - an independently observed junction feature as in B below.
+   If metric prior lengths are explicitly disallowed, normalized lap fraction
+   between remote bends cannot recover an unobserved along-straight junction.
+   Report association unavailable instead of silently treating that fraction as
+   a learned node. Preserving odometry route scale must remain explicit.
+
+B. Genuine junction observations.
+   Add timestamped, calibrated branch-mouth/crossroad observations from current
+   RGB/lane mask, with branch side/bearing/opening evidence, tracking consistency
+   and uncertainty. Associate in odometry with graph degree, cyclic order and
+   surrounding accepted landmarks; require repeated observations and reject
+   ambiguous service strips, crosswalks or temporarily missing lane fragments.
+   Today's selected ABC line alone is not such a feature. A red color alone has
+   neither junction ID nor branch geometry. Do not promote evaluator CAD mouths
+   or delayed historic projected points into visual detections.
+
+For both candidates retain normal unavailable behavior: real perception may
+continue, but no mapped detour while fusion/junction identity is untrusted.
+map_assist.py:680-708 requires available fusion, mapped topology, matched fresh
+odom and actual entry proximity. Do not remove these gates to demonstrate a turn.
+Also preserve LYA, plant, camera, lamp pose, physical motion and all failed runs.
+
+6. Remaining independent acceptance work
+
+Even correctly registered nodes do not certify branch traversal: current detour
+ABC follows straight graph segments, not a lane-width-aware smooth intersection
+curve (MAP_ASSIST.md:209,213). Lane membership, full turn trajectory, entry and
+exit feasibility, point/odom freshness, OA ownership and consumer visibility
+guards still need genuine closed-loop evidence. This static report neither
+authorizes a new map controller nor claims native ROS/DDS or full vehicle proof.

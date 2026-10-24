@@ -1,0 +1,12 @@
+[INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-10-05-17-01-38-840647-control-desktop-19393
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [obstacle_avoidance-1]: process started with pid [19395]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [obstacle_avoidance-1]: sending signal 'SIGINT' to process[obstacle_avoidance-1]
+[obstacle_avoidance-1] OA source reset failed: Failed to create guard_condition: the given context is not valid, either rcl_init() was not called or rcl_shutdown() was called., at /tmp/binarydeb/ros-foxy-rcl-1.1.14/src/rcl/guard_condition.c:67. Publish /point_flag=false before resuming lane processing.
+[obstacle_avoidance-1] Exception ignored in: <function Executor.__del__ at 0xffffbab4ed30>
+[obstacle_avoidance-1] Traceback (most recent call last):
+[obstacle_avoidance-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 239, in __del__
+[obstacle_avoidance-1]     if self._sigint_gc is not None:
+[obstacle_avoidance-1] AttributeError: 'SingleThreadedExecutor' object has no attribute '_sigint_gc'
+[ERROR] [obstacle_avoidance-1]: process has died [pid 19395, exit code 1, cmd '/usr/bin/python3 /home/workspace/install/launchers/share/launchers/shellscript/run_obstacle_avoidance.py oa_neo --ros-args -r /processed_point_a:=/oa_point_a -r /processed_point_b:=/oa_point_b -r /processed_point_c:=/oa_point_c -r /lane_stop_flag:=/point_flag'].

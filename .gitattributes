@@ -1,0 +1,44 @@
+# Keep reviewed session bytes stable across Windows/Linux checkouts and ZIP hashes.
+/AGENTS.md text eol=lf
+/AGENT_CONTEXT.md text eol=lf
+/docs/agent-context/** text eol=lf
+/docs/agent-context/bundles/*.zip binary
+# Preserve sealed sensor/report bytes and their published SHA256, including CRLF.
+/docs/agent-context/sessions/2026-10-11-planner-keyframe-005/evidence/*.json -text
+/docs/agent-context/sessions/2026-10-11-planner-observability-007/evidence/** -text
+/docs/agent-context/sessions/2026-10-11-planner-runtime-008/evidence/** -text
+/docs/agent-context/sessions/2026-10-11-planner-boundary-r12-010/evidence/** -text
+/docs/agent-context/sessions/2026-10-11-planner-geometry-r14-011/evidence/** -text
+/docs/agent-context/sessions/2026-10-11-planner-geometry-r15-012/evidence/** -text
+/docs/agent-context/sessions/2026-10-15-planner-r31-hotspots-029/evidence/dependency_probe.json -text
+/docs/agent-context/sessions/2026-10-15-planner-r33-native-validation-032/evidence/** -text
+/docs/agent-context/sessions/2026-10-15-planner-oriented-competitors-r34-033/evidence/** -text
+# Match this reviewed session's exact bytes to its sealed ZIP on every platform.
+/docs/agent-context/sessions/2026-10-25-planner-merge-all-035/** -text -eol whitespace=cr-at-eol
+/tools/agent_handoff.py text eol=lf
+/tools/tests/*.py text eol=lf
+/.github/workflows/agent-handoff.yml text eol=lf
+/workspace/src/aiformula/control/lane_mapping_*/scripts/*.sh text eol=lf
+# Keep R30's reviewed numerical sources and pinned fixture identical on clone.
+# Narrow names deliberately exclude unrelated quantized-curve prototypes.
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paired_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_paired_curve_*.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_domain_consensus.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_corner_bracket_batch.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_frame_normal_admission.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_contiguous_runs_equivalence.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_value_construction.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c text eol=lf
+/.github/workflows/lane-native.yml text eol=lf
+# Preserve the published snapshot manifests on Windows with core.autocrlf=true.
+/workspace/src/aiformula/control/motor_controller_old_bkup/** -text
+/workspace/src/aiformula/control/motor_controller_new_bkup/** -text
+/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A2_Deploy/** -text
+/workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/bundle.py text eol=lf
+/workspace/src/aiformula/control/lane_mapping_fixed_gnss/test/test_curve_bundle.py text eol=lf

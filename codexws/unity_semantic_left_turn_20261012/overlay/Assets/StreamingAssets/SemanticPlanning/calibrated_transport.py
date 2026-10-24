@@ -1,0 +1,312 @@
+"""Explicit simulator-only calibrated topology and recorded-reference adapter.
+
+No core source is changed. A real first lap still calls the original fusion
+builder exactly once. Its complete automatic result is retained separately;
+only an explicitly validated calibration can make the adapter map available.
+A recorded reference is a declared warm start, never evidence of fresh learning.
+"""
+from dataclasses import dataclass
+from functools import wraps
+import hashlib
+import json
+import math
+from pathlib import Path
+from types import MethodType
+
+
+def _unique(pairs):
+    out = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError("Duplicate JSON key: " + key)
+        out[key] = value
+    return out
+
+
+def _read_json(path, maximum=16 * 1024 * 1024):
+    raw = Path(path).read_bytes()
+    if len(raw) > maximum:
+        raise ValueError("Adapter JSON exceeds size limit")
+    def bad_constant(value):
+        raise ValueError("Nonfinite JSON constant: " + value)
+    value = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_unique,
+                       parse_constant=bad_constant)
+    return value, hashlib.sha256(raw).hexdigest()
+
+
+def _copy(value):
+    return json.loads(json.dumps(value, allow_nan=False))
+
+
+def _number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError("A finite numeric coordinate is required")
+    return float(value)
+
+
+def reference_snapshot(reference):
+    return dict(points=[list(p) for p in reference.points], trusted=list(reference.trusted),
+                cumulative_m=list(reference.cumulative_m), length_m=reference.length_m,
+                spacing_m=reference.spacing_m)
+
+
+def result_snapshot(result):
+    return _copy(dict(status=result.status, alignment=result.alignment,
+                      node_positions=result.node_positions, node_progress=result.node_progress,
+                      reference=reference_snapshot(result.reference)))
+
+
+def fusion_options(parameters):
+    names = {"spacing_m": "sample_spacing_m", "smooth_window_m": "smooth_window_m",
+             "max_detour_gap_m": "max_detour_gap_m", "max_rmse_m": "alignment_max_rmse_m",
+             "ambiguity_margin_m": "alignment_ambiguity_margin_m",
+             "node_search_m": "fusion_node_search_m", "feature_window_m": "fusion_feature_window_m",
+             "shape_weight": "fusion_shape_weight", "max_displacement_m": "fusion_max_displacement_m"}
+    return {key: _number(parameters[source]) for key, source in names.items()}
+
+
+def _same(actual, expected, path="result"):
+    """Compare complete original results, allowing only floating roundoff."""
+    if isinstance(actual, bool) or isinstance(expected, bool):
+        if type(actual) is not bool or type(expected) is not bool or actual != expected:
+            raise ValueError("Recorded result mismatch at " + path)
+    elif isinstance(actual, (float, int)) and isinstance(expected, (float, int)):
+        if not math.isclose(_number(actual), _number(expected), abs_tol=1e-9, rel_tol=1e-12):
+            raise ValueError("Recorded result mismatch at " + path)
+    elif isinstance(actual, dict) and isinstance(expected, dict):
+        if set(actual) != set(expected):
+            raise ValueError("Recorded result keys mismatch at " + path)
+        for key in actual:
+            _same(actual[key], expected[key], path + "." + key)
+    elif isinstance(actual, (list, tuple)) and isinstance(expected, (list, tuple)):
+        if len(actual) != len(expected):
+            raise ValueError("Recorded result length mismatch at " + path)
+        for index, (first, second) in enumerate(zip(actual, expected)):
+            _same(first, second, path + "[" + str(index) + "]")
+    elif type(actual) is not type(expected) or actual != expected:
+        raise ValueError("Recorded result mismatch at " + path)
+
+
+@dataclass
+class PreparedReference:
+    original_result: object
+    snapshot_sha256: str
+    provenance: dict
+
+
+def prepare_recorded_reference(path, node, source_root, source_identity, original_builder):
+    """Strictly replay original captured inputs before ready, not on a live tick."""
+    document, digest = _read_json(path)
+    if (not isinstance(document, dict) or document.get("schema") != "semantic_route_diagnostics/v1"
+            or document.get("exact_capture") is not True or document.get("control_input") is not False
+            or document.get("error") is not None):
+        raise ValueError("Recorded reference requires an error-free exact diagnostic capture")
+    snapshots = document.get("snapshots")
+    if not isinstance(snapshots, list) or len(snapshots) != 1:
+        raise ValueError("Recorded reference requires exactly one unambiguous snapshot")
+    item = snapshots[0]
+    if (not isinstance(item, dict) or item.get("schema") != "semantic_fusion_snapshot/v1"
+            or item.get("exact_capture") is not True or "capture_error" in item or "original_exception" in item):
+        raise ValueError("Recorded snapshot is not an exact successful builder capture")
+    context = item.get("context", {})
+    for key in ("source_hash", "source_tree_hash", "source_files"):
+        if context.get(key) != source_identity[key]:
+            raise ValueError("Recorded reference " + key + " mismatch")
+    # Check that the supplied identity also agrees with bytes on disk, including
+    # the actual OSM selected by this MapAssist instance (not a same-name file).
+    root = Path(source_root).resolve()
+    files = source_identity["source_files"]
+    for relative, expected_hash in files.items():
+        target = (root / relative).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("Source manifest path escapes source root") from exc
+        if hashlib.sha256(target.read_bytes()).hexdigest() != expected_hash:
+            raise ValueError("Source identity no longer matches disk: " + relative)
+    tree_hash = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    if tree_hash != source_identity["source_tree_hash"]:
+        raise ValueError("Source tree hash does not match file manifest")
+    osm = Path(node.p["topomap_path"]).resolve()
+    try:
+        osm_key = osm.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ValueError("Recorded OSM must belong to the verified source tree") from exc
+    if files.get(osm_key) != hashlib.sha256(osm.read_bytes()).hexdigest():
+        raise ValueError("Recorded reference OSM mismatch")
+    official = dict(node_ids=list(node.official.node_ids), points=[list(p) for p in node.official.points],
+                    chord_length_m=node.official.chord_length_m)
+    _same(official, item.get("official"), "official")
+    options = fusion_options(node.p)
+    if item.get("positional_options") != [] or item.get("keyword_options") != options:
+        raise ValueError("Recorded original fusion options mismatch")
+    if fusion_options(context.get("map_parameters", {})) != options:
+        raise ValueError("Recorded MapAssist fusion parameters mismatch")
+    raw_samples = item.get("candidate_samples")
+    limit = node.p["max_recorded_samples"]
+    if (type(limit) is not int or limit < 30 or not isinstance(raw_samples, list)
+            or len(raw_samples) < 30 or len(raw_samples) > limit + 1):
+        raise ValueError("Recorded candidate sample count invalid")
+    for key in ("max_recorded_samples", "min_lap_distance_m", "lap_closure_radius_m", "lap_closure_heading_deg"):
+        if context.get("map_parameters", {}).get(key) != node.p[key]:
+            raise ValueError("Recorded first-lap parameter mismatch: " + key)
+    state = context.get("map_state_before")
+    if (not isinstance(state, dict) or state.get("reference", "missing") is not None
+            or type(state.get("recorded_samples")) is not int
+            or state["recorded_samples"] != len(raw_samples) - 1
+            or _number(state.get("recorded_distance_m")) < node.p["min_lap_distance_m"]):
+        raise ValueError("Recorded first-lap completion evidence invalid")
+    from semantic_planner_core.rough_route import RouteSample
+    samples = []
+    for sample in raw_samples:
+        if not isinstance(sample, dict) or set(sample) != {"x", "y", "yaw", "excluded"} or type(sample["excluded"]) is not bool:
+            raise ValueError("Invalid original candidate sample")
+        samples.append(RouteSample(_number(sample["x"]), _number(sample["y"]),
+                                   _number(sample["yaw"]), excluded=sample["excluded"]))
+    first, last = samples[0], samples[-1]
+    odom = state.get("odom")
+    if not isinstance(odom, list) or len(odom) != 3:
+        raise ValueError("Recorded closure odometry missing")
+    _same([last.x, last.y, last.yaw], odom, "closure_odometry")
+    heading = abs((last.yaw - first.yaw + math.pi) % (2.0 * math.pi) - math.pi)
+    if (last.excluded or math.hypot(last.x - first.x, last.y - first.y) > node.p["lap_closure_radius_m"]
+            or heading > math.radians(node.p["lap_closure_heading_deg"])):
+        raise ValueError("Recorded first-lap closure invalid")
+    original = original_builder(samples, node.official, **options)
+    _same(result_snapshot(original), item.get("result"))
+    return PreparedReference(original, digest, dict(
+        reference_mode="warm_start", fresh_learning_proof=False, recorded_snapshot_sha256=digest,
+        recorded_source_tree_hash=source_identity["source_tree_hash"],
+        recorded_candidate_count=len(samples), original_result_verified=True,
+        original_result_comparison=dict(absolute_tolerance=1e-9, relative_tolerance=1e-12),
+        recorded_epoch=context.get("epoch"), recorded_tick_sequence=context.get("tick_sequence")))
+
+
+class CalibratedTransportAdapter:
+    """One explicit wrapper per worker module, state isolated per actual chain."""
+    def __init__(self, module, configuration):
+        from calibrated_topology import load_calibrated_topology
+        from continuous_detour_tracker import ContinuousDetourTracker
+        if getattr(module, "_calibrated_transport_owner", None) is not None:
+            raise RuntimeError("Calibrated wrapper already installed")
+        self.module = module
+        self.configuration, self.configuration_file_sha256 = _read_json(configuration, 4 * 1024 * 1024)
+        if not isinstance(self.configuration, dict):
+            raise ValueError("Calibration configuration must be an object")
+        self.original_builder = module.build_fused_route
+        self.loader = load_calibrated_topology
+        self.node = None
+        self.active_reference = None
+        self.calibration = None
+        self.prepared = None
+        self.original_auto_result = None
+        self.last_status = dict(enabled=True, available=False, mode="calibrated_map",
+                                reference_mode="real_first_lap", reason="awaiting_first_lap")
+
+        @wraps(self.original_builder)
+        def build(samples, official, *args, **kwargs):
+            # Original failure/exception stays observable; never fake an
+            # accepted fit, or replace the measured reference with prior paths.
+            original = self.original_builder(samples, official, *args, **kwargs)
+            return self._calibrate(original, official, warm=None)
+
+        self.wrapper = build
+        module.build_fused_route = build
+        module.DetourTracker = ContinuousDetourTracker
+        module._calibrated_transport_owner = self
+
+    def attach(self, node, *, seed_recorded=False):
+        self.node = node
+        self.active_reference = None
+        self.calibration = None
+        self.original_auto_result = None
+        self.last_status = dict(enabled=True, available=False, mode="calibrated_map",
+                                reference_mode="real_first_lap", reason="awaiting_first_lap")
+        adapter = self
+
+        def prepare(instance):
+            instance.official_to_odom = None
+            instance.mapped_topology = None
+            instance.topology_mapping_status = dict(available=False, reason="calibrated_reference_unavailable",
+                                                     source="explicit_calibrated_prior")
+            if (instance is adapter.node and instance.reference is adapter.active_reference
+                    and adapter.calibration is not None and adapter.calibration.available
+                    and instance.fusion_status.get("available") is True):
+                instance.mapped_topology = adapter.calibration.graph
+                instance.topology_mapping_status = _copy(adapter.calibration.status)
+                instance.topology_mapping_status["automatic_estimate"] = False
+
+        node._prepare_mapped_topology = MethodType(prepare, node)
+        if seed_recorded:
+            if self.prepared is None:
+                raise ValueError("Recorded reference was not validated before chain startup")
+            result = self._calibrate(self.prepared.original_result, node.official, self.prepared.provenance)
+            if self.calibration is None or not self.calibration.available:
+                raise ValueError("Recorded reference calibration rejected: " + str(self.last_status))
+            node.reference = result.reference
+            node.fusion_status = _copy(result.status)
+            node.fused_node_positions = dict(result.node_positions)
+            node.fused_node_progress = dict(result.node_progress)
+            node.topology_alignment = dict(result.alignment)
+            node.alignment = {"diagnostic_only": True, "superseded_by": "explicit_calibrated_prior"}
+            node.progress = 0.0
+            node.pending_distance = 0.0
+            node.matched = False
+            node.reason = "recorded_reference_warm_start"
+            # Deliberately do not seed samples, odom, clocks, traffic, ABC or
+            # controller commands. Those still require actual fresh inputs.
+            node._prepare_mapped_topology()
+            node._publish_path()
+
+    def _calibrate(self, original, official, warm):
+        if self.node is None or official is not self.node.official:
+            raise RuntimeError("Fusion called outside attached MapAssist chain")
+        from semantic_planner_core.route_fusion import FusionResult
+        self.active_reference = None
+        self.calibration = None
+        # Keep the complete original object snapshot for verification, while
+        # status carries all original diagnostics plus a reference fingerprint.
+        # Repeating thousands of reference points at 20 Hz would perturb I/O.
+        self.original_auto_result = result_snapshot(original)
+        auto = _copy(self.original_auto_result)
+        reference = auto.pop("reference")
+        auto["reference_summary"] = dict(length_m=reference["length_m"],
+            spacing_m=reference["spacing_m"], point_count=len(reference["points"]),
+            trusted_count=sum(reference["trusted"]),
+            sha256=hashlib.sha256(json.dumps(reference, sort_keys=True, allow_nan=False).encode()).hexdigest(),
+            unchanged_reference_object=True)
+        if self.configuration.get("outer_node_ids") != list(official.node_ids):
+            self.last_status = dict(enabled=True, available=False, reason="actual_official_outer_ids_mismatch",
+                                    original_auto_result=auto)
+            return original
+        calibration = self.loader(self.configuration, original.reference,
+                                  self.node.p["topomap_path"], enabled=True)
+        self.last_status = dict(enabled=True, mode="calibrated_map",
+                                reference_mode="warm_start" if warm else "real_first_lap",
+                                metric_source="explicit_simulation_calibration",
+                                configuration_file_sha256=self.configuration_file_sha256,
+                                **_copy(calibration.status))
+        self.last_status["original_auto_result"] = auto
+        self.last_status["configuration_canonical_sha256"] = calibration.status.get("configuration_sha256")
+        if not calibration.available:
+            return original
+        self.active_reference = original.reference
+        self.calibration = calibration
+        status = dict(self.last_status, automatic_estimate=False)
+        if warm is not None:
+            status.update(_copy(warm))
+        else:
+            status["fresh_learning_proof"] = True
+        status["mode"] = "calibrated_map"
+        status["metric_source"] = "explicit_simulation_calibration"
+        self.last_status = status
+        alignment = dict(mode="explicit_calibrated_prior", direction=calibration.direction,
+                         automatic_estimate=False)
+        return FusionResult(original.reference, alignment, _copy(status),
+                            dict(calibration.node_positions), dict(calibration.node_progress))
+
+    def status(self):
+        status = _copy(self.last_status)
+        status["active_in_current_chain"] = bool(self.node is not None and self.active_reference is not None
+                                                   and self.node.reference is self.active_reference)
+        return status

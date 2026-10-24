@@ -22,7 +22,7 @@ class LaneRecoveryGate:
 
     def update(
         self,
-        lane_result: Mapping | None,
+        lane_result: Optional[Mapping],
         constraints: SemanticConstraints,
         current_road_angle_deg: Optional[float] = None,
     ) -> str:

@@ -1,0 +1,58 @@
+{
+  "before_after_sources_identical": true,
+  "local_original_hashes": {
+    "r12_full_native_01.log": "b5d616195decae6e409e08d1a7bcfea526f7345734613ce8cd7afd772085ece2",
+    "r12_full_native_01.xml": "739d5b9da2f0b0f987104294e39ea28016cc761fbbcafce9236c2bb150f13c6d",
+    "r12_full_native_01_sources_after.json": "9b19baff13f4aeda524d3e4214794236891d354fa2457af2f106faaa1f1ce339",
+    "r12_full_native_01_sources_before.json": "9eb39eb791b4c91786cedaec031bb97e28e498a420c2cf068efc0a69505d9fcf",
+    "r12_full_native_01_summary.json": "2fe03801b582d6e8ead633319195d81cd53c3c92525566b95ac2cfd79afcbf6e",
+    "r12_native_identity_03.json": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a"
+  },
+  "native": {
+    "api_version": 1,
+    "binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+    "cross_section_weights_api_version": 1,
+    "installed_prefix_verified": false,
+    "local_geometry_api_version": 1,
+    "local_moments_api_version": 1,
+    "local_support_api_version": 1,
+    "nearest_api_version": 1,
+    "radius_graph_api_version": 1,
+    "real_calls_passed": true,
+    "source_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705"
+  },
+  "omitted": [
+    "absolute paths",
+    "hostname",
+    "raw JUnit XML and stdout",
+    "native binary",
+    "sensor images",
+    "bags"
+  ],
+  "platform": "Windows",
+  "pytest": {
+    "errors": 0,
+    "exit_code": 0,
+    "failures": 0,
+    "passed": 2396,
+    "process_elapsed_s": 68.09955609997269,
+    "reported_duration_s": 67.22,
+    "skipped": 1,
+    "tests": 2397
+  },
+  "python_version": "3.13.13",
+  "schema_version": 1,
+  "scope": [
+    "lane_mapping_lya_reference/test",
+    "lane_mapping_fixed_gnss/test"
+  ],
+  "skips": [
+    {
+      "module": "test.test_supervisor",
+      "reason": "Target Linux process-group test",
+      "test": "test_owned_process_shutdown_leaves_unrelated_process_alive"
+    }
+  ],
+  "status": "completed_offline_tests_not_runtime_acceptance",
+  "unchanged_source_file_count": 147
+}

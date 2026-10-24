@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "repository_id": 1303517209,
+  "functional_code_sha": "bab577b9cb71e5459301c785843ef54ba4a2cefa",
+  "checked_utc_date": "2026-09-28",
+  "runs": [
+    {
+      "id": 36427591132,
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591132",
+      "conclusion": "success",
+      "native_package_tests": 354,
+      "header_unit_tests": 4,
+      "reference_fixed_dds_checks": 63,
+      "real_lya_header_checks": 24,
+      "real_lya_cases": 2,
+      "source_default_output_mps": [2.0, 2.15],
+      "global_yaml_override_output_mps": [4.0, 4.15],
+      "actual_owned_process_group_stopped_in_both_cases": true,
+      "child_exit_codes": [-2, -2],
+      "exit_note": "Expected owned SIGINT shutdown, real STOPPED and group disappearance checked"
+    },
+    {
+      "id": 36427591136,
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/36427591136",
+      "conclusion": "success",
+      "native_package_tests": 616,
+      "included_shared_reference_tests": 354,
+      "gnss_package_tests": 262,
+      "header_unit_tests": 4,
+      "synthetic_native_dds_cases": 9,
+      "synthetic_native_dds_checks": 151
+    }
+  ],
+  "failed_predecessor": {
+    "run_id": 36426750831,
+    "code_sha": "900b5554825c63663b4710cb0caf58faf118434b",
+    "reason": "Installed real LYA exited 255 because tf_transformations could not import transforms3d",
+    "repair": "Declared python3-transforms3d; official Focal rosdep uses pip. Disposable CI pins 0.4.2 with --no-deps; no local installation or ROS NumPy upgrade.",
+    "other_checks_before_failure": "Build, 354 package tests, 4 Header units, 63 reference/fixed DDS checks passed; not a complete successful run"
+  },
+  "evidence_limits": [
+    "Native Foxy container, synthetic sensor/pose data, private localhost DDS only",
+    "Real installed lya_0221 and TeacherSupervisor; original control law retained",
+    "Production road-detector publication and cv_bridge exercised, not model inference",
+    "No actual motor, physical emergency stop, real sensor chain or real full-lap mapping/localization validation",
+    "4.0 case is private supervisor parameter propagation, not approval of GNSS raw-motion speed gate",
+    "Native package counts read from archived colcon stdout and CI XML count gate; existing upload pattern preserves Header XML but not package pytest.xml",
+    "Overlapping shared tests are not added twice"
+  ]
+}

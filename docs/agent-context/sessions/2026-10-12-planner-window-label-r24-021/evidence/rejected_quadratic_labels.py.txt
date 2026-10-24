@@ -1,0 +1,143 @@
+"""Certify a proposed quadratic against its complete original W/B support.
+
+This is nominal consistency on exact binary64 inputs, not physical normal
+identifiability, a fit, or permission to choose different supporting faces.
+All operations in the fast path enclose real arithmetic outwards. Only
+unresolved signs use exact rational evaluation; no physical epsilon or slack.
+The caller retains the first-selected window and all original geometry gates.
+"""
+from fractions import Fraction
+
+import numpy as np
+
+
+CONSISTENT = 0
+INCONSISTENT = 1
+UNRESOLVED = 2
+MAX_LABEL_PAIRS = 200000
+
+
+def _down(value):
+    return np.nextafter(value, -np.inf)
+
+
+def _up(value):
+    return np.nextafter(value, np.inf)
+
+
+def _add(left, right):
+    return _down(left[0]+right[0]), _up(left[1]+right[1])
+
+
+def _sub(left, right):
+    return _down(left[0]-right[1]), _up(left[1]-right[0])
+
+
+def _point_mul(value, scalar):
+    lower = np.where(scalar >= 0., value[0], value[1])*scalar
+    upper = np.where(scalar >= 0., value[1], value[0])*scalar
+    return _down(lower), _up(upper)
+
+
+def _mul(left, right):
+    values = np.stack((left[0]*right[0], left[0]*right[1],
+                       left[1]*right[0], left[1]*right[1]))
+    return _down(np.min(values, axis=0)), _up(np.max(values, axis=0))
+
+
+def _residual_bounds(labels, origins, normals, coefficients, scales):
+    delta = _sub((labels, labels), (origins, origins))
+    dx, dy = (delta[0][:, 0], delta[1][:, 0]), (delta[0][:, 1], delta[1][:, 1])
+    z = _add(_point_mul(dx, normals[:, 1]), _point_mul(dy, -normals[:, 0]))
+    z = (_down(z[0]/scales), _up(z[1]/scales))
+    h = _add(_point_mul(dx, normals[:, 0]), _point_mul(dy, normals[:, 1]))
+    a, b, c = coefficients.T
+    poly = _add(_mul(_add(_point_mul(z, c), (b, b)), z), (a, a))
+    return _sub(h, poly)
+
+
+def _exact_residual(point, chart):
+    origin, normal, coefficients, scale = chart
+    dx, dy = (Fraction.from_float(float(point[i]))-origin[i] for i in (0, 1))
+    z = (dx*normal[1]-dy*normal[0])/scale
+    h = dx*normal[0]+dy*normal[1]
+    a, b, c = coefficients
+    return h-(a+z*(b+c*z))
+
+
+def classify_quadratic_labels(origins, normals, coefficients, scales,
+                              white, black, owners):
+    """Return one status per chart: consistent, inconsistent, or unresolved.
+
+    W/B arrays contain ONLY, and ALL, the originally selected member pairs,
+    packed without changing their order; owners selects the chart for each.
+    A white label requires h-q(z)<=0, black h-q(z)>=0; equality is legal.
+    Invalid/nonfinite rows or charts without any labels are unresolved.
+    Shapes: charts (N,2)/(N,2)/(N,3)/(N,), labels (M,2), owners (M,).
+    No estimator state is read/mutated; input arrays are not modified.
+    """
+    arrays = []
+    for value in (origins, normals, coefficients, scales, white, black):
+        source = np.asarray(value)
+        if source.dtype.kind not in 'fiu' or (source.dtype.kind == 'f' and source.dtype.itemsize > 8):
+            raise ValueError('quadratic label arrays must be binary64-compatible numeric')
+        array = np.asarray(source, dtype=np.float64)
+        if source.dtype.kind in 'iu' and any(int(x) != int(y) for x, y in zip(source.flat, array.flat)):
+            raise ValueError('integer label conversion must be exact')
+        arrays.append(array)
+    origins, normals, coefficients, scales, white, black = arrays
+    owners = np.asarray(owners)
+    if (origins.ndim != 2 or origins.shape[1:] != (2,)
+            or normals.shape != origins.shape or coefficients.shape != (len(origins), 3)
+            or scales.shape != (len(origins),) or len(origins) > MAX_LABEL_PAIRS
+            or white.ndim != 2 or white.shape[1:] != (2,) or black.shape != white.shape
+            or owners.shape != (len(white),) or owners.dtype.kind not in 'iu'
+            or len(white) > MAX_LABEL_PAIRS
+            or np.any(owners < 0) or np.any(owners >= len(origins))):
+        raise ValueError('invalid quadratic label shapes or owner capacity')
+    owners = owners.astype(np.int64, copy=False)
+    result = np.full(len(origins), UNRESOLVED, dtype=np.uint8)
+    if not len(white):
+        return result
+    chart_good = (np.all(np.isfinite(origins), axis=1)
+                  & np.all(np.isfinite(normals), axis=1)
+                  & np.all(np.isfinite(coefficients), axis=1)
+                  & np.isfinite(scales) & (scales > 0.)
+                  & np.any(normals != 0., axis=1))
+    label_good = np.all(np.isfinite(white) & np.isfinite(black), axis=1)
+    np.logical_and.at(chart_good, owners, label_good)
+    has_labels = np.bincount(owners, minlength=len(origins)) > 0
+    good = chart_good & has_labels
+    result[good] = CONSISTENT
+    selected = np.flatnonzero(good[owners])
+    if not len(selected):
+        return result
+    index = owners[selected]
+    with np.errstate(all='ignore'):
+        wr = _residual_bounds(white[selected], origins[index], normals[index],
+                              coefficients[index], scales[index])
+        br = _residual_bounds(black[selected], origins[index], normals[index],
+                              coefficients[index], scales[index])
+    finite = np.isfinite(wr[0]) & np.isfinite(wr[1]) & np.isfinite(br[0]) & np.isfinite(br[1])
+    # An outward bound wholly on the forbidden side is a definite violation.
+    bad = finite & ((wr[0] > 0.) | (br[1] < 0.))
+    result[index[bad]] = INCONSISTENT
+    certified = finite & (wr[1] <= 0.) & (br[0] >= 0.)
+    unresolved = np.flatnonzero(~certified & ~bad)
+    charts = {}
+    for slot in unresolved:
+        owner = int(index[slot])
+        if result[owner] == INCONSISTENT:
+            continue
+        if not finite[slot]:
+            result[owner] = UNRESOLVED
+            continue
+        if owner not in charts:
+            exact = lambda value: tuple(Fraction.from_float(float(x)) for x in value)
+            charts[owner] = (exact(origins[owner]), exact(normals[owner]),
+                             exact(coefficients[owner]), Fraction.from_float(float(scales[owner])))
+        row = selected[slot]
+        if (_exact_residual(white[row], charts[owner]) > 0
+                or _exact_residual(black[row], charts[owner]) < 0):
+            result[owner] = INCONSISTENT
+    return result

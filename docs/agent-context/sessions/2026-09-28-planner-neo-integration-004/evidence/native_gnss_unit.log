@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform linux -- Python 3.8.10, pytest-4.6.9, py-1.8.1, pluggy-0.13.0
+cachedir: /tmp/lane_endpoint_gnss_ws/build/lane_mapping_fixed_gnss/.pytest_cache
+rootdir: /__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_fixed_gnss
+plugins: launch-testing-ros-0.11.7, ament-pep257-0.9.8, ament-copyright-0.9.8, launch-testing-0.10.10, ament-flake8-0.9.8, ament-lint-0.9.8, ament-xmllint-0.9.8, colcon-core-0.12.1
+collected 262 items
+
+test/test_anchors.py ................................................... [ 19%]
+........                                                                 [ 22%]
+test/test_bundle.py ................................                     [ 34%]
+test/test_control.py ................................................... [ 54%]
+..........                                                               [ 58%]
+test/test_deployment_guard.py ...........................                [ 68%]
+test/test_mapping.py .................                                   [ 74%]
+test/test_motion.py .................................................    [ 93%]
+test/test_worker.py .................                                    [100%]
+
+- generated xml file: /tmp/lane_endpoint_gnss_ws/build/lane_mapping_fixed_gnss/pytest.xml -
+========================== 262 passed in 8.62 seconds ==========================

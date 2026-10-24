@@ -1,0 +1,27 @@
+{
+  "schema": "r30.staged_code_static_review.v1",
+  "date": "2026-10-15",
+  "head": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "scope": "26 explicit intended code/test/attributes paths, before documentation staging; read-only static review, no execution",
+  "paths": 26,
+  "all_stage0_mode100644": true,
+  "all_index_equals_raw_worktree_equals_filtered_worktree_oid": true,
+  "all_leaf_plain_no_reparse": true,
+  "complete_cached_diff_command": "git -c core.quotePath=false -c color.ui=false diff --cached --binary --full-index --no-ext-diff --no-textconv --no-color",
+  "complete_cached_code_diff_bytes": 499960,
+  "complete_cached_code_diff_sha256": "9b420e446580dba48cdcbabdb2b6083c8a82f1ef0fc643c8d61d92a1b32ecb94",
+  "insertions": 8676,
+  "deletions": 36,
+  "review_sha256": "c1e1b512fd21be1ef7d64a6f6d812dbfa1ad98b3c2e36ee8617b5c72c150ad2e",
+  "review_bytes": 14007,
+  "new_blocking_static_issue_found": false,
+  "known_observations": [
+    "Three added tests contain an extra blank line at EOF; diff --check is not clean. Frozen tested bytes retained.",
+    "Paired joint test prepends package sys.path without restoring; regression module/source identity checks remain important.",
+    "Paired numerical helpers assume ordinary IEEE binary64 without unsafe fast-math/FTZ; this review does not authenticate platform FP state.",
+    "Current geometry is opt-in development only, not enabled in TeachMapEngine/control. Original whole-lap capacity and40/80/200ms gates remain unaccepted."
+  ],
+  "excluded_prototypes_opened_hashed_imported_tested_or_staged": false,
+  "native_binary_compilation_or_Unity_action": false,
+  "publication_caveat": "This diff identity covers CODE ONLY. It must not be described as the full later code+documentation+archive staged diff. The original local report contains an absolute workstation path and is not copied into this public session."
+}

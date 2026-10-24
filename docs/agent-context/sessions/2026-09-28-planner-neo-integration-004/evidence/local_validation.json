@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "code_sha": "bab577b9cb71e5459301c785843ef54ba4a2cefa",
+  "environment": "Windows, Python 3.13; no rclpy, ros2 or colcon",
+  "dependency_installation": false,
+  "vehicle_output_enabled": false,
+  "regression": {
+    "command": "python -B -m pytest workspace/src/aiformula/control/lane_mapping_lya_reference/test workspace/src/aiformula/control/lane_mapping_fixed_gnss/test workspace/src/aiformula/perception/road_detector/test/test_output_contract.py -q --tb=short",
+    "pythonpath_packages": ["lane_mapping_lya_reference", "lane_mapping_fixed_gnss", "trajectory_follower"],
+    "passed": 619,
+    "skipped": 1,
+    "elapsed_seconds": 17.29,
+    "exit_code": 0,
+    "retained_local_xml_sha256": "5836959134f08a319ac2d6cfeb3cf55775c476a3d5aecac7a1130537107d1c5b",
+    "xml_publication": "raw local path-bearing XML retained locally; reviewed summary published"
+  },
+  "handoff_tests": {"run": 33, "passed": 32, "skipped": 1, "exit_code": 0},
+  "python38_ast_changed_files": 24,
+  "bash_syntax": "passed for both CI scripts",
+  "diff_check": "passed",
+  "native_ros_evidence": "separate CI record; these local tests are not ROS runtime proof",
+  "failures_preserved": [
+    "Nonexistent fixed/test directory: no tests ran",
+    "Broad road_detector test collection: missing ament lint dependencies",
+    "First aggregate functional regression: 486 passed, 1 skipped, 88 AST fixture errors",
+    "New launch-contract doubles initially had three fixture errors",
+    "Existing Docker Desktop launch failed; daemon remained unavailable"
+  ]
+}

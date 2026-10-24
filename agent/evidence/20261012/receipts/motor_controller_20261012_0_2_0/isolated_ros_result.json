@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "ros_domain_id": 93,
+  "localhost_only": true,
+  "output_topic": "/motor_update_check_20261012/can",
+  "input_topic": "/motor_update_check_20261012/input",
+  "hardware_can_messages_sent": false,
+  "algorithm_sha256": "224cee23e3151d94cdd5864963c57266b0ab2297ba68f155d24ce93193d44d0e",
+  "wheel_parameters": {
+    "tread": 0.6,
+    "diameter": 0.254,
+    "gear_ratio": 1.1
+  },
+  "received_frames": 70,
+  "observer_receive_hz": 100.51888064698488,
+  "command_cases": [
+    {
+      "linear_x": 0.0,
+      "angular_z": 0.0,
+      "signed_rpm": [
+        0,
+        0
+      ],
+      "matching_frames": 10
+    },
+    {
+      "linear_x": 0.2,
+      "angular_z": 0.0,
+      "signed_rpm": [
+        49,
+        49
+      ],
+      "matching_frames": 10
+    },
+    {
+      "linear_x": 0.2,
+      "angular_z": 0.3,
+      "signed_rpm": [
+        58,
+        40
+      ],
+      "matching_frames": 10
+    },
+    {
+      "linear_x": -0.2,
+      "angular_z": -0.3,
+      "signed_rpm": [
+        -58,
+        -40
+      ],
+      "matching_frames": 10
+    },
+    {
+      "linear_x": 0.0,
+      "angular_z": 0.0,
+      "signed_rpm": [
+        0,
+        0
+      ],
+      "matching_frames": 10
+    }
+  ],
+  "final_stop_zero": true,
+  "isolated_node_shutdown_code": -15
+}

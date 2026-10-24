@@ -1,0 +1,1084 @@
+{
+  "checks": [
+    {
+      "details": {
+        "topic": "/lane_learning/cmd_vel"
+      },
+      "name": "private_command_topic_initially_unowned",
+      "passed": true
+    },
+    {
+      "details": {
+        "largest_cloud_points": 8,
+        "received_pose_messages": 89,
+        "scene": "stationary flat ground, two synthetic lane lines; not a complete lap",
+        "state": {
+          "commands_are_observation_only": true,
+          "confirmed_cells": 8,
+          "counters": {
+            "commands_observed": 0,
+            "masks_fused": 16,
+            "masks_received": 19,
+            "masks_rejected": 3,
+            "vectornav_accepted": 89,
+            "vectornav_rejected": 0
+          },
+          "origin_lla": [
+            35.0,
+            139.0,
+            10.0
+          ],
+          "pose_stamp_ns": 1790601587107516957,
+          "ready": false,
+          "reason": "mapping",
+          "schema_version": 1,
+          "session_directory": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/recorder_runs/20260928T131945Z_94ce3391d5e4",
+          "session_id": "20260928T131945Z_94ce3391d5e4",
+          "stamp_ns": 1790601587122513237,
+          "state": "recording",
+          "trace_points": 1
+        }
+      },
+      "name": "recorder_real_messages_fuse_nonempty_consensus",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "recorder_never_owns_command_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "trajectory must have shape N x 3 with N >= 8"
+      },
+      "name": "recorder_refuses_stationary_nonlap",
+      "passed": true
+    },
+    {
+      "details": {
+        "reported_mode": "lya_reference",
+        "requested_parameter": "fixed_only"
+      },
+      "name": "reference_profile_cannot_be_changed_by_parameter",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_disarmed_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "reference_explicit_arm",
+      "passed": true
+    },
+    {
+      "details": {
+        "speed_mps": 0.2,
+        "yaw_rate_rps": 0.05
+      },
+      "name": "reference_teach_forwards_private_teacher",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_teacher_stale_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "reference_teacher_recovery_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "reference_rearm_after_teacher_stale",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_vectornav_stale_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "reference_pose_recovery_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "reference_rearm_after_pose_stale",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_manual_estop_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "manual emergency stop is still asserted"
+      },
+      "name": "reference_cannot_reset_asserted_estop",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "reference_estop_release_remains_latched",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "reset complete; explicit arm required"
+      },
+      "name": "reference_reset_released_estop",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_reset_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "reference_explicit_arm_required_after_reset",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "operator stop; explicit resume required"
+      },
+      "name": "reference_operator_stop",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 6
+      },
+      "name": "reference_operator_stop_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "reference_ready_notification_does_not_arm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "repeat loaded; stop, settle, then call start_repeat again"
+      },
+      "name": "reference_first_repeat_call_loads_bundle",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "reference_teacher_selection_after_prepare",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 6
+      },
+      "name": "reference_first_repeat_call_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "waiting for mask-to-map localization"
+      },
+      "name": "reference_cannot_repeat_without_mask",
+      "passed": true
+    },
+    {
+      "details": {
+        "managed_stop_signal_simulated": false,
+        "response": "fixed route selected; LYA safety reference active"
+      },
+      "name": "reference_second_repeat_call_explicitly_starts",
+      "passed": true
+    },
+    {
+      "details": {
+        "pose_is_stationary": true,
+        "pose_source": "actual CommonGroup in saved ENU origin",
+        "speed_mps": 0.05554184200000001,
+        "yaw_rate_rps": 0.01802765076693158
+      },
+      "name": "reference_repeat_outputs_bounded_command",
+      "passed": true
+    },
+    {
+      "details": {
+        "speed_mps": 0.2,
+        "yaw_rate_rps": -0.4
+      },
+      "name": "reference_disagreement_uses_live_lya",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "reference_fallback_stale_teacher_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "reported_mode": "fixed_only",
+        "requested_parameter": "lya_reference"
+      },
+      "name": "fixed_profile_cannot_be_changed_by_parameter",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 6
+      },
+      "name": "fixed_disarmed_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "fixed_explicit_arm",
+      "passed": true
+    },
+    {
+      "details": {
+        "speed_mps": 0.2,
+        "yaw_rate_rps": 0.05
+      },
+      "name": "fixed_teach_forwards_private_teacher",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_teacher_stale_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_teacher_recovery_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "fixed_rearm_after_teacher_stale",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_vectornav_stale_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_pose_recovery_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "fixed_rearm_after_pose_stale",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_manual_estop_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "manual emergency stop is still asserted"
+      },
+      "name": "fixed_cannot_reset_asserted_estop",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_estop_release_remains_latched",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "reset complete; explicit arm required"
+      },
+      "name": "fixed_reset_released_estop",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_reset_does_not_autoarm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "teacher command selected"
+      },
+      "name": "fixed_explicit_arm_required_after_reset",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "operator stop; explicit resume required"
+      },
+      "name": "fixed_operator_stop",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_operator_stop_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_ready_notification_does_not_arm",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "repeat loaded; stop, settle, then call start_repeat again"
+      },
+      "name": "fixed_first_repeat_call_loads_bundle",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_teacher_selection_after_prepare",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_first_repeat_call_zero_output",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "waiting for mask-to-map localization"
+      },
+      "name": "fixed_cannot_repeat_without_mask",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "managed LYA supervisor has not freshly confirmed STOPPED after handover",
+        "signal_was_sent_before_prepare": true
+      },
+      "name": "fixed_rejects_preprepare_stopped_signal",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "managed LYA supervisor has not freshly confirmed STOPPED after handover"
+      },
+      "name": "fixed_rejects_missing_postprepare_stopped",
+      "passed": true
+    },
+    {
+      "details": {
+        "managed_stop_signal_simulated": true,
+        "response": "fixed route selected; teacher disabled"
+      },
+      "name": "fixed_second_repeat_call_explicitly_starts",
+      "passed": true
+    },
+    {
+      "details": {
+        "pose_is_stationary": true,
+        "pose_source": "actual CommonGroup in saved ENU origin",
+        "speed_mps": 0.05872020450000001,
+        "yaw_rate_rps": 0.018027650766931583
+      },
+      "name": "fixed_repeat_outputs_bounded_command",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_repeat_does_not_need_lya_messages",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 5
+      },
+      "name": "fixed_repeat_stale_mask_zero_output",
+      "passed": true
+    },
+    {
+      "details": {},
+      "name": "fixed_mask_recovery_does_not_autostart",
+      "passed": true
+    },
+    {
+      "details": {
+        "response": "fixed route selected; teacher disabled"
+      },
+      "name": "fixed_explicit_restart_after_mask_recovery",
+      "passed": true
+    },
+    {
+      "details": {
+        "last_commands": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "observed_commands": 8
+      },
+      "name": "fixed_repeat_stale_pose_zero_output",
+      "passed": true
+    }
+  ],
+  "children": [
+    {
+      "command": [
+        "ros2",
+        "run",
+        "lane_mapping_lya_reference",
+        "lap_recorder",
+        "--ros-args",
+        "-r",
+        "__node:=lane_smoke_35ee09d89b_recorder",
+        "-p",
+        "vectornav_topic:=/lane_smoke_35ee09d89b/vectornav",
+        "-p",
+        "mask_topic:=/lane_smoke_35ee09d89b/mask",
+        "-p",
+        "camera_info_topic:=/lane_smoke_35ee09d89b/camera_info",
+        "-p",
+        "lya_command_topic:=/lane_smoke_35ee09d89b/teacher",
+        "-p",
+        "base_frame:=lane_smoke_35ee09d89b_base",
+        "-p",
+        "map_frame:=lane_smoke_35ee09d89b_map",
+        "-p",
+        "output_directory:=/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/recorder_runs"
+      ],
+      "executable": "lap_recorder",
+      "log": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/lane_smoke_35ee09d89b_recorder.log",
+      "package": "lane_mapping_lya_reference",
+      "pid": 5429
+    },
+    {
+      "command": [
+        "ros2",
+        "run",
+        "lane_mapping_lya_reference",
+        "reference_follower",
+        "--ros-args",
+        "-r",
+        "__node:=lane_smoke_35ee09d89b_reference",
+        "-p",
+        "safety_mode:=fixed_only",
+        "-p",
+        "vectornav_topic:=/lane_smoke_35ee09d89b/vectornav",
+        "-p",
+        "mask_topic:=/lane_smoke_35ee09d89b/mask",
+        "-p",
+        "base_frame:=lane_smoke_35ee09d89b_base",
+        "-p",
+        "teacher_command_topic:=/lane_smoke_35ee09d89b/teacher",
+        "-p",
+        "emergency_stop_topic:=/lane_smoke_35ee09d89b/estop",
+        "-p",
+        "ready_bundle_topic:=/lane_smoke_35ee09d89b/reference/bundle",
+        "-p",
+        "teacher_state_topic:=/lane_smoke_35ee09d89b/reference/teacher_state",
+        "-p",
+        "reference_speed_mps:=0.2",
+        "-p",
+        "maximum_speed_mps:=0.8",
+        "-p",
+        "maximum_yaw_rate_rps:=0.4",
+        "-p",
+        "accepted_teacher_max_speed_mps:=0.0",
+        "-p",
+        "log_directory:=/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/reference_logs",
+        "-p",
+        "enable_vehicle_output:=false",
+        "-p",
+        "motor_zero_passthrough_verified:=false",
+        "-p",
+        "hardware_stop_verified:=false"
+      ],
+      "executable": "reference_follower",
+      "log": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/lane_smoke_35ee09d89b_reference.log",
+      "package": "lane_mapping_lya_reference",
+      "pid": 5458
+    },
+    {
+      "command": [
+        "ros2",
+        "run",
+        "lane_mapping_fixed",
+        "fixed_follower",
+        "--ros-args",
+        "-r",
+        "__node:=lane_smoke_35ee09d89b_fixed",
+        "-p",
+        "safety_mode:=lya_reference",
+        "-p",
+        "vectornav_topic:=/lane_smoke_35ee09d89b/vectornav",
+        "-p",
+        "mask_topic:=/lane_smoke_35ee09d89b/mask",
+        "-p",
+        "base_frame:=lane_smoke_35ee09d89b_base",
+        "-p",
+        "teacher_command_topic:=/lane_smoke_35ee09d89b/teacher",
+        "-p",
+        "emergency_stop_topic:=/lane_smoke_35ee09d89b/estop",
+        "-p",
+        "ready_bundle_topic:=/lane_smoke_35ee09d89b/fixed/bundle",
+        "-p",
+        "teacher_state_topic:=/lane_smoke_35ee09d89b/fixed/teacher_state",
+        "-p",
+        "reference_speed_mps:=0.2",
+        "-p",
+        "maximum_speed_mps:=0.8",
+        "-p",
+        "maximum_yaw_rate_rps:=0.4",
+        "-p",
+        "accepted_teacher_max_speed_mps:=0.0",
+        "-p",
+        "log_directory:=/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/fixed_logs",
+        "-p",
+        "enable_vehicle_output:=false",
+        "-p",
+        "motor_zero_passthrough_verified:=false",
+        "-p",
+        "hardware_stop_verified:=false"
+      ],
+      "executable": "fixed_follower",
+      "log": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/lane_smoke_35ee09d89b_fixed.log",
+      "package": "lane_mapping_fixed",
+      "pid": 5508
+    }
+  ],
+  "command_topic": "/lane_learning/cmd_vel",
+  "elapsed_s": 24.900272965,
+  "finished_utc": "2026-09-28T13:20:08.734168+00:00",
+  "log_directory": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63",
+  "observations": {
+    "actual_vectornav_message_type": "vectornav_msgs.msg._common_group.CommonGroup",
+    "closed_loop_repeat_tracking_tested": false,
+    "fixture_reference_speed_mps": 0.2,
+    "full_lap_camera_to_route_tested": false,
+    "hardware_emergency_stop_tested": false,
+    "largest_recorder_consensus_points": 8,
+    "managed_teacher_stop_signal_simulated": true,
+    "production_speed_default_tested": false,
+    "published_source_messages": {
+      "camera": 7,
+      "mask": 92,
+      "teacher": 279,
+      "vn": 963
+    },
+    "ready_bundle_and_repeat_handoff_tested": true,
+    "real_dds": true,
+    "received_command_messages": 407,
+    "teacher_supervisor_process_tested": false,
+    "uses_test_json_vectornav_adapter": false
+  },
+  "passed": true,
+  "ros_distro": "foxy",
+  "ros_domain_id": 217,
+  "ros_localhost_only": true,
+  "schema_version": 1,
+  "scope": "Real DDS package and synthetic-bundle REPEAT handoff; no complete camera lap, vehicle dynamics or hardware validation",
+  "started_utc": "2026-09-28T13:19:43.833855+00:00",
+  "synthetic_bundle": {
+    "first_sample": {
+      "curvature_1pm": 0.08433675016293715,
+      "left_clearance_m": 1.1959969843403,
+      "right_clearance_m": 1.204204508834656,
+      "s_m": 0.0,
+      "speed_mps": 0.2,
+      "x_m": 7.57150573403569e-16,
+      "y_m": 0.005335384857765269,
+      "yaw_rad": 3.0568542757590774e-15
+    },
+    "origin_lla": [
+      35.0,
+      139.0,
+      10.0
+    ],
+    "path": "/tmp/lane_teach_repeat_ws/evidence/lane-runtime-smoke-1wa9cp63/synthetic_route/bundle.json",
+    "production_speed_default_tested": false,
+    "reference_speed_mps": 0.2,
+    "route_sample_count": 377,
+    "source": "analytic circle, separate from recorder camera smoke",
+    "speed_policy": "fixed_reference"
+  },
+  "vehicle_topics_used": false
+}

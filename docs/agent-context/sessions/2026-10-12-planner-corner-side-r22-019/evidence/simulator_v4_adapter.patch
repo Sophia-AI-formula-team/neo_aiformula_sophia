@@ -1,0 +1,145 @@
+--- r21/replay_observed_keyframe.py
++++ r22/replay_observed_keyframe.py
+@@ -50,45 +50,61 @@
+ RIBBON_HELPER_NAME = "lane_mapping_lya_reference.ribbon_observation"
+ RIBBON_SOLVER_NAME = "lane_mapping_lya_reference.quantized_ribbon"
+ FOOTPRINT_HELPER_NAME = "lane_mapping_lya_reference.footprint_geometry"
++CONTINUATION_HELPER_NAME = "lane_mapping_lya_reference.continuation_support"
++CORNER_DIRECTION_NAME = "lane_mapping_lya_reference.corner_direction"
+ PAINT_HELPER_NAMES = (CORNER_HELPER_NAME, FINITE_SUPPORT_NAME,
+-                      RIBBON_SOLVER_NAME, RIBBON_HELPER_NAME, FOOTPRINT_HELPER_NAME)
++                      RIBBON_SOLVER_NAME, RIBBON_HELPER_NAME, FOOTPRINT_HELPER_NAME,
++                      CONTINUATION_HELPER_NAME, CORNER_DIRECTION_NAME)
+ BOUNDARY_REPRESENTATION = "paint_boundary_v1"
+ BOUNDARY_GRAPH_VERSION = 2
+ BOUNDARY_CERTIFIED_VERSION = 3
++BOUNDARY_CONTINUATION_VERSION = 4
+ BOUNDARY_TOPOLOGY = "confirmed_contour_node_chords_v1"
+ CERTIFIED_MODEL_REPRESENTATION = "confirmed_creation_chart_domains_v1"
++CONTINUATION_REPRESENTATION = "all_continuations_owned_quad_support_v1"
+ 
+ 
+ def boundary_mode(evidence, *, raw_imu):
+     """Only explicit recorded identity enables the new observation model."""
+     mode = evidence.get("feature_representation")
+     if mode is None:
+-        if "boundary_version" in evidence or "certified_model_representation" in evidence:
++        if any(key in evidence for key in ("boundary_version", "certified_model_representation",
++                                            "continuation_representation")):
+             raise ValueError("boundary version requires explicit feature representation")
+         return False
+     if mode != BOUNDARY_REPRESENTATION or not raw_imu:
+         raise ValueError("boundary representation requires explicit schema3 raw IMU")
+     version = evidence.get("boundary_version", 1)
+-    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
++    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION,
++                                                  BOUNDARY_CONTINUATION_VERSION):
+         raise ValueError("unsupported recorded boundary version")
+-    if version == BOUNDARY_CERTIFIED_VERSION:
++    if version >= BOUNDARY_CERTIFIED_VERSION:
+         if evidence.get("certified_model_representation") != CERTIFIED_MODEL_REPRESENTATION:
+-            raise ValueError("recorded boundary v3 requires explicit certified creation-chart contract")
++            raise ValueError("recorded boundary version 3 or 4 requires explicit certified creation-chart contract")
+     elif "certified_model_representation" in evidence:
+         raise ValueError("legacy boundary cannot claim certified model geometry")
++    if version == BOUNDARY_CONTINUATION_VERSION:
++        if evidence.get("continuation_representation") != CONTINUATION_REPRESENTATION:
++            raise ValueError("recorded boundary version 4 requires explicit continuation contract")
++    elif "continuation_representation" in evidence:
++        raise ValueError("legacy boundary cannot claim continuation permissions")
+     return True
+ 
+ 
+ def boundary_source_version(modules):
+     geometry = modules["lane_mapping_lya_reference.paint_geometry"]
+     version = getattr(geometry, "BOUNDARY_VERSION", 1)
+-    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION):
++    if type(version) is not int or version not in (1, BOUNDARY_GRAPH_VERSION, BOUNDARY_CERTIFIED_VERSION,
++                                                  BOUNDARY_CONTINUATION_VERSION):
+         raise ValueError("unsupported source boundary version")
+     if version >= BOUNDARY_GRAPH_VERSION and getattr(geometry, "TOPOLOGY_REPRESENTATION", None) != BOUNDARY_TOPOLOGY:
+         raise ValueError("source lacks the declared observed-graph topology contract")
+-    if (version == BOUNDARY_CERTIFIED_VERSION
++    if (version >= BOUNDARY_CERTIFIED_VERSION
+             and getattr(geometry, "CERTIFIED_MODEL_REPRESENTATION", None) != CERTIFIED_MODEL_REPRESENTATION):
+         raise ValueError("source lacks the certified creation-chart contract")
++    if (version == BOUNDARY_CONTINUATION_VERSION
++            and getattr(geometry, "CONTINUATION_REPRESENTATION", None) != CONTINUATION_REPRESENTATION):
++        raise ValueError("source lacks the continuation contract")
+     return version
+ CONTROL = "workspace/src/aiformula/control/"
+ EPOCH_NS = 1_000_000_000
+@@ -569,8 +585,10 @@
+     if boundary:
+         fixture["feature_representation"] = BOUNDARY_REPRESENTATION
+         fixture["boundary_version"] = provenance.get("boundary_version", 1)
+-        if fixture["boundary_version"] == BOUNDARY_CERTIFIED_VERSION:
++        if fixture["boundary_version"] >= BOUNDARY_CERTIFIED_VERSION:
+             fixture["certified_model_representation"] = provenance["certified_model_representation"]
++        if fixture["boundary_version"] == BOUNDARY_CONTINUATION_VERSION:
++            fixture["continuation_representation"] = provenance["continuation_representation"]
+     # Validate all timing and recomputed pose digests before publishing the fixture.
+     if repo is None:
+         raise ValueError("independent export requires --repo to verify the exact recorded odometer source")
+@@ -884,10 +902,14 @@
+                           "No adapter teacher/control/transport/stopping/route/repeat exercised.",
+                           "This fixed recorded prefix is not the future trajectory after a changed command.",
+                           "Real default clocks and processing budgets; offline latency is not runtime performance."])
+-    if recorded_boundary_version == BOUNDARY_CERTIFIED_VERSION:
++    if recorded_boundary_version is not None and recorded_boundary_version >= BOUNDARY_CERTIFIED_VERSION:
+         report["recorded_certified_model_representation"] = fixture["certified_model_representation"]
+-    if effective_boundary_version == BOUNDARY_CERTIFIED_VERSION:
++    if effective_boundary_version is not None and effective_boundary_version >= BOUNDARY_CERTIFIED_VERSION:
+         report["effective_certified_model_representation"] = CERTIFIED_MODEL_REPRESENTATION
++    if recorded_boundary_version == BOUNDARY_CONTINUATION_VERSION:
++        report["recorded_continuation_representation"] = fixture["continuation_representation"]
++    if effective_boundary_version == BOUNDARY_CONTINUATION_VERSION:
++        report["effective_continuation_representation"] = CONTINUATION_REPRESENTATION
+     if raw_imu:
+         # Separate camera calibration from raw_attitude_evidence: the latter's
+         # historical R8 dictionary is an exact state comparison contract.
+
+--- r21/lane_backend.py
++++ r22/lane_backend.py
+@@ -188,7 +188,7 @@
+         # Older immutable paint sources do not acquire new dependencies, and
+         # unused worktree prototypes are not swept into the source manifest.
+         helper_names = ("corner_brackets", "finite_support", "quantized_ribbon", "ribbon_observation",
+-                        "footprint_geometry")
++                        "footprint_geometry", "continuation_support", "corner_direction")
+         visited, visiting = set(), set()
+ 
+         def collect_helpers(name):
+@@ -220,11 +220,15 @@
+         boundary_topology = getattr(modules["lane_mapping_lya_reference.paint_geometry"], "TOPOLOGY_REPRESENTATION", None)
+         certified_representation = getattr(modules["lane_mapping_lya_reference.paint_geometry"],
+                                            "CERTIFIED_MODEL_REPRESENTATION", None)
+-        if (type(boundary_version) is not int or boundary_version not in (2, 3)
++        continuation_representation = getattr(modules["lane_mapping_lya_reference.paint_geometry"],
++                                              "CONTINUATION_REPRESENTATION", None)
++        if (type(boundary_version) is not int or boundary_version not in (2, 3, 4)
+                 or boundary_topology != "confirmed_contour_node_chords_v1"):
+-            raise ValueError("production full-mask mapping requires observed boundary graph version 2 or 3")
+-        if boundary_version == 3 and certified_representation != "confirmed_creation_chart_domains_v1":
+-            raise ValueError("production boundary version 3 requires the certified creation-chart contract")
++            raise ValueError("production full-mask mapping requires observed boundary graph version 2, 3 or 4")
++        if boundary_version >= 3 and certified_representation != "confirmed_creation_chart_domains_v1":
++            raise ValueError("production boundary version 3 or 4 requires the certified creation-chart contract")
++        if boundary_version == 4 and continuation_representation != "all_continuations_owned_quad_support_v1":
++            raise ValueError("production boundary version 4 requires the continuation contract")
+         self.build_route = modules["lane_mapping_lya_reference.route"].build_route
+         self.Controller = modules["lane_mapping_lya_reference.controller"].ClosedRouteController
+         self.Pose = modules["lane_mapping_lya_reference.controller"].Pose
+@@ -268,8 +272,10 @@
+             boundary_version=boundary_version, boundary_topology=boundary_topology,
+             ros_transport=False, gnss_used=False,
+             truth_pose_input=False, route_prior_input=False)
+-        if boundary_version == 3:
++        if boundary_version >= 3:
+             self.provenance["certified_model_representation"] = certified_representation
++        if boundary_version == 4:
++            self.provenance["continuation_representation"] = continuation_representation
+ 
+ 
+ class VisualFitError(ValueError):
+

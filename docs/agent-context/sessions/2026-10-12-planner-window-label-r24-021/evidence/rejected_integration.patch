@@ -1,0 +1,115 @@
+diff --git a/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py b/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py
+index ed3573f..ba7317c 100644
+--- a/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py
++++ b/workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py
+@@ -20,6 +20,8 @@ from .finite_support import (DomainState, advance_domain, certified_segments,
+ from .continuation_support import (ContinuationFrame, retain_frames, common_intervals,
+                                    FIELDS as CONTINUATION_FIELDS,
+                                    REPRESENTATION as CONTINUATION_REPRESENTATION)
++from .quadratic_labels import (classify_quadratic_labels, CONSISTENT,
++                               INCONSISTENT, UNRESOLVED)
+ 
+ 
+ REPRESENTATION = "paint_boundary_v1"
+@@ -42,6 +44,8 @@ REASON_DIRECTION = 4
+ REASON_J4_UNOBSERVED = 8
+ REASON_COMPETING_DIRECTION = 16
+ REASON_DIRECTION_UNCERTAIN = 32
++REASON_LABEL_INCONSISTENT = 64
++REASON_LABEL_UNRESOLVED = 128
+ 
+ 
+ def _integer(value, name, minimum=0, maximum=2 ** 63 - 1):
+@@ -1606,7 +1610,7 @@ def _direction_paths(points, segments, stable, paths, cfg, *, white_xy=None, bla
+ 
+ 
+ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, paths, cfg,
+-                *, cut_evidence=None):
++                *, cut_evidence=None, label_status=None):
+     """Batched contour-only windows. Stops at missing/J-cut/opposite faces.
+ 
+     Limiting arc distance (rather than Euclidean distance alone) also prevents
+@@ -1614,6 +1618,10 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
+     Opposite IMAGE face polarities stop traversal even around a very short end
+     cap. Perspective is not angle-preserving: orthogonal pixel stair faces can
+     have obtuse metric normals, which must not split one observed paint side.
++
++    Optional label_status records consistency of the FIRST accepted proposal
++    against ALL its original W/B members. It never changes the selected window,
++    seven numerical results or radius search, even when that proposal fails.
+     """
+     n = len(points)
+     normals, valid = np.zeros((n, 2)), np.zeros(n, dtype=bool)
+@@ -1716,6 +1724,12 @@ def _directions(points, segments, white_xy, black_xy, pixel_outward, stable, pat
+                 # This explicitly permits evaluation outside the centre hull,
+                 # but never beyond the observed, radius-clipped face domain.
+                 member_ids = candidates[enough][accepted]
++                if label_status is not None:
++                    rows, member_slots = np.nonzero(weights[accepted])
++                    members = member_ids[rows, member_slots]
++                    label_status[indices] = classify_quadratic_labels(
++                        points[indices], fitted[accepted], coefficients, scales,
++                        white_xy[members], black_xy[members], rows)
+                 observed_bounds = _finite_face_fit_bounds(
+                     points[indices], fitted[accepted], scales, points[member_ids],
+                     segments[member_ids],
+@@ -2021,9 +2035,13 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *,
+         j_observed[start:stop] = all_good
+     stable = metric & j_observed & np.isfinite(sensitivity) & (sensitivity <= maximum_j)
+     cut_evidence = []
++    label_status = np.full(n, UNRESOLVED, dtype=np.uint8)
+     normals, normal_valid, support_count, radii, coefficients, scales, bounds = _directions(
+         points, segments, white_xy, black_xy, black - white, stable, paths, cfg,
+-        cut_evidence=cut_evidence)
++        cut_evidence=cut_evidence, label_status=label_status)
++    # Keep this selection independent of ribbon proposals. Label failure does
++    # not turn an originally accepted direction into an invitation to refit.
++    quadratic_selected = normal_valid.copy()
+     valid = stable & normal_valid
+     model_points, model_normals, model_valid = _quantized_curve_positions(
+         white_xy, black_xy, points, normals, coefficients, scales, bounds, valid)
+@@ -2041,6 +2059,12 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *,
+     model_direction_reasons = _competing_endpoint_directions(cut_evidence, points,
+         segments, white_xy, black_xy, black-white, stable, radii, model_normals, model_valid, cfg)
+     model_valid &= model_direction_reasons == 0
++    model_label_reasons = (
++        (quadratic_selected & (label_status == INCONSISTENT)).astype(np.int64)
++        * REASON_LABEL_INCONSISTENT
++        | (quadratic_selected & (label_status == UNRESOLVED)).astype(np.int64)
++        * REASON_LABEL_UNRESOLVED)
++    model_valid &= (~quadratic_selected) | (label_status == CONSISTENT)
+     valid = stable & normal_valid
+     reliable = valid & (sensitivity <= cfg["reliable_sensitivity"])
+     # Projective metric fraction is NOT the image fraction. Reproject the
+@@ -2078,7 +2102,7 @@ def extract_boundary_observation(mask, lookup, normal_body, source_stamp_ns, *,
+                | (~stable).astype(np.int64) * REASON_SENSITIVITY
+                | (~normal_valid).astype(np.int64) * REASON_DIRECTION
+                | (~j_observed).astype(np.int64) * REASON_J4_UNOBSERVED
+-               | model_direction_reasons)
++               | model_direction_reasons | model_label_reasons)
+     return BoundaryObservation(points, normals, segments, sensitivity, metric, stable, normal_valid,
+                                valid, reliable, stamp, pixel_segments, white, black, previous,
+                                following, contour_ids, reasons, support_count, radii,
+diff --git a/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_extraction_equivalence.py b/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_extraction_equivalence.py
+index 083f4f1..cb1b601 100644
+--- a/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_extraction_equivalence.py
++++ b/workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_extraction_equivalence.py
+@@ -385,7 +385,7 @@ def test_old_direction_oracle_does_not_call_optimized_fit(monkeypatch):
+ 
+ 
+ def _old_directions_with_partition(points,segments,white,black,pixel_outward,stable,paths,cfg,
+-                                   *, cut_evidence=None):
++                                   *, cut_evidence=None, label_status=None):
+     length=np.linalg.norm(segments[:,1]-segments[:,0],axis=1)
+     crossing=np.linalg.norm(black-white,axis=1)
+     usable=(stable & np.isfinite(length) & (length>0.)
+@@ -395,6 +395,9 @@ def _old_directions_with_partition(points,segments,white,black,pixel_outward,sta
+     result = list(_old_directions(points,segments,white,black,pixel_outward,stable,pieces,cfg))
+     # Shared measurement domain only; all original fit arithmetic/outputs above
+     # remain the literal old oracle. Independent domain tests check this field.
+-    result[-1] = _optimized_directions(points,segments,white,black,pixel_outward,stable,paths,cfg)[-1]
++    # Label admission is shared by old/new arithmetic, not part of this
++    # numerical-equivalence oracle; independent full-window tests cover it.
++    result[-1] = _optimized_directions(points,segments,white,black,pixel_outward,stable,paths,cfg,
++                                      label_status=label_status)[-1]
+     return tuple(result)

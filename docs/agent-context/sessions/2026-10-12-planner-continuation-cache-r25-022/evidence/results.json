@@ -1,0 +1,40 @@
+{
+  "decision": "partial; equivalence verified, original runtime deadline still fails",
+  "base_sha": "764d860e64c5fe726fa03346f2142571fe1b2a99",
+  "candidate_paint_sha256": "c21aa8de5176894fcc4eebc62d16488e3c8d4c71ffed9bfe55de76b8d998b206",
+  "native_binary_sha256": "f2f9712754f8cecaae379af5355c8aa82b3a28855fa2da2d0ce949ddf339ef45",
+  "focused": {"passed": 85, "seconds": 0.80, "exit_code": 0},
+  "full_regression": {
+    "passed": 4152, "skipped_linux_only": 1, "failed": 0, "errors": 0,
+    "pytest_seconds": 128.04, "child_seconds": 130.03426980000222,
+    "source_binary_pins": 192, "source_changes": {},
+    "native9_real_calls_passed": true,
+    "summary_sha256": "dd1da2ff221aee43f67663f14717526250911e6e21f96eeea4e43e05f603d646",
+    "junit_sha256": "8889623ce5d2f27e22857f5f0aec728e1d82e282b452b82bface9f493fa63ecd"
+  },
+  "strict_recorded_prefix": {
+    "invocations": 1, "retries": 0, "original_mapping_frames": 111,
+    "attempted": 12, "accepted": 11, "failed_sequence": 162,
+    "reason": "processing_deadline", "processing_ms": 117.21639998722821,
+    "engine_budget_ms": 80.0, "matcher_ms": 39.5834, "matcher_budget_ms": 40.0,
+    "pre_match_ms": 6.4922000165097415,
+    "source_input_native_config_integrity": true,
+    "confirmed_cells_after_failure": 121, "trace_points_after_failure": 11,
+    "failed_frame_committed": false,
+    "candidate_overlap": 0.8079710144927535,
+    "candidate_residual_rmse_before_m": 0.007337900218845346,
+    "candidate_residual_rmse_after_m": 0.00445548326653866,
+    "candidate_residual_is_truth_error": false,
+    "remaining_frames_not_processed": 99,
+    "speedup_established": false,
+    "report_sha256": "9162b803568e0383012c617d8f25ff621e95902ad582908ee9f15d36745c3e9c",
+    "execution_sha256": "da0a46bd854fb7b6c11be4ca9467baf4b707b44c59cf08889703989b473f784e",
+    "approved_manifest_sha256": "d146c4375b4e40f0daa130630eb5e5ba83bd134df332324312c00ba3efb86293"
+  },
+  "vehicle_simulation_camera_lya_parameters_unchanged": true,
+  "geometry_and_admission_gates_unchanged": true,
+  "live_two_lap_verified": false,
+  "full_200ms_chain_verified": false,
+  "new_video": false,
+  "large_local_evidence": "original input, per-frame reports and complete source snapshot stay in controlled local diagnostics"
+}

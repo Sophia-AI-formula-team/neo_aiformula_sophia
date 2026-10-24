@@ -1,0 +1,190 @@
+{
+  "kind": "redacted_post_execution_policy02_evidence_review",
+  "scope": "frozen_extractor_case_diagnostic_not_runtime_or_vehicle_acceptance",
+  "reviewer_execution": "PowerShell_JSON_hash_compare_direct_exact_rational_substitution_only",
+  "artifact_sha256": {
+    "actual02_parent": "c0a155db1db47a77656d9b0c45a21df8928f731b51cb36c7577d941ab5125a05",
+    "actual02_summary": "99a71527b23aa5ac1ee9cd9e743ff28a4eba5f76c83a34b294f457704ac0f8b0",
+    "actual02_driver": "a7a4356bc4e1c8eec49c907b92ab8c4eee128967f98088d750037a0631cc88a2",
+    "actual01_parent": "cd379e4bde33e6062a0ff555d1b349cbef7db451361ce1a0b440d130070a47ea",
+    "actual01_summary": "5ab2e1af0ba1c2fbd086af798828403ae0e3245b3dd29eebfc7085ef762c768e",
+    "unit02_parent": "df199e1a0f64075231f8fbfc2c5158eed3638d2cd33e465b06a201ea8a9e1b5c",
+    "unit02_child": "f68d5767277ec945cb59b50b980f1638e23013b70b6c8cd7de729257dc806eca"
+  },
+  "root_recorded_new_units": {
+    "testsRun": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "inventory": {
+    "cases": 22,
+    "cuts": 40,
+    "primary_model_roles": 80,
+    "center_occurrences": 1528,
+    "WB_occurrences": 3056,
+    "q_hypotheses": 200,
+    "q_side_chart_cases": 400
+  },
+  "comparison": {
+    "policy01_candidate_certifiable": 19,
+    "policy02_candidate_certifiable": 24,
+    "original_preserved": 4,
+    "policy02_additional_candidate_certifiable": 20,
+    "retained_policy01_positives": 19,
+    "unknown_to_candidate_certifiable": 5,
+    "remaining_unknown": 16,
+    "policy01_off_original_chart_q_sides": 207,
+    "policy02_off_original_chart_q_sides": 0,
+    "original_P_q_exclusions_both": 0
+  },
+  "readback_checks": {
+    "actual02_JSON_fully_parsed": 28,
+    "actual01_JSON_fully_parsed": 28,
+    "unit02_JSON_fully_parsed": 2,
+    "original_R29_audit_JSON_fully_parsed": 22,
+    "parent_output_JSON_receipt_hash_relationships": 50,
+    "bindings_before_after_equal": 125,
+    "current_source_JSON_hash_matches": 98,
+    "NPZ_zip_textlog_hashes_not_independently_read": 27,
+    "shared_old_binding_entries_unchanged": 118,
+    "replaced_old_driver_current_hash_matches": 1,
+    "whole_original_P_Q_PQ_source_reports_equal": 120,
+    "whole_original_side_packets_equal": 80,
+    "protected_cut_fields_equal": 400,
+    "support_descriptors_count_shape_equal": 320,
+    "exact_original_P_sign_checks": 800,
+    "exact_saved_finite_plane_sign_checks": 800,
+    "exact_direct_original_chart_checks": 400,
+    "proposed_unchanged_chart_field_checks": 816
+  },
+  "original_domain_results": {
+    "P": {
+      "yes": 4,
+      "no": 31,
+      "unknown": 5
+    },
+    "Q": {
+      "yes": 0,
+      "no": 1,
+      "unknown": 39
+    },
+    "P_intersect_Q": {
+      "yes": 0,
+      "no": 1,
+      "unknown": 39
+    }
+  },
+  "proposals": {
+    "side_yes": 294,
+    "side_unknown": 106,
+    "side_unknown_restricted_pool": 104,
+    "side_unknown_rounding_packets": 2,
+    "paired_full_WB_hypotheses": 102,
+    "recorded_independently_verified_joint_reports": 306,
+    "recorded_joint_unknown_reports": 0
+  },
+  "remaining_unknown": {
+    "cuts": 16,
+    "q_hypotheses": 80,
+    "joint_calls": 0,
+    "joint_box_reports": 0,
+    "failed_side_proposals": 83,
+    "restricted_pool_unknown": 81,
+    "rounding_packet_unknown": 2,
+    "meaning": "bounded_candidate_search_unresolved_not_physical_or_global_curve_family_infeasibility"
+  },
+  "newly_positive": [
+    {
+      "case": "longcap_phase_0.0",
+      "cut": 1,
+      "positive_q_ordinals": [
+        1
+      ]
+    },
+    {
+      "case": "longcap_phase_0.0",
+      "cut": 3,
+      "positive_q_ordinals": [
+        1
+      ]
+    },
+    {
+      "case": "longcap_phase_0.35",
+      "cut": 0,
+      "positive_q_ordinals": [
+        2
+      ]
+    },
+    {
+      "case": "arc_0.6_phase_0.0",
+      "cut": 2,
+      "positive_q_ordinals": [
+        2,
+        3
+      ]
+    },
+    {
+      "case": "arc_0.6_phase_0.35",
+      "cut": 3,
+      "positive_q_ordinals": [
+        2,
+        3
+      ]
+    }
+  ],
+  "original_preserve_required": [
+    {
+      "case": "L_corner_phase_0.0",
+      "cut": 3
+    },
+    {
+      "case": "L_corner_phase_0.0",
+      "cut": 4
+    },
+    {
+      "case": "L_corner_phase_0.35",
+      "cut": 3
+    },
+    {
+      "case": "L_corner_phase_0.35",
+      "cut": 4
+    }
+  ],
+  "reported_compute": {
+    "candidate_joint_calls": 306,
+    "QP_systems": 2480,
+    "QP_pivots": 28,
+    "QP_full_scans": 324,
+    "child_elapsed_s_offline_only": 8.1100437999703,
+    "parent_elapsed_s_offline_only": 8.54830450000009,
+    "policy01_child_elapsed_s_offline_only": 4.36994709999999
+  },
+  "recorded_mutations": {
+    "map_writes": 0,
+    "adoptions": 0,
+    "gate_changes": 0,
+    "dropped_label_occurrences": 0,
+    "production_imports": 0,
+    "extractor_calls": 0,
+    "custom_native_calls": 0,
+    "unity_calls": 0
+  },
+  "recorded_process": {
+    "exit_code": 0,
+    "failure": null,
+    "retries": 0,
+    "own_child_stopped": true,
+    "own_child_stop_attempted": false
+  },
+  "limitations": [
+    "No NPZ payload, native extractor, certificate implementation or solver rerun by reviewer.",
+    "Label-positive coefficients alone are not a joint proof; recorded separate one-box certificates provide diagnostic joint existence.",
+    "Candidate positivity does not change original Q or P-intersect-Q reports.",
+    "125 before-after equality is executed-driver evidence; reviewer independently current-hashed only98 source/JSON files.",
+    "Old policy01 current outputs match their own receipts; they are not entries in the new125-source/input set.",
+    "Offline study timing is not runtime latency or a performance improvement.",
+    "No production adoption, physical map accuracy, closed-loop run, completed two laps, new vehicle error metric or video is claimed."
+  ],
+  "redaction": "No absolute host paths, sensor/GNSS values, selected support IDs, raw model/world coordinates or certificate payloads included."
+}

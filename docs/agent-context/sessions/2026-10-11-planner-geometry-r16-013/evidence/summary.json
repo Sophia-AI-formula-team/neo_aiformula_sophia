@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "session_id": "2026-10-11-planner-geometry-r16-013",
+  "result": "partial",
+  "source_checkpoints": {
+    "initial_identity_candidate_paint_sha256": "6bb0730232290a81579a7d2d0cc53e0d8d02077ae8bf0d1b0de6d569ff95ef85",
+    "profile02_paint_sha256": "848091e964cab2ea29eb07529c0770a7947252379e7c6b6cd0c868843abc1f6b",
+    "native_c_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+    "local_windows_binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+    "final_packed_helper_validation": "40 focused tests passed; finite-byte/invalid-mask helper oracle and all-field DDS observation byte comparison",
+    "final_full_suite_validation": "r16_full_native_02:2697passed1Linux-onlyskip;157sourcesunchanged;unintegratedprototype explicitly excluded"
+  },
+  "results": {
+    "packed_helper_equivalence": {
+      "passed": 40,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_seconds": 0.659,
+      "paint_sha256": "848091e964cab2ea29eb07529c0770a7947252379e7c6b6cd0c868843abc1f6b",
+      "test_repo_path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_fit_domain_equivalence.py",
+      "test_sha256": "20d7855cdc5ce98871a2e41af9a3b8976f054e206f0613949b052ddf99ef1184",
+      "scope": "Embedded literal pre-packed helper; finite value bytes and invalid masks; complete literal DDS observation arrays/scalars; immutable inputs",
+      "not_claimed": [
+        "universal numerical equivalence",
+        "identical warning counts or NaN payload bytes at helper level",
+        "full-suite pass derived solely from focused tests",
+        "ROS DDS or end-to-end runtime acceptance",
+        "recorded or synthetic quality repair"
+      ]
+    },
+    "final_native_core": {
+      "passed": 2697,
+      "skipped": 1,
+      "failed": 0,
+      "errors": 0,
+      "junit_cases": 2698,
+      "junit_seconds": 71.391,
+      "pytest_stdout_seconds": 71.4,
+      "process_seconds": 72.29146630002651,
+      "exit_code": 0,
+      "source_count": 157,
+      "changed_source_count": 0,
+      "paint_sha256": "848091e964cab2ea29eb07529c0770a7947252379e7c6b6cd0c868843abc1f6b",
+      "test_sha256": "20d7855cdc5ce98871a2e41af9a3b8976f054e206f0613949b052ddf99ef1184",
+      "skip_reason": "Target Linux process-group test",
+      "explicit_exclusion": "test_quantized_curve_fit.py remains an independent unintegrated prototype",
+      "real_native_api_count": 7,
+      "native_c_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+      "native_binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+      "finished_utc": "2026-10-11T10:21:10.833635+00:00",
+      "scope": "Windows offline reference/test plus gnss/test with stated prototype exclusion; not ROS DDS, runtime or driving acceptance"
+    },
+    "initial_native_core": {
+      "passed": 2657,
+      "skipped": 1,
+      "failed": 0,
+      "errors": 0,
+      "junit_cases": 2658,
+      "junit_seconds": 80.837,
+      "source_count": 156,
+      "changed_source_count": 0,
+      "skip_reason": "Target Linux process-group test",
+      "explicit_exclusion": "test_quantized_curve_fit.py was an unintegrated independent prototype at this checkpoint",
+      "real_native_api_count": 7
+    },
+    "recorded_candidate": {
+      "accepted": 105,
+      "attempted": 106,
+      "available": 111,
+      "first_sequence": 151,
+      "last_committed_sequence": 255,
+      "rejected_sequence": 256,
+      "reason": "match_insufficient_overlap",
+      "fresh_overlap": 0.5307820299500832,
+      "active_overlap": 0.4209650582362729,
+      "terminal_engine_ms": 58.738799998536706,
+      "original_matcher_budget_ms": 40,
+      "original_engine_budget_ms": 80,
+      "matcher_gates_unchanged": true,
+      "fixture_sha256": "ce1b36e4ec3de47be49893ba60a21c6f8b32596eaafc966a4dc6e467f293c421",
+      "scope": "Recorded candidate; engine excludes projection/extraction; not full lap"
+    },
+    "development": {
+      "cases_passed": 0,
+      "cases_failed": 4,
+      "each_accepted": 7,
+      "each_attempted": 8,
+      "each_planned": 509,
+      "failure_frame": 7,
+      "left_overlap": 0.48760330578512395,
+      "right_overlap": 0.5121951219512195,
+      "reason": "match_insufficient_overlap",
+      "diagnostic_budget_ms": 2000,
+      "configs_and_thresholds_unchanged": true,
+      "scope": "Reused original development cases, not untouched holdout or runtime"
+    },
+    "creation_chart_counterfactual": {
+      "original_mass": 32,
+      "new_mass": 34.75,
+      "denominator": 60.5,
+      "original_overlap": 0.5289256198347108,
+      "new_overlap": 0.5743801652892562,
+      "queries": 103,
+      "certified_interval_records": 90,
+      "newly_covered_queries": 6,
+      "newly_covered_mass": 2.75,
+      "lost_covered_queries": 0,
+      "new_solver_executed": false,
+      "new_accepted_pose": false,
+      "scope": "Fixed original prediction with full graph/interval nearest competition; no rank, inlier or motion solve"
+    },
+    "extraction_probes": {
+      "unprofiled_before_ms": 297.36860003322363,
+      "unprofiled_after_ms": 146.6981999692507,
+      "profiled_helper_before_approx_ms": 165,
+      "profiled_helper_after_approx_ms": 27,
+      "faces": 1322,
+      "model_valid": 1308,
+      "mask_sha256": "b7ab7e57d82599fc0d167802929353bc6a3469976da74a78cd5b75dfc7c6aefa",
+      "scope": "Two separate single-fixture probes. Later40-case oracle and2697/1 core run are separately indexed evidence; no robust runtime or ROS DDS acceptance"
+    },
+    "r15_ci": {
+      "read_utc": "2026-10-11T09:43:06.5051983Z",
+      "success": 6,
+      "failure": 2,
+      "gnss_branch_cases_passed": 7,
+      "gnss_tag_cases_passed": 3,
+      "cases_per_gnss_run": 9,
+      "gnss_unit_tests_per_run": 2618,
+      "worker_compute_approx_ms": [
+        365,
+        559
+      ],
+      "journal_source_age_approx_ms": [
+        400,
+        660
+      ],
+      "node_mask_age_limit_ms": 500,
+      "exact_guard_clause_logged": false,
+      "scope": "Actual ROS DDS failure after successful unit/build stages; source age explanation strongly supported, not proven for every rejection",
+      "runs": [
+        {
+          "workflow": "native",
+          "ref": "branch",
+          "id": 38128963046,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963046"
+        },
+        {
+          "workflow": "native",
+          "ref": "tag",
+          "id": 38128963079,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963079"
+        },
+        {
+          "workflow": "handoff",
+          "ref": "branch",
+          "id": 38128963119,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963119"
+        },
+        {
+          "workflow": "handoff",
+          "ref": "tag",
+          "id": 38128963049,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963049"
+        },
+        {
+          "workflow": "Lane Foxy",
+          "ref": "branch",
+          "id": 38128963105,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963105"
+        },
+        {
+          "workflow": "Lane Foxy",
+          "ref": "tag",
+          "id": 38128963092,
+          "result": "success",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963092"
+        },
+        {
+          "workflow": "GNSS Foxy",
+          "ref": "branch",
+          "id": 38128963174,
+          "result": "failure",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963174"
+        },
+        {
+          "workflow": "GNSS Foxy",
+          "ref": "tag",
+          "id": 38128963098,
+          "result": "failure",
+          "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38128963098"
+        }
+      ]
+    },
+    "new_actual_drive": false,
+    "complete_teach_lap": false,
+    "complete_repeat_lap": false
+  },
+  "fixed_chart_design_review": {
+    "integration_status": "design only",
+    "formula": "s=t0 dot(q-o0); F(s)=p+((s-t0 dot(p-o0))/(t0 dot t))*t",
+    "five_fields": [
+      "certified_model_segments",
+      "certified_model_owner",
+      "certified_model_frame_votes",
+      "certified_model_reliable_votes",
+      "certified_model_last_stamp_ns"
+    ],
+    "sufficiency": "Frozen localization geometry payload, conditional on immutable creation chart, same-world-parameter certificate, directed original angle gate, finite endpoints and atomic guarded state ownership",
+    "not_claimed": [
+      "raw history fully encoded by five fields",
+      "historical raw segments all lie on current fitted line",
+      "solver acceptance",
+      "complete lap",
+      "safe vehicle release"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "r16_full_native_02_summary.json",
+      "sha256": "6a6f5a82ef5257521b9c040bc34a37f3016c85cb1b8d493a9318f6edc2afed92",
+      "note": "Final2697passed1Linux-onlyskip;157sourcesunchanged;explicit unintegrated prototype exclusion.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_02_sources_before.json",
+      "sha256": "6016c0a10429e993786bd947f6756665ec663388e4b20139488fca897d621fc0",
+      "note": "Final157-source before manifest; paint848 and equivalence test20d785.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_02_sources_after.json",
+      "sha256": "d55ef447fc8a87d8ae601543f622f5abf1e3c86ce9a61c3a4626d59933160b8c",
+      "note": "Final source-content hashes unchanged; manifest capture metadata differs.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_02.xml",
+      "sha256": "421b47c48db98c01b88168f1731aa1be408acd733fc1be501245d64f377eba98",
+      "note": "2698top-levelcases,1skip,0errors,0failures,JUnit71.391s.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_02.log",
+      "sha256": "a8c7deb717a337317522f0fadd4a29d2334c04621c1c4ef22d771464d0041f14",
+      "note": "Terminal pytest2697passed1skipped71.40s; local-only original log.",
+      "copied": false
+    },
+    {
+      "path": "r16_native_identity_02.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "note": "Final seven-API real-call verification; same C and Windows binary identity.",
+      "copied": false
+    },
+    {
+      "path": "r16_fit_domain_equivalence_01/focused_01.xml",
+      "sha256": "8378d3447fd9a12663442417efb59e020dd5dc932d1f8022cafc51336bb5edf2",
+      "note": "40 tests passed in JUnit0.659s on unchanged848 paint; no failures/errors/skips.",
+      "copied": false
+    },
+    {
+      "path": "r16_identity_continuity_01/REVIEW.md",
+      "sha256": "c963c02f4c59587f9a59b6cb8b798803ca9f9c4973ce001b8ca3e1a7dbe40a46",
+      "note": "Read-only association contract review; initial 6bb source.",
+      "copied": false
+    },
+    {
+      "path": "r16_identity_continuity_01/focused_02.xml",
+      "sha256": "75a6ac28946a2441d1e4ff8de490142be6f7a3a73fed328e8f5c11eba8a810c1",
+      "note": "85 passed; 40 identity and 45 legacy-equivalence cases.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_01_summary.json",
+      "sha256": "c28c99337e41ec5d8108af853d1caff055b02d5acbc3c7563ab7cf068c10a4ae",
+      "note": "2657 passed / 1 skip. Independent unintegrated curve-fit test excluded by command.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_01_sources_before.json",
+      "sha256": "80febddd353e1d7f6c7e80aa5e21524d95ec041095c75886276e8d20f2274252",
+      "note": "156-source before manifest.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_01_sources_after.json",
+      "sha256": "0ce5713bdf6108796a15525892e9a033cf51bf9da4ed7bb24920b98070d6b0df",
+      "note": "No source-content changes compared with before; file metadata differs.",
+      "copied": false
+    },
+    {
+      "path": "r16_full_native_01.xml",
+      "sha256": "158b9d74259065b5f65064113638937c08cb4f4343b7dc3f01ee444ae26635b6",
+      "note": "2658 top-level cases; zero failures/errors; one Linux-only process-group skip.",
+      "copied": false
+    },
+    {
+      "path": "r16_native_identity_01.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "note": "Seven API real calls passed; Windows artifact identity, not Foxy acceptance.",
+      "copied": false
+    },
+    {
+      "path": "r16_validation_preparation_01/candidate_manifest_APPROVED_01.json",
+      "sha256": "839b48b6c837aa8680658e0b19b4db48dbf1614670ba4f577162585633d1f688",
+      "note": "Frozen initial candidate and selected validation commands.",
+      "copied": false
+    },
+    {
+      "path": "r16_validation_preparation_01/r16_observed_01.json",
+      "sha256": "7f10e77ea8d1c0c84512da6af3f88b054941ef6d4202888585d0ffdb55c5ab90",
+      "note": "105/106 accepted of 111 available; seq256 overlap failure; not historical source equivalence.",
+      "copied": false
+    },
+    {
+      "path": "r16_validation_preparation_01/r16_observed_01_execution.json",
+      "sha256": "285d8a02ab993678d4494be873f045c9e085b14f19db19a447df7852c353ac3b",
+      "note": "Execution identity and original matcher gates.",
+      "copied": false
+    },
+    {
+      "path": "r16_validation_preparation_01/r16_development_01.json",
+      "sha256": "e4700fe33fa433a911b4023b1094a8fe1ab4eef52d793c8bf8f7c3727d9abdef",
+      "note": "Four development cases failed frame7; reused synthetic inputs, not holdout.",
+      "copied": false
+    },
+    {
+      "path": "r16_validation_preparation_01/r16_development_01_execution.json",
+      "sha256": "d492d51bb330c72eb30040c3481ec5b08d7ae21023a2f54a532e65b3027831b1",
+      "note": "Configurations, thresholds and common inputs checked unchanged; process exit0 is not quality pass.",
+      "copied": false
+    },
+    {
+      "path": "r16_extraction_profile_01/summary.json",
+      "sha256": "69ff63576b941f99a92dcfa3ab307c9e1ab11fac3307055c6e22a693d6523774",
+      "note": "6bb source; first unprofiled extraction297.3686000332ms.",
+      "copied": false
+    },
+    {
+      "path": "r16_extraction_profile_01/profile.txt",
+      "sha256": "e2e974e19b5156a146c1137b9b20e915b03e3e95f191a0f13fd6adcf3d7b5f74",
+      "note": "Approximately165ms cumulative finite-face helper; profiling instrumentation.",
+      "copied": false
+    },
+    {
+      "path": "r16_extraction_profile_02/summary.json",
+      "sha256": "7b8ad3adc1e6ef4b7e8bfb70501255e11f941fed88c5c1cea48ba01bf55c052d",
+      "note": "848 source; first unprofiled extraction146.6981999693ms; separate probe.",
+      "copied": false
+    },
+    {
+      "path": "r16_extraction_profile_02/profile.txt",
+      "sha256": "e83912cdb2cc7e5a62cb0a753eb405892b79489072e65253b172a77d6edf7516",
+      "note": "Approximately27ms cumulative finite-face helper; not end-to-end runtime.",
+      "copied": false
+    },
+    {
+      "path": "r16_synthetic_support_audit_01/REPORT.md",
+      "sha256": "6259205bd44ba34ddcfc3e040c8a91a817a0ba2303a55f8f59dd56368db4439c",
+      "note": "Causal past model-segment evidence and counterfactual boundaries.",
+      "copied": false
+    },
+    {
+      "path": "r16_synthetic_support_audit_01/creation_chart_capacity_01.json",
+      "sha256": "164ad60e259988156785d6eeaf978b7eeb9efa972bc2c4f9cd4cbba4224ae59f",
+      "note": "COUNTERFACTUAL full nearest competition at fixed original prediction; no pose solve.",
+      "copied": false
+    },
+    {
+      "path": "r16_synthetic_support_audit_01/creation_chart_capacity.py",
+      "sha256": "e6ac8b49805d6b7f15551815b17ad36186a09164de471b3da58efd8dc597f2e6",
+      "note": "Saved-data diagnostic implementation; not production integration.",
+      "copied": false
+    },
+    {
+      "path": "r15_publication_01/REPORT.md",
+      "sha256": "643d4597c4f188d9d8b6d87d4f8902259addb7366535c33a28881cf74c2c62f7",
+      "note": "R15 remote6/8; two actual GNSS DDS failures; no full lap.",
+      "copied": false
+    },
+    {
+      "path": "r15_publication_01/readback_01.json",
+      "sha256": "54880488e9cef2cd21f6602a92d636b557a0b727af2773b955b5d9be95a2d323",
+      "note": "Saved exact-head branch/tag run and remote-ref readback.",
+      "copied": false
+    },
+    {
+      "path": "r15_publication_01/gnss_failure_01.json",
+      "sha256": "a0db45985d94ae388663e75256136571b32590249813197ebbdae2329d25430f",
+      "note": "Coordinate-free DDS failure and timing summary.",
+      "copied": false
+    },
+    {
+      "path": "r15_publication_01/runtime_source_audit_01.json",
+      "sha256": "72fd062e6904eaa87aaa9e9d03b39b00f4f369d982bab1dc7cfde5f406ae0842",
+      "note": "Worker versus engine timing boundaries and identical R14/R15 call-chain hashes.",
+      "copied": false
+    }
+  ],
+  "artifact_path_semantics": "Relative to private diagnostics root. These are references only; no originals copied. Paths or synthetic coordinates inside original evidence require review before publication.",
+  "pending": [
+    "Any remaining final-source adapter verification",
+    "Foxy DDS end-to-end revalidation",
+    "Any approved repeated-support implementation and quality validation"
+  ]
+}
