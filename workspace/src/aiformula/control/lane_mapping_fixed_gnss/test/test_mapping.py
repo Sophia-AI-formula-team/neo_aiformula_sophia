@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 sys.path.insert(0, str(Path(__file__).parents[2] / "lane_mapping_lya_reference"))
 
 from lane_mapping_fixed_gnss import mapping
+from lane_mapping_lya_reference.mask_localization import CommittedLocalizationState
 
 
 def scan():
@@ -24,18 +25,48 @@ class FakeMatcher:
     created = []
     accept = True
 
-    def __init__(self, anchor, config=None):
+    def __init__(self, anchor, config=None, anchor_support_xy=None, anchor_support_stamp_ns=None):
         self.anchor = anchor.copy()
+        self.config = dict(config or {})
+        self.correction_se2 = (0., 0., 0.)
         self.commits = 0
+        self.last_accepted_stamp_ns = None
+        self.last_seen_stamp_ns = None
         self.created.append(self)
 
-    def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True):
+    def fork_with_anchor(self, anchor, anchor_support_xy=None, anchor_support_stamp_ns=None):
+        return self.from_tracking_state(anchor, self.capture_tracking_state(), anchor_support_xy,
+                                        anchor_support_stamp_ns)
+
+    def capture_tracking_state(self):
+        # The test double follows the same immutable handoff protocol; the
+        # geometry/commit tests below still execute the real engine transition.
+        return CommittedLocalizationState(self.config, self.correction_se2,
+                                          self.last_accepted_stamp_ns, self.last_seen_stamp_ns)
+
+    @classmethod
+    def from_tracking_state(cls, anchor, state, anchor_support_xy=None, anchor_support_stamp_ns=None):
+        assert isinstance(state, CommittedLocalizationState)
+        other = cls(anchor, state.config)
+        other.correction_se2 = state.correction_se2
+        other.last_accepted_stamp_ns = state.last_accepted_stamp_ns
+        other.last_seen_stamp_ns = state.last_seen_stamp_ns
+        return other
+
+    def discard_pending(self):
+        pass
+
+    def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True,
+              scan_support_xy=None, scan_sensitivity=None):
         assert commit is False
+        assert scan_support_xy is not None and scan_sensitivity is not None
+        self.last_seen_stamp_ns = stamp
         return SimpleNamespace(accepted=self.accept, reason="no_overlap" if not self.accept else "matched",
-                               pose_xyyaw=np.asarray(prior).copy(), metrics={})
+                               pose_xyyaw=np.asarray(prior).copy(), metrics={}, stamp_ns=stamp)
 
     def commit(self, result):
         self.commits += 1
+        self.last_accepted_stamp_ns = result.stamp_ns
         return True
 
 

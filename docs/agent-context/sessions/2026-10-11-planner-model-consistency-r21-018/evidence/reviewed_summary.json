@@ -1,0 +1,87 @@
+{
+  "scope": "R21 exact extraction comparison, full offline tests and strict recorded trial28 prefix; no actual driving/lap validation",
+  "execution_order": [
+    "extraction comparison",
+    "full regression",
+    "strict replay"
+  ],
+  "retries": 0,
+  "comparison": {
+    "pairs": 12,
+    "fields_per_pair": 28,
+    "all_bytes_exact": true,
+    "all_integrity_checks": true,
+    "elapsed_s": 4.183425700000953,
+    "timings_ms": {
+      "R20": {
+        "min": 154.59750004811212,
+        "median": 160.8018999977503,
+        "max": 231.97759996401146,
+        "total": 2042.5167001085356
+      },
+      "R21": {
+        "min": 143.22060003178194,
+        "median": 150.4418000113219,
+        "max": 236.17300001205876,
+        "total": 1957.3769000708126
+      }
+    },
+    "r21_slower_sequences": [
+      160,
+      162
+    ],
+    "limitations": "One alternating pair per actual frame, not a runtime distribution. Excludes LYA, full LaneSession and transport."
+  },
+  "full_regression": {
+    "passed": 3597,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "junit_s": 102.108,
+    "process_s": 103.1895622999873,
+    "source_files": 183,
+    "source_changes": 0,
+    "native_api_real_calls": 8,
+    "installed_prefix_option_supplied": false,
+    "skip_reason": "Target Linux process-group test"
+  },
+  "strict": {
+    "integrity_pass": true,
+    "checks_passed": 21,
+    "accepted": 12,
+    "attempted": 13,
+    "available": 111,
+    "failed_sequence": 163,
+    "reason": "processing_deadline",
+    "engine_ms": 87.12150005158037,
+    "match_ms": 32.187,
+    "overlap": 0.6758620689655174,
+    "rank": 2,
+    "trace_points_after_rejection": 12,
+    "confirmed_cells_after_rejection": 131,
+    "child_process_s": 3.3321335000218824,
+    "current_frame_committed": false,
+    "first_failure_stop": true
+  },
+  "orchestration_issue": "Extra read-only post-full assertion incorrectly required installed_prefix_verified; assertion failed, but ungated tool orchestration proceeded. See original preserved issue file. Actual required native/source/test checks passed; no rerun.",
+  "artifacts_sha256": {
+    "r21_extraction_comparison_01/compare_once.py": "025a6c5d423e8a75ccd48c5ee9e4b6fef036019081166b53b240330395b5d648",
+    "r21_extraction_comparison_01/comparison_manifest_APPROVED_01.json": "c5488babbd137bc5ba5735202bddc605bbb47687131ed82178258c916a2ebfbc",
+    "r21_extraction_comparison_01/result_01.json": "46cac7dac7047763b0039323a436383b6bb85ac05fbdbc90e823a139b9d8dded",
+    "r21_extraction_comparison_01/current_sources_01.zip": "9d5e102ca563dea840c0c79d02263bda875edc89fb8f01015d08f288bc954a2e",
+    "r21_full_regression_01/run_once.py": "46f10c605209b355f4d3a598f0c22f6a3d1a70fb1270ad33f25e2a730cdc7e4d",
+    "r21_full_regression_01/regression_manifest_APPROVED_01.json": "a7f4a0ba2ae2b489dbce54f632abed116d2cb4a5df2292b92a786812572e4f75",
+    "r21_full_regression_01/summary_01.json": "ebe64437c93da9feb19356dafdf4089116e36d89ccccd91523e0fdbc24eb902f",
+    "r21_full_regression_01/pytest_01.xml": "1d26d00f5dda3d00f3c459d9e437a67e5434ccd8e25a954cf22808cd4da1ee3c",
+    "r21_full_regression_01/stdout_01.txt": "e7a0048c2a0c8e93513e6e2e3bab01330027acc21e5527b2b420fe0b35b200d0",
+    "r21_full_regression_01/native_actual_01.json": "bd13ca597a41fbc58392cf09f6934a0eebf937192e8076e6561e60c5ace3e54f",
+    "r21_full_regression_01/sources_before_01.json": "e6b85513f7888813a039993e5ecc84bc2fd1a8e3b29b0373d416ede27348f83b",
+    "r21_full_regression_01/sources_after_01.json": "9beb8df80b8f292e26746e642d22a0b26b8392a45a7081157d90c75adba9d032",
+    "r21_observed_01/run_once.py": "dffed515c66c05635b54694eaba1ed07063ca07180b0ddeb27e4bd86617928b3",
+    "r21_observed_01/candidate_manifest_APPROVED_01.json": "3c8019f9f3a60e5200a49bc7e2dfa24a8aaf9d382df9f7ffa80c4021c3160025",
+    "r21_observed_01/r21_observed_01.json": "ea3b6356d13b72586cd2e0ad1c058da88b9c01063728aa164a63345eb94727ee",
+    "r21_observed_01/execution_01.json": "43291e84bd13a90dae4da1acfbe9111c321e24b3a9251d6861f16a2f253e7742",
+    "r21_observed_01/source_snapshot_01.zip": "6cc4f2a9dad8dad71cc5a068b844f3dee4433c89153203d2f76e922d48be3a95",
+    "r21_observed_01/pre_execution_audit_issue_01.json": "ce5a6a31fd2aa848185bccaff3bc8b5df4b3bf90efae8e0591a8ef60830f85e7"
+  }
+}

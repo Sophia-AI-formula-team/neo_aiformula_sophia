@@ -1,0 +1,222 @@
+{
+  "scope": "synthetic ROS/DDS; no hardware or simulator lap",
+  "unit": {
+    "lane_mapping_fixed": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lane_mapping_fixed_gnss": {
+      "tests": 958,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lane_mapping_lya_reference": {
+      "tests": 3800,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  },
+  "runtime_passed": false,
+  "cases": [
+    {
+      "case": "default_guard",
+      "passed": true
+    },
+    {
+      "case": "normal",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 15,
+        "processing_deadline": 14,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "bootstrap_anchor_not_established",
+        "compute_ms": 219.86693699999998,
+        "engine_processing_ms": 0.08878599999206926,
+        "counts_at_result": {
+          "rejected": 15,
+          "processing_deadline": 14,
+          "accepted": 1,
+          "bootstrap_odometry": 1,
+          "bootstrap_anchor_not_established": 1
+        }
+      }
+    },
+    {
+      "case": "no_gnss_build",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 17,
+        "processing_deadline": 16,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 317.33572799999996,
+        "engine_processing_ms": 96.63211599996657,
+        "counts_at_result": {
+          "rejected": 16,
+          "processing_deadline": 16
+        }
+      }
+    },
+    {
+      "case": "startup_gap",
+      "passed": true
+    },
+    {
+      "case": "future_gps",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 15,
+        "processing_deadline": 14,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 356.517377,
+        "engine_processing_ms": 140.4873800000246,
+        "counts_at_result": {
+          "rejected": 14,
+          "processing_deadline": 14,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    },
+    {
+      "case": "missing_bits",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 16,
+        "processing_deadline": 15,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 320.152432,
+        "engine_processing_ms": 105.91527399998313,
+        "counts_at_result": {
+          "rejected": 15,
+          "processing_deadline": 15,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    },
+    {
+      "case": "uncertainty",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 15,
+        "processing_deadline": 14,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 353.89885499999997,
+        "engine_processing_ms": 137.64545899999803,
+        "counts_at_result": {
+          "rejected": 14,
+          "processing_deadline": 14,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    },
+    {
+      "case": "future_wheel",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 16,
+        "processing_deadline": 15,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 337.158052,
+        "engine_processing_ms": 122.70246200000656,
+        "counts_at_result": {
+          "rejected": 15,
+          "processing_deadline": 15,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    },
+    {
+      "case": "future_gyro",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 16,
+        "processing_deadline": 15,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 342.89666,
+        "engine_processing_ms": 104.44749299995237,
+        "counts_at_result": {
+          "rejected": 15,
+          "processing_deadline": 15,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    }
+  ],
+  "raw_runtime_sha256": "e69fb1430aa4b108b475af7fa72dd8b9feca100dded1b3fdf1e27dcdf03687b4",
+  "privacy": "source epochs, GNSS constants and paths omitted"
+}

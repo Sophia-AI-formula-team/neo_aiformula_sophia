@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "kind": "privacy_reviewed_junit_summary",
+  "source": {
+    "filename": "r3_core_suite_01.xml",
+    "bytes": 115054,
+    "sha256": "a29eb41cdf4d1a80ed72ab804bc703ce87aa02924bffaf3a97e52021335c74b7",
+    "raw_xml_included": false,
+    "command_recorded_in_xml": false,
+    "code_revision_recorded_in_xml": false,
+    "source_hashes_recorded_in_xml": false
+  },
+  "suite": {
+    "name": "pytest",
+    "timestamp": "2026-10-11T02:28:44.514410+09:00",
+    "duration_seconds": 39.903,
+    "tests": 879,
+    "passed": 878,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "testcase_node_count": 879,
+    "counts_verified_against_testcase_nodes": true
+  },
+  "testcase_counts_by_classname": {
+    "test.test_cell_grouping": 27,
+    "test.test_connected_geometry": 46,
+    "test.test_controller": 103,
+    "test.test_density_cross_section": 33,
+    "test.test_fixed_reference_speed": 32,
+    "test.test_follower_visual": 63,
+    "test.test_geometry_cache": 21,
+    "test.test_hint_admission": 18,
+    "test.test_local_density_admission": 5,
+    "test.test_mapping_route_pipeline": 1,
+    "test.test_mask_localization": 40,
+    "test.test_mask_localization_replay": 10,
+    "test.test_neo_contract": 29,
+    "test.test_recorder_callbacks": 7,
+    "test.test_recorder_localization": 28,
+    "test.test_route": 26,
+    "test.test_runtime_visual_fixture": 3,
+    "test.test_supervisor": 12,
+    "test.test_tracking_state": 16,
+    "test_anchors": 59,
+    "test_bundle": 32,
+    "test_control": 61,
+    "test_deployment_guard": 27,
+    "test_keyframe_transaction": 42,
+    "test_mapping": 17,
+    "test_motion": 49,
+    "test_past_direction_context": 34,
+    "test_repeat_handoff": 18,
+    "test_worker": 20
+  },
+  "skipped_tests": [
+    {
+      "classname": "test.test_supervisor",
+      "name": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+      "type": "pytest.skip",
+      "reason": "Target Linux process-group test"
+    }
+  ],
+  "publication_review": {
+    "method": "Parsed the original XML and independently counted testcase, skipped, failure and error nodes; retained only the enumerated fields in this summary.",
+    "omitted_source_fields": [
+      "testsuite hostname",
+      "skipped element text containing the personal absolute source path",
+      "individual test durations and full testcase enumeration"
+    ],
+    "source_modified": false,
+    "summary_contains_personal_absolute_paths": false,
+    "summary_contains_tokens_or_private_keys": false,
+    "summary_contains_ground_truth_course_or_gnss_data": false,
+    "related_replay_reports": {
+      "r3_connected_draft_23.json": "33486657247a4cf7c92cc6c68de71d55be726d70a0523d78ca0d75cc24193311",
+      "r3_connected_draft_24.json": "804ba9c2b5c7dd5d90642bd3cb16eba3b59fa4eb2fcc014b6e13734fb0adf902",
+      "r3_connected_draft_25.json": "3da86f2469cec5c4898197f34a1fb018fd32bb123c7fd8fadd8c56d7b53d7635",
+      "r3_connected_draft_26.json": "69ce98b2d72f61d336b121f1c8ed2b5253bd14ea96fb7e55bf225636ad042504"
+    },
+    "replay_review_scope": "All four JSON documents were parsed and their schema and strings reviewed. Source filenames are repository-relative. pose_xyyaw contains estimated local map poses, not simulator truth. No image payload, course coordinates, GNSS observations, personal absolute paths, email addresses, credential tokens or private keys were found. Exact bytes are retained, including the failed draft_23 result.",
+    "replay_fixture_sha256": "557ed0005e042322aa0caedbaa428670b6ebd46e6c017ee82d012e7e4a8a04ba"
+  },
+  "limits": [
+    "This is a privacy-reviewed summary of an existing test run, not a new execution.",
+    "The original JUnit XML does not independently establish the executed source revision or hashes. Related replay files carry their own four-module worktree hashes; source_revision is null.",
+    "Replay draft_23 accepts 105 of 106 frames and rejects sequence 357 for match_runtime_budget_exceeded. Drafts 24, 25 and 26 each accept 106 of 106 frames with the same recorded module hashes. Timing remains host-dependent; the failure is not suppressed.",
+    "These are offline core tests and replay reports, not a successful closed-loop Unity lap, repeat phase, ROS deployment or real-vehicle acceptance."
+  ]
+}

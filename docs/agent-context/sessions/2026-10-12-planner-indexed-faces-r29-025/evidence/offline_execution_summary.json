@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "kind": "Redacted original bounded executions, not runtime/driving acceptance",
+  "indexed_units": {
+    "original_driver_preflight": "SyntaxError missing closing parenthesis, exit1 before imports/tests; original source and failure record retained",
+    "corrected_driver": "run_once_02.py; identical helper/test bytes",
+    "tests": 25, "passed": 25, "failed": 0, "errors": 0, "skipped": 0,
+    "driver_elapsed_s": 0.27082320000045, "tool_wall_s": 0.5318919,
+    "exit_code": 0, "source_unchanged": true,
+    "result_sha256": "7064635b74e4b3e8dc61ad5443f7e27acec232861817017c6f27b900e06709d9"
+  },
+  "joint_and_loader_02": {
+    "joint": {"tests": 34, "passed": 34, "exit_code": 0},
+    "loader": {"tests": 52, "passed": 50, "errors": 2, "exit_code": 1},
+    "combined_root_elapsed_s": 5.66659510001773,
+    "source_unchanged": true,
+    "summary_sha256": "73edfb25edebb4ce36b5b7460e207ffcce0ccc046d41d8dcd2915da09f491b0d",
+    "failure_reason": "Historical R19/R21 C differs from installed native9. Correct production identity rejection retained.",
+    "metadata_correction": "Original02 summary first_failure_retained contains stale r28_adapter_checks_01/run_01 path; retained unedited. Actual original02 failure is r29_adapter_checks_02/run_01. Earlier joint33 fixture failure is separately sealed in session024.",
+    "joint_scope": "Exact fixed straight arm only; not actual polynomial join or arbitrary curve exclusion"
+  },
+  "loader_03": {
+    "tests": 52, "passed": 52, "failed": 0, "errors": 0, "skipped": 0,
+    "unittest_elapsed_s": 7.431, "root_elapsed_s": 7.840016300033312,
+    "tool_wall_s": 8.041155, "exit_code": 0, "source_pins_unchanged": true,
+    "pin_count": 32,
+    "summary_sha256": "7de734f3ea81951cdc99ea2b73c8573d1ac4f206fa97847b8a27df66a093471a",
+    "change": "Only two historical source-closure fixtures force original optional-native-unavailable path; native source mismatch guard unchanged. All current-source cases remain in selection."
+  },
+  "r28_strict_original111": {
+    "code_commit": "8fcd4c0533a13d95400b9f377959733ed798f744",
+    "document_head": "f8a2732a2763e97382f430fe2998808198e8b864",
+    "accepted": 13, "attempted": 14, "first_failure_sequence": 164,
+    "all_prefix_accepted": false, "first_failure_reason": "processing_deadline",
+    "engine_ms": 80.49819996813312, "engine_gate_ms": 80,
+    "matcher_ms": 31.3156, "matcher_gate_ms": 40,
+    "failed_frame_committed": false, "native_identity_exact": true,
+    "all25_integrity_checks": true,
+    "non_timing_mapping_exact_to_original_recording": false,
+    "child_elapsed_s": 3.5675615000072867,
+    "root_elapsed_s": 4.1393714000005275, "child_timeout_s": 45, "outer_timeout_s": 50,
+    "diagnostic_exit_code": 0,
+    "execution_sha256": "b4ee02739cfa5f50aa14647c8dd9dce4d3238080641f4d4ca2aa25bf469b6f15",
+    "report_sha256": "bed170cba93cdef31bdf2b7e7961939a775b637c0f46d38b0d1191ecd9636f50",
+    "scope": "Original causal mask/wheel/gyro receipt prefix stops first failure; not97 remaining frames, full200ms chain, Unity, truth/driving accuracy or full lap. Exit0 means diagnostic integrity only."
+  },
+  "boundaries": {
+    "new_native_build_or_install": false, "future_data": false, "unity_calls": 0,
+    "vehicle_sim_camera_lya_changes": false, "gate_changes": false,
+    "first_lap": false, "frozen_driven_route": false, "second_lap": false,
+    "new_driving_video": false, "runtime_acceptance": false,
+    "raw_images_source_stamps_coordinates_personal_paths_published": false
+  }
+}

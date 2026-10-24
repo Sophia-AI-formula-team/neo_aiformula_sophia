@@ -13,6 +13,11 @@
 
 两包共享同一份建图、路线生成和控制代码，不复制算法。两种启动方式只能选一种运行。
 
+共享定位器的 R7 候选另提供显式相对运动信息融合接口；当前自动接入的是
+`lane_mapping_fixed_gnss` 的原始轮速/陀螺链及仿真适配器，详见该包 README。
+本页两包现有 CommonGroup follower 不自动套用这一原始运动统计假设，仍保留
+旧调用。不要把共享代码存在当成所有 ROS 启动方式已经启用新因子或通过两圈。
+
 ## 先说清楚安全边界
 
 默认仅向 `/lane_learning/cmd_vel` 发布，**没有接到电机**；默认 `DISARMED`，不会自动开车。本包不启动相机、VectorNav、CAN、电机或原来的全车 launch。
@@ -47,10 +52,29 @@
 
 目标环境是 **Ubuntu 20.04 + ROS 2 Foxy / Python 3.8**。先准备好系统 ROS 环境和车上原来的感知、定位、LYA 依赖。下面只编译明确列出的包，不让 colcon 遍历整个车辆项目。依赖安装需先获得车端环境修改授权；已有依赖时跳过 rosdep 安装。
 
+原生连通图版本还需要标准 C 编译环境（Ubuntu 的 `build-essential`）及
+`python3-dev`。后者已声明为构建依赖；前者是构建环境，不伪造不存在的
+rosdep key。经环境修改授权后可用 `sudo apt-get install build-essential python3-dev`
+准备。扩展由 `colcon build` 随本包编译，无 NumPy C ABI、SciPy 或 pybind11 依赖。
+源码直接运行但未编译时保留原 Python 路径和原时限；不得把这种回退称为已启用加速。
+Windows 仿真 `.pyd` 不能带到车上，车端按其 Python/CPU 架构重新构建。
+当前原生版本是 repair 分支的候选，尚不是两圈/实车通过的部署版本。
+原生批处理保留候选点顺序、独立 double 乘加和原门限；法向兼容仍使用原来
+每个 cell 的 NumPy 矩阵运算，不改成不同舍入的 C 点积。超出原生容量或数值
+适用范围时使用原 NumPy 路径，不能悄悄截点。模块 API 或嵌入源 SHA 不匹配
+必须重新构建，不能将旧二进制混入新源码来证明验证通过。
+局部 PCA 的原生候选按一个半径批量计算连通邻域及均值/协方差，保留候选顺序、
+零权重乘法、原 NumPy 256 行特征分解及几何门限。CSR 单次最多4000个点/查询/组、
+每组2048个候选；候选ID最多65,536,000字节，另有有界索引/点数据、单行scratch和
+最多224,000字节输出，不再为所有邻域创建稠密浮点差分矩阵。这是容量限制，
+不是硬实时保证。独立 `local_moments` API 保留原最多139,264,000字节输入限制。
+只接收不可变bytes，完整检查CSR、ID、点范围和森林；缺seed不得凭其它点证明连通。
+严格下溢检查、不同浮点格式或超范围继续使用原NumPy路径；原生错误不静默重试。
+
 ```bash
 source /opt/ros/foxy/setup.bash
 mkdir -p ~/lane_learning_ws/src
-git clone --branch feat/causal-lane-teach-repeat \
+git clone --branch repair/lane-keyframe-transaction-20261011 \
   https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git \
   ~/lane_learning_ws/src/neo_aiformula_sophia
 cd ~/lane_learning_ws
@@ -69,6 +93,7 @@ colcon build --symlink-install --base-paths \
   src/neo_aiformula_sophia/dependencies/vectornav/vectornav_msgs \
   --packages-up-to lane_mapping_fixed
 source install/setup.bash
+python3 -c 'import _lane_mapping_lya_native as n; print(n.API_VERSION, n.SOURCE_SHA256, n.__file__)'
 ```
 
 如果 `vectornav_msgs` 已在车上的已 source 工作空间中安装，可以省略上面两处 VectorNav 源码路径。neo 仓库的原生消息源码位于 `dependencies/vectornav/vectornav_msgs`，不是旧仓库的 sensing 目录。
@@ -121,6 +146,16 @@ mask 只使用**当时已到达、且时间戳不晚于该图像**的 VectorNav�
 默认 `visual_max_age_s=0.5`、图像与过去 VectorNav 最大间隔 `0.15 s`、连续成功帧数 `3`；VectorNav 自身仍必须满足 `0.25 s` 时效和 Tracking 健康检查。前者是视觉修正的新鲜度，不会把旧 VN 当成新定位。匹配参数通过 `visual_matcher_config_json` 提供，未知键或非法数值启动失败，不会静默采用另一个算法。
 
 局部匹配默认最多使用 600 个降采样点、30 m 范围内的可靠投影，计算预算 40 ms。这是有界局部定位的范围，不是之前的 3 m 建图截断；原始建图仍按投影敏感度筛选完整 mask。超范围点数、预算超时和不可观测方向都会进诊断。
+
+当前 mask 另有最多 4000 个结构支持点用于连通性/方向，不能把这些点全部当作可靠位置票。
+邻桶距离按最多 65536 对一批计算，保持原距离判断和连通图；不分配全图浮点距离矩阵。
+局部支持只计算最终连通点数；某半径内不足最少点数的行不做必然失败的 PCA，仍会尝试
+后续半径。同一半径的独立 2×2 特征分解最多 256 个一批，均值/协方差仍按原区域计算，
+不会把不同白线混成一条。若目标点被候选截断排除或不在有效支持内，该行直接无支持，
+不能借另一个连通区域的点数通过检查。
+扫描几何缓存只在当前完整邻域字节和构造配置都相同时复用计算结果，不复用旧位姿、
+旧内点或地图票。拒绝帧可能留下纯几何缓存，但不能提交定位/地图；reset 和跨状态重建
+清空该缓存。缓存验证和当前数据复制也计入原 40 ms，不构成硬实时保证。
 
 这是有界的局部匹配，不是任意位置的“找回自己”。初始定位偏差过大、地图无覆盖、车道消失或错误标定会拒绝运行。没有完成相机/地图标定与 consensus 哈希的旧测试 bundle 也会被拒绝；真实 recorder 保存的完整 bundle 包含这些信息。
 
@@ -243,6 +278,18 @@ CI 不代替 RViz GUI 的车端显示验收。
 测试通过证明的是被测范围内的逻辑/通信，不证明真实赛道定位精度或电机安全。实车验收应先架空/断动力确认命令所有权、零指令与急停，再在封闭场地低速检查两圈定位一致性和路线跟踪误差。
 
 ## 离线定位与降噪验证
+
+R34 开发检查点：`BoundaryConsensus(curve_geometry=True, curve_storage="streamed",
+curve_closed_support=True)` 可显式试验原始连续边界的数值接缝修复。
+仅同一 owner/side/signature、至少5个独立原始帧和1个可靠帧、原5票有限域完整覆盖时，
+才能共用相邻有限片段的已有端点；重算法向并按原方向门限检查。
+不同 face ID 的坐标巧合、真实轮廓缺口、域缺口及竞争 signature 均不靠连接消除。
+原始证据和加权容量门不变。`curve_competitor_slab` 只是未接入的距离界研究工具。
+
+上述选项默认关闭，**TeachMapEngine/ROS/control 尚未启用v5**。当前固定历史 world
+观测片段中直接边界查询改善，但完整计算仍秒级；不是当前进程的因果位姿求解，
+也不是原始完整前景加权重叠率或两圈定位误差。不得据此配置车端驾驶；准确结果见
+仓库 STATUS 和 session033。未改车、仿真、LYA参数及所有准入/时间门限。
 
 `scripts/mask_localization_replay.py` 不启动 ROS 或输出车辆命令，输出到包内新建的 `.artifacts/mask_localization_<UTC>_<ID>/`，不覆盖旧实验。额外的离线依赖是 `rosbags`（读取真实 bag）和 `matplotlib`（作图）；不是节点运行依赖。
 

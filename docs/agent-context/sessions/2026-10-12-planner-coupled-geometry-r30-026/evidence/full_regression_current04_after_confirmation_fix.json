@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-15",
+  "evidence_level": "complete_local_Windows_regression_not_runtime",
+  "relative_run": "r30_full_regression_current_04/run_01",
+  "source_pins": 217,
+  "explicit_test_files": 120,
+  "original111_order_retained": true,
+  "source_and_attributes_unchanged": true,
+  "tests": 4613,
+  "passed": 4612,
+  "failures": 0,
+  "errors": 0,
+  "skips": 1,
+  "skip": "Original Linux process-group test",
+  "named_methods": 308,
+  "all_named_present_exactly_once_without_failure_or_skip": true,
+  "native_C_and_binary_identity_and_real_calls_verified": true,
+  "approved_sha256": "d07765b8526f864b0a7e6276b5ff012385ac9a04c0855072191986aa68f10d2b",
+  "root_receipt_sha256": "03133e8f8f83c3163d2734dba80fdf01f567c3bb0aaf55330b95efdff53a98b6",
+  "child_summary_sha256": "dd3e611d61d818e02a0d4d87fb27d2d068d7a0f8b92e45fe1be48ca4ef448b7b",
+  "junit_sha256": "cded56b303a338f58fae5e5e5454c0f132033c7ba151a48d43ca417653dc3732",
+  "native_json_sha256": "286231e8f872fd271b9fbe15b18e1e616814d19c72bf5c9bf27c735d5368bd1c",
+  "whole_owned_run_s": 118.18735269998433,
+  "pytest_reported_s": 113.44,
+  "primary_s": 150,
+  "stop_s": 5,
+  "retries": 0,
+  "stop_attempted": false,
+  "exit_code": 0,
+  "outer": {
+    "pid": 38756,
+    "birth": "not_recorded",
+    "independently_absent": true
+  },
+  "orchestrator": {
+    "pid": 16884,
+    "birth": "134364714942574925",
+    "independently_absent": true
+  },
+  "native": {
+    "pid": 48880,
+    "birth": "134364714957622816",
+    "independently_absent": true
+  },
+  "pytest": {
+    "pid": 41836,
+    "birth": "134364714959207393",
+    "independently_absent": true
+  },
+  "scope": "Current v5 confirmation guard and all four counterexamples are included. V5 is still not enabled in TeachMapEngine/control. Source/count/marker/timing checks are local regression evidence only, not complete causal Engine, semantic-unit correctness, acceleration, ROS/Foxy, new Unity laps/freeze/repeat, video or vehicle acceptance. Ordinary verifier/pytest imports retain the documented dependency/pyc evidence boundary.",
+  "known_style": "Three added test files have an extra blank line at EOF. git diff --check reports these; not a clean-whitespace claim. Frozen tested bytes are retained."
+}

@@ -1,0 +1,196 @@
+"""Development-only explicit piecewise model selection, no map or truth input."""
+from dataclasses import dataclass
+import math
+import numpy as np
+
+
+@dataclass(frozen=True)
+class Piece:
+    ids: tuple
+    normal: tuple
+    cost: float
+    family: str
+
+
+@dataclass(frozen=True)
+class Candidate:
+    start: int
+    count: int
+    closure: tuple
+    left: Piece
+    right: Piece
+    cost: float
+    radius: float
+
+
+def _piece(ids, points, segments, white, black, cfg, side):
+    ids = np.asarray(ids, dtype=np.int64)
+    if not len(ids) or (side and len(ids) < cfg['normal_min_points']):
+        return None
+    coordinates = points[ids]
+    mean = np.mean(coordinates, axis=0)
+    centered = coordinates-mean
+    values, vectors = np.linalg.eigh(centered.T@centered/len(ids))
+    if side and not (values[1] > 1.e-5
+            and values[0] <= cfg['normal_max_thickness_m']**2
+            and values[0] <= cfg['normal_max_variance_ratio']*values[1]):
+        return None
+    if len(ids) == 1:
+        tangent = segments[ids[0], 1]-segments[ids[0], 0]
+        normal = np.array([tangent[1], -tangent[0]])/np.linalg.norm(tangent)
+    else:
+        normal = vectors[:, 0]
+    crossing = black[ids]-white[ids]
+    orientation = float(np.dot(normal, np.sum(crossing, axis=0)))
+    if not math.isfinite(orientation) or orientation == 0.:
+        return None
+    if orientation < 0.:
+        normal = -normal
+    tangent = np.array([-normal[1], normal[0]])
+    height, along = centered@normal, centered@tangent
+    face = segments[ids, 1]-segments[ids, 0]
+    variance = ((face@normal)**2+(crossing@normal)**2)/12.
+    if not np.all(np.isfinite(variance) & (variance > 0.)):
+        return None
+    log_n = math.log(max(len(ids), 2))
+    cost = float(np.sum(height**2/variance))+2.*log_n
+    family = 'line'
+    if side:
+        scale = float(np.max(np.abs(along)))
+        if scale > 0.:
+            design = np.column_stack((np.ones(len(ids)), along/scale, (along/scale)**2))
+            coefficients, _, rank, _ = np.linalg.lstsq(design, height, rcond=None)
+            if rank == 3:
+                residual = height-design@coefficients
+                curved_cost = float(np.sum(residual**2/variance))+3.*log_n
+                if curved_cost < cost:
+                    cost, family = curved_cost, 'quadratic'
+    if not math.isfinite(cost):
+        return None
+    return Piece(tuple(map(int, ids)), tuple(map(float, normal)), cost, family)
+
+
+def split_short_closures(points, segments, white, black, pixel_outward, stable, paths, cfg, *, report=None):
+    """Choose finite ordered computational domains; leave original arrays alone."""
+    result = []
+    k = cfg['normal_min_points']
+    radii, radius = [], cfg['normal_radius_m']
+    while radius < cfg['normal_max_radius_m']:
+        radii.append(radius)
+        radius = min(radius*2., cfg['normal_max_radius_m'])
+    radii.append(cfg['normal_max_radius_m'])
+    cosine = math.cos(math.pi/6.)
+    for path, closed in paths:
+        n = len(path)
+        if n < 2*k+1:
+            result.append((path, closed))
+            continue
+        # A radius window is fixed by its seed, not truncated after fitting.
+        cache, pieces = {}, {}
+        def fitted(ids, side):
+            key = (ids, side)
+            if key not in pieces:
+                pieces[key] = _piece(ids, points, segments, white, black, cfg, side)
+            return pieces[key]
+        def arm(seed, direction, r):
+            key = (seed, direction, r)
+            if key in cache:
+                return cache[key]
+            members, distance, slot = [], 0., seed
+            if not closed and not 0 <= seed < n:
+                cache[key] = ()
+                return ()
+            first = int(path[seed % n])
+            # Metric dot does NOT replace the original pixel polarity stop.
+            while len(members) < min(n, cfg['max_patch_points']):
+                if not closed and not 0 <= slot < n:
+                    break
+                face = int(path[slot % n])
+                if not stable[face] or distance > r:
+                    break
+                if np.dot(pixel_outward[first], pixel_outward[face]) < 0:
+                    break
+                members.append(face)
+                following_slot = slot+direction
+                if not closed and not 0 <= following_slot < n:
+                    break
+                following = int(path[following_slot % n])
+                joint = segments[face, 1 if direction > 0 else 0]
+                step = np.linalg.norm(points[face]-joint)+np.linalg.norm(points[following]-joint)
+                if not np.isfinite(step) or step <= 0.:
+                    break
+                distance += float(step)
+                slot = following_slot
+            answer = tuple(reversed(members)) if direction < 0 else tuple(members)
+            cache[key] = answer
+            return answer
+
+        candidates = []
+        for start in range(n):
+            for count in range(1, k):
+                if not closed and (start == 0 or start+count >= n):
+                    continue
+                cap = tuple(int(path[i % n]) for i in range(start, start+count))
+                if not np.all(stable[list(cap)]):
+                    continue
+                cap_set = set(cap)
+                cap_piece = None
+                for radius in radii:
+                    left_ids = arm(start-1, -1, radius)
+                    right_ids = arm(start+count, 1, radius)
+                    if (len(left_ids) < k or len(right_ids) < k
+                            or cap_set.intersection(left_ids+right_ids)
+                            or set(left_ids).intersection(right_ids)):
+                        continue
+                    left = fitted(left_ids, True)
+                    right = fitted(right_ids, True)
+                    if left is None or right is None:
+                        continue
+                    if float(np.dot(left.normal, right.normal)) > -cosine:
+                        continue
+                    if cap_piece is None:
+                        cap_piece = fitted(cap, False)
+                    if cap_piece is not None:
+                        candidates.append(Candidate(start, count, cap, left, right,
+                            left.cost+right.cost+cap_piece.cost, radius))
+                    break
+        # Discrete partition need not be unique. This is a declared estimator,
+        # with no arbitrary face-ID tie-break for exactly equal cost proposals.
+        candidates.sort(key=lambda candidate: candidate.cost)
+        selected, consumed = [], set()
+        for candidate in candidates:
+            cap = set(candidate.closure)
+            if cap.intersection(consumed):
+                continue
+            tied = [other for other in candidates if other is not candidate
+                    and other.cost == candidate.cost
+                    and cap.intersection(other.closure)]
+            if tied:
+                continue
+            # Competing closures at this same end can touch through their
+            # immediate closure neighbours, without declaring long side
+            # overlaps at opposite endpoints to be a conflict.
+            neighbourhood = cap | {int(path[(candidate.start-1) % n]),
+                                   int(path[(candidate.start+candidate.count) % n])}
+            if neighbourhood.intersection(consumed):
+                continue
+            selected.append(candidate)
+            consumed.update(neighbourhood)
+        cuts = set()
+        for candidate in selected:
+            cuts.add((candidate.start-1) % n)
+            cuts.add((candidate.start+candidate.count-1) % n)
+        if report is not None:
+            report.append(dict(path_faces=tuple(map(int, path)), closed=closed,
+                candidates=candidates, selected=selected))
+        if not cuts:
+            result.append((path, closed))
+        elif closed:
+            cuts = sorted(cuts)
+            for first, last in zip(cuts, cuts[1:]+[cuts[0]+n]):
+                result.append((path[np.arange(first+1, last+1) % n], False))
+        else:
+            cuts = sorted(cuts)
+            result.extend((path[a:b], False) for a, b in zip([0]+[x+1 for x in cuts],
+                                                           [x+1 for x in cuts]+[n]))
+    return result

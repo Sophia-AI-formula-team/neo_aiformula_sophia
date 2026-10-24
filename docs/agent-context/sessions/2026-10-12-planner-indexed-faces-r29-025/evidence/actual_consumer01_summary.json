@@ -1,0 +1,519 @@
+{
+  "kind": "saved_model_geometry_diagnostic_not_map_acceptance",
+  "source": "original22 synthetic development cases from capture04; not real bag or new Unity drive",
+  "processed_cases": 22,
+  "actual_cut_count": 40,
+  "incident_model_counts": {
+    "primary": 80,
+    "ribbon": 0
+  },
+  "joint_calls": 44,
+  "budget": {
+    "max_boxes": 32,
+    "max_depth": 4,
+    "max_joint_calls": 64
+  },
+  "domain_status_counts": {
+    "P": {
+      "yes": 4,
+      "no": 31,
+      "unknown": 5
+    },
+    "Q": {
+      "yes": 0,
+      "no": 1,
+      "unknown": 39
+    },
+    "P_intersect_Q": {
+      "yes": 0,
+      "no": 1,
+      "unknown": 39
+    }
+  },
+  "nominal_world_label_models": {
+    "yes": 69,
+    "no": 11,
+    "unknown": 0
+  },
+  "violated_label_occurrences": 48,
+  "case_counts": [
+    {
+      "name": "longcap_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 4,
+      "P": [
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 8,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "longcap_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 4,
+      "P": [
+        "unknown",
+        "no",
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 8,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_1_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 2,
+        "no": 2,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_1_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 2,
+        "no": 2,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_3_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_3_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_5_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 2,
+        "no": 2,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "shortcap_5_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 2,
+        "no": 2,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "L_corner_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 6,
+      "P": [
+        "no",
+        "no",
+        "no",
+        "yes",
+        "yes",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 12,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "L_corner_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 6,
+      "P": [
+        "no",
+        "no",
+        "no",
+        "yes",
+        "yes",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 12,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "narrow_U_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 4,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "narrow_U_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 2,
+      "P": [
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 4,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "parallel_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "parallel_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "circle_0.6_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "circle_0.6_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "arc_0.6_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 4,
+      "P": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "label_models": {
+        "yes": 6,
+        "no": 2,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "arc_0.6_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 4,
+      "P": [
+        "no",
+        "no",
+        "no",
+        "no"
+      ],
+      "Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "no"
+      ],
+      "P_intersect_Q": [
+        "unknown",
+        "unknown",
+        "unknown",
+        "no"
+      ],
+      "label_models": {
+        "yes": 7,
+        "no": 1,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "circle_8.0_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "circle_8.0_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "arc_8.0_phase_0.0",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    },
+    {
+      "name": "arc_8.0_phase_0.35",
+      "status": "completed_diagnostic",
+      "cuts": 0,
+      "P": [],
+      "Q": [],
+      "P_intersect_Q": [],
+      "label_models": {
+        "yes": 0,
+        "no": 0,
+        "unknown": 0
+      }
+    }
+  ],
+  "bindings_before": 83,
+  "bindings_after": 83,
+  "source_and_inputs_unchanged": true,
+  "child_elapsed_s_diagnostic_only": 1.5179314000415616,
+  "parent_elapsed_s_diagnostic_only": 1.7868134999880567,
+  "tool_wall_s": 2.1842607,
+  "exit_code": 0,
+  "own_child_stopped": true,
+  "scoped_python_workers_after": 0,
+  "summary_sha256": "8a5ea05fef066e655311e8363cd8213eb9c1318b43db3b9cb539404d06064408",
+  "result_sha256": "955b9134829df5f4db1f4c83a7778487e2d77bb207b6fecc55013c9ce5f9a7fe",
+  "pending_sha256": "f0278b3a239d8bf92cc80869047c330efa8b71f3b0be211aaf619dcb9ab6fa40",
+  "approved_sha256": "b7b9d708988a3facefbb169c9fb3fcc783a53f47a148408a9cac1e5c9e66322f",
+  "driver_sha256": "be5d63a750bed294bac40586f4c585be157fbbcb829699c6532c4fa0abf9935c",
+  "consumer_sha256": "ae91d15769d99d043f59adf7e622955ad859dea1402c6db3c78edd8333c5cdfc",
+  "unit_gate_result_sha256": "71829d3e0493e68233eac943981f4451c16dec3504baca60afe21106f7fd828d",
+  "production_imports": 0,
+  "extractor_calls": 0,
+  "custom_native_calls": 0,
+  "Unity_calls": 0,
+  "refits": 0,
+  "map_writes": 0,
+  "dropped_label_occurrences": 0,
+  "retries": 0,
+  "limitations": [
+    "P/Q/intersection report three different hypotheses, not chosen production admission domains",
+    "31 P no disproves only the saved fixed pair in original P with finite bounds, not all curve families or physical measurements",
+    "All-label nominal polynomial extension is stronger than finite curve geometry; outside-extent labels retained and counted, not ignored",
+    "Original rounded primary WB fit arrays unavailable; all actual-rounded primary label conclusions unknown",
+    "39 Q/PQ unknown must not be reinterpreted as no, hull-repaired or deletion permits",
+    "10 zero-cut cases do not provide vacuous joint success",
+    "No actual incident ribbon coverage",
+    "No coefficient repair or coupling integrated; no fullruntime200ms/lap/driving error/video proof",
+    "Raw paths/coordinates/arrays and original actual receipts remain local",
+    "NEW peer full CPU/Unity handback accepted ~UTC22:20:33, no old grant reused; this execution used no Unity"
+  ]
+}

@@ -1,0 +1,145 @@
+"""Actual mask extraction and boundary routing, without driving or a server."""
+import base64
+import io
+import os
+from pathlib import Path
+import sys
+from types import SimpleNamespace
+import unittest
+from concurrent.futures import Future
+from unittest.mock import Mock, patch
+
+import numpy as np
+from PIL import Image
+
+from lane_backend import LaneSession, ProductionCore, source_ns
+from test_lane_backend import FakeClock, encoded_mask, synthetic_camera
+
+
+class BoundaryAdapter(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        repo = os.environ.get('LANE_TEST_REPO')
+        if not repo:
+            raise unittest.SkipTest('set LANE_TEST_REPO to the current neo checkout')
+        cls.saved_path = list(sys.path)
+        cls.saved_modules = {k: v for k, v in sys.modules.items()
+                             if k.split('.')[0] in ('lane_mapping_lya_reference', 'lane_mapping_fixed_gnss', 'trajectory_follower')}
+        cls.core = ProductionCore(Path(repo))
+        cls.camera = synthetic_camera()
+        cls.mask = encoded_mask(cls.core, cls.camera)
+
+    @classmethod
+    def tearDownClass(cls):
+        for key in list(sys.modules):
+            if key.split('.')[0] in ('lane_mapping_lya_reference', 'lane_mapping_fixed_gnss', 'trajectory_follower'):
+                sys.modules.pop(key)
+        sys.modules.update(cls.saved_modules)
+        sys.path[:] = cls.saved_path
+
+    def setUp(self):
+        self.events, self.clock = [], FakeClock()
+        self.session = LaneSession(self.core, self.events.append, clock=self.clock)
+
+    def frame(self):
+        return dict(sequence=0, sim_time=0., camera=self.camera, mask_png=self.mask,
+                    motion=[dict(stamp=0., left_rpm=0., right_rpm=0., gyro_z=0.)])
+
+    def test_source_provenance_includes_both_shared_boundary_modules(self):
+        self.assertEqual(self.core.provenance['feature_representation'], 'paint_boundary_v1')
+        self.assertEqual(self.core.provenance['boundary_version'], 3)
+        self.assertEqual(self.core.provenance['boundary_topology'], 'confirmed_contour_node_chords_v1')
+        self.assertEqual(self.core.provenance['certified_model_representation'], 'confirmed_creation_chart_domains_v1')
+        for name in ('paint_geometry.py', 'boundary_localization.py', 'finite_support.py'):
+            self.assertEqual(sum(path.endswith('/' + name) for path in self.core.provenance['source_sha256']), 1)
+
+    def test_step_calls_real_shared_extractor_on_entire_received_mask(self):
+        real = self.core.extract_boundary_observation
+        with patch.object(self.core, 'extract_boundary_observation', wraps=real) as extract:
+            response = self.session.step(self.frame())
+        self.assertEqual(response['phase'], 'WARMUP', response)
+        extract.assert_called_once()
+        args, kwargs = extract.call_args
+        expected = np.asarray(Image.open(io.BytesIO(base64.b64decode(self.mask))))
+        np.testing.assert_array_equal(args[0], expected)
+        self.assertIs(args[1], self.session.lookup)
+        self.assertEqual(tuple(args[2]), (0., 0., 1.))
+        self.assertEqual(args[3], source_ns(0.))
+        self.assertEqual(kwargs, {'threshold': 127})
+        observation = self.session.boundary_observation
+        summary = response['metrics']['boundary_observation']
+        self.assertEqual(summary, dict(representation='paint_boundary_v1', boundary_version=3, source_stamp_ns=source_ns(0.),
+                         edges=len(observation.points), reliable_edges=int(np.count_nonzero(observation.reliable))))
+        self.assertNotIn('points', summary)
+        self.assertIsNone(self.session.engine)  # WARMUP still makes no map.
+
+    def test_extractor_error_holds_without_legacy_fallback(self):
+        with patch.object(self.core, 'extract_boundary_observation', side_effect=ValueError('invalid boundary geometry')):
+            response = self.session.step(self.frame())
+        self.assertEqual(response['phase'], 'HOLD')
+        self.assertEqual((response['v'], response['w']), (0., 0.))
+        self.assertIn('invalid boundary geometry', response['reason'])
+        self.assertIsNone(self.session.engine)
+
+    def test_map_frame_preserves_filled_input_and_passes_current_boundary(self):
+        self.session.step(self.frame())
+        original = self.session.boundary_observation
+        self.session.engine = SimpleNamespace(process=Mock(return_value=dict(
+            accepted=True, pose_xyyaw=[0., 0., 0.])))
+        points, sensitivity = np.array([[1., .2], [2., .3]]), np.array([.01, .02])
+        self.session._map_frame(points, sensitivity, np.zeros(3), source_ns(0.), {})
+        call = self.session.engine.process.call_args
+        self.assertIs(call.args[0], points)
+        self.assertIs(call.args[1], sensitivity)
+        self.assertIs(call.kwargs['boundary_observation'], original)
+        self.assertEqual(call.kwargs['motion_source_stamp_ns'], self.session.sample.stamp_ns)
+
+    def test_missing_or_wrong_image_boundary_is_not_silently_omitted(self):
+        for observation in (None, SimpleNamespace(source_stamp_ns=99)):
+            self.session.boundary_observation = observation
+            with self.subTest(observation=observation), self.assertRaisesRegex(ValueError, 'missing or from another image'):
+                self.session._boundary_kwargs(100)
+
+    def test_only_explicit_legacy_test_core_omits_boundary_keyword(self):
+        self.session.core = SimpleNamespace(provenance={})
+        self.assertEqual(self.session._boundary_kwargs(100), {})
+
+    def test_repeat_build_uses_boundary_reference_not_filled_consensus(self):
+        reference, state = object(), object()
+        boundary_factory = SimpleNamespace(from_tracking_state=Mock(return_value=object()))
+        legacy_factory = SimpleNamespace(from_tracking_state=Mock())
+        controller = SimpleNamespace(samples=[dict(x_m=0., y_m=0., yaw_rad=0.)],
+                                     start_distance=.6, start_heading_error=.35)
+        self.session.core = SimpleNamespace(reference=2., build_route=Mock(return_value={}),
+            Controller=Mock(return_value=controller), BoundaryLocalizer=boundary_factory, Localizer=legacy_factory)
+        snapshot = SimpleNamespace(trace=np.zeros((3, 3)), consensus_xy=np.ones((3, 2)),
+            stats={'adapter_handoff': {'stopped_pose_xyyaw': [0., 0., 0.]}}, boundary_reference=reference)
+        self.session._build_repeat(snapshot, state)
+        boundary_factory.from_tracking_state.assert_called_once_with(reference, state)
+        legacy_factory.from_tracking_state.assert_not_called()
+
+    def test_boundary_build_rejects_missing_reference_before_route_or_matcher_work(self):
+        snapshot = SimpleNamespace(boundary_reference=None)
+        with patch.object(self.core, 'build_route') as route, \
+                patch.object(self.core.Localizer, 'from_tracking_state') as legacy:
+            with self.assertRaisesRegex(ValueError, 'requires a frozen boundary reference'):
+                self.session._build_repeat(snapshot, object())
+        route.assert_not_called()
+        legacy.assert_not_called()
+        self.assertIsNone(self.session.matcher)
+
+    def test_boundary_finish_rejects_worker_with_legacy_snapshot_before_publication(self):
+        session = self.session
+        session.snapshot = SimpleNamespace(boundary_reference=None)
+        session.prepare_future = Future()
+        session.prepare_future.set_result((object(), object(), object(), None))
+        session.phase = 'PREPARE'
+        with patch.object(session, '_stopped', return_value=True):
+            with self.assertRaisesRegex(RuntimeError, 'requires a frozen boundary reference'):
+                session._finish_prepare(100)
+        self.assertEqual(session.phase, 'PREPARE')
+        self.assertIsNone(session.matcher)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "completed_failed_offline_adapter_attempt",
+  "local_original": "r12_adapter_01.json",
+  "local_original_sha256": "dcc0ad68d28e1391554bfb545fba04af5080e689b31f4be7909ecddfb44ff77b",
+  "aggregate_passed": false,
+  "unit_command": {
+    "exit_code": 1,
+    "tests_run": 318,
+    "failures": 21,
+    "errors": 7,
+    "reported_duration_s": 83.923,
+    "passed_count_not_inferred": true,
+    "failure_classification": "pending independent separation of real integration defects and legacy fixture incompatibilities",
+    "observation_not_classification": "One retained failure reports an unexpected boundary_observation keyword passed to LaneMapLocalizer.match; whether that call belongs to an obsolete isolated fixture or a reachable runtime path is not decided by this summary."
+  },
+  "preservation": {
+    "local_original": "r12_adapter_01.preservation.json",
+    "local_original_sha256": "2a42032da8faa44be9962696133dc4039fae1ac0578c9673fab43a824432458e",
+    "exit_code": 1,
+    "protected_files": 878,
+    "changed_files": 14,
+    "passed": false,
+    "attribution": "The main planner identifies these as the existing peer-owned protected differences; aggregate failure is retained, not rebaselined or hidden."
+  },
+  "evidence_limits": [
+    "This failed adapter result does not invalidate or replace the separately identified 2396-pass core result; their scopes differ.",
+    "Core unit success does not establish complete adapter integration.",
+    "No ROS DDS, new actual lap, physical stop chain or vehicle acceptance is claimed.",
+    "Any repair must use a fresh candidate and new attempt identifier; this failure remains immutable evidence."
+  ],
+  "omitted": [
+    "absolute paths and hostname",
+    "raw stdout and tracebacks",
+    "images, bags and native binary"
+  ]
+}

@@ -343,8 +343,11 @@ def test_worker_latest_only_and_requires_commit_ack(module):
         def __init__(self):
             self.calls, self.committed = [], []
 
-        def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True):
+        def match(self, points, prior, stamp, prior_stamp_ns=None, commit=True,
+                  scan_support_xy=None, scan_sensitivity=None):
             assert commit is False
+            assert scan_support_xy.shape == (40, 2)
+            assert scan_sensitivity.shape == (40,)
             self.calls.append(stamp)
             entered.set()
             release.wait(1)

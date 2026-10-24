@@ -296,6 +296,57 @@ def unpack_cell_keys(keys: Sequence[int]) -> Tuple[np.ndarray, np.ndarray]:
     return x_bits.view(np.int32).astype(np.int64), y_bits.view(np.int32).astype(np.int64)
 
 
+@dataclass(frozen=True)
+class PreparedCellMeans:
+    """Bounded, immutable frame geometry bound to its ORIGINAL voting keys.
+
+    Re-quantizing an averaged point can select an adjacent cell at a floating
+    boundary. Validate containment, not a second quantization of that mean.
+    """
+
+    keys: np.ndarray
+    means: np.ndarray
+    updated_means: np.ndarray
+    resolution_m: float
+    source_stamp_ns: int
+    base_generation: int
+    owner: object
+
+    def __post_init__(self):
+        keys = np.asarray(self.keys)
+        means = np.asarray(self.means, dtype=np.float64)
+        updated = np.asarray(self.updated_means, dtype=np.float64)
+        if (keys.ndim != 1 or keys.dtype.kind not in "ui" or len(keys) > 200000
+                or np.any(keys < 0) or means.shape != (len(keys), 2)
+                or updated.shape != means.shape or not np.all(np.isfinite(means))
+                or not np.all(np.isfinite(updated))
+                or isinstance(self.resolution_m, bool)
+                or not math.isfinite(self.resolution_m) or self.resolution_m <= 0
+                or not _is_integer(self.source_stamp_ns) or not 0 < self.source_stamp_ns < 2 ** 63
+                or not _is_integer(self.base_generation) or self.base_generation < 0):
+            raise ValueError("invalid prepared cell means")
+        keys = keys.astype(np.uint64, copy=False)
+        if len(keys) > 1 and not np.all(keys[1:] > keys[:-1]):
+            raise ValueError("prepared cell keys must be sorted and unique")
+        ix, iy = unpack_cell_keys(keys)
+        try:
+            with np.errstate(over="raise", invalid="raise", divide="raise"):
+                centers = np.column_stack((ix, iy)) * self.resolution_m
+                tolerance = 8. * np.finfo(np.float64).eps * np.maximum(
+                    np.maximum(np.abs(centers), self.resolution_m), 1.)
+                extent = self.resolution_m * .5 + tolerance
+                outside = ((np.abs(means - centers) > extent)
+                           | (np.abs(updated - centers) > extent))
+        except FloatingPointError as error:
+            raise ValueError("prepared cell geometry exceeds numerical range") from error
+        if np.any(outside):
+            raise ValueError("prepared mean lies outside its original cell")
+        object.__setattr__(self, "keys", np.frombuffer(keys.tobytes(), dtype=np.uint64))
+        object.__setattr__(self, "means", np.frombuffer(means.tobytes(), dtype=np.float64).reshape(-1, 2))
+        object.__setattr__(self, "updated_means", np.frombuffer(updated.tobytes(), dtype=np.float64).reshape(-1, 2))
+        object.__setattr__(self, "resolution_m", float(self.resolution_m))
+
+
 class SparseConsensusMap:
     """Past-only consensus with optional low-projection-sensitivity anchors.
 
@@ -308,7 +359,7 @@ class SparseConsensusMap:
         self, resolution_m: float, minimum_frame_votes: int,
         minimum_reliable_frame_votes: int = 0,
         max_candidate_cells: int = 0, max_confirmed_cells: int = 0,
-        candidate_ttl_s: float = 0.0,
+        candidate_ttl_s: float = 0.0, measured_geometry: bool = False,
     ) -> None:
         if not math.isfinite(resolution_m) or resolution_m <= 0.0:
             raise ValueError("Map resolution must be positive")
@@ -327,12 +378,21 @@ class SparseConsensusMap:
             not math.isfinite(candidate_ttl_s * 1.0e9) or candidate_ttl_s * 1.0e9 < 1
         ):
             raise ValueError("Positive candidate TTL must fit nanosecond precision")
+        if not isinstance(measured_geometry, bool):
+            raise ValueError("Measured geometry must be explicitly enabled or disabled")
+        if measured_geometry and not 0 < max_candidate_cells <= 200000:
+            raise ValueError("Measured geometry requires a bounded candidate capacity <= 200000")
         self.resolution_m = float(resolution_m)
         self.minimum_frame_votes = int(minimum_frame_votes)
         self.minimum_reliable_frame_votes = int(minimum_reliable_frame_votes)
         self.max_candidate_cells = int(max_candidate_cells)
         self.max_confirmed_cells = int(max_confirmed_cells)
         self.candidate_ttl_s = float(candidate_ttl_s)
+        self.measured_geometry = measured_geometry
+        # Exactly one 2-double statistic per admitted cell, never pixel history.
+        # Its frame count is the existing candidate_votes, not pixel density.
+        self._cell_means = {}
+        self._geometry_generation = 0
         self._candidate_ttl_ns = int(candidate_ttl_s * 1.0e9)
         self.last_stamp_ns = None
         self.capacity_rejected_cells = 0
@@ -356,6 +416,53 @@ class SparseConsensusMap:
         indices = np.floor(points / self.resolution_m + 0.5).astype(np.int64)
         return np.unique(pack_cell_indices(indices[:, 0], indices[:, 1]))
 
+    def prepare_geometry(self, world_xy: np.ndarray, stamp_ns: int) -> PreparedCellMeans:
+        """Prepare one frame outside the commit lock, without changing the map.
+
+        At most 200000 input points / distinct cells: prepared numeric payload
+        <=8.0 MB; persistent mean payload <=3.2 MB plus bounded Python containers.
+        Pixels first average within each cell, then update averages those frame
+        means equally. No point duplicates can create extra votes or anchors.
+        """
+        if not self.measured_geometry:
+            raise ValueError("measured geometry is not enabled")
+        stamp = _checked_stamp(stamp_ns, self.last_stamp_ns)
+        points = np.asarray(world_xy, dtype=np.float64)
+        if (points.ndim != 2 or points.shape[1] != 2 or len(points) > 200000
+                or not np.all(np.isfinite(points))):
+            raise ValueError("invalid measured frame geometry")
+        try:
+            with np.errstate(over="raise", invalid="raise", divide="raise"):
+                cells = np.floor(points / self.resolution_m + .5)
+                if (np.any(cells < np.iinfo(np.int32).min)
+                        or np.any(cells > np.iinfo(np.int32).max)):
+                    raise ValueError("measured frame cell index exceeds int32")
+                cells = cells.astype(np.int64)
+                raw_keys = pack_cell_indices(cells[:, 0], cells[:, 1])
+                keys, inverse, counts = np.unique(raw_keys, return_inverse=True, return_counts=True)
+                means = np.zeros((len(keys), 2), dtype=np.float64)
+                # Divide BEFORE reduction, avoiding a large intermediate sum.
+                np.add.at(means, inverse, points / counts[inverse, None])
+                previous = np.empty_like(means)
+                frame_counts = np.empty(len(keys), dtype=np.float64)
+                cutoff = stamp - self._candidate_ttl_ns
+                for index, key in enumerate(keys.tolist()):
+                    old = self._cell_means.get(key)
+                    count = self.candidate_votes.get(key, 0)
+                    expired = (self._candidate_ttl_ns > 0 and key not in self.confirmed_keys
+                               and self._unconfirmed_last_seen.get(key, stamp) <= cutoff)
+                    if expired:
+                        old, count = None, 0
+                    if (old is None) != (count == 0):
+                        raise ValueError("measured geometry and vote history differ")
+                    previous[index] = (0., 0.) if old is None else old
+                    frame_counts[index] = count
+                updated = previous + (means - previous) / (frame_counts[:, None] + 1.)
+        except FloatingPointError as error:
+            raise ValueError("measured frame geometry exceeds numerical range") from error
+        return PreparedCellMeans(keys, means, updated, self.resolution_m, stamp,
+                                 self._geometry_generation, self)
+
     @staticmethod
     def _unique_keys(frame_keys: Iterable[int]) -> np.ndarray:
         if isinstance(frame_keys, np.ndarray):
@@ -372,6 +479,7 @@ class SparseConsensusMap:
         self, unique_frame_keys: Iterable[int],
         reliable_frame_keys: Optional[Iterable[int]] = None,
         stamp_ns: Optional[int] = None,
+        geometry: Optional[PreparedCellMeans] = None,
     ) -> List[int]:
         """Fuse one frame; refuse overflow without deleting confirmed geometry.
 
@@ -390,13 +498,23 @@ class SparseConsensusMap:
             positions = np.searchsorted(keys, reliable)
             if np.any(positions >= keys.size) or not np.array_equal(keys[positions], reliable):
                 raise ValueError("Reliable keys must be a subset of the current frame keys")
+        if self.measured_geometry:
+            if (not isinstance(geometry, PreparedCellMeans)
+                    or geometry.resolution_m != self.resolution_m
+                    or geometry.owner is not self
+                    or geometry.base_generation != self._geometry_generation
+                    or stamp_ns != geometry.source_stamp_ns
+                    or not np.array_equal(geometry.keys, keys)):
+                raise ValueError("measured update requires geometry for exactly the current voting keys")
+        elif geometry is not None:
+            raise ValueError("key-only map cannot silently enable measured geometry")
         if stamp_ns is not None:
             self.expire_candidates(stamp_ns)
         elif self.candidate_ttl_s > 0:
             raise ValueError("A measurement timestamp is required when candidate TTL is enabled")
         reliable_set = set(reliable.tolist())
         newly_confirmed = []
-        for raw_key in keys.tolist():
+        for position, raw_key in enumerate(keys.tolist()):
             key = int(raw_key)
             if key not in self.candidate_votes and (
                 self.max_candidate_cells > 0
@@ -405,6 +523,10 @@ class SparseConsensusMap:
                 self.capacity_rejected_cells += 1
                 continue
             new_count = self.candidate_votes.get(key, 0) + 1
+            if self.measured_geometry:
+                mean = geometry.updated_means[position]
+                # Store two scalar values, never a view retaining a whole frame.
+                self._cell_means[key] = (float(mean[0]), float(mean[1]))
             self.candidate_votes[key] = new_count
             if key in reliable_set:
                 self.candidate_reliable_votes[key] = (
@@ -433,6 +555,7 @@ class SparseConsensusMap:
     def expire_candidates(self, stamp_ns: int) -> int:
         """Expire only unconfirmed cells; never retract latched global geometry."""
         stamp_ns = _checked_stamp(stamp_ns, self.last_stamp_ns)
+        self._geometry_generation += 1
         self.last_stamp_ns = stamp_ns
         if self.candidate_ttl_s <= 0:
             return 0
@@ -445,6 +568,7 @@ class SparseConsensusMap:
             self._unconfirmed_last_seen.popitem(last=False)
             del self.candidate_votes[key]
             self.candidate_reliable_votes.pop(key, None)
+            self._cell_means.pop(key, None)
             count += 1
         self.expired_candidate_cells += count
         return count
@@ -456,7 +580,8 @@ class SparseConsensusMap:
         if self._pending_confirmed_keys:
             new_keys = np.asarray(sorted(self._pending_confirmed_keys), dtype=np.uint64)
             # Merge only newly latched keys into the previous sorted snapshot.
-            # Existing coordinates never move in world space or need unpacking.
+            # Key-only coordinates stay fixed. Measured means are refreshed
+            # below only for cells receiving another committed frame vote.
             new_positions = np.searchsorted(self._ordered_keys, new_keys)
             new_positions += np.arange(new_keys.size)
             size = self._ordered_keys.size + new_keys.size
@@ -469,7 +594,9 @@ class SparseConsensusMap:
             ordered_keys[new_positions] = new_keys
             points[previous_positions] = self._confirmed_points
             ix, iy = unpack_cell_keys(new_keys)
-            points[new_positions] = np.column_stack((ix, iy)) * self.resolution_m
+            points[new_positions] = (np.asarray([self._cell_means[int(key)] for key in new_keys])
+                                     if self.measured_geometry else
+                                     np.column_stack((ix, iy)) * self.resolution_m)
             votes[previous_positions] = self._confirmed_votes
             self._ordered_keys = ordered_keys
             self._confirmed_points = points
@@ -481,13 +608,17 @@ class SparseConsensusMap:
             self._confirmed_votes[positions] = np.fromiter(
                 self._dirty_confirmed_votes.values(), dtype=np.float32
             )
+            if self.measured_geometry:
+                self._confirmed_points[positions] = np.asarray([self._cell_means[int(key)] for key in keys])
             self._dirty_confirmed_votes.clear()
         # Callers may alter/save a returned snapshot without corrupting caches.
         return self._confirmed_points.copy(), self._confirmed_votes.copy()
 
     def clear(self) -> None:
+        self._geometry_generation += 1
         self.candidate_votes.clear()
         self.candidate_reliable_votes.clear()
+        self._cell_means.clear()
         self.confirmed_keys.clear()
         self._ordered_keys = np.empty(0, dtype=np.uint64)
         self._confirmed_points = np.empty((0, 2), dtype=np.float64)

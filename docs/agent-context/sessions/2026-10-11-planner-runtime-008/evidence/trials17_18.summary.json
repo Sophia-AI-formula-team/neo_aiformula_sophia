@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "kind": "reviewed_trial17_trial18_failure_summary",
+  "sources": [
+    {
+      "filename": "trial17_failure_audit_01.json",
+      "bytes": 11041,
+      "sha256": "54b1f1e909baa273456bcdc8ae1d3f1d62027d4c55ed522fa3d184f4862abf80"
+    },
+    {
+      "filename": "trial18_failure_audit_01.json",
+      "bytes": 29889,
+      "sha256": "e4782b7a7d4c0ad1dd70ec77ab8829d237cc289507715771efac2b34465ae2a0"
+    }
+  ],
+  "redaction": "Selected scalar counts, timing, source hashes and zero-command evidence. Excluded all raw poses, coordinate arrays, terminal screenshots, video content, source roots, personal paths and full logs.",
+  "trial17": {
+    "outcome": "FAIL before image processing",
+    "counts": {
+      "attempted_motion_samples": 1,
+      "last_committed_motion_sequence": 0,
+      "accepted_motion_events": 0,
+      "operator_start_events": 0,
+      "backend_image_step_events": 0,
+      "backend_command_delivery_events": 0,
+      "unity_reply_events": 0,
+      "unity_captured_frames": 0,
+      "mask_png_files": 0,
+      "truth_log_bytes": 0,
+      "map_or_route_output_files": 0,
+      "interpretation": "The lane pipeline never reached image processing, mapping or command ownership. No lane driving command was issued. This is not a claim of zero physical settling displacement or proof about unrelated manual input."
+    },
+    "backend_reason": "ValueError: clock publication stale beyond 200 ms",
+    "clock_domain_evidence": {
+      "first_request": {
+        "frequency_hz": 10000000,
+        "unity_stopwatch_sensor_received": 228408739928,
+        "unity_stopwatch_sent": 228408743755,
+        "python_native_qpc_arrival": 2594421014198,
+        "python_native_qpc_rejected": 2594421018471,
+        "same_stopwatch_domain_sensor_to_send_ms": 0.3827,
+        "same_native_domain_arrival_to_rejection_ms": 0.4273,
+        "invalid_mixed_domain_arrival_minus_send_s": 236601.2270443,
+        "invalid_mixed_domain_arrival_minus_sensor_s": 236601.227427,
+        "interpretation": "The large mixed-domain differences are not network latency or sensor age; their epochs are incompatible. The actual shared clock publication value was not separately logged in the rejection, so its exact rejected age cannot be reconstructed from this packet."
+      },
+      "saved_same_process_probe": {
+        "source": "lane_teach_repeat_20261011/trial17_clock_probe_01.json",
+        "utc": "2026-10-10T17:34:49.6465234Z",
+        "playing": false,
+        "stopwatch_before": 230783040508,
+        "stopwatch_after": 230783054121,
+        "stopwatch_frequency_hz": 10000000,
+        "native_qpc": 2596794910232,
+        "native_frequency_hz": 10000000,
+        "counter_ok": true,
+        "frequency_ok": true,
+        "stopwatch_bracket_ms": 1.3613,
+        "native_minus_stopwatch_offset_ticks_interval": [
+          2366011856111,
+          2366011869724
+        ],
+        "native_minus_stopwatch_midpoint_offset_s": 236601.18629175,
+        "interpretation": "Native QPC read inside a 1.3613 ms Stopwatch bracket differs by about 236601 seconds. Equal 10 MHz frequency and high resolution do not establish a shared origin on this Unity runtime. This supports the source-level clock-domain mismatch, not a genuinely 200 ms late first sensor message."
+      },
+      "source_mechanism": "Recorded C# bridge obtains sensor/send/shared-publication values from Stopwatch.GetTimestamp; recorded Python motion channel obtains arrival/consume values from kernel32 QueryPerformanceCounter. Their equality was assumed rather than established.",
+      "repair_boundary": "Use one verified clock domain for every cross-process timestamp or a rigorously validated conversion. Do not subtract this one observed offset in production, relax 150/200 ms gates, reset sensor time, modify physics or call this a localization failure. This audit does not implement or validate a repair."
+    },
+    "post_halt": {
+      "post_halt_phase": "HOLD",
+      "owns_commands": false,
+      "emergency_stop": true,
+      "requested_native_velocity": [
+        0,
+        0
+      ],
+      "body_forward_v_mps": 0.0000589520459,
+      "ros_yaw_w_radps": -0.00000668371331
+    }
+  },
+  "trial18": {
+    "outcome": "FAIL, not a completed lap",
+    "recorded_core_revision": "d49f3c3352f2f7bfb670ea66bcc70cf4e18aae0e",
+    "core_source_hashes": {
+      "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py": "bc0c6af9095325f455fcc93516fb4de3aa22f6f42f3a0663b015bb97946b12bd",
+      "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py": "028199bc7b60ceba998a5ad16812e76631c0d473eecc9e3771332c407f76c083",
+      "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/route.py": "3353e91e907b004c3c29862cd0aa9edb0e4775104fac3e923533d39af3b14d70",
+      "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/controller.py": "52d94a095e223746acdf666a970897bb3a7c218c8921ba4e7f419373083684c8",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/motion.py": "725f042ee6270c9cdb9b7cb232181a3dda7c2705f76020d90df9b06247aef3c7",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/mapping.py": "0cd2f1e8d2c6dc906881d06785292cd2fa113a6cc5f0a6a170b5bed65d9c7aab",
+      "workspace/src/aiformula/control/lane_mapping_fixed_gnss/lane_mapping_fixed_gnss/bundle.py": "226db1ce15496399b3ac574352ca98c913c99151c3139070f8ac8639c1cb25ef",
+      "workspace/src/aiformula/control/trajectory_follower/trajectory_follower/lya_profile.py": "1ddf8a610f5a690e4cd91b11206380e046f991c2ab4279867892c70a4ba964a0",
+      "workspace/src/aiformula/control/trajectory_follower/trajectory_follower/lya_0221.py": "a122a34bf17dcb8ebd8d46d94edfeb74193e2542479708de882e0a5481a85aeb"
+    },
+    "core_verified_count": 9,
+    "adapter_snapshot_verified_count": 47,
+    "native_clock_bridge_sha256": "b7681e4a944605881cef94388dd74b1b78cceefe20705931e5bb67ebffc85583",
+    "mapping_accepted": 106,
+    "mapping_rejected": 1,
+    "terminal_image_sequence": 410,
+    "terminal_reason": "ValueError: teach map rejected: match_runtime_budget_exceeded",
+    "confirmed_cells": 1186,
+    "sampled_travel_m": 28.769939377247177,
+    "travel_definition": "Aggregate planar chord length from recorded body samples, evaluation only; no world positions included.",
+    "matcher_ms": 40.7357,
+    "matcher_budget_ms": 40,
+    "engine_ms": 75.42259999900125,
+    "backend_ms": 97.4254,
+    "teach_backend_p95_ms": 50.942075,
+    "completed_lap": false,
+    "frozen_route": false,
+    "repeat_started": false,
+    "zero_requested": true,
+    "estop": true,
+    "released_ownership": true,
+    "post_halt_residual_v_mps": 0.1030073,
+    "complete_physical_rest_proven": false,
+    "runtime_parameters_sha256": "18a929edadc5188407c103dbd668234ea276a83cf2600ee70504e9ca9de3d24f",
+    "scene_sha256": "542b69e811b5eca13456a7d39f32c8b47290a2f7211865337497242bd5d3aa98",
+    "original_111_records_equal": true,
+    "additional_records": {
+      "contact_pair_limit": {
+        "id": "contact_pair_limit",
+        "value": 0
+      },
+      "caster_centering": {
+        "id": "caster_centering",
+        "value": 0
+      }
+    },
+    "retained_protection_difference_count": 12,
+    "protection_note": "Peer-attributed changes preserved; original 878-file manifest is not a clean pass.",
+    "video_not_included": true,
+    "video_sha256": "6d99c87ec92225a6cb1032da4906b9ec67a0672afb596cd2a787fbddcff5f223"
+  },
+  "offline_preflight": {
+    "offline_01": {
+      "unittest_returncode": 1,
+      "tests": 197,
+      "errors": 8,
+      "cause": "Wrong evidence directory in invoking command; failure preserved."
+    },
+    "offline_02": {
+      "unittest_returncode": 0,
+      "tests": 197,
+      "seconds": 15.341,
+      "overall_passed": false,
+      "note": "Unit tests passed; separate protected manifest check still returns 1 for the preserved 12 peer differences."
+    },
+    "compiled_source_checks": {
+      "parent_reported": 35,
+      "independently_reexecuted_by_this_audit": false
+    }
+  },
+  "limitations": [
+    "Summaries preserve failures and source hashes but cannot replace local raw logs.",
+    "Neither trial exercises a complete teach/repeat workflow.",
+    "Native QPC correction belongs to the simulator adapter; no physical parameters or ROS core clocks were changed for it."
+  ]
+}

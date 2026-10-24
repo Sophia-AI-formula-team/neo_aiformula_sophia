@@ -6,6 +6,7 @@ pose subscription exists. Restarting this node requires teaching a new lap.
 """
 from collections import deque
 from contextlib import contextmanager
+from dataclasses import asdict
 from functools import wraps
 import json
 import math
@@ -38,6 +39,7 @@ from lane_mapping_lya_reference.recorder_node import point_cloud
 from .anchors import EndpointAnchors, decode_vectornav_gps
 from .control import RuntimeSafety
 from .motion import CausalWheelGyroOdometry, decode_honda_rpm, DEFAULT_CONFIG as MOTION_DEFAULT_CONFIG
+from .imu_motion import CausalImuWheelOdometry
 from .worker import MapWorker
 
 
@@ -70,6 +72,9 @@ class EndpointFollower(Node):
         "accepted_teacher_max_speed_mps": 0.0,
         "wheel_diameter_m": 0.254, "gyro_bias_radps": 0.0,
         "gyro_mount_quaternion": [0.0, 0.0, 0.0, 0.0],
+        "motion_attitude_mode": "legacy_flat",
+        "imu_specific_force_verified": False,
+        "imu_source_stamp_semantics": "",
         "max_gnss_horizontal_sigma_m": 1.5, "max_endpoint_distance_m": 3.0,
         "mask_max_age_s": 0.5, "pose_mask_gap_s": 0.15,
         "log_directory": "~/.ros/lane_learning_gnss", "route_config_json": "{}",
@@ -113,7 +118,10 @@ class EndpointFollower(Node):
         if resolved_output != "/lane_learning_gnss/cmd_vel" and not all(self.p[x] for x in (
                 "enable_vehicle_output", "hardware_stop_verified", "motor_zero_passthrough_verified")):
             raise ValueError("remapped vehicle output requires all deployment confirmations")
-        self.motion = CausalWheelGyroOdometry(config={"wheel_diameter_m": self.p["wheel_diameter_m"]})
+        motion_type = CausalImuWheelOdometry if self._raw_imu_tilt() else CausalWheelGyroOdometry
+        self.motion = motion_type(config={"wheel_diameter_m": self.p["wheel_diameter_m"]})
+        self.held_output_since = None
+        self.last_output_receipt_ns = None
         self.anchors = EndpointAnchors(config={
             "max_horizontal_sigma_m": self.p["max_gnss_horizontal_sigma_m"],
             "max_endpoint_distance_m": self.p["max_endpoint_distance_m"],
@@ -144,7 +152,7 @@ class EndpointFollower(Node):
         self.deployment_issue = None
         self.tf_buffer = Buffer(cache_time=Duration(seconds=10))
         self.tf_listener = TransformListener(self.tf_buffer, self)
-        self.worker = MapWorker(self._commit_guard)
+        self.worker = MapWorker(self._commit_guard, motion_attitude_mode=self.p["motion_attitude_mode"])
         self.state_pub = self.create_publisher(String, "/lane_learning_gnss/state", self.state_qos)
         self.supervisor_pub = self.create_publisher(String, "/lane_learning_gnss/control_state", self.state_qos)
         self.map_pub = self.create_publisher(PointCloud2, "/lane_learning_gnss/consensus", self.state_qos)
@@ -176,7 +184,11 @@ class EndpointFollower(Node):
         self._event("started", gnss_policy="start_and_end_only", parameters=self.p,
             speed_policy="fixed_reference", lya_source_default_mps=REFERENCE_SPEED_MPS,
             reference_speed_mps=self.p["reference_speed_mps"], input_provenance={
-            "motion": "Honda RPM bytes + raw gyro angular_velocity only",
+            "motion": ("Honda RPM bytes + causal raw three-axis IMU tilt" if self._raw_imu_tilt()
+                       else "Honda RPM bytes + raw gyro angular_velocity only"),
+            "attitude_mode": self.p["motion_attitude_mode"],
+            "imu_source_stamp_semantics": self.p["imu_source_stamp_semantics"],
+            "imu_receipt_semantics": "serialized ROS callback admission monotonic time, not DDS hardware capture",
             "heading": "integrated local heading; not ENU",
             "gnss": "GpsGroup FIX|POSLLA|POSU; endpoint windows only"})
 
@@ -203,6 +215,17 @@ class EndpointFollower(Node):
                     self.p["reference_speed_mps"], MOTION_DEFAULT_CONFIG["max_speed_mps"]))
         if not math.isfinite(float(self.p["gyro_bias_radps"])):
             raise ValueError("invalid gyro bias")
+        if self.p["motion_attitude_mode"] not in ("legacy_flat", "raw_imu_tilt"):
+            raise ValueError("motion_attitude_mode must be legacy_flat or raw_imu_tilt")
+        if type(self.p["imu_specific_force_verified"]) is not bool:
+            raise ValueError("imu_specific_force_verified must be an explicit boolean")
+        if self._raw_imu_tilt():
+            if not self.p["imu_specific_force_verified"]:
+                raise ValueError("raw_imu_tilt requires verified raw specific force including gravity")
+            if self.p["imu_source_stamp_semantics"] not in ("hardware_sample", "driver_receipt_ros"):
+                raise ValueError("raw_imu_tilt requires declared IMU source timestamp semantics")
+            if float(self.p["gyro_bias_radps"]) != 0.0:
+                raise ValueError("raw_imu_tilt estimates three-axis bias; scalar gyro_bias_radps must be zero")
         mounting = np.asarray(self.p["gyro_mount_quaternion"], dtype=float)
         if (mounting.shape != (4,) or not np.isfinite(mounting).all()
                 or (np.any(mounting) and abs(np.linalg.norm(mounting) - 1.0) > 1e-5)):
@@ -227,6 +250,35 @@ class EndpointFollower(Node):
 
     def _times(self):
         return self.get_clock().now().nanoseconds, time.monotonic_ns()
+
+    def _raw_imu_tilt(self):
+        return self.p["motion_attitude_mode"] == "raw_imu_tilt"
+
+    def _imu_output_held(self, source, receipt):
+        # This is proof only of this node's published neutral command interval,
+        # not proof of physical stillness or ownership of an external publisher.
+        since = self.held_output_since
+        last = self.last_output_receipt_ns
+        return (self.safety.state in ("DISARMED", "HOLD", "ESTOP")
+                and since is not None and since[0] <= source and since[1] <= receipt
+                and last is not None and 0 <= receipt - last <= 200000000)
+
+    def _attitude_ready(self, now, steady):
+        if not self._raw_imu_tilt():
+            return True
+        sample = self.last_motion
+        try:
+            if sample is None or sample.attitude is None or not self.motion.ready:
+                return False
+            attitude = sample.attitude
+            if (attitude.stamp_ns != sample.stamp_ns
+                    or attitude.source_stamp_ns != sample.gyro_stamp_ns):
+                return False
+            attitude.propagate_to(sample.stamp_ns, wheel_receipt_ns=sample.received_steady_ns,
+                                 now_source_ns=now, now_steady_ns=steady)
+            return attitude.up_body[2] > 0.0
+        except (ValueError, TypeError, AttributeError):
+            return False
 
     def _event(self, event, **values):
         self.journal.write(finite_json(dict(event=event, **values)))
@@ -296,7 +348,7 @@ class EndpointFollower(Node):
             return
         if not self.session_started and self.start_reference_motion is not None:
             self.start_reference_usable = False
-        if self.session_started:
+        if self.session_started or (self._raw_imu_tilt() and self.gyro_rotation is not None):
             self.session_motion_invalid = True
             self.teach_enabled = False
             self.repeat_prepared = False
@@ -351,6 +403,8 @@ class EndpointFollower(Node):
             if not fresh(stamp, steady, now, steady, 0.2, future_tolerance_s=0.0):
                 raise ValueError("raw gyro source stale/future")
             frame = message.header.frame_id
+            if self._raw_imu_tilt() and not frame:
+                raise ValueError("raw IMU requires an explicit sensor frame")
             rotation = self._gyro_mount(frame, stamp)
             if self.gyro_rotation is None:
                 self.gyro_rotation = rotation
@@ -363,9 +417,27 @@ class EndpointFollower(Node):
                               message.angular_velocity.z], dtype=float)
             if not np.isfinite(rates).all():
                 raise ValueError("nonfinite raw gyro")
-            # Deliberately NEVER inspect message.orientation or acceleration.
-            yaw_rate = float((self.gyro_rotation @ rates)[2]) - self.p["gyro_bias_radps"]
-            self.motion.accept_gyro(stamp, steady, yaw_rate)
+            # Neither mode reads INS orientation. Acceleration belongs only to
+            # the explicitly opted-in raw-IMU initializer, never a moving tilt LPF.
+            if self._raw_imu_tilt():
+                force = np.array([message.linear_acceleration.x, message.linear_acceleration.y,
+                                  message.linear_acceleration.z], dtype=float)
+                if not np.isfinite(force).all():
+                    raise ValueError("nonfinite raw specific force")
+                if (message.angular_velocity_covariance[0] == -1
+                        or message.linear_acceleration_covariance[0] == -1):
+                    raise ValueError("raw IMU field declared unavailable")
+                sample = self.motion.accept_imu(stamp, steady, self.gyro_rotation @ rates,
+                    self.gyro_rotation @ force, self._imu_output_held(stamp, steady), now, steady)
+                self._event("raw_imu", source_ns=stamp, receipt_ns=steady,
+                    source_stamp_semantics=self.p["imu_source_stamp_semantics"],
+                    initialized=sample is not None, orientation_field_used=False,
+                    attitude=None if sample is None else asdict(sample),
+                    startup=self.motion.attitude_tracker.snapshot())
+            else:
+                # Legacy path deliberately ignores acceleration entirely.
+                yaw_rate = float((self.gyro_rotation @ rates)[2]) - self.p["gyro_bias_radps"]
+                self.motion.accept_gyro(stamp, steady, yaw_rate)
             self.last_gyro_ns = stamp
         except Exception as error:
             self._motion_fault("raw gyro rejected: " + str(error))
@@ -390,8 +462,18 @@ class EndpointFollower(Node):
             self.pose_buffer.append(sample)
             self.pose_pub.publish(self._pose_message(self.safety.arbiter.pose or pose))
             self._event("motion", source_ns=sample.stamp_ns, gyro_source_ns=sample.gyro_stamp_ns,
-                        x=sample.x, y=sample.y, yaw=sample.yaw, speed=sample.speed)
+                        x=sample.x, y=sample.y, yaw=sample.yaw, speed=sample.speed,
+                        attitude=(None if not self._raw_imu_tilt() or sample.attitude is None
+                                  else asdict(sample.attitude)))
         except Exception as error:
+            if (self._raw_imu_tilt() and not self.session_started
+                    and self.motion.last_wheel_stamp_ns is None
+                    and self.motion.fault_reason is None and str(error) == "no_past_gyro"):
+                # Initial asynchronous publishers need not deliver their first
+                # sample in source order. Do NOT consume a future gyro or mark
+                # this wheel accepted. No initialized trajectory exists yet.
+                self._event("raw_motion_waiting", reason="first wheel has no already-arrived past IMU")
+                return
             self.last_motion = None
             self.pose_buffer.clear()
             self._motion_fault("wheel/gyro rejected: " + str(error))
@@ -451,7 +533,10 @@ class EndpointFollower(Node):
                             "gyro_bias_radps": self.p["gyro_bias_radps"],
                             "gyro_mount_rotation": self.gyro_rotation.tolist(),
                             "gyro_frame": self.gyro_frame, "gnss_used": False,
-                            "orientation_field_used": False})
+                            "orientation_field_used": False,
+                            "motion_attitude_mode": self.p["motion_attitude_mode"],
+                            "imu_source_stamp_semantics": self.p["imu_source_stamp_semantics"],
+                            "imu_specific_force_verified": self.p["imu_specific_force_verified"]})
             if message.encoding not in ("mono8", "8UC1") or message.step < message.width:
                 raise ValueError("full mono8 road detector mask required")
             expected = int(message.height) * int(message.step)
@@ -465,6 +550,18 @@ class EndpointFollower(Node):
                        generation=self.safety.generation, stamp_ns=stamp, receipt_ns=steady,
                        prior=[prior.x, prior.y, prior.yaw], prior_stamp_ns=prior.stamp_ns,
                        mask=mask[:, :message.width].copy(), calibration=self.calibration)
+            if self._raw_imu_tilt():
+                if not self._attitude_ready(now, steady) or prior.attitude is None:
+                    raise ValueError("selected past wheel has no initialized raw-IMU attitude")
+                if prior.attitude.source_stamp_ns != prior.gyro_stamp_ns:
+                    raise ValueError("selected gyro and attitude source differ")
+                # Extrapolate ONLY the selected gyro's held rate, bounded from
+                # its original source; no later IMU may replace this snapshot.
+                job.update(attitude=prior.attitude.propagate_to(stamp,
+                    wheel_receipt_ns=prior.received_steady_ns,
+                    now_source_ns=now, now_steady_ns=steady),
+                    prior_gyro_stamp_ns=prior.gyro_stamp_ns,
+                    prior_receipt_ns=prior.received_steady_ns)
             self.worker.submit(job)
         except Exception as error:
             if self.repeat_prepared:
@@ -483,6 +580,17 @@ class EndpointFollower(Node):
                 and fresh(job["stamp_ns"], job["receipt_ns"], now, steady, self.p["mask_max_age_s"], 0.0)
                 and motion is not None and fresh(motion.stamp_ns, motion.received_steady_ns,
                                                 now, steady, 0.2, 0.0))
+            if self._raw_imu_tilt():
+                # Current motion must remain healthy. The old job retains its
+                # own capture-time snapshot, never replaced by current motion.
+                attitude = job.get("attitude")
+                allowed = (allowed and self._attitude_ready(now, steady)
+                    and attitude is not None and attitude.stamp_ns == job["stamp_ns"]
+                    and attitude.source_stamp_ns == job.get("prior_gyro_stamp_ns")
+                    and attitude.source_stamp_ns <= job["prior_stamp_ns"] <= job["stamp_ns"]
+                    and attitude.received_steady_ns <= job.get("prior_receipt_ns", -1)
+                    and attitude.wheel_receipt_ns == job.get("prior_receipt_ns")
+                    and attitude.wheel_receipt_ns <= job["receipt_ns"])
             if job["kind"] == "repeat":
                 allowed = allowed and self.safety.visual_deadline(job["stamp_ns"], job["receipt_ns"],
                                                                   now, steady) is not None
@@ -587,6 +695,8 @@ class EndpointFollower(Node):
             return self._reply(response, (False, "teach session already initialized or invalid"))
         if not self._stopped(now, steady):
             return self._reply(response, (False, "fresh stopped raw motion required before teach initialization"))
+        if not self._attitude_ready(now, steady):
+            return self._reply(response, (False, "initialized raw-IMU attitude on selected wheel required"))
         reference = self.start_reference_motion
         if reference is not None:
             current = self.last_motion
@@ -618,6 +728,8 @@ class EndpointFollower(Node):
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
         if not self.session_started or self.gnss_subscription is not None or self.camera is None:
             return self._reply(response, (False, "begin_teach and camera required; GNSS must be disconnected"))
+        if not self._attitude_ready(now, steady):
+            return self._reply(response, (False, "initialized raw-IMU attitude on selected wheel required"))
         result = self.safety.arm_teach(now, steady)
         if result[0]:
             self.teach_enabled = True
@@ -644,6 +756,8 @@ class EndpointFollower(Node):
         now, steady = self._times()
         if self.session_motion_invalid:
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
+        if not self._attitude_ready(now, steady):
+            return self._reply(response, (False, "initialized raw-IMU attitude on selected wheel required"))
         result = self.safety.prepare_repeat(now, steady)
         if result[0]:
             self.repeat_prepared = True
@@ -658,7 +772,10 @@ class EndpointFollower(Node):
             return self._reply(response, (False, issue))
         if self.session_motion_invalid:
             return self._reply(response, (False, "motion continuity lost; restart/new lap required"))
-        return self._reply(response, self.safety.start_repeat(*self._times()))
+        now, steady = self._times()
+        if not self._attitude_ready(now, steady):
+            return self._reply(response, (False, "initialized raw-IMU attitude on selected wheel required"))
+        return self._reply(response, self.safety.start_repeat(now, steady))
 
     @serialized
     def _stop(self, request, response):
@@ -754,6 +871,8 @@ class EndpointFollower(Node):
                 if not fresh(self.last_motion.stamp_ns, self.last_motion.received_steady_ns,
                              now, steady, 0.2, 0.0) and not self.session_motion_invalid:
                     self._motion_fault("wheel/gyro input expired")
+                if self._raw_imu_tilt() and not self._attitude_ready(now, steady):
+                    self._motion_fault("raw IMU attitude expired or uninitialized")
             if self.anchors.phase in ("start_window", "end_window"):
                 try:
                     self.anchors.check_window(now, steady, stopped=self._stopped(now, steady))
@@ -801,6 +920,15 @@ class EndpointFollower(Node):
         message = Twist()
         message.linear.x, message.angular.z = float(command.speed), float(command.yaw_rate)
         self.command_pub.publish(message)
+        if self._raw_imu_tilt():
+            source, receipt = self._times()
+            held = (message.linear.x == 0.0 and message.angular.z == 0.0
+                    and self.safety.state in ("DISARMED", "HOLD", "ESTOP"))
+            if held and self.held_output_since is None:
+                self.held_output_since = (source, receipt)
+            elif not held:
+                self.held_output_since = None
+            self.last_output_receipt_ns = receipt
         self._event("command", state=self.safety.state, speed=message.linear.x, yaw_rate=message.angular.z,
                     gnss_subscription_active=self.gnss_subscription is not None)
 

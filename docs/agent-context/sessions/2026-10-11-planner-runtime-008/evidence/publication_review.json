@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "kind": "final_planner_publication_review",
+  "utc": "2026-10-10T18:11:15.865699+00:00",
+  "files": [
+    {
+      "path": "evidence/components_batch_01.json",
+      "bytes": 4014,
+      "sha256": "362cc5f12eb6d75c08c9c5b7f88b95e3934cd6f9d5eb6ae4d486a6dc2885baaf"
+    },
+    {
+      "path": "evidence/evidence_review.json",
+      "bytes": 6693,
+      "sha256": "27d2850ef6c7277b4b333cf9d022d46d0c895af752437997793f8e688d8fab4a"
+    },
+    {
+      "path": "evidence/final_checks.json",
+      "bytes": 4847,
+      "sha256": "7812805139240093075ba7734cf93657c8bda16d0c656cb6e9568ba6ae9663c9"
+    },
+    {
+      "path": "evidence/motion_channel.py.txt",
+      "bytes": 17763,
+      "sha256": "5c1b45920153daf3e04756f1bf303e5bfa611b378dd4d718ec576b6bc595286d"
+    },
+    {
+      "path": "evidence/observed_prefix.json",
+      "bytes": 3397276,
+      "sha256": "ade7b16987374e874358f9ac88babd1b42f8c9e4f92317933debaf1d4aa3ec2b"
+    },
+    {
+      "path": "evidence/profile_r4_01.summary.json",
+      "bytes": 5111,
+      "sha256": "e9949ca4c17d1a07212be9627543538a47f9926e60cfe994224f2193d6b883ae"
+    },
+    {
+      "path": "evidence/r3_causal_01.json",
+      "bytes": 489220,
+      "sha256": "aeb5d10390f6a5b88d57f507dfa68dcf457cce950d9adb57e02eacc1f724fad0"
+    },
+    {
+      "path": "evidence/r3_ci_readback_01.json",
+      "bytes": 9893,
+      "sha256": "d57608c0aaf8378155d8f218a1e0a4dd3c092f781c4ca71378e079da2503474e"
+    },
+    {
+      "path": "evidence/r4_batched_01.json",
+      "bytes": 501926,
+      "sha256": "df3b71f659140b5a6408915f5ad83ebac44349346ed98aa8a2f155d47f0905d0"
+    },
+    {
+      "path": "evidence/r4_batched_02.json",
+      "bytes": 501947,
+      "sha256": "ff929e48e6e4d634d94913d8a9342e08d19a3ae4e0b66abddb3138328d8ccb98"
+    },
+    {
+      "path": "evidence/r4_batched_03.json",
+      "bytes": 501941,
+      "sha256": "b60ff2f45c028cd355bf29472a9363483ad4552e42a575c1eeb56e6eac2d6fa5"
+    },
+    {
+      "path": "evidence/r4_core_suite.sanitized.xml",
+      "bytes": 121580,
+      "sha256": "f6917f473b7351b41f370dc802057588974fa27adae2e6c3fbc61a74a9f58d19"
+    },
+    {
+      "path": "evidence/REPLAY.txt",
+      "bytes": 4822,
+      "sha256": "e962274c1bf5dcea3d15469a876bdf0844153552a610d650607aeeb630eabd5e"
+    },
+    {
+      "path": "evidence/replay_observed_keyframe.py.txt",
+      "bytes": 31516,
+      "sha256": "874fa54b6bde4b8584b5447ba0c998a00b9899e2c4211f0b07a88aa7254a40e1"
+    },
+    {
+      "path": "evidence/scan_cache_review.summary.json",
+      "bytes": 13681,
+      "sha256": "d0a83be06f59c7d7852b302ac366a92be4631950200008bb4c9a5add5aeadfc7"
+    },
+    {
+      "path": "evidence/schema2_audit.summary.json",
+      "bytes": 4405,
+      "sha256": "2f2c4b9b4d43ff9b61dbeca3b6d5169c8f3bb957b349bb21d013acf18af99c0d"
+    },
+    {
+      "path": "evidence/trial17_clock_probe_01.json",
+      "bytes": 281,
+      "sha256": "4ddcea13022fce6eee1940dc335dab5fae64c566d495a7ad255194e42ca4dc96"
+    },
+    {
+      "path": "evidence/trials17_18.summary.json",
+      "bytes": 8483,
+      "sha256": "31865945c7989d5da787346269290282d12465ed22c268244d1199d01396ee15"
+    },
+    {
+      "path": "session.json",
+      "bytes": 493,
+      "sha256": "7c06bf190bd63c7ca72a8ce3dfbd0cb515753867e70fbe0b4febe8504137f644"
+    },
+    {
+      "path": "SESSION.md",
+      "bytes": 12702,
+      "sha256": "6c776043b402b5920efaaff33c4aea88867199d1b5706a7b9b51e2ea6601243f"
+    }
+  ],
+  "count": 20,
+  "bytes": 5638594,
+  "reviewed": {
+    "code_diff": true,
+    "all_test_source": true,
+    "payload_field_contract": true,
+    "complete_107_mask_contact_sheet": true,
+    "native_resolution_pages_viewed": 6,
+    "masks_are_simulated_binary_lane_geometry": true,
+    "no_people_documents_or_RGB": true,
+    "original_pngs_have_only_IHDR_IDAT_IEND": true,
+    "source_hashes_preserved": true,
+    "no_raw_truth_GNSS_course_or_controller_inputs": true,
+    "no_hostnames_or_personal_root_paths": true,
+    "no_credentials_found": true,
+    "no_raw_video_upload": true,
+    "original_failures_retained": true
+  },
+  "boundaries": [
+    "Earlier evidence_review.json describes the preparation stage only; this inventory includes subsequent planner edits and tests.",
+    "Generic C:/route.json inside a path-traversal test name is synthetic test data, not a personal path.",
+    "Public GitHub Actions links refer only to canonical neo repository; no URL credentials or query strings.",
+    "Original XML preserved locally; published XML removes hostname and checkout-root prefix in skip text.",
+    "This review is not acceptance of full runtime, either lap, motor operation or hard-real-time performance.",
+    "Inventory excludes itself to avoid a circular hash; pack tool creates the final all-file hashmanifest."
+  ]
+}

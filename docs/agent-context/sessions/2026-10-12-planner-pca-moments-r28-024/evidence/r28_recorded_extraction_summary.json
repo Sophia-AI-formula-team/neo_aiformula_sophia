@@ -1,0 +1,43 @@
+{
+  "kind": "Single causal recorded-frame extraction diagnostic, not runtime acceptance",
+  "sequence": 163,
+  "plain_extractions": 1,
+  "profiled_extractions": 1,
+  "retries": 0,
+  "plain_outer_wall_ms": 196.79909996921197,
+  "profile_outer_wall_ms": 236.3113000174053,
+  "root_outer_wall_s": 1.3170109000056982,
+  "exit_code": 0,
+  "all_nine_integrity_checks": true,
+  "all_observation_fields_byte_exact": 29,
+  "profile_native_moments_calls": 34,
+  "future_motion_consumed": false,
+  "engine_calls": 0,
+  "runtime_acceptance": false,
+  "timing_comparison_prohibited": "plain and cProfile have different instrumentation; no speedup ratio",
+  "profile_overlapping_cumulative_times": true,
+  "profile_hotspots_ms": {
+    "directions_self": 53.8324,
+    "directions_cumulative": 184.5777,
+    "direction_paths_cumulative": 51.0243,
+    "corner_certificates_cumulative": 40.3028,
+    "finite_fit_bounds_cumulative": 30.831,
+    "quadratic_fit_cumulative": 26.3653,
+    "moments_dispatch_cumulative": 16.8905
+  },
+  "omitted_from_extraction_timing": ["PNG decode and causal IMU replay/setup", "filled-mask projection", "LYA/controller", "engine and matching", "transport and complete LaneSession freshness"],
+  "source_binding": {
+    "paint_geometry_sha256": "0d41317e52643cfe9606976d801ec949ecd8d3d9ca7fbe456258c8b7ad4e5180",
+    "local_moments_sha256": "bf667e3a42e49afb14c00e26447c697403221c42ac3b41b60ec2da22febfa32f",
+    "loaded_module_count": 17,
+    "runtime_and_support_sources": 21
+  },
+  "local_raw_evidence_sha256": {
+    "execution_01.json": "e825c9035573cd0ab4268413117a1da2aedf2b40253d2a4304432c97b11a3311",
+    "profile_01.json": "70c84d8793708c364f05726c86a4a863dc18dce1f7c57a39cd704eeaa14ee2c9",
+    "plain_observation_01.npz": "0c9bc8fffcf9e60123af598ddb24e9b0d40c49663bf985aab11abb999b21df31",
+    "profile_observation_01.npz": "0c9bc8fffcf9e60123af598ddb24e9b0d40c49663bf985aab11abb999b21df31",
+    "source_snapshot_01.zip": "b915854245d09c6194e05f19f317ba0268e2e16ae17a57750d0060557345fb23"
+  },
+  "redaction": "No personal paths, raw masks, truth arrays, precise GNSS, hostname or binary payload published; originals retained locally."
+}

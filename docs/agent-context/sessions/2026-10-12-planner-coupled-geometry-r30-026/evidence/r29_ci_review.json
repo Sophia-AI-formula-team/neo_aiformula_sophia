@@ -1,0 +1,626 @@
+{
+  "schema_version": 1,
+  "review_type": "read-only terminal exact-SHA R29 CI review, not a deployment or driving approval",
+  "repository": {
+    "full_name": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "id": 1303517209,
+    "id_live_api_verified": true,
+    "public": true
+  },
+  "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+  "tag": "lane-mapping-20261012-r29-rc1",
+  "branch": "repair/lane-keyframe-transaction-20261011",
+  "summary": {
+    "runs": 8,
+    "successful_runs": 7,
+    "failed_runs": 1,
+    "terminal": true,
+    "run_attempts_all_one": true,
+    "new_reruns": 0,
+    "reviewer_executed_local_tests": false,
+    "reviewer_executed_native": false,
+    "reviewer_used_unity": false,
+    "production_modified": false
+  },
+  "review_method": {
+    "initial_state_snapshot": "all eight exact run IDs once",
+    "terminal_state_snapshot": "remaining four once after independent artifact and workflow review",
+    "download_scope": "eight terminal artifacts from six exact runs, each fresh run-ID directory",
+    "hash_scope": "explicit native/JUnit/runtime/unit-log inputs only, excluded prototype pair untouched",
+    "artifact_archive_digests": "reported by GitHub API; extracted member SHA values independently computed; ZIP bytes were not independently hashed",
+    "read_errors": "One PowerShell inspection command had a parse error before execution; corrected read-only command only. Initial memory rg no-match exit and two excessive/truncated output selections were reader issues, not CI failures."
+  },
+  "runs": [
+    {
+      "id": "38181799010",
+      "ref_type": "branch",
+      "name": "Lane exact native graph",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:48:23Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181799010"
+    },
+    {
+      "id": "38181798956",
+      "ref_type": "tag",
+      "name": "Lane exact native graph",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:48:12Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181798956"
+    },
+    {
+      "id": "38181799059",
+      "ref_type": "branch",
+      "name": "Agent handoff integrity",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:48:36Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181799059"
+    },
+    {
+      "id": "38181798972",
+      "ref_type": "tag",
+      "name": "Agent handoff integrity",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:48:13Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181798972"
+    },
+    {
+      "id": "38181799027",
+      "ref_type": "branch",
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:51:27Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181799027"
+    },
+    {
+      "id": "38181798954",
+      "ref_type": "tag",
+      "name": "Lane teach-repeat (ROS 2 Foxy)",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:51:40Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181798954"
+    },
+    {
+      "id": "38181799031",
+      "ref_type": "branch",
+      "name": "Endpoint GNSS (ROS 2 Foxy)",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "failure",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:52:45Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181799031"
+    },
+    {
+      "id": "38181798986",
+      "ref_type": "tag",
+      "name": "Endpoint GNSS (ROS 2 Foxy)",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "9b8636fc3c1aa9e9712142b3924a722211df19bd",
+      "run_attempt": 1,
+      "created_utc": "2026-10-11T22:47:16Z",
+      "updated_utc": "2026-10-11T22:51:39Z",
+      "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38181798986"
+    }
+  ],
+  "native_standalone": {
+    "per_matrix_job": {
+      "main_testcases_passed": 646,
+      "subtests_passed": 954,
+      "junit_tests_attribute": 1600,
+      "junit_testcase_elements": 646,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "api_version_count": 9,
+      "all_api_versions": 1,
+      "real_calls_passed": true,
+      "finite_current_union_real_call_passed": true,
+      "installed_prefix_verified": false
+    },
+    "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+    "artifacts": [
+      {
+        "run_id": "38181799010",
+        "os": "ubuntu-latest",
+        "artifact_id": 11717732909,
+        "name": "lane-native-ubuntu-latest-py313",
+        "github_archive_digest_sha256": "4615d936ffc3454127513f17892a139e5c62b9178866f7b962fa9a1177f54276",
+        "binary_sha256": "4d6ef1f112b0058a044e0e2d4c284ebf0c8b71e315b54c80353d945e10f28c5c",
+        "downloaded_binary_hash_matches_metadata": true,
+        "native_json_sha256": "e72582dc2c18228a27a3554a8d9f2061bd9c0028769191aefa65c30620a685e9",
+        "tests_xml_sha256": "a70991c66289a63efc9d8724a2e0d104a7d196cbf295adb6a03e9ecec8ce3ff6"
+      },
+      {
+        "run_id": "38181799010",
+        "os": "windows-latest",
+        "artifact_id": 11718352040,
+        "name": "lane-native-windows-latest-py313",
+        "github_archive_digest_sha256": "d7b7f170fecbb5c81454613d45999a1185dca901ede3568b2f850bbf04bdf986",
+        "binary_sha256": "577277a652810c94e90c4cc92c8ce749bfda17fb1fad75cafcc58eb337575ee4",
+        "downloaded_binary_hash_matches_metadata": true,
+        "native_json_sha256": "fa027497b82d5693afe70423e40f4491d21e46c8c0ba27611e2020a490c3ddb6",
+        "tests_xml_sha256": "8845518c966c9bd3a8420954e21809f205af688ec880026c05d9850feebe4762"
+      },
+      {
+        "run_id": "38181798956",
+        "os": "ubuntu-latest",
+        "artifact_id": 11718451832,
+        "name": "lane-native-ubuntu-latest-py313",
+        "github_archive_digest_sha256": "20cdc74e78ffaa603b2928228d52a4e55229bd23eb577e4ca58ada76d80080db",
+        "binary_sha256": "4d6ef1f112b0058a044e0e2d4c284ebf0c8b71e315b54c80353d945e10f28c5c",
+        "downloaded_binary_hash_matches_metadata": true,
+        "native_json_sha256": "e72582dc2c18228a27a3554a8d9f2061bd9c0028769191aefa65c30620a685e9",
+        "tests_xml_sha256": "3e77a6b588965611d60c1f9bb5f51d4645064de7bdd74f9c3e327469126dded6"
+      },
+      {
+        "run_id": "38181798956",
+        "os": "windows-latest",
+        "artifact_id": 11718167293,
+        "name": "lane-native-windows-latest-py313",
+        "github_archive_digest_sha256": "882b89255e2d1a222045725bb427f845bb12cb6e91ac3d4964929acf7c46bda0",
+        "binary_sha256": "ffd0d734f17f4761f15a5f67d6ce28432f7d5bf482a2548e226598a8cd2e20cf",
+        "downloaded_binary_hash_matches_metadata": true,
+        "native_json_sha256": "7b8dd0b5097511695dbb61eb12f324eb16cdf133eac410f80a782872af8bfe13",
+        "tests_xml_sha256": "a035c88f0bbc38fc32630a9e607feff9852e0b1b9a7065875bc2f638f5be60e3"
+      }
+    ]
+  },
+  "handoff_integrity": {
+    "run_ids": [
+      "38181799059",
+      "38181798972"
+    ],
+    "matrix_per_run": [
+      "ubuntu-latest Python3.8",
+      "ubuntu-latest Python3.13",
+      "windows-latest Python3.8",
+      "windows-latest Python3.13"
+    ],
+    "tests_per_matrix_job": 33,
+    "each_log_result": "OK",
+    "artifacts": 0,
+    "scope": "packager/sealed repository records/local links/exact bundle bytes; repeated matrix execution is not 264 distinct tests"
+  },
+  "foxy": {
+    "common": {
+      "ros": "foxy",
+      "python": "3.8.10",
+      "native_api_version_count": 9,
+      "all_api_versions": 1,
+      "real_calls_passed": true,
+      "finite_current_union_real_call_passed": true,
+      "installed_prefix_verified": true,
+      "source_sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f",
+      "reported_binary_sha256": "472a3316cfeefd8514b59a9d2306ad92fb26f5edb26e024118ce7236cf81a948",
+      "native_json_sha256": "1c1f35ac8520541c5447d299cc7e86fd486be2e5fc3e3a8982891e162682a1df",
+      "downloaded_binary_present": false,
+      "lane_mapping_lya_reference_units_passed": 3365,
+      "lane_mapping_lya_reference_warnings": 1134,
+      "lane_mapping_fixed_collected_items": 0,
+      "new_indexed_tests_visible_25_dots": true,
+      "road_detector_header_unit_passed": 4,
+      "road_detector_header_unit_failed": 0,
+      "road_detector_header_unit_errors": 0,
+      "road_detector_header_unit_skips": 0
+    },
+    "unit_count_evidence": "colcon package stdout and GitHub step logs. Original pytest.xml was generated in build/package/pytest.xml but not in downloaded build/*/test_results upload scope. Header4 JUnit separately present. Missing unit JUnit members must not be claimed reviewed.",
+    "artifacts": [
+      {
+        "run_id": "38181799027",
+        "artifact_id": 11718272483,
+        "name": "lane-foxy-validation",
+        "github_archive_digest_sha256": "ad45d5939d65157de93812fee386328c6c80a399ea01043a5a04f20f2af31db5",
+        "runtime_json_sha256": "cf0e362ffa7360f78b44c8079a9873b6fc55ed7fd67d58bdc8421da6dd35d58a",
+        "neo_upstream_runtime_json_sha256": "b0050d524e9947fd0d0b599bf1d3260fbf7226e28b3ce4643da44d6d0630a30a",
+        "header_xml_sha256": "d16cb11ef12b598112ae125a004a2d5b1641ea108334035b2883411545694b46",
+        "lya_unit_stdout_sha256": "d8ce65bfd4e2c521fd636022f90e3ed72d87360d30e6a3146134b8c0c4b2ef47",
+        "gnss_unit_stdout_sha256": null
+      },
+      {
+        "run_id": "38181798954",
+        "artifact_id": 11717888036,
+        "name": "lane-foxy-validation",
+        "github_archive_digest_sha256": "0290fdb67471ad122b3c5d4f99ee8c64b3b8ecc79ad3e12bf646c7436b647883",
+        "runtime_json_sha256": "a8c3c927caab0df21ea413f9607341383469b97899090ad6528b1d922654124e",
+        "neo_upstream_runtime_json_sha256": "618727ef45bee9870906647b9edfeed9ce5bef2e1953a66330c66a3dbf15f466",
+        "header_xml_sha256": "db25481036939d6e524bec56d6ca50994c595e8e4de8fe5712802a39e57423b2",
+        "lya_unit_stdout_sha256": "8d5aab1dc8f637a3d648cce60fd80e3f177b5f824a4d5dca7fba138d27b2d73d",
+        "gnss_unit_stdout_sha256": null
+      },
+      {
+        "run_id": "38181799031",
+        "artifact_id": 11717802063,
+        "name": "lane-endpoint-gnss-foxy-validation",
+        "github_archive_digest_sha256": "2696afb23ef4cd76adabfa69613dbc77aa9aa712419c9b60d307be7f0fd99345",
+        "runtime_json_sha256": "fef8a169ea9c1ee98303fdcf93ae4e2a3178eccfacc1c09dcbe19dc654bcccd8",
+        "neo_upstream_runtime_json_sha256": null,
+        "header_xml_sha256": "5065d3f8ad737b375b50df2a03c627dea37ec00eb762381858a9509d88c877e6",
+        "lya_unit_stdout_sha256": "6012cdf975b23d37221d1965bbe700d6ed8d5342354b17a079342280be137ca0",
+        "gnss_unit_stdout_sha256": "286bd3949d021e4f9690e3b5c17ba4cd8f2fddcd5e9059e18d58f6e99f4f1f81"
+      },
+      {
+        "run_id": "38181798986",
+        "artifact_id": 11718097708,
+        "name": "lane-endpoint-gnss-foxy-validation",
+        "github_archive_digest_sha256": "61041ef7b93fa2ad48dca0b2b4437f6b3c1cc5d84c8ea5022bca6d9e2688557d",
+        "runtime_json_sha256": "6c10afccf2d3b8fe2ff507292883a0a2522bf057fb8ffc2e273929fe79a1565e",
+        "neo_upstream_runtime_json_sha256": null,
+        "header_xml_sha256": "d7bdaaad3f5dde24172973e5d9c7a7ca3971ff2dac97d29e92339fa618f29368",
+        "lya_unit_stdout_sha256": "e13445039ea3e2bb57c351040579eac556f4118530308322043372d3bb58dd88",
+        "gnss_unit_stdout_sha256": "67dcea15a8aae34aa78b623f1f7ee6bc9ee887bc4a61d119d2db553f0ee5db4c"
+      }
+    ],
+    "lane": {
+      "run_ids": [
+        "38181799027",
+        "38181798954"
+      ],
+      "packages_built": [
+        "vectornav_msgs",
+        "trajectory_follower",
+        "lane_mapping_lya_reference",
+        "lane_mapping_fixed"
+      ],
+      "stationary_synthetic_dds_checks_per_run": 63,
+      "stationary_synthetic_dds_checks_passed_per_run": 63,
+      "upstream_checks_per_run": 26,
+      "upstream_checks_passed_per_run": 26,
+      "upstream_check_names_unique": 15,
+      "upstream_actual_cases_per_run": [
+        {
+          "name": "source_default",
+          "checks": 13,
+          "effective_reference_mps": 2,
+          "source_default_mps": 2,
+          "production_publication_full_mask_header_tested": true
+        },
+        {
+          "name": "global_yaml_override",
+          "checks": 11,
+          "effective_reference_mps": 4,
+          "source_default_mps": 2,
+          "scope": "private supervisor propagation; not GNSS 3mps motion-gate or driving approval"
+        }
+      ],
+      "upstream_case_completion_guards": 2,
+      "real_installed_lya": true,
+      "real_supervisor_stopped_process": true,
+      "owned_lya_exitcode": -2,
+      "real_vehicle_tested": false,
+      "inference_tested": false,
+      "core_synthetic_fixed_handoff_stopped_signal_simulated": true,
+      "control_demo": {
+        "both_metric_sha256": "a87d76343817230457a98cd2c4fbc593a01151ea52aa4b4826e0106127483ba1",
+        "all_pass": true,
+        "scenarios": 4,
+        "scope": "synthetic stadium trace and ideal observed lane boundaries with ideal-unicycle closed-loop; not new Unity camera lap or geometry-model acceptance",
+        "two_requested_laps_each": true,
+        "speed_caps_mps": [
+          0.4,
+          0.8
+        ],
+        "initial_offsets_m": [
+          0,
+          0.25
+        ],
+        "not_production_speed_or_vehicle_parameters": true
+      }
+    },
+    "endpoint": {
+      "run_ids": [
+        "38181799031",
+        "38181798986"
+      ],
+      "packages_built": [
+        "vectornav_msgs",
+        "trajectory_follower",
+        "lane_mapping_lya_reference",
+        "lane_mapping_fixed",
+        "lane_mapping_fixed_gnss"
+      ],
+      "gnss_units_passed_each": 940,
+      "gnss_unit_warnings_each": 170,
+      "units_total_each": 4305,
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "scope": "stationary private localhost DDS endpoint/safety/window scenarios, not full-lap repeat or physical hardware",
+      "branch": {
+        "run_id": "38181799031",
+        "passed": false,
+        "cases_passed": 2,
+        "cases_failed": 7,
+        "completed_checks": 121,
+        "completed_checks_true": 121,
+        "completed_checks_false": 0,
+        "later_checks_not_reached": true,
+        "cases": [
+          {
+            "name": "default_guard",
+            "passed": true,
+            "exit_code": 0,
+            "completed_checks": 11,
+            "completed_checks_true": 11
+          },
+          {
+            "name": "normal",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 13,
+            "completed_checks_true": 13
+          },
+          {
+            "name": "no_gnss_build",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 10,
+            "completed_checks_true": 10
+          },
+          {
+            "name": "startup_gap",
+            "passed": true,
+            "exit_code": 0,
+            "completed_checks": 16,
+            "completed_checks_true": 16
+          },
+          {
+            "name": "future_gps",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 15,
+            "completed_checks_true": 15
+          },
+          {
+            "name": "missing_bits",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 15,
+            "completed_checks_true": 15
+          },
+          {
+            "name": "uncertainty",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 15,
+            "completed_checks_true": 15
+          },
+          {
+            "name": "future_wheel",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 13,
+            "completed_checks_true": 13
+          },
+          {
+            "name": "future_gyro",
+            "passed": false,
+            "exit_code": 1,
+            "completed_checks": 13,
+            "completed_checks_true": 13
+          }
+        ],
+        "failed_scenario_reason": "terminal engine: bootstrap_anchor_not_established; waiting for five actual stationary camera commits",
+        "failed_diagnostics": [
+          {
+            "name": "normal",
+            "processing_deadline_count": 15,
+            "accepted_count_if_reported": 1,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 107.74484099999881,
+            "last_completed_camera_adapter_ms": 324.100306,
+            "last_completed_camera_age_at_diagnostic_ms": 619.627015,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "no_gnss_build",
+            "processing_deadline_count": 17,
+            "accepted_count_if_reported": null,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 86.15670699998645,
+            "last_completed_camera_adapter_ms": 307.30236099999996,
+            "last_completed_camera_age_at_diagnostic_ms": 601.041014,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "future_gps",
+            "processing_deadline_count": 15,
+            "accepted_count_if_reported": 1,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 117.18872799997371,
+            "last_completed_camera_adapter_ms": 331.291323,
+            "last_completed_camera_age_at_diagnostic_ms": 611.375629,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "missing_bits",
+            "processing_deadline_count": 15,
+            "accepted_count_if_reported": 1,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_engine_ms": 0.08902700000135155,
+            "last_completed_camera_adapter_ms": 216.03527599999998,
+            "last_completed_camera_age_at_diagnostic_ms": 287.830485,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "uncertainty",
+            "processing_deadline_count": 15,
+            "accepted_count_if_reported": 1,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 108.92844899996135,
+            "last_completed_camera_adapter_ms": 326.23713699999996,
+            "last_completed_camera_age_at_diagnostic_ms": 614.271583,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "future_wheel",
+            "processing_deadline_count": 17,
+            "accepted_count_if_reported": null,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 87.57349999996222,
+            "last_completed_camera_adapter_ms": 304.83179,
+            "last_completed_camera_age_at_diagnostic_ms": 576.878422,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          },
+          {
+            "name": "future_gyro",
+            "processing_deadline_count": 16,
+            "accepted_count_if_reported": 1,
+            "terminal_reason": "bootstrap_anchor_not_established",
+            "last_completed_camera_reason": "processing_deadline",
+            "last_completed_camera_engine_ms": 124.75867000000562,
+            "last_completed_camera_adapter_ms": 337.997958,
+            "last_completed_camera_age_at_diagnostic_ms": 617.8299499999999,
+            "worker_failure": null,
+            "worker_thread_alive": true,
+            "runtime_gnss_enabled": false,
+            "session_safety_state": "TEACH"
+          }
+        ],
+        "timing_semantics": "independent read-only samples, journal may lag; ages are not commit-time ages. Low terminal-event engine time for missing_bits does not negate the preceding 15 deadline rejections."
+      },
+      "tag": {
+        "run_id": "38181798986",
+        "passed": true,
+        "cases_passed": 9,
+        "cases_failed": 0,
+        "completed_checks": 151,
+        "completed_checks_true": 151,
+        "cases": [
+          {
+            "name": "default_guard",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 11,
+            "checks_true": 11
+          },
+          {
+            "name": "normal",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 25,
+            "checks_true": 25
+          },
+          {
+            "name": "no_gnss_build",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 12,
+            "checks_true": 12
+          },
+          {
+            "name": "startup_gap",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 16,
+            "checks_true": 16
+          },
+          {
+            "name": "future_gps",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 17,
+            "checks_true": 17
+          },
+          {
+            "name": "missing_bits",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 17,
+            "checks_true": 17
+          },
+          {
+            "name": "uncertainty",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 17,
+            "checks_true": 17
+          },
+          {
+            "name": "future_wheel",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 18,
+            "checks_true": 18
+          },
+          {
+            "name": "future_gyro",
+            "passed": true,
+            "exit_code": 0,
+            "checks": 18,
+            "checks_true": 18
+          }
+        ]
+      },
+      "comparison": "same SHA but different outcomes. Host/load contribution is not established; no environment-flake, WCET, reliable runtime or all-green conclusion."
+    }
+  },
+  "limits": [
+    "7/8 workflow success, not 8/8",
+    "Foxy build/installed-native readiness does not erase seven endpoint runtime failures",
+    "No future-data or GNSS mapping authorized; endpoint scenarios declare runtime GNSS false after the window",
+    "No local test/native/build/profile/solver/Unity execution by reviewer",
+    "No vehicle, hardware E-stop/motor-zero/remote arbitration, real sensor-chain, localization, new camera mapping lap, geometry repair or second-lap driving/video acceptance",
+    "Retain original failure and all attempt1 run IDs; no retry-until-pass",
+    "Extracted private/raw artifact paths/coordinates remain local; only redacted relative-input hashes, public repository IDs and run URLs here"
+  ]
+}

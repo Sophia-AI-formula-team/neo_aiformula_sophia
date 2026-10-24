@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "baseline_commit": "baba879468b8674e7044dadebe2363baae378238",
+  "local_source_files": [
+    {
+      "path": ".github/workflows/lane-native.yml",
+      "sha256": "30dcd7a4bc02adad70aa849125bfbf03319825fddc4ad39cf1e6d51b9c29afaa"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c",
+      "sha256": "9dae4a7ab517d872af29d3c2d0a27d1cdfa7e8446c8f138be206df5ba4c4438f"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/verify_native.py",
+      "sha256": "f09c9f3cff8378da59c661402118d7cd108f1fcb8e75edf42bb70461a695c7a1"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/setup.cfg",
+      "sha256": "aae0d0f4b42eee7f658a57a4fa4b2fee09aa97a716332384197416ddada5a782"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/setup.py",
+      "sha256": "5c629a6b0755842eb6a95e22bef5cb585ac2c7c5959ab216471b75e465bd6b9e"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_domain_consensus.py",
+      "sha256": "106003f068971bc339ddb6cf31ef342983054659de0f43853c1286187e360589"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_batch_validation.py",
+      "sha256": "c3fabb57e35ca1798b1634534176b95b24e820fd5cd16263a268f24c875d5c85"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_coalescing_equivalence.py",
+      "sha256": "c72f14d9cca5240eb9de774f131590b6917cb7541cf81239a0a0aefd0b4f33a7"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_connected_projection.py",
+      "sha256": "0ec203d3b3b893df70b8a227c5fd507fe2519ce6e12d10e85e421832d9af7861"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_nextafter.py",
+      "sha256": "6feb26ec378d7cda75ac61aaa3cbebfccdf99c4c1d3f2a719abb1ca697151e8b"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_scalar_validation.py",
+      "sha256": "a306b35cb3089bcbd0ab39c8820cfbc8ed36a564052ac378333098a873a3e911"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_support.py",
+      "sha256": "10de4b03128e9eb1689cac551377651c9a95bb808ea19f5f1dedf5d55f22fb38"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_union_hotloop.py",
+      "sha256": "a505e4f751bc8e628397c8645f92b00b6c91c0bf13fd2011ff980a4c7efbdab1"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_native_current_union_dispatch.py",
+      "sha256": "e800d9807414ba35c07802b5e55d5bf1e31ef40adac30cb9af4a6415fa97ffa5"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_native_current_union.py",
+      "sha256": "f4f945c701391669e60cb0975f0cd377b1bd6d6328fa986593e91e52daa15cb4"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_native_finite_projection.py",
+      "sha256": "518264bf056aa5076128590da1c776a46b3870a1f6101e4ee0e2fd45c8c4404b"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/__init__.py",
+      "sha256": "29bd7278966cfae838211b18769e8349e49c3a3518c71939ba8cba79b4256d5c"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/boundary_localization.py",
+      "sha256": "762cddfb84daded733aba561399bb0cf90fb60cab93aa4a602f0a20f12616db5"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/continuation_support.py",
+      "sha256": "fa9d01e3d6d57efc70aac850363703459ec6c36994a12156ccfbab58b032e337"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/controller.py",
+      "sha256": "52d94a095e223746acdf666a970897bb3a7c218c8921ba4e7f419373083684c8"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_brackets.py",
+      "sha256": "e0254dc27fe52c028508ebc5afccce5b1592f514373abdca16dd7ae5e803b0b1"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/corner_direction.py",
+      "sha256": "d5c003046630e9fa154f21b0655ba3add2fe21fc6919717dc8727d39508b71cb"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py",
+      "sha256": "9e71c177b72e1fef2b145f325f7234b5b7c7a9c2f7d90c4610485d13ea9065ee"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/follower_node.py",
+      "sha256": "0adb470f18dfa33234ffcc23db7052c2f2139ca8fc114659f56baf8acafb9729"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/footprint_geometry.py",
+      "sha256": "eb03d1ceb011c2419c4c8a25fb1cf8e40f7cb3c084d714d9d39b7a065e181d17"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/launch_support.py",
+      "sha256": "2e5a188bc46e9f1eeab54d3228b73353419307e67446f9808eee31fc4feecfc6"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mapping_core.py",
+      "sha256": "ef2cc93dcdcb07c861a9f21d9ae0d7fb061f33f5772a48044671e1875ef09128"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/mask_localization.py",
+      "sha256": "11f33a2ddf239c668dd5ecc4a233f12fa9f085e14469863636bf9a623abe8935"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py",
+      "sha256": "7f8023c67829b2e4fbf33d636ee71aed30f72a7b4a8558af7f13a17f3539ce90"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/quantized_ribbon.py",
+      "sha256": "27996860b0564735dc3ca641f9a074eb48a2c436490c022b1f4ca806b77eb0f9"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/recorder_node.py",
+      "sha256": "6f5806d7cb7185f07e73aad0d0faf57bea6b45e9e63ab96c226979a3b692395b"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/ribbon_observation.py",
+      "sha256": "9defdec8a9b70510820ff7a3464271920309d19170996b44c5be86babb608407"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/route.py",
+      "sha256": "3353e91e907b004c3c29862cd0aa9edb0e4775104fac3e923533d39af3b14d70"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/supervisor.py",
+      "sha256": "01a171574f4cdb60d184545b9f470dcd8b6ec0ae4f049f39d18d8dcf5ee594e6"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/tilted_projection.py",
+      "sha256": "63131d278ceecb9dd7581f00c040cf1fadf739750e38dd586cc6e21d6b454b62"
+    }
+  ],
+  "note": "Local tested file hashes; C pinned LF. Native9 pending."
+}

@@ -1,0 +1,264 @@
+{
+  "scope": "Exact R30 code CI, synthetic real ROS messages; not vehicle or Unity",
+  "code_sha": "c212c3b1393c3f0297fd8cb65561798a24a5a8c2",
+  "all8_terminal": true,
+  "workflow_success": 6,
+  "workflow_failure": 2,
+  "successful_runs": [
+    38607072967,
+    38607072916,
+    38607072971,
+    38607073016,
+    38607072950,
+    38607072808
+  ],
+  "failed_runs": [
+    38607072990,
+    38607073093
+  ],
+  "endpoint_Linux_unit_tests_each": 4613,
+  "endpoint_unit_errors_failures_skips_each": 0,
+  "road_detector_header_tests_each": 4,
+  "retries_requested": 0,
+  "endpoint_reports": [
+    {
+      "side": "endpoint_branch",
+      "run_id": 38607072990,
+      "artifact_id": 11916376761,
+      "runtime_sha256": "cbab243fac2b8eadc0630f070802140bca9a0aefaa37ca89653515c2486eb587",
+      "passed": false,
+      "case_passed": 2,
+      "case_total": 9,
+      "cases": [
+        {
+          "case": "default_guard",
+          "passed": true,
+          "terminal": null,
+          "accepted": null,
+          "processing_deadline": null,
+          "last_engine_ms": null,
+          "last_worker_compute_ms": null,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 0
+        },
+        {
+          "case": "normal",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 15,
+          "last_engine_ms": 109.73188099995923,
+          "last_worker_compute_ms": 359.191714,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "no_gnss_build",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 137.53843900002494,
+          "last_worker_compute_ms": 357.278147,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "startup_gap",
+          "passed": true,
+          "terminal": null,
+          "accepted": null,
+          "processing_deadline": null,
+          "last_engine_ms": null,
+          "last_worker_compute_ms": null,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 0
+        },
+        {
+          "case": "future_gps",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 111.44294799998988,
+          "last_worker_compute_ms": 331.77772,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "missing_bits",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 15,
+          "last_engine_ms": 107.82809900001666,
+          "last_worker_compute_ms": 334.534421,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "uncertainty",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": null,
+          "processing_deadline": 16,
+          "last_engine_ms": 85.20345900001303,
+          "last_worker_compute_ms": 307.343241,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "future_wheel",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 107.75538100006088,
+          "last_worker_compute_ms": 335.02770499999997,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "future_gyro",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 114.31953999999678,
+          "last_worker_compute_ms": 339.729353,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        }
+      ]
+    },
+    {
+      "side": "endpoint_tag",
+      "run_id": 38607073093,
+      "artifact_id": 11915926915,
+      "runtime_sha256": "c83e92308141db069b2fc4de922d43aa32d0a85a2ca6a6caf9eb1fbfd6124aeb",
+      "passed": false,
+      "case_passed": 2,
+      "case_total": 9,
+      "cases": [
+        {
+          "case": "default_guard",
+          "passed": true,
+          "terminal": null,
+          "accepted": null,
+          "processing_deadline": null,
+          "last_engine_ms": null,
+          "last_worker_compute_ms": null,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 0
+        },
+        {
+          "case": "normal",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 2,
+          "processing_deadline": 13,
+          "last_engine_ms": 98.40957499994829,
+          "last_worker_compute_ms": 366.439418,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "no_gnss_build",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 101.72719999997071,
+          "last_worker_compute_ms": 323.02777599999996,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "startup_gap",
+          "passed": true,
+          "terminal": null,
+          "accepted": null,
+          "processing_deadline": null,
+          "last_engine_ms": null,
+          "last_worker_compute_ms": null,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 0
+        },
+        {
+          "case": "future_gps",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 3,
+          "processing_deadline": 12,
+          "last_engine_ms": 0.11360700000295765,
+          "last_worker_compute_ms": 234.32095099999998,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "missing_bits",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 2,
+          "processing_deadline": 14,
+          "last_engine_ms": 0.09158400001751943,
+          "last_worker_compute_ms": 227.90008899999998,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "uncertainty",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 109.742467999979,
+          "last_worker_compute_ms": 358.609014,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "future_wheel",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 1,
+          "processing_deadline": 14,
+          "last_engine_ms": 0.10411399995291504,
+          "last_worker_compute_ms": 244.551934,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        },
+        {
+          "case": "future_gyro",
+          "passed": false,
+          "terminal": "bootstrap_anchor_not_established",
+          "accepted": 2,
+          "processing_deadline": 13,
+          "last_engine_ms": 104.96393300002183,
+          "last_worker_compute_ms": 349.881743,
+          "production_speed_default_tested": false,
+          "physical_stop_tested": false,
+          "exit_code": 1
+        }
+      ]
+    }
+  ],
+  "caveats": "Seven Endpoint cases each failed before five stationary camera commits; processing_deadline rejection precedes bootstrap_anchor_not_established. Last-camera fields are independent snapshots, not distributions/commit-time ages. Missing accepted key means unavailable, not asserted zero. Existing private synthetic teacher0.2m/s fixture does not validate production inherited LYA speed. V5 stays disabled in Engine; original timing/geometry/vehicle/simulator parameters unchanged. Raw errors/stacks/anchors/poses/private paths excluded from this summary."
+}

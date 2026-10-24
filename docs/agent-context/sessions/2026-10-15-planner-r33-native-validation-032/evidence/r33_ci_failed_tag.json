@@ -1,0 +1,181 @@
+{
+  "scope": "synthetic ROS/DDS; no hardware or simulator lap",
+  "unit": {
+    "lane_mapping_fixed": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lane_mapping_fixed_gnss": {
+      "tests": 958,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lane_mapping_lya_reference": {
+      "tests": 3809,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  },
+  "runtime_passed": false,
+  "cases": [
+    {
+      "case": "default_guard",
+      "passed": true
+    },
+    {
+      "case": "normal",
+      "passed": true
+    },
+    {
+      "case": "no_gnss_build",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 14,
+        "processing_deadline": 13,
+        "accepted": 3,
+        "bootstrap_odometry": 3,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "bootstrap_anchor_not_established",
+        "compute_ms": 219.069782,
+        "engine_processing_ms": 0.09791899998390363,
+        "counts_at_result": {
+          "rejected": 14,
+          "processing_deadline": 13,
+          "accepted": 3,
+          "bootstrap_odometry": 3,
+          "bootstrap_anchor_not_established": 1
+        }
+      }
+    },
+    {
+      "case": "startup_gap",
+      "passed": true
+    },
+    {
+      "case": "future_gps",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 16,
+        "processing_deadline": 15,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 307.404476,
+        "engine_processing_ms": 85.50654399999758,
+        "counts_at_result": {
+          "rejected": 15,
+          "processing_deadline": 15,
+          "accepted": 1,
+          "bootstrap_odometry": 1
+        }
+      }
+    },
+    {
+      "case": "missing_bits",
+      "passed": true
+    },
+    {
+      "case": "uncertainty",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 15,
+        "processing_deadline": 14,
+        "accepted": 3,
+        "bootstrap_odometry": 3,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 335.939695,
+        "engine_processing_ms": 95.70618499998318,
+        "counts_at_result": {
+          "rejected": 14,
+          "processing_deadline": 14,
+          "accepted": 3,
+          "bootstrap_odometry": 3
+        }
+      }
+    },
+    {
+      "case": "future_wheel",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 16,
+        "processing_deadline": 15,
+        "accepted": 1,
+        "bootstrap_odometry": 1,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "bootstrap_anchor_not_established",
+        "compute_ms": 222.46257,
+        "engine_processing_ms": 0.099875999978849,
+        "counts_at_result": {
+          "rejected": 16,
+          "processing_deadline": 15,
+          "accepted": 1,
+          "bootstrap_odometry": 1,
+          "bootstrap_anchor_not_established": 1
+        }
+      }
+    },
+    {
+      "case": "future_gyro",
+      "passed": false,
+      "engine_phase": "invalid",
+      "engine_terminal_reason": "bootstrap_anchor_not_established",
+      "engine_counts": {
+        "rejected": 15,
+        "processing_deadline": 14,
+        "accepted": 2,
+        "bootstrap_odometry": 2,
+        "bootstrap_anchor_not_established": 1
+      },
+      "worker_failure": null,
+      "worker_thread_alive": true,
+      "last_completed_camera": {
+        "event": "teach_mask",
+        "reason": "processing_deadline",
+        "compute_ms": 319.658204,
+        "engine_processing_ms": 86.88611299999138,
+        "counts_at_result": {
+          "rejected": 14,
+          "processing_deadline": 14,
+          "accepted": 2,
+          "bootstrap_odometry": 2
+        }
+      }
+    }
+  ],
+  "raw_runtime_sha256": "0c81745e42070b0feb885dcf0ecb3a10c0643005a843b3aa7e8b2c76f32c9180",
+  "privacy": "source epochs, GNSS constants and paths omitted"
+}

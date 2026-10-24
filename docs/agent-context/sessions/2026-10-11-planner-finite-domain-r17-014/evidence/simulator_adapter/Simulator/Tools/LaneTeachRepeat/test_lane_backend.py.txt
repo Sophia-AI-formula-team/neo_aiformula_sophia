@@ -1,0 +1,801 @@
+"""Pure adapter tests. No server, Unity, ROS, plant edits or generated files."""
+import base64
+import copy
+import hashlib
+import io
+import json
+import math
+import os
+from pathlib import Path
+import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
+
+import numpy as np
+from PIL import Image
+
+from lane_backend import Journal, LaneSession, ProductionCore, TEACH_MAP_CONFIG, VisualFitError, source_ns, visual_target
+
+
+def synthetic_camera():
+    return dict(width=320, height=180, K=[120., 0., 160., 0., 120., 80., 0., 0., 1.],
+        T_base_camera=[0., 0., 1., 0., -1., 0., 0., 0., 0., -1., 0., .7, 0., 0., 0., 1.])
+
+
+def synthetic_boundary_camera():
+    """Test-only doubled resolution/K; same FOV and unchanged mount, no Unity edits."""
+    camera = copy.deepcopy(synthetic_camera())
+    camera['width'] *= 2
+    camera['height'] *= 2
+    camera['K'] = [value * 2 if index < 6 else value
+                   for index, value in enumerate(camera['K'])]
+    return camera
+
+
+def legacy_xy_test_core(production):
+    """Explicit isolated XY contract fixture; never mutate production provenance."""
+    core = copy.copy(production)
+    core.provenance = dict(production.provenance,
+                          feature_representation='legacy_filled_xy_test_fixture')
+    return core
+
+
+def encoded_mask(core, camera, blank=False):
+    lookup = core.GroundLookup(camera["width"], camera["height"], camera["K"],
+                              np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+    xy = lookup.points_xy
+    pixels = (np.abs(np.abs(xy[:, :, 1]) - 1.2) < .085) & (xy[:, :, 0] > .5) & (xy[:, :, 0] < 10.)
+    if blank:
+        pixels[:] = False
+    buffer = io.BytesIO()
+    Image.fromarray(pixels.astype(np.uint8) * 255).save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 1_000_000_000
+
+    def __call__(self):
+        return self.now
+
+
+class LaneBackendTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        repo = os.environ.get("LANE_TEST_REPO")
+        if not repo:
+            raise unittest.SkipTest("set LANE_TEST_REPO to the neo feature checkout")
+        cls.core = ProductionCore(Path(repo))
+        cls.camera = synthetic_camera()
+        cls.mask = encoded_mask(cls.core, cls.camera)
+
+    def setUp(self):
+        self.events = []
+        self.clock = FakeClock()
+        self.session = LaneSession(self.core, self.events.append, clock=self.clock)
+
+    def frame(self, index, *, operation="step", speed=0., yaw=0.):
+        stamp = index * .1
+        self.clock.now = 1_000_000_000 + round(stamp * 1e9)
+        rpm = speed * 60 / (math.pi * .254)
+        return dict(sequence=index, sim_time=stamp, operation=operation,
+            camera=self.camera, mask_png=self.mask,
+            motion=[dict(stamp=stamp, left_rpm=rpm, right_rpm=rpm, gyro_z=yaw)])
+
+    def warmup(self):
+        response = None
+        for index in range(16):
+            response = self.session.step(self.frame(index))
+            self.assertEqual(response["phase"], "WARMUP", response)
+        self.assertEqual(response["reason"], "ready for explicit Start")
+        return response
+
+    def test_imports_are_production_and_reference_is_single_source(self):
+        self.assertEqual(self.core.reference, self.core.source_reference)
+        self.assertFalse(self.core.provenance["reference_overridden"])
+        self.assertGreaterEqual(len(self.core.provenance["source_sha256"]), 9)
+        self.assertFalse(self.core.provenance["truth_pose_input"])
+        self.assertEqual(self.core.MapEngine.__module__, "lane_mapping_fixed_gnss.mapping")
+
+    def test_source_speed_four_does_not_silently_weaken_motion_gate(self):
+        with self.assertRaisesRegex(ValueError, "raw-motion speed gate"):
+            ProductionCore(self.core.repo, 4.)
+
+    def test_stationary_warmup_validates_sensors_without_spending_mapping_bootstrap(self):
+        response = self.warmup()
+        self.assertEqual((response["v"], response["w"]), (0., 0.))
+        self.assertEqual(response["metrics"]["map_cells"], 0)
+        self.assertEqual(response["map_points"], [])
+        self.assertIsNone(self.session.engine)
+        self.assertTrue(response["metrics"]["ready_for_start"])
+        self.assertLess(np.linalg.norm(response["estimated_pose"]), .005)
+
+    def test_long_operator_warmup_does_not_reset_or_exhaust_a_started_map(self):
+        self.camera = synthetic_boundary_camera()
+        self.mask = encoded_mask(self.core, self.camera)
+        for index in range(71):
+            response = self.session.step(self.frame(index))
+            self.assertEqual(response["phase"], "WARMUP")
+            self.assertIsNone(self.session.engine)
+        response = self.session.step(self.frame(71, operation="start"))
+        self.assertEqual(response["phase"], "TEACH", response)
+        engine = self.session.engine
+        self.assertEqual(engine.counts["accepted"], 1)
+        for index in range(72, 79):
+            response = self.session.step(self.frame(index))
+            self.assertIs(engine, self.session.engine)
+            self.assertEqual(response["phase"], "TEACH", response)
+        self.assertEqual(engine.phase, "tracking")
+        self.assertGreater(response["metrics"]["map_cells"], 100)
+
+    def test_original_320_mask_filled_over_100_is_not_boundary_bootstrap_readiness(self):
+        # r12_adapter_readiness_01: 178 nodes have frame votes, but only 74 have
+        # reliable evidence. Keep this negative input; do not reduce min 100.
+        self.warmup()
+        for index in range(16, 24):
+            response = self.session.step(self.frame(index, operation='start' if index == 16 else 'step'))
+            self.assertEqual(response['phase'], 'TEACH', response)
+        engine = self.session.engine
+        self.assertGreater(response['metrics']['map_cells'], 100)
+        self.assertEqual(engine._boundary_map.confirmed_count, 74)
+        self.assertLess(engine._boundary_map.confirmed_count, engine.config['bootstrap_min_anchor_points'])
+        self.assertEqual(engine.config['bootstrap_min_anchor_points'], 100)
+        self.assertEqual(engine.phase, 'bootstrap')
+        self.assertIsNone(engine._matcher)
+        self.assertIsNone(engine._candidate)
+        self.assertEqual(engine.counts['keyframes_prepared'], 0)
+        self.assertEqual(engine.counts['accepted'], 8)
+
+    def test_queued_start_does_not_begin_teach_until_bridge_acknowledges_ownership(self):
+        self.warmup()
+        self.assertTrue(self.session.queue_start()[0])
+        self.assertIsNone(self.session.engine)
+        self.assertEqual(self.session.phase, "WARMUP")
+        self.assertTrue(self.session.status()["start_requested"])
+        response = self.session.step(self.frame(16))
+        self.assertTrue(response["start_requested"])
+        self.assertEqual(response["phase"], "WARMUP")
+        self.assertEqual(response["v"], 0.)
+        response = self.session.step(self.frame(17, operation="start"))
+        self.assertFalse(response["start_requested"])
+        self.assertEqual(response["phase"], "TEACH", response)
+        self.assertIsNotNone(self.session.engine)
+
+    def test_repeated_queued_start_is_idempotent(self):
+        self.warmup()
+        self.assertTrue(self.session.queue_start()[0])
+        events_before = len(self.events)
+        self.assertTrue(self.session.queue_start()[0])
+        self.assertEqual(len(self.events), events_before)
+        self.assertEqual(self.session.phase, "WARMUP")
+
+    def test_start_queue_rejects_unready_stale_or_terminal_state(self):
+        self.assertFalse(self.session.queue_start()[0])
+        self.assertEqual(self.session.phase, "WARMUP")
+        self.warmup()
+        self.clock.now += 500_000_001
+        accepted, reason = self.session.queue_start()
+        self.assertFalse(accepted)
+        self.assertIn("500 ms", reason)
+        self.assertFalse(self.session.start_requested)
+        self.session.hold("test terminal")
+        self.assertFalse(self.session.queue_start()[0])
+
+    def test_stop_revokes_a_queued_start(self):
+        self.warmup()
+        self.session.queue_start()
+        response = self.session.step(self.frame(16, operation="stop"))
+        self.assertFalse(response["start_requested"])
+        self.assertEqual(response["phase"], "HOLD")
+
+    def test_status_reports_latest_accepted_image_source_time(self):
+        self.warmup()
+        self.assertAlmostEqual(self.session.status()["sim_time"], 1.5)
+        self.assertEqual(self.session.status()["sequence"], 15)
+
+    def test_status_labels_last_issued_command_and_revokes_it_after_hold(self):
+        self.warmup()
+        reply = self.session.step(self.frame(16, operation="start"))
+        status = self.session.status()
+        self.assertGreater(reply["v"], 0.)
+        self.assertEqual((status["v"], status["w"]), (reply["v"], reply["w"]))
+        self.assertTrue(status["metrics"]["command_is_last_issued_not_live_measurement"])
+        self.assertEqual(status["metrics"]["reception_age_ms"], 0.)
+        self.session.hold("test command revocation")
+        status = self.session.status()
+        self.assertEqual(status["phase"], "HOLD")
+        self.assertEqual((status["v"], status["w"]), (0., 0.))
+
+    def test_legacy_xy_lap_closure_is_relative_to_explicit_start_not_initial_odometer_origin(self):
+        self.session.core = legacy_xy_test_core(self.core)
+        self.warmup()
+        # Represents a continuous sensor-origin frame after manual warmup. No
+        # map has yet been created, and no odometer reset is part of the test.
+        self.session.sample = SimpleNamespace(x=12., y=-7., yaw=1.2, stamp_ns=source_ns(1.6))
+        points, sensitivity, _ = self.session._mask(self.mask)
+        self.session._teach(points, sensitivity, source_ns(1.6), True)
+        np.testing.assert_array_equal(self.session.start_pose, [12., -7., 1.2])
+        np.testing.assert_array_equal(self.session.map_origin_pose, [12., -7., 1.2])
+        np.testing.assert_allclose(self.session._prior(), [0., 0., 0.], atol=1e-12)
+        self.session.sample = SimpleNamespace(x=12.1, y=-7.1, yaw=1.22)
+        distance, angle = self.session._closure_error(self.session._prior())
+        self.assertAlmostEqual(distance, math.sqrt(.02))
+        self.assertAlmostEqual(angle, .02)
+        self.assertEqual(self.session._closure_error([0., 0., 0.]), (0., 0.))
+        self.assertEqual(self.session.motion.reset_count, 0)
+
+    def test_legacy_xy_repeat_refinement_is_reported_separately_from_frozen_map(self):
+        self.session.core = legacy_xy_test_core(self.core)
+        x = np.arange(.5, 8.01, .1)
+        anchor = np.vstack((np.column_stack((x, np.full_like(x, -1.5))),
+                            np.column_stack((x, np.full_like(x, 1.5)))))
+        self.session.matcher = self.core.Localizer(anchor)
+        self.session.map_preview = anchor.tolist()
+        anchor_before = self.session.matcher.anchor_points.copy()
+        self.session.phase = "ACQUIRE"
+        self.session.stop_since_ns = source_ns(0.)
+        # Only controller attachment is a stub here; scan matching and consensus
+        # accumulation execute production code against an independent anchor.
+        self.session.controller = SimpleNamespace(attach=lambda pose: None)
+        for index in range(3):
+            stamp = source_ns(2. + index * .1)
+            self.session.sample = SimpleNamespace(x=0., y=0., yaw=0., speed=0., stamp_ns=stamp,
+                                                  gyro_stamp_ns=stamp)
+            self.session._repeat(anchor, np.zeros(len(anchor)), stamp, self.clock())
+        response = self.session.response(2.2)
+        self.assertGreater(len(response["refined_map_points"]), 0)
+        self.assertEqual(response["map_points"], anchor.tolist())
+        self.assertLessEqual(len(response["refined_map_points"]), 2000)
+        np.testing.assert_array_equal(self.session.matcher.anchor_points, anchor_before)
+
+    def test_completion_refinement_artifact_has_separate_identity_and_keeps_route(self):
+        journal = Journal.__new__(Journal)
+        journal.directory = Path("not-written-by-this-test")
+        points = np.array([[1., 2.], [3., 4.]])
+        votes = np.array([3, 7])
+        route = {"closed": True, "reference_speed_mps": self.core.reference}
+        route_before = dict(route)
+        stream = io.StringIO()
+        # Do not generate test files outside the two assigned source files.
+        class OpenBuffer:
+            def __enter__(self):
+                return stream
+
+            def __exit__(self, *_):
+                return False
+        with patch.object(Path, "open", return_value=OpenBuffer()) as mocked:
+            path = journal.save_refinement(points, votes, sequence=77, stamp_ns=123,
+                                           route=route, anchor=points)
+        record = json.loads(stream.getvalue())
+        self.assertFalse(record["modifies_frozen_route"])
+        self.assertFalse(record["uses_refinement_for_matching"])
+        self.assertEqual(record["points"], points.tolist())
+        self.assertEqual(record["votes"], votes.tolist())
+        self.assertEqual(route, route_before)
+        self.assertTrue(path.name.startswith("repeat_refinement_"))
+        self.assertEqual(mocked.call_args.args[0], "x")
+
+    def test_explicit_start_uses_source_lya_feedback_without_speed_reduction(self):
+        self.warmup()
+        response = self.session.step(self.frame(16, operation="start"))
+        self.assertEqual(response["phase"], "TEACH", response)
+        observation = response["metrics"]["teacher_observation"]
+        expected_v, expected_w = self.core.teacher(observation["target_body"],
+            self.core.reference * observation["curvature_1pm"])
+        self.assertAlmostEqual(response["v"], expected_v, places=12)
+        self.assertAlmostEqual(response["w"], expected_w, places=12)
+        self.assertGreater(response["v"], self.core.reference)
+        self.assertTrue(response["metrics"]["teacher_enabled"])
+
+    def test_teach_index_refresh_changes_only_explicit_public_scheduling_settings(self):
+        self.camera = synthetic_boundary_camera()
+        self.mask = encoded_mask(self.core, self.camera)
+        baseline = self.core.MapEngine()
+        self.warmup()
+        self.session.step(self.frame(16, operation="start"))
+        engine = self.session.engine
+        differences = {key: value for key, value in engine.config.items() if value != baseline.config[key]}
+        self.assertEqual(differences, TEACH_MAP_CONFIG)
+        self.assertEqual(self.core.provenance["teach_map_adapter_overrides"], TEACH_MAP_CONFIG)
+        self.assertEqual(engine.matcher_config, baseline.matcher_config)
+        for index in range(17, 29):
+            response = self.session.step(self.frame(index))
+            self.assertEqual(response["phase"], "TEACH", response)
+            mapping = response["metrics"]["mapping"]
+            if mapping["matched_against_frontier_ns"] is not None:
+                self.assertLess(mapping["matched_against_frontier_ns"], mapping["stamp_ns"])
+        self.assertGreater(engine.counts["keyframes_prepared"], 1)
+
+    def test_rejected_map_preserves_match_and_teacher_diagnostics_and_stops(self):
+        self.warmup()
+        self.session.step(self.frame(16, operation="start"))
+        rejected = dict(accepted=False, reason="match_unobservable_geometry", pose_xyyaw=np.zeros(3),
+            metrics={"observable_rank": 1}, stamp_ns=source_ns(1.7),
+            matched_against_frontier_ns=source_ns(1.6))
+        with patch.object(self.session.engine, "process", return_value=rejected):
+            response = self.session.step(self.frame(17))
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertEqual((response["v"], response["w"]), (0., 0.))
+        self.assertFalse(response["metrics"]["mapping"]["accepted"])
+        self.assertEqual(response["metrics"]["mapping"]["metrics"]["observable_rank"], 1)
+        self.assertIn("teacher_observation", response["metrics"])
+        event = next(record for record in self.events if record["event"] == "mapping_rejected")
+        self.assertEqual(event["sequence"], 17)
+        self.assertEqual(event["mapping"], response["metrics"]["mapping"])
+        self.assertEqual(event["teacher_observation"], response["metrics"]["teacher_observation"])
+
+    def test_duplicate_http_retry_does_not_add_map_votes(self):
+        self.warmup()
+        request = self.frame(16, operation="start")
+        response = self.session.step(request)
+        accepted = self.session.engine.counts["accepted"]
+        self.assertEqual(self.session.step(request), response)
+        self.assertEqual(self.session.engine.counts["accepted"], accepted)
+
+    def test_same_sequence_with_changed_payload_cannot_replay_moving_command(self):
+        self.warmup()
+        request = self.frame(16, operation="start")
+        self.assertGreater(self.session.step(request)["v"], 0.)
+        request["operation"] = "stop"
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertEqual(response["v"], 0.)
+        self.assertIn("different request", response["reason"])
+
+    def test_external_fault_revokes_cached_moving_response(self):
+        self.warmup()
+        request = self.frame(16, operation="start")
+        self.assertGreater(self.session.step(request)["v"], 0.)
+        self.session.hold("transport fault")
+        self.assertEqual(self.session.step(request)["v"], 0.)
+
+    def test_terminal_new_sequences_continue_to_be_logged(self):
+        self.session.step(self.frame(0, operation="stop"))
+        before = len(self.events)
+        response = self.session.step(self.frame(1))
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertEqual(len(self.events), before + 1)
+        self.assertEqual(self.events[-1]["response"]["sequence"], 1)
+
+    def test_float32_sensor_geometry_is_preserved_with_numeric_tolerance(self):
+        request = self.frame(0)
+        actual_diameter = 0.254000008106
+        request["sensor_calibration"] = dict(wheel_diameter_m=actual_diameter, motor_to_wheel_ratio=1.)
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "WARMUP", response)
+        self.assertEqual(self.session.motion.config["wheel_diameter_m"], actual_diameter)
+        request = self.frame(1)
+        request["sensor_calibration"] = dict(wheel_diameter_m=actual_diameter, motor_to_wheel_ratio=1.)
+        self.assertEqual(self.session.step(request)["phase"], "WARMUP")
+        request = self.frame(2)
+        request["sensor_calibration"] = dict(wheel_diameter_m=.254, motor_to_wheel_ratio=1.)
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("calibration changed", response["reason"])
+
+    def test_unrelated_sensor_geometry_and_nonfinite_values_are_rejected(self):
+        for diameter in (.25, float("inf")):
+            request = self.frame(0)
+            request["sensor_calibration"] = dict(wheel_diameter_m=diameter, motor_to_wheel_ratio=1.)
+            self.assertEqual(self.session.step(request)["phase"], "HOLD")
+
+    def test_prephysics_motion_t_minus_dt_is_valid_for_postphysics_mask(self):
+        for index in range(1, 13):
+            request = self.frame(index)
+            request["motion"][0]["stamp"] -= .01
+            response = self.session.step(request)
+            self.assertEqual(response["phase"], "WARMUP", response)
+        self.assertEqual(source_ns(request["sim_time"]) - self.session.sample.stamp_ns, 10_000_000)
+
+    def test_duplicate_zero_boundary_with_different_gyro_is_not_deduplicated(self):
+        # Reproduces backend_02: clamping the undefined pre-first interval to
+        # zero produced two different sensor observations with source stamp 0.
+        self.assertEqual(self.session.step(self.frame(0))["phase"], "WARMUP")
+        request = self.frame(1)
+        request["sim_time"] = .1099999975413084
+        request["motion"] = [
+            dict(stamp=0., left_rpm=0., right_rpm=0., gyro_z=5.183863e-08),
+            dict(stamp=.009999999776482582, left_rpm=0., right_rpm=0., gyro_z=1.36144678e-08),
+        ]
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("gyro_stamp_not_increasing", response["reason"])
+        self.assertEqual(self.session.motion.last_gyro_stamp_ns, source_ns(0.))
+
+    def test_skipping_undefined_pre_first_interval_retains_real_boundaries(self):
+        dt = .009999999776482582
+        emitted = []
+        for fixed_time in (0., dt, 2 * dt):
+            boundary = fixed_time - dt
+            if boundary < 0:
+                continue
+            emitted.append(boundary)
+            request = self.frame(len(emitted))
+            request["sim_time"] = fixed_time
+            request["motion"] = [dict(stamp=boundary, left_rpm=0., right_rpm=0., gyro_z=0.)]
+            response = self.session.step(request)
+            self.assertEqual(response["phase"], "WARMUP", response)
+        self.assertEqual(emitted, [0., dt])
+        self.assertEqual(self.session.motion.last_wheel_stamp_ns, source_ns(dt))
+
+    def test_explicit_start_before_stopped_bootstrap_holds(self):
+        response = self.session.step(self.frame(0, operation="start"))
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("Start requires", response["reason"])
+        self.assertEqual(response["v"], 0.)
+
+    def test_no_global_truth_or_reference_fields_accepted(self):
+        for forbidden in ("pose", "world_pose", "reference", "course"):
+            request = self.frame(0)
+            request[forbidden] = [1., 2., 3.]
+            response = self.session.step(request)
+            self.assertEqual(response["phase"], "HOLD")
+            self.assertIn("prohibited", response["reason"])
+
+    def test_future_motion_rejected_before_map_votes(self):
+        request = self.frame(0)
+        request["motion"][0]["stamp"] = .01
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("future motion", response["reason"])
+        self.assertIsNone(self.session.engine)
+
+    def test_image_timestamp_cannot_repeat(self):
+        self.session.step(self.frame(0))
+        request = self.frame(1)
+        request["sim_time"] = 0.
+        response = self.session.step(request)
+        self.assertIn("strictly increase", response["reason"])
+
+    def test_wheel_gap_not_repaired_or_reset(self):
+        self.session.step(self.frame(0))
+        response = self.session.step(self.frame(4))
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("wheel_dt_gap", response["reason"])
+        self.assertEqual(self.session.motion.reset_count, 0)
+
+    def test_blank_mask_stops_a_running_teacher(self):
+        self.warmup()
+        self.session.step(self.frame(16, operation="start"))
+        request = self.frame(17)
+        request["mask_png"] = encoded_mask(self.core, self.camera, blank=True)
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertEqual((response["v"], response["w"]), (0., 0.))
+        self.assertIn("two-sided corridor", response["reason"])
+
+    def test_calibration_change_rejected_without_reprojection(self):
+        self.session.step(self.frame(0))
+        request = self.frame(1)
+        request["camera"] = dict(self.camera, K=list(self.camera["K"]))
+        request["camera"]["K"][0] += 1.
+        response = self.session.step(request)
+        self.assertIn("calibration changed", response["reason"])
+
+    def test_teach_motion_is_integrated_from_sensor_not_command(self):
+        self.warmup()
+        self.session.step(self.frame(16, operation="start"))
+        # LYA asks for 2.15, but encoder remains zero: pose must remain zero.
+        response = self.session.step(self.frame(17))
+        self.assertEqual(response["phase"], "TEACH", response)
+        self.assertLess(np.linalg.norm(response["estimated_pose"]), .005)
+        self.assertEqual((self.session.sample.x, self.session.sample.y, self.session.sample.yaw), (0., 0., 0.))
+        self.assertEqual(self.session.travel, 0.)
+
+    def test_loopback_reception_gap_is_not_hidden_by_fresh_sim_stamps(self):
+        self.warmup()
+        self.session.step(self.frame(16, operation="start"))
+        request = self.frame(17)
+        self.clock.now += 600_000_000
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "HOLD")
+        self.assertIn("reception gap", response["reason"])
+
+    def test_mask_target_uses_two_observed_boundaries(self):
+        x = np.repeat(np.arange(.5, 6.01, .05), 5)
+        x = np.concatenate([x, x])
+        y = np.concatenate([.03 * x[:len(x)//2] ** 2 + 1.2, .03 * x[:len(x)//2] ** 2 - 1.2])
+        target, curvature, metrics = visual_target(np.column_stack([x, y]))
+        self.assertAlmostEqual(target[1], .03, delta=.015)
+        self.assertGreater(curvature, .04)
+        self.assertEqual(len(target), 3)
+        self.assertGreater(metrics["corridor_bins"], 10)
+        with self.assertRaisesRegex(ValueError, "two-sided"):
+            visual_target(np.column_stack([x[:len(x)//2], y[:len(y)//2]]))
+
+    def test_dashed_boundary_need_not_be_painted_at_every_solid_line_station(self):
+        right_x = np.repeat(np.arange(1.2, 4.01, .025), 4)
+        left_x = np.repeat(np.concatenate((np.arange(2.2, 2.65, .025), np.arange(3.15, 3.95, .025))), 4)
+        observed = np.vstack((np.column_stack((right_x, .02 * right_x ** 2 - 1.6)),
+                              np.column_stack((left_x, .02 * left_x ** 2 + 1.8))))
+        before = observed.copy()
+        target, curvature, metrics = visual_target(observed)
+        self.assertGreater(target[0], 2.2)
+        self.assertLess(target[0], 2.4)
+        self.assertAlmostEqual(metrics["observed_width_m"], 3.4, places=4)
+        self.assertGreater(curvature, .03)
+        self.assertEqual(metrics["map_points_generated_by_fit"], 0)
+        np.testing.assert_array_equal(before, observed)
+
+    def test_nonoverlapping_edges_do_not_fabricate_a_shared_visible_target(self):
+        right_x = np.repeat(np.arange(.5, 2., .025), 4)
+        left_x = np.repeat(np.arange(3., 4., .025), 4)
+        observed = np.vstack((np.column_stack((right_x, np.full_like(right_x, -1.5))),
+                              np.column_stack((left_x, np.full_like(left_x, 1.5)))))
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            visual_target(observed)
+
+    def test_teacher_candidate_tier_is_bounded_and_has_no_history_or_future_state(self):
+        x = np.repeat(np.arange(1.2, 6.01, .025), 4)
+        current = np.vstack((np.column_stack((x, -.01 * x ** 2 - 1.5)),
+                             np.column_stack((x, -.01 * x ** 2 + 1.7))))
+        sensitivity = np.tile(.02 + .04 * x, 2)
+        before = visual_target(current, sensitivity)
+        self.assertGreater(before[2]["candidate_tier_bins"], 0)
+        self.assertLessEqual(before[2]["maximum_used_sensitivity_m_per_px"], .5)
+        # Invalid far observations must not influence this fit. Future calls
+        # cannot update a cached width: this function is deliberately stateless.
+        outside = np.column_stack((x, .5 * np.sin(x)))
+        augmented = visual_target(np.vstack((current, outside)),
+                                  np.concatenate((sensitivity, np.full(len(x), .500001))))
+        self.assertEqual(before, augmented)
+        future = current.copy()
+        future[:, 1] += .1
+        visual_target(future, sensitivity)
+        self.assertEqual(before, visual_target(current, sensitivity))
+        with self.assertRaisesRegex(ValueError, "two-sided"):
+            visual_target(current[:len(x)], sensitivity[:len(x)])
+        self.assertEqual(before[2]["map_points_generated_by_fit"], 0)
+
+    def test_teacher_sensitivity_requires_aligned_nonnegative_finite_values(self):
+        points = np.array([[1., -1.5], [1., 1.5]])
+        for invalid in ([-.1, .1], [float("nan"), .1], [.1], [[.1, .1]]):
+            with self.assertRaisesRegex(ValueError, "sensitivity"):
+                visual_target(points, invalid)
+
+    def test_visual_association_cannot_discard_many_bins_or_nearest_lane_support(self):
+        x = np.repeat(np.arange(1.275, 8.01, .15), 4)
+        right = np.column_stack((x, np.full_like(x, -1.5)))
+        left = np.column_stack((x, np.full_like(x, 1.7)))
+        sensitivity = np.tile(.02 + .04 * x, 2)
+        for corrupted in (x > 5.5, x < 1.3):
+            altered = left.copy()
+            altered[corrupted, 1] += 1.3
+            with self.assertRaises(VisualFitError) as caught:
+                visual_target(np.vstack((right, altered)), sensitivity)
+            diagnostics = caught.exception.diagnostics
+            self.assertEqual(diagnostics["inlier_policy"]["protected_nearest_bins_per_side"], 3)
+            self.assertIn("fit_points", diagnostics)
+            self.assertEqual(diagnostics["map_points_generated_by_fit"], 0)
+
+    def test_visual_failure_retains_selected_point_diagnostics_without_old_width_fallback(self):
+        x = np.repeat(np.arange(1.2, 4.01, .025), 4)
+        with self.assertRaises(VisualFitError) as caught:
+            visual_target(np.column_stack((x, np.full_like(x, -1.5))))
+        self.assertGreater(len(caught.exception.diagnostics["selected_right_xy_sensitivity"]), 3)
+        self.assertEqual(caught.exception.diagnostics["selected_left_xy_sensitivity"], [])
+        self.assertEqual(caught.exception.diagnostics["observation_source"], "current_mask_only")
+
+    def test_actual_unity_dash_dropout_retains_current_stable_far_observations(self):
+        root = os.environ.get("LANE_REAL_FRAME_DIR")
+        if not root:
+            self.skipTest("set LANE_REAL_FRAME_DIR to lane_teach_repeat_20261010 diagnostics")
+        root = Path(root)
+        records = [json.loads(line) for line in (root / "backend_05/events.jsonl").read_text().splitlines()]
+        camera = next(record["camera"] for record in records if record["event"] == "calibration")
+        failed = next(record["response"] for record in records
+                      if record.get("response", {}).get("sequence") == 83)
+        image = root / "unity_639272374343591877/terminal_mask.png"
+        self.assertEqual(hashlib.sha256(image.read_bytes()).hexdigest(), failed["metrics"]["mask_sha256"])
+        lookup = self.core.GroundLookup(camera["width"], camera["height"], camera["K"],
+            np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+        with Image.open(image) as frame:
+            points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(frame.convert("L")), 127)
+        with self.assertRaisesRegex(ValueError, "support/overlap"):
+            visual_target(points[sensitivity <= .1])
+        current = visual_target(points, sensitivity)
+        target, _, metrics = current
+        self.assertGreater(metrics["candidate_tier_bins"], 0)
+        self.assertLess(metrics["fit_rmse_m"], .06)
+        self.assertGreaterEqual(target[0], metrics["joint_support_x_m"][0])
+        self.assertLessEqual(target[0], metrics["joint_support_x_m"][1])
+        self.assertEqual(metrics["map_points_generated_by_fit"], 0)
+        self.assertLessEqual(metrics["maximum_used_sensitivity_m_per_px"], .5)
+        # An unrelated image evaluated later cannot change this historical
+        # answer; no lane-width cache, prebuilt course or future frame is used.
+        visual_target(points * [1., -1.], sensitivity)
+        self.assertEqual(current, visual_target(points, sensitivity))
+
+    def test_actual_unity_finite_support_rejects_short_anchors_but_keeps_supported_fit(self):
+        root = os.environ.get("LANE_REAL_FRAME_DIR")
+        if not root:
+            self.skipTest("set LANE_REAL_FRAME_DIR to lane_teach_repeat_20261010 diagnostics")
+        root = Path(root)
+        records = [json.loads(line) for line in (root / "backend_06/events.jsonl").read_text().splitlines()]
+        camera = next(record["camera"] for record in records if record["event"] == "calibration")
+        responses = {record["response"]["sequence"]: record["response"]
+                     for record in records if record["event"] == "step"}
+        failed = responses[64]
+        self.assertIn("match_unobservable_geometry", failed["reason"])
+        image = root / "unity_639272377706324010/terminal_mask.png"
+        self.assertEqual(hashlib.sha256(image.read_bytes()).hexdigest(), failed["metrics"]["mask_sha256"])
+        lookup = self.core.GroundLookup(camera["width"], camera["height"], camera["K"],
+            np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+        with Image.open(image) as frame:
+            points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(frame.convert("L")), 127)
+        stamp = source_ns(failed["sim_time"])
+        prior = np.asarray(failed["metrics"]["raw_odom_pose"])
+        configs = []
+        for sequence in (60, 62, 63):
+            anchor_response = responses[sequence]
+            self.assertLess(source_ns(anchor_response["sim_time"]), stamp)
+            matcher = self.core.Localizer(np.asarray(anchor_response["map_points"]))
+            configs.append(matcher.config)
+            result = matcher.match(points[sensitivity <= .1], prior, stamp,
+                                   prior_stamp_ns=stamp, commit=False)
+            # R8 no longer treats a short endpoint tangent as an infinite lane.
+            # Independent fixed-input audit: seq60/62 previously obtained rank2
+            # from extrapolations up to .628/.497m beyond confirmed support.
+            # The later seq63 still MUST supply a valid two-dimensional fit;
+            # this is not a blanket relaxation to accept any rejection.
+            if sequence in (60, 62):
+                self.assertFalse(result.accepted, result)
+                self.assertEqual(result.reason, "unobservable_geometry")
+                self.assertEqual(result.metrics["observable_rank"], 1)
+                self.assertGreater(result.metrics["finite_support_rejected_correspondences"], 0)
+                self.assertIsNone(matcher.last_accepted_stamp_ns)
+            else:
+                self.assertTrue(result.accepted, result)
+                self.assertEqual(result.metrics["observable_rank"], 2)
+                self.assertLess(result.metrics["rmse_after_m"], .06)
+            self.assertFalse(result.metrics["uses_refinement_for_matching"])
+        self.assertEqual(configs[0], configs[1])
+        self.assertEqual(configs[1], configs[2])
+
+    def test_actual_unity_far_adjacent_line_is_unassociated_not_a_lane_hop(self):
+        root = os.environ.get("LANE_REAL_FRAME_DIR")
+        if not root:
+            self.skipTest("set LANE_REAL_FRAME_DIR to lane_teach_repeat_20261010 diagnostics")
+        root = Path(root)
+        records = [json.loads(line) for line in (root / "backend_07/events.jsonl").read_text().splitlines()]
+        camera = next(record["camera"] for record in records if record["event"] == "calibration")
+        failed = next(record["response"] for record in records
+                      if record.get("response", {}).get("sequence") == 69)
+        image = root / "unity_639272380218808709/terminal_mask.png"
+        self.assertEqual(hashlib.sha256(image.read_bytes()).hexdigest(), failed["metrics"]["mask_sha256"])
+        lookup = self.core.GroundLookup(camera["width"], camera["height"], camera["K"],
+            np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+        with Image.open(image) as frame:
+            points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(frame.convert("L")), 127)
+        points_before = points.copy()
+        result = visual_target(points, sensitivity)
+        target, _, metrics = result
+        self.assertLess(metrics["unfiltered_side_fit_rmse_m"][1], .15)
+        self.assertLess(metrics["fit_rmse_m"], .05)
+        self.assertLessEqual(max(metrics["dropped_bin_fraction_per_side"]), .2)
+        self.assertGreaterEqual(min(metrics["retained_weight_fraction_per_side"]), .8)
+        evidence = np.asarray(metrics["fit_points"])
+        for side in (0, 1):
+            self.assertTrue(np.all(evidence[evidence[:, 3] == side][:3, 5] == 1))
+        # The adjacent branch is now rejected BEFORE fitting, not hidden in its
+        # residual budget. Keep its real candidate and rejection reason visible.
+        rejected = [candidate for candidate in metrics["association_candidates"]
+                    if not candidate["associated"] and candidate["side_left"] == 1]
+        self.assertTrue(any(candidate["reason"] == "prediction_residual"
+                            and candidate["prediction_residual_m"] > 1. for candidate in rejected))
+        self.assertLessEqual(np.max(np.abs(evidence[evidence[:, 5] == 1, 4])), .15)
+        self.assertEqual(metrics["fit_outlier_budget_scope"],
+                         "associated_chain_only; unassociated candidates are separately audited")
+        self.assertGreaterEqual(target[0], metrics["joint_support_x_m"][0])
+        self.assertLessEqual(target[0], metrics["joint_support_x_m"][1])
+        self.assertEqual(metrics["map_points_generated_by_fit"], 0)
+        np.testing.assert_array_equal(points, points_before)
+        # Future observations cannot change the current image's associations.
+        visual_target(points * [1., -1.], sensitivity)
+        self.assertEqual(result, visual_target(points, sensitivity))
+
+    def test_actual_unity_consistent_far_dash_is_not_lost_to_squared_sensitivity_leverage(self):
+        root = os.environ.get("LANE_REAL_FRAME_DIR")
+        if not root:
+            self.skipTest("set LANE_REAL_FRAME_DIR to lane_teach_repeat_20261010 diagnostics")
+        root = Path(root)
+        records = [json.loads(line) for line in (root / "backend_08/events.jsonl").read_text().splitlines()]
+        camera = next(record["camera"] for record in records if record["event"] == "calibration")
+        failure = next(record for record in records if record["event"] == "visual_rejected")
+        failed = next(record["response"] for record in records
+                      if record.get("response", {}).get("sequence") == failure["sequence"])
+        image = root / "unity_639272383573827775/terminal_mask.png"
+        self.assertEqual(hashlib.sha256(image.read_bytes()).hexdigest(), failed["metrics"]["mask_sha256"])
+        self.assertGreater(failure["diagnostics"]["dropped_bin_fraction_per_side"][1], .2)
+        lookup = self.core.GroundLookup(camera["width"], camera["height"], camera["K"],
+            np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+        with Image.open(image) as frame:
+            points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(frame.convert("L")), 127)
+        target, _, metrics = visual_target(points, sensitivity)
+        self.assertEqual(metrics["dropped_bin_fraction_per_side"], [0., 0.])
+        self.assertLess(max(metrics["side_fit_rmse_m"]), .05)
+        evidence = np.asarray(metrics["fit_points"])
+        self.assertLess(np.max(np.abs(evidence[:, 4])), .11)
+        self.assertTrue(np.all(evidence[:, 5] == 1))
+        self.assertEqual(metrics["sensitivity_weighting"],
+                         "inverse_0.02_plus_J4_per_side_normalized_not_covariance")
+        self.assertGreaterEqual(target[0], metrics["joint_support_x_m"][0])
+        self.assertLessEqual(target[0], metrics["joint_support_x_m"][1])
+        self.assertEqual(metrics["map_points_generated_by_fit"], 0)
+
+    def test_nonparallel_observations_still_require_residual_and_nearest_support_gates(self):
+        x = np.repeat(np.arange(1.275, 8.01, .15), 4)
+        right = np.column_stack((x, -.02 * x - 1.5))
+        left = np.column_stack((x, -.35 * x + 3.5))
+        sensitivity = np.tile(.02 + .04 * x, 2)
+        with self.assertRaises(VisualFitError) as caught:
+            visual_target(np.vstack((right, left)), sensitivity)
+        self.assertEqual(caught.exception.diagnostics["inlier_policy"]["max_point_residual_m"], .15)
+        self.assertEqual(caught.exception.diagnostics["inlier_policy"]["protected_nearest_bins_per_side"], 3)
+
+    def test_actual_unity_first_frame_uses_current_mask_not_a_one_metre_guess(self):
+        # Optional recorded-input regression: no embedded mask, route, truth pose
+        # or authored fit constants. The diagnostic fixture is supplied by the run.
+        root = os.environ.get("LANE_REAL_FRAME_DIR")
+        if not root:
+            self.skipTest("set LANE_REAL_FRAME_DIR to lane_teach_repeat_20261010 diagnostics")
+        root = Path(root)
+        records = [json.loads(line) for line in (root / "backend_01/events.jsonl").read_text().splitlines()]
+        camera = next(record["camera"] for record in records if record["event"] == "calibration")
+        image = root / "unity_639272363547711993/mask_000001.png"
+        lookup = self.core.GroundLookup(camera["width"], camera["height"], camera["K"],
+            np.asarray(camera["T_base_camera"]).reshape(4, 4), .5)
+        with Image.open(image) as frame:
+            points, sensitivity, _ = lookup.project_mask_with_sensitivity(np.asarray(frame.convert("L")), 127)
+        target, _, metrics = visual_target(points[sensitivity <= .1])
+        self.assertGreater(target[0], 2.)
+        self.assertGreaterEqual(target[0], metrics["joint_support_x_m"][0])
+        self.assertLessEqual(target[0], metrics["joint_support_x_m"][1])
+        self.assertLess(metrics["fit_rmse_m"], .03)
+        encoded = base64.b64encode(image.read_bytes()).decode()
+        for index in range(16):
+            request = self.frame(index)
+            request.update(camera=camera, mask_png=encoded)
+            response = self.session.step(request)
+            self.assertEqual(response["phase"], "WARMUP", response)
+        self.assertEqual(response["reason"], "ready for explicit Start")
+        self.assertEqual(response["v"], 0.)
+        self.assertTrue(response["metrics"]["ready_for_start"])
+        self.assertIsNone(self.session.engine)
+        request = self.frame(16, operation="start")
+        request.update(camera=camera, mask_png=encoded)
+        response = self.session.step(request)
+        self.assertEqual(response["phase"], "TEACH", response)
+        self.assertGreater(response["v"], self.core.reference)
+
+    def test_extracted_lya_matches_independent_equations(self):
+        rng = np.random.default_rng(4001)
+        for _ in range(150):
+            x, y, heading = rng.uniform(.2, 5.), rng.uniform(-1., 1.), rng.uniform(-.5, .5)
+            omega_t = rng.uniform(-.5, .5)
+            r, alpha = math.hypot(x, y), math.atan2(y, x)
+            beta = math.atan2(math.sin(alpha - heading), math.cos(alpha - heading))
+            sa, sb = math.sin(alpha), math.sin(beta)
+            sa = 1e-6 if abs(sa) < 1e-6 else sa
+            sb = 1e-6 if abs(sb) < 1e-6 else sb
+            reference = self.core.reference
+            expected_v = (reference * math.cos(beta) + .15 * r) * math.cos(alpha)
+            expected_w = (2.5 * sa + (.8 / sa) * (sa / (.8 * r) + sb / (25 * r))
+                * (math.sin(2 * alpha) * math.cos(beta) / 2 - sb) * reference
+                - (omega_t * sb / 25) * (.8 / sa)
+                + (.8 / sa) * .15 * (math.sin(2 * alpha) / 2) * (sa / .8 + sb / 25))
+            expected_w = min(self.core.maximum_teacher_yaw, max(-self.core.maximum_teacher_yaw, expected_w))
+            actual_v, actual_w = self.core.teacher((x, y, heading), omega_t)
+            self.assertAlmostEqual(actual_v, expected_v, places=12)
+            self.assertAlmostEqual(actual_w, expected_w, places=12)
+
+    def test_source_clock_has_positive_epoch_without_future_interpolation(self):
+        self.assertEqual(source_ns(0.), 1_000_000_000)
+        self.assertEqual(source_ns(.1), 1_100_000_000)
+        with self.assertRaises(ValueError):
+            source_ns(float("nan"))
+
+
+if __name__ == "__main__":
+    unittest.main()

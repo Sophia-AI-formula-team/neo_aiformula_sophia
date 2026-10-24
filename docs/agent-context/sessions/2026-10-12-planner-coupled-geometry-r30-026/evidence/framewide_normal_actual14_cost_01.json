@@ -1,0 +1,67 @@
+{
+  "status": "actual narrow calculation pass; production integration and two-lap runtime NOT RUN",
+  "approval_sha256": "6b7bbccf23f9692c8c93023bfaaeb62d63c7ce81f5a4b1ff3513f0a2c30c6766",
+  "driver_sha256": "5465fd3ae9434002736ba8baec134e96d577b663ac08848c98e92c48f41528d4",
+  "parent_result_sha256": "5f03ac07aa02a6403cdd4aed33cb3670079d01097e9907cd09a9b5fbfe1594ee",
+  "child_result_sha256": "8b6c21d8b60b9e48658e2200de3defb4688c2f04913aad9b0083795e048ccbf5",
+  "pins": 124,
+  "actual_units": 10,
+  "unit_failures": 0,
+  "unit_errors": 0,
+  "unit_skips": 0,
+  "actual_frames": 14,
+  "actual_groups": 3495,
+  "actual_rows": 34462,
+  "all_original_input_and_output_bits_equal": true,
+  "paired_orders": [
+    [
+      "OFF",
+      "ON"
+    ],
+    [
+      "ON",
+      "OFF"
+    ],
+    [
+      "OFF",
+      "ON"
+    ]
+  ],
+  "off_full_frame_subtotal_ns": [
+    78844400,
+    78914000,
+    78997700
+  ],
+  "on_full_frame_subtotal_ns": [
+    63163900,
+    64472200,
+    64340300
+  ],
+  "off_total_ns": 236756100,
+  "on_total_ns": 191976400,
+  "change_percent": -18.91385269481969,
+  "on_includes": [
+    "actual original creation-normal construction",
+    "whole-frame outward classification and immutable plan",
+    "all original consumers including small and empty groups",
+    "all native calls"
+  ],
+  "parent_pid": 67728,
+  "parent_birth": "134362549690840972",
+  "child_pid": 5304,
+  "child_birth": "134362549698672980",
+  "elapsed_seconds": 7.461657700012438,
+  "normal_exit": 0,
+  "stop_attempted": false,
+  "retries": 0,
+  "independent_parent_and_child_absent": true,
+  "sources_inputs_and_registry_unchanged": true,
+  "original_engine_clock_unchanged": true,
+  "runtime_pass": false,
+  "production_adopted": false,
+  "new_motion": false,
+  "new_extraction": false,
+  "new_curve_shadow": false,
+  "gnss": false,
+  "car_or_simulation_parameter_changes": false
+}

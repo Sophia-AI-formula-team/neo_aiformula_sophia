@@ -268,7 +268,8 @@ class LatestMaskWorker:
                 # lane-publisher ROI. The matcher separately bounds workload.
                 reliable = local[sensitivity <= context["reliable_sensitivity"]]
                 result = context["matcher"].match(reliable, job["prior"], job["source_ns"],
-                    prior_stamp_ns=job["prior_stamp_ns"], commit=False)
+                    prior_stamp_ns=job["prior_stamp_ns"], commit=False, scan_support_xy=local,
+                    scan_sensitivity=sensitivity[sensitivity <= context["reliable_sensitivity"]])
             except Exception as failure:
                 error = str(failure)
             envelope = dict(kind="proposal", job=job, result=result, error=error,

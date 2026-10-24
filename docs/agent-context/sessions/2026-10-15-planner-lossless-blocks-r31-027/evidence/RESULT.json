@@ -1,0 +1,45 @@
+{
+  "scope": "D-only storage projection prototype; not production, full builder, causal Engine or runtime acceptance",
+  "source_baseline": "c212c3b1393c3f0297fd8cb65561798a24a5a8c2",
+  "repository_head_during_test": "67d9b668598a8301b3e1c8c83c304b74a75a150a",
+  "tests": 12,
+  "passed": 12,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "reported_seconds": 0.013,
+  "exit_code": 0,
+  "runs": 1,
+  "pid": 36240,
+  "birth": "not_recorded",
+  "independently_absent_after_exit": true,
+  "sha256_before_after_equal": {
+    "retained_blocks.py": "906d9506bfd07d6b2d53d4bfb3595d2d873c89b5d43ccf13505f96501f88f5a1",
+    "test_retained_blocks.py": "a745c78ef202294eaac25fd6498560bb5184454ebec4edda767715f7f211546d",
+    "original_curve_evidence.py": "7c500480134bd1f70c7a1348a50d8e56efc5fdb2722f304791ecf86fd4b8c665"
+  },
+  "test_evidence": [
+    "All10 directed-pair fields exact dtype/shape/bytes against independent dense original indexing, readonly outputs",
+    "Isolated own face7 absent from all pairs retained with complete field bytes",
+    "Repeated ordered incident occurrences and shared opposite-owner face blocks preserved",
+    "Invalid-root valid-unowned quad, signedzero and NaN payload preserved",
+    "Weakrefs show original SourceFrame and all10 original ndarray objects collectible while retained lease still decodes",
+    "Weakref shows an unrelated owner face block collectible after its lease is dropped, not pinned by FrameIdentity",
+    "Shared complete unowned capsule remains through state lease without external orphan history",
+    "Empty packet retains allown+unowned rows and exact empty field shapes",
+    "Distinct source events with equal stamp do not merge",
+    "Other-source packets and duplicate key frames rejected",
+    "Original input bytes and all block field views stay immutable",
+    "Zero packets retain only complete unowned capsule"
+  ],
+  "tiny_fixture_only": {
+    "original_source_faces": 8,
+    "required_faces_for_one_retained_key_including_capsule": 5,
+    "original_face_payload_bytes": 1112,
+    "retained_face_payload_bytes": 695,
+    "original_and_new_packet_payload_bytes": 51,
+    "old_source_packet_weighted_charge_both": 25,
+    "heap_RSS_timing_or_corpus_savings_claim": false
+  },
+  "limitations": "Ordinary imports and3explicit source hashes, not217closure or full raw-loader attestation. No complete builder arithmetic/box/permission/state parity, global5+1 retention/transactions, real14 input, capacity improvement, heap/RSS,40/80/200ms deadline, Unity lap/freeze/repeat or video tested. Source projection intentionally omits unused other-owner rows; it is NOT the legacy full-table representation or a silent replacement. Existing gate coefficients and production code unchanged."
+}

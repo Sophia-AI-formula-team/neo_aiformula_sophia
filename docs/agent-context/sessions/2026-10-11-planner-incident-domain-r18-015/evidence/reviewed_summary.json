@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "kind": "R18 failed development checkpoint preparation; not a publication receipt",
+  "read_utc": "2026-10-11T12:39:15.8397972Z",
+  "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+  "base_code_sha": "b8482aa37935ff6ba268de6939ca6982681e0e0f",
+  "branch": "repair/lane-keyframe-transaction-20261011",
+  "writable_scope_this_review": "Only new files in diagnostic directory r18_checkpoint_preparation_01",
+  "result": "partial",
+  "overall_goal": "not achieved; no new actual TEACH lap, frozen route, or REPEAT",
+  "purpose": "Publish an honest development checkpoint through the root agent so CI can compile and validate the new native API; not a deployment approval.",
+  "reviewed_junit": [
+    {
+      "path": "r18_compaction_design_01/focused_01.xml",
+      "tests": 110,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 1.014,
+      "passed": 110
+    },
+    {
+      "path": "r18_compaction_design_01/integrated_01.xml",
+      "tests": 125,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 2.161,
+      "passed": 125
+    },
+    {
+      "path": "r18_incident_domain_tests_01/focused_01.xml",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 0.346,
+      "passed": 22
+    },
+    {
+      "path": "r18_scalar_validation_01/focused_01.xml",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 0.128,
+      "passed": 19
+    },
+    {
+      "path": "r18_native_projection_01/focused_fallback_01.xml",
+      "tests": 146,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "time_s": 0.916,
+      "passed": 145
+    }
+  ],
+  "test_count_warning": "These suites overlap; do not sum them as unique total tests. The native module skip is not a native test pass.",
+  "quality": {
+    "passed_cases": 0,
+    "passed_all_cases": false,
+    "source_unchanged": true,
+    "camera_offset_m": 0,
+    "cases": [
+      {
+        "id": "left_0",
+        "planned": 509,
+        "attempted": 12,
+        "accepted": 11,
+        "quality_pass": false,
+        "failure_frame_zero_based": 11,
+        "reason": "match_insufficient_overlap",
+        "overlap": 0.5289256198347108,
+        "matcher_budget_ms": 2000,
+        "rejection_preserved_committed_state": true
+      },
+      {
+        "id": "left_0.35",
+        "planned": 509,
+        "attempted": 12,
+        "accepted": 11,
+        "quality_pass": false,
+        "failure_frame_zero_based": 11,
+        "reason": "match_insufficient_overlap",
+        "overlap": 0.475,
+        "matcher_budget_ms": 2000,
+        "rejection_preserved_committed_state": true
+      },
+      {
+        "id": "right_0",
+        "planned": 509,
+        "attempted": 12,
+        "accepted": 11,
+        "quality_pass": false,
+        "failure_frame_zero_based": 11,
+        "reason": "match_insufficient_overlap",
+        "overlap": 0.5284552845528455,
+        "matcher_budget_ms": 2000,
+        "rejection_preserved_committed_state": true
+      },
+      {
+        "id": "right_0.35",
+        "planned": 509,
+        "attempted": 12,
+        "accepted": 11,
+        "quality_pass": false,
+        "failure_frame_zero_based": 11,
+        "reason": "match_insufficient_overlap",
+        "overlap": 0.4918032786885246,
+        "matcher_budget_ms": 2000,
+        "rejection_preserved_committed_state": true
+      }
+    ]
+  },
+  "recorded": [
+    {
+      "path": "r18_validation_preparation_01/r18_observed_01_execution.json",
+      "exit_code": 0,
+      "integrity_pass": true,
+      "sources_unchanged": true,
+      "native_unchanged": true,
+      "expected": 111,
+      "attempted": 12,
+      "accepted": 11,
+      "outcome": "prefix_failed",
+      "sequence": 162,
+      "reason": "processing_deadline",
+      "engine_ms": 81.00840001134202,
+      "matcher_ms": 21.1524,
+      "camera_offset_m": 0.007,
+      "finite_support_sha256": "9da26b5fb5bd971c32580dd9b08e0d7da6ce8d182d69e937865d2691f6029d28"
+    },
+    {
+      "path": "r18_validation_preparation_02/r18_observed_02_execution.json",
+      "exit_code": 0,
+      "integrity_pass": true,
+      "sources_unchanged": true,
+      "native_unchanged": true,
+      "expected": 111,
+      "attempted": 13,
+      "accepted": 12,
+      "outcome": "prefix_failed",
+      "sequence": 163,
+      "reason": "processing_deadline",
+      "engine_ms": 100.47210002085194,
+      "matcher_ms": 26.6257,
+      "camera_offset_m": 0.007,
+      "finite_support_sha256": "9bc134913cfb0438014533001b2d60ed7f70ca6e586bcf24efb2241a21d6eb63"
+    }
+  ],
+  "profile": {
+    "evidence": "r18_target_profile_01/r18_seq163_profile_01_profile.json",
+    "source_instrumented": true,
+    "source_equivalence": false,
+    "source_bytes_unchanged": true,
+    "sequence": 163,
+    "accepted": 12,
+    "attempted": 13,
+    "reason": "processing_deadline",
+    "original_matcher_budget_ms": 40,
+    "original_engine_budget_ms": 80,
+    "matcher_ms": 32.881,
+    "engine_ms": 167.4192000064,
+    "prepare_cumulative_ms": 130.8,
+    "advance_domain_cumulative_ms": 89.006,
+    "current_union_cumulative_ms": 45.659,
+    "projection_bounds_calls": 1771,
+    "projection_bounds_cumulative_ms": 22.31,
+    "warning": "Single cProfile execution. Parent/child costs overlap. Neither runtime acceptance nor a paired speed comparison."
+  },
+  "native_candidate": {
+    "api": "FINITE_PROJECTION_BOUNDS_API_VERSION=1",
+    "source_sha256": "0c54086e66554c8e9c96b48893e4b19c076c8a747b8f2cf08d6ad216fdeca12d",
+    "finite_support_sha256": "5e748578bf5e6beb67c48de0f289a35b89a0025b9fc1f7ae2e498764c53ddf33",
+    "api_count_required": 8,
+    "actual_new_kernel_compiled": false,
+    "actual_new_kernel_arithmetic_validated": false,
+    "local_build": {
+      "exit_code": 1,
+      "error": "Microsoft Visual C++ 14.0 or greater is required",
+      "source": "Parent original execution-tool output relayed in build_failure_01.json; full output file unavailable",
+      "time_unknown": true,
+      "retried": false,
+      "dependency_install": false
+    },
+    "fallback_tests": {
+      "passed": 145,
+      "skipped_modules": 1,
+      "exit_code": 0
+    },
+    "required_native_admission": {
+      "exit_code": 2,
+      "reason": "required native finite_projection_bounds API version 1 is not installed",
+      "expected_negative_check": true
+    },
+    "skipped_native_cases_planned": 64,
+    "previously_loaded_seven_api_binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+    "previously_loaded_seven_api_embedded_c_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+    "warning": "Recorded01/02 and profile predate the eighth API; their loaded old binary cannot validate the new C source."
+  },
+  "geometry_evidence": {
+    "dataset": "Fixed synthetic development masks, not a new actual vehicle/Unity lap",
+    "synthetic_plane_offset_m": 0,
+    "recorded_trial28_plane_offset_m": 0.007,
+    "actual_final_fresh_coverage": {
+      "mass": 32,
+      "denominator": 60.5,
+      "ratio": 0.5289256198347108,
+      "required": 0.55
+    },
+    "query_classification": {
+      "finite_rejects": 17,
+      "terminal": 15,
+      "branch_certificate": 2,
+      "missing_nearest": 20,
+      "no_aabb": 13,
+      "normal_incompatible": 4,
+      "distance": 3
+    },
+    "seven_owner_link_occurrences": {
+      "raw_normal_invalid": 90,
+      "curve_root_or_domain_invalid": 7,
+      "creation_chart_incompatible": 1,
+      "admitted_direct_segments": 119
+    },
+    "frame0_islands": [
+      {
+        "face": 834,
+        "white_pixels": [
+          [
+            413,
+            235
+          ],
+          [
+            414,
+            235
+          ],
+          [
+            415,
+            235
+          ]
+        ]
+      },
+      {
+        "face": 803,
+        "white_pixels": [
+          [
+            403,
+            231
+          ],
+          [
+            404,
+            231
+          ],
+          [
+            405,
+            231
+          ]
+        ]
+      },
+      {
+        "face": 772,
+        "white_pixels": [
+          [
+            393,
+            227
+          ],
+          [
+            394,
+            227
+          ],
+          [
+            395,
+            227
+          ]
+        ]
+      }
+    ],
+    "frame0_diagnosis": "Each original closed contour and direction piece has eight faces. All are metric-valid; seed-relative side polarity retains five at all three radii, below original minimum six. This is not new corner partitioning.",
+    "frame6_diagnosis": "Support eight passes count but eigenvalue ratios approximately 0.1862/0.2057 exceed unchanged 0.15; eleven-support control ratio approximately 0.0691 passes.",
+    "observation_equivalence": "Two diagnostic extractions returned all direction arrays and full BoundaryObservation fields byte-identical to captured originals.",
+    "prohibited_inferences": [
+      "No cross-black contour links",
+      "No borrowing node votes as finite support",
+      "No lowering min-six, PCA ratio, J, overlap, or runtime gates",
+      "No proof that a proposed ribbon model uniquely describes physical paint"
+    ]
+  },
+  "lp": {
+    "invocations": 1,
+    "engine_invocations": 0,
+    "extraction_invocations": 0,
+    "white_labels": 41,
+    "black_labels": 888,
+    "hard_inequalities": 970,
+    "exact_fraction_minimum_margin_m": 0.001461981801912662,
+    "all_original_label_constraints_strict": true,
+    "continuous_upper_minus_lower_positive": true,
+    "meaning": "Existence of one local two-quadratic band consistent with the fixed pixel-center labels only.",
+    "not_proven": [
+      "uniqueness",
+      "physical continuity",
+      "production six-face gate",
+      "direction observability",
+      "geometric accuracy",
+      "localization",
+      "graph/domain votes",
+      "runtime"
+    ],
+    "preserved_setup_failure": "Initial standalone AST pre-check used GBK on UTF-8 and failed; unique LP completed, later UTF-8 AST check did not rerun it.",
+    "implementation_status": "offline diagnostic only; any new ribbon prototype belongs to the next R19 draft, not session015"
+  },
+  "excluded_repo_paths": [
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/quantized_curve_fit.py",
+    "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_quantized_curve_fit.py"
+  ],
+  "publication_boundary": {
+    "session015_edited_by_this_task": false,
+    "packed": false,
+    "staged": false,
+    "committed": false,
+    "pushed": false,
+    "minimum": "Root completes existing session015 seven sections, actual result partial/blocked, both manual review flags only after review, validate and deterministic pack. Published sessions cannot remain draft.",
+    "not_reexecuted": "No tests, replay, profiler, LP, Unity, build or installation were invoked by this preparation."
+  },
+  "evidence_hashes": [
+    {
+      "path": "r18_compaction_design_01/focused_01.xml",
+      "bytes": 16941,
+      "sha256": "a5177c3541e51c727947415025ad64a424d660ad7d97e33fd8757c10492a0f1e"
+    },
+    {
+      "path": "r18_compaction_design_01/integrated_01.xml",
+      "bytes": 18871,
+      "sha256": "61a5e74a6cadb8c3455c52953cdd0f74a5a619e1057473dbac732938a4f2ef93"
+    },
+    {
+      "path": "r18_incident_domain_tests_01/focused_01.xml",
+      "bytes": 3659,
+      "sha256": "612cf4d5fa4ad644a599e7adbff8155b234897f8ebe35bc8678a31582c71bd7f"
+    },
+    {
+      "path": "r18_incident_domain_tests_01/focused_01.log",
+      "bytes": 311,
+      "sha256": "54848d20b59fa00b9efd17f42b03019f293c5fb957fe43afb20f8fa5bc80f376"
+    },
+    {
+      "path": "r18_scalar_validation_01/focused_01.json",
+      "bytes": 1569,
+      "sha256": "91d6d5d5603477259de01fb29b7a5cea07c81215e0ffb7604551bcf7b161bc9a"
+    },
+    {
+      "path": "r18_scalar_validation_01/focused_01.xml",
+      "bytes": 3299,
+      "sha256": "022e0478f43605ce3e85800e2db27ac8b4e4b94f2572f5b8560ebfc838945559"
+    },
+    {
+      "path": "r18_native_projection_01/verification_wiring_01.json",
+      "bytes": 3678,
+      "sha256": "ea5ed1998fb358180139204fe135efebbcdfd80b1370bfe2cfe84ab77cc0000d"
+    },
+    {
+      "path": "r18_native_projection_01/build_failure_01.json",
+      "bytes": 1417,
+      "sha256": "368567c8c52b9d3f4dca0927a5f678b9512b07cb44ecd44fb003f98963d1963e"
+    },
+    {
+      "path": "r18_native_projection_01/focused_fallback_01.xml",
+      "bytes": 22890,
+      "sha256": "8c847a5f3b42cda14db7589de54127d47c45a6f9867d9a0cbb3b6e03f948c226"
+    },
+    {
+      "path": "r18_native_projection_01/required_native_admission_01_stdout.txt",
+      "bytes": 691,
+      "sha256": "dfc16ccb66c8356082206dd469faaf2a6cda2950294b47d386aa47b6ed9d6b87"
+    },
+    {
+      "path": "r18_quality_validation_01/r18_development_01.json",
+      "bytes": 840807,
+      "sha256": "a5001d30a9e77a8a7fa83adbd19f0ced7120830454654c73ff25d5a2981d004d"
+    },
+    {
+      "path": "r18_quality_validation_01/r18_development_01_execution.json",
+      "bytes": 551,
+      "sha256": "8bb73bf3598f5b1017058c22004de77bbe7db539cbc7ad3d3ef6853f547df9a0"
+    },
+    {
+      "path": "r18_validation_preparation_01/r18_observed_01.json",
+      "bytes": 88452,
+      "sha256": "8e9efbf52d43a1678c1a0446c7438e52edbdc9a68dcb11babcc34f80ab0b89be"
+    },
+    {
+      "path": "r18_validation_preparation_01/r18_observed_01_execution.json",
+      "bytes": 17202,
+      "sha256": "e745b1aad8fea8523ec75f89d8da0f9286b6ed775e44c975919aec65d88d3d15"
+    },
+    {
+      "path": "r18_validation_preparation_02/r18_observed_02.json",
+      "bytes": 96903,
+      "sha256": "5f8ed6d97ccc951382899f67cdf134a4cb1baff51cf981c76e1444d32b56dfc5"
+    },
+    {
+      "path": "r18_validation_preparation_02/r18_observed_02_execution.json",
+      "bytes": 18368,
+      "sha256": "0d689bab980c6677f3267f2677b3ed5a28555af3545e8240b20c1e71bdd2ed35"
+    },
+    {
+      "path": "r18_target_profile_01/r18_seq163_profile_01_profile.json",
+      "bytes": 495552,
+      "sha256": "e7ad63027b96ff74d630e86d230c01369a464d326166ada0cfac8f5253eb7cbd"
+    },
+    {
+      "path": "r18_target_profile_01/r18_seq163_profile_01_execution.json",
+      "bytes": 20080,
+      "sha256": "b7bcd82fd3baf5ff42bc0e5c1b259a636b9728e91c0573699d35ebfa5d64c8df"
+    },
+    {
+      "path": "r18_target_profile_01/r18_seq163_profile_01_replay.json",
+      "bytes": 96904,
+      "sha256": "ee07a314b407a928c6e47358bb32a13a48517cb84be39cc55ae6770fb4a8a413"
+    },
+    {
+      "path": "r18_target_profile_01/REPORT.md",
+      "bytes": 5975,
+      "sha256": "009e1808635db96cd5b145174b318eb8b8d2f3fe2e229019b54322027179c869"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/capture_summary_01.json",
+      "bytes": 9352,
+      "sha256": "b7904e0ddbe00f3bfa8197f3e9a2dadbc0738d39c13838f1b1632da80c303545"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/support_02.json",
+      "bytes": 4642503,
+      "sha256": "63c5a90c768d1953b13ef0d63cc58f730b3fe2f27bb42af7415b8606fe056b51"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/owner_history_01.json",
+      "bytes": 484818,
+      "sha256": "e419538959a4c1d944e59dd8bb9dbbe748121e410f11ba7d05ae654561cd2b50"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/direction_probe_results_01.json",
+      "bytes": 176060,
+      "sha256": "bada90f6f452c3e09e41d61d8e35a62596e42169d3b6fda97673a56faf7c93c3"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/direction_probe_frame_00_01.json",
+      "bytes": 60519,
+      "sha256": "768a59ed41cac0e03a3641af56acd8e838b17a1f92f078ae6dfce873333811e9"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/direction_probe_frame_06_01.json",
+      "bytes": 79734,
+      "sha256": "2cb479b5693a8fc142bea631c65dc988a119245b2e24e606b32a0ed2630a956c"
+    },
+    {
+      "path": "r18_synthetic_support_audit_01/FINDINGS_01.md",
+      "bytes": 6195,
+      "sha256": "f635abf422857dbadcaf386d89eb23935a1541c23e720ab231532ceadc5c80d0"
+    },
+    {
+      "path": "r18_quantized_band_probe_01/result_01.json",
+      "bytes": 515884,
+      "sha256": "be2ba914775eb4117996c02a096f62e59212f3a9ce13a4aa4ce5c4314c510707"
+    },
+    {
+      "path": "r18_quantized_band_probe_01/REPORT_01.md",
+      "bytes": 2883,
+      "sha256": "a9b6d3a3b88d69e4394b4bdbd86331e7bac99e83f23db18617cd46413938c0f5"
+    },
+    {
+      "path": "r18_quantized_band_probe_01/execution_note_01.json",
+      "bytes": 1272,
+      "sha256": "955abb6cc0be69ac5cf24c62358fe1be7c9b58aff350503139683fe733d2bf4c"
+    },
+    {
+      "path": "r18_quantized_band_probe_01/label_feasibility_01.png",
+      "bytes": 181751,
+      "sha256": "f53d9026ba53ea0764e5382b6086c71c2d37714f72c05c6c0c41134ea71890b3"
+    },
+    {
+      "path": "r18_quantized_band_probe_01/probe_01.py",
+      "bytes": 13579,
+      "sha256": "4b18250a8d7e44c70d27e5b19b1a8cd4ae4e69cb9d4af6b9014fa528f9a75ae7"
+    }
+  ],
+  "current_source_hashes": [
+    {
+      "path": ".github/workflows/lane-native.yml",
+      "bytes": 2070,
+      "sha256": "986666ac41020a1a32c5df7a30766a50471263010d8200d62cbf141e2510973f"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/finite_support.py",
+      "bytes": 23860,
+      "sha256": "5e748578bf5e6beb67c48de0f289a35b89a0025b9fc1f7ae2e498764c53ddf33"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/lane_mapping_lya_reference/paint_geometry.py",
+      "bytes": 94282,
+      "sha256": "67043f3b9912395a22dea64d6f1f5b3dc4091aa55d3b3cfc02e57eaa2724407b"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/native/lane_graph_native.c",
+      "bytes": 61531,
+      "sha256": "0c54086e66554c8e9c96b48893e4b19c076c8a747b8f2cf08d6ad216fdeca12d"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/scripts/verify_native.py",
+      "bytes": 4874,
+      "sha256": "c2474bade893419c2b2cd7904fa7c2efb3570891e70a8a99a343a6b67f62e300"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_discrete_equivalence.py",
+      "bytes": 23620,
+      "sha256": "21f3fb8cc4056f062e790284ed89b3f55b3c24dd88eaf757d93276654b3b00c5"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_domain_consensus.py",
+      "bytes": 20594,
+      "sha256": "106003f068971bc339ddb6cf31ef342983054659de0f43853c1286187e360589"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_boundary_incident_domains.py",
+      "bytes": 16131,
+      "sha256": "1a134f1fe918d06f7ea9397078037cab55cba22ba02342d9d2dc54e3c14b4dda"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_confirmed_compaction.py",
+      "bytes": 16479,
+      "sha256": "67a667f69456550ac4e46009e5cd2dfaa8c5beb2b92604c8d19c448b482bbd72"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_finite_scalar_validation.py",
+      "bytes": 13801,
+      "sha256": "a306b35cb3089bcbd0ab39c8820cfbc8ed36a564052ac378333098a873a3e911"
+    },
+    {
+      "path": "workspace/src/aiformula/control/lane_mapping_lya_reference/test/test_native_finite_projection.py",
+      "bytes": 15052,
+      "sha256": "518264bf056aa5076128590da1c776a46b3870a1f6101e4ee0e2fd45c8c4404b"
+    }
+  ]
+}

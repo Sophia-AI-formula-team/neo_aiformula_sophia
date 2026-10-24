@@ -1,0 +1,759 @@
+{
+  "schema_version": 1,
+  "scope": "Reviewed R15 checkpoint evidence. Local originals are referenced, not copied; no completed lap.",
+  "base_code_sha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+  "github_r14_readback": {
+    "checked_utc": "2026-10-11T09:09:24.5562950Z",
+    "repository_id": 1303517209,
+    "repository": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "branch_ref": "refs/heads/repair/lane-keyframe-transaction-20261011",
+    "branch_target": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+    "tag_ref": "refs/tags/lane-mapping-20261011-r14-rc1",
+    "tag_object": "c65cee137991185d3b0a8ed48cac29016ae8a0cf",
+    "tag_target": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+    "tag_signature_verified": false,
+    "tag_signature_reason": "unsigned",
+    "runs": [
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266479,
+        "event": "push",
+        "headBranch": "lane-mapping-20261011-r14-rc1",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:52:03Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266479",
+        "workflowName": "Lane exact native graph"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266623,
+        "event": "push",
+        "headBranch": "repair/lane-keyframe-transaction-20261011",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:52:18Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266623",
+        "workflowName": "Agent handoff integrity"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266472,
+        "event": "push",
+        "headBranch": "lane-mapping-20261011-r14-rc1",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:52:26Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266472",
+        "workflowName": "Agent handoff integrity"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266469,
+        "event": "push",
+        "headBranch": "repair/lane-keyframe-transaction-20261011",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:55:03Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266469",
+        "workflowName": "Lane teach-repeat (ROS 2 Foxy)"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266485,
+        "event": "push",
+        "headBranch": "lane-mapping-20261011-r14-rc1",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:55:29Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266485",
+        "workflowName": "Lane teach-repeat (ROS 2 Foxy)"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:06Z",
+        "databaseId": 38126266464,
+        "event": "push",
+        "headBranch": "lane-mapping-20261011-r14-rc1",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:55:42Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266464",
+        "workflowName": "Endpoint GNSS (ROS 2 Foxy)"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:05Z",
+        "databaseId": 38126266449,
+        "event": "push",
+        "headBranch": "repair/lane-keyframe-transaction-20261011",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:52:02Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266449",
+        "workflowName": "Lane exact native graph"
+      },
+      {
+        "conclusion": "success",
+        "createdAt": "2026-10-11T08:51:05Z",
+        "databaseId": 38126266453,
+        "event": "push",
+        "headBranch": "repair/lane-keyframe-transaction-20261011",
+        "headSha": "cde9adbb598174904f84dd9829c51453d1bd0d66",
+        "status": "completed",
+        "updatedAt": "2026-10-11T08:55:11Z",
+        "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/actions/runs/38126266453",
+        "workflowName": "Endpoint GNSS (ROS 2 Foxy)"
+      }
+    ]
+  },
+  "summary": {
+    "adapter": {
+      "passed": 339,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_s": 111.501,
+      "process_s": 112.12414199998602,
+      "source_count": 196,
+      "source_hashes_unchanged": true,
+      "original_preservation": {
+        "protected": 878,
+        "changed": 16,
+        "passed": false
+      },
+      "aggregate_passed": false
+    },
+    "reconciliation": {
+      "final_consistent": true,
+      "original_preservation_not_reset": true,
+      "earlier_incomplete_report_retained": true,
+      "added_changed_paths": 2,
+      "saved_parameters_equal": 116,
+      "saved_components_equal": 175,
+      "saved_bodies_equal": 3,
+      "saved_only_not_live": true,
+      "requires_root_live_preflight": true
+    },
+    "capture04": {
+      "accepted": 105,
+      "attempted": 106,
+      "first_sequence": 151,
+      "last_accepted_sequence": 255,
+      "rejected_sequence": 256,
+      "reason": "match_insufficient_overlap",
+      "non_timing_results_exact_to_r14": true,
+      "reconstructed_groups": 31396,
+      "fresh_finite_rejects": 14,
+      "same_record_recoverable_5_plus_1": 0,
+      "with_actual_cross_record_recoverable_5_plus_1": 0,
+      "query65_covering_frames": 2,
+      "query65_reliable_frames": 0,
+      "other13_covering_frames": 0,
+      "candidate_overlap": 0.5307820299500832,
+      "old_active_query43_covering_frames": 7,
+      "old_active_query43_reliable_frames": 1,
+      "limits": "No new matching, gates, truth or current-frame reference. Counts are fixed-owner chart coverage, not an alternative pose acceptance."
+    },
+    "fit_domain": {
+      "rejected_faces": [
+        478,
+        479,
+        482,
+        483
+      ],
+      "assigned_mass": 2,
+      "inside_own_observed_face": true,
+      "original_validity_not_changed_by_audit": true,
+      "contract": "Sample-center interpolation domain differs from observed quantized-face domain. A W/B bracket hull would be tautological and is not the proposed independent finite-domain check."
+    },
+    "r15_single_frame": {
+      "paint_source_sha256": "a42f4fbb0bba72a7d56cb91bd25a3f8cb92fadd72c88c1f14bf2d3f1e195ae7f",
+      "model_valid_before": 2413,
+      "model_valid_after": 2446,
+      "model_reliable_before": 870,
+      "model_reliable_after": 879,
+      "assigned_mass_before": 42.083333333333336,
+      "assigned_mass_after": 44.083333333333336,
+      "foreground_denominator": 50.08333333333333,
+      "limits": "One extraction, not a map/pose/runtime/lap result; earlier hash-guard failure remains."
+    },
+    "r15_focused": {
+      "passed": 363,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit_s": 8.213,
+      "source_count": 155,
+      "source_hashes_unchanged": true,
+      "manifest_byte_hashes_differ_only_due_to_capture_metadata": true,
+      "native_real_apis": 7,
+      "scope": "Six named focused test files, NOT full core suite despite legacy output filename."
+    },
+    "r15_recorded_candidate": {
+      "accepted": 105,
+      "attempted": 106,
+      "last_accepted_sequence": 255,
+      "rejected_sequence": 256,
+      "reason": "match_insufficient_overlap",
+      "candidate_overlap": 0.5207986688851913,
+      "active_overlap": 0.4209650582362729,
+      "engine_ms": 57.71919997641817,
+      "original_gates_unchanged": true
+    },
+    "r15_development": {
+      "passed_cases": 0,
+      "total_cases": 4,
+      "case_ids": [
+        "left_0",
+        "left_0.35",
+        "right_0",
+        "right_0.35"
+      ],
+      "accepted_each": 7,
+      "attempted_each": 8,
+      "planned_each": 509,
+      "failure_frame_each": 7,
+      "reason": "match_insufficient_overlap",
+      "limits": "Offline geometry tests use explicit 2000 ms unit budget, not runtime acceptance."
+    },
+    "r15_prototypes": {
+      "fraction_oracle_passed": 32,
+      "float64_support_only_passed": 36,
+      "production_integrated": false,
+      "failed_actual_queries_recovered": false,
+      "limits": "Supplied fixed chart, finite coverage only; not replacement geometry, published candidate, engine or lap proof."
+    },
+    "actual_status": {
+      "new_unity_trial": false,
+      "completed_teach_lap": false,
+      "completed_repeat_lap": false,
+      "last_actual_context": "trial28 failed; offline work and saved UI handback do not constitute a new drive"
+    },
+    "r15_full_native": {
+      "junit_top_level": [
+        {
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "2618",
+          "time": "80.952"
+        }
+      ],
+      "passed": 2617,
+      "skip_cases": [
+        {
+          "classname": "test.test_supervisor",
+          "name": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+          "message": "Target Linux process-group test"
+        }
+      ],
+      "summary_exit_code": 0,
+      "process_elapsed_s": 81.97666599997319,
+      "source_count_before": 155,
+      "source_count_after": 155,
+      "source_hash_map_differences": [],
+      "source_hashes_unchanged": true,
+      "native_identity": {
+        "backend": "native",
+        "api_version": 1,
+        "radius_graph_api_version": 1,
+        "local_support_api_version": 1,
+        "nearest_api_version": 1,
+        "cross_section_weights_api_version": 1,
+        "local_moments_api_version": 1,
+        "local_geometry_api_version": 1,
+        "source_sha256": "a39fc90d8373056bc98dc45f936e60cc5d2ef6639aea2417e0e35fde35be6705",
+        "binary_sha256": "0674d769ef5f70bfd4c3ef054fefbe96778e74d0a375f32630a8c7a023451165",
+        "real_calls_passed": true
+      },
+      "scope": "Root's completed Windows offline native suite, not rerun here; not ROS, runtime or driving acceptance.",
+      "summary_matches_actual_junit": true
+    },
+    "r15_live_readback": {
+      "root_capture_utc": "2026-10-11T09:14:31.271041+00:00",
+      "audited_utc": "2026-10-11T09:17:22.941108+00:00",
+      "nonclock_exact_against": [
+        "trial29_edit_before.json",
+        "r10_edit_before.json"
+      ],
+      "scene_sha256": "542b69e811b5eca13456a7d39f32c8b47290a2f7211865337497242bd5d3aa98",
+      "scene_matches_r10": true,
+      "parameters": 116,
+      "components": 175,
+      "bodies": 3,
+      "globals": 10,
+      "spawn": 8,
+      "captured_editor": {
+        "play_mode": {
+          "is_playing": false,
+          "is_paused": false,
+          "is_changing": false
+        },
+        "compilation": {
+          "is_compiling": false,
+          "is_domain_reload_pending": false,
+          "last_compile_started_unix_ms": null,
+          "last_compile_finished_unix_ms": null,
+          "last_domain_reload_before_unix_ms": null,
+          "last_domain_reload_after_unix_ms": 1791708465538
+        },
+        "asset_update": false,
+        "tests_running": false,
+        "activity_phase": "idle"
+      },
+      "captured_driver": {
+        "scene": "Assets/Scenes/LaneTeachRepeatValidation.unity",
+        "dirty": false,
+        "playing": false,
+        "parametersInitialized": true,
+        "pendingCount": 0,
+        "emergencyStop": false,
+        "armed": false,
+        "uiBlocked": false,
+        "inputSource": "Auto",
+        "keyboardControl": true,
+        "requestedV": 0,
+        "requestedRosW": 0,
+        "brake": false
+      },
+      "not_driving": true,
+      "limits": [
+        "Only root's saved get-state/Snapshot responses and disk bytes were read; no Unity call, Initialize, controls, baseline or source mutation.",
+        "The two live operations are sequential, not an atomic scene snapshot. Their recorded state is not a guarantee of future state.",
+        "No bridge command-ownership flag is added if absent from this detailed Snapshot.",
+        "emergencyStop=false and brake=false must not be described as a verified latched stop.",
+        "No driving, completed TEACH/REPEAT lap, vehicle release or original 878-preservation pass is established."
+      ]
+    },
+    "r15_posthoc_accuracy": {
+      "count": 105,
+      "first": 151,
+      "last": 255,
+      "capture_elapsed_s": 11.449999744072556,
+      "lag": {
+        "count": 105,
+        "rmse": 0.020118694973297147,
+        "p95_absolute": 0.02,
+        "max_absolute": 0.029999999000000003,
+        "mean_signed": 0.020095237666666668,
+        "final_signed": 0.02
+      },
+      "metrics": [
+        {
+          "model": "raw",
+          "lateral_rmse_m": 0.004622761875918636,
+          "yaw_rmse_rad": 0.0006218617052573356,
+          "longitudinal_rmse_m": 0.30323116395743344
+        },
+        {
+          "model": "R14",
+          "lateral_rmse_m": 0.010140481992712693,
+          "yaw_rmse_rad": 0.0010994772258722777,
+          "longitudinal_rmse_m": 0.3032310373102544
+        },
+        {
+          "model": "R15",
+          "lateral_rmse_m": 0.009606833509613187,
+          "yaw_rmse_rad": 0.0010627900276680047,
+          "longitudinal_rmse_m": 0.30323106659641275
+        }
+      ],
+      "validations": {
+        "all_input_hashes_pinned": true,
+        "sensor_states_same_prefix": true,
+        "raw_priors_bitexact_to_recorded_steps": true,
+        "all_111_original_PNG_bytes_verified": true,
+        "R10A_poses_bitexact_to_recorded": true,
+        "same_numeric_configs_and_recorded_plane": true,
+        "output_binding_checked_before_GT_open": true,
+        "GT_exact_capture_timestamp_and_sequence": true,
+        "original_97_frame_raw_R10A_R12_metrics_exactly_reproduced": true,
+        "no_estimator_or_native_import": true
+      },
+      "production_unchanged": true,
+      "paint_hashes": [
+        {
+          "model": "R14",
+          "paint": "a0e34451229f21a8a1c2a5ba12a0d1f307a3ba5aa030d83c23047a13f50df7a8"
+        },
+        {
+          "model": "R15",
+          "paint": "a42f4fbb0bba72a7d56cb91bd25a3f8cb92fadd72c88c1f14bf2d3f1e195ae7f"
+        }
+      ],
+      "cohort": "common_R14_R15_only",
+      "method": "Fixed first-TEACH sequence151 rigid origin; exact camera-sequence/time; no spatial/temporal fit, scale, interpolation, extrapolation or sensor-lag correction. GT opened only after sealed output/input validation; never supplied to estimator.",
+      "failed_frame_excluded": 256,
+      "not_heldout": true,
+      "not_lap": true,
+      "r15_still_worse_than_raw_lateral_and_yaw": true,
+      "older_eef_r14_not_used": true
+    }
+  },
+  "artifacts": [
+    {
+      "path": "r14_adapter_full_01.json",
+      "sha256": "d7095a0d802f3da865534b2a20ef720530e013911a40a20155010d908767e20c",
+      "bytes": 10603,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_full_01.xml",
+      "sha256": "90447c4b291238aece512d710d75f65cea7e2496610e74c7180da55a3a066913",
+      "bytes": 51345,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_full_01.preservation.json",
+      "sha256": "5e4b7c8de381258b9f86b98b4124a893b029df2112b03bcd19b1653efc73236b",
+      "bytes": 1080,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_full_01.sources_before.json",
+      "sha256": "415c2645eb176d7997802a4724cac82eb1584e0b00e60adde085f6477261d83a",
+      "bytes": 31695,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_full_01.sources_after.json",
+      "sha256": "415c2645eb176d7997802a4724cac82eb1584e0b00e60adde085f6477261d83a",
+      "bytes": 31695,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_reconciliation_01/reconciliation_01.json",
+      "sha256": "987b943800778b0871b0953f96e63b1da83a0729740c1b0a0e0fdf2b83648b0a",
+      "bytes": 152225,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_reconciliation_01/reconciliation_02.json",
+      "sha256": "4a7cc2c2850d12d361f9c6a8f26257920e5b3fc860d6c0a46b45d5976e79bf19",
+      "bytes": 158156,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_adapter_reconciliation_01/REPORT.md",
+      "sha256": "5888a3f9d4056d7c51c5c2f3f054b41821cabb20923a822c3f9a3e46e0a3427a",
+      "bytes": 5749,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/capture_summary_01.json",
+      "sha256": "a65a7899801c67f7ccc3ba1aa9ded4a29ee5ecc4947de861b7432f64b66de73b",
+      "bytes": 22854,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/association_check_01.json",
+      "sha256": "18ebed9b63f2d65ee83cdfac2841e520e5d7b38bdf0990628e273fcaae7a3940",
+      "bytes": 2074,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/support_counts_01.json",
+      "sha256": "62d255832c52a5c1070801e29ff90ce88b8b41cf79075f0576b163ab634527ef",
+      "bytes": 157069,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/cross_record_support_01.json",
+      "sha256": "8d6cfb99259fafd20b164e042e5387239e895c2752c22116aa2ea5e9afa7608c",
+      "bytes": 210446,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/REPORT.md",
+      "sha256": "5ed73f52eb49f7038d0834ff81298afc5d53ea8588c4a608f2116ec93e200f0a",
+      "bytes": 5314,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_past_support_audit_04/CROSS_RECORD_REPORT.md",
+      "sha256": "56f36c4cc02cab63d677d1de93e1a44843423e82534f197472f23586379b9ee0",
+      "bytes": 3918,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_fit_domain_01/fit_domain_01.json",
+      "sha256": "e6a17faceb05ca556db6d0d49fd004eaf02cc8b81093b696ea54a923f25daa96",
+      "bytes": 63290,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_fit_domain_01/REPORT.md",
+      "sha256": "ecad892d0edb0dff088d6383cbc6a2a76c89709bee9c86f88da328530227bb75",
+      "bytes": 3876,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r14_fit_domain_review_01/REVIEW.md",
+      "sha256": "684f9a9e7bb9f42eed8bbbe5668f0c24e3431b87693cd8ea83ffa97dd462d806",
+      "bytes": 6310,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_frame256_geometry_02/comparison_01.json",
+      "sha256": "144f993de0c6b42d23bf8f0569bfeaa3407d6eb8534378265be080c02a85a5ff",
+      "bytes": 42272,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_frame256_geometry_02/classification_01.json",
+      "sha256": "57400f6970f415da5c674f67d762b71676786660c197f6118aee0c149e507257",
+      "bytes": 307758,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_frame256_geometry_02/REPORT.md",
+      "sha256": "985de27501af865128758db086be518ef479082040d11c5262b6deb02b5039cd",
+      "bytes": 3500,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_domain_votes_01/focused_01.json",
+      "sha256": "c3897431bae339eff995e5aeadf816458bb4a043f82de5df9b2515aef74d1b3d",
+      "bytes": 17725,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_domain_votes_01/focused_01.xml",
+      "sha256": "d526c8fdc8dcb0eeb33604c1c7a63caaf8c0afc8f29cb7d0ef4391978e9c35be",
+      "bytes": 4735,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_domain_votes_01/REPORT.md",
+      "sha256": "1e754cf3e535675e2f19a6ee7cbc00d6bff1018b949b08830ea23d7367d3ebf3",
+      "bytes": 5895,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_repeated_support_prototype_01/focused_01.json",
+      "sha256": "24963f6b953011546463cb6956fe1245046e79da6eec381fbe3605cdee30f19f",
+      "bytes": 1610,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_focused_full_native_01_summary.json",
+      "sha256": "35e286d7a647863083853faedf946e4bf9d903b8fe04044616eed433587a0d8a",
+      "bytes": 5095,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_focused_full_native_01.xml",
+      "sha256": "344f731b95e049c47f81c86a848d5cbc75d09236e4f1313eb32cff6504a0d2b0",
+      "bytes": 54492,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_focused_native_identity_01.json",
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "bytes": 716,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_focused_full_native_01_sources_before.json",
+      "sha256": "1d632d3364eae7b1e9cf9dbc7f17841f6ea32cf7db85454d0d7e74f99422146c",
+      "bytes": 25707,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_focused_full_native_01_sources_after.json",
+      "sha256": "f999f258fe9516d5c00c8bd482acd261e4d96b15c044b277c2772d5ad48a7e5e",
+      "bytes": 25707,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_boundary_observed_01.json",
+      "sha256": "e20a0db4fb51059d69e5953dfc69f8b0ad2f21d26c6ec112ba24ae6afac84d06",
+      "bytes": 860938,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_quality_development_01.json",
+      "sha256": "8f76c66b2740319575da360e5a85e123ff0d5029de5c79ddf5ef6e4fe2a753d9",
+      "bytes": 413810,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "docs/agent-context/sessions/2026-10-11-planner-geometry-r14-011/SESSION.md",
+      "sha256": "60273a537c9768be59359f2e571e2362c04cdb68c1104d148cc283a399aead81",
+      "bytes": 6318,
+      "root_alias": "canonical_repo",
+      "copied": false
+    },
+    {
+      "path": "docs/agent-context/sessions/2026-10-11-planner-geometry-r14-011/session.json",
+      "sha256": "1df7b592a556618346e1b77e3067c34130295ae14529107f79995376613b4a53",
+      "bytes": 498,
+      "root_alias": "canonical_repo",
+      "copied": false
+    },
+    {
+      "sha256": "e87da32bfa474498898c073355760a2fb602d4a8098d0040c062192503440995",
+      "bytes": 424829,
+      "path": "r15_live_edit_snapshot_01.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "2eabcc20af691109151a3f81d2a1b46a964e4b55a0b6f0f1c4c01f6ef8d4efc3",
+      "bytes": 413982,
+      "path": "trial29_edit_before.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "d4b67cc1ef4da3680cd552d7f30d1b9b44a891fe26ff42c4e793ee14766908cf",
+      "bytes": 413997,
+      "path": "r10_edit_before.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "6a1ca736d6d93299259a451f8b823121288e07c2ee95c4ed172f91df85bd17dc",
+      "bytes": 9913,
+      "path": "r10_preflight_audit_01.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "9faca9ab85e9b17fa6f31d13e351e9c35432e19f78bb6d5ae419ddd72b63c8cf",
+      "bytes": 4660,
+      "path": "r15_full_native_01_summary.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "043fe6f37dbee2774a8bc55f755c86920a11212fe2e18a3066cd1520b8ceb3ed",
+      "bytes": 25707,
+      "path": "r15_full_native_01_sources_before.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "29981a8733202481176686d31fb9fbd1937ea36a926deccdf3ee696f5b612326",
+      "bytes": 25707,
+      "path": "r15_full_native_01_sources_after.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "4a00265f4c284254cb60c12340834477494c5a050648ab9235a6bf116a1a3c8a",
+      "bytes": 716,
+      "path": "r15_native_identity_01.json",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "sha256": "59cbd9ec0b28fd1d5ce48a111f7183c5ba7b37cedf9350eb1a5d628aee0d17e3",
+      "bytes": 370000,
+      "path": "r15_full_native_01.xml",
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_live_preflight_audit_01/audit.py",
+      "sha256": "8d38dce41e7cd5986832a69ef6563c462dc56070f533688ce28ab631ba621cef",
+      "bytes": 8762,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_live_preflight_audit_01/audit_01.json",
+      "sha256": "15f0d7e899008cc0de90250510bd8412a1e99d329d79161b9d51346888b98c27",
+      "bytes": 7330,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_live_preflight_audit_01/REPORT.md",
+      "sha256": "d083ccbd6f75a0260c6af04a42bec1c5048a4d63cd9e852a8b294ad567243337",
+      "bytes": 3241,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_recorded_accuracy_01/accuracy_01.json",
+      "sha256": "358607845d88842eb559e0ef747a8bb68cf06a500bd8c069f7a5b9c26e73c27d",
+      "bytes": 962395,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_recorded_accuracy_01/score_completed.py",
+      "sha256": "655b418c320c8c9c89c140b360d3059bebd8290422e88b3794502367f8c97e8c",
+      "bytes": 16449,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    },
+    {
+      "path": "r15_recorded_accuracy_01/README.md",
+      "sha256": "67a33172bed4fed7445c9388e30abc2abeb415268698c298c6b4d8f2f975c849",
+      "bytes": 3094,
+      "root_alias": "diagnostics_20261011",
+      "copied": false
+    }
+  ],
+  "source_change": {
+    "paint_geometry_sha256": "a42f4fbb0bba72a7d56cb91bd25a3f8cb92fadd72c88c1f14bf2d3f1e195ae7f",
+    "kind": "finite observed-face fit domain; fit arithmetic and numeric gates unchanged",
+    "independent_domain_tests": 40
+  },
+  "later_diagnostics": [
+    {
+      "path": "r15_past_support_audit_01/capture_summary_01.json",
+      "sha256": "d8c0f201e3ee80c856985b28fdf69dc24e7c8e9e0a309a0a99a3b46a19c8b9e2",
+      "scope": "105 commits,106 non-timing results exact to R15; original budgets"
+    },
+    {
+      "path": "r15_past_support_audit_01/sampling_audit_01.json",
+      "sha256": "77c756575f27c826b50933bc8bbc805033be298146e11c0ab39337834125c8d0",
+      "scope": "Pure queries only; per-face actual256 fresh .522795 and synthetic frame7 .491736 still fail .55"
+    },
+    {
+      "path": "r15_past_support_audit_01/lost_reference_01.json",
+      "sha256": "ab0ae520d0dcb40c2b26e450709357436bbc0178b8ffaceb4f1181080043ea37",
+      "scope": "A .5-mass old representative loses past graph coverage under either saved current pose; historical identity audit pending"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "scope": "Reviewed trial16 diagnosis payload files; this manifest is excluded from its own list. Session packager supplies the complete bundle hash manifest.",
+  "preservation": "Hashes refer to exact reviewed bytes. Preserve evidence files with Git -text attributes; do not normalize source-copy line endings or PNG data.",
+  "baseline_revision": "751edef54952902783c19ebb148072ccc7f17152",
+  "payload_static_check": "passed",
+  "core_execution_performed_during_evidence_assembly": false,
+  "total_payload_bytes": 1652436,
+  "files": [
+    {
+      "file": "observed_prefix.json",
+      "bytes": 1117839,
+      "sha256": "557ed0005e042322aa0caedbaa428670b6ebd46e6c017ee82d012e7e4a8a04ba"
+    },
+    {
+      "file": "causal_default.json",
+      "bytes": 365437,
+      "sha256": "61e85a090986f0dcdce5dae2d5177a703cea1635e92d210737cee6a23302d227"
+    },
+    {
+      "file": "replay_observed_keyframe.py.txt",
+      "bytes": 14867,
+      "sha256": "8b54c1cdc9f16e364784ee2a50108c7ddf8f8d8177cf79fb06a72fc7a66f43a5"
+    },
+    {
+      "file": "diagnosis.json",
+      "bytes": 9503,
+      "sha256": "1a26b22c94b4653dd0c28d0dd63a63b571da6d59b29134fc89575cf71e602d6c"
+    },
+    {
+      "file": "visibility_clipped_stripe.png",
+      "bytes": 140565,
+      "sha256": "754669549af1487f7ec399768e3372406fdbfb112818bcbb2193698fbcc77cbf"
+    },
+    {
+      "file": "REPLAY.txt",
+      "bytes": 4225,
+      "sha256": "f277269b9e978b2fce8fcc51e2bb5caf8753ae76ce18820e43a6e3d18bc31655"
+    }
+  ]
+}

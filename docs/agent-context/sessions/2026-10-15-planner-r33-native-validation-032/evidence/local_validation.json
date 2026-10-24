@@ -1,0 +1,61 @@
+{
+  "scope": "local Windows explicit unit regression; not causal runtime or laps",
+  "tests": 4767,
+  "passed": 4765,
+  "failures": 0,
+  "errors": 0,
+  "skips": [
+    {
+      "classname": "workspace.src.aiformula.control.lane_mapping_lya_reference.test.test_supervisor",
+      "name": "test_owned_process_shutdown_leaves_unrelated_process_alive",
+      "time": "0.000",
+      "reason": "Target Linux process-group test"
+    },
+    {
+      "classname": "workspace.src.aiformula.control.lane_mapping_lya_reference.test.test_curve_endpoint_native",
+      "name": "test_non_nearest_hardware_mode_declines",
+      "time": "0.000",
+      "reason": "glibc x86 rounding-mode probe"
+    }
+  ],
+  "source_file_count": 231,
+  "explicit_test_file_count": 128,
+  "sources_unchanged": true,
+  "retry_count": 0,
+  "wall_seconds": [
+    0.16192480000609066,
+    108.39451579999877
+  ],
+  "native": {
+    "backend": "native",
+    "api_version": 1,
+    "radius_graph_api_version": 1,
+    "local_support_api_version": 1,
+    "nearest_api_version": 1,
+    "cross_section_weights_api_version": 1,
+    "local_moments_api_version": 1,
+    "local_geometry_api_version": 1,
+    "finite_projection_bounds_api_version": 1,
+    "finite_current_union_api_version": 1,
+    "finite_current_union_real_call_passed": true,
+    "source_sha256": "0f8befc007400635a4ec7b5c8344a767ef06b5728d25d9b27b73e6e7eee5901a",
+    "binary_sha256": "51231943bb189ce69bc2644f872b2832600d519d343d00a188e91a6c363d3f81",
+    "binary_name": "_lane_mapping_lya_native.cp313-win_amd64.pyd",
+    "python": "3.13.13 (tags/v3.13.13:01104ce, Apr  7 2026, 19:25:48) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "installed_prefix_verified": false,
+    "real_calls_passed": true
+  },
+  "result_sha256": "2e82f2f1ae6e7bb61903bacf0447c58b795be230f62e96c04a07af6ef1ec3058",
+  "xml_sha256": "e0f097e181188a5df8d036ca889b784c9745ea6310435e1ae585a26e89c2f328",
+  "isolated_targeted": {
+    "tests": 98,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "processes_independently_absent": [
+    56212,
+    49784
+  ]
+}
