@@ -13,17 +13,16 @@ import bisect
 from dataclasses import dataclass, field
 import math
 from pathlib import Path
-from typing import Sequence
+from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, Union
 import xml.etree.ElementTree as ET
-from typing import Tuple
 
 
 Point = Tuple[float, float]
 _EPSILON = 1e-12
 
 
-def _finite_points(values: Sequence[Point]) -> list[Point]:
-    points: list[Point] = []
+def _finite_points(values: Sequence[Point]) -> List[Point]:
+    points: List[Point] = []
     for value in values:
         try:
             if len(value) != 2:
@@ -37,7 +36,7 @@ def _finite_points(values: Sequence[Point]) -> list[Point]:
     return points
 
 
-def _cumulative_lengths(points: Sequence[Point]) -> list[float]:
+def _cumulative_lengths(points: Sequence[Point]) -> List[float]:
     cumulative = [0.0]
     for start, end in zip(points, points[1:]):
         cumulative.append(cumulative[-1] + math.hypot(end[0] - start[0], end[1] - start[1]))
@@ -46,12 +45,12 @@ def _cumulative_lengths(points: Sequence[Point]) -> list[float]:
     return cumulative
 
 
-def _sample_closed(points: Sequence[Point], count: int) -> list[Point]:
+def _sample_closed(points: Sequence[Point], count: int) -> List[Point]:
     """Sample equal arc-length fractions without duplicating the end point."""
     cumulative = _cumulative_lengths(points)
     if cumulative[-1] <= _EPSILON:
         raise ValueError("A path with nonzero length is required")
-    samples: list[Point] = []
+    samples: List[Point] = []
     for index in range(count):
         distance = cumulative[-1] * index / count
         edge = min(bisect.bisect_right(cumulative, distance) - 1, len(points) - 2)
@@ -71,10 +70,10 @@ def _sample_closed(points: Sequence[Point], count: int) -> list[Point]:
 class OfficialRoute:
     """A closed sequence of connected official nodes, preserving string IDs."""
 
-    node_ids: list[str]
-    points: list[Point]
+    node_ids: List[str]
+    points: List[Point]
     chord_length_m: float = field(init=False)
-    _cumulative_m: list[float] = field(init=False, repr=False)
+    _cumulative_m: List[float] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.node_ids = list(self.node_ids)
@@ -94,7 +93,7 @@ class OfficialRoute:
 
     @classmethod
     def from_osm(
-        cls, path: str | Path, node_ids: Sequence[str] | None = None,
+        cls, path: Union[str, Path], node_ids: Optional[Sequence[str]] = None,
     ) -> "OfficialRoute":
         """Read local_x/local_y and undirected adjacency from an official OSM.
 
@@ -109,7 +108,7 @@ class OfficialRoute:
         if root.tag != "osm":
             raise ValueError("Expected an OSM XML root")
 
-        nodes: dict[str, Point] = {}
+        nodes: Dict[str, Point] = {}
         for element in root.findall("node"):
             identifier = element.get("id")
             if not identifier or identifier in nodes:
@@ -121,8 +120,8 @@ class OfficialRoute:
                 raise ValueError(f"Node {identifier} needs numeric local_x/local_y") from exc
             nodes[identifier] = _finite_points([coordinate])[0]
 
-        edges: set[frozenset[str]] = set()
-        closed_ways: list[list[str]] = []
+        edges: Set[FrozenSet[str]] = set()
+        closed_ways: List[List[str]] = []
         for way in root.findall("way"):
             references = [item.get("ref") for item in way.findall("nd")]
             if any(reference not in nodes for reference in references):
@@ -152,7 +151,7 @@ class OfficialRoute:
                 raise ValueError(f"No official edge connects {start} to {end}")
         return cls(selected, [nodes[identifier] for identifier in selected])
 
-    def edge_at_fraction(self, fraction: float) -> tuple[str, str]:
+    def edge_at_fraction(self, fraction: float) -> Tuple[str, str]:
         """Return a rough chord-progress edge label, never a localisation fix.
 
         Fractions wrap each lap; exactly 1.0 labels the first edge of the next

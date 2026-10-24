@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Tuple
+from typing import List, Tuple
 
 
 class PrimitiveName(str, Enum):
@@ -41,7 +41,7 @@ def default_primitives(
     small_left_w: float = 0.30,
     medium_left_w: float = 0.55,
     strong_left_w: float = 0.85,
-) -> list[Primitive]:
+) -> List[Primitive]:
     # Image coordinates are normalized: x grows left-to-right, y grows top-to-bottom.
     # This is front-camera perspective, not BEV: image bottom is near the robot,
     # image middle/top is farther ahead, and paths are visually compressed toward

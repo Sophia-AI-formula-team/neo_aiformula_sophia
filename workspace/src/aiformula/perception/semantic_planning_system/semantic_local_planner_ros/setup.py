@@ -15,6 +15,7 @@ setup(
         (f"share/{package_name}/config", glob("config/*.yaml") + glob("config/*.osm")),
     ],
     install_requires=["setuptools"],
+    python_requires=">=3.8",
     zip_safe=True,
     maintainer="ROS2 Light Avoidance",
     maintainer_email="user@example.com",

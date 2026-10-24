@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List, Optional, Tuple
+
 import json
 import math
 import time
@@ -38,7 +40,7 @@ class PlannedLanePointsAdapterNode(Node):
         ):
             self.declare_parameter(name, value)
 
-        self.latest_path: Path | None = None
+        self.latest_path: Optional[Path] = None
         self.latest_path_time = 0.0
         self.selected_primitive = "STOP"
         self.constraints = SemanticConstraints()
@@ -113,7 +115,7 @@ class PlannedLanePointsAdapterNode(Node):
         timeout = float(self.get_parameter("stale_timeout_sec").value)
         return time.monotonic() - self.latest_path_time > timeout
 
-    def _path_to_vehicle_points(self, path: Path | None) -> tuple[Pose2D, Pose2D, Pose2D]:
+    def _path_to_vehicle_points(self, path: Optional[Path]) -> Tuple[Pose2D, Pose2D, Pose2D]:
         if path is None or not path.poses:
             return Pose2D(), Pose2D(), Pose2D()
 
@@ -129,7 +131,7 @@ class PlannedLanePointsAdapterNode(Node):
         selected_indices = [self._fraction_to_index(fraction, len(normalized_points)) for fraction in fractions]
         vehicle_points = [self._normalized_to_vehicle(point) for point in normalized_points]
 
-        output: list[Pose2D] = []
+        output: List[Pose2D] = []
         for index in selected_indices:
             x_m, y_m = vehicle_points[index]
             heading_index = min(index + 1, len(vehicle_points) - 1)
@@ -144,7 +146,7 @@ class PlannedLanePointsAdapterNode(Node):
 
         return output[0], output[1], output[2]
 
-    def _normalized_to_vehicle(self, point: tuple[float, float]) -> tuple[float, float]:
+    def _normalized_to_vehicle(self, point: Tuple[float, float]) -> Tuple[float, float]:
         x_ratio, y_ratio = point
         x_ratio = self._clamp01(x_ratio)
         y_ratio = self._clamp01(y_ratio)
@@ -166,13 +168,13 @@ class PlannedLanePointsAdapterNode(Node):
     def _clamp01(value: float) -> float:
         return min(1.0, max(0.0, value))
 
-    def _publish_points(self, points: tuple[Pose2D, Pose2D, Pose2D]) -> None:
+    def _publish_points(self, points: Tuple[Pose2D, Pose2D, Pose2D]) -> None:
         self.point_a_pub.publish(points[0])
         self.point_b_pub.publish(points[1])
         self.point_c_pub.publish(points[2])
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: Optional[List[str]] = None) -> None:
     rclpy.init(args=args)
     node = PlannedLanePointsAdapterNode()
     try:

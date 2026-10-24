@@ -1,0 +1,42 @@
+map_assist 启动与构图看图（Python 3.8，2026-10-06）
+
+以下在 Linux / Bash 中执行，各终端先加载原有 ROS2 环境和工作区环境。
+
+1. 编译（首次拷贝或更新代码后执行）
+colcon build --symlink-install --packages-up-to semantic_local_planner_ros
+source install/setup.bash
+
+2. 新 lane 上车：正常冷启动（尚未进入避障）
+ros2 run semantic_local_planner_ros map_assist
+
+3. 旧 rosbag 测试：与上面二选一，不同时启动
+ros2 run semantic_local_planner_ros map_assist --ros-args --params-file "$(ros2 pkg prefix semantic_local_planner_ros)/share/semantic_local_planner_ros/config/map_assist_bag.yaml"
+
+4. bag 测试打开 RViz，查看建好的地图
+rviz2
+
+RViz 设置：
+  Global Options → Fixed Frame：odom（若录制的 odom.header.frame_id 不同，填实际值）。
+  Add → Path → Topic：/map_assist/path。
+  Durability Policy：Transient Local；Reliability Policy：Reliable。
+  首圈完成后显示建好的整条路线；记录过程中暂不显示。看图时保持 map 节点运行。
+
+5. 查看状态（未播放也应有消息）
+ros2 topic echo /map_assist/status
+
+  phase=guarding 且 map_fusion.available=true：融合粗图构建成功。
+  phase=odom_only：显示的是 odom 备用轨迹，尚未融合成功。
+  reason=waiting_for_odom：节点已启动，尚无有效 odom。
+  phase=learning：尚未完成首圈；recorded_samples 增长才说明正在采集。
+
+回放要点：
+  先启动 map、RViz 和状态查看，再按你的方式播放 bag（1 倍速，完整外圈一圈并越过起点少许；不需要 --clock）。
+  bag 需包含 /aiformula_sensing/gyro_odometry_publisher/odom 和 /processed_point_a、/processed_point_b、/processed_point_c；数据齐全则无需启动其他处理节点。
+  命令按录制起点未在避障配置；包含避障时需同时回放真实 /lane_stop_flag。
+  bag 配置输出 debug 三点，关闭驾驶纠偏及速度输出；车辆配置启用方向辅助，红灯功能仍需按车辆方案开启。
+  车辆中途重启且 OA 状态未知时，裸命令加 --ros-args -p avoidance_initially_idle:=false。
+
+若仍看不到 status：检查是否加载了新安装包，以及运行参数是否仍为旧值。
+ros2 pkg prefix semantic_local_planner_ros
+ros2 param get /map_assist use_sim_time
+新版 bag 配置应显示 false；status 应持续发布，不需要等首圈完成。

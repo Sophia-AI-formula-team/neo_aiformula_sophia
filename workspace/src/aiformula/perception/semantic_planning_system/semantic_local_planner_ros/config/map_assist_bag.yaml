@@ -2,7 +2,8 @@
 # Bare ros2 run loads map_assist.yaml for the vehicle instead.
 /**:
   ros__parameters:
-    use_sim_time: true
+    # Wall time supports ordinary 1x playback, including Foxy without --clock.
+    use_sim_time: false
     topomap_path: ""  # Empty resolves to the official OSM installed with this package.
     enable_correction: false
     enable_traffic_control: false

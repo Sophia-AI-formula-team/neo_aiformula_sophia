@@ -9,6 +9,7 @@ This does not add connections or claim to survey unseen internal roads.
 from __future__ import annotations
 
 import math
+from typing import Dict, Tuple
 from collections.abc import Mapping
 
 import numpy as np
@@ -31,7 +32,7 @@ def _point(value) -> Point:
     return result
 
 
-def _checked_graph(graph: TopologyGraph) -> tuple[dict[str, Point], dict[str, dict[str, float]]]:
+def _checked_graph(graph: TopologyGraph) -> Tuple[Dict[str, Point], Dict[str, Dict[str, float]]]:
     """Validate graph integrity and derive weights from official geometry."""
     if (not isinstance(graph, TopologyGraph) or not isinstance(graph.nodes, Mapping)
             or not graph.nodes or not isinstance(graph.adjacency, Mapping)
@@ -73,7 +74,7 @@ def _checked_graph(graph: TopologyGraph) -> tuple[dict[str, Point], dict[str, di
     return nodes, weights
 
 
-def anchored_graph(graph: TopologyGraph, outer_positions: dict[str, Point],
+def anchored_graph(graph: TopologyGraph, outer_positions: Dict[str, Point],
                    official_to_odom: OfficialToOdom) -> TopologyGraph:
     """Return an independent graph in odom units with exact outer anchors.
 

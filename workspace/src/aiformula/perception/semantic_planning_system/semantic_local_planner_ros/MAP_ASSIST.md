@@ -16,9 +16,21 @@ ros2 run semantic_local_planner_ros map_assist
 ros2 run semantic_local_planner_ros map_assist --ros-args --params-file "$(ros2 pkg prefix semantic_local_planner_ros)/share/semantic_local_planner_ros/config/map_assist_bag.yaml"
 ```
 
-测试配置订阅旧 `/processed_point_a/b/c`，三点输出到 debug 话题，关闭驾驶纠偏、红灯控制及速度输出。录制开头应未进入避障，后续使用真实 flag；回放带 `--clock`。在 RViz 添加 `/map_assist/path`（Path，Transient Local），首圈结束后查看整条路线。`phase=guarding` 且 `map_fusion.available=true` 表示融合成功。
+测试配置订阅旧 `/processed_point_a/b/c`，三点输出到 debug 话题，关闭驾驶纠偏、红灯控制及速度输出。录制开头应未进入避障，后续使用真实 flag；使用系统时间，按 1 倍速普通播放即可，不需要 `--clock`。在 RViz 添加 `/map_assist/path`（Path，Transient Local），首圈结束后查看整条路线。`phase=guarding` 且 `map_fusion.available=true` 表示融合成功。
 
 显式指定配置时不叠加默认车辆配置。两种启动方式都会自动定位包内官方 OSM；切换时结束当前 map，再用另一条命令启动，不需要修改代码或来回改话题。
+
+## Python 3.8 与 status（2026-10-06）
+
+源码使用 Python 3.8 兼容的 `typing.List/Dict/Tuple/Optional/Union`。运行时类型别名也已修正；地图定位依赖 `ament_index_python`，数学核心依赖 NumPy，ROS 相关依赖见包内 `package.xml`。不需要升级车辆 Python。
+
+旧版 status 依赖控制用 ROS 定时器；`use_sim_time=true` 且没有持续的 `/clock` 时，节点可以出现在话题列表里，却没有状态消息。新版状态由独立的单调时钟定时器发布，未收到 odom/三点、bag 未开始或暂停时也能查看。诊断回调不驱动车辆控制。
+
+```bash
+ros2 topic echo /map_assist/status
+```
+
+未播放数据也应看到 `reason=waiting_for_odom`。`odom_age_sec=null` 表示尚无有效 odom 接收；`point_age_sec` 的 a/b/c 为 null 表示对应三点还未收到。年龄持续增大表示输入没有继续更新。`use_sim_time` 和 `ros_time_sec` 显示当前时钟设置与时间。现有 bag 配置默认 `use_sim_time=false`；若仍读到 true，检查是否加载了旧安装配置或传入了覆盖参数。话题存在只表示通信端点已注册，不保证正在发布数据。
 
 ## 0. 粗图怎样建立（本次修正）
 
@@ -40,13 +52,13 @@ ros2 run semantic_local_planner_ros map_assist --ros-args --params-file "$(ros2 
 
 ## 1. 接入现有行驶链路
 
-已按用户确认的 `lane_0529oa → withoutkalman_0312 → lya_follower_connected_omegat_global` 接线。OA 继续使用原来的 `oa_neo` 或 `oa_neov1.2`，本次没有修改、启动或替换 OA。
+手动接线使用 `lane_0927oa → map_assist → withoutkalman_0312 → lya_follower_connected_omegat_global`。`lane_0927oa` 保留 `lane_0529oa` 的处理逻辑，只修改三个输出话题。OA 继续使用原来的 `oa_neo` 或 `oa_neov1.2`，本次没有修改、启动或替换 OA。
 
 ```mermaid
 flowchart TD
     Perception[原车道线检测] -->|车道点云| OA[原 OA 节点]
     Cone[原 cone 检测] -->|cone_mask / cone_bbox_image| OA
-    OA -->|正常时转发 lane_line_center / left / right| Lane[lane_0529oa]
+    OA -->|正常时转发 lane_line_center / left / right| Lane[lane_0927oa]
     Lane -->|/original_processed_point_a、b、c| Points
     OA -->|避障三点 /processed_point_a、b、c| Filter[withoutkalman_0312]
     OA -->|/lane_stop_flag| Points
@@ -67,7 +79,7 @@ flowchart TD
 
 `a、b、c` 表示三个独立 `Pose2D` 话题，单位米，车体坐标 x 向前、y 向左。
 
-接入改动只有两处重映射：视觉三点交给 `map_assist`；LYA 的速度输出交给同一节点做停车处理。OA 的避障三点仍直接送入 `withoutkalman_0312`。
+接入改动有两处：新 lane 将视觉三点交给 `map_assist`；LYA 的速度输出通过重映射交给同一节点做停车处理。OA 的避障三点仍直接送入 `withoutkalman_0312`。
 
 **真正等待靠零速度实现。** 现用 LYA 存在最低线速度限制，零三点和停发三点都不能代替停车。正常时原样转发新 LYA 速度指令；等待时周期发送零 `Twist`；速度超过默认 0.5 秒未更新也发零。解除等待后要求新的有效视觉三点和新的 LYA 指令，不重放旧速度缓存。
 
@@ -113,17 +125,10 @@ ros2 launch semantic_local_planner_ros map_drive.launch.py avoidance_initially_i
 
 下列命令用于车辆上的 Linux/Bash。每个终端先加载现有 ROS2 环境及包含这些包的工作区 `install/setup.bash`。新增包需已构建。各节点只保留一个实例；不要同时运行旧启动命令或 `map_drive.launch.py`。
 
-**终端 1：map_assist。** 以下 `avoidance_initially_idle:=true` 仅用于已确认 OA 空闲的冷启动；否则设 false，等待真实 flag。OSM 路径现在可自动定位；红灯停车／绕行仍需开启交通与速度功能，单独读取默认车辆 YAML 不会启用这两项。
+**终端 1：map_assist。** 默认车辆配置按已确认 OA 空闲的冷启动设置；如果是未知 OA 状态的中途启动，另加 `-p avoidance_initially_idle:=false`。包内配置和 OSM 路径自动加载；红灯停车／绕行需要同时开启交通与速度功能。
 
 ```bash
-MAP_ASSIST_SHARE="$(ros2 pkg prefix semantic_local_planner_ros)/share/semantic_local_planner_ros"
-
-ros2 run semantic_local_planner_ros map_assist --ros-args \
-  --params-file "$MAP_ASSIST_SHARE/config/map_assist.yaml" \
-  -p "topomap_path:=$MAP_ASSIST_SHARE/config/aiformula_topomap.osm" \
-  -p enable_traffic_control:=true \
-  -p enable_velocity_gate:=true \
-  -p avoidance_initially_idle:=true
+ros2 run semantic_local_planner_ros map_assist --ros-args -p enable_traffic_control:=true -p enable_velocity_gate:=true
 ```
 
 **终端 2：视觉三点。** 新增的 `lane_0927oa` 已直接发布 `/original_processed_point_a/b/c`，不再需要重映射。它保留 `lane_0529oa` 的处理逻辑，只修改三个输出话题；文件放进原 `lane_points` 包，在该包 `setup.py` 的 `console_scripts` 中添加 `'lane_0927oa = lane_points.lane_0927oa:main',` 后重新构建。
@@ -143,8 +148,7 @@ ros2 run kalman_filter withoutkalman_0312
 **终端 4：LYA。** 将它的输出交给 map_assist，再由 map_assist 输出到底盘话题。
 
 ```bash
-ros2 run trajectory_follower lya_follower_connected_omegat_global --ros-args \
-  -r /aiformula_control/game_pad/cmd_vel:=/map_assist/controller_cmd_vel
+ros2 run trajectory_follower lya_follower_connected_omegat_global --ros-args -r /aiformula_control/game_pad/cmd_vel:=/map_assist/controller_cmd_vel
 ```
 
 OA、相机、检测、odom 和底盘照旧运行。**不要把 OA 的 `/processed_point_*` 重映射成视觉输入，也不要将 `/lane_stop_flag` 接成 `/point_flag`。**
@@ -175,9 +179,13 @@ ros2 topic echo /map_assist/status
 
 ```mermaid
 flowchart TD
-    Light[接收红绿灯状态] --> Red{是否红灯}
-    Red -->|绿灯| Normal[正常视觉行驶；解除等待后使用新数据]
-    Red -->|红灯| Map{首圈粗图已建立}
+    Light[逐帧接收 red / green / unknown] --> Vote[最近 0.5 秒严格多数确认；至少 3 帧且首窗口完整]
+    Vote --> Active{已经进入绕行}
+    Active -->|是| Follow[继续按 odom 生成地图三点并跟踪]
+    Active -->|否| Red{当前确认结果}
+    Red -->|green| Normal[正常视觉行驶；解除等待后使用新三点和新速度]
+    Red -->|unknown| Keep[保持正常或等待状态；不解除已有等待]
+    Red -->|red| Map{首圈粗图已建立}
     Map -->|否| Wait[零速度等待；绿灯后继续首圈]
     Map -->|是| Locate{融合成功且在已对应的外圈路口附近}
     Locate -->|否| Wait
@@ -185,17 +193,21 @@ flowchart TD
     Block --> Search[在剩余图中搜索经过内部节点的替代路线]
     Search --> Valid{路线连通且入口／跟踪条件满足}
     Valid -->|否| Wait
-    Valid -->|是| Follow[按当前 odom 转换为车辆前方三点并跟踪]
-    Follow --> End[到达原路线的后续节点]
-    End --> Normal
+    Valid -->|是| Follow
+    Follow --> End{已到达出口}
+    End -->|否| Follow
+    End -->|是| Fresh{当前新鲜投票仍为 red}
+    Fresh -->|是| Map
+    Fresh -->|否| Normal
 ```
 
-- **第一圈：**沿视觉行驶并记录 odom。遇到红灯等待，只有明确绿灯解除；检测变成 unknown 或停止更新，不会自动解除已有红灯等待。
+- **红绿多数确认：**按消息实际到达的单调时间统计最近 0.5 秒；红、绿都必须占全部消息的严格多数（超过一半），unknown 也计入分母。至少 3 条实际检测消息，并等满首个 0.5 秒窗口后才确认。平票、无多数或样本不足时结果为 unknown；断流超过 0.5 秒后重新等待完整窗口。控制定时器不会自行补票。
+- **第一圈：**沿视觉行驶并记录 odom。确认红灯后等待，只有确认绿灯解除；判断变成 unknown 或停止更新，不会自动解除已有红灯等待。绿灯解除后等待默认 0.2 秒、新的完整视觉三点和新的 LYA 速度，才允许继续。
 - **建图：**检测闭合圈后，先进行官方外圈对应和形状约束融合，再平滑。自动搜索起点和行驶方向，按局部转弯特征对应节点；最终保留 odom 米制尺度，不要求手动给起点或固定绕行节点。
 - **质量检查：**对应误差太大、节点特征不可靠、形状近似对称而存在多个解释时，报告 `odom_only` 及不可靠原因，不用该结果执行地图纠偏或拓扑绕行。有效视觉继续正常透传。
-- **第二圈起遇红灯：**在当前匹配的外圈附近找到路口，根据已识别行进方向确定原本下一条边，临时将其视为不可通行。从该路口到这条边的另一端，在剩余官方图上搜索经过内部节点的最短连通路线。每次按当前位置计算，不写死 `1→5→6→3` 等顺序。
+- **第二圈起确认红灯：**先进入等待，再在当前匹配的外圈附近找路口。要求地图融合、定位和入口条件可靠，默认距路口不超过 3 米；不满足就等待，不会自动开到更远的路口。根据已识别行进方向确定原本下一条边，临时将其视为不可通行。从该路口到这条边的另一端，在剩余官方图上搜索经过内部节点的最短连通路线。每次按当前位置计算，不写死 `1→5→6→3` 等顺序。
 - **跟踪替代路线：**在外圈节点已绑定最终粗图的 odom 图上搜索；入口、出口精确使用这份粗图的节点，内部节点用边界约束推算。每次新 odom 生成一组车体三点，经原处理节点和 LYA 执行。按顺序通过节点，进入 `detour_waypoint_radius_m` 容差范围即视为到达；三点只采样当前直线段，尚未生成平滑的路口转弯轨迹。偏离太远或目标不可向前执行时停车。
-- **回到原路：**以替代路线出口重新设置外圈匹配进度，等待新视觉三点后恢复。完成前即使灯变绿，也先走完已进入的连接路线，避免在路段中途跳回外圈；同一次红灯不反复触发改道。
+- **回到原路：**以替代路线出口重新设置外圈匹配进度。完成前即使确认绿灯，也先走完已进入的连接路线；到达出口后重新读取当前投票，若仍有新鲜确认红灯，重新等待并检查绕行条件，否则等待新视觉三点后恢复。这里没有灯位置、灯 ID 或永久“已处理红灯”标记；因此同一盏仍持续检测到的红灯也可能再次触发，不能区分它与新的红灯。
 - **OA 仍优先：**true 时不输出任何地图／视觉三点，已有红灯决策暂停，新 LYA 避障速度指令照常通过；false 后再处理红灯或恢复路线。速度断流仍会停车。
 
 **位置与道路边界：**融合对本次 odom 粗图施加有限的外圈形状约束，不是全局 SLAM，也没有消除长期 odom 漂移。官方文件只有稀疏连线，没有车道宽度和路口转弯曲线；本版只在路口附近启动替代路线，不能从任意路段直接穿过场地去连接内部节点。图中没有单行方向标签，当前按提供的无向连通关系搜索。内部节点是估计位置，实际路线可行性、容差和转弯跟踪需要现场验证。
@@ -206,9 +218,13 @@ flowchart TD
 
 ```yaml
 traffic_light_topic: /map_assist/traffic_light_input
+traffic_vote_window_sec: 0.5
+traffic_vote_min_samples: 3
 ```
 
 当前约定 `std_msgs/msg/String`，内容为 `red`、`green`、`unknown`。这是预留接口，没有假称已接上 YOLOP 的真实输出。若 YOLOP 输出的是检测框或自定义消息，还需要把识别结果转换成这一状态，或调整本节点订阅类型和回调；只改话题名不能改变消息类型。
+
+上游应当逐帧发布：没识别到灯也发送 unknown，不能缓存最后一次 red 或 green，再用定时器重复发送来凑票。投票使用消息数量；同一检测结果不应被重复计数。
 
 以后改话题可以直接传启动参数：
 
@@ -216,11 +232,11 @@ traffic_light_topic: /map_assist/traffic_light_input
 ros2 launch semantic_local_planner_ros map_drive.launch.py traffic_light_topic:=/your/light_state
 ```
 
-联调时手动输入状态：
+联调时以 10 Hz 模拟状态，各持续至少 0.5 秒；结束当前颜色的发布后再测试另一种颜色。测试时只保留一个灯色发布来源，避免与真实检测消息混合。单次 `--once` 不满足多数确认条件。
 
 ```bash
-ros2 topic pub --once /map_assist/traffic_light_input std_msgs/msg/String '{data: red}'
-ros2 topic pub --once /map_assist/traffic_light_input std_msgs/msg/String '{data: green}'
+ros2 topic pub -r 10 /map_assist/traffic_light_input std_msgs/msg/String "{data: red}"
+ros2 topic pub -r 10 /map_assist/traffic_light_input std_msgs/msg/String "{data: green}"
 ```
 
 ## 5. 查看、重置与原单节点入口
@@ -231,7 +247,7 @@ ros2 topic echo /map_assist/path --once --qos-durability transient_local
 ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 ```
 
-状态包含 `phase`（learning / guarding / odom_only）、`map_fusion`、`topology_alignment`、`official_node_positions_odom`、`official_node_progress_m`、`topology_mapping`、`traffic_mode`、被禁用的 `blocked_edge`、自动选中的 `detour_node_ids` 和速度放行原因。融合成功、当前 odom 匹配有效（`route_matched`）、内部图可用是分别报告的条件。粗图及对应只存当前进程内存，重启或 reset 后重新学习。
+状态包含 `phase`（learning / guarding / odom_only）、`map_fusion`、`topology_alignment`、`official_node_positions_odom`、`official_node_progress_m`、`topology_mapping`、`traffic_mode`、被禁用的 `blocked_edge`、自动选中的 `detour_node_ids` 和速度放行原因。`traffic_light_raw` 是最后一条原始灯色，可能已经过时；`traffic_light` 是当前有效多数判断；`traffic_vote` 包含窗口长度、最低样本数、是否就绪、总帧数、red/green/unknown 各自帧数及最后消息年龄，用于核对投票和断流。融合成功、当前 odom 匹配有效（`route_matched`）、内部图可用是分别报告的条件。粗图及对应只存当前进程内存，重启或 reset 后重新学习。
 
 原 `map_assist.launch.py` 仍只启动单个点辅助节点，默认不启用红灯控制和速度转发；新接入使用 `map_drive.launch.py`。不要同时运行原语义 mux 或另一套向最终点／最终速度话题发控制指令的链路。
 

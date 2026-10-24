@@ -10,19 +10,22 @@ import math
 import os
 import sys
 import time
+from typing import List, Optional
 
 import rclpy
 from geometry_msgs.msg import Pose2D, PoseStamped, Twist
 from nav_msgs.msg import Odometry, Path
+from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from std_msgs.msg import Bool, String
 
-from semantic_planner_core.rough_route import HeadingGuard, RouteReference, RouteSample
+from semantic_planner_core.rough_route import HeadingGuard, RouteSample
 from semantic_planner_core.rough_topology import OfficialRoute
 from semantic_planner_core.route_fusion import build_fused_route
 from semantic_planner_core.anchored_topology import anchored_graph
-from semantic_planner_core.traffic_route import DetourTracker, OfficialToOdom, TopologyGraph, validated_alignment
+from semantic_planner_core.traffic_route import DetourTracker, OfficialToOdom, TopologyGraph
+from semantic_planner_core.traffic_light_filter import TrafficLightFilter
 
 
 def wrap_angle(value: float) -> float:
@@ -35,7 +38,7 @@ def installed_config(filename: str) -> str:
     return os.path.join(get_package_share_directory("semantic_local_planner_ros"), "config", filename)
 
 
-def startup_args(args=None) -> list[str]:
+def startup_args(args=None) -> List[str]:
     """Bare ros2 run uses the vehicle profile; bag replay selects its own file."""
     argv = list(sys.argv[1:] if args is None else args)
     if "--params-file" not in argv:
@@ -85,6 +88,8 @@ class MapAssist(Node):
             "enable_correction": True,
             "enable_traffic_control": False,
             "traffic_light_topic": "/map_assist/traffic_light_input",
+            "traffic_vote_window_sec": 0.5,
+            "traffic_vote_min_samples": 3,
             "enable_velocity_gate": False,
             "input_cmd_vel_topic": "/map_assist/controller_cmd_vel",
             "output_cmd_vel_topic": "/aiformula_control/game_pad/cmd_vel",
@@ -136,10 +141,14 @@ class MapAssist(Node):
         self.odom_covariance_available = False
         self.last_status_time = -math.inf
         self.odom_seq = 0
+        self.light_filter = TrafficLightFilter(
+            window_sec=self.p["traffic_vote_window_sec"],
+            min_samples=self.p["traffic_vote_min_samples"],
+        )
+        self.traffic_light_raw = "unknown"
         self.traffic_light = "unknown"
         self.traffic_mode = "normal"
         self.traffic_reason = "traffic_idle"
-        self.red_handled = False
         self.topology_alignment = None
         self.official_to_odom = None
         self.fusion_status = {"available": False, "reason": "not_built"}
@@ -178,6 +187,12 @@ class MapAssist(Node):
         if self.p["enable_traffic_control"]:
             self.create_subscription(String, self.p["traffic_light_topic"], self._on_light_state, 10)
         self.create_timer(1.0 / self.p["publish_rate_hz"], self._tick)
+        # Diagnostics must remain visible before /clock arrives and while a bag
+        # is paused. Only this status timer uses steady time; control stays on
+        # the node's ROS clock and cannot run from the diagnostic callback.
+        self.status_clock = Clock(clock_type=ClockType.STEADY_TIME)
+        self.status_timer = self.create_timer(0.2, self._status_tick, clock=self.status_clock)
+        self._status_tick()
         self.get_logger().info(
             "Map assist: first lap learns in RAM; points use metres, x forward/y left. "
             f"Initial avoidance state: {self.avoidance_active}; unknown waits for a real False flag. "
@@ -222,8 +237,9 @@ class MapAssist(Node):
 
     def _reset_learning(self, reason: str) -> None:
         was_detouring = self.traffic_mode == "detour"
-        # A previously handled light cannot suppress red events in a new map session.
-        self.red_handled = False
+        # Odom can reset the map before the next control tick. Never release a
+        # committed detour using an old green from a detector that has stopped.
+        self.traffic_light = self.light_filter.evaluate(time.monotonic())
         self.topology_alignment = None
         self.official_to_odom = None
         self.fusion_status = {"available": False, "reason": reason}
@@ -243,7 +259,6 @@ class MapAssist(Node):
             elif was_detouring or self.traffic_light == "red":
                 self.traffic_mode = "wait"
                 self.traffic_reason = "map_reset_wait"
-                self.red_handled = False
         self.samples = []
         self.reference = None
         self.recorded_distance = 0.0
@@ -287,10 +302,19 @@ class MapAssist(Node):
 
     def _on_light_state(self, msg: String) -> None:
         state = str(msg.data).strip().lower()
-        self.traffic_light = state if state in ("red", "green") else "unknown"
+        self.traffic_light_raw = state if state in ("red", "green") else "unknown"
         if not self.p["enable_traffic_control"]:
             return
-        if state == "red" and not self.red_handled and self.traffic_mode == "normal":
+        now = time.monotonic()
+        self.light_filter.add(self.traffic_light_raw, now)
+        self._update_light_vote(now)
+        self._publish_velocity_stop_if_needed(now)
+
+    def _update_light_vote(self, now: float) -> None:
+        if not self.p["enable_traffic_control"]:
+            return
+        self.traffic_light = self.light_filter.evaluate(now)
+        if self.traffic_light == "red" and self.traffic_mode == "normal":
             self.traffic_mode = "wait"
             self.traffic_reason = "red_wait_first_lap" if self.reference is None else "red_planning"
             self.guard.reset()
@@ -298,13 +322,10 @@ class MapAssist(Node):
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        elif state == "green":
-            self.red_handled = False
-            if self.traffic_mode == "wait":
-                self._resume_vision("green_resume")
-        # Unknown/missing detections never release an already observed red.
+        elif self.traffic_light == "green" and self.traffic_mode == "wait":
+            self._resume_vision("green_resume")
+        # Unknown/missing detections never release an already confirmed red.
         # A committed detour finishes even if its light subsequently turns green.
-        self._publish_velocity_stop_if_needed(time.monotonic())
 
     def _resume_vision(self, reason: str) -> None:
         self.traffic_mode = "normal"
@@ -319,7 +340,7 @@ class MapAssist(Node):
         self.guard.reset()
         self.last_correction = 0.0
 
-    def _velocity_hold_reason(self, now: float) -> str | None:
+    def _velocity_hold_reason(self, now: float) -> Optional[str]:
         # OA still owns the path and moving commands during its active phase.
         # Red waits remain latched and are reconsidered when OA releases control.
         if self.avoidance_active is True:
@@ -338,6 +359,7 @@ class MapAssist(Node):
 
     def _on_controller_cmd(self, msg: Twist) -> None:
         now = time.monotonic()
+        self._update_light_vote(now)
         values = (msg.linear.x, msg.linear.y, msg.linear.z,
                   msg.angular.x, msg.angular.y, msg.angular.z)
         if not all(math.isfinite(value) for value in values):
@@ -471,7 +493,6 @@ class MapAssist(Node):
         self.last_cmd_time = -math.inf
         self.traffic_mode = "detour"
         self.traffic_reason = "following_alternative_route"
-        self.red_handled = True
         self.guard.reset()
         self.last_correction = 0.0
 
@@ -495,10 +516,11 @@ class MapAssist(Node):
             self.progress = self.detour_exit_progress
             self.pending_distance = 0.0
             self.matched = False
-            # Preserve the event latch: a green seen anywhere during this
-            # committed detour has already released the original red event.
+            # No lamp IDs or permanent handled-red latch: reconsider only the
+            # current fresh vote, including a red that appeared on the detour.
             self._resume_vision("detour_complete_resume_vision")
-            if self.traffic_light == "red" and not self.red_handled:
+            self.traffic_light = self.light_filter.evaluate(now)
+            if self.traffic_light == "red":
                 self.traffic_mode = "wait"
                 self.traffic_reason = "red_after_detour"
             return
@@ -527,7 +549,7 @@ class MapAssist(Node):
                     self.last_cmd_time = -math.inf
         return callback
 
-    def _output_block_reason(self, now: float) -> str | None:
+    def _output_block_reason(self, now: float) -> Optional[str]:
         if self.avoidance_active is None:
             return "avoidance_state_unknown"
         if self.avoidance_active is True:
@@ -536,7 +558,7 @@ class MapAssist(Node):
             return "resume_delay"
         return None
 
-    def _bypass_reason(self, now: float) -> str | None:
+    def _bypass_reason(self, now: float) -> Optional[str]:
         blocked = self._output_block_reason(now)
         if blocked:
             return blocked
@@ -703,6 +725,7 @@ class MapAssist(Node):
 
     def _tick(self) -> None:
         now = time.monotonic()
+        self._update_light_vote(now)
         self._update_traffic(now)
         blocked = self._output_block_reason(now)
         if blocked:
@@ -746,7 +769,6 @@ class MapAssist(Node):
 
     def _publish_housekeeping(self, now: float) -> None:
         self._publish_velocity_stop_if_needed(now)
-        self._publish_status_if_due(now)
 
     def _process_triplet(self, now: float) -> None:
         # Check again so direct callback entry cannot bypass avoidance silence.
@@ -835,6 +857,10 @@ class MapAssist(Node):
                 msg.poses.append(pose)
         self.path_pub.publish(msg)
 
+    def _status_tick(self) -> None:
+        # Read-only diagnostics: never publish path points or velocity here.
+        self._publish_status_if_due(time.monotonic())
+
     def _publish_status_if_due(self, now: float) -> None:
         if now - self.last_status_time >= 0.2:
             self._publish_status()
@@ -842,6 +868,11 @@ class MapAssist(Node):
 
     def _publish_status(self) -> None:
         reference = self.reference
+        now = time.monotonic()
+
+        def age_seconds(received_at: float) -> Optional[float]:
+            return max(0.0, now - received_at) if math.isfinite(received_at) else None
+
         payload = {
             "phase": ("guarding" if self.fusion_status.get("available") else "odom_only") if reference is not None else "learning",
             "reason": self.reason,
@@ -849,11 +880,16 @@ class MapAssist(Node):
             "recorded_samples": len(self.samples), "recorded_distance_m": self.recorded_distance,
             "reference_length_m": reference.length_m if reference is not None else None,
             "route_matched": self.matched, "progress_m": self.progress,
+            "use_sim_time": bool(self.get_parameter("use_sim_time").value),
+            "ros_time_sec": self.get_clock().now().nanoseconds * 1e-9,
+            "odom_age_sec": age_seconds(self.odom_time),
+            "point_age_sec": {label: age_seconds(self.point_times[label]) for label in "abc"},
+            "recording_points_valid": self._recording_points_valid(now),
             "odom_covariance_available": self.odom_covariance_available,
             "correction_deg": math.degrees(self.last_correction),
             "violation_frames": self.guard.violation_count,
             "avoidance_active": self.avoidance_active, "branch_active": self.branch_active,
-            "path_output_allowed": self._output_block_reason(time.monotonic()) is None and self.traffic_mode != "wait",
+            "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode != "wait",
             "enable_correction": self.p["enable_correction"],
             "official_route_node_ids": self.official.node_ids,
             "approximate_official_edge": self._current_topology_edge(),
@@ -862,7 +898,9 @@ class MapAssist(Node):
             "official_node_positions_odom": self.fused_node_positions,
             "official_node_progress_m": self.fused_node_progress,
             "topology_mapping": self.topology_mapping_status,
-            "traffic_light": self.traffic_light,
+            "traffic_light_raw": self.traffic_light_raw,
+            "traffic_light": self.light_filter.evaluate(now),
+            "traffic_vote": self.light_filter.snapshot(now),
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
             "topology_alignment": self.topology_alignment,

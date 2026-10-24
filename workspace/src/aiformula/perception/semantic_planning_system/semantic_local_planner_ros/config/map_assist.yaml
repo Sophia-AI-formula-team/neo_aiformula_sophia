@@ -54,6 +54,9 @@ map_assist:
     # Standalone map_assist.launch.py retains point-only assistance by default.
     enable_traffic_control: false
     traffic_light_topic: /map_assist/traffic_light_input
+    # Both red and green require a strict majority of real detector frames.
+    traffic_vote_window_sec: 0.5
+    traffic_vote_min_samples: 3
     enable_velocity_gate: false
     input_cmd_vel_topic: /map_assist/controller_cmd_vel
     output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel

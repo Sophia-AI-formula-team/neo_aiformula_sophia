@@ -10,7 +10,8 @@ from __future__ import annotations
 from bisect import bisect_right
 from dataclasses import dataclass
 import math
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 
 from .rough_route import RouteReference, RouteSample
@@ -24,10 +25,10 @@ Point = Tuple[float, float]
 @dataclass
 class FusionResult:
     reference: RouteReference
-    alignment: dict | None
+    alignment: Optional[Dict]
     status: dict
-    node_positions: dict[str, Point]
-    node_progress: dict[str, float]
+    node_positions: Dict[str, Point]
+    node_progress: Dict[str, float]
 
 
 def _wrap(angle: float) -> float:
@@ -39,7 +40,7 @@ def _turn(before: Point, centre: Point, after: Point) -> float:
                  - math.atan2(centre[1] - before[1], centre[0] - before[0]))
 
 
-def _fit_trace(reference: RouteReference, max_gap_m: float) -> tuple[list[Point], str | None]:
+def _fit_trace(reference: RouteReference, max_gap_m: float) -> Tuple[List[Point], Optional[str]]:
     """Only short, bounded gaps may be bridged for initial shape matching.
 
     Real excluded observations never steer the fit. The returned bridge is
@@ -81,7 +82,7 @@ def _fit_trace(reference: RouteReference, max_gap_m: float) -> tuple[list[Point]
 
 
 def _node_anchors(reference: RouteReference, official: OfficialRoute, alignment: dict,
-                  search_m: float, window_m: float) -> tuple[dict[str, float], str | None]:
+                  search_m: float, window_m: float) -> Tuple[Dict[str, float], Optional[str]]:
     """Refine phase seeds to measured signed turns, not official edge lengths."""
     count = len(official.node_ids) - 1
     direction, phase = alignment["direction"], alignment["phase_fraction"]
@@ -137,7 +138,7 @@ def _node_anchors(reference: RouteReference, official: OfficialRoute, alignment:
 
 
 def _shape_displacements(reference: RouteReference, official: OfficialRoute, alignment: dict,
-                         anchors: dict[str, float], weight: float, maximum: float) -> dict[str, Point]:
+                         anchors: Dict[str, float], weight: float, maximum: float) -> Dict[str, Point]:
     """Small least-squares direction corrections with measured length anchors.
 
     Official edge lengths are never used. The desired edge vector has the

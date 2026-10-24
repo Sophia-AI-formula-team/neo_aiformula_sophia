@@ -72,6 +72,7 @@ class MapAssistTests(unittest.TestCase):
         self.package = Path(__file__).resolve().parents[1]
         self.system = self.package.parent
         self.now = 100.0
+        self.ros_now = None
         official = self.package / "config" / "aiformula_topomap.osm"
         self.assertTrue(official.is_file(), "The package must include the supplied official map fixture")
         overrides = {
@@ -87,7 +88,8 @@ class MapAssistTests(unittest.TestCase):
 
         class FakeNode:
             def __init__(self, name):
-                self.name, self.parameters = name, {}
+                self.name = name
+                self.parameters = {"use_sim_time": overrides.get("use_sim_time", False)}
                 self.publishers, self.subscriptions, self.timers = {}, {}, []
                 self.logs = []
 
@@ -106,22 +108,29 @@ class MapAssistTests(unittest.TestCase):
                 self.subscriptions[topic] = callback
                 return callback
 
-            def create_timer(self, interval, callback):
-                self.timers.append((interval, callback))
+            def create_timer(self, interval, callback, clock=None):
+                self.timers.append((interval, callback, clock))
                 return callback
 
             def get_logger(self):
                 return types.SimpleNamespace(info=self.logs.append, warn=self.logs.append)
 
             def get_clock(self):
-                stamp = lambda: types.SimpleNamespace(sec=int(test_case.now), nanosec=0)
-                return types.SimpleNamespace(now=lambda: types.SimpleNamespace(to_msg=stamp))
+                def now():
+                    seconds = test_case.now if test_case.ros_now is None else test_case.ros_now
+                    return types.SimpleNamespace(
+                        nanoseconds=int(seconds * 1e9),
+                        to_msg=lambda: types.SimpleNamespace(sec=int(seconds), nanosec=0),
+                    )
+                return types.SimpleNamespace(now=now)
 
         modules = {}
-        for name in ("rclpy", "rclpy.node", "rclpy.qos", "geometry_msgs", "geometry_msgs.msg",
+        for name in ("rclpy", "rclpy.node", "rclpy.qos", "rclpy.clock", "geometry_msgs", "geometry_msgs.msg",
                      "nav_msgs", "nav_msgs.msg", "std_msgs", "std_msgs.msg"):
             modules[name] = types.ModuleType(name)
         modules["rclpy.node"].Node = FakeNode
+        modules["rclpy.clock"].Clock = lambda **kwargs: types.SimpleNamespace(**kwargs)
+        modules["rclpy.clock"].ClockType = types.SimpleNamespace(STEADY_TIME=3)
         modules["rclpy.qos"].QoSProfile = lambda **kwargs: types.SimpleNamespace(**kwargs)
         modules["rclpy.qos"].DurabilityPolicy = types.SimpleNamespace(TRANSIENT_LOCAL=1)
         modules["geometry_msgs.msg"].Pose2D = Pose2D
@@ -131,7 +140,7 @@ class MapAssistTests(unittest.TestCase):
         modules["nav_msgs.msg"].Path = PathMessage
         modules["std_msgs.msg"].Bool = DataMessage
         modules["std_msgs.msg"].String = DataMessage
-        for parent, child in (("rclpy", "node"), ("rclpy", "qos"),
+        for parent, child in (("rclpy", "node"), ("rclpy", "qos"), ("rclpy", "clock"),
                               ("geometry_msgs", "msg"), ("nav_msgs", "msg"), ("std_msgs", "msg")):
             setattr(modules[parent], child, modules[parent + "." + child])
         path_patch = patch.object(sys, "path", [str(self.system / "semantic_planner_core")] + sys.path)
@@ -200,6 +209,88 @@ class MapAssistTests(unittest.TestCase):
             node = self.module.MapAssist()
         lookup.assert_not_called()
         self.assertEqual(node.p["topomap_path"], self.parameter_overrides["topomap_path"])
+
+    def test_startup_publishes_status_without_inputs(self):
+        self.assertEqual(len(self.node.status_pub.messages), 1)
+        status = json.loads(self.node.status_pub.messages[-1].data)
+        self.assertEqual(status["phase"], "learning")
+        self.assertEqual(status["reason"], "waiting_for_odom")
+        self.assertIsNone(status["odom_age_sec"])
+        self.assertEqual(status["point_age_sec"], dict.fromkeys("abc"))
+        self.assertFalse(status["recording_points_valid"])
+        self.assertEqual(self.output_count(), 0)
+
+    def test_only_status_timer_uses_steady_time(self):
+        control = next(timer for timer in self.node.timers if timer[1] == self.node._tick)
+        status = next(timer for timer in self.node.timers if timer[1] == self.node._status_tick)
+        self.assertIsNone(control[2], "Vehicle control must retain the node's ROS clock")
+        self.assertEqual(status[2].clock_type, self.module.ClockType.STEADY_TIME)
+        self.assertAlmostEqual(status[0], 0.2)
+
+    def test_status_continues_without_clock_and_during_paused_bag(self):
+        self.parameter_overrides["use_sim_time"] = True
+        self.ros_now = 0.0
+        self.node = self.module.MapAssist()
+        for ros_time in (0.0, 1234.0):
+            self.ros_now = ros_time
+            before = len(self.node.status_pub.messages)
+            for _ in range(3):
+                self.advance(0.21)
+                self.node.status_timer()
+            self.assertEqual(len(self.node.status_pub.messages), before + 3)
+            status = json.loads(self.node.status_pub.messages[-1].data)
+            self.assertTrue(status["use_sim_time"])
+            self.assertAlmostEqual(status["ros_time_sec"], ros_time)
+            self.assertEqual(status["reason"], "waiting_for_odom")
+        self.assertEqual(self.output_count(), 0)
+        self.assertEqual(self.node.path_pub.messages, [])
+
+    def test_status_reports_stale_inputs_when_ros_clock_is_paused(self):
+        self.ros_now = 1234.0
+        self.start_session()
+        self.triplet()
+        self.odom()
+        self.node._status_tick()
+        self.advance(1.0)
+        self.node._status_tick()
+        status = json.loads(self.node.status_pub.messages[-1].data)
+        self.assertAlmostEqual(status["ros_time_sec"], 1234.0)
+        self.assertAlmostEqual(status["odom_age_sec"], 1.0)
+        for age in status["point_age_sec"].values():
+            self.assertAlmostEqual(age, 1.0)
+        self.assertFalse(status["recording_points_valid"])
+
+    def test_status_timer_never_runs_control_or_velocity_gate(self):
+        self.traffic_node()
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(self.command())
+        points_before = self.output_count()
+        commands_before = len(self.node.cmd_pub.messages)
+        used_seq_before = dict(self.node.used_seq)
+        self.node.traffic_light = "red"
+        self.node.traffic_mode = "wait"
+        self.advance(1.0)
+        with patch.object(self.node, "_update_traffic") as update:
+            with patch.object(self.node, "_publish_velocity_stop_if_needed") as stop:
+                self.node._status_tick()
+        update.assert_not_called()
+        stop.assert_not_called()
+        self.assertEqual(self.output_count(), points_before)
+        self.assertEqual(len(self.node.cmd_pub.messages), commands_before)
+        self.assertEqual(self.node.used_seq, used_seq_before)
+        self.assertEqual(self.node.traffic_mode, "wait")
+
+    def test_status_rate_is_independent_of_control_tick(self):
+        count = len(self.node.status_pub.messages)
+        self.advance(0.1)
+        self.node._status_tick()
+        self.node._tick()
+        self.assertEqual(len(self.node.status_pub.messages), count)
+        self.advance(0.11)
+        self.node._tick()
+        self.assertEqual(len(self.node.status_pub.messages), count)
+        self.node._status_tick()
+        self.assertEqual(len(self.node.status_pub.messages), count + 1)
 
     def advance(self, seconds=0.05):
         self.now += seconds
@@ -330,6 +421,20 @@ class MapAssistTests(unittest.TestCase):
         self.parameter_overrides.update(enable_traffic_control=True, enable_velocity_gate=True)
         self.node = self.module.MapAssist()
         self.start_session()
+
+    def confirm_light(self, state, *, refresh_points=True, oa_command=None):
+        """Feed real 10 Hz observations for a full window, without control ticks."""
+        start = self.now
+        for index in range(7):
+            self.now = start + index * 0.1
+            if self.node.odom is not None:
+                self.odom(*self.node.odom)
+            if refresh_points:
+                self.triplet()
+            if oa_command is not None:
+                self.node._on_controller_cmd(oa_command)
+            self.node._on_light_state(DataMessage(state))
+        self.assertEqual(self.node.traffic_light, state)
 
     @staticmethod
     def command(speed=0.7, turn=0.2):
@@ -747,7 +852,7 @@ class MapAssistTests(unittest.TestCase):
         self.node._on_controller_cmd(moving)
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
         count = self.output_count()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assert_stopped()
         stop_count = len(self.node.cmd_pub.messages)
@@ -762,7 +867,7 @@ class MapAssistTests(unittest.TestCase):
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assert_stopped()
-        self.node._on_light_state(DataMessage("green"))
+        self.confirm_light("green", refresh_points=False)
         self.assertEqual(self.node.traffic_mode, "normal")
         self.node._on_controller_cmd(moving)
         self.assert_stopped()
@@ -838,14 +943,14 @@ class MapAssistTests(unittest.TestCase):
         self.node._on_controller_cmd(moving)
         self.assert_stopped()
 
-    def test_detour_odom_reset_resumes_after_known_green_but_holds_red_or_unknown(self):
+    def test_detour_odom_reset_resumes_after_fresh_confirmed_green_but_holds_red_or_unknown(self):
         for light in ("green", "red", "unknown"):
             with self.subTest(light=light):
                 self.learned_official_loop()
-                self.node._on_light_state(DataMessage("red"))
+                self.confirm_light("red")
                 self.node._tick()
                 self.assertEqual(self.node.traffic_mode, "detour")
-                self.node._on_light_state(DataMessage(light))
+                self.confirm_light(light)
                 self.assertEqual(self.node.traffic_mode, "detour")
                 previous = self.node.odom
                 self.advance(0.1)
@@ -866,7 +971,7 @@ class MapAssistTests(unittest.TestCase):
                 if light == "green":
                     self.assertEqual(self.node.traffic_mode, "normal")
                     self.assertEqual(self.output_count(), count + 1,
-                                     "A previously received green needs no extra green event after reset")
+                                     "A still-fresh confirmed green needs no extra green event after reset")
                     self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]),
                                      self.twist_values(moving))
                 else:
@@ -882,12 +987,14 @@ class MapAssistTests(unittest.TestCase):
         oa_command = self.command(0.4, -0.6)
         self.node._on_controller_cmd(oa_command)
         count = len(self.node.cmd_pub.messages)
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red", oa_command=oa_command)
         self.triplet()
         self.node._tick()
         self.assertEqual(self.output_count(), points_count)
-        self.assertEqual(len(self.node.cmd_pub.messages), count,
-                         "Red cannot inject a stop while fresh OA commands own the path")
+        self.assertEqual(len(self.node.cmd_pub.messages), count + 7,
+                         "Each fresh OA command passes once; red cannot inject a stop")
+        self.assertTrue(all(self.twist_values(message) == self.twist_values(oa_command)
+                            for message in self.node.cmd_pub.messages[count:]))
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(oa_command))
         self.node._on_controller_cmd(oa_command)
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(oa_command))
@@ -910,7 +1017,7 @@ class MapAssistTests(unittest.TestCase):
                     self.node._on_avoidance(DataMessage(True))
                 else:
                     self.learned_official_loop()
-                    self.node._on_light_state(DataMessage("red"))
+                    self.confirm_light("red")
                     self.node._tick()
                     self.assertEqual(self.node.traffic_mode, "detour")
                 moving = self.command(0.5, -0.2)
@@ -927,7 +1034,7 @@ class MapAssistTests(unittest.TestCase):
 
     def test_red_automatically_avoids_forward_edge_and_emits_detour_only_on_new_odom(self):
         self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         route = self.node.detour_node_ids
@@ -942,14 +1049,16 @@ class MapAssistTests(unittest.TestCase):
             self.assertGreater(point.x, 0.0)
             self.assertTrue(math.isfinite(point.y))
         tracker = self.node.detour_tracker
-        self.node._on_light_state(DataMessage("green"))
+        self.confirm_light("green")
         self.node._tick()
         self.assertIs(self.node.detour_tracker, tracker, "Green cannot abandon an already selected detour")
-        self.assertEqual(self.output_count(), 1)
+        self.assertEqual(self.output_count(), 2, "New odom received during voting emits one new path group")
+        self.node._tick()
+        self.assertEqual(self.output_count(), 2, "A timer without new odom cannot replay a path group")
         self.advance(0.1)
         self.odom(*self.node.odom)
         self.node._tick()
-        self.assertEqual(self.output_count(), 2)
+        self.assertEqual(self.output_count(), 3)
         moving = self.command()
         self.node._on_controller_cmd(moving)
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
@@ -959,7 +1068,7 @@ class MapAssistTests(unittest.TestCase):
                                   ({"available": False}, "red_wait_map_fusion")):
             with self.subTest(options=options):
                 self.learned_official_loop(**options)
-                self.node._on_light_state(DataMessage("red"))
+                self.confirm_light("red")
                 self.node._tick()
                 self.assertEqual(self.node.traffic_mode, "wait")
                 self.assertEqual(self.node.traffic_reason, expected)
@@ -968,13 +1077,13 @@ class MapAssistTests(unittest.TestCase):
 
     def test_detour_completion_reseeds_outer_progress_and_requires_fresh_visual_and_command(self):
         self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         reference = self.node.reference
         route_points = list(self.node.detour_tracker.points)
         expected_exit = self.node.detour_exit_progress
-        self.node._on_light_state(DataMessage("green"))
+        self.confirm_light("green")
         last_position = self.node.odom
         completed = False
         for start, end in zip(route_points, route_points[1:]):
@@ -1004,7 +1113,6 @@ class MapAssistTests(unittest.TestCase):
         self.assertFalse(self.node.matched)
         self.assertIsNone(self.node.detour_tracker)
         self.assertEqual(self.node.used_seq, self.node.point_seq)
-        self.assertFalse(self.node.red_handled, "Green seen during the detour releases the previous red")
         self.assert_stopped()
         count = self.output_count()
         self.advance(0.21)
@@ -1081,7 +1189,7 @@ class MapAssistTests(unittest.TestCase):
         self.node.fused_node_progress[key] = progress + 1.234
         self.assertEqual(self.node._node_progress(key), progress + 1.234)
         self.node.fused_node_progress[key] = progress
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         route = self.node.detour_node_ids
@@ -1108,75 +1216,144 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(status["phase"], "odom_only")
         self.assertFalse(status["map_fusion"]["available"])
         self.assertTrue(status["map_fusion"]["reason"])
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assertEqual(self.node.traffic_reason, "red_wait_map_fusion")
         self.assertIsNone(self.node.detour_tracker)
         self.assert_stopped()
 
-    def test_reset_clears_handled_red_after_completed_detour_and_unknown_detection(self):
+    def test_reset_after_completed_detour_does_not_ignore_a_later_red(self):
         self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.complete_active_detour()
-        self.assertTrue(self.node.red_handled)
-        self.node._on_light_state(DataMessage("unknown"))
         self.node._on_reset(DataMessage(True))
-        self.assertFalse(self.node.red_handled)
         self.assertIsNone(self.node.reference)
         self.assertEqual(self.node.fused_node_positions, {})
         self.assertEqual(self.node.fused_node_progress, {})
         self.assertIsNone(self.node.mapped_topology)
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
         self.assert_stopped()
 
-    def test_green_during_detour_cannot_suppress_a_new_red_after_completion(self):
+    def test_completed_detour_needs_no_green_before_later_red_can_stop(self):
         self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
-        self.node._on_light_state(DataMessage("green"))
         self.complete_active_detour()
-        self.assertFalse(self.node.red_handled)
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertEqual(self.node.traffic_light, "unknown")
         self.advance(self.node.p["resume_delay_sec"] + 0.01)
         self.odom(*self.node.odom)
         self.triplet()
         self.node._tick()
         self.node._on_controller_cmd(self.command())
         self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
-        self.node._on_light_state(DataMessage("red"))
-        self.assertEqual(self.node.traffic_mode, "wait", "A new red event must revoke normal motion")
+        self.confirm_light("red")
+        self.assertEqual(self.node.traffic_mode, "wait", "A later confirmed red must revoke motion without a green event")
         self.assert_stopped()
 
-    def test_green_then_unknown_during_detour_still_releases_the_handled_red(self):
+    def test_expired_red_during_detour_does_not_start_another_detour_at_exit(self):
         self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.confirm_light("red")
         self.node._tick()
-        self.node._on_light_state(DataMessage("green"))
-        self.node._on_light_state(DataMessage("unknown"))
+        self.advance(0.6)
         self.emit_detour_completion()
         self.assertEqual(self.node.traffic_mode, "normal")
-        self.assertFalse(self.node.red_handled)
-        self.node._on_light_state(DataMessage("red"))
-        self.assertEqual(self.node.traffic_mode, "wait")
-        self.assert_stopped()
-
-    def test_new_red_after_green_during_detour_is_enforced_at_completion(self):
-        self.learned_official_loop()
-        self.node._on_light_state(DataMessage("red"))
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertIsNone(self.node.detour_tracker)
+        self.advance(0.21)
+        self.odom(*self.node.odom)
+        self.triplet()
         self.node._tick()
-        self.node._on_light_state(DataMessage("green"))
-        self.node._on_light_state(DataMessage("red"))
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertIsNone(self.node.detour_tracker)
+
+    def test_fresh_red_during_detour_is_enforced_at_completion_without_green_event(self):
+        self.learned_official_loop()
+        self.confirm_light("red")
+        self.node._tick()
+        self.confirm_light("red")
         self.assertEqual(self.node.traffic_mode, "detour", "Light changes cannot abandon a committed route")
         self.emit_detour_completion()
-        self.assertEqual(self.node.traffic_mode, "wait", "No repeated red message should be needed")
+        self.assertEqual(self.node.traffic_mode, "wait", "Fresh confirmed red remains effective at the exit")
         self.assertEqual(self.node.traffic_reason, "red_after_detour")
         self.assertIsNone(self.node.detour_tracker)
         self.node._on_controller_cmd(self.command())
         self.assert_stopped()
+
+    def test_one_red_frame_or_timer_repetition_does_not_stop_normal_motion(self):
+        self.traffic_node()
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(self.command())
+        self.node._on_light_state(DataMessage("red"))
+        for _ in range(6):
+            self.advance(0.1)
+            self.odom(*self.node.odom)
+            self.triplet()
+            self.node._tick()
+            self.node._on_controller_cmd(self.command())
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
+
+    def test_wait_survives_one_green_frame_and_detection_stream_loss(self):
+        self.traffic_node()
+        self.ready_visual_motion()
+        self.confirm_light("red")
+        self.node._on_light_state(DataMessage("green"))
+        self.advance(0.6)
+        self.odom(*self.node.odom)
+        self.triplet()
+        self.node._tick()
+        self.node._on_controller_cmd(self.command())
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assert_stopped()
+
+    def test_stale_green_cannot_release_detour_on_explicit_or_odom_reset(self):
+        for reset_kind in ("explicit", "odom"):
+            with self.subTest(reset_kind=reset_kind):
+                self.learned_official_loop()
+                self.confirm_light("red")
+                self.node._tick()
+                self.confirm_light("green")
+                self.assertEqual(self.node.traffic_light, "green")
+                self.advance(0.6)
+                if reset_kind == "explicit":
+                    self.node._on_reset(DataMessage(True))
+                else:
+                    x, y, yaw = self.node.odom
+                    self.odom(x + 100.0, y, yaw)
+                self.assertEqual(self.node.traffic_light, "unknown")
+                self.assertEqual(self.node.traffic_mode, "wait")
+                self.assertIsNone(self.node.detour_tracker)
+                self.assertIsNone(self.node.reference)
+                self.node._on_controller_cmd(self.command())
+                self.assert_stopped()
+
+    def test_status_reports_expired_vote_without_changing_control_state(self):
+        self.traffic_node()
+        self.ready_visual_motion()
+        self.confirm_light("red")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.advance(0.6)
+        before_points = self.output_count()
+        before_commands = len(self.node.cmd_pub.messages)
+        with patch.object(self.node, "_update_light_vote") as update:
+            self.node._status_tick()
+        update.assert_not_called()
+        status = json.loads(self.node.status_pub.messages[-1].data)
+        self.assertEqual(status["traffic_light"], "unknown")
+        self.assertEqual(status["traffic_light_raw"], "red")
+        self.assertEqual(status["traffic_vote"]["sample_count"], 0)
+        self.assertFalse(status["traffic_vote"]["ready"])
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.assertEqual(self.output_count(), before_points)
+        self.assertEqual(len(self.node.cmd_pub.messages), before_commands)
 
 
 if __name__ == "__main__":

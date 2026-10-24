@@ -11,16 +11,15 @@ import heapq
 from itertools import count
 import math
 from pathlib import Path
-from typing import Sequence
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 import xml.etree.ElementTree as ET
-from typing import Tuple
 
 
 Point = Tuple[float, float]
 _EPS = 1e-6
 
 
-def _points(values: Sequence[Point]) -> list[Point]:
+def _points(values: Sequence[Point]) -> List[Point]:
     result = []
     try:
         for value in values:
@@ -39,8 +38,8 @@ def _points(values: Sequence[Point]) -> list[Point]:
 class OpenTopoRoute:
     """A user-specified open sequence of official, connected node IDs."""
 
-    node_ids: list[str]
-    points: list[Point]
+    node_ids: List[str]
+    points: List[Point]
 
     def __post_init__(self) -> None:
         self.node_ids = list(self.node_ids)
@@ -54,7 +53,7 @@ class OpenTopoRoute:
             raise ValueError("Consecutive route nodes must have distinct coordinates")
 
     @classmethod
-    def from_osm(cls, path: str | Path, node_ids: Sequence[str]) -> "OpenTopoRoute":
+    def from_osm(cls, path: Union[str, Path], node_ids: Sequence[str]) -> "OpenTopoRoute":
         """Validate explicit order against undirected official OSM adjacency.
 
         Empty configuration is an error. No default route, signal position,
@@ -69,12 +68,12 @@ class OpenTopoRoute:
 class TopologyGraph:
     """The supplied undirected graph; edge direction is not inferred."""
 
-    nodes: dict[str, Point]
-    adjacency: dict[str, dict[str, float]]
-    closed_ways: list[list[str]]
+    nodes: Dict[str, Point]
+    adjacency: Dict[str, Dict[str, float]]
+    closed_ways: List[List[str]]
 
     @classmethod
-    def from_osm(cls, path: str | Path) -> "TopologyGraph":
+    def from_osm(cls, path: Union[str, Path]) -> "TopologyGraph":
         try:
             root = ET.parse(path).getroot()
         except (ET.ParseError, OSError) as exc:
@@ -123,7 +122,7 @@ class TopologyGraph:
 
     def alternative_route(self, start_id: str, blocked_next_id: str,
                           require_internal: bool = True,
-                          outer_node_ids: Sequence[str] | None = None) -> OpenTopoRoute | None:
+                          outer_node_ids: Optional[Sequence[str]] = None) -> Optional[OpenTopoRoute]:
         """Remove the blocked edge both ways and find a short open bypass.
 
         With ``require_internal``, a bypass must visit a node outside the
@@ -144,7 +143,7 @@ class TopologyGraph:
             raise ValueError("An outer route is required to identify internal nodes")
         blocked = frozenset((start_id, blocked_next_id))
 
-        def search(needs_internal: bool) -> list[str] | None:
+        def search(needs_internal: bool) -> Optional[List[str]]:
             serial = count()
             initial_internal = bool(outer) and start_id not in outer
             heap = [(0.0, next(serial), (start_id,), frozenset((start_id,)), initial_internal)]
@@ -198,7 +197,7 @@ class OfficialToOdom:
             raise ValueError("Frame conversion produced non-finite coordinates")
         return result
 
-    def points(self, values: Sequence[Point]) -> list[Point]:
+    def points(self, values: Sequence[Point]) -> List[Point]:
         return [self.point(x, y) for x, y in _points(values)]
 
 
@@ -235,7 +234,7 @@ def validated_alignment(diagnostic_dict: dict, max_rmse_m: float,
 
 @dataclass(frozen=True)
 class DetourResult:
-    points: list[Point]
+    points: List[Point]
     done: bool
     reason: str
     segment_index: int
@@ -257,7 +256,7 @@ class DetourTracker:
 
     def __init__(self, points: Sequence[Point], waypoint_radius_m: float = 1.0,
                  max_cross_track_m: float = 3.0, lookahead_m: float = 0.5,
-                 spacing_m: float = 0.5, entry_radius_m: float | None = None) -> None:
+                 spacing_m: float = 0.5, entry_radius_m: Optional[float] = None) -> None:
         self.points = _points(points)
         if len(self.points) < 2:
             raise ValueError("A detour needs at least two points")
@@ -291,7 +290,7 @@ class DetourTracker:
     def _unavailable(self, reason: str) -> DetourResult:
         return DetourResult([], False, reason, self.segment_index, self.progress_m)
 
-    def _projection(self, position: Point, index: int) -> tuple[float, float]:
+    def _projection(self, position: Point, index: int) -> Tuple[float, float]:
         start, end = self.points[index:index + 2]
         length = self.cumulative_m[index + 1] - self.cumulative_m[index]
         dx, dy = end[0] - start[0], end[1] - start[1]

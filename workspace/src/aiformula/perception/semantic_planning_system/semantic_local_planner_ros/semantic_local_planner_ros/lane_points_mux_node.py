@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Dict, List, Optional, Tuple
+
 import json
 import time
 
@@ -47,10 +49,10 @@ class LanePointsMuxNode(Node):
         ):
             self.declare_parameter(name, value)
 
-        self.original_points: dict[str, Pose2D | None] = {"a": None, "b": None, "c": None}
-        self.semantic_points: dict[str, Pose2D | None] = {"a": None, "b": None, "c": None}
-        self.original_times: dict[str, float] = {"a": 0.0, "b": 0.0, "c": 0.0}
-        self.semantic_times: dict[str, float] = {"a": 0.0, "b": 0.0, "c": 0.0}
+        self.original_points: Dict[str, Optional[Pose2D]] = {"a": None, "b": None, "c": None}
+        self.semantic_points: Dict[str, Optional[Pose2D]] = {"a": None, "b": None, "c": None}
+        self.original_times: Dict[str, float] = {"a": 0.0, "b": 0.0, "c": 0.0}
+        self.semantic_times: Dict[str, float] = {"a": 0.0, "b": 0.0, "c": 0.0}
         self.constraints = SemanticConstraints()
         self.costmap_health = "stale"
         self.lane_recovery_state = "ignore_lane"
@@ -135,7 +137,7 @@ class LanePointsMuxNode(Node):
         self._publish_stop_and_speed(source)
         self._publish_state(source, reason)
 
-    def _select_points(self) -> tuple[tuple[Pose2D, Pose2D, Pose2D] | None, str, str]:
+    def _select_points(self) -> Tuple[Optional[Tuple[Pose2D, Pose2D, Pose2D]], str, str]:
         if self.constraints.diversion_active or self.constraints.red_forward_forbidden:
             if self.costmap_health != "fresh":
                 return None, "zero", "costmap_stale_during_diversion"
@@ -161,13 +163,13 @@ class LanePointsMuxNode(Node):
 
     def _fresh_triplet(
         self,
-        points: dict[str, Pose2D | None],
-        stamps: dict[str, float],
+        points: Dict[str, Optional[Pose2D]],
+        stamps: Dict[str, float],
         validate_semantic: bool = False,
-    ) -> tuple[Pose2D, Pose2D, Pose2D] | None:
+    ) -> Optional[Tuple[Pose2D, Pose2D, Pose2D]]:
         timeout = float(self.get_parameter("stale_timeout_sec").value)
         now = time.monotonic()
-        triplet: list[Pose2D] = []
+        triplet: List[Pose2D] = []
         for label in ("a", "b", "c"):
             point = points[label]
             if point is None or now - stamps[label] > timeout:
@@ -178,7 +180,7 @@ class LanePointsMuxNode(Node):
             return None
         return result
 
-    def _semantic_triplet_is_safe(self, points: tuple[Pose2D, Pose2D, Pose2D]) -> bool:
+    def _semantic_triplet_is_safe(self, points: Tuple[Pose2D, Pose2D, Pose2D]) -> bool:
         min_x = float(self.get_parameter("min_semantic_point_x_m").value)
         max_x = float(self.get_parameter("max_semantic_point_x_m").value)
         max_abs_y = float(self.get_parameter("max_abs_semantic_point_y_m").value)
@@ -225,7 +227,7 @@ def np_isfinite(value: float) -> bool:
     return value == value and value not in (float("inf"), float("-inf"))
 
 
-def main(args: list[str] | None = None) -> None:
+def main(args: Optional[List[str]] = None) -> None:
     rclpy.init(args=args)
     node = LanePointsMuxNode()
     try:

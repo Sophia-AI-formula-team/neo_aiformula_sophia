@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -23,7 +23,7 @@ class PlannerWeights:
 class LocalPrimitivePlanner:
     lethal_cost: int = 255
     weights: PlannerWeights = field(default_factory=PlannerWeights)
-    primitives: Optional[list[Primitive]] = None
+    primitives: Optional[List[Primitive]] = None
     red_forward_center_x_ratio: float = 0.5
     red_forward_width_ratio: float = 0.20
     red_forward_top_y_ratio: float = 0.25
@@ -38,13 +38,13 @@ class LocalPrimitivePlanner:
         current_yaw: float = 0.0,
         theta_ref: Optional[float] = None,
         previous_primitive_name: Optional[str] = None,
-    ) -> tuple[Primitive, Dict[str, Dict[str, float | bool | str]]]:
+    ) -> Tuple[Primitive, Dict[str, Dict[str, Union[float, bool, str]]]]:
         if costmap is None or np.asarray(costmap).size == 0:
             stop = self._stop()
             return stop, {stop.name: self._stop_info("missing_costmap")}
 
-        details: Dict[str, Dict[str, float | bool | str]] = {}
-        valid_moving: list[tuple[float, Primitive]] = []
+        details: Dict[str, Dict[str, Union[float, bool, str]]] = {}
+        valid_moving: List[Tuple[float, Primitive]] = []
 
         for primitive in self._primitives():
             info = self._score_primitive(
@@ -77,7 +77,7 @@ class LocalPrimitivePlanner:
         current_yaw: float,
         theta_ref: Optional[float],
         previous_primitive_name: Optional[str],
-    ) -> Dict[str, float | bool | str]:
+    ) -> Dict[str, Union[float, bool, str]]:
         if primitive.is_stop:
             return self._stop_info("stop")
 
@@ -146,9 +146,9 @@ class LocalPrimitivePlanner:
             "reason": "ok",
         }
 
-    def _sample_costs(self, costmap: np.ndarray, points: Iterable[tuple[float, float]]) -> list[int]:
+    def _sample_costs(self, costmap: np.ndarray, points: Iterable[Tuple[float, float]]) -> List[int]:
         height, width = costmap.shape[:2]
-        costs: list[int] = []
+        costs: List[int] = []
         for x_ratio, y_ratio in points:
             x = int(round(max(0.0, min(1.0, x_ratio)) * (width - 1)))
             y = int(round(max(0.0, min(1.0, y_ratio)) * (height - 1)))
@@ -156,13 +156,13 @@ class LocalPrimitivePlanner:
         return costs
 
     @staticmethod
-    def _progress_reward(points: Iterable[tuple[float, float]]) -> float:
+    def _progress_reward(points: Iterable[Tuple[float, float]]) -> float:
         pts = list(points)
         if len(pts) < 2:
             return 0.0
         return max(0.0, pts[0][1] - pts[-1][1])
 
-    def _path_hits_red_forward_gate(self, points: Iterable[tuple[float, float]]) -> bool:
+    def _path_hits_red_forward_gate(self, points: Iterable[Tuple[float, float]]) -> bool:
         half_width = 0.5 * self.red_forward_width_ratio
         x_min = self.red_forward_center_x_ratio - half_width
         x_max = self.red_forward_center_x_ratio + half_width
@@ -170,7 +170,7 @@ class LocalPrimitivePlanner:
         y_max = self.red_forward_bottom_y_ratio
         return any(x_min <= x <= x_max and y_min <= y <= y_max for x, y in points)
 
-    def _primitives(self) -> list[Primitive]:
+    def _primitives(self) -> List[Primitive]:
         return self.primitives if self.primitives is not None else default_primitives()
 
     def _stop(self) -> Primitive:
@@ -180,7 +180,7 @@ class LocalPrimitivePlanner:
         return Primitive(PrimitiveName.STOP.value, 0.0, 0.0, 1.0, ())
 
     @staticmethod
-    def _stop_info(reason: str) -> Dict[str, float | bool | str]:
+    def _stop_info(reason: str) -> Dict[str, Union[float, bool, str]]:
         return {
             "valid": True,
             "total": 0.0,

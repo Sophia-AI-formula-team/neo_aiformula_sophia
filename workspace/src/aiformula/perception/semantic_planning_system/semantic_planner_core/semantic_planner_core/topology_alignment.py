@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import bisect
 import math
-from typing import Sequence
-from typing import Tuple
+from typing import List, Sequence, Tuple
 
 from .rough_topology import _cumulative_lengths, _finite_points, _sample_closed
 
@@ -31,7 +30,7 @@ def _number(name: str, value) -> float:
     return result
 
 
-def _closed(values: Sequence[Point]) -> tuple[list[Point], float]:
+def _closed(values: Sequence[Point]) -> Tuple[List[Point], float]:
     try:
         points = _finite_points(values)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -46,7 +45,7 @@ def _closed(values: Sequence[Point]) -> tuple[list[Point], float]:
     return points, gap
 
 
-def _centre(points: Sequence[Point]) -> tuple[Point, list[Point], float]:
+def _centre(points: Sequence[Point]) -> Tuple[Point, List[Point], float]:
     count = len(points)
     try:
         mean = (math.fsum(x / count for x, _ in points), math.fsum(y / count for _, y in points))
