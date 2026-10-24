@@ -39,6 +39,7 @@ jobs:
         with:
           sparse-checkout: |
             .github/workflows
+            codexws
             docs/agent-context
             tools
             workspace/src/aiformula/control/lane_mapping_lya_reference
