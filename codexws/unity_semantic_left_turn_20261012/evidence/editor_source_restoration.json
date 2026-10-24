@@ -1,0 +1,61 @@
+{
+  "schema": "left_turn_editor_source_restoration/v1",
+  "passed": true,
+  "protected_baseline_files": 453,
+  "declared_changes": [
+    {
+      "path": "Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+      "before_sha256": "3df0d74a8f9ff28a5d25bbb2a515d09ef693cb345480308f63320de38e996968",
+      "after_sha256": "dd91ae44eeed5c3b12a149d001459f49eec72c8c95d57328628e826946842da3",
+      "declared": true
+    },
+    {
+      "path": "Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+      "before_sha256": "3e3bef3c17a35a71d793a339e20078dadb19e193b27f3060b2b7cdb56bf6f852",
+      "after_sha256": "869a966069db77753717be0ab244d04946f8457175971d5ae427a03f157a40f5",
+      "declared": true
+    },
+    {
+      "path": "Assets/StreamingAssets/SemanticPlanning/semantic_worker.py",
+      "before_sha256": "0bcc9a078dda6d52d70e85d57a4efebf7b2ed1c639e8f97ed036d35a73373a65",
+      "after_sha256": "929c8f533aaf03dd58dbdf841110274f8c7feeaa92cdd284033b26ccc1121da9",
+      "declared": true
+    },
+    {
+      "path": "Assets/StreamingAssets/VisionLaneFollower/upstream_adapter.py",
+      "before_sha256": "96efd513363c1099f68dc8b3d8252810014e1afc5e27261f9344f1833a2a7bb1",
+      "after_sha256": "8be126cfc98395858f81ac61a855bb3d5fa4d8b19ade1ad4788cceb6db8c672d",
+      "declared": true
+    }
+  ],
+  "unexpected_changes": [],
+  "captured_core_files": 73,
+  "core_diff": [],
+  "editor_fields_compared": [
+    "scene",
+    "dirty",
+    "playing",
+    "paused",
+    "compiling",
+    "preset",
+    "spawnPosition",
+    "spawnRotation",
+    "bodies",
+    "fixedDeltaTime",
+    "timeScale",
+    "requestedVelocity"
+  ],
+  "editor_diff": {},
+  "restored_scene": "Assets/Scenes/LaneTeachRepeatValidation.unity",
+  "dirty": false,
+  "playing": false,
+  "requested_velocity": [
+    0.0,
+    0.0
+  ],
+  "detector_workers": [],
+  "semantic_workers": [],
+  "staged_calibration_installed": false,
+  "calibrated_closed_loop_validated": false,
+  "evidence": "MCP reopened preserved scene without saving; exact editor-field/source comparison. Installed acquisition wiring remains declared, candidate is staged only."
+}

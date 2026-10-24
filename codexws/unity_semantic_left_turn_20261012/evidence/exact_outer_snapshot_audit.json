@@ -1,0 +1,981 @@
+{
+  "schema": "semantic_exact_snapshot_audit/v1",
+  "snapshot": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_left_turn_20261012\\exact_outer_red_detour\\route_fusion_exact.json",
+  "snapshot_sha256": "c0639a94bdc1dac1bbd52947fedd1acb839215dbbe913a9417feb6495ee01338",
+  "evidence": "Exact live candidate samples replayed once with original core and parameters; additional seed/turn diagnostics only",
+  "source_root": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanning\\source",
+  "source_tree_hash": "90a152c885fad6104c50dabd76041baddd31137a67050d2b23fad87d29729b68",
+  "source_files_checked": 73,
+  "source_unchanged": true,
+  "context": {
+    "worker_pid": 25424,
+    "tick_sequence": 2181,
+    "sim_time": 109.56999755091965,
+    "epoch": 1,
+    "source_hash": "7a348b05dca212018d72ecbdf27feae0816320303747986ae168a939804ec8ba",
+    "source_tree_hash": "90a152c885fad6104c50dabd76041baddd31137a67050d2b23fad87d29729b68",
+    "source_files": {
+      "semantic_bringup/config/semantic_system.yaml": "de2899a979b6560a6ba5f7697ef6e1edb4d06c757213b9bc802755399254ce62",
+      "semantic_bringup/config/semantic_vehicle_live.yaml": "6256cca62dfee37fc55c5f37f8305f1c442f43198bd159e81edaefa02f8927f9",
+      "semantic_bringup/config/semantic_vehicle_shadow_demo.yaml": "bec5dbad600806273adcb70a81711219b2cbeaec26343ab4f7577279d2dea50f",
+      "semantic_bringup/launch/semantic_lane_points_bridge.launch.py": "401cee206ff14d969c4a7f1cb655218a632cf6e4c3feb078990a8bfd32c4e28d",
+      "semantic_bringup/launch/semantic_lane_points_manual_traffic_light.launch.py": "8cf20e52d32d870fca69651400f7b38096edf684b318bfade9439e7be6424790",
+      "semantic_bringup/launch/semantic_system.launch.py": "3cef93da9245580e7ed7d238ab31a885719d94b598c8ab6c05babefcf2305d74",
+      "semantic_bringup/launch/semantic_vehicle_live.launch.py": "ef2d06dd5da3a076548291302489de55cf95d4d411409b8581f1243b9cc7d844",
+      "semantic_bringup/launch/semantic_vehicle_shadow_demo.launch.py": "59854ecf4a8f32917b497f37c6179dd465fad08fae55eecfb64e08e77a50ca74",
+      "semantic_bringup/setup.py": "7e63d94faada21ad5015c1ba57d094131b88ffbb668ef83e96b3cfe12af53a99",
+      "semantic_costmap_ros/semantic_costmap_ros/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_costmap_ros/semantic_costmap_ros/color_semantic_mask_node.py": "e00a04f143635a410c8413f4102edfa21d894d5e385f6a00ea79663e6f31b811",
+      "semantic_costmap_ros/semantic_costmap_ros/local_costmap_node.py": "eb070895ca49992d25923f7a2f60c77844abcea26052ed8930cd766e4214c653",
+      "semantic_costmap_ros/setup.py": "e212d9fe73f295be4e1ce3512a58a5fb88c320b663b812270c435b07cc483a20",
+      "semantic_gate_ros/semantic_gate_ros/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_gate_ros/semantic_gate_ros/red_pixel_traffic_light_adapter_node.py": "703af618ee8f7152510f6b01a3133fdb50ff4365c4477f2cef766b11561dcb3c",
+      "semantic_gate_ros/semantic_gate_ros/traffic_light_gate_node.py": "38e1ff36c21ec05b158a9048602d36db824e3a6cb75e2cfce1eeea5dfcf22370",
+      "semantic_gate_ros/setup.py": "e193c89826a2150c1a842e00bf85c364193a5e038f86b1b320d3fb430682cf14",
+      "semantic_lane_recovery_ros/semantic_lane_recovery_ros/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_lane_recovery_ros/semantic_lane_recovery_ros/lane_recovery_gate_node.py": "c765227e7d67bcdea6336a900d8323b59f0f7a15d62a58213ccb8adf96d0510f",
+      "semantic_lane_recovery_ros/setup.py": "eb5231e27b3496f446c6012dae6b2430dfb2d8ac72755552adba3b3d4f132cf4",
+      "semantic_local_planner_ros/config/aiformula_topomap.osm": "9a515361f3e897a3b929a69f75568938a879ffcb4a14cb7535a8ac1e344ae083",
+      "semantic_local_planner_ros/config/map_assist.yaml": "fe06c3af12832434c9e0892a8dd79862080f4bc77dd26f4c02e4d133f75dcf96",
+      "semantic_local_planner_ros/config/map_assist_bag.yaml": "7c2ad1af042ff47a2483630df03741ba7f24de04522cd8838e26e0cda4fde948",
+      "semantic_local_planner_ros/launch/map_assist.launch.py": "a44489a531d6eb7a65fdf00f84073afbe218502e9c8bab88cb988d83135eac32",
+      "semantic_local_planner_ros/launch/map_drive.launch.py": "41ea6d89ae53286c0ecda575293f5d66323c1c733846d3c5104a65877b1e1907",
+      "semantic_local_planner_ros/semantic_local_planner_ros/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_local_planner_ros/semantic_local_planner_ros/lane_points_mux_node.py": "6ec79bd549c7bb1f74ae86f70d34c6ae7da63d8dbc03d0fb226b7a21492ce44d",
+      "semantic_local_planner_ros/semantic_local_planner_ros/local_primitive_planner_node.py": "4146fc86add0e5acf7c646c0bb9e8951a673262d4312e624985e1e83f1f1eedd",
+      "semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py": "7a348b05dca212018d72ecbdf27feae0816320303747986ae168a939804ec8ba",
+      "semantic_local_planner_ros/semantic_local_planner_ros/planned_lane_points_adapter_node.py": "be1e334fefd5ffcd15f63f506c9a3c2ac0afd14b0bcf426431f4b8547b9cfdeb",
+      "semantic_local_planner_ros/setup.py": "cc34b16ffe865a993af0fa059caedafa6bf566e85b83ab322d29886d4127ea9b",
+      "semantic_local_planner_ros/tests/test_launch_standalone.py": "9f000bf5d03427d146ec4723d290b63958470b8f69fed32509c5b4fa9e0c8d18",
+      "semantic_local_planner_ros/tests/test_map_assist.py": "b10c1dd087c68026b13c1af0f82b3543bb7b9ad4836d016aa3c9406fccd0ae9f",
+      "semantic_local_planner_ros/tests/test_map_drive_launch.py": "0c903b4d803bce8f07fecc3832fb8a266688c8b5706fd6afece0fb0fc1894901",
+      "semantic_planner_core/semantic_planner_core/__init__.py": "deeb835e52491b868d9a5f984976614426bd07d2b983c763990d53705dfabb50",
+      "semantic_planner_core/semantic_planner_core/anchored_topology.py": "bbad1fb460d6b361a30cc5f70a45ce1aed306ca834a2240e91587fcbaddabf84",
+      "semantic_planner_core/semantic_planner_core/constraints.py": "6d092a2ffa2a806289f329d143588f6e0bdb5917a5b5686503ce4a5dfd6fb849",
+      "semantic_planner_core/semantic_planner_core/costmap.py": "e55de23cd44b6f8666c6ce222dfe70ff9af5cbb74d12166c8e07247779b7fc30",
+      "semantic_planner_core/semantic_planner_core/heading.py": "a7b4429b89851a3ad98c072f5e1a0cfc69f1a0c8c0f46bfc6620bedc1685c45d",
+      "semantic_planner_core/semantic_planner_core/lane_recovery.py": "472ca521e7a25408889a37d18efb9c208daf3994abeac98edb6886dc93d28154",
+      "semantic_planner_core/semantic_planner_core/planner.py": "f91eb292e7c731a00d9321c9f391a3884c035a24593726e6b8ee31a61ac455da",
+      "semantic_planner_core/semantic_planner_core/primitives.py": "80ebd39b149b4c2525e82cd9116dad7c8e0f0d2eb26f9bb13ee76e1509cf5b61",
+      "semantic_planner_core/semantic_planner_core/rough_route.py": "dd537459985e654c0046eef2efd236b7149084feedde62f3cec962fff58ebe22",
+      "semantic_planner_core/semantic_planner_core/rough_topology.py": "1547c095d90266261b78e0069d451b1581bc1a66f12458c289fbec473b975b8d",
+      "semantic_planner_core/semantic_planner_core/route_fusion.py": "0ee1e743997d0fbd1845d3067338f03fb211f58130a4b7c89f9a07f0f09d42fd",
+      "semantic_planner_core/semantic_planner_core/safety.py": "5d7edef41b051ed720c29e8bda9c12b814c36240d81355828c0b65778d3a959d",
+      "semantic_planner_core/semantic_planner_core/signal_approach.py": "b19bc90aa0f1850ad740050893c62888f0c61eb01a1c6c37238b2278444c2934",
+      "semantic_planner_core/semantic_planner_core/topology_alignment.py": "d572d9ea95c0a9823f5e848818aa2e56ffc3fbf68b8b5cfb182b79a229059989",
+      "semantic_planner_core/semantic_planner_core/traffic_light_filter.py": "ac13c13ddbb155b74d9aa1c4769d9c07fefc917161c8bda1e62b48e9e469c546",
+      "semantic_planner_core/semantic_planner_core/traffic_route.py": "4bc6b1a885b21c1773533abc45cbf7bb6fefc13de8568105889dc1c341b64b3a",
+      "semantic_planner_core/setup.py": "cc82fd1d1a5677ad509fd7c3c6fcd1718dad4db223a735e41adbe84dd093d32f",
+      "semantic_planner_core/tests/test_anchored_topology.py": "026d10fabe2b4554e9f1ed878fbb78ede5040b8e804cb49d9c86f75955cf87b3",
+      "semantic_planner_core/tests/test_constraints.py": "7fad6b359606093f51ff949487cbbe070df320a3a706eaf2d9fdb5398013bbea",
+      "semantic_planner_core/tests/test_costmap.py": "8657a8784d75aa986bda1daf223f70b065ac6816f81572573bb24043d5881ae3",
+      "semantic_planner_core/tests/test_heading.py": "eeafe9975575cde15272e913c9a525520a3a2c41940d0b1f3c54c993fdaba6b5",
+      "semantic_planner_core/tests/test_lane_recovery.py": "136470dee8e7c408bbefab4c13480f57344e847496be20eaa866b69d5cfec7a5",
+      "semantic_planner_core/tests/test_planner.py": "8eefe79cd60f6fc99c6ef57aca4681e43226bb0e0a1ce3d945918edcd105787d",
+      "semantic_planner_core/tests/test_rough_route.py": "52847dbad2938b02c12e1b97e8d28cc2266a9491c0e54c6cd52a5e15886ed042",
+      "semantic_planner_core/tests/test_rough_topology.py": "5179ea3dab26d226f32423ff5813afdc9b535271323f3681df9e5c0512a40eb3",
+      "semantic_planner_core/tests/test_route_fusion.py": "35d388f508e7585549d05dc6ed985bf7522b03ab02864080e2ae285ee21aa837",
+      "semantic_planner_core/tests/test_signal_approach.py": "c5951fe1057f980a0c19c80daea1f447cbc978123cad9c91c3c9f66feaf5fd7b",
+      "semantic_planner_core/tests/test_topology_alignment.py": "0e7a42e39fec604a59f67972d4b1e60ca7f07c026acae040814cdbb1bae43d74",
+      "semantic_planner_core/tests/test_traffic_light_filter.py": "d10aa87ecbe46f145f2976442c1e920487736754d3339354965595354c20a8c7",
+      "semantic_planner_core/tests/test_traffic_route.py": "2c5040aaa25b90cf920cd206c956595b4ad5aaa674f62c0e7aa78aead23c2866",
+      "semantic_safety_ros/semantic_safety_ros/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_safety_ros/semantic_safety_ros/safety_supervisor_node.py": "cc0f728b5386c72b15d5865accc4b7f2856a399a0c90da0d97db6459efeddc35",
+      "semantic_safety_ros/setup.py": "70212c249a93ab9834431fb4ae35d7bb456b8cbe59c24a8fc562173cedd1c0a4",
+      "semantic_test_tools/scripts/run_core_demo.py": "ec2d3f9b2ab4aa638194cf6284c86d34897b66ef10d25e5dc4e9589c9a544acd",
+      "semantic_test_tools/semantic_test_tools/__init__.py": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "semantic_test_tools/semantic_test_tools/fake_lane_result_node.py": "1eb1e34930bbc4dc62fbb50bf98ce1fc2d8d3822834bd91aa28e9f92d97624e0",
+      "semantic_test_tools/semantic_test_tools/fake_mask_publisher_node.py": "65f16b6fb4e8bf33ed02ce26604220cf67a32ef3d2d70dfb5645504163e22626",
+      "semantic_test_tools/semantic_test_tools/fake_traffic_light_node.py": "b0197b75ac3e174f76963bf61bdc8b6e86b571b187bbe51664abdfa2b5b84ef9",
+      "semantic_test_tools/setup.py": "60b56fa6f164ccb2c13cefa61acb061cb983f355d2269edb3e7d07d89181fde1"
+    },
+    "vision_commit": "05f1651c8a14d56ab9a86a9767c52793403dcfdc",
+    "map_parameters": {
+      "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
+      "avoidance_flag_topic": "/lane_stop_flag",
+      "avoidance_initially_idle": true,
+      "branch_active_topic": "/map_assist/branch_active",
+      "reset_topic": "/map_assist/reset",
+      "status_topic": "/map_assist/status",
+      "reference_path_topic": "/map_assist/path",
+      "topomap_path": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\Simulator\\Assets\\StreamingAssets\\SemanticPlanning\\source\\semantic_local_planner_ros\\config\\aiformula_topomap.osm",
+      "route_node_ids": "",
+      "angle_tolerance_deg": 15.0,
+      "progress_tolerance_m": 1.0,
+      "persistence_frames": 5,
+      "max_correction_deg": 8.0,
+      "max_step_deg": 2.0,
+      "sample_spacing_m": 0.2,
+      "smooth_window_m": 1.0,
+      "max_detour_gap_m": 2.0,
+      "min_lap_distance_m": 40.0,
+      "lap_closure_radius_m": 1.5,
+      "lap_closure_heading_deg": 25.0,
+      "match_window_m": 3.0,
+      "max_match_distance_m": 1.5,
+      "max_odom_speed_mps": 4.0,
+      "max_odom_yaw_rate_radps": 3.0,
+      "max_odom_position_std_m": 1.0,
+      "max_odom_yaw_std_deg": 20.0,
+      "max_odom_gap_sec": 2.0,
+      "max_recorded_samples": 20000,
+      "publish_rate_hz": 20.0,
+      "point_timeout_sec": 0.5,
+      "max_point_skew_sec": 0.15,
+      "odom_timeout_sec": 0.5,
+      "resume_delay_sec": 0.2,
+      "enable_correction": true,
+      "enable_traffic_control": true,
+      "traffic_light_topic": "/map_assist/traffic_light_input",
+      "traffic_vote_window_sec": 0.5,
+      "traffic_vote_min_samples": 3,
+      "enable_signal_approach": true,
+      "signal_observation_topic": "/map_assist/signal_observation",
+      "signal_observation_timeout_sec": 0.5,
+      "target_stop_distance_m": 8.0,
+      "approach_max_speed_mps": 3.0,
+      "approach_deceleration_mps2": 1.5,
+      "approach_latency_sec": 0.2,
+      "approach_stop_tolerance_m": 0.1,
+      "enable_velocity_gate": true,
+      "input_cmd_vel_topic": "/map_assist/controller_cmd_vel",
+      "output_cmd_vel_topic": "/aiformula_control/game_pad/cmd_vel",
+      "cmd_vel_timeout_sec": 0.5,
+      "alignment_max_rmse_m": 3.0,
+      "alignment_ambiguity_margin_m": 0.3,
+      "fusion_node_search_m": 4.0,
+      "fusion_feature_window_m": 2.0,
+      "fusion_shape_weight": 0.25,
+      "fusion_max_displacement_m": 0.75,
+      "detour_entry_radius_m": 3.0,
+      "detour_waypoint_radius_m": 0.8,
+      "detour_max_cross_track_m": 2.0,
+      "detour_lookahead_m": 0.5,
+      "detour_point_spacing_m": 0.5,
+      "input_point_a_topic": "/original_processed_point_a",
+      "output_point_a_topic": "/processed_point_a",
+      "input_point_b_topic": "/original_processed_point_b",
+      "output_point_b_topic": "/processed_point_b",
+      "input_point_c_topic": "/original_processed_point_c",
+      "output_point_c_topic": "/processed_point_c"
+    },
+    "map_state_before": {
+      "odom": [
+        -11.4429951,
+        -72.57746,
+        0.05140142960406524
+      ],
+      "odom_stamp": 109.56999755,
+      "odom_sequence": 2117,
+      "recorded_samples": 1013,
+      "recorded_distance_m": 285.05945223798574,
+      "reference": null
+    }
+  },
+  "original_parameters": {
+    "spacing_m": 0.2,
+    "smooth_window_m": 1.0,
+    "max_detour_gap_m": 2.0,
+    "max_rmse_m": 3.0,
+    "ambiguity_margin_m": 0.3,
+    "node_search_m": 4.0,
+    "feature_window_m": 2.0,
+    "shape_weight": 0.25,
+    "max_displacement_m": 0.75
+  },
+  "candidate_sample_count": 1014,
+  "raw_excluded_count": 2,
+  "prepared_point_count": 1433,
+  "prepared_untrusted_count": 10,
+  "original_result_agreement": {
+    "exact_equal": true,
+    "numeric_agreement": true,
+    "numeric_count": 4321,
+    "maximum_absolute_difference": 0.0,
+    "differences": [],
+    "atol": 1e-08,
+    "rtol": 1e-10
+  },
+  "process_object_identity_claim": false,
+  "original_fusion_status": {
+    "available": false,
+    "mode": "odom_only",
+    "metric_source": "odometry",
+    "recorded_length_m": 286.5017321447541,
+    "official_size_used": false,
+    "field_validation_required": true,
+    "reason": "rmse_exceeds_limit",
+    "final_length_m": 286.4885465825291
+  },
+  "original_alignment": {
+    "scale": 0.717722886690017,
+    "rotation_rad": 2.4874365232984568,
+    "translation_x": 29.365559132685963,
+    "translation_y": -19.17921368399526,
+    "rmse_m": 3.404463140369931,
+    "phase_fraction": 0.5803058594995599,
+    "direction": 1,
+    "available": false,
+    "reason": "rmse_exceeds_limit",
+    "alternative_rmse_m": 4.408826786038456,
+    "alternative_phase_fraction": 0.05713494731724622,
+    "alternative_direction": 1,
+    "ambiguity_gap_m": 1.004363645668525,
+    "ambiguity_phase_separation_fraction": 0.125,
+    "closure_gap_m": 0.19990657307635776,
+    "recorded_closed_length_m": 286.5014466420779,
+    "official_chord_length_m": 215.73047338474703,
+    "sample_count": 128,
+    "transform_direction": "recorded_odom_to_official_xy",
+    "automatic_estimate": true,
+    "quality_gated": true,
+    "field_validation_required": true,
+    "assumption": "similar outer shape; turn features refine local node correspondence",
+    "normalization_official_to_odom": 1.3280540651008967,
+    "error_units": "odom_metres"
+  },
+  "original_required_outer_node_count": 5,
+  "original_route_node_ids": [
+    "10000000000",
+    "10000000001",
+    "10000000002",
+    "10000000003",
+    "10000000004",
+    "10000000000"
+  ],
+  "node_anchor_window_diagnostics": [
+    {
+      "window_m": 1.0,
+      "effective_window_m": 1.0,
+      "search_m": 4.0,
+      "original_alignment_available": false,
+      "navigation_acceptance": false,
+      "mode": "rejected_transform_diagnostic_seed_only",
+      "original_node_anchors_reason": "node_turn_unobserved_or_excluded",
+      "original_node_anchors_progress": {},
+      "per_node": [
+        {
+          "node_id": "10000000000",
+          "seed_progress_m": 120.24309822437988,
+          "expected_turn_deg": 85.21923943437635,
+          "minimum_observed_turn_deg": 21.304809858594087,
+          "trusted_geometry_samples": 97,
+          "same_sign_samples": 97,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 3.0937683568241647,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000001",
+          "seed_progress_m": 178.30808692806818,
+          "expected_turn_deg": 79.80406680142464,
+          "minimum_observed_turn_deg": 19.95101670035616,
+          "trusted_geometry_samples": 97,
+          "same_sign_samples": 97,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 3.077430462557739,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000002",
+          "seed_progress_m": 260.8518328046224,
+          "expected_turn_deg": 99.09500206123029,
+          "minimum_observed_turn_deg": 24.773750515307572,
+          "trusted_geometry_samples": 97,
+          "same_sign_samples": 97,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 2.7912586845608773,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000003",
+          "seed_progress_m": 29.202210397774973,
+          "expected_turn_deg": 49.62899645308057,
+          "minimum_observed_turn_deg": 12.407249113270142,
+          "trusted_geometry_samples": 97,
+          "same_sign_samples": 42,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 2.357333328295831,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000004",
+          "seed_progress_m": 63.298565590444,
+          "expected_turn_deg": 46.25269524988816,
+          "minimum_observed_turn_deg": 11.56317381247204,
+          "trusted_geometry_samples": 97,
+          "same_sign_samples": 88,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 3.1836992770321917,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        }
+      ]
+    },
+    {
+      "window_m": 2.0,
+      "effective_window_m": 2.0,
+      "search_m": 4.0,
+      "original_alignment_available": false,
+      "navigation_acceptance": false,
+      "mode": "rejected_transform_diagnostic_seed_only",
+      "original_node_anchors_reason": "node_turn_unobserved_or_excluded",
+      "original_node_anchors_progress": {},
+      "per_node": [
+        {
+          "node_id": "10000000000",
+          "seed_progress_m": 120.24309822437988,
+          "expected_turn_deg": 85.21923943437635,
+          "minimum_observed_turn_deg": 21.304809858594087,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 6.051214079766094,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000001",
+          "seed_progress_m": 178.30808692806818,
+          "expected_turn_deg": 79.80406680142464,
+          "minimum_observed_turn_deg": 19.95101670035616,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 6.136436264077159,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000002",
+          "seed_progress_m": 260.8518328046224,
+          "expected_turn_deg": 99.09500206123029,
+          "minimum_observed_turn_deg": 24.773750515307572,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 5.544033690571655,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000003",
+          "seed_progress_m": 29.202210397774973,
+          "expected_turn_deg": 49.62899645308057,
+          "minimum_observed_turn_deg": 12.407249113270142,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 50,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 3.30737593776749,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000004",
+          "seed_progress_m": 63.298565590444,
+          "expected_turn_deg": 46.25269524988816,
+          "minimum_observed_turn_deg": 11.56317381247204,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 6.276912285714743,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        }
+      ]
+    },
+    {
+      "window_m": 4.0,
+      "effective_window_m": 4.0,
+      "search_m": 4.0,
+      "original_alignment_available": false,
+      "navigation_acceptance": false,
+      "mode": "rejected_transform_diagnostic_seed_only",
+      "original_node_anchors_reason": "node_turn_unobserved_or_excluded",
+      "original_node_anchors_progress": {},
+      "per_node": [
+        {
+          "node_id": "10000000000",
+          "seed_progress_m": 120.24309822437988,
+          "expected_turn_deg": 85.21923943437635,
+          "minimum_observed_turn_deg": 21.304809858594087,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 11.831023130841839,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000001",
+          "seed_progress_m": 178.30808692806818,
+          "expected_turn_deg": 79.80406680142464,
+          "minimum_observed_turn_deg": 19.95101670035616,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 12.199468788493283,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000002",
+          "seed_progress_m": 260.8518328046224,
+          "expected_turn_deg": 99.09500206123029,
+          "minimum_observed_turn_deg": 24.773750515307572,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 11.042542311025807,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000003",
+          "seed_progress_m": 29.202210397774973,
+          "expected_turn_deg": 49.62899645308057,
+          "minimum_observed_turn_deg": 12.407249113270142,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 53,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 5.627140646481957,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000004",
+          "seed_progress_m": 63.298565590444,
+          "expected_turn_deg": 46.25269524988816,
+          "minimum_observed_turn_deg": 11.56317381247204,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 16,
+          "largest_same_sign_turn_deg": 12.149189585410127,
+          "selected_candidate": {
+            "progress_m": 59.98149241971229,
+            "observed_turn_deg": 12.086351540565353,
+            "odom_xy": [
+              42.64540715916332,
+              -56.86261103859788
+            ],
+            "seed_delta_m": -3.3170731707317103
+          },
+          "selected_difference_deg": 34.16634370932281
+        }
+      ]
+    },
+    {
+      "window_m": 8.0,
+      "effective_window_m": 8.0,
+      "search_m": 4.0,
+      "original_alignment_available": false,
+      "navigation_acceptance": false,
+      "mode": "rejected_transform_diagnostic_seed_only",
+      "original_node_anchors_reason": "node_turn_inconsistent",
+      "original_node_anchors_progress": {},
+      "per_node": [
+        {
+          "node_id": "10000000000",
+          "seed_progress_m": 120.24309822437988,
+          "expected_turn_deg": 85.21923943437635,
+          "minimum_observed_turn_deg": 21.304809858594087,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 27,
+          "largest_same_sign_turn_deg": 22.84518662888047,
+          "selected_candidate": {
+            "progress_m": 124.14553724877013,
+            "observed_turn_deg": 22.82884927269929,
+            "odom_xy": [
+              38.46500337859177,
+              6.2634322847629775
+            ],
+            "seed_delta_m": 3.9024390243902474
+          },
+          "selected_difference_deg": 62.39039016167706
+        },
+        {
+          "node_id": "10000000001",
+          "seed_progress_m": 178.30808692806818,
+          "expected_turn_deg": 79.80406680142464,
+          "minimum_observed_turn_deg": 19.95101670035616,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 76,
+          "largest_same_sign_turn_deg": 23.723932330979768,
+          "selected_candidate": {
+            "progress_m": 174.30808692806818,
+            "observed_turn_deg": 23.723932330979768,
+            "odom_xy": [
+              -8.807067097010385,
+              12.24791773647826
+            ],
+            "seed_delta_m": -4.0
+          },
+          "selected_difference_deg": 56.080134470444875
+        },
+        {
+          "node_id": "10000000002",
+          "seed_progress_m": 260.8518328046224,
+          "expected_turn_deg": 99.09500206123029,
+          "minimum_observed_turn_deg": 24.773750515307572,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 0,
+          "largest_same_sign_turn_deg": 22.064593958498595,
+          "selected_candidate": null,
+          "selected_difference_deg": null
+        },
+        {
+          "node_id": "10000000003",
+          "seed_progress_m": 29.202210397774973,
+          "expected_turn_deg": 49.62899645308057,
+          "minimum_observed_turn_deg": 12.407249113270142,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 1,
+          "largest_same_sign_turn_deg": 12.428949319380877,
+          "selected_candidate": {
+            "progress_m": 33.20221039777498,
+            "observed_turn_deg": 12.428949319380877,
+            "odom_xy": [
+              23.198051238762048,
+              -72.4420916190961
+            ],
+            "seed_delta_m": 4.0000000000000036
+          },
+          "selected_difference_deg": 37.20004713369969
+        },
+        {
+          "node_id": "10000000004",
+          "seed_progress_m": 63.298565590444,
+          "expected_turn_deg": 46.25269524988816,
+          "minimum_observed_turn_deg": 11.56317381247204,
+          "trusted_geometry_samples": 83,
+          "same_sign_samples": 83,
+          "passing_turn_samples": 54,
+          "largest_same_sign_turn_deg": 22.340619221790575,
+          "selected_candidate": {
+            "progress_m": 59.298565590444,
+            "observed_turn_deg": 22.340619221790575,
+            "odom_xy": [
+              42.48909107964738,
+              -57.52735017385431
+            ],
+            "seed_delta_m": -4.0
+          },
+          "selected_difference_deg": 23.912076028097587
+        }
+      ]
+    }
+  ],
+  "descriptive_measured_bends": [
+    {
+      "window_m": 1.0,
+      "diagnostic_only": true,
+      "thresholds": [
+        {
+          "threshold_deg": 10.0,
+          "suppression_distance_m": 2.0,
+          "local_peak_count": 0,
+          "separated_peak_count": 0,
+          "ordered_peaks": []
+        },
+        {
+          "threshold_deg": 20.0,
+          "suppression_distance_m": 2.0,
+          "local_peak_count": 0,
+          "separated_peak_count": 0,
+          "ordered_peaks": []
+        }
+      ],
+      "interpretation": "Scale/threshold-sensitive measured bend peaks, not semantic junction identities or proof that the road has this node count"
+    },
+    {
+      "window_m": 2.0,
+      "diagnostic_only": true,
+      "thresholds": [
+        {
+          "threshold_deg": 10.0,
+          "suppression_distance_m": 4.0,
+          "local_peak_count": 0,
+          "separated_peak_count": 0,
+          "ordered_peaks": []
+        },
+        {
+          "threshold_deg": 20.0,
+          "suppression_distance_m": 4.0,
+          "local_peak_count": 0,
+          "separated_peak_count": 0,
+          "ordered_peaks": []
+        }
+      ],
+      "interpretation": "Scale/threshold-sensitive measured bend peaks, not semantic junction identities or proof that the road has this node count"
+    },
+    {
+      "window_m": 4.0,
+      "diagnostic_only": true,
+      "thresholds": [
+        {
+          "threshold_deg": 10.0,
+          "suppression_distance_m": 8.0,
+          "local_peak_count": 50,
+          "separated_peak_count": 11,
+          "ordered_peaks": [
+            {
+              "progress_m": 37.58722865918013,
+              "signed_turn_deg": 12.463741688294268,
+              "odom_xy": [
+                27.537871100922082,
+                -71.88380028217264
+              ]
+            },
+            {
+              "progress_m": 49.9828977266365,
+              "signed_turn_deg": 12.962318205406163,
+              "odom_xy": [
+                38.066700725929515,
+                -65.61050320423772
+              ]
+            },
+            {
+              "progress_m": 59.57950498811053,
+              "signed_turn_deg": 12.150631267198001,
+              "odom_xy": [
+                42.557286332720636,
+                -57.25481364694673
+              ]
+            },
+            {
+              "progress_m": 111.16192787842724,
+              "signed_turn_deg": 10.773302394975905,
+              "odom_xy": [
+                43.06295038601755,
+                -5.727662613454834
+              ]
+            },
+            {
+              "progress_m": 125.15705838005698,
+              "signed_turn_deg": 11.92981007208873,
+              "odom_xy": [
+                37.82974372277538,
+                7.050459041023083
+              ]
+            },
+            {
+              "progress_m": 138.75232323517602,
+              "signed_turn_deg": 10.523626519895675,
+              "odom_xy": [
+                26.344255299466866,
+                13.90667653335513
+              ]
+            },
+            {
+              "progress_m": 170.14162814921212,
+              "signed_turn_deg": 12.673538130806515,
+              "odom_xy": [
+                -4.942607804580182,
+                13.780976639593085
+              ]
+            },
+            {
+              "progress_m": 184.53662658074091,
+              "signed_turn_deg": 10.565084722981585,
+              "odom_xy": [
+                -16.34162921062139,
+                5.45818510583057
+              ]
+            },
+            {
+              "progress_m": 246.11572800111205,
+              "signed_turn_deg": 11.343640112945236,
+              "odom_xy": [
+                -38.578352086034364,
+                -51.72005012237535
+              ]
+            },
+            {
+              "progress_m": 254.7127232874246,
+              "signed_turn_deg": 11.03040833729636,
+              "odom_xy": [
+                -36.804997757688106,
+                -60.06751189941843
+              ]
+            },
+            {
+              "progress_m": 270.3073028932189,
+              "signed_turn_deg": 11.103685297833845,
+              "odom_xy": [
+                -25.962026465145343,
+                -70.7670352429991
+              ]
+            }
+          ]
+        },
+        {
+          "threshold_deg": 20.0,
+          "suppression_distance_m": 8.0,
+          "local_peak_count": 0,
+          "separated_peak_count": 0,
+          "ordered_peaks": []
+        }
+      ],
+      "interpretation": "Scale/threshold-sensitive measured bend peaks, not semantic junction identities or proof that the road has this node count"
+    },
+    {
+      "window_m": 8.0,
+      "diagnostic_only": true,
+      "thresholds": [
+        {
+          "threshold_deg": 10.0,
+          "suppression_distance_m": 16.0,
+          "local_peak_count": 21,
+          "separated_peak_count": 5,
+          "ordered_peaks": [
+            {
+              "progress_m": 54.18140647085027,
+              "signed_turn_deg": 25.410904044815908,
+              "odom_xy": [
+                40.579358798493,
+                -62.25792611056451
+              ]
+            },
+            {
+              "progress_m": 125.15705838005698,
+              "signed_turn_deg": 22.897327585104907,
+              "odom_xy": [
+                37.82974372277538,
+                7.050459041023083
+              ]
+            },
+            {
+              "progress_m": 173.14057535038123,
+              "signed_turn_deg": 24.120474960768465,
+              "odom_xy": [
+                -7.760872614194695,
+                12.765721682039088
+              ]
+            },
+            {
+              "progress_m": 247.91509763589167,
+              "signed_turn_deg": 22.523268631674924,
+              "odom_xy": [
+                -38.50210138161256,
+                -53.517235739072
+              ]
+            },
+            {
+              "progress_m": 268.5079291939851,
+              "signed_turn_deg": 22.142644227654607,
+              "odom_xy": [
+                -27.58446566689591,
+                -69.99021672862305
+              ]
+            }
+          ]
+        },
+        {
+          "threshold_deg": 20.0,
+          "suppression_distance_m": 16.0,
+          "local_peak_count": 20,
+          "separated_peak_count": 5,
+          "ordered_peaks": [
+            {
+              "progress_m": 54.18140647085027,
+              "signed_turn_deg": 25.410904044815908,
+              "odom_xy": [
+                40.579358798493,
+                -62.25792611056451
+              ]
+            },
+            {
+              "progress_m": 125.15705838005698,
+              "signed_turn_deg": 22.897327585104907,
+              "odom_xy": [
+                37.82974372277538,
+                7.050459041023083
+              ]
+            },
+            {
+              "progress_m": 173.14057535038123,
+              "signed_turn_deg": 24.120474960768465,
+              "odom_xy": [
+                -7.760872614194695,
+                12.765721682039088
+              ]
+            },
+            {
+              "progress_m": 247.91509763589167,
+              "signed_turn_deg": 22.523268631674924,
+              "odom_xy": [
+                -38.50210138161256,
+                -53.517235739072
+              ]
+            },
+            {
+              "progress_m": 268.5079291939851,
+              "signed_turn_deg": 22.142644227654607,
+              "odom_xy": [
+                -27.58446566689591,
+                -69.99021672862305
+              ]
+            }
+          ]
+        }
+      ],
+      "interpretation": "Scale/threshold-sensitive measured bend peaks, not semantic junction identities or proof that the road has this node count"
+    }
+  ],
+  "actual_run_outcome": {
+    "accepted": false,
+    "reason": "Stopped without 0.1 m progress for 15 simulation seconds",
+    "firstLapLearned": true,
+    "redScheduled": true,
+    "detourEntered": false,
+    "detourCompleted": false,
+    "leftTurnObserved": false,
+    "leftTurnValidated": false
+  },
+  "actual_terminal_semantic_status": {
+    "phase": "odom_only",
+    "reason": "red_wait_map_fusion",
+    "lap": 2,
+    "recorded_samples": 1013,
+    "recorded_distance_m": 285.05945223798574,
+    "reference_length_m": 286.4885465825291,
+    "route_matched": true,
+    "progress_m": 16.12926832670494,
+    "use_sim_time": true,
+    "ros_time_sec": 132.189997045,
+    "odom_age_sec": 0.0,
+    "point_age_sec": {
+      "a": 0.031000000017229468,
+      "b": 0.031000000017229468,
+      "c": 0.031000000017229468
+    },
+    "recording_points_valid": true,
+    "odom_covariance_available": false,
+    "correction_deg": 0.0,
+    "violation_frames": 0,
+    "avoidance_active": false,
+    "branch_active": false,
+    "path_output_allowed": false,
+    "enable_correction": true,
+    "official_route_node_ids": [
+      "10000000000",
+      "10000000001",
+      "10000000002",
+      "10000000003",
+      "10000000004",
+      "10000000000"
+    ],
+    "approximate_official_edge": null,
+    "official_alignment_diagnostic_only": {
+      "diagnostic_only": true,
+      "superseded_by": "map_fusion"
+    },
+    "map_fusion": {
+      "available": false,
+      "mode": "odom_only",
+      "metric_source": "odometry",
+      "recorded_length_m": 286.5017321447541,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "rmse_exceeds_limit",
+      "final_length_m": 286.4885465825291
+    },
+    "official_node_positions_odom": {},
+    "official_node_progress_m": {},
+    "topology_mapping": {
+      "available": false,
+      "reason": "fusion_unavailable"
+    },
+    "traffic_light_raw": "red",
+    "traffic_light": "red",
+    "traffic_vote": {
+      "window_sec": 0.5,
+      "min_samples": 3,
+      "ready": true,
+      "sample_count": 4,
+      "red_count": 4,
+      "green_count": 0,
+      "unknown_count": 0,
+      "last_message_age_sec": 0.031000000017229468
+    },
+    "traffic_mode": "wait",
+    "traffic_reason": "red_wait_map_fusion",
+    "signal_approach": {
+      "enabled": true,
+      "target_stop_distance_m": 8.0,
+      "observation_sequence": 1009,
+      "wait_latched": false,
+      "fault_sequence": -1,
+      "distance_m": 7.871347234531824,
+      "uncertainty_m": 0.49617800648027277,
+      "profile": {
+        "distance_lower_m": 7.3751692280515515,
+        "remaining_m": -0.6248307719484485,
+        "speed_limit_mps": 0.0,
+        "braking_distance_m": 0.0,
+        "braking_required": false,
+        "valid": true,
+        "reason": "ok",
+        "age_sec": 0.17356680001830682
+      },
+      "recovery_eligible": false,
+      "recovery_reason": "signal_target_reached",
+      "recovery_age_sec": null,
+      "recovery_vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": false,
+        "sample_count": 0,
+        "red_count": 0,
+        "green_count": 0,
+        "unknown_count": 0,
+        "last_message_age_sec": null
+      }
+    },
+    "topology_alignment": {
+      "scale": 0.717722886690017,
+      "rotation_rad": 2.4874365232984568,
+      "translation_x": 29.365559132685963,
+      "translation_y": -19.17921368399526,
+      "rmse_m": 3.404463140369931,
+      "phase_fraction": 0.5803058594995599,
+      "direction": 1,
+      "available": false,
+      "reason": "rmse_exceeds_limit",
+      "alternative_rmse_m": 4.408826786038456,
+      "alternative_phase_fraction": 0.05713494731724622,
+      "alternative_direction": 1,
+      "ambiguity_gap_m": 1.004363645668525,
+      "ambiguity_phase_separation_fraction": 0.125,
+      "closure_gap_m": 0.19990657307635776,
+      "recorded_closed_length_m": 286.5014466420779,
+      "official_chord_length_m": 215.73047338474703,
+      "sample_count": 128,
+      "transform_direction": "recorded_odom_to_official_xy",
+      "automatic_estimate": true,
+      "quality_gated": true,
+      "field_validation_required": true,
+      "assumption": "similar outer shape; turn features refine local node correspondence",
+      "normalization_official_to_odom": 1.3280540651008967,
+      "error_units": "odom_metres"
+    },
+    "blocked_edge": null,
+    "detour_node_ids": [],
+    "velocity_gate_reason": "red_wait_map_fusion"
+  },
+  "interpretation": [
+    "Object identity across a serialized snapshot cannot be asserted; structural/numeric return agreement is audited.",
+    "No input parameter or available flag is modified. The same rejected alignment remains rejected in every diagnostic.",
+    "A measured bend peak is not proof of an intersection or a safely drivable internal edge.",
+    "If fusion is unavailable, _update_traffic stops before any detour node selection; larger anchor windows alone cannot enable a detour."
+  ],
+  "elapsed_seconds": 0.4243576000444591
+}
