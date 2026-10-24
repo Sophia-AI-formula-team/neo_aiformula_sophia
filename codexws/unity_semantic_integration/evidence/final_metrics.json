@@ -1,0 +1,742 @@
+{
+  "geometry": {
+    "baselineManifest": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_stop_20261012\\source_before.json",
+    "baselineSha256": "3935df0e41f45582c1c5335bc7e3e67b328a46654f0205b3b36bbc201c30a300",
+    "checkedFiles": {
+      "Assets/TrainingEnvironment/Surface/track_surface.json": {
+        "sha256": "a90c26a32e89b877d0f89a69183d9141ec45d3e3906ce8297d024709b5af2fe0",
+        "equalsTaskBaseline": true
+      },
+      "Assets/TrainingEnvironment/Surface/Meshes/WhiteMarkings.asset": {
+        "sha256": "46a0cefb4f31432fd1203a234b935653a95c3e76b063309068c9e6eb4fedf53b",
+        "equalsTaskBaseline": true
+      },
+      "Assets/TrainingEnvironment/Surface/Meshes/Island_04.asset": {
+        "sha256": "bbbc08ed6125689b0a238f8ad70bfb53185c373d8abb10e9072bf302cff629c8",
+        "equalsTaskBaseline": true
+      },
+      "Assets/TrainingEnvironment/Surface/Meshes/Island_05.asset": {
+        "sha256": "d24109cd621f4920136f849dd0a0a5c2811e42dde41ab1a5df0c73f604e0e2ea",
+        "equalsTaskBaseline": true
+      },
+      "Assets/TrainingEnvironment/Surface/Meshes/OuterGreenStrip.asset": {
+        "sha256": "c83a0fef8e100285ceed472bed99dd4e910cd703eac976fe0d6c95c10a51e054",
+        "equalsTaskBaseline": true
+      },
+      "Assets/Scenes/MotorControllerValidation.unity": {
+        "sha256": "418bbbe1264b4eed3e058af2096cc35409c1c8d2773bc52402e6b1d1e11d6083",
+        "equalsTaskBaseline": true
+      }
+    },
+    "generatorPath": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\tools\\build_track_surface.py",
+    "generatorSha256": "cd5eec0f25ec7a60563d618411ad775dac4bc7cf80726dec5199d1b318ac63c7",
+    "cadTransform": {
+      "scale_px_per_m": 5.68,
+      "origin_px": [
+        767.5,
+        165.0
+      ],
+      "world_offset_xz_m": [
+        29.0,
+        44.4
+      ],
+      "formula": "(cad - origin) / (5.68, -5.68) + world_offset"
+    },
+    "interpretation": "Saved CAD-transformed geometry; not live Unity or surveyed road coordinates."
+  },
+  "laneBoundaryConstants": {
+    "northeastCenter": [
+      51.76408450704227,
+      22.234507042253515
+    ],
+    "outerRadiusM": 22.51760563380282,
+    "dividerRadiusM": 19.01760563380282,
+    "nominalPaintWidthM": 0.15
+  },
+  "cases": [
+    {
+      "name": "final63_inner_red",
+      "trial": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_stop_20261012\\final63_inner_red",
+      "lane": "inner",
+      "recordedResult": {
+        "accepted": true,
+        "reason": "East straight, complete northeast bend and north straight completed",
+        "case": "final63_inner_red",
+        "imageCount": 438,
+        "detectionCount": 273,
+        "motionCount": 558,
+        "supportedCount": 255,
+        "travelled": 73.62214,
+        "stoppedForRed": true,
+        "crossedSignal": true,
+        "redViolation": false,
+        "stop_z": 6.139776,
+        "stoppedFrontGap": 8.635939,
+        "redStopInTarget": true,
+        "green_t": 15.769111099551083,
+        "seconds": 39.35597179955221,
+        "wallSeconds": 39.46651920000295,
+        "captureHz": 15,
+        "motionHz": 20,
+        "framesUseActualTimestamps": true,
+        "signalPlaneZ": 15.0,
+        "initialPoseChangedOnce": true,
+        "articulatedBodiesMovedTogether": true,
+        "signalTruthFedToControl": false,
+        "evaluatorRouteFedToControl": false,
+        "odometrySource": "Unity Rigidbody pose and velocity; ideal noiseless simulated odometry",
+        "physicsParametersChanged": false,
+        "cameraIntrinsicsChanged": false,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": [],
+        "terminalBodySpeed": 2.97582346e-07,
+        "evidence": "Live Unity Play, genuine RGB model output, native LYA and semantic result. Main video uses an observer-camera clone. Remains in Play with E-STOP."
+      },
+      "sourceHashes": {
+        "motion.jsonl": "0e9a6e7b1921050628119796bb2f9a42a5cb5d98e3e4e5c6c8dcd1bc0cb03b1d",
+        "events.jsonl": "45036fbb4b919fec1c8c0204e3e27a7957a82ea016aec421fd7a70e0877cc6c0",
+        "configuration.json": "e4f86dee9a056bf1ffe667111685fc9b4af1ed42b0b8cb6da0afa515377ebc9a",
+        "result.json": "4248053a3ab4b1a93813169159302094a10847cdeda60c56d180ad628e031fd4"
+      },
+      "motionSamples": 558,
+      "actualStart": [
+        68.76,
+        -10.0
+      ],
+      "actualEnd": [
+        37.2346878,
+        38.46398
+      ],
+      "maxWallSampleGapS": 0.1634974000044167,
+      "centerOutsideLaneSamples": 0,
+      "centerOverPaintEdgeSamples": 0,
+      "minima": {
+        "leftBoundaryCenterDistanceM": {
+          "t": 20.716385699546663,
+          "wall": 20.826500200004375,
+          "x": 68.5511856,
+          "z": 17.1761131,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.827056681440407,
+          "rightBoundaryCenterDistanceM": 2.2305045408450894,
+          "leftPaintEdgeDistanceM": 1.752056681440407,
+          "rightPaintEdgeDistanceM": 2.1555045408450892
+        },
+        "rightBoundaryCenterDistanceM": {
+          "t": 28.54934889954893,
+          "wall": 28.6601370999997,
+          "x": 62.19344,
+          "z": 35.91972,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 2.4662745717969914,
+          "rightBoundaryCenterDistanceM": 1.8113128983714049,
+          "leftPaintEdgeDistanceM": 2.391274571796991,
+          "rightPaintEdgeDistanceM": 1.736312898371405
+        },
+        "leftPaintEdgeDistanceM": {
+          "t": 20.716385699546663,
+          "wall": 20.826500200004375,
+          "x": 68.5511856,
+          "z": 17.1761131,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.827056681440407,
+          "rightBoundaryCenterDistanceM": 2.2305045408450894,
+          "leftPaintEdgeDistanceM": 1.752056681440407,
+          "rightPaintEdgeDistanceM": 2.1555045408450892
+        },
+        "rightPaintEdgeDistanceM": {
+          "t": 28.54934889954893,
+          "wall": 28.6601370999997,
+          "x": 62.19344,
+          "z": 35.91972,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 2.4662745717969914,
+          "rightBoundaryCenterDistanceM": 1.8113128983714049,
+          "leftPaintEdgeDistanceM": 2.391274571796991,
+          "rightPaintEdgeDistanceM": 1.736312898371405
+        }
+      },
+      "sections": {
+        "east_straight": {
+          "samples": 331,
+          "minLeftBoundaryCenterDistanceM": 1.827056681440407,
+          "minRightBoundaryCenterDistanceM": 2.0215101408450806
+        },
+        "northeast_bend": {
+          "samples": 137,
+          "minLeftBoundaryCenterDistanceM": 1.933899542583802,
+          "minRightBoundaryCenterDistanceM": 1.8113128983714049
+        },
+        "north_straight": {
+          "samples": 90,
+          "minLeftBoundaryCenterDistanceM": 2.439382040970119,
+          "minRightBoundaryCenterDistanceM": 2.0960152760563346
+        }
+      },
+      "leftBoundaryDefinition": "Actual northeast service boundary plus southeast OPEN service arc; no boundary fabricated across junction",
+      "actualStops": [
+        {
+          "x": 68.5891,
+          "z": 6.140499,
+          "wallStart": 12.878247000000556,
+          "wallEnd": 16.552983600005973,
+          "duration": 3.674736600005417,
+          "signalAtStop": "red",
+          "signalsDuringStop": [
+            "red",
+            "green"
+          ],
+          "measuredFrontGapM": 8.636813,
+          "frontGapRangeM": [
+            8.635939,
+            8.636813
+          ],
+          "frontGapSamples": 56,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        },
+        {
+          "x": 37.2361221,
+          "z": 38.463932,
+          "wallStart": 38.527067300005,
+          "wallEnd": 39.46265349999885,
+          "duration": 0.9355861999938497,
+          "signalAtStop": "green",
+          "signalsDuringStop": [
+            "green"
+          ],
+          "measuredFrontGapM": -23.7994041,
+          "frontGapRangeM": [
+            -23.7994576,
+            -23.7994041
+          ],
+          "frontGapSamples": 15,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        }
+      ],
+      "semanticReasonMotionSamples": {
+        "fields": {
+          "traffic_reason": {
+            "traffic_idle": 68,
+            "red_approach_signal": 1,
+            "signal_color_unknown": 23,
+            "signal_red_reacquired": 92,
+            "signal_target_reached": 61,
+            "green_resume": 310
+          },
+          "velocity_gate_reason": {
+            "waiting_fresh_visual_triplet": 62,
+            "forwarding_controller": 312,
+            "signal_color_unknown": 23,
+            "resume_delay": 10,
+            "signal_approach_speed_limit": 63,
+            "approach_braking": 21,
+            "controller_command_timeout": 2,
+            "signal_target_reached": 61,
+            "corridor_width_prior_expired": 1
+          }
+        },
+        "source": "Original semantic.status fields in motion.jsonl; repeated/frozen snapshots count as motion samples, not independent detections or duration."
+      }
+    },
+    {
+      "name": "final63_inner_green",
+      "trial": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_stop_20261012\\final63_inner_green",
+      "lane": "inner",
+      "recordedResult": {
+        "accepted": true,
+        "reason": "East straight, complete northeast bend and north straight completed",
+        "case": "final63_inner_green",
+        "imageCount": 370,
+        "detectionCount": 210,
+        "motionCount": 463,
+        "supportedCount": 191,
+        "travelled": 73.65752,
+        "stoppedForRed": false,
+        "crossedSignal": true,
+        "redViolation": false,
+        "stop_z": null,
+        "stoppedFrontGap": null,
+        "redStopInTarget": false,
+        "green_t": null,
+        "seconds": 32.62822169955325,
+        "wallSeconds": 32.74432420000085,
+        "captureHz": 15,
+        "motionHz": 20,
+        "framesUseActualTimestamps": true,
+        "signalPlaneZ": 15.0,
+        "initialPoseChangedOnce": true,
+        "articulatedBodiesMovedTogether": true,
+        "signalTruthFedToControl": false,
+        "evaluatorRouteFedToControl": false,
+        "odometrySource": "Unity Rigidbody pose and velocity; ideal noiseless simulated odometry",
+        "physicsParametersChanged": false,
+        "cameraIntrinsicsChanged": false,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": [],
+        "terminalBodySpeed": 4.11634176e-07,
+        "evidence": "Live Unity Play, genuine RGB model output, native LYA and semantic result. Main video uses an observer-camera clone. Remains in Play with E-STOP."
+      },
+      "sourceHashes": {
+        "motion.jsonl": "71fcb5ee11aed9c97a85935b2f91b03c8647b5543cf90e1ff306db38788dd5fb",
+        "events.jsonl": "48e3aeff3760d72d66b21c4103dba4ac2a056ab5b94305d396f14e8df24148b9",
+        "configuration.json": "76be9301098c5071a26b9928e29ef07efd34b15a90c1414c0aab998b51837659",
+        "result.json": "b56654216958ca854567a30376571dd4dbe276e1548db68a941c5e47be500d2a"
+      },
+      "motionSamples": 463,
+      "actualStart": [
+        68.76,
+        -10.0
+      ],
+      "actualEnd": [
+        37.20631,
+        38.4475555
+      ],
+      "maxWallSampleGapS": 0.18313469999702647,
+      "centerOutsideLaneSamples": 0,
+      "centerOverPaintEdgeSamples": 0,
+      "minima": {
+        "leftBoundaryCenterDistanceM": {
+          "t": 15.946533199552505,
+          "wall": 16.039327099999355,
+          "x": 68.53675,
+          "z": 22.2641811,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.812161019996836,
+          "rightBoundaryCenterDistanceM": 2.2449138913198006,
+          "leftPaintEdgeDistanceM": 1.7371610199968361,
+          "rightPaintEdgeDistanceM": 2.1699138913198004
+        },
+        "rightBoundaryCenterDistanceM": {
+          "t": 22.312895099552406,
+          "wall": 22.411892000003718,
+          "x": 60.856842,
+          "z": 36.89946,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 2.5590976342665113,
+          "rightBoundaryCenterDistanceM": 1.7624880138427557,
+          "leftPaintEdgeDistanceM": 2.484097634266511,
+          "rightPaintEdgeDistanceM": 1.6874880138427557
+        },
+        "leftPaintEdgeDistanceM": {
+          "t": 15.946533199552505,
+          "wall": 16.039327099999355,
+          "x": 68.53675,
+          "z": 22.2641811,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.812161019996836,
+          "rightBoundaryCenterDistanceM": 2.2449138913198006,
+          "leftPaintEdgeDistanceM": 1.7371610199968361,
+          "rightPaintEdgeDistanceM": 2.1699138913198004
+        },
+        "rightPaintEdgeDistanceM": {
+          "t": 22.312895099552406,
+          "wall": 22.411892000003718,
+          "x": 60.856842,
+          "z": 36.89946,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 2.5590976342665113,
+          "rightBoundaryCenterDistanceM": 1.7624880138427557,
+          "leftPaintEdgeDistanceM": 2.484097634266511,
+          "rightPaintEdgeDistanceM": 1.6874880138427557
+        }
+      },
+      "sections": {
+        "east_straight": {
+          "samples": 240,
+          "minLeftBoundaryCenterDistanceM": 1.8125378126760552,
+          "minRightBoundaryCenterDistanceM": 2.0211101408450816
+        },
+        "northeast_bend": {
+          "samples": 136,
+          "minLeftBoundaryCenterDistanceM": 1.812161019996836,
+          "minRightBoundaryCenterDistanceM": 1.7624880138427557
+        },
+        "north_straight": {
+          "samples": 87,
+          "minLeftBoundaryCenterDistanceM": 2.4455803180962032,
+          "minRightBoundaryCenterDistanceM": 2.0697726760563313
+        }
+      },
+      "leftBoundaryDefinition": "Actual northeast service boundary plus southeast OPEN service arc; no boundary fabricated across junction",
+      "actualStops": [
+        {
+          "x": 37.207695,
+          "z": 38.4475136,
+          "wallStart": 31.745747900000424,
+          "wallEnd": 32.725617399999464,
+          "duration": 0.9798694999990403,
+          "signalAtStop": "green",
+          "signalsDuringStop": [
+            "green"
+          ],
+          "measuredFrontGapM": -23.7828484,
+          "frontGapRangeM": [
+            -23.78289,
+            -23.7828484
+          ],
+          "frontGapSamples": 16,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        }
+      ],
+      "semanticReasonMotionSamples": {
+        "fields": {
+          "traffic_reason": {
+            "traffic_idle": 460
+          },
+          "velocity_gate_reason": {
+            "waiting_fresh_visual_triplet": 66,
+            "forwarding_controller": 392,
+            "corridor_width_prior_expired": 2
+          }
+        },
+        "source": "Original semantic.status fields in motion.jsonl; repeated/frozen snapshots count as motion samples, not independent detections or duration."
+      }
+    },
+    {
+      "name": "final63_outer_red",
+      "trial": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_stop_20261012\\final63_outer_red",
+      "lane": "outer",
+      "recordedResult": {
+        "accepted": true,
+        "reason": "East straight, complete northeast bend and north straight completed",
+        "case": "final63_outer_red",
+        "imageCount": 433,
+        "detectionCount": 293,
+        "motionCount": 544,
+        "supportedCount": 282,
+        "travelled": 79.29607,
+        "stoppedForRed": true,
+        "crossedSignal": true,
+        "redViolation": false,
+        "stop_z": 6.16772938,
+        "stoppedFrontGap": 8.602903,
+        "redStopInTarget": true,
+        "green_t": 14.203249999547552,
+        "seconds": 39.52211619955051,
+        "wallSeconds": 39.65873119999742,
+        "captureHz": 15,
+        "motionHz": 20,
+        "framesUseActualTimestamps": true,
+        "signalPlaneZ": 15.0,
+        "initialPoseChangedOnce": true,
+        "articulatedBodiesMovedTogether": true,
+        "signalTruthFedToControl": false,
+        "evaluatorRouteFedToControl": false,
+        "odometrySource": "Unity Rigidbody pose and velocity; ideal noiseless simulated odometry",
+        "physicsParametersChanged": false,
+        "cameraIntrinsicsChanged": false,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": [],
+        "terminalBodySpeed": 2.36658721e-07,
+        "evidence": "Live Unity Play, genuine RGB model output, native LYA and semantic result. Main video uses an observer-camera clone. Remains in Play with E-STOP."
+      },
+      "sourceHashes": {
+        "motion.jsonl": "dfd603e5ce86866a255d74276253294bb3f85b869213c07533714db7aa2ae3ab",
+        "events.jsonl": "04d662ed76cd67c5f95f69e8a69634e2a61a483fc1c63263c82de02a8c389217",
+        "configuration.json": "1c1cda666dd3ded11041ebcff966e2e350423a2f8ddf40da9aea51b1136b72a2",
+        "result.json": "6ef363c6e86aca01c150e0400a84e0e6d06402770edca85f3cd87522ae6b4960"
+      },
+      "motionSamples": 544,
+      "actualStart": [
+        72.53,
+        -10.0
+      ],
+      "actualEnd": [
+        37.20115,
+        42.91827
+      ],
+      "maxWallSampleGapS": 0.18637999999918975,
+      "centerOutsideLaneSamples": 0,
+      "centerOverPaintEdgeSamples": 0,
+      "minima": {
+        "leftBoundaryCenterDistanceM": {
+          "t": 21.2239918995474,
+          "wall": 21.33094159999746,
+          "x": 72.4056244,
+          "z": 22.7350044,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.6300011708047393,
+          "rightBoundaryCenterDistanceM": 1.8699988291952607,
+          "leftPaintEdgeDistanceM": 1.5550011708047393,
+          "rightPaintEdgeDistanceM": 1.7949988291952608
+        },
+        "rightBoundaryCenterDistanceM": {
+          "t": 4.028090599545976,
+          "wall": 4.130001399993489,
+          "x": 72.53045,
+          "z": -9.716735,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.7487598591549158,
+          "rightBoundaryCenterDistanceM": 1.7512401408450842,
+          "leftPaintEdgeDistanceM": 1.6737598591549159,
+          "rightPaintEdgeDistanceM": 1.6762401408450842
+        },
+        "leftPaintEdgeDistanceM": {
+          "t": 21.2239918995474,
+          "wall": 21.33094159999746,
+          "x": 72.4056244,
+          "z": 22.7350044,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.6300011708047393,
+          "rightBoundaryCenterDistanceM": 1.8699988291952607,
+          "leftPaintEdgeDistanceM": 1.5550011708047393,
+          "rightPaintEdgeDistanceM": 1.7949988291952608
+        },
+        "rightPaintEdgeDistanceM": {
+          "t": 4.028090599545976,
+          "wall": 4.130001399993489,
+          "x": 72.53045,
+          "z": -9.716735,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.7487598591549158,
+          "rightBoundaryCenterDistanceM": 1.7512401408450842,
+          "leftPaintEdgeDistanceM": 1.6737598591549159,
+          "rightPaintEdgeDistanceM": 1.6762401408450842
+        }
+      },
+      "sections": {
+        "east_straight": {
+          "samples": 299,
+          "minLeftBoundaryCenterDistanceM": 1.640539859154913,
+          "minRightBoundaryCenterDistanceM": 1.7512401408450842
+        },
+        "northeast_bend": {
+          "samples": 157,
+          "minLeftBoundaryCenterDistanceM": 1.6300011708047393,
+          "minRightBoundaryCenterDistanceM": 1.808967181489681
+        },
+        "north_straight": {
+          "samples": 88,
+          "minLeftBoundaryCenterDistanceM": 1.6469973239436655,
+          "minRightBoundaryCenterDistanceM": 1.791636776056336
+        }
+      },
+      "leftBoundaryDefinition": "Continuous divider boundary through painted dash gaps",
+      "actualStops": [
+        {
+          "x": 72.48201,
+          "z": 6.16772938,
+          "wallStart": 11.304711400000087,
+          "wallEnd": 14.941183599999931,
+          "duration": 3.6364721999998437,
+          "signalAtStop": "red",
+          "signalsDuringStop": [
+            "red",
+            "green"
+          ],
+          "measuredFrontGapM": 8.605093,
+          "frontGapRangeM": [
+            8.602903,
+            8.605093
+          ],
+          "frontGapSamples": 47,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        },
+        {
+          "x": 37.2030563,
+          "z": 42.91826,
+          "wallStart": 38.68282739999995,
+          "wallEnd": 39.64024239999708,
+          "duration": 0.9574149999971269,
+          "signalAtStop": "green",
+          "signalsDuringStop": [
+            "green"
+          ],
+          "measuredFrontGapM": -28.247921,
+          "frontGapRangeM": [
+            -28.2479324,
+            -28.247921
+          ],
+          "frontGapSamples": 16,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        }
+      ],
+      "semanticReasonMotionSamples": {
+        "fields": {
+          "traffic_reason": {
+            "traffic_idle": 69,
+            "red_approach_signal": 90,
+            "signal_target_reached": 50,
+            "green_resume": 331
+          },
+          "velocity_gate_reason": {
+            "waiting_fresh_visual_triplet": 60,
+            "forwarding_controller": 336,
+            "signal_approach_speed_limit": 68,
+            "approach_braking": 21,
+            "controller_command_timeout": 1,
+            "signal_target_reached": 50,
+            "resume_delay": 4
+          }
+        },
+        "source": "Original semantic.status fields in motion.jsonl; repeated/frozen snapshots count as motion samples, not independent detections or duration."
+      }
+    },
+    {
+      "name": "final63_outer_green",
+      "trial": "C:\\Users\\PC\\OneDrive - Sophia Univ. Students\\Main\\SOPHIA\\Y4T1\\Research\\Demo_LaneLineTrainer\\workspace\\diagnostics\\semantic_stop_20261012\\final63_outer_green",
+      "lane": "outer",
+      "recordedResult": {
+        "accepted": true,
+        "reason": "East straight, complete northeast bend and north straight completed",
+        "case": "final63_outer_green",
+        "imageCount": 378,
+        "detectionCount": 249,
+        "motionCount": 457,
+        "supportedCount": 238,
+        "travelled": 79.18614,
+        "stoppedForRed": false,
+        "crossedSignal": true,
+        "redViolation": false,
+        "stop_z": null,
+        "stoppedFrontGap": null,
+        "redStopInTarget": false,
+        "green_t": null,
+        "seconds": 34.100755299550656,
+        "wallSeconds": 34.209694899996975,
+        "captureHz": 15,
+        "motionHz": 20,
+        "framesUseActualTimestamps": true,
+        "signalPlaneZ": 15.0,
+        "initialPoseChangedOnce": true,
+        "articulatedBodiesMovedTogether": true,
+        "signalTruthFedToControl": false,
+        "evaluatorRouteFedToControl": false,
+        "odometrySource": "Unity Rigidbody pose and velocity; ideal noiseless simulated odometry",
+        "physicsParametersChanged": false,
+        "cameraIntrinsicsChanged": false,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": [],
+        "terminalBodySpeed": 2.7643992e-07,
+        "evidence": "Live Unity Play, genuine RGB model output, native LYA and semantic result. Main video uses an observer-camera clone. Remains in Play with E-STOP."
+      },
+      "sourceHashes": {
+        "motion.jsonl": "4480ed2c1d12316fc1623bda9d3faed9fcf6f0e6c50e4d5cb887ba7abfb15a8a",
+        "events.jsonl": "256d86a1ea91449963f986a3db384d8151ac2a40f3612996eed4228ca0e40c60",
+        "configuration.json": "0026b747d7979fc99633c8b5a41bb589ca7d9b73dc9dbdf7543c7a33abd4d484",
+        "result.json": "f77ef380a1ce6e57c6bc7ba0e3bf6106578eb4c290d0ea16c72f672a95ce5e48"
+      },
+      "motionSamples": 457,
+      "actualStart": [
+        72.53,
+        -10.0
+      ],
+      "actualEnd": [
+        37.30143,
+        42.94059
+      ],
+      "maxWallSampleGapS": 0.17706950000138022,
+      "centerOutsideLaneSamples": 0,
+      "centerOverPaintEdgeSamples": 0,
+      "minima": {
+        "leftBoundaryCenterDistanceM": {
+          "t": 16.051933599555923,
+          "wall": 16.160360100002436,
+          "x": 72.38989,
+          "z": 23.061842,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.6247860727227206,
+          "rightBoundaryCenterDistanceM": 1.8752139272772794,
+          "leftPaintEdgeDistanceM": 1.5497860727227206,
+          "rightPaintEdgeDistanceM": 1.8002139272772795
+        },
+        "rightBoundaryCenterDistanceM": {
+          "t": 3.8997023995543714,
+          "wall": 4.003880500000378,
+          "x": 72.53109,
+          "z": -9.700207,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.74939985915492,
+          "rightBoundaryCenterDistanceM": 1.75060014084508,
+          "leftPaintEdgeDistanceM": 1.67439985915492,
+          "rightPaintEdgeDistanceM": 1.67560014084508
+        },
+        "leftPaintEdgeDistanceM": {
+          "t": 16.051933599555923,
+          "wall": 16.160360100002436,
+          "x": 72.38989,
+          "z": 23.061842,
+          "section": "northeast_bend",
+          "leftBoundaryCenterDistanceM": 1.6247860727227206,
+          "rightBoundaryCenterDistanceM": 1.8752139272772794,
+          "leftPaintEdgeDistanceM": 1.5497860727227206,
+          "rightPaintEdgeDistanceM": 1.8002139272772795
+        },
+        "rightPaintEdgeDistanceM": {
+          "t": 3.8997023995543714,
+          "wall": 4.003880500000378,
+          "x": 72.53109,
+          "z": -9.700207,
+          "section": "east_straight",
+          "leftBoundaryCenterDistanceM": 1.74939985915492,
+          "rightBoundaryCenterDistanceM": 1.75060014084508,
+          "leftPaintEdgeDistanceM": 1.67439985915492,
+          "rightPaintEdgeDistanceM": 1.67560014084508
+        }
+      },
+      "sections": {
+        "east_straight": {
+          "samples": 226,
+          "minLeftBoundaryCenterDistanceM": 1.6398898591549198,
+          "minRightBoundaryCenterDistanceM": 1.75060014084508
+        },
+        "northeast_bend": {
+          "samples": 148,
+          "minLeftBoundaryCenterDistanceM": 1.6247860727227206,
+          "minRightBoundaryCenterDistanceM": 1.7978610445126861
+        },
+        "north_straight": {
+          "samples": 83,
+          "minLeftBoundaryCenterDistanceM": 1.6429973239436677,
+          "minRightBoundaryCenterDistanceM": 1.7974999760563364
+        }
+      },
+      "leftBoundaryDefinition": "Continuous divider boundary through painted dash gaps",
+      "actualStops": [
+        {
+          "x": 37.302166,
+          "z": 42.94059,
+          "wallStart": 33.269695000002685,
+          "wallEnd": 34.15768190000381,
+          "duration": 0.887986900001124,
+          "signalAtStop": "green",
+          "signalsDuringStop": [
+            "green"
+          ],
+          "measuredFrontGapM": -28.2697449,
+          "frontGapRangeM": [
+            -28.2697449,
+            -28.2697449
+          ],
+          "frontGapSamples": 14,
+          "frontGapDefinition": "Original evaluator actual_front_gap_m at first stopped motion sample; not inferred from root pose.",
+          "definition": "Measured abs(actual_v)<0.05 m/s for at least 0.4 s after motion"
+        }
+      ],
+      "semanticReasonMotionSamples": {
+        "fields": {
+          "traffic_reason": {
+            "traffic_idle": 453
+          },
+          "velocity_gate_reason": {
+            "waiting_fresh_visual_triplet": 59,
+            "forwarding_controller": 394
+          }
+        },
+        "source": "Original semantic.status fields in motion.jsonl; repeated/frozen snapshots count as motion samples, not independent detections or duration."
+      }
+    }
+  ],
+  "scope": "Discrete measured Unity vehicle centers, including terminal coast/hold. No full-body envelope, tire footprint, continuous-time sweep, surveyed geometry or hardware claim.",
+  "interpretation": "Center stays in its intended lane only when both signed boundary margins are nonnegative. A broad region guard is not used for this conclusion.",
+  "cadReference": "Saved geometry matches task baseline; CAD contour approximations remain. Divider is continued through intentional dashed paint gaps."
+}

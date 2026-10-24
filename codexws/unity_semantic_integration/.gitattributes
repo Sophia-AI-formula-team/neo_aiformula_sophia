@@ -1,0 +1,12 @@
+# Frozen payload hashes describe bytes, independent of core.autocrlf.
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sha256 text eol=lf
+COLCON_IGNORE text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+# Frozen receipts/source use exact byte hashes, including original whitespace.
+before/** -text -whitespace
+overlay/** -text -whitespace
+evidence/** -text -whitespace
