@@ -37,3 +37,11 @@ secrets, caches and unrelated files. Use a feature branch and a draft PR. Preser
 the existing PR stack and immutable tags; do not merge, force-push or create a
 release tag without the user's request. Keep support records attributable to the
 source commit that produced them, even after newer commits are added.
+
+## User-authorized native follow-up — 2026-10-12
+
+MapAssist 0.2.1 adds default stop_wait per the user request. Preserve topo learning and
+core geometry; distance/automatic detour are historical legacy policy only. Frozen
+core63 evidence belongs to its original revision. See SIMPLE_TRAFFIC_CHANGE.md.
+The vehicle source update remains uncompiled and shadow-only unless the user later
+authorizes compilation or changes that scope.

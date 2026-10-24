@@ -1,4 +1,4 @@
-# map_assist：保留 odom 尺度的地图融合、视觉辅助与红灯改道
+# map_assist：保留 odom 尺度的地图融合、视觉辅助与红灯等待
 
 `map_assist` 仍在原 `semantic_local_planner_ros` 包内，独立于原语义门控运行。原语义方案保留。
 
@@ -177,6 +177,10 @@ ros2 topic echo /map_assist/status
 
 ## 3. 红灯决策
 
+0.2.1 默认 `traffic_policy=stop_wait`：稳定红灯输出零 Twist 并保持等待，稳定有效绿灯后经过恢复延时、新完整三点与新控制指令再恢复。距离为 null 不影响颜色判断；不按距离接近、不自动触发拓扑绕行。已确认红灯的等待优先于 OA 移动指令。原子输入在 `enable_signal_approach=false` 时仍被订阅，保留源年龄与序号检查。未知、断流、过期或重复消息不能解除红灯等待。正常行驶时 unknown 本身不代表红灯。
+
+### 历史策略（以下需显式 traffic_policy=legacy）
+
 ```mermaid
 flowchart TD
     Light[逐帧接收 red / green / unknown] --> Vote[最近 0.5 秒严格多数确认；至少 3 帧且首窗口完整]
@@ -253,11 +257,11 @@ ros2 topic pub --once /map_assist/reset std_msgs/msg/Bool '{data: true}'
 
 常用配置保留原视觉纠偏的 15° 容差、1 米进度容差、连续 5 组异常才介入和 8° 最大修正。融合默认参数：节点搜索 4 米、转弯特征窗口 2 米、形状约束权重 0.25、融合位移上限 0.75 米；质量误差以 odom 米为单位。参数集中在同一 YAML 中。`route_node_ids` 可选地指定首圈外圈；为空时读取官方文件第一个闭合外圈，起点与行进方向仍自动估计。
 
-## 6. 可选的距离停车接近
+## 6. 历史距离停车接近（仅 traffic_policy=legacy）
 
 **0.2.0（2026-10-12）：**`semantic_planner_core` 新增距离观测校验和制动包络；`semantic_local_planner_ros` 新增默认关闭的接近状态、原子观测接口、诊断和回归测试。两包从 0.1.0 升为 0.2.0，表示 0.x 阶段新增可选功能；旧颜色接口、默认停车行为、原 OA 所有权和地图绕行保持兼容。其余包版本不变。该版本变更不声称测距精度、实际停车距离或实车验收已经通过。
 
-`enable_signal_approach` 默认 `false`，保持原有“确认红灯立即等待；建图后可尝试拓扑绕行”的行为。仅开启此参数时，确认红灯且有可靠距离的车辆可以进入 `traffic_mode=approach`，沿原视觉三点和 LYA 轨迹减速接近。此功能没有加入左转指令，也没有启动另一套 costmap/primitive planner。
+在显式 `traffic_policy=legacy` 下，`enable_signal_approach=false` 保持旧的等待／绕行策略；默认 `stop_wait` 禁止按距接近。仅开启此参数时，确认红灯且有可靠距离的车辆可以进入 `traffic_mode=approach`，沿原视觉三点和 LYA 轨迹减速接近。此功能没有加入左转指令，也没有启动另一套 costmap/primitive planner。
 
 启用时必须同时开启 `enable_traffic_control` 和 `enable_velocity_gate`。在 `/map_assist/signal_observation` 发布 `std_msgs/msg/String`，内容是每个真实检测帧的一条原子 JSON：
 

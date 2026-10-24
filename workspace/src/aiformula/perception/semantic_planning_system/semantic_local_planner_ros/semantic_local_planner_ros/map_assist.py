@@ -89,6 +89,7 @@ class MapAssist(Node):
             "resume_delay_sec": 0.2,
             "enable_correction": True,
             "enable_traffic_control": False,
+            "traffic_policy": "stop_wait",
             "traffic_light_topic": "/map_assist/traffic_light_input",
             "traffic_vote_window_sec": 0.5,
             "traffic_vote_min_samples": 3,
@@ -155,6 +156,7 @@ class MapAssist(Node):
             window_sec=self.p["traffic_vote_window_sec"],
             min_samples=self.p["traffic_vote_min_samples"],
         )
+        self.light_input_is_atomic = False
         self.traffic_light_raw = "unknown"
         self.traffic_light = "unknown"
         self.traffic_mode = "normal"
@@ -213,8 +215,7 @@ class MapAssist(Node):
             self.create_subscription(Twist, self.p["input_cmd_vel_topic"], self._on_controller_cmd, 10)
         if self.p["enable_traffic_control"]:
             self.create_subscription(String, self.p["traffic_light_topic"], self._on_light_state, 10)
-            if self.p["enable_signal_approach"]:
-                self.create_subscription(String, self.p["signal_observation_topic"], self._on_signal_observation, 10)
+            self.create_subscription(String, self.p["signal_observation_topic"], self._on_signal_observation, 10)
         self.create_timer(1.0 / self.p["publish_rate_hz"], self._tick)
         # Diagnostics must remain visible before /clock arrives and while a bag
         # is paused. Only this status timer uses steady time; control stays on
@@ -252,6 +253,10 @@ class MapAssist(Node):
             raise ValueError("Invalid topology alignment quality limits")
         if self.p["fusion_shape_weight"] >= 1.0:
             raise ValueError("fusion_shape_weight must be in (0, 1)")
+        if self.p["traffic_policy"] not in ("stop_wait", "legacy"):
+            raise ValueError("traffic_policy must be stop_wait or legacy")
+        if self.p["traffic_policy"] == "stop_wait" and self.p["enable_signal_approach"]:
+            raise ValueError("stop_wait does not use signal distance; disable enable_signal_approach")
         if self.p["enable_traffic_control"] and not self.p["enable_velocity_gate"]:
             raise ValueError("Traffic waiting requires the velocity gate; zero path points cannot stop LYA")
         if self.p["enable_signal_approach"] and not self.p["enable_traffic_control"]:
@@ -345,6 +350,7 @@ class MapAssist(Node):
         self._publish_velocity_stop_if_needed(time.monotonic())
 
     def _on_light_state(self, msg: String) -> None:
+        self.light_input_is_atomic = False
         # A legacy color has no corresponding metric observation. Never attach
         # it to a cached range from another detector frame.
         self.signal_observation = None
@@ -353,6 +359,7 @@ class MapAssist(Node):
 
     def _on_signal_observation(self, msg: String) -> None:
         """Atomic real detector frame; duplicate frames never refresh or vote."""
+        self.light_input_is_atomic = True
         now = time.monotonic()
         # A new arrival cannot hide a timeout that already revoked recovery.
         if self.traffic_mode == "perception_suspended":
@@ -393,6 +400,9 @@ class MapAssist(Node):
         if not self.p["enable_traffic_control"]:
             return
         self.traffic_light = self.light_filter.evaluate(now)
+        if self.p["traffic_policy"] == "stop_wait":
+            self._update_simple_traffic(now)
+            return
         if self.traffic_mode == "approach":
             profile = self._signal_approach_profile(now)
             # Keep confirmed red intent when older votes expire or tie. The
@@ -448,6 +458,22 @@ class MapAssist(Node):
             self._resume_vision("green_resume")
         # Unknown/missing detections never release an already confirmed red.
         # A committed detour finishes even if its light subsequently turns green.
+
+    def _update_simple_traffic(self, now: float) -> None:
+        """Latch confirmed red until current, fresh, confirmed green; no range or detour."""
+        if self.traffic_light == "red" and self.traffic_mode != "wait":
+            self._wait_for_signal("red_wait_green")
+        elif (self.traffic_light == "green" and self.traffic_mode == "wait"
+              and self.traffic_light_raw == "green"):
+            if self.light_input_is_atomic:
+                observation = self.signal_observation
+                if observation is None:
+                    return
+                age = observation.age_sec + max(0.0, now - self.signal_observation_time)
+            else:
+                age = self.light_filter.snapshot(now)["last_message_age_sec"]
+            if age is not None and age <= self.p["signal_observation_timeout_sec"]:
+                self._resume_vision("green_resume")
 
     def _resume_vision(self, reason: str) -> None:
         self.traffic_mode = "normal"
@@ -557,6 +583,9 @@ class MapAssist(Node):
         return profile
 
     def _velocity_hold_reason(self, now: float) -> Optional[str]:
+        if (self.p["enable_traffic_control"] and self.p["traffic_policy"] == "stop_wait"
+                and self.traffic_mode == "wait"):
+            return self.traffic_reason
         # OA still owns the path and moving commands during its active phase.
         # Red waits remain latched and are reconsidered when OA releases control.
         if self.avoidance_active is True:
@@ -665,6 +694,8 @@ class MapAssist(Node):
         return [start, ordered[(ordered.index(start) + 1) % len(ordered)]]
 
     def _update_traffic(self, now: float) -> None:
+        if self.p["traffic_policy"] == "stop_wait":
+            return
         if not self.p["enable_traffic_control"] or self.traffic_mode != "wait" or self.traffic_light != "red":
             return
         if self.signal_wait_latched:
@@ -1158,6 +1189,7 @@ class MapAssist(Node):
             "traffic_light_raw": self.traffic_light_raw,
             "traffic_light": self.light_filter.evaluate(now),
             "traffic_vote": self.light_filter.snapshot(now),
+            "traffic_policy": self.p["traffic_policy"],
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
             "signal_approach": {
