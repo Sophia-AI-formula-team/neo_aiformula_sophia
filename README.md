@@ -2,6 +2,16 @@
 
 This student-maintained repository contains a public ROS 2 source snapshot used for AI Formula research in Sophia University's Control Engineering Laboratory. It is provided for research reference and is not an official Honda or Sophia University software release.
 
+## Lane teach/repeat and agent handoff
+
+The canonical destination is **Sophia-AI-formula-team/neo_aiformula_sophia**
+(repository ID 1303517209), branch `feat/causal-lane-teach-repeat`.
+Start with [AGENT_CONTEXT.md](AGENT_CONTEXT.md), [current handoff](docs/agent-context/STATUS.md)
+and [experiment recording/upload protocol](docs/agent-context/PROTOCOL.md).
+The three lane-mapping packages are under `workspace/src/aiformula/control/`, beside LYA.
+GNSS in `_gnss` is only a fixed-route start check, never a mapping input.
+CI and handoff receipts do not authorize driving the vehicle.
+
 ## Repository layout
 
 - `workspace/src/aiformula`: the ROS 2 workspace source tree for vehicle integration, sensing, perception, control, launch, and supporting packages.

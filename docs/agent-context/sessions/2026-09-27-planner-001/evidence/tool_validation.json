@@ -1,0 +1,17 @@
+{
+  "evidence_kind": "local_offline_packager_unit_tests",
+  "command": "python -B -m unittest discover -s tools/tests -p test_agent_handoff.py -v",
+  "platform": "Windows",
+  "python": "3.13.13",
+  "exit_code": 0,
+  "tests": 27,
+  "passed": 26,
+  "failed": 0,
+  "skipped": 1,
+  "elapsed_seconds": 0.651,
+  "skip_reason": "Host lacks permission to create a real symbolic link; simulated Windows reparse/junction rejection test passed.",
+  "covered": ["deterministic_archive_and_hashes", "no_overwrite_and_publication_races", "size_and_count_limits", "secret_and_coordinate_tripwires", "signed_url_rejection", "source_mutation", "partial_blocked_not_run_outcomes", "manual_review_required"],
+  "not_yet_executed_at_sealing": ["remote_agent_handoff_ci", "published_repo_link_and_bundle_tests"],
+  "not_tested": ["hardware", "ROS_runtime", "power_loss_during_two_file_publication"],
+  "privacy_review": "No raw logs, coordinates, credentials, personal filesystem paths or images included. Test result is a manually reviewed summary; raw Windows skip path omitted."
+}

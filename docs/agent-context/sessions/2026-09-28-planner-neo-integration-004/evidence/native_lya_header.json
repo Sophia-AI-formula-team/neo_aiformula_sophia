@@ -1,0 +1,703 @@
+{
+  "cases": [
+    {
+      "checks": [
+        {
+          "details": {
+            "discovered_nodes": [
+              [
+                "neo_upstream_smoke_09e47d5d8d",
+                "/"
+              ]
+            ]
+          },
+          "name": "private_domain_has_only_probe_before_spawn",
+          "passed": true
+        },
+        {
+          "details": {
+            "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+          },
+          "name": "actual_installed_lya_0221_started",
+          "passed": true
+        },
+        {
+          "details": {
+            "command_topic": "/lane_learning/lya_cmd"
+          },
+          "name": "actual_motor_output_remapped_private",
+          "passed": true
+        },
+        {
+          "details": {
+            "configuration_source": "current_lya_source_default",
+            "effective_reference_mps": 2.0,
+            "meaning": "reference, not guaranteed constant LYA output",
+            "source_reference_mps": 2.0
+          },
+          "name": "teacher_receives_effective_reference_at_startup",
+          "passed": true
+        },
+        {
+          "details": {
+            "child_pid": 5587
+          },
+          "name": "real_supervisor_running_heartbeat",
+          "passed": true
+        },
+        {
+          "details": {
+            "effective_reference_mps": 2.0,
+            "expected_speed_mps": 2.0,
+            "observed": [
+              {
+                "received_s": 234.720801263,
+                "speed_mps": 2.0,
+                "yaw_rate_rps": 0.0
+              },
+              {
+                "received_s": 234.723828651,
+                "speed_mps": 2.0,
+                "yaw_rate_rps": 0.0
+              },
+              {
+                "received_s": 234.800125683,
+                "speed_mps": 2.0,
+                "yaw_rate_rps": 0.0
+              }
+            ],
+            "source_reference_mps": 2.0,
+            "target_x_m": 0.0
+          },
+          "name": "real_lya_zero_error_feedback_output",
+          "passed": true
+        },
+        {
+          "details": {
+            "effective_reference_mps": 2.0,
+            "expected_speed_mps": 2.15,
+            "observed": [
+              {
+                "received_s": 234.909511919,
+                "speed_mps": 2.15,
+                "yaw_rate_rps": 4.359999999999997e-07
+              },
+              {
+                "received_s": 235.009518378,
+                "speed_mps": 2.15,
+                "yaw_rate_rps": 4.359999999999997e-07
+              },
+              {
+                "received_s": 235.109729474,
+                "speed_mps": 2.15,
+                "yaw_rate_rps": 4.359999999999997e-07
+              }
+            ],
+            "source_reference_mps": 2.0,
+            "target_x_m": 1.0
+          },
+          "name": "real_lya_forward_error_feedback_output",
+          "passed": true
+        },
+        {
+          "details": {
+            "height": 48,
+            "source_sha256": "4205535038c0fd457df946936023a57568082a8a8174b2e864ce8c25aefe0e82",
+            "topic": "/aiformula_perception/road_detector/mask_image",
+            "width": 80
+          },
+          "name": "production_mask_retains_full_frame_and_pixels",
+          "passed": true
+        },
+        {
+          "details": {
+            "frame_id": "neo_test_left_camera_optical_frame"
+          },
+          "name": "production_mask_and_annotation_keep_original_header",
+          "passed": true
+        },
+        {
+          "details": {
+            "log_path": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/source_default/teacher/teacher_20260928T132009Z_ce99b563/teacher.log"
+          },
+          "name": "child_stop_requested_by_real_fixed_handoff_callback",
+          "passed": true
+        },
+        {
+          "details": {
+            "child_returncode": -2,
+            "expected_stop": true,
+            "stopped_heartbeats": 1
+          },
+          "name": "real_fixed_handoff_stops_owned_lya_process_group",
+          "passed": true
+        },
+        {
+          "details": {},
+          "name": "private_command_publisher_removed_after_handoff",
+          "passed": true
+        },
+        {
+          "details": {
+            "limitation": "sampled ROS graph in isolated domain; not a motor interlock",
+            "maximum_observed_publisher_count": {
+              "/aiformula_control/game_pad/cmd_vel": 0,
+              "/aiformula_control/motor_controller/reference_signal": 0
+            }
+          },
+          "name": "no_real_motor_topic_publisher_observed",
+          "passed": true
+        }
+      ],
+      "child": {
+        "command": [
+          "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221",
+          "--ros-args",
+          "-r",
+          "/aiformula_control/game_pad/cmd_vel:=/lane_learning/lya_cmd",
+          "-p",
+          "reference_speed_mps:=2.0"
+        ],
+        "executable": "lya_0221",
+        "exitcode": -2,
+        "pid": 5587,
+        "stopped_from_real_supervisor": true
+      },
+      "elapsed_s": 2.243860183999999,
+      "installed_lya_source": {
+        "path": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/python3.8/site-packages/trajectory_follower/lya_0221.py",
+        "sha256": "7057c027e20a23a5146c91739ab05279ed0944b94fd7584b7186efef09ab3ab3"
+      },
+      "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/source_default",
+      "name": "source_default",
+      "observations": {
+        "command_messages": 7,
+        "fabricated_stopped_messages": false,
+        "model_inference_tested": false,
+        "real_dds": true,
+        "real_installed_lya_process": true,
+        "real_supervisor_stop": true,
+        "road_detector_publication_tested": true,
+        "teacher_state_messages": 19,
+        "vehicle_tested": false
+      },
+      "passed": true,
+      "reference_configuration": {
+        "effective_reference_mps": 2.0,
+        "source": "current_lya_source_default",
+        "source_default_mps": 2.0
+      },
+      "ros_domain_id": 221,
+      "ros_localhost_only": true
+    },
+    {
+      "checks": [
+        {
+          "details": {
+            "discovered_nodes": [
+              [
+                "neo_upstream_smoke_58d18a1ae8",
+                "/"
+              ]
+            ]
+          },
+          "name": "private_domain_has_only_probe_before_spawn",
+          "passed": true
+        },
+        {
+          "details": {
+            "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+          },
+          "name": "actual_installed_lya_0221_started",
+          "passed": true
+        },
+        {
+          "details": {
+            "command_topic": "/lane_learning/lya_cmd"
+          },
+          "name": "actual_motor_output_remapped_private",
+          "passed": true
+        },
+        {
+          "details": {
+            "configuration_source": "global_ros_params_file",
+            "effective_reference_mps": 4.0,
+            "meaning": "reference, not guaranteed constant LYA output",
+            "source_reference_mps": 2.0
+          },
+          "name": "teacher_receives_effective_reference_at_startup",
+          "passed": true
+        },
+        {
+          "details": {
+            "child_pid": 5643
+          },
+          "name": "real_supervisor_running_heartbeat",
+          "passed": true
+        },
+        {
+          "details": {
+            "effective_reference_mps": 4.0,
+            "expected_speed_mps": 4.0,
+            "observed": [
+              {
+                "received_s": 236.820296121,
+                "speed_mps": 4.0,
+                "yaw_rate_rps": 0.0
+              },
+              {
+                "received_s": 236.823293348,
+                "speed_mps": 4.0,
+                "yaw_rate_rps": 0.0
+              },
+              {
+                "received_s": 236.908835455,
+                "speed_mps": 4.0,
+                "yaw_rate_rps": 0.0
+              }
+            ],
+            "source_reference_mps": 2.0,
+            "target_x_m": 0.0
+          },
+          "name": "real_lya_zero_error_feedback_output",
+          "passed": true
+        },
+        {
+          "details": {
+            "effective_reference_mps": 4.0,
+            "expected_speed_mps": 4.15,
+            "observed": [
+              {
+                "received_s": 237.009336118,
+                "speed_mps": 4.15,
+                "yaw_rate_rps": -1.6280000000000003e-06
+              },
+              {
+                "received_s": 237.120217135,
+                "speed_mps": 4.15,
+                "yaw_rate_rps": -1.6280000000000003e-06
+              },
+              {
+                "received_s": 237.220324521,
+                "speed_mps": 4.15,
+                "yaw_rate_rps": -1.6280000000000003e-06
+              }
+            ],
+            "source_reference_mps": 2.0,
+            "target_x_m": 1.0
+          },
+          "name": "real_lya_forward_error_feedback_output",
+          "passed": true
+        },
+        {
+          "details": {
+            "log_path": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/global_yaml_override/teacher/teacher_20260928T132012Z_6ceb7f57/teacher.log"
+          },
+          "name": "child_stop_requested_by_real_fixed_handoff_callback",
+          "passed": true
+        },
+        {
+          "details": {
+            "child_returncode": -2,
+            "expected_stop": true,
+            "stopped_heartbeats": 1
+          },
+          "name": "real_fixed_handoff_stops_owned_lya_process_group",
+          "passed": true
+        },
+        {
+          "details": {},
+          "name": "private_command_publisher_removed_after_handoff",
+          "passed": true
+        },
+        {
+          "details": {
+            "limitation": "sampled ROS graph in isolated domain; not a motor interlock",
+            "maximum_observed_publisher_count": {
+              "/aiformula_control/game_pad/cmd_vel": 0,
+              "/aiformula_control/motor_controller/reference_signal": 0
+            }
+          },
+          "name": "no_real_motor_topic_publisher_observed",
+          "passed": true
+        }
+      ],
+      "child": {
+        "command": [
+          "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221",
+          "--ros-args",
+          "-r",
+          "/aiformula_control/game_pad/cmd_vel:=/lane_learning/lya_cmd",
+          "-p",
+          "reference_speed_mps:=4.0"
+        ],
+        "executable": "lya_0221",
+        "exitcode": -2,
+        "pid": 5643,
+        "stopped_from_real_supervisor": true
+      },
+      "elapsed_s": 1.996712830000007,
+      "installed_lya_source": {
+        "path": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/python3.8/site-packages/trajectory_follower/lya_0221.py",
+        "sha256": "7057c027e20a23a5146c91739ab05279ed0944b94fd7584b7186efef09ab3ab3"
+      },
+      "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/global_yaml_override",
+      "name": "global_yaml_override",
+      "observations": {
+        "command_messages": 6,
+        "fabricated_stopped_messages": false,
+        "model_inference_tested": false,
+        "real_dds": true,
+        "real_installed_lya_process": true,
+        "real_supervisor_stop": true,
+        "road_detector_publication_tested": false,
+        "teacher_state_messages": 19,
+        "vehicle_tested": false
+      },
+      "passed": true,
+      "reference_configuration": {
+        "effective_reference_mps": 4.0,
+        "params_file": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/global_yaml_override/reference_override.yaml",
+        "params_file_sha256": "de97cf2e81cfce3f5b8d1132c252fa17fc79c118e4322cc29b3ea1cdb8970980",
+        "source": "global_ros_params_file",
+        "source_default_mps": 2.0
+      },
+      "ros_domain_id": 222,
+      "ros_localhost_only": true
+    }
+  ],
+  "checks": [
+    {
+      "case": "source_default",
+      "details": {
+        "discovered_nodes": [
+          [
+            "neo_upstream_smoke_09e47d5d8d",
+            "/"
+          ]
+        ]
+      },
+      "name": "private_domain_has_only_probe_before_spawn",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+      },
+      "name": "actual_installed_lya_0221_started",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "command_topic": "/lane_learning/lya_cmd"
+      },
+      "name": "actual_motor_output_remapped_private",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "configuration_source": "current_lya_source_default",
+        "effective_reference_mps": 2.0,
+        "meaning": "reference, not guaranteed constant LYA output",
+        "source_reference_mps": 2.0
+      },
+      "name": "teacher_receives_effective_reference_at_startup",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "child_pid": 5587
+      },
+      "name": "real_supervisor_running_heartbeat",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "effective_reference_mps": 2.0,
+        "expected_speed_mps": 2.0,
+        "observed": [
+          {
+            "received_s": 234.720801263,
+            "speed_mps": 2.0,
+            "yaw_rate_rps": 0.0
+          },
+          {
+            "received_s": 234.723828651,
+            "speed_mps": 2.0,
+            "yaw_rate_rps": 0.0
+          },
+          {
+            "received_s": 234.800125683,
+            "speed_mps": 2.0,
+            "yaw_rate_rps": 0.0
+          }
+        ],
+        "source_reference_mps": 2.0,
+        "target_x_m": 0.0
+      },
+      "name": "real_lya_zero_error_feedback_output",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "effective_reference_mps": 2.0,
+        "expected_speed_mps": 2.15,
+        "observed": [
+          {
+            "received_s": 234.909511919,
+            "speed_mps": 2.15,
+            "yaw_rate_rps": 4.359999999999997e-07
+          },
+          {
+            "received_s": 235.009518378,
+            "speed_mps": 2.15,
+            "yaw_rate_rps": 4.359999999999997e-07
+          },
+          {
+            "received_s": 235.109729474,
+            "speed_mps": 2.15,
+            "yaw_rate_rps": 4.359999999999997e-07
+          }
+        ],
+        "source_reference_mps": 2.0,
+        "target_x_m": 1.0
+      },
+      "name": "real_lya_forward_error_feedback_output",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "height": 48,
+        "source_sha256": "4205535038c0fd457df946936023a57568082a8a8174b2e864ce8c25aefe0e82",
+        "topic": "/aiformula_perception/road_detector/mask_image",
+        "width": 80
+      },
+      "name": "production_mask_retains_full_frame_and_pixels",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "frame_id": "neo_test_left_camera_optical_frame"
+      },
+      "name": "production_mask_and_annotation_keep_original_header",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "log_path": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/source_default/teacher/teacher_20260928T132009Z_ce99b563/teacher.log"
+      },
+      "name": "child_stop_requested_by_real_fixed_handoff_callback",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "child_returncode": -2,
+        "expected_stop": true,
+        "stopped_heartbeats": 1
+      },
+      "name": "real_fixed_handoff_stops_owned_lya_process_group",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {},
+      "name": "private_command_publisher_removed_after_handoff",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "limitation": "sampled ROS graph in isolated domain; not a motor interlock",
+        "maximum_observed_publisher_count": {
+          "/aiformula_control/game_pad/cmd_vel": 0,
+          "/aiformula_control/motor_controller/reference_signal": 0
+        }
+      },
+      "name": "no_real_motor_topic_publisher_observed",
+      "passed": true
+    },
+    {
+      "details": {
+        "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/source_default",
+        "ros_domain_id": 221
+      },
+      "name": "isolated_case_completed_source_default",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "discovered_nodes": [
+          [
+            "neo_upstream_smoke_58d18a1ae8",
+            "/"
+          ]
+        ]
+      },
+      "name": "private_domain_has_only_probe_before_spawn",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+      },
+      "name": "actual_installed_lya_0221_started",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "command_topic": "/lane_learning/lya_cmd"
+      },
+      "name": "actual_motor_output_remapped_private",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "configuration_source": "global_ros_params_file",
+        "effective_reference_mps": 4.0,
+        "meaning": "reference, not guaranteed constant LYA output",
+        "source_reference_mps": 2.0
+      },
+      "name": "teacher_receives_effective_reference_at_startup",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "child_pid": 5643
+      },
+      "name": "real_supervisor_running_heartbeat",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "effective_reference_mps": 4.0,
+        "expected_speed_mps": 4.0,
+        "observed": [
+          {
+            "received_s": 236.820296121,
+            "speed_mps": 4.0,
+            "yaw_rate_rps": 0.0
+          },
+          {
+            "received_s": 236.823293348,
+            "speed_mps": 4.0,
+            "yaw_rate_rps": 0.0
+          },
+          {
+            "received_s": 236.908835455,
+            "speed_mps": 4.0,
+            "yaw_rate_rps": 0.0
+          }
+        ],
+        "source_reference_mps": 2.0,
+        "target_x_m": 0.0
+      },
+      "name": "real_lya_zero_error_feedback_output",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "effective_reference_mps": 4.0,
+        "expected_speed_mps": 4.15,
+        "observed": [
+          {
+            "received_s": 237.009336118,
+            "speed_mps": 4.15,
+            "yaw_rate_rps": -1.6280000000000003e-06
+          },
+          {
+            "received_s": 237.120217135,
+            "speed_mps": 4.15,
+            "yaw_rate_rps": -1.6280000000000003e-06
+          },
+          {
+            "received_s": 237.220324521,
+            "speed_mps": 4.15,
+            "yaw_rate_rps": -1.6280000000000003e-06
+          }
+        ],
+        "source_reference_mps": 2.0,
+        "target_x_m": 1.0
+      },
+      "name": "real_lya_forward_error_feedback_output",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "log_path": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/global_yaml_override/teacher/teacher_20260928T132012Z_6ceb7f57/teacher.log"
+      },
+      "name": "child_stop_requested_by_real_fixed_handoff_callback",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "child_returncode": -2,
+        "expected_stop": true,
+        "stopped_heartbeats": 1
+      },
+      "name": "real_fixed_handoff_stops_owned_lya_process_group",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {},
+      "name": "private_command_publisher_removed_after_handoff",
+      "passed": true
+    },
+    {
+      "case": "global_yaml_override",
+      "details": {
+        "limitation": "sampled ROS graph in isolated domain; not a motor interlock",
+        "maximum_observed_publisher_count": {
+          "/aiformula_control/game_pad/cmd_vel": 0,
+          "/aiformula_control/motor_controller/reference_signal": 0
+        }
+      },
+      "name": "no_real_motor_topic_publisher_observed",
+      "passed": true
+    },
+    {
+      "details": {
+        "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty/global_yaml_override",
+        "ros_domain_id": 222
+      },
+      "name": "isolated_case_completed_global_yaml_override",
+      "passed": true
+    }
+  ],
+  "elapsed_s": 4.241833849999978,
+  "finished_utc": "2026-09-28T13:20:13.066439+00:00",
+  "limits": [
+    "Synthetic upstream inputs, no perception inference or sensor drivers",
+    "The 4.0 YAML case tests private supervisor propagation only; not GNSS motion-gate or driving approval",
+    "No camera-to-map lap, mapping quality or closed-loop vehicle tracking",
+    "No physical stop, real remote-control arbitration or motor-zero validation",
+    "ROS graph absence is sampled diagnostic evidence, not hardware isolation proof"
+  ],
+  "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-f24wz5ty",
+  "passed": true,
+  "ros_distro": "foxy",
+  "ros_domain_id": 221,
+  "ros_localhost_only": true,
+  "schema_version": 2,
+  "scope": "real neo upstream LYA feedback and owned-process handoff; optional mask publication",
+  "started_utc": "2026-09-28T13:20:08.824566+00:00"
+}

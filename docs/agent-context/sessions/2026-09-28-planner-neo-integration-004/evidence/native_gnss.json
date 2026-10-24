@@ -1,0 +1,1181 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "actual_ros_messages": true,
+  "generated_utc": "2026-09-28T13:19:54.635562+00:00",
+  "cases": [
+    {
+      "case": "default_guard",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "valid_0x230_gps_anchor_accepted",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "default_hardware_proof_cannot_arm",
+          "passed": true,
+          "details": {
+            "response": "physical emergency stop has not been verified"
+          }
+        },
+        {
+          "name": "unverified_hardware_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 155,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "HOLD",
+        "phase": "TEACH_READY",
+        "reason": "physical emergency stop has not been verified",
+        "generation": 2,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": "1790601596641628548",
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/default_guard_logs/follower-20260928T131955-e8c4e496",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/default_guard.log"
+    },
+    {
+      "case": "normal",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "valid_0x230_gps_anchor_accepted",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "manual_estop_zero_output",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "asserted_manual_estop_cannot_reset",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "manual_release_stays_latched",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "released_estop_resets_disarmed",
+          "passed": true,
+          "details": {
+            "response": "reset complete; explicit arm required"
+          }
+        },
+        {
+          "name": "estop_reset_never_rearms",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_arm_after_estop_reset",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "explicit_stop_before_end_window",
+          "passed": true,
+          "details": {
+            "response": "HOLD"
+          }
+        },
+        {
+          "name": "finish_freezes_before_end_gnss_window",
+          "passed": true,
+          "details": {
+            "response": "teaching stopped; freeze/build model independently of optional end GNSS"
+          }
+        },
+        {
+          "name": "two_endpoint_windows_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "stationary_scene_cannot_be_claimed_as_a_driven_route",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "incomplete_lap_never_starts_repeat",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 119,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "HOLD",
+        "phase": "END_ANCHOR_PENDING",
+        "reason": "map worker: First lap is shorter than min_lap_length_m",
+        "generation": 5,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": "1790601600167162759",
+        "end_anchor_id": "1790601604168843569",
+        "endpoint_proximity_validated": true,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/normal_logs/follower-20260928T131958-ac135438",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/normal.log"
+    },
+    {
+      "case": "no_gnss_build",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "teaching_can_skip_gnss_capture_entirely",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "missing_or_failed_gnss_does_not_block_native_mask_mapping",
+          "passed": true,
+          "details": {}
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 171,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "TEACH",
+        "phase": "TEACH",
+        "reason": "teacher command selected",
+        "generation": 1,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": null,
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/no_gnss_build_logs/follower-20260928T132005-f0a8ce1d",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/no_gnss_build.log"
+    },
+    {
+      "case": "startup_gap",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "valid_0x230_gps_anchor_accepted",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "origin_reset_waits_for_first_native_motion",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "missing_first_motion_latches_session_invalid",
+          "passed": true,
+          "details": {
+            "reason": "motion continuity lost; restart and teach new lap: no post-begin motion arrived before startup deadline"
+          }
+        },
+        {
+          "name": "post_begin_startup_gap_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "restored_raw_stream_cannot_revive_invalid_session",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "startup_gap_requires_restart_and_new_lap",
+          "passed": true,
+          "details": {
+            "response": "motion continuity lost; restart/new lap required"
+          }
+        },
+        {
+          "name": "startup_gap_cannot_reset_same_session",
+          "passed": true,
+          "details": {
+            "response": "teach session already initialized or invalid"
+          }
+        },
+        {
+          "name": "startup_gap_recovery_stays_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 115,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "HOLD",
+        "phase": "TEACH_READY",
+        "reason": "motion continuity lost; restart and teach new lap: no post-begin motion arrived before startup deadline",
+        "generation": 2,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": "1790601610767593048",
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/startup_gap_logs/follower-20260928T132009-18d90772",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/startup_gap.log"
+    },
+    {
+      "case": "future_gps",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_fix_never_establishes_start_anchor",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_optional_fix_does_not_arm",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_gnss_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "missing_or_failed_gnss_does_not_block_native_mask_mapping",
+          "passed": true,
+          "details": {}
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 179,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "TEACH",
+        "phase": "TEACH",
+        "reason": "teacher command selected",
+        "generation": 1,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": null,
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_gps_logs/follower-20260928T132013-28cbe2c6",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_gps.log"
+    },
+    {
+      "case": "missing_bits",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_fix_never_establishes_start_anchor",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_optional_fix_does_not_arm",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_gnss_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "missing_or_failed_gnss_does_not_block_native_mask_mapping",
+          "passed": true,
+          "details": {}
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 175,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "TEACH",
+        "phase": "TEACH",
+        "reason": "teacher command selected",
+        "generation": 1,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": null,
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/missing_bits_logs/follower-20260928T132017-1b0f2526",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/missing_bits.log"
+    },
+    {
+      "case": "uncertainty",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_fix_never_establishes_start_anchor",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_optional_fix_does_not_arm",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "invalid_gnss_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "missing_or_failed_gnss_does_not_block_native_mask_mapping",
+          "passed": true,
+          "details": {}
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 129,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "TEACH",
+        "phase": "TEACH",
+        "reason": "teacher command selected",
+        "generation": 1,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": null,
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/uncertainty_logs/follower-20260928T132022-8a9ab338",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/uncertainty.log"
+    },
+    {
+      "case": "future_wheel",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "valid_0x230_gps_anchor_accepted",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "future_wheel_not_fused",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "motion_recovery_does_not_autoarm",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "raw_fault_requires_new_mapping_session",
+          "passed": true,
+          "details": {
+            "response": "motion continuity lost; restart/new lap required"
+          }
+        },
+        {
+          "name": "invalid_motion_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 145,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "HOLD",
+        "phase": "TEACH",
+        "reason": "motion continuity lost; restart and teach new lap: wheel/gyro rejected: wheel_source_stale_or_future",
+        "generation": 2,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": "1790601627973555421",
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_wheel_logs/follower-20260928T132026-6b4e682a",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_wheel.log"
+    },
+    {
+      "case": "future_gyro",
+      "passed": true,
+      "checks": [
+        {
+          "name": "default_disarmed",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "no_gnss_subscription_before_capture",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "private_command_bus_only",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "disarmed_outputs_only_zero",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        },
+        {
+          "name": "explicit_capture_start_after_stopped_settle",
+          "passed": true,
+          "details": {
+            "response": "waiting for one fresh quality GNSS fix while stopped"
+          }
+        },
+        {
+          "name": "exactly_one_gnss_subscriber_during_window",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "valid_0x230_gps_anchor_accepted",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "gnss_fix_never_resets_odometry_or_invalidates_geometry",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "explicit_local_origin_boundary_independent_of_gnss",
+          "passed": true,
+          "details": {
+            "response": "local origin reset requested; fresh stopped interval then explicit teacher arm required"
+          }
+        },
+        {
+          "name": "explicit_synthetic_private_arm",
+          "passed": true,
+          "details": {
+            "response": "teacher command selected"
+          }
+        },
+        {
+          "name": "bounded_teach_command",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "runtime_gnss_spam_and_imu_orientation_have_bitwise_no_pose_influence",
+          "passed": true,
+          "details": {
+            "orientation_contains_nan": true,
+            "gnss_coordinates_jump": true
+          }
+        },
+        {
+          "name": "orientation_not_used_as_heading",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "full_masks_build_runtime_consensus",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "future_gyro_not_fused",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "motion_recovery_does_not_autoarm",
+          "passed": true,
+          "details": {}
+        },
+        {
+          "name": "raw_fault_requires_new_mapping_session",
+          "passed": true,
+          "details": {
+            "response": "motion continuity lost; restart/new lap required"
+          }
+        },
+        {
+          "name": "invalid_motion_never_actuates",
+          "passed": true,
+          "details": {
+            "count": 4
+          }
+        }
+      ],
+      "synthetic": true,
+      "actual_ros_messages": true,
+      "domain_id": 115,
+      "command_output_topic": "/lane_learning_gnss/cmd_vel",
+      "physical_stop_tested": false,
+      "production_speed_default_tested": false,
+      "fixture_teacher_speed_mps": 0.2,
+      "final_state": {
+        "state": "HOLD",
+        "phase": "TEACH",
+        "reason": "motion continuity lost; restart and teach new lap: raw gyro rejected: raw gyro source stale/future",
+        "generation": 2,
+        "teacher_enabled": true,
+        "gnss_window": null,
+        "start_anchor_id": "1790601632552141378",
+        "end_anchor_id": null,
+        "endpoint_proximity_validated": false,
+        "bundle_id": null,
+        "visual_streak": 0,
+        "visual_source_ns": null,
+        "runtime_gnss_enabled": false,
+        "command_output_topic": "/lane_learning_gnss/cmd_vel"
+      },
+      "logs": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_gyro_logs/follower-20260928T132030-00c2ab63",
+      "exit_code": 0,
+      "process_log": "/tmp/lane_endpoint_gnss_ws/evidence/gnss-native-smoke-o2s6xbd8/future_gyro.log"
+    }
+  ],
+  "limitation": "Stationary DDS safety/windows only; no full-lap repeat or physical hardware proof"
+}

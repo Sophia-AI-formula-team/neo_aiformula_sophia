@@ -1,0 +1,136 @@
+{
+  "cases": [
+    {
+      "checks": [
+        {
+          "details": {
+            "discovered_nodes": [
+              [
+                "neo_upstream_smoke_d70f8f415d",
+                "/"
+              ]
+            ]
+          },
+          "name": "private_domain_has_only_probe_before_spawn",
+          "passed": true
+        },
+        {
+          "details": {
+            "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+          },
+          "name": "actual_installed_lya_0221_started",
+          "passed": true
+        },
+        {
+          "details": {
+            "command_topic": "/lane_learning/lya_cmd"
+          },
+          "name": "actual_motor_output_remapped_private",
+          "passed": true
+        },
+        {
+          "details": {
+            "configuration_source": "current_lya_source_default",
+            "effective_reference_mps": 2.0,
+            "meaning": "reference, not guaranteed constant LYA output",
+            "source_reference_mps": 2.0
+          },
+          "name": "teacher_receives_effective_reference_at_startup",
+          "passed": true
+        }
+      ],
+      "child": {
+        "command": [
+          "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221",
+          "--ros-args",
+          "-r",
+          "/aiformula_control/game_pad/cmd_vel:=/lane_learning/lya_cmd",
+          "-p",
+          "reference_speed_mps:=2.0"
+        ],
+        "executable": "lya_0221",
+        "exitcode": null,
+        "pid": 5530,
+        "stopped_from_real_supervisor": false
+      },
+      "elapsed_s": 1.4862840579999954,
+      "error": "LYA exited unexpectedly: 255",
+      "installed_lya_source": {
+        "path": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/python3.8/site-packages/trajectory_follower/lya_0221.py",
+        "sha256": "7057c027e20a23a5146c91739ab05279ed0944b94fd7584b7186efef09ab3ab3"
+      },
+      "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-uv0sskcy/source_default",
+      "name": "source_default",
+      "passed": false,
+      "reference_configuration": {
+        "effective_reference_mps": 2.0,
+        "source": "current_lya_source_default",
+        "source_default_mps": 2.0
+      },
+      "ros_domain_id": 220,
+      "ros_localhost_only": true,
+      "traceback": "Traceback (most recent call last):\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 349, in main\n    run_suite(case, case_directory, road_source if reference_override is None else None,\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 191, in run_suite\n    wait_for(lambda: any(item.get(\"state\") == \"RUNNING\" for item in status)\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 152, in wait_for\n    raise SmokeFailure(\"LYA exited unexpectedly: \" + str(supervisor._process.returncode))\nSmokeFailure: LYA exited unexpectedly: 255\n"
+    }
+  ],
+  "checks": [
+    {
+      "case": "source_default",
+      "details": {
+        "discovered_nodes": [
+          [
+            "neo_upstream_smoke_d70f8f415d",
+            "/"
+          ]
+        ]
+      },
+      "name": "private_domain_has_only_probe_before_spawn",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "executable": "/tmp/lane_teach_repeat_ws/install/trajectory_follower/lib/trajectory_follower/lya_0221"
+      },
+      "name": "actual_installed_lya_0221_started",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "command_topic": "/lane_learning/lya_cmd"
+      },
+      "name": "actual_motor_output_remapped_private",
+      "passed": true
+    },
+    {
+      "case": "source_default",
+      "details": {
+        "configuration_source": "current_lya_source_default",
+        "effective_reference_mps": 2.0,
+        "meaning": "reference, not guaranteed constant LYA output",
+        "source_reference_mps": 2.0
+      },
+      "name": "teacher_receives_effective_reference_at_startup",
+      "passed": true
+    }
+  ],
+  "elapsed_s": 1.4868502740000054,
+  "error": "LYA exited unexpectedly: 255",
+  "finished_utc": "2026-09-28T13:12:59.288573+00:00",
+  "limits": [
+    "Synthetic upstream inputs, no perception inference or sensor drivers",
+    "The 4.0 YAML case tests private supervisor propagation only; not GNSS motion-gate or driving approval",
+    "No camera-to-map lap, mapping quality or closed-loop vehicle tracking",
+    "No physical stop, real remote-control arbitration or motor-zero validation",
+    "ROS graph absence is sampled diagnostic evidence, not hardware isolation proof"
+  ],
+  "log_directory": "/tmp/lane_teach_repeat_ws/evidence/neo-upstream-smoke-uv0sskcy",
+  "passed": false,
+  "ros_distro": "foxy",
+  "ros_domain_id": 220,
+  "ros_localhost_only": true,
+  "schema_version": 2,
+  "scope": "real neo upstream LYA feedback and owned-process handoff; optional mask publication",
+  "started_utc": "2026-09-28T13:12:57.801685+00:00",
+  "traceback": "Traceback (most recent call last):\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 349, in main\n    run_suite(case, case_directory, road_source if reference_override is None else None,\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 191, in run_suite\n    wait_for(lambda: any(item.get(\"state\") == \"RUNNING\" for item in status)\n  File \"/__w/neo_aiformula_sophia/neo_aiformula_sophia/workspace/src/aiformula/control/lane_mapping_lya_reference/test/neo_upstream_smoke.py\", line 152, in wait_for\n    raise SmokeFailure(\"LYA exited unexpectedly: \" + str(supervisor._process.returncode))\nSmokeFailure: LYA exited unexpectedly: 255\n"
+}
