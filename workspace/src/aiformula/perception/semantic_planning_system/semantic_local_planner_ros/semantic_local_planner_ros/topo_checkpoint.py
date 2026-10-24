@@ -38,7 +38,9 @@ def validate_state(state, max_samples):
         pose(row[:3])
     for key in ('recorded_distance', 'progress'):
         number(state.get(key))
-        if state[key] < 0:
+        # Closed-route progress is signed/unwrapped at the start seam. Travel
+        # distance (and progress before a reference exists) stays nonnegative.
+        if state[key] < 0 and (key == 'recorded_distance' or state.get('closed_at') is None):
             raise ValueError('negative_' + key)
     for key in ('left_start_area', 'excluded_since_sample'):
         if type(state.get(key)) is not bool:

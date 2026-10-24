@@ -1,0 +1,357 @@
+{
+  "schema": "aiformula_final_media_receipts/v1",
+  "created_utc": "2026-10-14T16:06:46.806734+00:00",
+  "status": "five videos complete; full decode/source integrity/process cleanup passed; sampled visual QA passed",
+  "catalog": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\catalog.json",
+  "catalog_sha256": "0c2595446441aa314f2d4ef2d4e02d61a8b6a0a05c0dd444f9e9aff8cf95088d",
+  "videos": [
+    {
+      "case": "inner_traffic_03",
+      "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\render_01\\inner_neo_stop_wait.mp4",
+      "video_sha256": "543f864ec392f9388b1b5f686d50bba08f4eb91fe288bb79cbbd9e3d20264617",
+      "bytes": 2881210,
+      "duration_seconds": 13.666666666666666,
+      "frames": 205,
+      "source_version": {
+        "MapAssist": "0.3.1",
+        "Neo": "3c6fbac2ff9f"
+      },
+      "recorded_accepted": true,
+      "recorded_reason": "Red zero held 3 s; green native LYA resumed 5 m",
+      "lane_recovery_mode": "component-only",
+      "full_decode": {
+        "frame_count": 205,
+        "codec": "h264",
+        "format": "yuv420p",
+        "width": 1280,
+        "height": 960,
+        "time_base": "1/15360",
+        "frame_rate": "15",
+        "every_frame_index_and_pts_checked": true,
+        "pts_rule": "exact n/15 seconds",
+        "decode_resize_fps_pixfmt_forced": false
+      },
+      "source_hashes_before_after_equal": true,
+      "cleanup": {
+        "verified": true,
+        "job_active_after_stop": 0,
+        "elapsed_seconds": 0.0004474000015761703,
+        "independent_known_process_checks_pass": true,
+        "known_process_count": 4
+      },
+      "primary_elapsed_seconds": 8.054991899989545,
+      "plan": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\plan.json",
+      "plan_sha256": "b3876a11116cf6989d7e9fda4eaa43b20624d9832b508527618911ecd1bdbd17",
+      "machine_verification": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\render_01\\verification.json",
+      "machine_verification_sha256": "7a808ff7ea3967de2045e6f2104e2bd81c6c9b66a1f79443b33ae537f6ab99cd",
+      "process_receipt": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\execution_01\\receipt.json",
+      "process_receipt_sha256": "4114187036f75571722489cc3a56121611731f16a2969a207439dbe5a24da7f6",
+      "visual_qa": {
+        "status": "passed_sampled_event_review",
+        "reviewer": "neo_media; root independently inspected key frames",
+        "scope": "All event contact sheets plus listed full-resolution frames; not a claim that every frame was visually inspected",
+        "full_resolution_images": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\render_01\\qa\\decoded_0012.png",
+            "sha256": "2bad939f645a8acf38bf0d2e714bee21cb4d9b586366635bfd11d276180112aa"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\render_01\\qa\\decoded_0018.png",
+            "sha256": "27bc6cbd0b75d9243ec7e85d29fc1529996bde2265a191636576495169cd211e"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_traffic_03_plan_01\\render_01\\qa\\decoded_0022.png",
+            "sha256": "c468b6e40a0e65b1bd7e0c9859b6c5bafd45ba76e9a78fefda90113eb1a08408"
+          }
+        ],
+        "event_contact_sheets": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\inner_traffic_03_events_01.jpg",
+            "sha256": "35ee6843959243735439ae24d0994c693aa8778503f43a43fdd3e2dbaed2ed33"
+          }
+        ],
+        "observer_fraction": 0.75,
+        "findings": [
+          "At the red-stop-completion event the lamp changes to green before perception releases; full-resolution decoded_0012 is the earlier visible-red held-stop sample."
+        ]
+      }
+    },
+    {
+      "case": "outer_traffic_03",
+      "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\render_01\\outer_neo_stop_wait.mp4",
+      "video_sha256": "5b78419471e1da7fe26f3f42853d843ce5c580715055744af631e6b207629bcb",
+      "bytes": 2443578,
+      "duration_seconds": 12.8,
+      "frames": 192,
+      "source_version": {
+        "MapAssist": "0.3.1",
+        "Neo": "3c6fbac2ff9f"
+      },
+      "recorded_accepted": true,
+      "recorded_reason": "Red zero held 3 s; green native LYA resumed 5 m",
+      "lane_recovery_mode": "baseline",
+      "full_decode": {
+        "frame_count": 192,
+        "codec": "h264",
+        "format": "yuv420p",
+        "width": 1280,
+        "height": 960,
+        "time_base": "1/15360",
+        "frame_rate": "15",
+        "every_frame_index_and_pts_checked": true,
+        "pts_rule": "exact n/15 seconds",
+        "decode_resize_fps_pixfmt_forced": false
+      },
+      "source_hashes_before_after_equal": true,
+      "cleanup": {
+        "verified": true,
+        "job_active_after_stop": 0,
+        "elapsed_seconds": 0.00033799998345784843,
+        "independent_known_process_checks_pass": true,
+        "known_process_count": 4
+      },
+      "primary_elapsed_seconds": 6.7406462999933865,
+      "plan": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\plan.json",
+      "plan_sha256": "09537eba0be6122837d82dad7383aad5d8cdb3815d7e71e1b0e292d9a8ae5726",
+      "machine_verification": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\render_01\\verification.json",
+      "machine_verification_sha256": "063268b8d5bb147f50f9bd8ea748738075b3aa734dc5976ad9e137f506bfe4e1",
+      "process_receipt": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\execution_01\\receipt.json",
+      "process_receipt_sha256": "5ea1786cb6662e2052055b1eac6cad279fe56d001d02f54739263ea45c13ea6c",
+      "visual_qa": {
+        "status": "passed_sampled_event_review",
+        "reviewer": "neo_media; root independently inspected key frames",
+        "scope": "All event contact sheets plus listed full-resolution frames; not a claim that every frame was visually inspected",
+        "full_resolution_images": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\render_01\\qa\\decoded_0014.png",
+            "sha256": "0ed93a46aae7941725112c773c85b38f4e8a95bf26cfa1e6e694c60fbeef2d2a"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_traffic_03_plan_01\\render_01\\qa\\decoded_0018.png",
+            "sha256": "e8bf5da81713e4221a859e0e5591c2c7b32dc8b64bd4a6ef6b60585e4ad59b56"
+          }
+        ],
+        "event_contact_sheets": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\outer_traffic_03_events_01.jpg",
+            "sha256": "ca8674e0906e9d780a09c8f70df28e508cceb1d2d66fb16dab18a3180826c366"
+          }
+        ],
+        "observer_fraction": 0.75,
+        "findings": []
+      }
+    },
+    {
+      "case": "inner_recovery_03",
+      "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\render_01\\inner_neo_stop_wait.mp4",
+      "video_sha256": "ed067f6e9783eb0f79a3f99846efa48e03388fe82ce63e08e2afdb84db8bd5e0",
+      "bytes": 23155019,
+      "duration_seconds": 49.666666666666664,
+      "frames": 745,
+      "source_version": {
+        "MapAssist": "0.3.1",
+        "Neo": "3c6fbac2ff9f"
+      },
+      "recorded_accepted": true,
+      "recorded_reason": "Partial map restored, topo closed, reference restored and LYA resumed 3 m",
+      "lane_recovery_mode": "component-only",
+      "full_decode": {
+        "frame_count": 745,
+        "codec": "h264",
+        "format": "yuv420p",
+        "width": 1280,
+        "height": 960,
+        "time_base": "1/15360",
+        "frame_rate": "15",
+        "every_frame_index_and_pts_checked": true,
+        "pts_rule": "exact n/15 seconds",
+        "decode_resize_fps_pixfmt_forced": false
+      },
+      "source_hashes_before_after_equal": true,
+      "cleanup": {
+        "verified": true,
+        "job_active_after_stop": 0,
+        "elapsed_seconds": 0.00045190000673756003,
+        "independent_known_process_checks_pass": true,
+        "known_process_count": 4
+      },
+      "primary_elapsed_seconds": 29.04887639998924,
+      "plan": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\plan.json",
+      "plan_sha256": "e2b20b10149abc037153aabbce109385abf6247e2f45e0df65c7e29fa072f859",
+      "machine_verification": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\render_01\\verification.json",
+      "machine_verification_sha256": "2136fb823999b3769c932dc3c90a16c0a7f23f9c8d533b8573eada7b6270d627",
+      "process_receipt": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\execution_01\\receipt.json",
+      "process_receipt_sha256": "09df87a2d5cc3ba22346fc4f943f10c3f7883bd97ac757afd510b2bb31baa000",
+      "visual_qa": {
+        "status": "passed_sampled_event_review",
+        "reviewer": "neo_media; root independently inspected key frames",
+        "scope": "All event contact sheets plus listed full-resolution frames; not a claim that every frame was visually inspected",
+        "full_resolution_images": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\render_01\\qa\\decoded_0010.png",
+            "sha256": "2adfbd7d9d4a7dd5f384164ead137ffafabd329353efccf685bf1dd3ddfe1fbe"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\inner_recovery_03_plan_01\\render_01\\qa\\decoded_0036.png",
+            "sha256": "e0f116b9b2aa62df125981312fc0997f67ba6425e37d75aa1f7d7c45ce2effb6"
+          }
+        ],
+        "event_contact_sheets": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\inner_recovery_03_events_01.jpg",
+            "sha256": "e3c30ebc1a4389fc9b3ddafbdce17633c3ce1a76f5fa480d30b5e8f895d5fc71"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\inner_recovery_03_events_02.jpg",
+            "sha256": "0a7239360c946ffde31f3b1f420595f1c8e73920380f8f29ae352409295b569d"
+          }
+        ],
+        "observer_fraction": 0.75,
+        "findings": [
+          "At source wall 29.05s, original LLP unsupported/fallback is explicitly labeled; it is not presented as valid triplet detection. 4x label verified.",
+          "Generation and restoration are visible at 1x; semantic topology completion and OSM fusion unavailable/rmse_exceeds_limit are separate."
+        ]
+      }
+    },
+    {
+      "case": "outer_recovery_03",
+      "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_recovery_03_plan_01\\render_01\\outer_neo_stop_wait.mp4",
+      "video_sha256": "b87d476aeeff6e08025eaac693b040aed9b372061160fbfa00d8f6b4712e0fa2",
+      "bytes": 22821440,
+      "duration_seconds": 51.0,
+      "frames": 765,
+      "source_version": {
+        "MapAssist": "0.3.1",
+        "Neo": "3c6fbac2ff9f"
+      },
+      "recorded_accepted": true,
+      "recorded_reason": "Partial map restored, topo closed, reference restored and LYA resumed 3 m",
+      "lane_recovery_mode": "baseline",
+      "full_decode": {
+        "frame_count": 765,
+        "codec": "h264",
+        "format": "yuv420p",
+        "width": 1280,
+        "height": 960,
+        "time_base": "1/15360",
+        "frame_rate": "15",
+        "every_frame_index_and_pts_checked": true,
+        "pts_rule": "exact n/15 seconds",
+        "decode_resize_fps_pixfmt_forced": false
+      },
+      "source_hashes_before_after_equal": true,
+      "cleanup": {
+        "verified": true,
+        "job_active_after_stop": 0,
+        "elapsed_seconds": 0.00039209998794831336,
+        "independent_known_process_checks_pass": true,
+        "known_process_count": 4
+      },
+      "primary_elapsed_seconds": 30.2184164999926,
+      "plan": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_recovery_03_plan_01\\plan.json",
+      "plan_sha256": "ce056314f6ca3133b2276a45e0feb1ffdad65e816f1d26603f5996da946752f7",
+      "machine_verification": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_recovery_03_plan_01\\render_01\\verification.json",
+      "machine_verification_sha256": "427b9ed293e711f3ac3030988f987e1fc7c355bf8bccc3721512fd671d7b532f",
+      "process_receipt": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_recovery_03_plan_01\\execution_01\\receipt.json",
+      "process_receipt_sha256": "cdd18fb311de22f9b81e3f6d5ac938e91f401576f4509c13bd3cb73974fe8bd2",
+      "visual_qa": {
+        "status": "passed_sampled_event_review",
+        "reviewer": "neo_media; root independently inspected key frames",
+        "scope": "All event contact sheets plus listed full-resolution frames; not a claim that every frame was visually inspected",
+        "full_resolution_images": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_recovery_03_plan_01\\render_01\\qa\\decoded_0037.png",
+            "sha256": "db45bf91ac413c96b7403b674a42d8d5c285485529d775929a098cf07fea9ec2"
+          }
+        ],
+        "event_contact_sheets": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\outer_recovery_03_events_01.jpg",
+            "sha256": "fac53e501cd889c679083424d50ce13534d3fc4afa48e8bf966cb76a05b0bd59"
+          },
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\outer_recovery_03_events_02.jpg",
+            "sha256": "a45a0780d3c2463b364b65de6a3e694e0c1b1072246547ca148ef89023361d6a"
+          }
+        ],
+        "observer_fraction": 0.75,
+        "findings": [
+          "Generation and restoration are visible at 1x; semantic topology completion and OSM fusion unavailable/rmse_exceeds_limit are separate."
+        ]
+      }
+    },
+    {
+      "case": "outer_closure_02",
+      "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_closure_02_plan_02\\render_01\\outer_neo_stop_wait.mp4",
+      "video_sha256": "1d4e55c408ca5e597b1e68d45007b253eaafe2307aa117b3eec3285c6853db0e",
+      "bytes": 18572156,
+      "duration_seconds": 38.8,
+      "frames": 582,
+      "source_version": {
+        "MapSHA": "16e2034b124a",
+        "MotorSHA": "5051626c0497",
+        "HarnessSHA": "34999a4c5c1c"
+      },
+      "recorded_accepted": false,
+      "recorded_reason": "Production topo closure complete",
+      "lane_recovery_mode": null,
+      "full_decode": {
+        "frame_count": 582,
+        "codec": "h264",
+        "format": "yuv420p",
+        "width": 1280,
+        "height": 960,
+        "time_base": "1/15360",
+        "frame_rate": "15",
+        "every_frame_index_and_pts_checked": true,
+        "pts_rule": "exact n/15 seconds",
+        "decode_resize_fps_pixfmt_forced": false
+      },
+      "source_hashes_before_after_equal": true,
+      "cleanup": {
+        "verified": true,
+        "job_active_after_stop": 0,
+        "elapsed_seconds": 0.0004954999894835055,
+        "independent_known_process_checks_pass": true,
+        "known_process_count": 4
+      },
+      "primary_elapsed_seconds": 20.10657900001388,
+      "plan": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_closure_02_plan_02\\plan.json",
+      "plan_sha256": "10d5c1c22397e189d382c0e5ec199f56ca013c6f2d6786bd9dafb5f7da9484f5",
+      "machine_verification": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_closure_02_plan_02\\render_01\\verification.json",
+      "machine_verification_sha256": "2110b511cb8c6e27dac99df5808674eba0b800886537821f64b8c5b8287313b9",
+      "process_receipt": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_closure_02_plan_02\\execution_01\\receipt.json",
+      "process_receipt_sha256": "0670db53c9bfc6d1eefc344c077279da715d7914a5ade794e6cb85317203be77",
+      "visual_qa": {
+        "status": "passed_sampled_event_review",
+        "reviewer": "neo_media; root independently inspected key frames",
+        "scope": "All event contact sheets plus listed full-resolution frames; not a claim that every frame was visually inspected",
+        "full_resolution_images": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\outer_closure_02_plan_02\\render_01\\qa\\decoded_0021.png",
+            "sha256": "f1c1024aca2c6e85568e9822799662970d75d3791c7ec9dd6f80298e57b13fda"
+          }
+        ],
+        "event_contact_sheets": [
+          {
+            "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\media_plans\\final_media_qa_01\\outer_closure_02_events_01.jpg",
+            "sha256": "40f824a95e86f851b219e37981dd337be6b03b3de88d8aff12983ce23318259f"
+          }
+        ],
+        "observer_fraction": 0.75,
+        "findings": [
+          "Historical source MapSHA 16e2034b124a is retained. Footer displays accepted=false, topo closed=true, original complete reason, and checkpoint save_failed/negative_progress together."
+        ]
+      }
+    }
+  ],
+  "scope": "Renderer did not infer acceptance or rewrite raw evidence. RGB helper is labeled. No bbox-distance, SLAM source, new inference or Unity operation used during media work.",
+  "limitations": [
+    "Synthetic Unity odometry and semantic worker restarts are not physical vehicle or native ROS/DDS validation.",
+    "Restart recovery preserved Unity, detector, follower and clock; it was not an Editor or OS reboot.",
+    "Inner recovery used component-only LYA mode; outer recovery used baseline.",
+    "Traffic acceptance is held-stop/green-release evidence; moving-red braking distance was not validated.",
+    "The historical outer_closure_02 video intentionally retains its failed acceptance result."
+  ],
+  "media_CPU_window_complete": true
+}

@@ -1,0 +1,12 @@
+{
+  "reviewed_mode": "stop_wait",
+  "bbox_distance_enabled": false,
+  "automatic_detour_enabled": false,
+  "checks": [
+    {"role": "traffic_policy", "file": "configuration.json", "path": ["traffic_policy"], "equals": "stop_wait"},
+    {"role": "bbox_distance", "file": "configuration.json", "path": ["bbox_enabled"], "equals": false},
+    {"role": "distance_estimation", "file": "configuration.json", "path": ["distance_enabled"], "equals": false},
+    {"role": "automatic_detour", "file": "configuration.json", "path": ["automatic_detour_enabled"], "equals": false}
+  ],
+  "note": "Example only. Match actual configuration field paths; never insert values into recorded configuration to satisfy this check."
+}

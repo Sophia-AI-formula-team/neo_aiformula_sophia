@@ -1,0 +1,46 @@
+{
+  "schema": "neo_trials_staging_handoff/v1",
+  "recorded_utc": "2026-10-14T15:52:15.1311290Z",
+  "files": {
+    "AIFormulaNeoTopoTrial.cs": "c7dfc35da6bb058da575915c5a67d7d55b76ee9042b298eb7735b303067ae005",
+    "run_neo_trial.py": "1f6919cc67aabc4befe53fa2849c26116c90254bc95547cedbeaf429a05a81e7",
+    "PROBLEM_ANALYSIS.md": "a2e07339710d7bcc039af8187c5d7f77f4a563f5458759788cdcbfbd77dc0078",
+    "FAILURE_ANALYSIS_01.md": "2f951f6032f3f8294da867b78d6fb851c0b85f1f576743bfb4f84fddea3222ba",
+    "FAILURE_ANALYSIS_02.md": "e51422aac4220c2eb55aa95933362ddb41901810cde1a5768f2b54ce4e1a9669",
+    "prepare_component_replay_42_03.py": "05c1239f412c224bc38df5b01b2ac3a6d56c8b5554d0045f902afc2423ec6159",
+    "run_owned_component_replay_42_03.py": "2b9b0b6c7527ad74414b8908dcc188eb370db7cf0ef553076c0992be387ab5ce"
+  },
+  "frozen_harness": true,
+  "installed_by_this_agent": false,
+  "source_repo_modified": false,
+  "runtime_option": "component-only: RecoverProjectedComponents=true; UseCurrentCorridor=false; restore both original values at cleanup",
+  "headroom": "RequireFirstFrameHeadroom=true explicitly enabled and original restored",
+  "runner_fix": "Start MCP call and first manifest write moved within owned try/finally; start_attempted scopes failure cleanup",
+  "production_commit_pin": "No hardcoded commit: runner resolves explicit paths and hashes actual production sources before/after; root Git manifest supplies commit identity",
+  "replay": {
+    "result": "analysis/owned_component_replay_42_03/replay/result.json",
+    "receipt": "analysis/owned_component_replay_42_03/receipt.json",
+    "caller_absence": "analysis/owned_component_replay_42_03/caller_absence.json",
+    "frames": 42,
+    "recorded_and_baseline_counts": [
+      0,
+      4,
+      0
+    ],
+    "component_only_counts": [
+      8,
+      4,
+      4
+    ],
+    "recovered_current_component_pixels": 852,
+    "observed_span_m": 3.5,
+    "elapsed_sec": 2.046,
+    "source_unchanged": true,
+    "live_acceptance": false,
+    "prior_driver_attempts_preserved": [
+      "analysis/owned_component_replay_42_01",
+      "analysis/owned_component_replay_42_02"
+    ]
+  },
+  "next": "Root is running inner_recovery_03. Independently audit completed result/trace/checkpoints after run; do not infer full closure or restart acceptance from mask replay."
+}

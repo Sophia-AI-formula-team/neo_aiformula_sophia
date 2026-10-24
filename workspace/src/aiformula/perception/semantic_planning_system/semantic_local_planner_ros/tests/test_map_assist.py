@@ -2286,6 +2286,33 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(self.node.last_cmd_time, -math.inf)
         self.assertEqual(self.output_count(), 0)
 
+    def test_closed_negative_seam_match_saves_and_restores_without_geometry_change(self):
+        self.checkpoint_node()
+        self.learn_circle()
+        reference = self.node.reference
+        points, trusted = list(reference.points), list(reference.trusted)
+        x, y, _ = reference.point_at(-0.3)
+        before = reference.point_at(-0.32)
+        after = reference.point_at(-0.28)
+        yaw = math.atan2(after[1]-before[1], after[0]-before[0])
+        self.advance(0.2)
+        self.triplet()
+        self.odom(x, y, yaw)
+        self.assertTrue(self.node.matched)
+        self.assertLess(self.node.progress, 0.0)  # Real callback/matcher, no assigned negative progress.
+        progress = self.node.progress
+        self.node._save_checkpoint(force=True)
+        self.assertEqual(self.node.persistence_status['state'], 'saved')
+        self.assertEqual(json.loads(self.checkpoint_path.read_text())['state']['progress'], progress)
+        self.restart_checkpoint_node()
+        self.triplet()
+        self.odom(x, y, yaw)
+        self.assertEqual(self.node.persistence_status['state'], 'restored')
+        self.assertAlmostEqual(self.node.progress, progress, places=9)
+        self.assertEqual(self.node.reference.points, points)
+        self.assertEqual(self.node.reference.trusted, trusted)
+        self.assertEqual(self.node._closure_diagnostics(self.now)['state'], 'complete')
+
     def test_restore_rejects_position_heading_frame_or_time_discontinuity(self):
         for issue in ('position', 'heading', 'frame', 'child_frame', 'time'):
             with self.subTest(issue=issue):

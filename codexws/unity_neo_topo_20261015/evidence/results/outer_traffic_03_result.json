@@ -1,0 +1,506 @@
+{
+  "stage": "green_resume",
+  "case_kind": "traffic",
+  "lane_recovery_mode": "baseline",
+  "traffic_policy": "stop_wait",
+  "distance_enabled": false,
+  "bbox_enabled": false,
+  "automatic_detour_enabled": false,
+  "firstLapClosed": false,
+  "partialRestored": false,
+  "referenceRestored": false,
+  "greenResumed": true,
+  "learnedStatus": null,
+  "restartReceipts": [],
+  "firstRedConfirmation": {
+    "confirmed_color": "red",
+    "wall": 4.343796499999826,
+    "absolute_sim_time": 4.221187899553115,
+    "detection_sequence": 4,
+    "lane_epoch": 1,
+    "frame_sim_time": 3.967169699553324,
+    "frame_wall_age": 0.2863441000004059,
+    "semantic_result_age": 0.043636899999910383,
+    "semantic_response": {
+      "type": "tick",
+      "sequence": 80,
+      "sim_time": 4.209999905899167,
+      "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+      "valid": true,
+      "v": 0.0,
+      "w": 0.0,
+      "status": {
+        "phase": "learning",
+        "reason": "red_wait_green",
+        "lap": 1,
+        "recorded_samples": 3,
+        "recorded_distance_m": 0.521895161793591,
+        "closure": {
+          "state": "blocked",
+          "blocker": "left_start_area",
+          "blockers": [
+            "left_start_area",
+            "not_excluded",
+            "enough_samples",
+            "enough_distance"
+          ],
+          "checks": {
+            "restore_ready": true,
+            "odom_fresh": true,
+            "start_recorded": true,
+            "left_start_area": false,
+            "recording_points_valid": true,
+            "not_excluded": false,
+            "within_start_radius": true,
+            "heading_aligned": true,
+            "enough_samples": false,
+            "enough_distance": false
+          },
+          "distance_to_start_m": 0.6265092656433823,
+          "heading_error_deg": 0.5896401891080815,
+          "start_pose": [
+            -9.999503,
+            -72.53,
+            3.342218922716634e-07
+          ],
+          "current_pose": [
+            -9.372996,
+            -72.5316849,
+            -0.010290828480125757
+          ],
+          "closure_radius_m": 1.5,
+          "closure_heading_deg": 25.0,
+          "leave_start_radius_m": 3.0,
+          "recorded_distance_m": 0.521895161793591,
+          "min_distance_m": 40.0,
+          "recorded_samples": 3,
+          "min_samples": 30,
+          "exclusion_reason": "traffic_wait",
+          "point_issues": [],
+          "build_error": null,
+          "last_learning_reset_reason": "waiting_for_odom"
+        },
+        "persistence": {
+          "state": "saved",
+          "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+          "error": null,
+          "saved_samples": 1,
+          "saved_distance_m": 0.0
+        },
+        "reference_length_m": null,
+        "route_matched": false,
+        "progress_m": 0.0,
+        "use_sim_time": true,
+        "ros_time_sec": 4.209999905,
+        "odom_age_sec": 0.0,
+        "point_age_sec": {
+          "a": 0.0629999999946449,
+          "b": 0.0629999999946449,
+          "c": 0.0629999999946449
+        },
+        "recording_points_valid": true,
+        "odom_covariance_available": false,
+        "correction_deg": 0.0,
+        "violation_frames": 0,
+        "avoidance_active": false,
+        "branch_active": false,
+        "path_output_allowed": false,
+        "enable_correction": false,
+        "official_route_node_ids": [
+          "10000000000",
+          "10000000001",
+          "10000000002",
+          "10000000003",
+          "10000000004",
+          "10000000000"
+        ],
+        "approximate_official_edge": null,
+        "official_alignment_diagnostic_only": null,
+        "map_fusion": {
+          "available": false,
+          "reason": "first_lap_not_closed"
+        },
+        "official_node_positions_odom": {},
+        "official_node_progress_m": {},
+        "topology_mapping": {
+          "available": false,
+          "reason": "first_lap_not_closed"
+        },
+        "traffic_light_raw": "red",
+        "traffic_light": "red",
+        "traffic_vote": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 3,
+          "green_count": 0,
+          "unknown_count": 0,
+          "last_message_age_sec": 0.0629999999946449
+        },
+        "traffic_policy": "stop_wait",
+        "traffic_mode": "wait",
+        "traffic_reason": "red_wait_green",
+        "traffic_stop_required": true,
+        "signal_approach": {
+          "enabled": false,
+          "target_stop_distance_m": 8.5,
+          "observation_sequence": 4,
+          "wait_latched": false,
+          "fault_sequence": -1,
+          "distance_m": null,
+          "uncertainty_m": 0.0,
+          "profile": {
+            "valid": false,
+            "reason": "signal_range_missing"
+          },
+          "recovery_eligible": false,
+          "recovery_reason": "red_wait_green",
+          "recovery_age_sec": null,
+          "recovery_vote": {
+            "window_sec": 0.5,
+            "min_samples": 3,
+            "ready": false,
+            "sample_count": 0,
+            "red_count": 0,
+            "green_count": 0,
+            "unknown_count": 0,
+            "last_message_age_sec": null
+          }
+        },
+        "topology_alignment": null,
+        "blocked_edge": null,
+        "detour_node_ids": [],
+        "velocity_gate_reason": "red_wait_green"
+      },
+      "semantic_v": 0.0,
+      "semantic_w": 0.0,
+      "corridor_guard": null,
+      "command_gate": {
+        "reason": "semantic_hold:red_wait_green",
+        "policy": "motor_0.4.1_traffic_only",
+        "traffic_stop_required": true,
+        "source_sequence": 4,
+        "source_age_sec": 0.24138029999494393,
+        "remaining_sec": 0.2586197000050561,
+        "raw_command_new": false
+      },
+      "selected_points": [
+        [
+          2.5,
+          -0.46157462596893306
+        ],
+        [
+          3.5,
+          -0.4627743482589721
+        ],
+        [
+          4.5,
+          -0.4639740705490112
+        ]
+      ],
+      "selected_points_new": false,
+      "topo_selected_points_new": false,
+      "target": [
+        2.5,
+        -0.46157462596893306,
+        -0.0011997217144393694
+      ],
+      "controller_v": 2.309498048554301,
+      "controller_w": -0.47766712036346426,
+      "command_new": false,
+      "vision_result": "none",
+      "vision_votes_total": 3,
+      "last_vision_sequence": 4,
+      "epoch": 1,
+      "source_hash": "16e2034b124a186272817d4054efcf4b3182859fe0bad52f822ec6f317b90344",
+      "source_tree_hash": "1bd0a232ba88498779ab2aaab4d2e985951c3551924f1114b9160c08e3ac6820",
+      "motor_gate_hash": "5051626c0497763d8aa6baab307d96b1330219876358968d1ecb110699905ac1",
+      "vision_commit": "05f1651c8a14d56ab9a86a9767c52793403dcfdc",
+      "restore_event": null,
+      "checkpoint_scope": {
+        "adapter": "explicit_simulation_checkpoint_v1",
+        "root": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints",
+        "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+        "use_sim_time": true,
+        "production_sim_guard_unchanged": true,
+        "storage": "windows_byte_lock_file_fsync_atomic_replace_no_directory_fsync"
+      },
+      "worker_generation": 1
+    }
+  },
+  "firstGreenConfirmation": {
+    "confirmed_color": "green",
+    "wall": 9.0857046000001,
+    "absolute_sim_time": 8.990809999553221,
+    "detection_sequence": 28,
+    "lane_epoch": 1,
+    "frame_sim_time": 8.845366099553303,
+    "frame_wall_age": 0.1507960999997522,
+    "semantic_result_age": 0.005303399999775138,
+    "semantic_response": {
+      "type": "tick",
+      "sequence": 175,
+      "sim_time": 8.949999799951911,
+      "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+      "valid": true,
+      "v": 2.3708362415554918,
+      "w": 0.1968123480025138,
+      "status": {
+        "phase": "learning",
+        "reason": "resume_delay",
+        "lap": 1,
+        "recorded_samples": 9,
+        "recorded_distance_m": 2.0528170449949514,
+        "closure": {
+          "state": "blocked",
+          "blocker": "left_start_area",
+          "blockers": [
+            "left_start_area",
+            "not_excluded",
+            "within_start_radius",
+            "enough_samples",
+            "enough_distance"
+          ],
+          "checks": {
+            "restore_ready": true,
+            "odom_fresh": true,
+            "start_recorded": true,
+            "left_start_area": false,
+            "recording_points_valid": true,
+            "not_excluded": false,
+            "within_start_radius": false,
+            "heading_aligned": true,
+            "enough_samples": false,
+            "enough_distance": false
+          },
+          "distance_to_start_m": 2.05830448280375,
+          "heading_error_deg": 2.584931293529621,
+          "start_pose": [
+            -9.999503,
+            -72.53,
+            3.342218922716634e-07
+          ],
+          "current_pose": [
+            -7.941611,
+            -72.5712051,
+            -0.04511522778803561
+          ],
+          "closure_radius_m": 1.5,
+          "closure_heading_deg": 25.0,
+          "leave_start_radius_m": 3.0,
+          "recorded_distance_m": 2.0528170449949514,
+          "min_distance_m": 40.0,
+          "recorded_samples": 9,
+          "min_samples": 30,
+          "exclusion_reason": "resume_delay",
+          "point_issues": [],
+          "build_error": null,
+          "last_learning_reset_reason": "waiting_for_odom"
+        },
+        "persistence": {
+          "state": "saved",
+          "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+          "error": null,
+          "saved_samples": 9,
+          "saved_distance_m": 2.0528170449949514
+        },
+        "reference_length_m": null,
+        "route_matched": false,
+        "progress_m": 0.0,
+        "use_sim_time": true,
+        "ros_time_sec": 8.949999799,
+        "odom_age_sec": 0.0,
+        "point_age_sec": {
+          "a": 0.0,
+          "b": 0.0,
+          "c": 0.0
+        },
+        "recording_points_valid": true,
+        "odom_covariance_available": false,
+        "correction_deg": 0.0,
+        "violation_frames": 0,
+        "avoidance_active": false,
+        "branch_active": false,
+        "path_output_allowed": false,
+        "enable_correction": false,
+        "official_route_node_ids": [
+          "10000000000",
+          "10000000001",
+          "10000000002",
+          "10000000003",
+          "10000000004",
+          "10000000000"
+        ],
+        "approximate_official_edge": null,
+        "official_alignment_diagnostic_only": null,
+        "map_fusion": {
+          "available": false,
+          "reason": "first_lap_not_closed"
+        },
+        "official_node_positions_odom": {},
+        "official_node_progress_m": {},
+        "topology_mapping": {
+          "available": false,
+          "reason": "first_lap_not_closed"
+        },
+        "traffic_light_raw": "green",
+        "traffic_light": "green",
+        "traffic_vote": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 0,
+          "green_count": 2,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "traffic_policy": "stop_wait",
+        "traffic_mode": "normal",
+        "traffic_reason": "green_resume",
+        "traffic_stop_required": false,
+        "signal_approach": {
+          "enabled": false,
+          "target_stop_distance_m": 8.5,
+          "observation_sequence": 28,
+          "wait_latched": false,
+          "fault_sequence": -1,
+          "distance_m": null,
+          "uncertainty_m": 0.0,
+          "profile": {
+            "valid": false,
+            "reason": "signal_range_missing"
+          },
+          "recovery_eligible": false,
+          "recovery_reason": "green_resume",
+          "recovery_age_sec": null,
+          "recovery_vote": {
+            "window_sec": 0.5,
+            "min_samples": 3,
+            "ready": false,
+            "sample_count": 0,
+            "red_count": 0,
+            "green_count": 0,
+            "unknown_count": 0,
+            "last_message_age_sec": null
+          }
+        },
+        "topology_alignment": null,
+        "blocked_edge": null,
+        "detour_node_ids": [],
+        "velocity_gate_reason": "resume_delay"
+      },
+      "semantic_v": 2.3708362415554918,
+      "semantic_w": 0.1968123480025138,
+      "corridor_guard": null,
+      "command_gate": {
+        "reason": "semantic_go",
+        "policy": "motor_0.4.1_traffic_only",
+        "traffic_stop_required": false,
+        "source_sequence": 28,
+        "source_age_sec": 0.1455101999999897,
+        "remaining_sec": 0.3544898000000103,
+        "raw_command_new": true
+      },
+      "selected_points": [
+        [
+          2.5,
+          0.1540224701166153
+        ],
+        [
+          3.5,
+          0.19609534740447998
+        ],
+        [
+          4.5,
+          0.23816820979118347
+        ]
+      ],
+      "selected_points_new": true,
+      "topo_selected_points_new": false,
+      "target": [
+        2.5,
+        0.1540224701166153,
+        0.04204807884164995
+      ],
+      "controller_v": 2.3708362415554918,
+      "controller_w": 0.1968123480025138,
+      "command_new": true,
+      "vision_result": "accepted",
+      "vision_votes_total": 27,
+      "last_vision_sequence": 28,
+      "epoch": 1,
+      "source_hash": "16e2034b124a186272817d4054efcf4b3182859fe0bad52f822ec6f317b90344",
+      "source_tree_hash": "1bd0a232ba88498779ab2aaab4d2e985951c3551924f1114b9160c08e3ac6820",
+      "motor_gate_hash": "5051626c0497763d8aa6baab307d96b1330219876358968d1ecb110699905ac1",
+      "vision_commit": "05f1651c8a14d56ab9a86a9767c52793403dcfdc",
+      "restore_event": null,
+      "checkpoint_scope": {
+        "adapter": "explicit_simulation_checkpoint_v1",
+        "root": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints",
+        "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+        "use_sim_time": true,
+        "production_sim_guard_unchanged": true,
+        "storage": "windows_byte_lock_file_fsync_atomic_replace_no_directory_fsync"
+      },
+      "worker_generation": 1
+    }
+  },
+  "nativeLyaParametersChanged": false,
+  "runtimeFirstFrameHeadroom": true,
+  "movingRedBrakingDistanceValidated": false,
+  "accepted": true,
+  "reason": "Red zero held 3 s; green native LYA resumed 5 m",
+  "case": "outer_traffic_03",
+  "imageCount": 171,
+  "detectionCount": 46,
+  "motionCount": 218,
+  "supportedCount": 39,
+  "travelled": 7.79700232,
+  "stoppedForRed": true,
+  "redViolation": false,
+  "stoppedFrontGapEvaluationOnly": 22.7110615,
+  "green_t": 8.43313749955314,
+  "seconds": 12.73773099955315,
+  "wallSeconds": 12.834939899999881,
+  "captureHz": 15,
+  "motionHz": 20,
+  "framesUseActualTimestamps": true,
+  "signalPlaneZ": 15.0,
+  "initialPoseChangedOnce": true,
+  "articulatedBodiesMovedTogether": true,
+  "signalTruthFedToControl": false,
+  "evaluatorRouteFedToControl": false,
+  "odometrySource": "Unity Rigidbody pose and velocity; ideal noiseless simulated odometry",
+  "physicsParametersChanged": false,
+  "cameraIntrinsicsChanged": false,
+  "detectorWorker": 0,
+  "semanticWorker": 0,
+  "cleanupErrors": [],
+  "finalShutdownReceipt": {
+    "clean": true,
+    "before_worker_id": 32360,
+    "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+    "forced": false,
+    "exited": true,
+    "exit_code": 0,
+    "elapsed_ms": 20.9417,
+    "error": null,
+    "acknowledgement": {
+      "type": "shutdown",
+      "clean": true,
+      "worker_boot_id": "c536ab6c-f08b-4340-9604-0d7c27b6a96a",
+      "checkpoint_ok": true,
+      "persistence": {
+        "state": "saved",
+        "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\runs\\outer_traffic_03\\checkpoints\\outer_traffic_03\\topo.json",
+        "error": null,
+        "saved_samples": 28,
+        "saved_distance_m": 7.035815528109673
+      }
+    }
+  },
+  "terminalBodySpeed": 2.5685938e-07,
+  "evidence": "Live Unity Play, genuine RGB model output, native LYA and semantic result. Main video uses an observer-camera clone. Remains in Play with E-STOP."
+}

@@ -1,0 +1,105 @@
+{
+  "kind": "synthetic_stdio_transport_and_windows_checkpoint_unit_tests",
+  "actual_unity": false,
+  "actual_model": false,
+  "native_dds": false,
+  "tests_run": 20,
+  "successful": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "elapsed_sec": 3.3112919999985024,
+  "ledger": [
+    {
+      "test": "__main__.TransportTests.test_checkpoint_corruption_rejected_without_overwrite",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_checkpoint_path_escape_and_vehicle_ros_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_checkpoint_roundtrip_uses_production_checksum",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_duplicate_vision_does_not_vote_or_refresh_command",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_epoch_change_cannot_reset_map_implicitly",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_mismatched_lya_provenance_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonfinite_command_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonzero_age_recovers_after_empty_tick_timeout",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_nonzero_source_age_startup_forwards_original_command",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_recovery_pose_mismatch_preserves_saved_file",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_recovery_time_rewind_preserves_saved_file",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_red_green_nonzero_age_release_without_private_abc",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_same_case_second_writer_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_semantic_restart_restores_prefix_and_actual_restore_event",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_signal_range_cannot_enter_stop_wait",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_simulation_clock_rewind_rejected",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_source_ttl_expires_without_repeated_frame_refresh",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_stale_source_rejected_even_at_fresh_arrival",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_unsupported_lane_still_votes_but_never_drives",
+      "status": "PASS"
+    },
+    {
+      "test": "__main__.TransportTests.test_use_sim_time_reported_honestly",
+      "status": "PASS"
+    }
+  ],
+  "source_sha256_before": {
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\test_transport.py": "127eab2332a845208a79c4fa7e24a11a8acaec63f22b782a0ff1369bd42cb0d7",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\semantic_worker.py": "c4affb635a840eff76abef924083ac66ca4fed8cd1354d707c5b96a9368bb2b3",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\sim_checkpoint_adapter.py": "82dd6aa8d162b8203b27afb774d14de126601fcc84ad4c530daa52a41a565834"
+  },
+  "source_sha256_after": {
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\test_transport.py": "127eab2332a845208a79c4fa7e24a11a8acaec63f22b782a0ff1369bd42cb0d7",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\semantic_worker.py": "c4affb635a840eff76abef924083ac66ca4fed8cd1354d707c5b96a9368bb2b3",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_neo_topo_20261015\\staging\\transport\\sim_checkpoint_adapter.py": "82dd6aa8d162b8203b27afb774d14de126601fcc84ad4c530daa52a41a565834"
+  },
+  "source_unchanged": true
+}
