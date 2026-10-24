@@ -101,6 +101,21 @@ class MapDriveLaunchTests(unittest.TestCase):
         self.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.module)
 
+    def test_vehicle_entry_enables_checkpoint_without_new_launch_arguments(self):
+        path = self.path.parents[4] / 'launchers' / 'launch' / 'semantic_vehicle.launch.py'
+        spec = importlib.util.spec_from_file_location('semantic_vehicle_checkpoint_test', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        description = module.generate_launch_description()
+        self.assertTrue(all(isinstance(entity, Node) for entity in description.entities))
+        nodes = [entity.kwargs for entity in description.entities]
+        self.assertEqual(len(nodes), 4)
+        params = next(n for n in nodes if n['executable'] == 'map_assist')['parameters'][0]
+        self.assertEqual(params['checkpoint_path'], '~/.ros/aiformula/topo_map/checkpoint.json')
+        self.assertEqual(params['output_cmd_vel_topic'], '/semantic_drive/topo_diagnostic_cmd_vel')
+        self.assertFalse(params['enable_correction'])
+        self.assertEqual(params['traffic_policy'], 'stop_wait')
+
     def expand(self, **overrides):
         description = self.module.generate_launch_description()
         context = {}

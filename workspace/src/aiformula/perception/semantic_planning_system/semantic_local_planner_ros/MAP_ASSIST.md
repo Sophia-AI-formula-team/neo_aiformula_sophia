@@ -1,5 +1,7 @@
 # map_assist：保留 odom 尺度的地图融合、视觉辅助与红灯等待
 
+> **当前车辆入口（2026-10-13，本地待部署）**：`ros2 run semantic_vehicle_wiring semantic`。0.3.0自动显示闭环阻塞条件，并保存/恢复topo；见[具体字段、存档路径及恢复限制](../../../../../../docs/topo_checkpoint_20261013/README.md)。下文包含旧独立map_drive流程，不要与现用allnodes/LYA/semantic入口混用。
+
 `map_assist` 仍在原 `semantic_local_planner_ros` 包内，独立于原语义门控运行。原语义方案保留。
 
 ## 启动：新 lane 用默认配置，旧 rosbag 指定测试配置
