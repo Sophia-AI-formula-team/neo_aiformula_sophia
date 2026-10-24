@@ -1,0 +1,60 @@
+{
+  "passed": false,
+  "cases": [
+    {
+      "case": "official_capture_v2_outer_01",
+      "trace_sha256": "693b0b2afc034b0554358f8ef2e0162d87cf2d55e2a86f3333c2a8fccae06010",
+      "frames": 512,
+      "valid_image_poses": 512,
+      "body_image_noncoincident": 512,
+      "errors": [
+        [
+          503,
+          "epoch/order mismatch"
+        ]
+      ],
+      "source_report": {
+        "accepted": false,
+        "reason": "Bounded image-pose metadata capture complete; no left-turn acceptance",
+        "seconds": 70.67198434281454,
+        "wallSeconds": 71.27672200000961,
+        "travelled": 176.648682,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": []
+      },
+      "metadata_validation_passed": false,
+      "control_acceptance": false
+    },
+    {
+      "case": "official_capture_v2_inner_01",
+      "trace_sha256": "ae3098d3d33f82264af13997d3204dbf9e182f7aaba035a08589e7c17fe20171",
+      "frames": 212,
+      "valid_image_poses": 212,
+      "body_image_noncoincident": 212,
+      "errors": [
+        [
+          202,
+          "epoch/order mismatch"
+        ]
+      ],
+      "source_report": {
+        "accepted": false,
+        "reason": "Follower: Lost predicted lanes; upstream default-straight rejected",
+        "seconds": 29.51276299955498,
+        "wallSeconds": 29.590721200002008,
+        "travelled": 64.8746,
+        "detectorWorker": 0,
+        "semanticWorker": 0,
+        "cleanupErrors": []
+      },
+      "metadata_validation_passed": false,
+      "control_acceptance": false
+    }
+  ],
+  "model_inference": false,
+  "Unity_operations": false,
+  "world_anchors_created": false,
+  "official_association": false,
+  "left_turn_validated": false
+}

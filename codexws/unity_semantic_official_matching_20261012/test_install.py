@@ -1,0 +1,189 @@
+"""Isolated deployment safety tests; no Unity, model, or existing project writes."""
+import json
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import install
+
+
+class ArchiveSafetyTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="semantic-install-test-")
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.bundle = self.root / "bundle"
+        self.project = self.root / "project"
+        self.repo = self.root / "repo"
+        self.bundle.mkdir()
+        self.repo.mkdir()
+        (self.project / "Assets").mkdir(parents=True)
+        self.modified = "Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs"
+        self.added = "Assets/StreamingAssets/SemanticPlanning/task_added.py"
+        self.prereq = "Assets/existing_dependency.txt"
+        self.manifest = dict(format=install.FORMAT,
+                             before_semantic_commit=install.BEFORE,
+                             frozen_semantic_commit=install.AFTER,
+                             files=[], prerequisites={self.prereq: install.digest(b"pinned")})
+        self.write(self.project / self.prereq, b"pinned")
+        for name, before, after in ((self.modified, b"old\r\n", b"new\r\n"),
+                                    (self.added, None, b"new file\n")):
+            row = dict(path=name)
+            for side, data in (("before", before), ("after", after)):
+                row[side + "_sha256"] = None if data is None else install.digest(data)
+                path = ("before/" if side == "before" else "overlay/") + name
+                row[side] = None if data is None else dict(kind="file", path=path)
+                if data is not None:
+                    self.write(self.bundle / path, data)
+            if before is not None:
+                self.write(self.project / name, before)
+            self.manifest["files"].append(row)
+        self.save_manifest()
+
+    @staticmethod
+    def write(path, data):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def save_manifest(self):
+        raw = (json.dumps(self.manifest, indent=2) + "\n").encode()
+        (self.bundle / "manifest.json").write_bytes(raw)
+        (self.bundle / "manifest.sha256").write_text(install.digest(raw) + "  manifest.json\n", encoding="ascii")
+
+    def run_action(self, action, **kwargs):
+        return install.execute(self.bundle, self.repo, self.project, action, **kwargs)
+
+    def snapshot(self):
+        return {p.relative_to(self.project).as_posix(): p.read_bytes()
+                for p in self.project.rglob("*") if p.is_file()}
+
+    def apply(self):
+        return self.run_action("apply", write=True, unity_closed=True)
+
+    def rollback(self):
+        return self.run_action("rollback", write=True, unity_closed=True)
+
+    def test_read_only_and_exact_roundtrip_preserves_unrelated_file(self):
+        self.write(self.project / "Assets/Tools/LaneTeachRepeat/peer.txt", b"peer edits")
+        before = self.snapshot()
+        self.assertTrue(self.run_action("verify-payload")["ok"])
+        self.assertTrue(self.run_action("verify-before")["ok"])
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(self.apply()["writes"], 2)
+        self.assertTrue(self.run_action("verify-after")["ok"])
+        self.assertEqual((self.project / self.modified).read_bytes(), b"new\r\n")
+        self.assertEqual(self.rollback()["writes"], 2)
+        self.assertEqual(before, self.snapshot())
+
+    def test_existing_file_drift_prevents_every_write(self):
+        self.write(self.project / self.modified, b"other task edits")
+        before = self.snapshot()
+        result = self.apply()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["writes"], 0)
+        self.assertEqual(before, self.snapshot())
+
+    def test_added_path_collision_is_not_overwritten(self):
+        self.write(self.project / self.added, b"unrelated existing content")
+        before = self.snapshot()
+        self.assertFalse(self.apply()["ok"])
+        self.assertEqual(before, self.snapshot())
+
+    def test_prerequisite_drift_refuses_apply_and_rollback(self):
+        self.write(self.project / self.prereq, b"changed camera")
+        before = self.snapshot()
+        self.assertFalse(self.apply()["ok"])
+        self.assertEqual(before, self.snapshot())
+        self.write(self.project / self.prereq, b"pinned")
+        self.assertTrue(self.apply()["ok"])
+        self.write(self.project / self.prereq, b"changed camera")
+        after = self.snapshot()
+        self.assertFalse(self.rollback()["ok"])
+        self.assertEqual(after, self.snapshot())
+
+    def test_partial_state_refuses_both_directions(self):
+        self.write(self.project / self.added, b"new file\n")
+        before = self.snapshot()
+        self.assertFalse(self.apply()["ok"])
+        self.assertFalse(self.rollback()["ok"])
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual({s["state"] for s in self.run_action("inspect")["states"]}, {"before", "after"})
+
+    def test_payload_corruption_prevents_every_write(self):
+        self.write(self.bundle / ("overlay/" + self.added), b"bad payload")
+        before = self.snapshot()
+        with self.assertRaisesRegex(ValueError, "Payload byte mismatch"):
+            self.apply()
+        self.assertEqual(before, self.snapshot())
+
+    def test_checksum_mismatch_is_refused(self):
+        with (self.bundle / "manifest.json").open("ab") as stream:
+            stream.write(b" ")
+        with self.assertRaisesRegex(ValueError, "Manifest checksum"):
+            self.apply()
+
+    def test_out_of_scope_and_alias_paths_are_refused(self):
+        for bad in ("../outside", "Assets/../outside", "C:/outside", "Assets\\outside",
+                    "ProjectSettings/TimeManager.asset", "Assets/Tools/LaneTeachRepeat/peer.py",
+                    "Assets/StreamingAssets/VisionLaneFollower/upstream/lya.py",
+                    "Assets/StreamingAssets/RoadDetector/a3-v14/weights/shared_best.pth"):
+            with self.subTest(path=bad), self.assertRaises(ValueError):
+                install.managed_name(bad)
+        self.manifest["files"].append(dict(self.manifest["files"][0]))
+        self.save_manifest()
+        with self.assertRaisesRegex(ValueError, "Duplicate"):
+            self.apply()
+
+    def test_wrong_native_pin_or_mapping_does_not_invoke_git(self):
+        row = dict(path=install.VENDORED + "semantic_planner_core/setup.py",
+                   after_sha256=install.digest(b"x\n"),
+                   after=dict(kind="git_blob", commit="5bc52e05329d7fe642f219d32a578d04d2b7f668",
+                              path=install.NATIVE + "semantic_planner_core/setup.py", newline="lf"))
+        with patch.object(subprocess, "run") as runner, self.assertRaises(ValueError):
+            install.payload(self.bundle, self.repo, row, "after")
+        runner.assert_not_called()
+        row["after"]["commit"] = install.AFTER
+        row["after"]["path"] = install.NATIVE + "different.py"
+        with patch.object(subprocess, "run") as runner, self.assertRaises(ValueError):
+            install.payload(self.bundle, self.repo, row, "after")
+        runner.assert_not_called()
+
+    def test_explicit_native_newline_policy(self):
+        row = dict(path=install.VENDORED + "semantic_planner_core/setup.py",
+                   after_sha256=install.digest(b"x\r\ny\r\n"),
+                   after=dict(kind="git_blob", commit=install.AFTER,
+                              path=install.NATIVE + "semantic_planner_core/setup.py", newline="crlf"))
+        reply = subprocess.CompletedProcess([], 0, stdout=b"x\ny\n", stderr=b"")
+        with patch.object(subprocess, "run", return_value=reply) as runner:
+            self.assertEqual(install.payload(self.bundle, self.repo, row, "after"), b"x\r\ny\r\n")
+        self.assertIn("--no-replace-objects", runner.call_args.args[0])
+
+    def test_write_requires_both_explicit_flags(self):
+        before = self.snapshot()
+        for flags in ({}, dict(write=True), dict(unity_closed=True)):
+            with self.subTest(flags=flags), self.assertRaises(ValueError):
+                self.run_action("apply", **flags)
+        self.assertEqual(before, self.snapshot())
+
+    def test_io_interruption_reports_partial_without_overwriting_remaining(self):
+        replace = install.os.replace
+        count = 0
+        def interrupted(source, target):
+            nonlocal count
+            count += 1
+            if count == 2:
+                raise OSError("synthetic second-file interruption")
+            return replace(source, target)
+        with patch.object(install.os, "replace", side_effect=interrupted):
+            result = self.apply()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["completed"], [self.modified])
+        self.assertFalse((self.project / self.added).exists())
+        self.assertFalse(list(self.project.rglob("*.tmp")))
+        self.assertFalse(self.rollback()["ok"])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
