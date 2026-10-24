@@ -47,6 +47,13 @@ def generate_launch_description():
                 output="screen",
             ),
             Node(
+                package="semantic_local_planner_ros",
+                executable="planned_lane_points_adapter_node",
+                name="planned_lane_points_adapter_node",
+                parameters=[config],
+                output="screen",
+            ),
+            Node(
                 package="semantic_lane_recovery_ros",
                 executable="lane_recovery_gate_node",
                 name="lane_recovery_gate_node",

@@ -27,6 +27,7 @@ def _scenario_costmap(name: str) -> np.ndarray:
         road[42:, 16:48] = 255
     elif name == "red_gate_left_blocked":
         offroad[42:, :58] = 255
+        offroad[42:, 58:] = 255
     else:
         raise ValueError(name)
     return SemanticCostmapBuilder().build(road, offroad, _constraints())
@@ -43,6 +44,32 @@ def test_image_coordinate_conventions_for_primitives():
         ys = [point[1] for point in primitive.path_points]
         assert ys[0] > ys[-1]
         assert all(0.0 <= point[0] <= 1.0 and 0.0 <= point[1] <= 1.0 for point in primitive.path_points)
+
+
+def test_primitives_fan_out_instead_of_converging_to_center():
+    primitives = {primitive.name: primitive for primitive in default_primitives()}
+    for name in (
+        PrimitiveName.SMALL_LEFT.value,
+        PrimitiveName.MEDIUM_LEFT.value,
+        PrimitiveName.STRONG_LEFT.value,
+        PrimitiveName.LEFT_THEN_ALIGN.value,
+    ):
+        points = primitives[name].path_points
+        assert points[-1][0] < points[0][0]
+
+    for name in (
+        PrimitiveName.SMALL_RIGHT.value,
+        PrimitiveName.MEDIUM_RIGHT.value,
+        PrimitiveName.STRONG_RIGHT.value,
+        PrimitiveName.RIGHT_THEN_ALIGN.value,
+    ):
+        points = primitives[name].path_points
+        assert points[-1][0] > points[0][0]
+
+    assert primitives[PrimitiveName.STRONG_LEFT.value].path_points[-1][0] < primitives[PrimitiveName.MEDIUM_LEFT.value].path_points[-1][0]
+    assert primitives[PrimitiveName.MEDIUM_LEFT.value].path_points[-1][0] < primitives[PrimitiveName.SMALL_LEFT.value].path_points[-1][0]
+    assert primitives[PrimitiveName.SMALL_RIGHT.value].path_points[-1][0] < primitives[PrimitiveName.MEDIUM_RIGHT.value].path_points[-1][0]
+    assert primitives[PrimitiveName.MEDIUM_RIGHT.value].path_points[-1][0] < primitives[PrimitiveName.STRONG_RIGHT.value].path_points[-1][0]
 
 
 def test_red_gate_left_blocked_selects_stop():
@@ -68,6 +95,39 @@ def test_red_gate_left_open_selects_left_primitive():
     }
     assert selected.name != PrimitiveName.STOP.value
     assert details[PrimitiveName.SLOW_FORWARD.value]["valid"] is False
+    assert any(
+        details[name]["valid"] is True
+        for name in (
+            PrimitiveName.SMALL_RIGHT.value,
+            PrimitiveName.MEDIUM_RIGHT.value,
+            PrimitiveName.STRONG_RIGHT.value,
+            PrimitiveName.RIGHT_THEN_ALIGN.value,
+        )
+    )
+
+
+def test_right_primitives_are_generated_but_left_is_preferred():
+    costmap = _scenario_costmap("red_gate_left_open")
+
+    selected, details = LocalPrimitivePlanner(left_preference_bonus=0.20).plan(
+        costmap,
+        _constraints(),
+        theta_ref=0.0,
+    )
+
+    assert selected.name in {
+        PrimitiveName.SMALL_LEFT.value,
+        PrimitiveName.MEDIUM_LEFT.value,
+        PrimitiveName.STRONG_LEFT.value,
+        PrimitiveName.LEFT_THEN_ALIGN.value,
+    }
+    for name in (
+        PrimitiveName.SMALL_RIGHT.value,
+        PrimitiveName.MEDIUM_RIGHT.value,
+        PrimitiveName.STRONG_RIGHT.value,
+        PrimitiveName.RIGHT_THEN_ALIGN.value,
+    ):
+        assert name in details
 
 
 def test_slow_forward_invalid_under_red_gate():
@@ -98,6 +158,10 @@ def test_offroad_lethal_invalidates_primitive():
         PrimitiveName.MEDIUM_LEFT.value,
         PrimitiveName.STRONG_LEFT.value,
         PrimitiveName.LEFT_THEN_ALIGN.value,
+        PrimitiveName.SMALL_RIGHT.value,
+        PrimitiveName.MEDIUM_RIGHT.value,
+        PrimitiveName.STRONG_RIGHT.value,
+        PrimitiveName.RIGHT_THEN_ALIGN.value,
     ):
         assert details[name]["valid"] is False
         assert details[name]["lethal_hit"] is True

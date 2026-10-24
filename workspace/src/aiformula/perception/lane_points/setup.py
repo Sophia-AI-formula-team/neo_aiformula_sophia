@@ -32,6 +32,7 @@ setup(
                             'lane_260118 = lane_points.lane_260118:main',
                             'lane_record = lane_points.lane_record:main',
                             'lane_0529oa = lane_points.lane_0529oa:main',
+                            'lane_0927oa = lane_points.lane_0927oa:main',
         ],
     },
 )

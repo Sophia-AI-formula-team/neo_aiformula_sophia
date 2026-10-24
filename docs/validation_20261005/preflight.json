@@ -1,0 +1,57 @@
+{
+  "python": "3.8.10",
+  "torch": "2.0.0+nv23.05",
+  "torchvision": "0.15.1",
+  "numpy": "1.24.4",
+  "cv2": "4.2.0",
+  "cuda": "11.4",
+  "device": "Orin",
+  "weights": {
+    "lane_epoch_282.pth": {
+      "sha256": "ac2336709034f89b8a7d69d0d7af158e677964699d41cc3520c08d16dc691bfe",
+      "bytes": 20921608
+    },
+    "object_detector_usable.pth": {
+      "sha256": "5ef0574078014c0ac9d97c21539a31435e1c02499d57a944c02e07589a231fe0",
+      "bytes": 77867961
+    }
+  },
+  "gpu_nms": [
+    0,
+    2
+  ],
+  "gpu_roi_align": {
+    "shape": [
+      1,
+      2,
+      7,
+      7
+    ],
+    "mean": 1.0
+  },
+  "strict_load_seconds": 1.9844092690000252,
+  "synthetic_zero_frame_preflight": {
+    "lane_shape": [
+      360,
+      640
+    ],
+    "lane_values": [
+      0
+    ],
+    "obstacle_shape": [
+      360,
+      640
+    ],
+    "obstacle_values": [
+      0
+    ],
+    "detections": 0,
+    "timings_ms": {
+      "lane": 4574.571745000867,
+      "objects": 319.7917839988804,
+      "render": 0.6111410002631601,
+      "total": 4894.9746700000105
+    }
+  },
+  "note": "Dependency, GPU operator and strict checkpoint compatibility only; no bag; this is not live acceptance."
+}
