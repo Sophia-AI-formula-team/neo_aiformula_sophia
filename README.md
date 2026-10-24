@@ -1,5 +1,11 @@
 # Sophia AI Formula ROS 2 Snapshot
 
+## Integrated source state (2026-10-25)
+
+The default vehicle launcher retains A3 V14 and current camera/gamepad settings. `motor_controller` 0.4.1 is the only buildable motor package; complete `motor_controller_old_bkup` 0.2.1 and `motor_controller_new_bkup` 0.4.1 snapshots remain beside it with restore metadata in [motor_controller_versions.json](workspace/src/aiformula/control/motor_controller_versions.json).
+
+PR #18 is preserved in the [dated left-turn experiment archive](codexws/unity_semantic_left_turn_20261012/README.md), default-disabled and excluded from colcon. See the [experiment index](codexws/README.md) and [integration receipt](docs/agent-context/receipts/2026-10-25-planner-merge-all-035.md). Historical acceptance limits remain recorded separately.
+
 This student-maintained repository contains a public ROS 2 source snapshot used for AI Formula research in Sophia University's Control Engineering Laboratory. It is provided for research reference and is not an official Honda or Sophia University software release.
 
 ## Lane teach/repeat and agent handoff
