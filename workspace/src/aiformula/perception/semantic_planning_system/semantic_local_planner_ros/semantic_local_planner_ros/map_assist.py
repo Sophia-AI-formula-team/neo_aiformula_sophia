@@ -1192,6 +1192,13 @@ class MapAssist(Node):
             "traffic_policy": self.p["traffic_policy"],
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
+            # The vehicle motor consumes only this traffic latch. Topo's
+            # private point/velocity output has separate readiness conditions.
+            "traffic_stop_required": (
+                self.traffic_mode != "normal"
+                if self.p["enable_traffic_control"] and self.p["traffic_policy"] == "stop_wait"
+                else None
+            ),
             "signal_approach": {
                 "enabled": self.p["enable_signal_approach"],
                 "target_stop_distance_m": self.p["target_stop_distance_m"],
