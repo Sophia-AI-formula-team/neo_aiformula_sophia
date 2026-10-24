@@ -7,6 +7,7 @@ nodes are started. These checks complement, not replace, native DDS validation.
 import ast
 import copy
 import math
+import os
 import os.path as osp
 from pathlib import Path
 from types import SimpleNamespace
@@ -159,7 +160,16 @@ def production_teacher_speed_argument(parameters):
 
 def test_actual_neo_road_detector_remaps_the_full_mask_topic():
     namespace = launch_namespace(ALLNODES, ['create_road_detector_node'])
-    node, = namespace['create_road_detector_node']({})
+    namespace.update(os=os, EnvironmentVariable=action('EnvironmentVariable'))
+    # Main now selects A3 by default. Exercise legacy remapping explicitly and
+    # retain its duplicate-detector guard without launching a ROS node.
+    assert namespace['create_road_detector_node'](
+        dict(launch_legacy_road_detector='false', launch_yolop_a3='true')) == ()
+    with pytest.raises(RuntimeError, match='Select only one detector'):
+        namespace['create_road_detector_node'](
+            dict(launch_legacy_road_detector='true', launch_yolop_a3='true'))
+    node, = namespace['create_road_detector_node'](
+        dict(launch_legacy_road_detector='true', launch_yolop_a3='false'))
     assert node.package == 'road_detector'
     assert node.executable == 'road_detector'
     remaps = dict(node.remappings)
