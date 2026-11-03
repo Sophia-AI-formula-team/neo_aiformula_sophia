@@ -1,5 +1,9 @@
 # Sophia AI Formula ROS 2 Snapshot
 
+## Selected experiment source (2026-11-04)
+
+The user selected the 1027/1102 experiment snapshot for main, preserving its known limitations and a pre-import rollback reference. Read the [snapshot/rollback receipt](docs/agent-context/receipts/2026-11-04-experimental-import-036.md). Existing A3 launchers and motor 0.4.1 with both version backups remain unchanged. This source selection is not an all-tests-passed or vehicle-acceptance release.
+
 ## Integrated source state (2026-10-25)
 
 The default vehicle launcher retains A3 V14 and current camera/gamepad settings. `motor_controller` 0.4.1 is the only buildable motor package; complete `motor_controller_old_bkup` 0.2.1 and `motor_controller_new_bkup` 0.4.1 snapshots remain beside it with restore metadata in [motor_controller_versions.json](workspace/src/aiformula/control/motor_controller_versions.json).

@@ -1,3 +1,7 @@
+# User-authorized experiment import (2026-11-04)
+
+The user explicitly authorized merging the latest 1027simtest experimental source before fixing its known issues, with rollback if needed. Read the [selection and rollback receipt](docs/agent-context/receipts/2026-11-04-experimental-import-036.md); preserve the source snapshot and its known-failure evidence. Do not silently revert it or weaken tests. Existing motor backups, launchers and PR18 archive remain protected; this authorization does not start or deploy hardware.
+
 # Repository integration state (2026-10-25)
 
 The user authorized merging all pending work, resolving conflicts in favor of current versions. Keep main's A3 V14 launch, camera calibration and motor 0.4.1 active; preserve both motor backups. PR #18 stays an opt-in experiment archive under `codexws/unity_semantic_left_turn_20261012/`, excluded by `COLCON_IGNORE`.

@@ -1,0 +1,203 @@
+{
+  "checks": [
+    {
+      "name": "imported_semantic",
+      "exit": 0,
+      "seconds": 9.206,
+      "tests": 228,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "retained_header_contract",
+      "exit": 1,
+      "seconds": 0.897,
+      "tests": 4,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "source_hashes_verified": 466,
+  "credential_pattern_findings": [],
+  "prior_audit": {
+    "python38_files": 254,
+    "bench_deadlines": [
+      {
+        "file": "simtest_speed/simtest_speed/speed.py",
+        "duration_s": 20,
+        "stages": [
+          [
+            5,
+            0.0
+          ],
+          [
+            2,
+            0.5
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            2,
+            2.0
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            2,
+            0.5
+          ],
+          [
+            5,
+            0.0
+          ]
+        ],
+        "finished_after_deadline": false,
+        "commands_after_deadline": []
+      },
+      {
+        "file": "simtest_stop/simtest_stop/stop.py",
+        "duration_s": 22,
+        "stages": [
+          [
+            5,
+            0.0
+          ],
+          [
+            2,
+            0.5
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            3,
+            2.0
+          ],
+          [
+            10,
+            0.0
+          ]
+        ],
+        "finished_after_deadline": false,
+        "commands_after_deadline": []
+      },
+      {
+        "file": "simtest_turn/simtest_turn/turn.py",
+        "duration_s": 20,
+        "stages": [
+          [
+            5,
+            0.0,
+            0.0
+          ],
+          [
+            2,
+            1.5,
+            0.2
+          ],
+          [
+            2,
+            1.5,
+            0.4
+          ],
+          [
+            2,
+            1.5,
+            0.4
+          ],
+          [
+            2,
+            1.5,
+            0.2
+          ],
+          [
+            2,
+            1.5,
+            0.0
+          ],
+          [
+            5,
+            0.0,
+            0.0
+          ]
+        ],
+        "finished_after_deadline": false,
+        "commands_after_deadline": []
+      },
+      {
+        "file": "simtest_mixed/simtest_mixed/mixed.py",
+        "duration_s": 20,
+        "stages": [
+          [
+            5,
+            0.0,
+            0.0
+          ],
+          [
+            2,
+            0.5,
+            0.0
+          ],
+          [
+            2,
+            1.5,
+            0.15
+          ],
+          [
+            2,
+            2.0,
+            0.0
+          ],
+          [
+            2,
+            1.0,
+            -0.15
+          ],
+          [
+            2,
+            0.5,
+            0.0
+          ],
+          [
+            5,
+            0.0,
+            0.0
+          ]
+        ],
+        "finished_after_deadline": false,
+        "commands_after_deadline": []
+      }
+    ],
+    "motor_policy_check": [
+      {
+        "policy": "stop_wait",
+        "semantic_active": true,
+        "status_allowed": true,
+        "semantic_reason": "normal",
+        "output": [
+          1.0,
+          0.0
+        ],
+        "reason": "semantic_go"
+      },
+      {
+        "policy": "first_lap_wait_then_detour",
+        "semantic_active": true,
+        "status_allowed": false,
+        "semantic_reason": "invalid_semantic_status",
+        "output": [
+          0.0,
+          0.0
+        ],
+        "reason": "semantic_status_timeout"
+      }
+    ]
+  }
+}

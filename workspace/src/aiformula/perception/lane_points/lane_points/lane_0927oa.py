@@ -239,9 +239,9 @@ class LaneLineSubscriber(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    a = 4  
-    b = 6  
-    c = 8  
+    a = 0
+    b = 2
+    c = 4
 
     lane_line_subscriber = LaneLineSubscriber(a, b, c)
     try:

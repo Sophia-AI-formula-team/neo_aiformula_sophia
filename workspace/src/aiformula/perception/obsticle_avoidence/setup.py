@@ -25,6 +25,7 @@ setup(
         'oa_neo_ubs = obsticle_avoidence.oa_neo_ubs:main',
         'odom_path_recorder = obsticle_avoidence.odom_path_recorder:main',
         'data_record = obsticle_avoidence.data_record:main',
+        'oa_2 = obsticle_avoidence.oa_2:main',
         ],
     },
 )
