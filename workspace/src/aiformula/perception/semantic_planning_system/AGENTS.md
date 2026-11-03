@@ -45,27 +45,3 @@ core geometry; distance/automatic detour are historical legacy policy only. Froz
 core63 evidence belongs to its original revision. See SIMPLE_TRAFFIC_CHANGE.md.
 The vehicle source update remains uncompiled and shadow-only unless the user later
 authorizes compilation or changes that scope.
-
-## User-authorized motor gate follow-up — 2026-10-12
-
-The user now authorizes compilation/deployment and motor-side traffic gating with manual priority, but no vehicle movement. PR23 geometry/learning remains unchanged; semantic_vehicle.launch observes existing lanes/odom and publishes diagnostic-only commands. Motor 0.3.0 is the actual gate and defaults motion_enabled=false. Keep the old shadow restrictions intact and distinguish isolated DDS from physical lap/braking acceptance.
-
-## Offline green-resume follow-up — 2026-10-12
-
-Motor 0.4.0 is the currently deployed compatibility baseline (no startup flags).
-The user now requests an offline fix/package while the vehicle is disconnected.
-MapAssist 0.2.2 adds a traffic-only `traffic_stop_required` status field consumed
-by motor 0.4.1; do not reuse topo diagnostic path/velocity readiness as the motor
-release condition. Deploy both packages together only after reconnection.
-Geometry, learning, legacy/shadow behavior and the USB wheel math stay intact.
-Evidence and pending target acceptance: docs/motor_green_resume_20261012.
-
-## Local-only topo follow-up — 2026-10-13
-
-The user authorizes closure diagnostics, checkpoint persistence/restart recovery,
-local tests and GitHub publication. MapAssist 0.3.0 implements these in the ROS
-adapter; core geometry/closure thresholds, traffic and motor behavior stay intact.
-The vehicle is offline; do not deploy or claim new DDS/physical acceptance.
-Read docs/topo_checkpoint_20261013 at the repository root for current behavior,
-source hashes and validation. Vehicle startup takes no new flags. Keep PR24's
-already deployed version/history intact and stack this feature PR on it.

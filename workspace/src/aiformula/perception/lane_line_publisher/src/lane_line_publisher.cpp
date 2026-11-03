@@ -276,7 +276,7 @@ std::pair<int, int> baseSideBoundsAtRow(const int side, const int row, const int
     if (side == LEFT) {
         return {0, clampInt(static_cast<int>(std::floor(center_u - half_gap)), 0, cols - 1)};
     }
-    return {clampInt(static_cast<int>(std::ceil(center_u + half_gap)), 0, cols - 1), cols - 1};
+    return {clampInt(static_cast<int>(std::ceil(center_u - 80.0 * static_cast<double>(cols) / 640.0)), 0, cols - 1), cols - 1};
 }
 
 std::pair<cv::Mat, std::vector<cv::Point>> buildInitRoi(const cv::Size& size, const int side,

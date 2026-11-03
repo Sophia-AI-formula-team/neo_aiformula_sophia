@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>simtest_speed</name>
+  <version>0.1.0</version>
+  <description>Straight-line speed test</description>
+  <maintainer email="simtest@example.com">simtest</maintainer>
+  <license>UNLICENSED</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
