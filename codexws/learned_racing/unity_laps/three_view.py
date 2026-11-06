@@ -247,6 +247,7 @@ def main():
     parser.add_argument("--referee-inset", action="store_true", help="Show a fixed local ground-truth referee inset on the chase camera")
     parser.add_argument("--learned-panel", action="store_true", help="Add actual fitted-action choices, scores and terminal outcome")
     parser.add_argument("--whole-lap", action="store_true", help="Show recorded progress and switch the fixed referee view only between encounters")
+    parser.add_argument("--reference-run",type=Path,help="Compare the identical physical scenario to the archived baseline")
     args = parser.parse_args()
     run = json.loads(args.trajectory.read_text(encoding="utf-8-sig"))
     frames, decisions = run["frames"], run["decisions"]
@@ -271,7 +272,15 @@ def main():
     hold_frames = round(.8*FPS) if terminal else 0
     count = motion_frames+hold_frames
     background = layout(args.title, args.note)
-    panel = LearnedPanel(run) if args.learned_panel else None
+    comparison=None
+    reference=None
+    if args.reference_run:
+        reference=json.loads(args.reference_run.read_bytes())
+        if (reference.get("props")!=run.get("props") or reference["request"].get("encounter") is not None
+                or any(reference["request"].get(k)!=run["request"].get(k) for k in ("seed","start","offset","yaw","limit","model","weights","timing"))):
+            raise ValueError("The reference is not the same physical scenario and baseline driving request")
+        comparison=reference["rows"]==run["rows"]
+    panel = LearnedPanel(run,comparison) if args.learned_panel else None
     size = (SIZE[0],SIZE[1]+LEARNED_HEIGHT) if panel else SIZE
     if panel:
         base=Image.new("RGB",size,PAPER)
@@ -354,6 +363,7 @@ def main():
                "start_s":args.start,"end_s":args.end,"end_included":terminal,
                "labelled_terminal_hold_s":hold_frames/FPS,"status":run.get("status"),"encoded":encoded,
                "referee_inset":timeline.receipt() if timeline else referee.receipt() if referee and referee.ids else None,
+               "matchedReference":None if reference is None else {"id":reference["id"],"sha256":digest(args.reference_run),"identicalPhysicalRows":comparison},
                "learned_panel":None if panel is None else {"modelId":panel.model, "actionTable":panel.actions,
                    "selections":[{"t":decisions[i]["t"],**decisions[i]["encounter"]} for i in panel.selected]},
                "method":"Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",

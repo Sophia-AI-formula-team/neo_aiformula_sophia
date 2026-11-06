@@ -38,6 +38,12 @@ def export(args):
     if Path(args.trial).name!=args.trial:raise ValueError("Expected a run ID")
     run_path=args.capture_root/"runs"/(args.trial+".json")
     run=json.loads(run_path.read_bytes())
+    physical=[{"index":i,"amplitudeM":p[4],"omegaRadS":p[6],"stationFromStartM":p[7],
+               "moving":bool(p[4] and p[6])} for i,p in enumerate(run["props"])]
+    moving=sum(p["moving"] for p in physical)
+    counts=(len(physical)-moving,moving)
+    if args.expected_props is not None and tuple(args.expected_props)!=counts:
+        raise ValueError(f"Physical static/moving count is {counts}, not the declared {args.expected_props}")
     policy=run.get("request",{}).get("encounter") or {}
     if args.model_id and policy.get("modelId")!=args.model_id:
         raise ValueError("Recording does not use the specified frozen model ID")
@@ -68,6 +74,7 @@ def export(args):
              "--start",str(start),"--end",str(end),"--title",args.title,"--referee-inset","--out",str(temp)]
     if not baseline:command.append("--learned-panel")
     if args.whole_lap:command.append("--whole-lap")
+    if args.reference_run:command.extend(("--reference-run",str(args.reference_run)))
     subprocess.run(command,check=True)
     receipt_path=temp.with_suffix(".json")
     receipt=json.loads(receipt_path.read_bytes())
@@ -89,6 +96,7 @@ def export(args):
             "rangeS":[start,end],"sourceSHA256":sha(run_path),"weightsSHA256":ready["sha256"],
             "solver":run["request"].get("solver"),"modelId":policy.get("modelId"),"videoSHA256":sha(temp),"bytes":temp.stat().st_size,
             "posterSourceTimeS":min(end,start+round(poster_offset*fps)/float(fps)),"minRoadM":run["minRoad"],"minConeM":run["minGap"],
+            "sceneProps":{"static":counts[0],"moving":counts[1],"records":physical},
             "fps":int(fps),"frameSize":list(size),"frames":len(frames),"durationS":float(len(frames)/fps)}
     write(evidence/(name+".verified.json"),audit)
     shutil.copyfile(receipt_path,evidence/(name+".source.json"))
@@ -134,6 +142,8 @@ def main():
     clip.add_argument("--whole-lap",action="store_true")
     clip.add_argument("--baseline-full",action="store_true")
     clip.add_argument("--model-id",help="Require this exact model digest in the actual Unity request")
+    clip.add_argument("--reference-run",type=Path)
+    clip.add_argument("--expected-props",nargs=2,type=int,metavar=("STATIC","MOVING"),help="Check physical cone counts before writing the clip")
     for key in ("trial","name","title"):clip.add_argument("--"+key,required=True)
     for key in ("start","end","poster-at"):clip.add_argument("--"+key,type=float)
     reel=sub.add_parser("join")

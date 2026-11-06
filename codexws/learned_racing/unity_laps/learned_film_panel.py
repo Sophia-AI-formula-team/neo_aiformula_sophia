@@ -1,5 +1,6 @@
 """Use recorded kernel-regression action returns, issued choices and referee outcomes in a film."""
 from bisect import bisect_right
+import math
 
 from PIL import Image, ImageDraw
 
@@ -19,8 +20,9 @@ def action_text(index,actions):
 
 
 class LearnedPanel:
-    def __init__(self,run):
+    def __init__(self,run,comparison=None):
         self.run=run
+        self.comparison=comparison
         cfg=run["request"].get("encounter") or {}
         if not cfg.get("actions") or cfg.get("mode")=="probe":
             raise ValueError("Learning panel requires a fitted policy, not a forced training action")
@@ -28,10 +30,20 @@ class LearnedPanel:
         self.decisions=run["decisions"]
         self.selected=[i for i,d in enumerate(self.decisions) if (d.get("encounter") or {}).get("state")=="selected"]
         self.model=cfg["modelId"]
+        self.raw_picks={}
         for i in self.selected:
             e=self.decisions[i]["encounter"]
             if e.get("modelId")!=self.model or len(e.get("actionScores") or [])!=len(self.actions):
                 raise ValueError("Incomplete scores or mismatched decision weights")
+            if cfg.get("rawReturns"):
+                distances=[sum(((a-b)/s)**2 for a,b,s in zip(row,e["features"],cfg["scales"])) for row in cfg["contexts"]]
+                weights=[math.exp(-(x-min(distances))/(2*cfg["width"]**2)) for x in distances]
+                def estimate(table):
+                    return [sum(w*v for w,v in zip(weights,column))/sum(weights) for column in zip(*table)]
+                if max(abs(c-a) for c,a in zip(estimate(cfg["returns"]),e["actionScores"]))>.002:
+                    raise ValueError("Risk-adjusted model replay does not match the logged action scores")
+                raw=estimate(cfg["rawReturns"])
+                self.raw_picks[self.decisions[i]["t"]]=max(range(len(raw)),key=raw.__getitem__)
         self.outcome=OUTCOMES.get(run["status"],run["status"])
 
     def sample(self,i):
@@ -46,6 +58,8 @@ class LearnedPanel:
         state=ACTION_STATES.get(current.get("state"),"当前没有策略评估")
         label(d,(43,35),"学习策略",30,"#ffffff",True)
         label(d,(204,37),state,23,"#c2dcdb")
+        if self.comparison is not None:
+            label(d,(738,37),"与基线逐行轨迹"+("相同" if self.comparison else "不同"),22,"#ccdfdc")
         clearance=f"最小桶净距 {self.run['minGap']:.2f} m" if self.run["props"] else "场内无锥桶"
         end="本趟结果  "+self.outcome+"   /   "+clearance
         label(d,(2004,34),end,24,"#ffd7a1" if self.run["status"] in ("obstacle","boundary") else "#c0e8d4",True,anchor="rm")
@@ -58,10 +72,15 @@ class LearnedPanel:
         chosen=decision["chosen"];features=decision["features"]
         label(d,(43,105),f"{source['t']:.2f} s 选择   {action_text(chosen,self.actions)}",32,"#dff4ac",True)
         label(d,(44,156),f"选取时   前距 {features[3]:.1f} m    横向速度估计 {features[1]:+.2f} m/s    {int(features[4])} 个跟踪目标",22,"#e0e9ea")
-        label(d,(44,190),"正横向速度朝道路右侧。这里显示实际选取时的观测。",18,"#a7c1c4")
+        if source["t"] in self.raw_picks:
+            raw=self.raw_picks[source["t"]]
+            label(d,(44,190),f"扣风险前首选（复算）  {action_text(raw,self.actions)}   →   实际  {action_text(chosen,self.actions)}",19,"#d5dce7")
+        else:
+            label(d,(44,190),"正横向速度朝道路右侧。这里显示实际选取时的观测。",18,"#a7c1c4")
         scores=decision["actionScores"]
         best=sorted(range(len(scores)),key=lambda k:(-scores[k],k))[:3]
-        label(d,(1024,94),f"动作估计回报 · 前 {len(best)} 项",21,"#c2dcdb",True)
+        score_label="扣除风险后的估计回报" if self.raw_picks else "动作估计回报"
+        label(d,(1024,94),f"{score_label} · 前 {len(best)} 项",21,"#c2dcdb",True)
         for k,action in enumerate(best):
             x=1024+k*330
             color="#ddf4aa" if action==chosen else "#e1eaea"
