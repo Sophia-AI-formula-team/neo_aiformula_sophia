@@ -1,0 +1,536 @@
+{
+  "schema": 1,
+  "courseLengthForFractionsM": 280.87656260722264,
+  "cases": [
+    {
+      "id": "g01",
+      "scope": "segment",
+      "family": "static",
+      "road": "straight",
+      "context": "static / straight",
+      "nominalStartM": 144.80993445001334,
+      "seed": 6523504,
+      "approach": 0,
+      "limitM": 38.1409,
+      "props": [
+        [
+          25.6409,
+          -2.2949,
+          0,
+          0,
+          0
+        ],
+        [
+          25.6409,
+          1.0977,
+          0,
+          0,
+          0
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "outer-line",
+          "stationM": 25.6409,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.5749,
+            0.3776999999999998
+          ]
+        }
+      ],
+      "order": [
+        "base",
+        "learned"
+      ]
+    },
+    {
+      "id": "g02",
+      "scope": "segment",
+      "family": "static",
+      "road": "bend",
+      "context": "static / bend",
+      "nominalStartM": 252.9572714753308,
+      "seed": 6392770,
+      "approach": 0,
+      "limitM": 35.8164,
+      "props": [
+        [
+          23.3164,
+          -3.2363,
+          0,
+          0,
+          0
+        ],
+        [
+          23.3164,
+          -0.2081,
+          0,
+          0,
+          0
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "shift",
+          "stationM": 23.3164,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.5163,
+            -0.9281
+          ]
+        }
+      ],
+      "order": [
+        "learned",
+        "base"
+      ]
+    },
+    {
+      "id": "g03",
+      "scope": "segment",
+      "family": "moving",
+      "road": "straight",
+      "context": "moving / straight",
+      "nominalStartM": 143.2457109012447,
+      "seed": 7389945,
+      "approach": 0,
+      "limitM": 36.975,
+      "props": [
+        [
+          24.475,
+          -2.3797,
+          0.1644,
+          0.4374,
+          -0.2087
+        ],
+        [
+          24.475,
+          1.1356,
+          0.1985,
+          0.6065,
+          -1.9274
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "outer-line",
+          "stationM": 24.475,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.4952999999999999,
+            0.21709999999999996
+          ]
+        }
+      ],
+      "order": [
+        "base",
+        "learned"
+      ]
+    },
+    {
+      "id": "g04",
+      "scope": "segment",
+      "family": "moving",
+      "road": "bend",
+      "context": "moving / bend",
+      "nominalStartM": 81.83004701829735,
+      "seed": 7240441,
+      "approach": 0,
+      "limitM": 35.0645,
+      "props": [
+        [
+          22.5645,
+          -3.1511,
+          0.2801,
+          0.5716,
+          -1.204
+        ],
+        [
+          22.5645,
+          -0.106,
+          0.1622,
+          0.5407,
+          -1.9298
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "shift",
+          "stationM": 22.5645,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.1510000000000002,
+            -0.9882000000000001
+          ]
+        }
+      ],
+      "order": [
+        "learned",
+        "base"
+      ]
+    },
+    {
+      "id": "g05",
+      "scope": "segment",
+      "family": "double",
+      "road": "straight",
+      "context": "double / straight",
+      "nominalStartM": 35.00846139099381,
+      "seed": 7293977,
+      "approach": 0,
+      "limitM": 43.9348,
+      "props": [
+        [
+          23.5342,
+          -2.4154,
+          0,
+          0,
+          0
+        ],
+        [
+          23.5342,
+          1.1216,
+          0,
+          0,
+          0
+        ],
+        [
+          31.4348,
+          -3.0819,
+          0,
+          0,
+          0
+        ],
+        [
+          31.4348,
+          -0.1462,
+          0,
+          0,
+          0
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "outer-line",
+          "stationM": 23.5342,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.6954000000000002,
+            0.40159999999999985
+          ]
+        },
+        {
+          "index": 1,
+          "propIndices": [
+            2,
+            3
+          ],
+          "role": "shift",
+          "stationM": 31.4348,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.3619000000000003,
+            -0.8662000000000001
+          ]
+        }
+      ],
+      "order": [
+        "base",
+        "learned"
+      ]
+    },
+    {
+      "id": "g06",
+      "scope": "segment",
+      "family": "double",
+      "road": "bend",
+      "context": "double / bend",
+      "nominalStartM": 74.66577559400436,
+      "seed": 7082190,
+      "approach": 0,
+      "limitM": 43.6902,
+      "props": [
+        [
+          24.1504,
+          -3.1763,
+          0,
+          0,
+          0
+        ],
+        [
+          24.1504,
+          0.0499,
+          0,
+          0,
+          0
+        ],
+        [
+          31.1902,
+          -2.3271,
+          0,
+          0,
+          0
+        ],
+        [
+          31.1902,
+          1.1289,
+          0,
+          0,
+          0
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "shift",
+          "stationM": 24.1504,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.4563,
+            -0.6701
+          ]
+        },
+        {
+          "index": 1,
+          "propIndices": [
+            2,
+            3
+          ],
+          "role": "outer-line",
+          "stationM": 31.1902,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.6071,
+            0.40889999999999993
+          ]
+        }
+      ],
+      "order": [
+        "learned",
+        "base"
+      ]
+    },
+    {
+      "id": "g07",
+      "scope": "segment",
+      "family": "mixed-triple",
+      "road": "bend",
+      "context": "mixed-triple / bend",
+      "nominalStartM": 231.6665284219613,
+      "seed": 7066864,
+      "approach": 0,
+      "limitM": 51.4555,
+      "props": [
+        [
+          24.4927,
+          -2.4387,
+          0,
+          0,
+          0
+        ],
+        [
+          24.4927,
+          1.0969,
+          0,
+          0,
+          0
+        ],
+        [
+          31.7787,
+          -2.974,
+          0.241,
+          0.7785,
+          0.6407
+        ],
+        [
+          31.7787,
+          -0.0954,
+          0.2198,
+          0.6974,
+          1.9398
+        ],
+        [
+          38.9555,
+          -2.4306,
+          0.1995,
+          0.6884,
+          2.0876
+        ],
+        [
+          38.9555,
+          1.1357,
+          0.1567,
+          0.6612,
+          1.4
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "outer-line",
+          "stationM": 24.4927,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.7187000000000001,
+            0.3768999999999999
+          ]
+        },
+        {
+          "index": 1,
+          "propIndices": [
+            2,
+            3
+          ],
+          "role": "shift",
+          "stationM": 31.7787,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.0130000000000003,
+            -1.0352000000000001
+          ]
+        },
+        {
+          "index": 2,
+          "propIndices": [
+            4,
+            5
+          ],
+          "role": "outer-line",
+          "stationM": 38.9555,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.5110999999999999,
+            0.2589999999999998
+          ]
+        }
+      ],
+      "order": [
+        "base",
+        "learned"
+      ]
+    },
+    {
+      "id": "g08",
+      "scope": "segment",
+      "family": "mixed-triple",
+      "road": "bend",
+      "context": "mixed-triple / bend",
+      "nominalStartM": 277.9223164456677,
+      "seed": 6965456,
+      "approach": 0,
+      "limitM": 51.7918,
+      "props": [
+        [
+          24.8481,
+          -3.2158,
+          0.2994,
+          0.3935,
+          2.3712
+        ],
+        [
+          24.8481,
+          -0.1047,
+          0.1777,
+          0.7822,
+          0.1713
+        ],
+        [
+          31.8041,
+          -2.3465,
+          0.1422,
+          0.4627,
+          -0.919
+        ],
+        [
+          31.8041,
+          1.1177,
+          0.1828,
+          0.6564,
+          -1.9609
+        ],
+        [
+          39.2918,
+          -2.9561,
+          0,
+          0,
+          0
+        ],
+        [
+          39.2918,
+          -0.231,
+          0,
+          0,
+          0
+        ]
+      ],
+      "gates": [
+        {
+          "index": 0,
+          "propIndices": [
+            0,
+            1
+          ],
+          "role": "shift",
+          "stationM": 24.8481,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.1964000000000006,
+            -1.0024000000000002
+          ]
+        },
+        {
+          "index": 1,
+          "propIndices": [
+            2,
+            3
+          ],
+          "role": "outer-line",
+          "stationM": 31.8041,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -1.4842999999999997,
+            0.21489999999999998
+          ]
+        },
+        {
+          "index": 2,
+          "propIndices": [
+            4,
+            5
+          ],
+          "role": "shift",
+          "stationM": 39.2918,
+          "worstPhaseAlignedAxleOffsetIntervalM": [
+            -2.2361000000000004,
+            -0.9510000000000001
+          ]
+        }
+      ],
+      "order": [
+        "learned",
+        "base"
+      ]
+    }
+  ]
+}
