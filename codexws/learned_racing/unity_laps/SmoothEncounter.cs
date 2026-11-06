@@ -10,6 +10,7 @@ public sealed class SmoothConfig {
     public float[][] actions;
     // Each row is either [feature, split, left, right] or [-1, action scores...].
     public float[][][] forest;
+    public GapConfig gap;
 }
 public sealed class SmoothEvidence {
     public string state,modelId;

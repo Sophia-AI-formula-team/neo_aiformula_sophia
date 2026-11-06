@@ -162,7 +162,7 @@ public sealed class UnityRace {
         d.SetAutonomousVelocityCommand(policy.speedCmd,policy.yawCmd);d.StepDrive(dt);scene.GetPhysicsScene().Simulate(dt);k++;
         if(observed!=null)decisions.Add(new{t,speed,yaw,observed,tracks=tracks.Select(o=>new[]{o.z,o.x,o.vx,o.vz}).ToArray(),
             policy.reason,policy.curvature,policy.cruise,policy.look,policy.target,policy.preferred,policy.offset,ratio=policy.chosenSpeed,
-            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing,encounter=policy.Encounter,smooth=policy.Smooth});
+            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing,encounter=policy.Encounter,smooth=policy.Smooth,gap=policy.Gap});
         if(d.MotorFault.Length>0||d.TireContact.Fault.Length>0)throw new InvalidOperationException(d.MotorFault+d.TireContact.Fault);
     }
     void Capture(float t){

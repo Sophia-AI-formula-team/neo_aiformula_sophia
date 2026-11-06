@@ -245,6 +245,8 @@ public sealed class Policy {
     readonly LocalTiming timing;
     readonly EncounterPolicy encounter;
     readonly SmoothEncounter smooth;
+    readonly GapPlanner gap;
+    public GapDecision Gap {get{return gap==null?null:gap.Decision;}}
     public SmoothEvidence Smooth {get{return smooth==null?null:smooth.evidence;}}
     public EncounterEvidence Encounter {get{return encounter==null?null:encounter.evidence;}}
     readonly float approach;
@@ -253,6 +255,7 @@ public sealed class Policy {
         p=weights;approach=approachCap;if(!string.IsNullOrEmpty(timingMode))timing=new LocalTiming(timingMode=="both");
         if(encounterConfig!=null)encounter=new EncounterPolicy(encounterConfig);
         if(smoothConfig!=null)smooth=new SmoothEncounter(smoothConfig);
+        if(smoothConfig!=null && smoothConfig.gap!=null)gap=new GapPlanner(smoothConfig.gap);
     }
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
@@ -355,6 +358,10 @@ public sealed class Policy {
         if(smooth!=null && smooth.Act(line,objects,speed,yaw,curvature,offset,lineBias,period)){
             reason="smooth_encounter";preferred=smooth.evidence.targetOffset;guardCap=smooth.evidence.targetSpeed;
             planningSpeed=Mathf.Min(nominalCruise,guardCap);pace=1;recovery=0;
+        }
+        if(gap!=null && gap.Plan(line,objects,speed,nominalCruise,lineBias,offset,period)){
+            reason="visible_gap";preferred=gap.Decision.offset;guardCap=gap.Decision.speed;
+            planningSpeed=guardCap;pace=1;recovery=0;
         }
         float shiftStep=guarded?period*(yielding?2.5f:p[11]):.52f;
         offset=Mathf.MoveTowards(offset,preferred,shiftStep);chosenSpeed=pace;
