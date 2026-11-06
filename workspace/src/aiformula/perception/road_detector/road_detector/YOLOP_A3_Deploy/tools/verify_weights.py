@@ -8,7 +8,7 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from yolop_a3_runtime.shared_fpn import CONTRACT_ARCHITECTURE, INPUT_CONTRACT
+from yolop_a3_runtime.temporal import ARCHITECTURE, INPUT_CONTRACT
 
 
 def main():
@@ -24,10 +24,10 @@ def main():
     payload = torch.load(path, map_location="cpu", weights_only=True)
     if set(payload) != {"architecture", "model", "input_contract", "provenance"}:
         raise ValueError("Expected model-only checkpoint without training state")
-    if payload["architecture"] != manifest["architecture"] or payload["architecture"] != CONTRACT_ARCHITECTURE:
+    if payload["architecture"] != manifest["architecture"] or payload["architecture"] != ARCHITECTURE:
         raise ValueError("Architecture mismatch")
     if payload["input_contract"] != INPUT_CONTRACT or manifest["input_contract"] != INPUT_CONTRACT:
-        raise ValueError("V14 input contract mismatch")
+        raise ValueError("V76 input contract mismatch")
     if payload["provenance"] != manifest["provenance"]:
         raise ValueError("Provenance mismatch")
     if path.stat().st_size != manifest["bytes"] or len(payload["model"]) != manifest["tensors"]:
@@ -35,7 +35,7 @@ def main():
     if any(not torch.isfinite(value).all() for value in payload["model"].values()):
         raise ValueError("Nonfinite model tensor")
     print(json.dumps(dict(sha256=checksum, bytes=path.stat().st_size,
-                          step=payload["provenance"]["step"], tag="a3-v14", inference_only=True), indent=2))
+                          step=payload["provenance"]["step"], tag="a3-v76", inference_only=True), indent=2))
 
 
 if __name__ == "__main__":

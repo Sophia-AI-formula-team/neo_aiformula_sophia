@@ -30,11 +30,13 @@ class PerceptionOutput:
     traffic_light_state: str
     red_pixels_count: int
     timings_ms: dict
+    temporal_status: str = "single_frame"
 
     def detections_payload(self):
         return dict(detections=[item.to_dict() for item in self.detections],
                     traffic_light_state=self.traffic_light_state,
-                    red_pixels_count=self.red_pixels_count, timings_ms=self.timings_ms)
+                    red_pixels_count=self.red_pixels_count, timings_ms=self.timings_ms,
+                    temporal_status=self.temporal_status)
 
 
 def render(image, detections):

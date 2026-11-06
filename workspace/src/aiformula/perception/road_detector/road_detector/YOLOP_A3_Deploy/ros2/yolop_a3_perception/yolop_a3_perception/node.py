@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import rclpy
@@ -31,7 +32,8 @@ class YolopA3Node(Node):
         self.light = self.create_publisher(String, ROS_TOPICS.traffic_light_state, 1)
         self.detections = self.create_publisher(String, ROS_TOPICS.detections_json, 1)
         self.subscription = self.create_subscription(Image, topic, self.receive, qos)
-        self.get_logger().info(f"A3 single-backbone weights={weights}; input={topic}")
+        self.get_logger().info(f"A3 V76 single-frame mode; weights={weights}; input={topic}; "
+                               "calibrated temporal input is available through Python predict_frame")
 
     def receive(self, message):
         try:
@@ -39,7 +41,7 @@ class YolopA3Node(Node):
             output = self.model.predict(image)
             for name, (publisher, encoding) in self.images.items():
                 result = self.bridge.cv2_to_imgmsg(getattr(output, name), encoding=encoding)
-                result.header = message.header
+                result.header = deepcopy(message.header)
                 publisher.publish(result)
             self.red.publish(Int32(data=output.red_pixels_count))
             self.light.publish(String(data=output.traffic_light_state))

@@ -1,87 +1,68 @@
-# A3 V14 Deployment Handoff
+# A3 V76 Deployment Handoff
 
-## Selected Version
+## Release Decision
 
-User selected **local V14 step 16,384**, not remote A1/FCOS or the best-gap step.
-Tag `a3-v14` replaces the previous A3 package. Tag `a3-v6` preserves the former
-PR #13 code and epoch24 weight together. Local training finished normally after
-176.73 minutes, step_budget, exit 0. Automated quality qualification did not pass.
+The user selected V76 aligned step 1024 as the new stable package and authorized
+merge. Release tag: **a3-v76**. Prior rollback tag: **a3-v14**.
+See weights/manifest.json for exact source/export hashes and input contract.
 
-## Results
+This release contains the actual temporal module and its learned weights.
+The existing ROS image-only node runs single-frame inference; enabling temporal
+fusion requires the explicit calibrated frame API in TEMPORAL.md. No vehicle
+launch or perception publisher has been switched by this publication.
 
-Fixed diagnostics, raw masks at 0.5; object confidence/IoU thresholds both 0.5.
-32 real lane images, 16 empty, 594 geometry, 101 object images. These are repeated
-diagnostic holdouts, not an independent final or vehicle test.
+## Measured Results
 
-| Metric | Original A1 | Local V14 final |
+900 held-out synthetic sequence frames: 4 spatial anchors, three lighting
+conditions (midday, long shadow, soft dusk), dashed/solid/unmarked variants.
+The same frames, unchanged native labels and raw threshold 0.5 were used.
+
+| Metric | Frozen single-frame parent | V76 aligned |
 |---|---:|---:|
-| Real lane recall | 97.85% | 82.45% |
-| Real lane IoU | 59.09% | 74.72% |
-| Empty false-pixel rate | 0.398% | 0.187% |
-| Geometry gap recall | 7.17% | 17.91% |
-| Real object micro F1 | N/A, lane-only | 55.56% |
+| Dashed-gap recall | 57.150% | 57.598% |
+| Lane IoU on dashed scenes | 72.305% | 73.105% |
+| Empty-scene false-pixel rate | 0.03418% | 0.03226% |
+| Automated false joins | 0 | 0 |
 
-Training-sentinel gap recall is 91.32%, exposing poor holdout generalization.
-Real person/car/light/cone recall is 39.13/64.71/53.33/24.24%; Unity person/light/
-cone recall is 95.65/82.64/63.18%. Real small-object recall is 26.51%. Micro F1
-is not mAP. The original A3 native reference real F1 was 56.14%.
+The image model and detector were frozen. The 49-parameter fusion improves
+cleanup modestly, but the +0.448-point gap gain is below the experiment's
++2-point direction gate. The source flag remains false; user selection is
+recorded separately. These sequence metrics must not be compared directly with
+V14's older static splits or different gap definitions.
 
-Real recall >=95%, clean continuity and object nonregression remain unmet. Empty
-FP <=0.35% and IoU improvement on these sentinels do not establish full acceptance.
-The old >=85% dash-gap gate was not retested in its old definition; geometric
-gap recall cannot be directly compared with v6's 73.57% dark-pixel proxy.
-Full unrounded data: verification/training_summary.json. No claim of Orin FPS.
+Paired research-model latency on RTX 4070 Ti: single-frame median 21.63 ms,
+temporal median 22.70 ms (+4.96%). This excludes ROS transport and overlay work.
+Object raw outputs are unchanged relative to the V73 parent. This is not a new
+per-class object-quality comparison against V14.
 
-## Deployment Changes
+## Packaging Verification
 
-- Exported only model tensors and provenance; no optimizer/scaler/RNG/history.
-- Removed the experimental `core.` wrapper prefix with exact tensor equality.
-- Added mandatory V14 input/restoration metadata validation at load time.
-- Default lane output is RAW at 0.5, matching the reviewed local final images.
-  Older v6 morphology is no longer enabled by default. This is intentional.
-- Preserved one shared encoder, independent masks, ROS topics, headers and HSV
-  color/light semantics. Legacy architecture loaders remain for older explicitly
-  supplied checkpoints; they are not fallbacks for missing V14 metadata.
-- Added AGENTS.md, release/rollback instructions and contract regression tests.
+- Before replacement: all 26 old package tests passed.
+- New unit/contract checks cover actual weights, one encoder traversal, independent
+  outputs, native restoration, temporal resets, invalid metadata and ROS headers.
+- Full-resolution source/export comparison: see verification/runtime_smoke.json.
+- Wheel/install/CLI results: see verification/package_smoke.json.
+- Sanitized experiment summary: verification/training_summary.json.
 
-## Verification And Remaining Risks
-
-See verification/runtime_smoke.json for fixed-frame reference/package parity and
-single encoder counts; verification/package_smoke.json for tests, wheel, isolated
-installation and CLI smoke. These files describe this exact weight, not v6.
-The package tests use real weights with reduced-size CPU structural checks;
-separate CUDA parity uses the full native input contract.
-
-Exact parity uses deterministic algorithms with TF32 disabled. The default CLI
-retains Torch's backend settings: its smoke frame differed by 8 lane pixels,
-with identical detection count/semantic labels and maximum box shift 0.030 px.
-This is recorded in package_smoke.json, not represented as bitwise CLI parity.
-
-No live ROS2/DDS or colcon build was performed on Windows. No Orin/TensorRT,
-sustained full-bag latency, light-state accuracy, watchdog or moving-vehicle
-acceptance is implied. Callback failures emit no fabricated empty result; stale
-data must be handled by a validated downstream watchdog.
+The publication preserves the newer road_detector full-Header repair.
+No ROS/DDS, Jetson or moving-vehicle run was performed in this release task.
 
 ## Next Owner
 
-1. Verify weights, install runtime and run the offline demo/tests in DEPLOYMENT.md.
-2. Use all shadow remaps before touching vehicle topics. Check actual publisher
-   count, source timestamp age, frame_id, resolution and avoidance ROI behavior.
-3. On Orin verify the JetPack/Torch/TorchVision/ROS ABI and CUDA ROI/NMS operators;
-   measure sustained end-to-end timing on representative held-out bags.
-4. For further training, audit complete real small-object assignment coverage and
-   compare detector-only against joint training. For lanes, compare lane-only
-   against joint training on independent maps/camera poses. Do not only add epochs.
-5. Keep one backbone/one weight/two outputs. Do not conceal gap failures with
-   thickening, broad closing, relaxed thresholds or validation relabeling.
+1. Install from the tag and verify the manifest checksum before inference.
+2. Run the image demo and all shadow remaps in DEPLOYMENT.md; verify publisher
+   count, encodings, original timestamps and frame IDs.
+3. For temporal operation supply metric plane geometry at image capture time.
+   Validate real-camera ground projection, optical axes, camera extrinsics and
+   odometry synchronization. Do not normalize the projection matrix arbitrarily.
+4. On AGX Orin measure sustained end-to-end timing and source timestamp age,
+   memory and temperatures with representative input. FP32 is the reference.
+5. Compare lanes and each object class on the same real footage before changing
+   runtime precision or input size. Temporal object tracking is not implemented.
 
-## Resume And Rollback
+## Rollback And Training
 
-This model-only weight is not an exact-resume checkpoint. Full local training
-state remains separately in `YOLOP_A3/runs/contract_v14/local/a3/last.pth`, with
-87 optimizer slots, four RNG states and source/data fingerprints. Do not restart
-the exhausted recipe or edit fingerprinted sources from this deployment package.
-
-With the vehicle stopped, restore the entire `a3-v6` tagged checkout and reinstall
-its runtime, then verify its weight and shadow outputs. Code and weights must be
-rolled back together. No vehicle launch switch is performed by either release.
+Restore the entire a3-v14 runtime and weight together; do not rename a checkpoint.
+The package is inference-only. Full optimizer/RNG/history checkpoints remain in
+the separate training project. No training, resume configuration or private data
+belongs in this deployment directory.
