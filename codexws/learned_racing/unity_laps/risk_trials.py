@@ -10,13 +10,15 @@ import subprocess
 import sys
 import time
 
-from run import HERE, Lab, SIM, write
+from run import HERE, Lab, NAMES, SIM, write
 
 ROOT = HERE / "risk_revision"
 PRACTICE = (41021, 5948, 33551)
 CHECK = (78441, 96527)
 BLIND = (93677, 20318, 57846, 81052)
 INITIAL = json.loads((HERE / "evidence/camera_policy.json").read_bytes())
+GUARD_FIELDS = [*NAMES, "passing_speed_mps", "recovery_speed_mps", "return_offset_mps"]
+CORRIDOR_FIELDS = [*GUARD_FIELDS, "passing_line_retention"]
 
 
 @contextmanager
@@ -74,12 +76,16 @@ def main():
     p.add_argument("--clear", action="store_true")
     args = p.parse_args()
     baseline = args.action == "baseline"
-    lab = Lab(SIM, ROOT, INITIAL["solver"] if baseline else None)
+    solver=INITIAL["solver"] if baseline else None
     weights = INITIAL["weights"] if baseline else args.weights
     if args.action in ("blind","film"):
-        frozen = json.loads((ROOT / "frozen.json").read_bytes())
+        record=ROOT/"selected.json"
+        frozen = json.loads((record if record.exists() else ROOT/"frozen.json").read_bytes())
         weights = frozen["weights"]
-        if lab.build != frozen["solver"]:raise RuntimeError("Frozen controller changed")
+        solver = frozen["solver"]
+        if hashlib.sha256((HERE/"vision.py").read_bytes()).hexdigest()!=frozen["observerSha"]:
+            raise RuntimeError("Frozen camera observer changed")
+    lab = Lab(SIM, ROOT, solver)
     if not weights:raise ValueError("Candidate weights required")
     if args.action == "film":
         run_group(lab, args.name, weights, [(args.seed, not args.clear)], args.observer, True)

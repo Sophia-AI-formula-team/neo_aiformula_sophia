@@ -26,12 +26,14 @@ def phase(decision):
     reason = decision["reason"]
     if reason == "insufficient_lane":
         return "可用车线不足，限制车速"
-    if reason == "yield":
+    if reason in ("yield", "yield_corridor"):
         if decision["guardCap"] < decision["cruise"]:
             return "前方存在冲突，降速避让"
         return "已观察到前方冲突"
     if reason == "recover":
         return "回线阶段，检查恢复限速"
+    if reason == "hold_pass":
+        return "短时保持已选绕行侧"
     if decision["ratio"] < .99:
         return "绕障候选选择较低车速"
     return "按车线曲率设定车速" if reason == "road" else str(reason)

@@ -88,6 +88,59 @@ public sealed class Policy {
     public float cruise, look, target, preferred, guardCap, conflictRange;
     public string reason="start";
     float recovery;
+    float passGoal;
+    bool inPass;
+    // Search the currently visible cross section for a corridor wide enough for the body.
+    // Clearance is measured along the observed road normal; short-term memory keeps a passing side during occlusion.
+    void ChooseCorridor(float[] line,List<Sight> objects,float speed,float lineBias,float period){
+        var blocked=new List<Vector2>();
+        float localSlope=(line[1]-line[0])/(Ahead[1]-Ahead[0]);
+        float egoOffset=-CenterAt(line,0)/Mathf.Sqrt(1+localSlope*localSlope);
+        float arrivalCap=cruise;
+        float hazard=99;
+        foreach(var o in objects){
+            if(o.z<-.85f || o.z>12f)continue;
+            float slope=(CenterAt(line,o.z+.25f)-CenterAt(line,o.z-.25f))*2f;
+            float scale=Mathf.Sqrt(1+slope*slope);
+            float cross=(o.x-CenterAt(line,o.z))/scale;
+            float motion=Mathf.Clamp((o.vx-slope*o.vz)/scale,-1.6f,1.6f);
+            float horizon=Mathf.Clamp(o.z/Mathf.Max(1f,speed),0,2.5f);
+            float future=cross+motion*horizon*p[6];
+            float padding=.76f+p[4]+Mathf.Min(.4f,.22f*horizon*Mathf.Abs(motion));
+            var interval=new Vector2(Mathf.Min(cross,future)-padding,Mathf.Max(cross,future)+padding);
+            if(interval.x>1.35f || interval.y< -4.65f)continue;
+            blocked.Add(interval);
+            if(interval.x<lineBias+.36f && interval.y>lineBias-.36f || inPass)hazard=Mathf.Min(hazard,o.z);
+        }
+        if(hazard<12f){
+            float best=float.NegativeInfinity,bestTarget=lineBias;
+            for(int i=0;i<=33;i++){
+                float x=-4.30f+.16f*i;
+                float margin=Mathf.Min(Track.Lane*.5f-.40f-x,Track.Lane*1.5f-.40f+x);
+                foreach(var b in blocked)margin=Mathf.Min(margin,Mathf.Max(b.x-x,x-b.y));
+                float score=2f*Mathf.Min(margin,1.25f)-.10f*Mathf.Abs(x-lineBias);
+                if(inPass)score-=p[12]*Mathf.Abs(x-passGoal);
+                if(score>best){best=score;bestTarget=x;}
+            }
+            passGoal=bestTarget;inPass=true;recovery=1.2f;
+            guardCap=Mathf.Sqrt(p[9]*p[9]+2f*1.25f*Mathf.Max(0,hazard-7f));
+            if(hazard>0 && Mathf.Abs(passGoal-egoOffset)>.45f){
+                bool exposed=blocked.Any(b=>egoOffset>=b.x && egoOffset<=b.y);
+                if(exposed){
+                    float needed=Mathf.Sqrt(2f*Mathf.Abs(passGoal-egoOffset)/1.20f)+.35f;
+                    arrivalCap=Mathf.Max(.38f,(hazard-.65f)/needed);
+                }
+            }
+            guardCap=Mathf.Min(guardCap,arrivalCap);preferred=passGoal;reason="yield_corridor";
+        }else if(inPass && recovery>0){
+            preferred=passGoal;guardCap=p[10];reason="hold_pass";
+        }else{
+            inPass=false;preferred=lineBias;
+            bool returning=Mathf.Abs(egoOffset-lineBias)>.60f || Mathf.Abs(offset-lineBias)>.35f || Mathf.Abs(localSlope)>.35f;
+            guardCap=returning?p[10]:cruise;reason=returning?"recover":"road";
+        }
+        conflictRange=hazard;
+    }
     public Policy(float[] weights){p=weights;}
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
@@ -139,7 +192,10 @@ public sealed class Policy {
             }
         }
         float planningSpeed=Mathf.Min(cruise,guardCap);
-        if(objects.Count>0){
+        if(p.Length>=13){
+            ChooseCorridor(line,objects,speed,lineBias,period);
+            planningSpeed=Mathf.Min(cruise,guardCap);
+        }else if(objects.Count>0){
             withObjects++;
             foreach(float lateral in new[]{-3.65f,-3.08f,-2.6f,-2.05f,-1.55f,-1.15f,-.78f,0f,.70f,.92f}){
                 foreach(float ratio in new[]{1f,.68f,.40f}){

@@ -46,8 +46,21 @@ class Lab:
         sources=sorted(HERE.glob("*.cs"));self.build=hashlib.sha256(b"".join(p.read_text(encoding="utf8").encode("utf8") for p in sources)).hexdigest()[:14]
         self.dll=self.work/f"LapLab_{self.build}.dll"
         if solver is not None and solver!=self.build:
-            self.build=solver;self.dll=(HERE/"evidence/.work")/f"LapLab_{solver}.dll"
-            if not self.dll.is_file():raise RuntimeError("Requested frozen solver must be rebuilt from its source revision")
+            self.build=solver;self.dll=self.work/f"LapLab_{solver}.dll"
+            previous=(HERE/"evidence/.work")/self.dll.name
+            if not self.dll.is_file() and previous.is_file():
+                self.dll=previous
+            if not self.dll.is_file():
+                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed"}
+                if solver not in revisions:raise RuntimeError("No recorded source revision for "+solver)
+                source_dir=self.work/"sources"/solver
+                source_dir.mkdir(exist_ok=True,parents=True)
+                for source in sources:
+                    revision=revisions[solver]+":codexws/learned_racing/unity_laps/"+source.name
+                    (source_dir/source.name).write_bytes(subprocess.check_output(["git","show",revision],cwd=HERE))
+                sources=sorted(source_dir.glob("*.cs"))
+                digest=hashlib.sha256(b"".join(p.read_text(encoding="utf8").encode("utf8") for p in sources)).hexdigest()[:14]
+                if digest!=solver:raise RuntimeError("Historical source hash mismatch")
         if not self.dll.exists():
             mono=eng/"MonoBleedingEdge"
             refs=[managed/"UnityEngine/UnityEngine.dll",managed/"UnityEngine/UnityEditor.CoreModule.dll",
