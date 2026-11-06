@@ -7,6 +7,7 @@ from pathlib import Path
 from statistics import median
 
 import numpy as np
+from crossing_audit import evaluate, first_crossing, section
 from risk_metrics import CONE_MARGIN_M, ROAD_MARGIN_M, ZONE_HALF_M, _free_pace, _groups
 
 HERE = Path(__file__).resolve().parent
@@ -101,6 +102,45 @@ def audit_loaded_selector(run, artifact):
     return dict(selected=selected, maxReplayScoreError=max_score_error,
                 activeCommandUpdates=sum(d["reason"] == "learned_encounter" for d in run["decisions"]))
 
+def swept_strip(run, prop, sec):
+    """Check the union of the body's lateral projections throughout the actual gate occupation."""
+    enter, leave = sec.get("frontEnterS"), sec.get("rearClearS")
+    if enter is None or leave is None:
+        return None
+    rows=np.asarray(run["rows"]); t=np.linspace(enter,leave,math.ceil((leave-enter)/.005)+1)
+    xz=np.column_stack([np.interp(t,rows[:,0],rows[:,i]) for i in (1,2)])
+    yaw=np.interp(t,rows[:,0],np.unwrap(rows[:,3]))
+    fwd=np.column_stack((np.sin(yaw),np.cos(yaw))); side=np.column_stack((fwd[:,1],-fwd[:,0]))
+    pos=np.asarray(prop[:2]); side_vec=np.asarray(prop[2:4])
+    lateral=np.array([(xz-pos+z*fwd+x*side)@side_vec for z in (-.88,.28) for x in (-.38,.38)])
+    lo,hi=float(lateral.min()-.34),float(lateral.max()+.34)
+    def gap(ts):
+        x=prop[4]*np.sin(prop[5]+ts*prop[6])
+        return np.maximum(lo-x,x-hi)
+    overlap=np.min(gap(t))<=0.
+    query=leave+np.linspace(0.,3.,1501)
+    next_entry=first_crossing(query,-gap(query)) if not overlap else None
+    return dict(inflatedBandM=[lo,hi], occupiedDuringPass=bool(overlap), lookaheadS=3.,
+                rearLeadS=next_entry-leave if next_entry is not None else None)
+
+
+def movement_evidence(run, audit):
+    measured=[]
+    for i,prop in enumerate(run["props"]):
+        if not prop[4] or not prop[6]:
+            continue
+        # The decisions have no referee prop ID. Only associate the last preceding
+        # selector event with this gate, report it as temporal proximity, not identity.
+        at_gate=section(run,prop).get("axleCrossS") or run["seconds"]
+        rows=np.asarray(run["rows"])
+        window=[s for s in audit["selected"] if s["t"]<at_gate and
+                prop[7]-12. <= np.interp(s["t"],rows[:,0],rows[:,7]) <= prop[7]]
+        event=window[-1] if window else None
+        check=evaluate(run,i,event["t"] if event else None)
+        measured.append(dict(propIndex=i, nearestEarlierSelection=event,**check,
+                             sweptStrip=swept_strip(run,prop,check["section"])))
+    return measured
+
 
 def pair_metrics(reference, learned):
     a, b = status(reference), status(learned)
@@ -177,9 +217,10 @@ def main():
         if base["request"].get("encounter") is not None:
             raise ValueError("Baseline unexpectedly enables an encounter selector")
         measurements = lap_metrics(base,learned) if args.full_lap else pair_metrics(base,learned)
+        audit=audit_loaded_selector(learned,artifact)
         pairs.append(dict(id=c["id"], context=c["context"], approachCapMps=c["approach"], runSha256=[
             hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **measurements,
-            selectorAudit=audit_loaded_selector(learned,artifact)))
+            selectorAudit=audit, movingObstacles=movement_evidence(learned,audit)))
     report = dict(protocolCommit="2b647e0" if args.full_lap else "4bfe2d7", layoutGitBlobNormalizedSha256=hashlib.sha256(
         args.layouts.read_bytes().replace(b"\r\n", b"\n")).hexdigest(), solver=versions.pop()[1],
         modelFileSha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),

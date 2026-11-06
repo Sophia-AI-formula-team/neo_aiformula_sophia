@@ -1,0 +1,282 @@
+{
+  "protocolCommit": "2b647e0",
+  "layoutGitBlobNormalizedSha256": "1027b271df08a3787725dab74b1728b46ab3e3af0c693ccb605a3657ba7ab285",
+  "solver": "788eb7af5abf9f",
+  "modelFileSha256": "6a142b122b0b7d3e56dd5e233779ea4f7b31ae7950c836f51fb4bfe198df79b0",
+  "pairs": [
+    {
+      "id": "full01",
+      "context": "one unseen whole lap with a static, close static-moving pair and another moving cone",
+      "approachCapMps": 0,
+      "runSha256": [
+        "0f28b261f0f5f34ece1bcae584b383d19e8723bc86181275c1145b7f096d8fe7",
+        "1a26ec78d2ed6f8cdab31de799d7a6bdfd277e26dc9bcce7b916818c08699a50"
+      ],
+      "base": {
+        "status": "lap",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 0.877936363,
+        "minConeM": 0.178585321,
+        "elapsedS": 88.02,
+        "progressM": 280.898651,
+        "courseM": 280.876556,
+        "gate": 32,
+        "progressFraction": 1.0000786644507276,
+        "perProp": [
+          {
+            "id": 0,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 0.8397304
+          },
+          {
+            "id": 1,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 2.19342828
+          },
+          {
+            "id": 2,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 1.71520293
+          },
+          {
+            "id": 3,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 0.178585321
+          }
+        ]
+      },
+      "learned": {
+        "status": "obstacle",
+        "complete": false,
+        "safe": false,
+        "minRoadM": 1.0068624,
+        "minConeM": -0.033495307,
+        "elapsedS": 63.39,
+        "progressM": 218.027374,
+        "courseM": 280.876556,
+        "gate": 24,
+        "progressFraction": 0.7762391318982137,
+        "perProp": [
+          {
+            "id": 0,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 1.36563373
+          },
+          {
+            "id": 1,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 2.37624574
+          },
+          {
+            "id": 2,
+            "entered": true,
+            "exited": true,
+            "observedGapM": 3.205798
+          },
+          {
+            "id": 3,
+            "entered": true,
+            "exited": false,
+            "observedGapM": -0.033495307
+          }
+        ]
+      },
+      "sameSafeLapTimeChangeS": null,
+      "firstCommandChange": {
+        "t": 2.39999986,
+        "sameObservation": true,
+        "baseReason": "road",
+        "learnedReason": "learned_encounter",
+        "baseTargetMps": 4.448922,
+        "learnedTargetMps": 4.297334
+      },
+      "selectorAudit": {
+        "selected": [
+          {
+            "t": 2.39999986,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 4.297334,
+            "bodyMps": 4.177829
+          },
+          {
+            "t": 12.5999994,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 3.067552,
+            "bodyMps": 3.29465485
+          },
+          {
+            "t": 16.8,
+            "choice": 1,
+            "reason": "learned_encounter",
+            "targetMps": 2.26,
+            "bodyMps": 2.32790279
+          },
+          {
+            "t": 18.8,
+            "choice": 0,
+            "reason": "recover",
+            "targetMps": 0.76,
+            "bodyMps": 2.0629108
+          },
+          {
+            "t": 36.0,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 2.91451335,
+            "bodyMps": 3.13081717
+          },
+          {
+            "t": 39.3999977,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 1.76,
+            "bodyMps": 2.50442648
+          },
+          {
+            "t": 61.3999977,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 3.7512114,
+            "bodyMps": 4.48015356
+          }
+        ],
+        "maxReplayScoreError": 2.0352487459518454e-06,
+        "activeCommandUpdates": 44
+      },
+      "movingObstacles": [
+        {
+          "propIndex": 2,
+          "nearestEarlierSelection": {
+            "t": 39.3999977,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 1.76,
+            "bodyMps": 2.50442648
+          },
+          "id": "full01_learned",
+          "status": "obstacle",
+          "qualifiesForTimeComparison": false,
+          "obstacleZoneS": 4.659999899999995,
+          "minConeClearanceM": 3.205798,
+          "minRoadClearanceM": 1.0068624,
+          "section": {
+            "frontEnterS": 39.76332400360128,
+            "axleCrossS": 40.016071172299284,
+            "rearClearS": 40.43341449040241,
+            "nextConeEntersCrossedStripS": null,
+            "rearLeadS": null,
+            "approachingStripAtRear": true,
+            "inflatedStripM": [
+              -3.6744074347799733,
+              -2.2172864879225442
+            ]
+          },
+          "earlyAcceleration": {
+            "atS": 39.3999977,
+            "actualMps": 2.50442648,
+            "peakBeforeAxleCrossMps": 2.638011748120959,
+            "actualAtFrontEntryMps": 2.3920127010575993,
+            "actualAtAxleCrossMps": 2.638011748120959,
+            "increaseMps": 0.13358526812095928
+          },
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": 3.205798399413243
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": 3.1355372650012554
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": 3.0428629971670227
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": 2.931048456408241
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": 2.8036258504375717
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": 2.516569789138772
+            }
+          ],
+          "sweptStrip": {
+            "inflatedBandM": [
+              -3.6825132518706543,
+              -2.181256778686576
+            ],
+            "occupiedDuringPass": false,
+            "lookaheadS": 3.0,
+            "rearLeadS": null
+          }
+        },
+        {
+          "propIndex": 3,
+          "nearestEarlierSelection": {
+            "t": 61.3999977,
+            "choice": 3,
+            "reason": "learned_encounter",
+            "targetMps": 3.7512114,
+            "bodyMps": 4.48015356
+          },
+          "id": "full01_learned",
+          "status": "obstacle",
+          "qualifiesForTimeComparison": false,
+          "obstacleZoneS": null,
+          "minConeClearanceM": -0.033495307,
+          "minRoadClearanceM": 1.0068624,
+          "section": {
+            "frontEnterS": 63.36966794827696,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "nextConeEntersCrossedStripS": null,
+            "rearLeadS": null,
+            "approachingStripAtRear": null
+          },
+          "earlyAcceleration": null,
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": -0.03349418899135509
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": -0.0662201755428985
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": -0.024128952276424864
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": 0.08452415069287633
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": 0.22685250759749093
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": 0.5319560319058034
+            }
+          ],
+          "sweptStrip": null
+        }
+      ]
+    }
+  ]
+}
