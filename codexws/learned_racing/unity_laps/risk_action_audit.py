@@ -10,7 +10,7 @@ from risk_encounters import ROOT
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("--output",type=Path,default=ROOT);args=p.parse_args();root=args.output
-    model=json.loads((root/"model.json").read_bytes());result={}
+    model=json.loads((root/"model.json").read_bytes());previous=json.loads((V1/"model.json").read_bytes());result={}
     for path in sorted((root/"runs").glob("*_learned.json")):
         stem=path.stem.removesuffix("_learned");run=json.loads(path.read_bytes())
         if not stem.startswith("diag_"):
@@ -29,8 +29,11 @@ def main():
                                          model["width"],np.asarray(e["features"]))
             ordinary=values("rawReturns");debit=model["riskWeight"]*values("riskUpper");adjusted=ordinary-debit
             assert np.allclose(adjusted,e["actionScores"],atol=3e-5) and np.argmax(adjusted)==e["chosen"]
+            old=predictive_scores(np.asarray(previous["contexts"]),np.asarray(previous["returns"]),np.asarray(previous["scales"]),
+                                  previous["width"],np.asarray(e["features"]))
             contributions.append(dict(t=d["t"],ordinary=ordinary.tolist(),riskDebit=debit.tolist(),adjusted=adjusted.tolist(),
-                                      ordinaryChoice=NAMES[int(np.argmax(ordinary))],deployedChoice=NAMES[e["chosen"]]))
+                                      ordinaryChoice=NAMES[int(np.argmax(ordinary))],deployedChoice=NAMES[e["chosen"]],
+                                      previousModelOnSameObservationOnly=NAMES[int(np.argmax(old))]))
         evidence["riskContributions"]=contributions;result[stem]=evidence
     write(root/"risk_action_audit.json",result)
 if __name__=="__main__":main()
