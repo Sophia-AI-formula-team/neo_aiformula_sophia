@@ -32,6 +32,8 @@ For every predeclared gate report observed progress / actual elapsed time (m/s),
 
 Declare the 4 m/s natural-clear target demonstrated only when **all four** clear local segments and **both** clear laps complete, each local fixed gate's mean is ≥4.00 m/s and each clear lap's pooled fixed straight-gate mean is ≥4.00 m/s. Report high-speed distance percentage even if this stringent test fails; it has no separately invented threshold. For traffic laps, report geometry-only predeclared straight coverage regardless of success and any ≥4 m/s attainment there separately.
 
+For descriptive bend-only speed reporting, `bend_controls.json` fixes non-obstacle regions with |curvature| ≥0.032/m after the first 12 m, with 2 m end trims and a 10 m minimum untrimmed length. These secondary windows do not affect the four-straight/two-clear-lap acceptance rule.
+
 ## Paired uncertainty
 
 Show each pair, effect signs and the counts of better/tied/worse outcomes. Report per-cohort paired bootstrap 95% intervals (10,000 seeded resamples; resample complete case pairs with replacement, never individual frames) for completion-rate difference, median yaw/time changes, and pooled cruise differences where comparable. Each sample reflects this deliberately mixed finite test on one simulated course, not an estimate of independent tracks. Very small strata and all-identical effects have limited uncertainty information.

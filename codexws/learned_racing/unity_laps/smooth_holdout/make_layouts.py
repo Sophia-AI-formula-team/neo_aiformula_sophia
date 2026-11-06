@@ -78,4 +78,16 @@ def create():
 
 if __name__=="__main__":
     path=Path(__file__).with_name("layouts.json")
-    path.write_text(json.dumps(create(),ensure_ascii=False,indent=2)+"\n",encoding="utf8")
+    matrix=create()
+    path.write_text(json.dumps(matrix,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
+    _,stations,_,curvature,length=geometry()
+    controls={}
+    for c in matrix["cases"]:
+        q=np.arange(12.,c["limitM"]+.000001,.25)
+        free=np.ones_like(q,dtype=bool)
+        for m,*_ in c["props"]:free &= (q<m-12)|(q>m+8)
+        bend=np.abs(np.interp((c["nominalStartM"]+q)%length,stations,curvature))>=.032
+        valid=q[free & bend]
+        sections=np.split(valid,np.flatnonzero(np.diff(valid)>.251)+1)
+        controls[c["id"]]=[[float(v[0]+2),float(v[-1]-2)] for v in sections if len(v) and v[-1]-v[0]>=10]
+    path.with_name("bend_controls.json").write_text(json.dumps(controls,indent=2)+"\n",encoding="utf8")
