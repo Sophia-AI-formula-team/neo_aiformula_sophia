@@ -1,0 +1,11 @@
+{
+  "experiment": "phase-only verification of local crossing-time action",
+  "commonSeed": 25,
+  "commonApproachMps": 2.4,
+  "layout": "cross",
+  "phasesRad": [-4.38, -3.54, -5.26, -1.10],
+  "pairedModes": ["both", "yield_only"],
+  "freezeOrder": "Freeze controller before scoring these four phases. Retain failures, no-offer results and complete matched pairs.",
+  "interpretation": "The same course and run-up are used across these four new phases. The filmed example may be selected from development. Controls are real closed-loop runs.",
+  "acceptance": "Compare time only when both arms finish with >=0.15 m cone clearance and >=0.08 m road clearance. Measure actual speed change after positive action and before passing, full rear-clearance time, and the later lateral occupancy of the chosen strip. If the cone never reaches that strip, classify as spatial avoidance."
+}
