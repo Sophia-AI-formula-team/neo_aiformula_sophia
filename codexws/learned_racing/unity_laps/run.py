@@ -43,7 +43,7 @@ class Lab:
         if Path(panel["assets"]).resolve()!=proj/"Assets" or panel["dirty"] or panel["play"]:raise RuntimeError(panel)
         self.panel=panel
         eng=Path(panel["editor"]);managed=eng/"Managed"
-        sources=sorted(HERE.glob("*.cs"));self.build=hashlib.sha256(b"".join(p.read_bytes() for p in sources)).hexdigest()[:14]
+        sources=sorted(HERE.glob("*.cs"));self.build=hashlib.sha256(b"".join(p.read_text(encoding="utf8").encode("utf8") for p in sources)).hexdigest()[:14]
         self.dll=self.work/f"LapLab_{self.build}.dll"
         if solver is not None and solver!=self.build:
             self.build=solver;self.dll=(HERE/"evidence/.work")/f"LapLab_{solver}.dll"
@@ -64,8 +64,10 @@ class Lab:
         self.asset_hashes={p.name:sha(p) for p in [surface,proj/"Assets/Scenes/MotorControllerValidation.unity",
             proj/"Assets/AIFormula/Runtime/Physics/AIFormulaDifferentialDrive.cs",proj/"Assets/AIFormula/Runtime/Physics/AIFormulaTireContact.cs",
             proj/"Assets/AIFormula/Runtime/Physics/AIFormulaArticulatedContact.cs",proj/"Assets/TrainingEnvironment/Prefabs/TrafficCone_75cm.prefab"]}
-        write(self.root/"baseline.json",{"editor":panel,"solverHash":self.build,"sources":self.asset_hashes,
-            "features":NAMES,"columns":"t x z heading v v_command yaw_command progress lane_offset road_clearance cone_clearance target_offset right_rpm left_rpm yaw_rate".split()})
+        description={"editor":panel,"solverHash":self.build,"sources":self.asset_hashes,
+            "features":NAMES,"columns":"t x z heading v v_command yaw_command progress lane_offset road_clearance cone_clearance target_offset right_can_command_rpm left_can_command_rpm yaw_rate".split()}
+        write(self.root/"baseline.json",description)
+        write(self.root/"solvers"/(self.build+".json"),description)
         self.event("session",build=self.build,editor=panel)
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:

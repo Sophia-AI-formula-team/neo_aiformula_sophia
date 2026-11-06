@@ -1,0 +1,467 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><title>AI Formula · Unity 驾驶训练回放</title>
+<style>
+:root {
+  color-scheme:light;
+  --ink:#182522;
+  --mut:#52645f;
+  --paper:#f3f4ed;
+  --line:#ccd4c9;
+  --green:#345e31;
+  --orange:#9a461c;
+  --light:#dcebd4
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font:16px/1.55 "Segoe UI","Microsoft YaHei",sans-serif
+}
+header,main,footer {
+  max-width:1240px;
+  margin:auto;
+  padding:0 30px
+}
+header {
+  padding-top:26px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center
+}
+.brand {
+  font:700 17px/1.3 Consolas,monospace;
+  letter-spacing:.055em
+}
+.brand b {
+  color:#608a3b
+}
+nav {
+  display:flex;
+  gap:18px
+}
+a {
+  color:#345d48;
+  text-underline-offset:3px
+}
+nav a {
+  font-size:14px
+}
+h1 {
+  font-size:clamp(28px,4vw,46px);
+  line-height:1.17;
+  letter-spacing:-.04em;
+  margin:30px 0 10px
+}
+h2 {
+  font-size:27px;
+  letter-spacing:-.035em;
+  margin:0 0 7px
+}
+p {
+  margin:4px 0 13px
+}
+.lead {
+  color:var(--mut);
+  max-width:85ch
+}
+.mainvideo {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:16/9;
+  background:#111c22;
+  border-radius:8px;
+  overflow:hidden
+}
+.toolbar {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin:16px 0 10px
+}
+.toolbar label,.sub {
+  color:var(--mut);
+  font-size:14px
+}
+select,button {
+  font:inherit;
+  color:var(--ink);
+  border:1px solid #aab8a9;
+  background:#fbfcf7;
+  border-radius:5px;
+  padding:6px 10px;
+  cursor:pointer
+}
+button:hover,select:hover {
+  background:#e3eddd
+}
+button:focus-visible,select:focus-visible,a:focus-visible,input:focus-visible {
+  outline:3px solid #58854e;
+  outline-offset:2px
+}
+.chapters {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px
+}
+.chapters button {
+  font-size:14px
+}
+.vnote {
+  font-size:14px;
+  color:var(--mut);
+  margin:7px 0
+}
+.section {
+  border-top:1px solid var(--line);
+  margin-top:32px;
+  padding-top:24px
+}
+.stage button[aria-pressed=true],.tab button[aria-pressed=true] {
+  background:var(--ink);
+  color:white;
+  border-color:var(--ink)
+}
+.stage,.tab {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap
+}
+.tab {
+  margin:13px 0
+}
+.practice {
+  display:grid;
+  grid-template-columns:1.5fr 1fr;
+  gap:18px
+}
+.panel {
+  background:#fcfdf8;
+  border:1px solid var(--line);
+  padding:15px 16px;
+  border-radius:8px;
+  min-width:0
+}
+.panel h3 {
+  font-size:17px;
+  margin:0 0 10px
+}
+canvas {
+  display:block;
+  width:100%;
+  height:231px
+}
+.legend {
+  font-size:12px;
+  color:var(--mut);
+  margin-top:6px
+}
+.inspect {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:12px 0
+}
+.inspect select {
+  max-width:100%;
+  min-width:200px
+}
+.transport {
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.transport input {
+  flex:1;
+  min-width:65px;
+  accent-color:#597845
+}
+.transport output {
+  min-width:55px;
+  font-variant-numeric:tabular-nums
+}
+.summary {
+  font-size:14px;
+  padding:8px 0;
+  color:var(--mut)
+}
+.scroll {
+  overflow-x:auto
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+  white-space:nowrap;
+  font-size:15px;
+  text-align:left;
+  font-variant-numeric:tabular-nums
+}
+th,td {
+  padding:9px 12px;
+  border-bottom:1px solid var(--line)
+}
+th:first-child,td:first-child {
+  padding-left:0
+}
+th {
+  color:var(--mut);
+  font-size:13px;
+  font-weight:600
+}
+.pass {
+  color:var(--green);
+  font-weight:650
+}
+.fail {
+  color:var(--orange);
+  font-weight:650
+}
+.evidence {
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap
+}
+.method {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px
+}
+.method strong {
+  display:block;
+  margin:8px 0 4px
+}
+.small,footer {
+  font-size:14px;
+  color:var(--mut)
+}
+footer {
+  padding-top:25px;
+  padding-bottom:35px
+}
+.num {
+  font-family:Consolas,monospace
+}
+.testline {
+  font-size:17px;
+  margin:15px 0
+}
+svg {
+  overflow:visible
+}
+@media(max-width:750px) {
+  header,main,footer {
+    padding-left:14px;
+    padding-right:14px
+  }
+  header {
+    padding-top:16px
+  }
+  nav {
+    gap:9px
+  }
+  .practice,.method {
+    grid-template-columns:1fr
+  }
+  .brand {
+    font-size:14px
+  }
+  .toolbar {
+    gap:8px
+  }
+  .panel {
+    padding:10px
+  }
+  .stage button {
+    font-size:14px
+  }
+  .section {
+    margin-top:21px
+  }
+  .method {
+    gap:4px
+  }
+  nav a {
+    font-size:12px
+  }
+  th,td {
+    padding:7px
+  }
+  canvas {
+    height:210px
+  }
+}
+</style></head><body><header><span class="brand"><b>AI</b> FORMULA / SOPHIA</span><nav><a href="#film">录像</a><a href="#training">预训练</a><a href="#tests">留出考核</a></nav></header><main>
+<h1>Unity 驾驶训练回放</h1><p class="lead" id="headline"></p>
+<section id="film" aria-label="Unity 实际机位录像"><div class="toolbar"><label for="videoChoice">录像</label><select id="videoChoice"></select><div class="chapters" id="chapters"></div></div>
+<video class="mainvideo" id="filmPlayer" controls playsinline preload="metadata"></video><p class="vnote" id="videoNote"></p></section>
+<section class="section" id="training"><h2>预训练中的每一次试车</h2><p class="lead">每个点是一趟 Unity 闭环试车。点击点或选择试次，可以回放实际轨迹，包括提前终止的位置。</p>
+<div class="stage" id="stages"></div><div class="inspect"><label for="trial">试次</label><select id="trial"></select><a href="#" id="raw">原始记录</a></div>
+<div class="practice"><div class="panel"><h3>圈时与未完成试次</h3><canvas id="chart" role="img" aria-label="每次训练的整圈用时与中止状态，另可通过试次下拉框选择"></canvas><div class="legend">● 完圈，越低越快　 × 中止，单独显示在底部　 绿色折线为截至该次的最快完圈</div></div>
+<div class="panel"><h3 id="mapTitle">试车轨迹</h3><canvas id="map" role="img" aria-label="实际轨迹、车身位置与动态路障位置"></canvas><div class="transport"><button type="button" id="play">播放</button><input type="range" id="scrub" min="0" max="1000" value="1000" aria-label="轨迹时间"><output id="readtime"></output></div></div></div>
+<div class="summary" id="inspectNote" aria-live="polite"></div><p class="small" id="weightNote"></p></section>
+<section class="section" id="tests"><h2>冻结策略后的新起点</h2><div class="tab" id="channels"></div><p class="testline" id="testSummary"></p>
+<div class="scroll"><table><thead><tr><th>起点种子</th><th>初始策略</th><th>训练后</th><th>单桶用时</th><th>双桶用时</th><th>横移路障用时</th><th>最小净距</th></tr></thead><tbody id="testRows"></tbody></table></div>
+<p class="small" id="testNote"></p><p class="summary" id="ablation"></p></section>
+<section class="section"><h2>驾驶指令从哪里来</h2><div class="method"><div><strong>识别与控制</strong>摄像头每 0.2 秒给 A4 一张真实 Unity 画面。车线 mask 投影为前方四处横截面，锥桶框投影为相对位置。跟踪器用连续观测与仿真车身运动估算锥桶速度。局部规划器比较横向位置与速度，再交给原模拟器的左右轮转换器。</div><div><strong>手写与学习的分工</strong>候选动作、反馈公式、预测和碰撞代价由人定义。交叉熵搜索用每趟实测通过情况和用时选择九个参数，其中包括入弯收油、近远处选线和路障运动预估。首圈可用的信息只到眼前，整图用于出生与裁判。</div></div>
+<p class="small">考核范围是这条赛道、加设的锥桶和当前仿真车况。车身矩形任一角越过行驶区或进入锥桶保守包络就结束试次。红灯决策、换电后的在线适应和独立刹车力留待单独实验。</p>
+<div class="evidence"><a href="../WORKLOG.md">工作记录</a><a href="../evidence/summary.json">考核数据</a><a href="../evidence/joint_policy.json">冻结策略</a><a href="../evidence/events.jsonl">全部运行事件</a></div></section></main><footer>Unity 2022.3.22f1 · JanuaryLapIdentified · 0.01 s 物理步长</footer>
+<script id="experiment" type="application/json">__DATA_JSON__</script>
+<script>
+const data = JSON.parse(document.getElementById('experiment').textContent), by = id => document.getElementById(id);
+const videos = data.videos, player = by('filmPlayer'), opt = (text, val) => { let o = document.createElement('option'); o.textContent = text; o.value = val; return o; };
+const stat = { lap: '完圈', obstacle: '碰桶', boundary: '越界', lost_lane: '丢线', stalled: '停滞' };
+const sname = { clean: '空场提速', obstacles: '首轮避障', cross: '首轮第二布局', joint: '双布局联合练习', vision: 'A4 相机练习' };
+function button(text, click) { const el = document.createElement('button'); el.textContent = text; el.onclick = click; return el; }
+function count(list) { return list.filter(x => x.status === 'lap').length; }
+const fast = data.clearCamera;
+by('headline').textContent = '同一随机起点、同一 A4 相机，无新增路障圈时从 ' + fast[0].s.toFixed(2) + ' 秒降至 ' + fast[1].s.toFixed(2) + ' 秒。' + (data.blind.length ? '最终视觉策略在三个新障碍布局完成 ' + count(data.blind.map(x => x.cameraAfter)) + '/3 圈。' : '') + '下方保留 ' + data.trials + ' 趟练习、成功录像及未完圈记录。';
+videos.forEach((v, i) => by('videoChoice').append(opt(v.title, i)));
+function setVideo(i) {
+    let v = videos[i];
+    player.poster = v.poster;
+    player.src = v.file;
+    player.load();
+    by('chapters').replaceChildren();
+    for (let c of v.chapters) {
+        by('chapters').append(button(c.title, () => { player.currentTime = c.video; player.play().catch(() => { }); }));
+    }
+    if (v.comparison) {
+        by('videoNote').textContent = '种子 ' + v.seed + '　·　两次真实 Unity 相机录像按距横移桶 11 m 对齐。左侧通过，右侧在首次接触时定格。';
+        return;
+    }
+    let raw = v.release === 'local_semantic', speed = v.simTimes.length > 1 ? (v.simTimes[1] - v.simTimes[0]) * v.fps : 1;
+    by('videoNote').textContent = '种子 ' + v.seed + '　·　' + (raw ? '理想局部观测控制，右侧显示实际 RGB' : v.release.toUpperCase() + ' 单帧识别闭环') + '　·　' + (stat[v.status] || v.status) + ' ' + v.seconds.toFixed(2) + ' s　·　画面约 ' + speed.toFixed(1) + '×，右上角为仿真时间。';
+}
+by('videoChoice').onchange = e => setVideo(+e.target.value);
+setVideo(0);
+function prepare(c) { const rect = c.getBoundingClientRect(), s = Math.min(2, window.devicePixelRatio || 1); c.width = Math.round(rect.width * s); c.height = Math.round(rect.height * s); const g = c.getContext('2d'); g.scale(s, s); g.font = '12px "Segoe UI","Microsoft YaHei",sans-serif'; g.lineJoin = 'round'; g.lineCap = 'round'; return [g, rect.width, rect.height]; }
+function line(g, pts, color, width = 1, close = false) { if (!pts.length)
+    return; g.strokeStyle = color; g.lineWidth = width; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); if (close)
+    g.closePath(); g.stroke(); }
+let stage = 'joint', items = [], sel = 0, hit = [], progress = 1, playing = false, start = 0, anim = 0;
+function stageSet(key) { stage = key; items = data.training.filter(x => x.stage === key); document.querySelectorAll('#stages button').forEach(b => b.setAttribute('aria-pressed', b.dataset.key === key)); by('trial').replaceChildren(...items.map((r, i) => opt('第 ' + (i + 1) + ' 趟 · ' + (stat[r.status] || r.status) + ' · ' + (r.status === 'lap' ? r.s.toFixed(2) + ' s' : Math.round(r.p) + ' m') + ' · 种子 ' + r.seed, i))); select(items.length - 1); }
+Object.entries(sname).filter(([k]) => data.training.some(x => x.stage === k)).forEach(([k, title]) => { const b = button(title, () => stageSet(k)); b.dataset.key = k; by('stages').append(b); });
+function stop() { playing = false; cancelAnimationFrame(anim); by('play').textContent = '播放'; }
+function select(i) { stop(); sel = i; progress = 1; by('trial').value = i; by('scrub').value = 1000; const r = items[i]; by('mapTitle').textContent = '第 ' + (i + 1) + ' 趟 · ' + (stat[r.status] || r.status); by('raw').href = '../evidence/runs/' + r.id + '.json'; by('inspectNote').textContent = '第 ' + r.gen + ' 轮采样　·　初始朝向扰动 ' + r.yaw.toFixed(1) + '°　·　通过 ' + r.g + '/32 个计时门　·　前进 ' + r.p.toFixed(1) + ' m　·　峰值实测 ' + r.peak.toFixed(2) + ' m/s'; const p = r.weights; by('weightNote').textContent = '该候选的直线指令上限 ' + p[0].toFixed(2) + ' m/s，曲率收油系数 ' + p[1].toFixed(2) + '，基础预瞄 ' + p[3].toFixed(2) + ' m，近 / 远选线权重 ' + p[7].toFixed(2) + ' / ' + p[8].toFixed(2) + '。'; chart(); map(); }
+by('trial').onchange = e => select(+e.target.value);
+function chart() {
+    const [g, w, h] = prepare(by('chart'));
+    const l = 40, r = w - 15, top = 23, bot = h - 49, n = items.length;
+    let xx = i => l + (r - l) * (i + .4) / (n - .2), yy = t => bot - (bot - top) * (t - 50) / 140;
+    g.fillStyle = '#4d6158';
+    g.fillText('秒', 4, 14);
+    for (let value of [60, 100, 140, 180]) {
+        let y = yy(value);
+        line(g, [[l, y], [r, y]], '#dbe1d7');
+        g.fillText(value, 8, y + 4);
+    }
+    let best = Infinity, bestline = [];
+    hit = [];
+    items.forEach((p, i) => {
+        let x = xx(i), ok = p.status === 'lap', y = ok ? yy(p.s) : h - 18;
+        if (ok)
+            best = Math.min(best, p.s);
+        if (isFinite(best))
+            bestline.push([x, yy(best)]);
+        hit.push([x, y]);
+        if (ok) {
+            g.fillStyle = '#70918b';
+            g.beginPath();
+            g.arc(x, y, 3.4, 0, Math.PI * 2);
+            g.fill();
+        }
+        else {
+            line(g, [[x - 3, y - 3], [x + 3, y + 3]], '#b36336', 1.5);
+            line(g, [[x - 3, y + 3], [x + 3, y - 3]], '#b36336', 1.5);
+        }
+    });
+    line(g, bestline, '#427a40', 1.6);
+    line(g, [[l, h - 34], [r, h - 34]], '#cbd5cb');
+    g.fillStyle = '#835331';
+    g.fillText('中止', 2, h - 14);
+    g.fillStyle = '#526259';
+    g.fillText('第 1 趟', l, 12);
+    g.fillText('第 ' + n + ' 趟', r - 44, 12);
+    const [x, y] = hit[sel];
+    g.strokeStyle = '#172e1d';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.arc(x, y, 6, 0, Math.PI * 2);
+    g.stroke();
+}
+by('chart').onclick = e => { let p = by('chart').getBoundingClientRect(); let best = Infinity, k = 0; hit.forEach(([x, y], i) => { const d = (x - e.clientX + p.left) ** 2 + (y - e.clientY + p.top) ** 2; if (d < best) {
+    best = d;
+    k = i;
+} }); select(k); };
+function map() {
+    const [g, w, h] = prepare(by('map'));
+    const ge = data.geometry, all = ge.flat(), xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+    const xmin = Math.min(...xs), xmax = Math.max(...xs), ymin = Math.min(...ys), ymax = Math.max(...ys);
+    const z = Math.min((w - 30) / (xmax - xmin), (h - 28) / (ymax - ymin));
+    function pt(x, y) { return [w / 2 + (x - (xmin + xmax) / 2) * z, h / 2 - (y - (ymin + ymax) / 2) * z]; }
+    line(g, ge[1].map(p => pt(...p)), '#d8ded7', 6.86 * z, true);
+    for (let j of [0, 2])
+        line(g, ge[j].map(p => pt(...p)), '#819287', 1, true);
+    line(g, ge[1].map(p => pt(...p)), '#fbfcf8', 1, true);
+    const a = items[sel], tr = a.trace, idx = Math.min(tr.length - 1, Math.round(progress * (tr.length - 1))), t = tr[idx][0];
+    line(g, tr.slice(0, idx + 1).map(v => pt(v[1], v[2])), '#22736f', 2.7);
+    for (let o of a.props) {
+        const dx = o[4] * Math.sin(o[5] + t * o[6]);
+        const [x, y] = pt(o[0] + o[2] * dx, o[1] + o[3] * dx);
+        g.fillStyle = o[4] ? '#b0332e' : '#b66b26';
+        g.beginPath();
+        g.moveTo(x, y - 5);
+        g.lineTo(x - 4.5, y + 3.5);
+        g.lineTo(x + 4.5, y + 3.5);
+        g.fill();
+    }
+    let [x, y] = pt(tr[0][1], tr[0][2]);
+    g.strokeStyle = '#273324';
+    g.strokeRect(x - 3.5, y - 3.5, 7, 7);
+    [x, y] = pt(tr[idx][1], tr[idx][2]);
+    g.fillStyle = progress > .99 && a.status !== 'lap' ? '#b23d2a' : '#213e30';
+    g.beginPath();
+    g.arc(x, y, 5, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#43594b';
+    g.fillText(tr[idx][3].toFixed(2) + ' m/s', 7, 14);
+    g.fillText(Math.round(tr[idx][5]) + ' m', w - 54, 14);
+    by('readtime').textContent = t.toFixed(1) + ' s';
+}
+by('scrub').oninput = e => { stop(); progress = +e.target.value / 1000; map(); };
+by('play').onclick = () => { if (playing) {
+    stop();
+    return;
+} if (progress > .99)
+    progress = 0; playing = true; by('play').textContent = '暂停'; start = performance.now() - progress * 11000; function tick(now) { progress = Math.min(1, (now - start) / 11000); by('scrub').value = Math.round(progress * 1000); map(); if (progress < 1 && playing)
+    anim = requestAnimationFrame(tick);
+else
+    stop(); } anim = requestAnimationFrame(tick); };
+new ResizeObserver(() => { if (items.length) {
+    chart();
+    map();
+} }).observe(by('chart'));
+stageSet(data.blind.length ? 'vision' : 'joint');
+const channels = { ...(data.blind.length ? { blind: 'A4 视觉训练后 · 新考核' } : {}), camera: '视觉训练前 · A4 路障', ideal: '理想观测 · 加设路障', clear: '理想观测 · 无新增路障' };
+function cells(r) { return r.status === 'lap' ? '<span class="pass">' + r.s.toFixed(2) + ' s</span>' : '<span class="fail">' + (stat[r.status] || r.status) + ' · ' + Math.round(r.p) + ' m</span>'; }
+function zoneText(z) { return !z ? '—' : z.time != null ? z.time.toFixed(2) : z.started ? '中止' : '未到'; }
+function showTest(channel) {
+    document.querySelectorAll('#channels button').forEach(b => b.setAttribute('aria-pressed', b.dataset.key === channel));
+    const set = channel === 'blind' ? data.blind : data.holdout;
+    const key = channel === 'blind' ? 'camera' : channel;
+    const rows = set.map(x => [x[key + 'Before'], x[key + 'After']]);
+    by('testSummary').textContent = '同种子成对考核，初始策略完圈 ' + count(rows.map(x => x[0])) + '/3，训练后完圈 ' + count(rows.map(x => x[1])) + '/3。';
+    by('testRows').innerHTML = rows.map(([a, b]) => '<tr><td class="num">' + b.seed + '</td><td>' + cells(a) + '</td><td>' + cells(b) + '</td>' + [0, 1, 2].map(i => '<td>' + (!b.zones[i] ? '—' : zoneText(a.zones[i]) + ' → ' + zoneText(b.zones[i])) + '</td>').join('') + '<td>' + (b.minGap == null ? '—' : b.minGap.toFixed(2) + ' m') + '</td></tr>').join('');
+    by('testNote').textContent = '分区用时按「初始 → 训练后」列出，单位为秒。从首个桶前 6 m 计时，到末个桶后 6 m 结束。最小净距取训练后整趟的最小值。';
+}
+Object.entries(channels).forEach(([k, title]) => { const b = button(title, () => showTest(k)); b.dataset.key = k; by('channels').append(b); });
+showTest(data.blind.length ? 'blind' : 'camera');
+if (data.ablation) {
+    const v = data.ablation;
+    by('ablation').textContent = '同一 A4 布局的对照（种子 ' + v.normal.seed + '）：正常观察 ' + (stat[v.normal.status] || v.normal.status) + ' ' + v.normal.p.toFixed(1) + ' m；屏蔽所有锥桶观测 ' + (stat[v.muted.status] || v.muted.status) + ' ' + v.muted.p.toFixed(1) + ' m；将横向位移外推系数设为零 ' + (stat[v.zeroForecast.status] || v.zeroForecast.status) + ' ' + v.zeroForecast.p.toFixed(1) + ' m。';
+}
+</script></body></html>

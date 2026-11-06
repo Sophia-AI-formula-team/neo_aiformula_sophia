@@ -1,5 +1,7 @@
 # AI Formula 学习驾驶原型
 
+[Unity 整圈训练与 A4 车载相机回放](unity_laps/replay/index.html)汇集了随机起点、逐轮试车、固定与移动路障、成功与失败录像。[实验说明与复验方法](unity_laps/README.md)。
+
 [Unity 连续双桶试验与相机回放](unity_cones/README.md)记录了安装版车辆物理上的局部选边实验。下文是早期二维策略的独立结果。
 
 打开 [双车回放](demo/replay.html) 可切换布局、拖动模拟时钟，查看两轮的指令和模型算出的车身速度。[窄门动图](demo/corner.gif) 把两辆车分别到达同一入口的瞬间对齐。图中的原始外环来自 Demo_LaneLineTrainer 的跑道资产，错位窄门是用于试验的附加布置。

@@ -59,7 +59,7 @@ def receive(sock,n):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument("release",type=Path);p.add_argument("ready",type=Path)
+    p=argparse.ArgumentParser();p.add_argument("release",type=Path);p.add_argument("ready",type=Path);p.add_argument("--no-samples",action="store_true");p.add_argument("--ignore-objects",action="store_true")
     args=p.parse_args();root=args.release.resolve();args.ready.parent.mkdir(parents=True,exist_ok=True)
     sys.path.insert(0,str(root))
     from yolop_a3_runtime import PerceptionModel
@@ -71,7 +71,8 @@ def main():
     samples=args.ready.parent/(root.name+"_samples");samples.mkdir(exist_ok=True)
     with socket.socket() as server:
         server.bind(("127.0.0.1",0));server.listen(1)
-        meta=dict(port=server.getsockname()[1],release=root.name,sha256=digest,mode="single_frame",device="cuda",sampleStride=1)
+        meta=dict(port=server.getsockname()[1],release=root.name,sha256=digest,mode="single_frame",device="cuda",sampleStride=1,
+                  objectObservations="muted" if args.ignore_objects else "enabled")
         tmp=args.ready.with_suffix(".tmp");tmp.write_text(json.dumps(meta),encoding="utf8");tmp.replace(args.ready)
         print("Ready",meta,flush=True)
         while True:
@@ -91,10 +92,11 @@ def main():
                             if y1<=CY+5:continue
                             z=HEIGHT*FOCAL/(y1-CY);x=(.5*(x0+x1)-CX)*z/FOCAL
                             if z<12 and abs(x)<5.5:objects.append([z,x])
-                        overlay=out.combined_overlay.copy()
-                        for u,v in marks:cv2.circle(overlay,(u,v),3,(219,225,47),-1)
-                        cv2.imwrite(str(samples/f"{frame:05d}.jpg"),overlay,[cv2.IMWRITE_JPEG_QUALITY,85])
-                        msg=json.dumps(dict(lane=lane,objects=objects),allow_nan=False).encode()
+                        if not args.no_samples:
+                            overlay=out.combined_overlay.copy()
+                            for u,v in marks:cv2.circle(overlay,(u,v),3,(219,225,47),-1)
+                            cv2.imwrite(str(samples/f"{frame:05d}.jpg"),overlay,[cv2.IMWRITE_JPEG_QUALITY,85])
+                        msg=json.dumps(dict(lane=lane,objects=[] if args.ignore_objects else objects),allow_nan=False).encode()
                         connection.sendall(struct.pack("<I",len(msg))+msg);frame+=1
                 except (EOFError,ConnectionResetError,BrokenPipeError):
                     print("Closed",frame,flush=True)

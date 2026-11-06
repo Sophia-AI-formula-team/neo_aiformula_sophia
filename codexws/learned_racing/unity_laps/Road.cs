@@ -91,6 +91,11 @@ public sealed class Policy {
         for(int i=1;i<Ahead.Length;i++)if(s<=Ahead[i])return Mathf.Lerp(line[i-1],line[i],(s-Ahead[i-1])/(Ahead[i]-Ahead[i-1]));
         return line[line.Length-1];
     }
+    static float CenterAt(float[] line,float s){
+        if(s<Ahead[0])return line[0]+(s-Ahead[0])*(line[1]-line[0])/(Ahead[1]-Ahead[0]);
+        if(s>Ahead[3])return line[3]+(s-Ahead[3])*(line[3]-line[2])/(Ahead[3]-Ahead[2]);
+        return Interpolate(line,s);
+    }
     public bool Act(float[] line,List<Sight> objects,float speed,float yaw){
         calls++;int n=line.Count(q=>!float.IsNaN(q));
         if(n<2){blind++;speedCmd=blind<=2?Mathf.Min(speedCmd,1.2f):0;return blind<9;}
@@ -112,23 +117,29 @@ public sealed class Policy {
         float preferred=lineBias, pace=1;float best=float.PositiveInfinity;
         if(objects.Count>0){
             withObjects++;
-            foreach(float lateral in new[]{-2.6f,-2.05f,-1.55f,-1.15f,-.78f,0f,.78f,1.05f,1.23f}){
+            foreach(float lateral in new[]{-3.65f,-3.08f,-2.6f,-2.05f,-1.55f,-1.15f,-.78f,0f,.70f,.92f}){
                 foreach(float ratio in new[]{1f,.68f,.40f}){
-                    float cost=.17f*Mathf.Abs(lateral-lineBias)+.28f*Mathf.Abs(lateral-offset)+1.1f*(1-ratio);
+                    float cost=.14f*Mathf.Abs(lateral-lineBias)+.22f*Mathf.Abs(lateral-offset)+1.55f*(1-ratio);
                     // Reduce the appeal of a path that leaves no space to correct toward the outside curb.
-                    cost+=.65f*Mathf.Max(0,lateral-.45f);
+                    float edgeRoom=Mathf.Min(Track.Lane*.5f-lateral,Track.Lane*1.5f+lateral)-.38f;
+                    cost+=.40f/Mathf.Max(.05f,edgeRoom);
                     foreach(var o in objects){
-                        float tau=Mathf.Clamp(o.z/Mathf.Max(.55f,.42f*speed+.58f*cruise*ratio-o.vz),0,4.5f);
-                        float ahead=Mathf.Clamp(o.z+o.vz*tau,0,12);
-                        float expected=o.x+o.vx*tau*p[6];
-                        float response=Mathf.SmoothStep(0,1,Mathf.Clamp01(ahead/p[5]));
-                        float roadX=Interpolate(line,Mathf.Max(2f,ahead));
-                        // Near the nose, a car cannot instantly attain a new lane offset.
-                        float pathX=response*(roadX+lateral);
-                        float sep=Mathf.Abs(pathX-expected);
-                        float shortfall=Mathf.Max(0,.64f+p[4]-sep);
-                        cost+=shortfall*shortfall*26f+Mathf.Max(0,1.42f-sep)*.16f;
-                        if(o.z<4f)cost+=Mathf.Clamp01((4f-o.z)/2f)*.85f*Mathf.Abs(lateral-offset);
+                        float tau=Mathf.Clamp((o.z-.28f)/Mathf.Max(.55f,.45f*speed+.55f*cruise*ratio-o.vz),0,4.5f);
+                        float ahead=Mathf.Clamp(o.z+o.vz*tau,-1.2f,13f);
+                        float endX=CenterAt(line,ahead)+lateral;
+                        float nowX=o.x, predictedX=nowX+o.vx*tau*p[6];
+                        float low=Mathf.Min(nowX,predictedX), high=Mathf.Max(nowX,predictedX);
+                        // The same first-order steering response applies to every candidate.
+                        // A slower arrival gives the chassis more time to move sideways.
+                        float u=tau*Mathf.Max(1.15f,11f/p[5]);
+                        float attainable=endX*(1f-(1f+u)*Mathf.Exp(-u));
+                        float detectionWidth=.06f+Mathf.Min(.55f,.28f*tau*Mathf.Min(Mathf.Abs(o.vx),1.2f));
+                        float required=.76f+p[4]+detectionWidth;
+                        float sep=Mathf.Max(low-attainable,attainable-high,0);
+                        float finalSep=Mathf.Max(low-endX,endX-high,0);
+                        float shortfall=Mathf.Max(0,required-sep), terminal=Mathf.Max(0,required-finalSep);
+                        cost+=30f*shortfall*shortfall+20f*terminal*terminal;
+                        if(o.z<4.5f)cost+=Mathf.Clamp01((4.5f-o.z)/2f)*1.25f*Mathf.Abs(lateral-offset);
                     }
                     if(cost<best){best=cost;preferred=lateral;pace=ratio;}
                 }
