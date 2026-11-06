@@ -75,10 +75,10 @@ def short_scene(p,runs):
     return short_window([load(runs/(p["id"]+"_"+a+".json")) for a in ("base","learned")])
 
 
-def development(args):
-    plan=load(args.plan);runs=args.root/"runs";arms=[];proof={}
+def verify_reshoot(args,base_original,trained_original):
+    runs=args.root/"runs";arms=[];proof={}
     for role in ("base","trained"):
-        original=getattr(args,role+"_original");replay=getattr(args,role+"_replay")
+        original=base_original if role=="base" else trained_original;replay=getattr(args,role+"_replay")
         source=runs/(original+".json");captured=runs/(replay+".json")
         old,new=load(source),load(captured)
         for k in ("props","rows","status","seconds","progress","minGap","minRoad","zoneStart","zoneEnd","propMin"):
@@ -88,14 +88,40 @@ def development(args):
         if cmd(old)!=cmd(new):raise ValueError(f"{original} vs {replay}: wheel or yaw/speed commands differ")
         arms.append(new);proof[role]=dict(original=original,replay=replay,originalSHA256=digest(source),
             replaySHA256=digest(captured),equalPhysicalRows=len(new["rows"]),equalCommandTicks=len(new["decisions"]))
+    return arms,proof
+
+
+def upsert(plan_path,entry):
+    plan=load(plan_path)
+    plan["cases"]=[c for c in plan["cases"] if c["name"]!=entry["name"]]+[entry]
+    plan["cases"].sort(key=lambda c:c["name"]);save(plan_path,plan)
+
+
+def development(args):
+    arms,proof=verify_reshoot(args,args.base_original,args.trained_original)
     if (arms[1]["request"].get("smooth") or {}).get("modelId")!=args.model_id:raise ValueError("Unknown frozen development model")
     w=short_window(arms)
     entry=dict(name="01b-development-replay",title="开发集复测 · 冻结前后同场实驾",case=args.trained_original,
         selection="沿用开发时同一初始条件，重新拍摄的两臂均逐行复现原先的车身运动与速度、偏航、左右轮指令。",
         baseId=args.base_replay,trainedId=args.trained_replay,kind="pair",phase="development-replay",
         replayCheck=proof,localScene=local_scene(arms[1],w["prop"]),**w)
-    plan["cases"]=[c for c in plan["cases"] if c["name"]!=entry["name"]]+[entry]
-    plan["cases"].sort(key=lambda c:c["name"]);save(args.plan,plan)
+    upsert(args.plan,entry)
+
+
+def training_choice(args):
+    choice_path=args.root/"training_replay_choices.json";chosen=load(choice_path)[args.pair_number-1]
+    a,b=chosen["runs"];arms,proof=verify_reshoot(args,a,b)
+    configs=[r["request"]["smooth"] for r in arms]
+    if any(c["mode"]!="probe" for c in configs) or configs[0]["forced"]!=0:raise ValueError("Expected a recorded forced training comparison")
+    forced=configs[1]["forced"];windows=short_window(arms)
+    title=("近障快速通过" if args.pair_number==1 else "减速动作挽回接触")
+    if args.pair_number==2 and (arms[0]["status"]!="obstacle" or arms[1]["status"]!="segment"):raise ValueError("Training rescue is not a recorded contact and recovery")
+    entry=dict(name=f"01a{args.pair_number}-training-probes",title=f"训练动作对照 · {title}",case=b,
+        selection=f"预先登记的中位复演案例（候选 {chosen['population']} 组）。同一布局强制试动作 0 和 {forced}，两臂实拍均复现原轨迹与轮指令。",
+        baseId=args.base_replay,trainedId=args.trained_replay,baseLabel="训练 · 动作 0",trainedLabel=f"训练 · 动作 {forced}",
+        kind="pair",phase="training-probes",trainedAction=forced,replayCheck=proof,
+        choicesFileSHA256=digest(choice_path),localScene=local_scene(arms[1],windows["prop"]),**windows)
+    upsert(args.plan,entry)
 
 
 def selection(args):
@@ -164,12 +190,17 @@ def film(args):
     name=spec["name"];case=spec["case"];raw=args.root/".work"
     base,learned=spec.get("baseId",case+"_base"),spec.get("trainedId",case+"_learned")
     cfg=load(args.root/"runs"/(learned+".json"))["request"].get("smooth") or {}
-    if cfg.get("modelId")!=args.model_id or cfg.get("mode")=="probe":raise ValueError("Not the frozen model")
+    is_probe=spec.get("phase")=="training-probes"
+    if is_probe:
+        if cfg.get("mode")!="probe" or cfg.get("forced")!=spec["trainedAction"]:raise ValueError("Forced training action differs")
+    elif cfg.get("modelId")!=args.model_id or cfg.get("mode")=="probe":raise ValueError("Not the frozen model")
     temp=args.package/".work"/name/(name+".mp4");temp.parent.mkdir(parents=True,exist_ok=True)
     clips=args.package/"videos";ev=args.package/"evidence";(ev/"posters").mkdir(parents=True,exist_ok=True);clips.mkdir(exist_ok=True)
     if spec["kind"]=="pair":
         cmd=[sys.executable,"-B",str(HERE/"smooth_comparison.py"),"--root",str(args.root),"--base",base,"--trained",learned,
-             "--start",str(spec["start"]),"--end",str(spec["end"]),"--title",spec["title"],"--model-id",args.model_id,"--out",str(temp)]
+             "--start",str(spec["start"]),"--end",str(spec["end"]),"--title",spec["title"],"--out",str(temp)]
+        if not is_probe:cmd.extend(("--model-id",args.model_id))
+        if spec.get("baseLabel"):cmd.extend(("--base-label",spec["baseLabel"],"--trained-label",spec["trainedLabel"]))
         if spec["prop"] is not None:cmd.extend(("--prop",str(spec["prop"])))
         subprocess.run(cmd,check=True)
     else:
@@ -183,7 +214,7 @@ def film(args):
     fps,size,_,marks=inspect(temp)
     poster_s=(len(marks)/fps)*(.45 if spec["kind"]=="pair" else .33)
     inspect(temp,ev/"posters"/(name+".jpg"),float(poster_s))
-    receipt.update(dict(clipSHA256=digest(temp),case=case,sourceModelId=args.model_id,selection=spec["selection"],
+    receipt.update(dict(clipSHA256=digest(temp),case=case,sourceModelId=cfg.get("modelId"),phase=spec.get("phase","blind"),selection=spec["selection"],
                         durationS=float(len(marks)/fps),frameSize=size))
     save(ev/(name+".json"),receipt);temp.replace(clips/temp.name)
 
@@ -235,4 +266,8 @@ if __name__=="__main__":
     a=sub.add_parser("development")
     for k in ("root","plan"):a.add_argument("--"+k,type=Path,required=True)
     for k in ("base-original","base-replay","trained-original","trained-replay","model-id"):a.add_argument("--"+k,required=True)
-    args=p.parse_args();{"plan":selection,"film":film,"assemble":assemble,"development":development}[args.stage](args)
+    a=sub.add_parser("training-choice")
+    for k in ("root","plan"):a.add_argument("--"+k,type=Path,required=True)
+    for k in ("base-replay","trained-replay"):a.add_argument("--"+k,required=True)
+    a.add_argument("--pair-number",type=int,choices=(1,2),required=True)
+    args=p.parse_args();{"plan":selection,"film":film,"assemble":assemble,"development":development,"training-choice":training_choice}[args.stage](args)
