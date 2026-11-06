@@ -18,3 +18,7 @@ Register these eight segment pairs before reading outcomes. The layout file stay
 5. Report separately how often the selector made a different choice and where it improved margins, speed or both. No claim of proactive crossing without a visible moving obstacle, actual pre-passage acceleration, positive independently assessed rear-clear time before the obstacle enters the same traversed strip, and a valid paired comparison.
 
 For provenance audit the training-data split, model serialization, features, fit method, model digest loaded during evaluation and how learned choices connect to actual actuation. Keep fixed controller thresholds, available actions, training objective, learned parameters and simulator-only outcomes distinct.
+
+## Approach conditions
+
+Also show the same metrics separately for natural cruise (three pairs, cap zero) and configured cruise (five pairs), retaining the original pooled decision above. A positive cap limits ordinary cruise throughout a segment, including after an encounter. The prior go-first option and a selected nonzero learned action can temporarily use the unconstrained curvature cruise; the learned option also applies its selected action's upper speed. The same external cap and complete geometry apply in each matched pair. It is an experimental driving condition, not a measured or learned entry speed. The layout identifier, phase and station do not serve as selector features. The cap can nevertheless alter ego speed and arrival phase and thereby affect the observation and action.

@@ -70,6 +70,38 @@ def first_control_change(reference, learned):
     return None
 
 
+def audit_loaded_selector(run, artifact):
+    cfg = run["request"].get("encounter", {})
+    for key in ("mode", "modelId", "actions", "contexts", "returns", "scales", "width"):
+        if key not in cfg or cfg[key] != artifact[key]:
+            raise ValueError(f"{run['id']}: embedded selector differs from frozen artifact at {key}")
+    if cfg["mode"] == "probe":
+        raise ValueError("Forced actions cannot count as learned evaluations")
+    contexts = np.array(cfg["contexts"])
+    scales, values = np.array(cfg["scales"]), np.array(cfg["returns"])
+    if contexts.ndim != 2 or values.shape != (len(contexts), len(cfg["actions"])) or np.any(scales<=0):
+        raise ValueError("Ill-formed return model")
+    selected = []
+    max_score_error = 0.
+    for decision in run["decisions"]:
+        probe = decision.get("encounter") or {}
+        if probe.get("modelId") != cfg["modelId"]:
+            raise ValueError("Reported model ID differs from embedded selector")
+        if probe.get("state") != "selected":
+            continue
+        distances = np.sum(((np.array(probe["features"])-contexts)/scales)**2, axis=1)
+        w = np.exp(-(distances-distances.min())/(2*cfg["width"]**2))
+        scores = w @ values / sum(w)
+        error = float(np.max(np.abs(scores-np.array(probe["actionScores"]))))
+        max_score_error = max(max_score_error, error)
+        if not np.allclose(scores, probe["actionScores"], atol=.0003, rtol=.00003) or scores.argmax()!=probe["chosen"]:
+            raise ValueError(f"Independent selector disagrees with Unity at {decision['t']}")
+        selected.append(dict(t=decision["t"], choice=probe["chosen"], reason=decision["reason"],
+                             targetMps=decision["speedCmd"], bodyMps=decision["speed"]))
+    return dict(selected=selected, maxReplayScoreError=max_score_error,
+                activeCommandUpdates=sum(d["reason"] == "learned_encounter" for d in run["decisions"]))
+
+
 def pair_metrics(reference, learned):
     a, b = status(reference), status(learned)
     if a["safe"] and b["safe"]:
@@ -108,10 +140,12 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("runs", type=Path)
     p.add_argument("--layouts", type=Path, default=HERE/"learned_holdout/layouts.json")
+    p.add_argument("--model", type=Path, required=True, help="Frozen selector configuration JSON")
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
     plan = read(args.layouts)
     pairs, versions = [], set()
+    artifact = read(args.model)
     for c in plan["cases"]:
         paths = [args.runs/f"{c['id']}_{arm}.json" for arm in ("base", "learned")]
         base, learned = map(read, paths)
@@ -119,11 +153,17 @@ def main():
         versions.add((base["request"]["model"], base["request"]["solver"]))
         if len(versions) != 1:
             raise ValueError("The compiled solver or camera model changed across the test")
-        pairs.append(dict(id=c["id"], context=c["context"], runSha256=[
-            hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **pair_metrics(base, learned)))
+        if base["request"].get("encounter") is not None:
+            raise ValueError("Baseline unexpectedly enables an encounter selector")
+        pairs.append(dict(id=c["id"], context=c["context"], approachCapMps=c["approach"], runSha256=[
+            hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **pair_metrics(base, learned),
+            selectorAudit=audit_loaded_selector(learned,artifact)))
     report = dict(protocolCommit="4bfe2d7", layoutGitBlobNormalizedSha256=hashlib.sha256(
         args.layouts.read_bytes().replace(b"\r\n", b"\n")).hexdigest(), solver=versions.pop()[1],
-        summary=summarize(pairs), pairs=pairs)
+        modelFileSha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
+        summary=summarize(pairs), approachSubgroups={
+            "natural": summarize([p for p in pairs if p["approachCapMps"] == 0]),
+            "configured": summarize([p for p in pairs if p["approachCapMps"] > 0])}, pairs=pairs)
     args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False)+"\n", encoding="utf8")
 
 
