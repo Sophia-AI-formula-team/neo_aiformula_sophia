@@ -116,14 +116,8 @@ def evaluate(args):
                     run_one(lab,name,case,cfg,*shared,False)
 
 def parity(args):
-    ref=json.loads((HERE/"learned_risk_revision/runs/diag_full01_learned.json").read_bytes())
-    req=ref["request"];lab=Lab(SIM,args.output)
-    with detector(lab,"outer-edge","parity") as (port,release):
-        r=lab.run("default_v2_parity",FROZEN["weights"],req["seed"],vision=port,limit=1.,
-                  capture=.05,model=release,obstacle_specs=req["obstacles"],timing=req["timing"],encounter=V2)
-    same=r["rows"]==ref["rows"] and [{k:v for k,v in d.items() if k!="smooth"} for d in r["decisions"]]==ref["decisions"]
-    write(args.output/"parity.json",dict(reference=ref["id"],previousSolver=req["solver"],solver=r["request"]["solver"],
-          entirePhysicsAndVisionAndCommandsExact=same));assert same
+    from smooth_parity import check
+    check(args.output)
 
 def film_training(args):
     if not args.ids:raise ValueError("Choose a recorded training run ID")
