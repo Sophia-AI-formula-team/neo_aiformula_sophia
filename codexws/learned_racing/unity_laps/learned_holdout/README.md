@@ -9,7 +9,7 @@ Run the scorer from `codexws/learned_racing/unity_laps`. Every run is from the s
 | Free pace over identical non-obstacle distance in the four mutually safe pairs | 3.156 m/s | 3.139 m/s |
 | Single new complete-lap attempt | 88.02 s, 32 gates | Contact after 218.03 m, gate 24 |
 
-The three mutually safe obstacle segments were traversed 33.1%, 18.0% and 24.7% faster by duration (h02, h03 and h08 respectively). They cover a single static cone, staggered static cones and a static-moving pair mid-corner. The median paired duration change was −24.7%. The independent safety requirement failed when the learned selector caused a new contact with a moving cone in a bend (h07). The two repairs of earlier baseline contacts (h05 and h06) and one new failure are recorded individually.
+The learned selector reduced the time spent in the three mutually safe obstacle segments by 33.1%, 18.0% and 24.7% (h02, h03 and h08 respectively). They cover a single static cone, staggered static cones and a static-moving pair mid-corner. The median paired duration change was −24.7%. The independent safety requirement failed when the learned selector caused a new contact with a moving cone in a bend (h07). The two repairs of earlier baseline contacts (h05 and h06) and one new failure are recorded individually.
 
 At h05 both arms received the same observation at 6.8 s. The learned selector chose a faster inward line. Its measured speed rose from 2.72 to 4.31 m/s before crossing the cone's fixed station, with 1.27 m minimum cone clearance. The rear cleared the expanded gate at 9.51 s. The cone entered the laterally traversed footprint 1.21 s later, or 1.01 s later using the wider union of the body's projected widths throughout gate occupation. The previous controller contacted the cone at 12.21 s. A different phase in h04 produced the same underlying commands in both arms and only 0.061 m clearance.
 
@@ -23,4 +23,18 @@ With natural cruise, h01, h03 and h08 were all safe in both arms. With positive 
 python learned_training_audit.py learned_revision --out learned_holdout/training_audit.json
 python learned_holdout_score.py learned_revision/runs --model learned_revision/model.json --out learned_holdout/results.json
 python learned_holdout_score.py learned_revision/runs --model learned_revision/model.json --full-lap --out learned_holdout/full_lap.json
+```
+
+## V2: risk adjustment on a separate holdout
+
+Four newly registered stress cases cover opposing lateral crossings and two natural-cruise bends. Both arms finished all four safely. Every physics row and control command matched the reference. Pooled free speed was 2.669 m/s in both arms and paired obstacle-zone time change was 0%. In seven of eight choices the learned risk deduction changed the best-scoring action to reuse the underlying controller. The eighth would already have reused it. These new cases show no aggregate improvement.
+
+Three selectively repeated v1 cases are reported separately. On the known h05 crossing, v2 reproduced the v1 faster inward pass with 1.268 m clearance. On the known h07 moving obstacle in a bend, v2 chose the slower inward action and completed the segment in 18.91 s with 2.274 m clearance. It selected that same slow action before the risk deduction. On the known full lap, all eight selections fell back to the original controller and the 88.02 s lap trace matched the reference exactly.
+
+`v2_training_audit.json` reconstructs the score and risk tables from 120 paired probe runs, covering 20 contexts in 12 parent families. `v2_results.json` and `v2_known_diagnostics.json` report new tests and subsequent diagnostics separately.
+
+```powershell
+python learned_training_audit.py learned_risk_revision --first-training learned_revision --layouts learned_holdout/v2_stress_layouts.json --out learned_holdout/v2_training_audit.json
+python learned_holdout_score.py learned_risk_revision/runs --model learned_risk_revision/model.json --v2-stress --out learned_holdout/v2_results.json
+python learned_holdout_score.py learned_risk_revision/runs --known-diagnostics learned_revision/runs --model learned_risk_revision/model.json --out learned_holdout/v2_known_diagnostics.json
 ```

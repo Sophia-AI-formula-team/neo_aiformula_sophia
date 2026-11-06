@@ -76,6 +76,8 @@ def audit_loaded_selector(run, artifact):
     for key in ("mode", "modelId", "actions", "contexts", "returns", "scales", "width"):
         if key not in cfg or cfg[key] != artifact[key]:
             raise ValueError(f"{run['id']}: embedded selector differs from frozen artifact at {key}")
+    if cfg != artifact:
+        raise ValueError("Embedded selector metadata differs from the frozen file")
     if cfg["mode"] == "probe":
         raise ValueError("Forced actions cannot count as learned evaluations")
     contexts = np.array(cfg["contexts"])
@@ -97,8 +99,15 @@ def audit_loaded_selector(run, artifact):
         max_score_error = max(max_score_error, error)
         if not np.allclose(scores, probe["actionScores"], atol=.0003, rtol=.00003) or scores.argmax()!=probe["chosen"]:
             raise ValueError(f"Independent selector disagrees with Unity at {decision['t']}")
-        selected.append(dict(t=decision["t"], choice=probe["chosen"], reason=decision["reason"],
-                             targetMps=decision["speedCmd"], bodyMps=decision["speed"]))
+        entry=dict(t=decision["t"], choice=probe["chosen"], reason=decision["reason"],
+                   targetMps=decision["speedCmd"], bodyMps=decision["speed"])
+        if "rawReturns" in cfg:
+            scores_before=w@np.asarray(cfg["rawReturns"])/sum(w)
+            risk=w@np.asarray(cfg["riskUpper"])/sum(w)
+            if not np.allclose(scores_before-cfg["riskWeight"]*risk,scores,rtol=1e-8,atol=1e-8):
+                raise ValueError("Risk penalty did not reproduce the applied action scores")
+            entry.update(unpenalizedChoice=int(scores_before.argmax()),penalizedChoice=int(scores.argmax()))
+        selected.append(entry)
     return dict(selected=selected, maxReplayScoreError=max_score_error,
                 activeCommandUpdates=sum(d["reason"] == "learned_encounter" for d in run["decisions"]))
 
@@ -194,6 +203,26 @@ def summarize(pairs):
                 medianPairedZoneTimeChangeFraction=change, passesRegisteredImprovement=improved)
 
 
+def known_diagnostics(new_runs, old_runs, artifact):
+    tested=[]
+    for matrix,ids in (("layouts.json",("h05","h07")),("full_lap_layout.json",("full01",))):
+        plan=read(HERE/"learned_holdout"/matrix)
+        for case in plan["cases"]:
+            name=case["id"]
+            if name not in ids:
+                continue
+            files=[old_runs/(name+"_base.json"),old_runs/(name+"_learned.json"),new_runs/("diag_"+name+"_learned.json")]
+            base,old,new=map(read,files)
+            check_layout(case,base,new,plan["courseLengthForFractionsM"])
+            measure=lap_metrics if name=="full01" else pair_metrics
+            compared=measure(base,new);previous=measure(base,old)
+            tested.append(dict(id=name,context=case["context"],base=compared["base"],v1=previous["learned"],
+                               v2=compared["learned"],firstBaseToV2=compared["firstCommandChange"],
+                               exactBasePhysics=new["rows"]==base["rows"],selectorAudit=audit_loaded_selector(new,artifact),
+                               fileSha256=[hashlib.sha256(p.read_bytes()).hexdigest() for p in files]))
+    return dict(type="Known scenarios revisited after inspecting v1. Separate from untouched stress tests.",pairs=tested)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("runs", type=Path)
@@ -201,9 +230,14 @@ def main():
     test_group=p.add_mutually_exclusive_group()
     test_group.add_argument("--full-lap", action="store_true", help="Score the supplementary full lap separately")
     test_group.add_argument("--v2-stress", action="store_true", help="Score the separately frozen second selector")
+    test_group.add_argument("--known-diagnostics", type=Path, metavar="V1_RUNS", help="Compare v2 replay with known v1 cases")
     p.add_argument("--model", type=Path, required=True, help="Frozen selector configuration JSON")
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
+    if args.known_diagnostics:
+        result=known_diagnostics(args.runs,args.known_diagnostics,read(args.model))
+        args.out.write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)+"\n",encoding="utf8")
+        return
     if args.layouts is None:
         layout_name="full_lap_layout.json" if args.full_lap else "v2_stress_layouts.json" if args.v2_stress else "layouts.json"
         args.layouts=HERE/"learned_holdout"/layout_name

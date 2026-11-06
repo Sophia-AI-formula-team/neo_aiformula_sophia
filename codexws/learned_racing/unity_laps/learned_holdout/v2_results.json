@@ -1,0 +1,660 @@
+{
+  "protocolCommit": "7b3239b",
+  "layoutGitBlobNormalizedSha256": "d4da0162ec359ed29e8556ac6fb541197bd3a48995a22d082409e250e2280dcd",
+  "solver": "788eb7af5abf9f",
+  "modelFileSha256": "22d6f47258e079bd74a93574010c02f78afb605e38c7fe8191d23a93cc4ea729",
+  "pairs": [
+    {
+      "id": "s01",
+      "context": "naturally approached bend with moving cone",
+      "approachCapMps": 0,
+      "runSha256": [
+        "64a6e6d3678349ed8249f6323d3666800ff35c83078503b000c0182878a09f5c",
+        "5f0a22b7fe5c472eda222febd4655683c6611811873872dd3cb499503ffa6295"
+      ],
+      "base": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 1.00710881,
+        "minConeM": 0.455288619,
+        "elapsedS": 16.42,
+        "progressM": 44.52691,
+        "freeRoad": {
+          "meters": 22.52691,
+          "seconds": 7.213004407261569,
+          "mps": 3.123096663759337
+        },
+        "zoneSeconds": 5.683583891894373
+      },
+      "learned": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 1.00710881,
+        "minConeM": 0.455288619,
+        "elapsedS": 16.42,
+        "progressM": 44.52691,
+        "freeRoad": {
+          "meters": 22.52691,
+          "seconds": 7.213004407261569,
+          "mps": 3.123096663759337
+        },
+        "zoneSeconds": 5.683583891894373
+      },
+      "firstCommandChange": null,
+      "selectorAudit": {
+        "selected": [
+          {
+            "t": 5.79999971,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.68609607,
+            "bodyMps": 3.137693,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          }
+        ],
+        "maxReplayScoreError": 1.2428434459366144e-06,
+        "activeCommandUpdates": 0
+      },
+      "movingObstacles": [
+        {
+          "propIndex": 0,
+          "nearestEarlierSelection": {
+            "t": 5.79999971,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.68609607,
+            "bodyMps": 3.137693,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          "id": "s01_learned",
+          "status": "segment",
+          "qualifiesForTimeComparison": true,
+          "obstacleZoneS": 5.680000000000001,
+          "minConeClearanceM": 0.455288619,
+          "minRoadClearanceM": 1.00710881,
+          "section": {
+            "frontEnterS": 9.21286720028204,
+            "axleCrossS": 9.578410487081525,
+            "rearClearS": 10.245380558455071,
+            "nextConeEntersCrossedStripS": 10.689402006823178,
+            "rearLeadS": 0.4440214483681064,
+            "approachingStripAtRear": true,
+            "inflatedStripM": [
+              -2.1667600219922427,
+              -0.6823493541062888
+            ]
+          },
+          "earlyAcceleration": {
+            "atS": 5.79999971,
+            "actualMps": 3.137693,
+            "peakBeforeAxleCrossMps": 3.137693,
+            "actualAtFrontEntryMps": 1.7177272133994568,
+            "actualAtAxleCrossMps": 1.7146186135618486,
+            "increaseMps": 0.0
+          },
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": 0.4554121625663193
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": 0.2765420400093868
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": 0.10512994011531207
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": -0.05609683054118364
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": -0.20387330560985967
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": -0.34
+            }
+          ],
+          "sweptStrip": {
+            "inflatedBandM": [
+              -2.225312909694948,
+              -0.6742592397515468
+            ],
+            "occupiedDuringPass": false,
+            "lookaheadS": 3.0,
+            "rearLeadS": 0.4320967051681954
+          }
+        }
+      ]
+    },
+    {
+      "id": "s02",
+      "context": "left to right crossing of the course centre",
+      "approachCapMps": 2.52,
+      "runSha256": [
+        "f9b1d1d45c56859088c54ac35b3a4175257fa7df2382f1e8a20136814bedee20",
+        "b4347f949ea2778b10bc94eb779df52a601cb26f8bd1471d60f592d7b0e1250f"
+      ],
+      "base": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 0.601905346,
+        "minConeM": 1.98588908,
+        "elapsedS": 19.84,
+        "progressM": 42.9202766,
+        "freeRoad": {
+          "meters": 20.920276600000005,
+          "seconds": 8.997065402594526,
+          "mps": 2.325233358197788
+        },
+        "zoneSeconds": 7.124209383653794
+      },
+      "learned": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 0.601905346,
+        "minConeM": 1.98588908,
+        "elapsedS": 19.84,
+        "progressM": 42.9202766,
+        "freeRoad": {
+          "meters": 20.920276600000005,
+          "seconds": 8.997065402594526,
+          "mps": 2.325233358197788
+        },
+        "zoneSeconds": 7.124209383653794
+      },
+      "firstCommandChange": null,
+      "selectorAudit": {
+        "selected": [
+          {
+            "t": 6.39999962,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 0.896166146,
+            "bodyMps": 2.90165138,
+            "unpenalizedChoice": 0,
+            "penalizedChoice": 0
+          }
+        ],
+        "maxReplayScoreError": 5.613185773967189e-07,
+        "activeCommandUpdates": 0
+      },
+      "movingObstacles": [
+        {
+          "propIndex": 0,
+          "nearestEarlierSelection": {
+            "t": 6.39999962,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 0.896166146,
+            "bodyMps": 2.90165138,
+            "unpenalizedChoice": 0,
+            "penalizedChoice": 0
+          },
+          "id": "s02_learned",
+          "status": "segment",
+          "qualifiesForTimeComparison": true,
+          "obstacleZoneS": 7.1299994,
+          "minConeClearanceM": 1.98588908,
+          "minRoadClearanceM": 0.601905346,
+          "section": {
+            "frontEnterS": 10.944299591693884,
+            "axleCrossS": 11.392487066383628,
+            "rearClearS": 12.075109332081194,
+            "nextConeEntersCrossedStripS": 13.81048633437114,
+            "rearLeadS": 1.7353770022899457,
+            "approachingStripAtRear": true,
+            "inflatedStripM": [
+              -2.0247713017722533,
+              -0.12343223450285534
+            ]
+          },
+          "earlyAcceleration": {
+            "atS": 6.39999962,
+            "actualMps": 2.90165138,
+            "peakBeforeAxleCrossMps": 2.90165138,
+            "actualAtFrontEntryMps": 1.8887411196375337,
+            "actualAtAxleCrossMps": 2.0828518196156613,
+            "increaseMps": 0.0
+          },
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": 1.986079041488286
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": 1.9214566614013984
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": 1.7936232608068254
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": 1.6201621126986243
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": 1.4138559816782974
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": 0.9427217086220521
+            }
+          ],
+          "sweptStrip": {
+            "inflatedBandM": [
+              -2.632197866956851,
+              0.3771298424830316
+            ],
+            "occupiedDuringPass": false,
+            "lookaheadS": 3.0,
+            "rearLeadS": 1.2423259470022998
+          }
+        }
+      ]
+    },
+    {
+      "id": "s03",
+      "context": "naturally approached bend with adjacent static and moving cones",
+      "approachCapMps": 0,
+      "runSha256": [
+        "a4be097a3e4297c84ac2a628fbcf03a85d4a25a0a3316b95fb62d9eb00c54b3a",
+        "4186b04ee6a8cac277e07ab687872db11f9f41413b978b46b64b7c886b543116"
+      ],
+      "base": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 1.07694745,
+        "minConeM": 1.67715538,
+        "elapsedS": 19.67,
+        "progressM": 49.4139252,
+        "freeRoad": {
+          "meters": 24.2496185,
+          "seconds": 8.518000434523742,
+          "mps": 2.8468674880216582
+        },
+        "zoneSeconds": 7.222194200237411
+      },
+      "learned": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 1.07694745,
+        "minConeM": 1.67715538,
+        "elapsedS": 19.67,
+        "progressM": 49.4139252,
+        "freeRoad": {
+          "meters": 24.2496185,
+          "seconds": 8.518000434523742,
+          "mps": 2.8468674880216582
+        },
+        "zoneSeconds": 7.222194200237411
+      },
+      "firstCommandChange": null,
+      "selectorAudit": {
+        "selected": [
+          {
+            "t": 8.0,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.87379014,
+            "bodyMps": 3.17209554,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          {
+            "t": 11.4,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.74348366,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          {
+            "t": 12.7999992,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.71442258,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          }
+        ],
+        "maxReplayScoreError": 1.574073417387467e-06,
+        "activeCommandUpdates": 0
+      },
+      "movingObstacles": [
+        {
+          "propIndex": 1,
+          "nearestEarlierSelection": {
+            "t": 12.7999992,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.71442258,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          "id": "s03_learned",
+          "status": "segment",
+          "qualifiesForTimeComparison": true,
+          "obstacleZoneS": 5.4300005,
+          "minConeClearanceM": 1.67715538,
+          "minRoadClearanceM": 1.07694745,
+          "section": {
+            "frontEnterS": 12.952712090542757,
+            "axleCrossS": 13.312156437818773,
+            "rearClearS": 13.907445733662055,
+            "nextConeEntersCrossedStripS": null,
+            "rearLeadS": null,
+            "approachingStripAtRear": true,
+            "inflatedStripM": [
+              -3.146023018914882,
+              -1.6865765354814741
+            ]
+          },
+          "earlyAcceleration": {
+            "atS": 12.7999992,
+            "actualMps": 1.71442258,
+            "peakBeforeAxleCrossMps": 1.8220086633802464,
+            "actualAtFrontEntryMps": 1.7171772344502807,
+            "actualAtAxleCrossMps": 1.8220086633802464,
+            "increaseMps": 0.10758608338024644
+          },
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": 1.6771476469865079
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": 1.5293056748729223
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": 1.3854085531766984
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": 1.2475623740247672
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": 1.1177351671326106
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": 0.8897717770760893
+            }
+          ],
+          "sweptStrip": {
+            "inflatedBandM": [
+              -3.1595105065287785,
+              -1.6703877952830666
+            ],
+            "occupiedDuringPass": false,
+            "lookaheadS": 3.0,
+            "rearLeadS": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "s04",
+      "context": "right to left crossing of the course centre",
+      "approachCapMps": 2.72,
+      "runSha256": [
+        "c95258cbccf2b74ca382beb88570e6ea9b74c64df526b95432ac52ae5b4fb1c4",
+        "5c38af11ead3076eaefea5a473b82706ea31d993a08a4c9a8acefcef233c4637"
+      ],
+      "base": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 0.400138855,
+        "minConeM": 1.77558,
+        "elapsedS": 19.41,
+        "progressM": 44.3031464,
+        "freeRoad": {
+          "meters": 22.303146400000003,
+          "seconds": 8.995562242323743,
+          "mps": 2.4793499060086135
+        },
+        "zoneSeconds": 6.878735813569131
+      },
+      "learned": {
+        "status": "segment",
+        "complete": true,
+        "safe": true,
+        "minRoadM": 0.400138855,
+        "minConeM": 1.77558,
+        "elapsedS": 19.41,
+        "progressM": 44.3031464,
+        "freeRoad": {
+          "meters": 22.303146400000003,
+          "seconds": 8.995562242323743,
+          "mps": 2.4793499060086135
+        },
+        "zoneSeconds": 6.878735813569131
+      },
+      "firstCommandChange": null,
+      "selectorAudit": {
+        "selected": [
+          {
+            "t": 4.4,
+            "choice": 0,
+            "reason": "road",
+            "targetMps": 2.72,
+            "bodyMps": 3.01764655,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          {
+            "t": 8.0,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.61006773,
+            "unpenalizedChoice": 1,
+            "penalizedChoice": 0
+          },
+          {
+            "t": 9.8,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.44269025,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          }
+        ],
+        "maxReplayScoreError": 6.095669711214668e-07,
+        "activeCommandUpdates": 0
+      },
+      "movingObstacles": [
+        {
+          "propIndex": 0,
+          "nearestEarlierSelection": {
+            "t": 9.8,
+            "choice": 0,
+            "reason": "yield",
+            "targetMps": 1.4,
+            "bodyMps": 1.44269025,
+            "unpenalizedChoice": 3,
+            "penalizedChoice": 0
+          },
+          "id": "s04_learned",
+          "status": "segment",
+          "qualifiesForTimeComparison": true,
+          "obstacleZoneS": 6.88,
+          "minConeClearanceM": 1.77558,
+          "minRoadClearanceM": 0.400138855,
+          "section": {
+            "frontEnterS": 11.416524648499575,
+            "axleCrossS": 11.812549501585817,
+            "rearClearS": 12.462067006993056,
+            "nextConeEntersCrossedStripS": null,
+            "rearLeadS": null,
+            "approachingStripAtRear": false,
+            "inflatedStripM": [
+              -5.264992530754558,
+              -3.4302899941615097
+            ]
+          },
+          "earlyAcceleration": {
+            "atS": 9.8,
+            "actualMps": 1.44269025,
+            "peakBeforeAxleCrossMps": 2.12240458,
+            "actualAtFrontEntryMps": 2.121818952571331,
+            "actualAtAxleCrossMps": 2.122400749009968,
+            "increaseMps": 0.6797143299999999
+          },
+          "samePathLater": [
+            {
+              "delayS": 0.0,
+              "estimatedGapM": 1.7752566761895354
+            },
+            {
+              "delayS": 0.25,
+              "estimatedGapM": 1.766561469764482
+            },
+            {
+              "delayS": 0.5,
+              "estimatedGapM": 1.767681097013403
+            },
+            {
+              "delayS": 0.75,
+              "estimatedGapM": 1.7798078515648947
+            },
+            {
+              "delayS": 1.0,
+              "estimatedGapM": 1.8093583600522025
+            },
+            {
+              "delayS": 1.5,
+              "estimatedGapM": 1.9142349597145636
+            }
+          ],
+          "sweptStrip": {
+            "inflatedBandM": [
+              -5.727692275819592,
+              -3.033656898248467
+            ],
+            "occupiedDuringPass": false,
+            "lookaheadS": 3.0,
+            "rearLeadS": null
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "order": [
+      "base",
+      "learned"
+    ],
+    "completed": [
+      4,
+      4
+    ],
+    "safe": [
+      4,
+      4
+    ],
+    "newlyUnsafe": [],
+    "bothSafe": [
+      "s01",
+      "s02",
+      "s03",
+      "s04"
+    ],
+    "timedObstacles": [
+      "s01",
+      "s02",
+      "s03",
+      "s04"
+    ],
+    "pooledFreeRoadMps": [
+      2.6687502164983217,
+      2.6687502164983217
+    ],
+    "freeGainFraction": 0.0,
+    "medianPairedZoneTimeChangeFraction": 0.0,
+    "passesRegisteredImprovement": false
+  },
+  "approachSubgroups": {
+    "natural": {
+      "order": [
+        "base",
+        "learned"
+      ],
+      "completed": [
+        2,
+        2
+      ],
+      "safe": [
+        2,
+        2
+      ],
+      "newlyUnsafe": [],
+      "bothSafe": [
+        "s01",
+        "s03"
+      ],
+      "timedObstacles": [
+        "s01",
+        "s03"
+      ],
+      "pooledFreeRoadMps": [
+        2.9735245122899174,
+        2.9735245122899174
+      ],
+      "freeGainFraction": 0.0,
+      "medianPairedZoneTimeChangeFraction": 0.0,
+      "passesRegisteredImprovement": false
+    },
+    "configured": {
+      "order": [
+        "base",
+        "learned"
+      ],
+      "completed": [
+        2,
+        2
+      ],
+      "safe": [
+        2,
+        2
+      ],
+      "newlyUnsafe": [],
+      "bothSafe": [
+        "s02",
+        "s04"
+      ],
+      "timedObstacles": [
+        "s02",
+        "s04"
+      ],
+      "pooledFreeRoadMps": [
+        2.40228519441449,
+        2.40228519441449
+      ],
+      "freeGainFraction": 0.0,
+      "medianPairedZoneTimeChangeFraction": 0.0,
+      "passesRegisteredImprovement": false
+    }
+  }
+}
