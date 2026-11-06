@@ -35,7 +35,7 @@ def verify(receipt_path, frames, a4):
                 delta = ImageChops.difference(actual, expected.crop((0,0,960,height)))
                 mask = Image.new("L",delta.size,255)
                 excluded = None
-                if channel=="chase" and receipt.get("referee_inset"):
+                if channel=="chase" and receipt.get("referee_inset") and sample.get("refereeActive",True):
                     excluded=receipt["referee_inset"]["overlay_chase_pixel_box"]
                     left,top,right,bottom=excluded
                     ImageDraw.Draw(mask).rectangle((left,top,right-1,bottom-1),fill=0)

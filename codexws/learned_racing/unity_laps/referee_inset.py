@@ -33,6 +33,31 @@ def pose_at(rows, times, t):
     return a[1]+(b[1]-a[1])*u, a[2]+(b[2]-a[2])*u, a[3]+turn*u
 
 
+class RefereeTimeline:
+    """Keep a fixed local plot through each encounter and leave the free-road view clear."""
+    def __init__(self,run):
+        self.windows=[]
+        groups=[]
+        for i in sorted(range(len(run["props"])),key=lambda i:run["props"][i][7]):
+            if not groups or run["props"][i][7]-run["props"][groups[-1][0]][7]>8:
+                groups.append([])
+            groups[-1].append(i)
+        for group in groups:
+            entered=[i for i in group if run["zoneStart"][i]>=0]
+            if not entered:continue
+            lo=max(0,min(run["zoneStart"][i] for i in entered)-2.0)
+            hi=min(run["seconds"],max(run["zoneEnd"][i] if run["zoneEnd"][i]>=0 else run["seconds"] for i in entered)+1.5)
+            view=RefereeInset(run,lo,hi)
+            if view.ids:self.windows.append((lo,hi,view))
+
+    def current(self,t):
+        return next((view for lo,hi,view in self.windows if lo-.00002<=t<=hi+.00002),None)
+
+    def receipt(self):
+        return {"mode":"fixed per local encounter; hidden on free road","overlay_chase_pixel_box":CHASE_INSET,
+                "windows":[{"startS":lo,"endS":hi,**view.receipt()} for lo,hi,view in self.windows]}
+
+
 class RefereeInset:
     def __init__(self, run, start, end):
         self.rows = run["rows"]

@@ -38,7 +38,10 @@ def export(args):
     if Path(args.trial).name!=args.trial:raise ValueError("Expected a run ID")
     run_path=args.capture_root/"runs"/(args.trial+".json")
     run=json.loads(run_path.read_bytes())
-    if run.get("id")!=args.trial or not any(isinstance(d.get("encounter"),dict) for d in run["decisions"]):
+    baseline=args.baseline_full
+    if baseline and (not args.whole_lap or run["request"].get("encounter") is not None):
+        raise ValueError("A whole-lap reference film must be an actual baseline trial")
+    if run.get("id")!=args.trial or (not baseline and not any(isinstance(d.get("encounter"),dict) for d in run["decisions"])):
         raise ValueError("This export requires decision evidence from the current learned-encounter experiment")
     raw=args.capture_root/".work"
     chase=raw/"frames"/args.trial
@@ -52,17 +55,20 @@ def export(args):
     end=args.end if args.end is not None else min(run["seconds"],round((max(ends) if ends else run["seconds"])+1.5,2))
     if args.end is None and run["status"] in ("obstacle","boundary"):
         end=run["seconds"]
+    if args.whole_lap:start,end=0.,run["seconds"]
     videos,evidence=paths(args.package)
     pending=args.package/".work"/name
     pending.mkdir(parents=True,exist_ok=True)
     temp=pending/(name+".mp4")
     script=Path(__file__).with_name("three_view.py")
     command=[sys.executable,"-B",str(script),"--trajectory",str(run_path),"--frames",str(chase),"--a4",str(a4),
-             "--start",str(start),"--end",str(end),"--title",args.title,"--referee-inset","--learned-panel","--out",str(temp)]
+             "--start",str(start),"--end",str(end),"--title",args.title,"--referee-inset","--out",str(temp)]
+    if not baseline:command.append("--learned-panel")
+    if args.whole_lap:command.append("--whole-lap")
     subprocess.run(command,check=True)
     receipt_path=temp.with_suffix(".json")
     receipt=json.loads(receipt_path.read_bytes())
-    if any(receipt["missing_camera_output_frames"].values()) or not receipt["referee_inset"]:
+    if any(receipt["missing_camera_output_frames"].values()) or (run["props"] and not receipt["referee_inset"]):
         raise ValueError("This clip requires both complete optical feeds and a local referee view")
     audit=verify(receipt_path,chase,a4)
     poster=pending/(name+".jpg")
@@ -122,6 +128,8 @@ def main():
     clip=sub.add_parser("clip")
     clip.add_argument("--capture-root",type=Path,required=True)
     clip.add_argument("--package",type=Path,required=True)
+    clip.add_argument("--whole-lap",action="store_true")
+    clip.add_argument("--baseline-full",action="store_true")
     for key in ("trial","name","title"):clip.add_argument("--"+key,required=True)
     for key in ("start","end","poster-at"):clip.add_argument("--"+key,type=float)
     reel=sub.add_parser("join")

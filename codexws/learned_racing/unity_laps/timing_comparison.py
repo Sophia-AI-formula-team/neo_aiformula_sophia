@@ -11,6 +11,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 from referee_inset import position
 from three_view import FPS, INK, MUTED, PAPER, SIZE, WHITE, at, camera, digest, label
+from learned_film_panel import action_text
 
 LEFT, RIGHT = "#9b4908", "#006e6f"
 MOVING = "#b72865"
@@ -20,7 +21,8 @@ A4_X, A4_Y, A4_W, A4_H = 660, 12, 288, 162
 TERMINAL = {"obstacle":"碰桶终止", "boundary":"触边终止", "lap":"完成一圈", "segment":"完成录制路段",
             "stalled":"进度停滞", "lost_lane":"道路观测丢失", "invalid_progress":"进度无效"}
 REASONS = {"road":"按弯度调速", "yield":"减速避让", "recover":"恢复车速", "hold_pass":"保持避让侧",
-           "yield_corridor":"寻找可用空间", "insufficient_lane":"道路观测不足", "go_first":"选择加速先行"}
+           "yield_corridor":"寻找可用空间", "insufficient_lane":"道路观测不足", "go_first":"选择加速先行",
+           "learned_encounter":"执行学习动作"}
 
 
 def short_seconds(value):
@@ -61,7 +63,7 @@ class Recording:
                 "row":self.rows[ri],"decision":self.decisions[di],"stopped":t>=self.run["seconds"]-2e-5}
 
 
-def check_pair(left,right,prop):
+def check_pair(left,right,prop,learned=False):
     a,b=left.run,right.run
     for key in ("seed","start","offset","yaw","obstacles","model","vision"):
         if a["request"].get(key)!=b["request"].get(key):
@@ -75,7 +77,12 @@ def check_pair(left,right,prop):
     modes=tuple(r["request"].get("timing",{}).get("mode") for r in (a,b))
     if left.path.resolve()==right.path.resolve() or a.get("id")==b.get("id"):
         raise ValueError("Identical driving record; it cannot support a policy comparison")
-    if modes!=("yield_only","both"):
+    if learned:
+        if (a["request"].get("encounter") is not None
+                or (b["request"].get("encounter") or {}).get("mode")!="learned"
+                or a["request"].get("timing")!=b["request"].get("timing")):
+            raise ValueError("Expected baseline and fitted policy with identical timing conditions")
+    elif modes!=("yield_only","both"):
         raise ValueError("Baseline must disable and candidate must enable the timing branch")
     for key in ("weights","solver","limit"):
         if a["request"].get(key)!=b["request"].get(key):raise ValueError(f"Unmatched control condition: {key}")
@@ -226,7 +233,15 @@ def prediction(dec,first_go):
 def render(args):
     records=(Recording(args.baseline,args.baseline_frames,args.baseline_a4),
              Recording(args.candidate,args.candidate_frames,args.candidate_a4))
-    check_pair(*records,args.prop)
+    check_pair(*records,args.prop,args.learned)
+    if args.learned and args.audit is None:
+        from crossing_audit import evaluate
+        args.out.parent.mkdir(parents=True,exist_ok=True)
+        first=next((d for d in records[1].decisions if (d.get("encounter") or {}).get("state")=="selected"),None)
+        trigger=first["t"] if first else None
+        args.audit=args.out.with_suffix(".crossing-audit.json")
+        blob={key:evaluate(r.run,args.prop,trigger) for key,r in zip(("off","on"),records)}
+        args.audit.write_text(json.dumps(blob,ensure_ascii=False,indent=2),encoding="utf8")
     audit=json.loads(args.audit.read_text(encoding="utf-8-sig")) if args.audit else {}
     if audit and any(audit.get(which,{}).get("id")!=r.run.get("id") for which,r in zip(("off","on"),records)):
         raise ValueError("Audit IDs must match the actual baseline and candidate recordings")
@@ -241,7 +256,7 @@ def render(args):
         if not any((r.frame_dir/f"{int(f[1]):04d}c.jpg").is_file() for f in r.frames[first:last+1]):
             raise ValueError(f"No real chase frames for {r.path.name} in the requested window")
     judge=Referee(records[0].run["props"][args.prop],records,args.start,args.end)
-    first_go=next((d for d in records[1].decisions if d["reason"]=="go_first"),None)
+    first_go=next((d for d in records[1].decisions if (d.get("encounter") or {}).get("state")=="selected"),None) if args.learned else next((d for d in records[1].decisions if d["reason"]=="go_first"),None)
     args.out.parent.mkdir(parents=True,exist_ok=True)
     nframes=math.ceil((args.end-args.start)*FPS-1e-7)
     # Include the exact terminal camera tick for an encounter truncated by a collision/boundary.
@@ -260,7 +275,8 @@ def render(args):
     template=Image.new("RGB",SIZE,PAPER);d=ImageDraw.Draw(template)
     d.rectangle((0,0,2048,94),fill=INK)
     label(d,(44,46),args.title,41,WHITE,True)
-    for x,text,color in zip(XPOS,("先行分支关闭","先行分支开放"),(LEFT,RIGHT)):
+    names=("冻结基线","启用学习策略") if args.learned else ("先行分支关闭","先行分支开放")
+    for x,text,color in zip(XPOS,names,(LEFT,RIGHT)):
         label(d,(x,125),text,31,color,True)
     d.rounded_rectangle((31,782,1002,1228),radius=16,fill=WHITE)
     d.rounded_rectangle((1038,782,2009,1228),radius=16,fill=WHITE)
@@ -308,8 +324,17 @@ def render(args):
             decision=samples[1]["decision"]
             known_go=first_go if first_go and first_go["t"]<=decision["t"] else None
             if known_go:
-                label(d,(2001,127),f"首次选择先行  {known_go['t']:.2f} s",22,RIGHT,anchor="rm")
-            label(d,(1058,1187),prediction(decision,known_go),22,MUTED)
+                prefix="首次评分" if args.learned else "首次选择先行"
+                label(d,(2001,127),f"{prefix}  {known_go['t']:.2f} s",22,RIGHT,anchor="rm")
+            if args.learned:
+                msg="尚未触发动作评分"
+                if known_go:
+                    e=known_go["encounter"]; choice=e["chosen"]
+                    name=action_text(choice,records[1].run["request"]["encounter"]["actions"])
+                    msg=f"{known_go['t']:.2f} s 首次选取   {name}   ·   估计回报 {e['actionScores'][choice]:+.2f}"
+            else:
+                msg=prediction(decision,known_go)
+            label(d,(1058,1187),msg,22,MUTED)
             if n in inspected:
                 checks.append({"videoFrame":n,"simS":t,"sources":[{"sourceFrame":s["frame_id"],"sourceS":s["frame_t"],
                               "decisionS":s["decision"]["t"],"poseS":s["row"][0],"heldAfterEnd":s["stopped"],
@@ -362,6 +387,7 @@ def main():
     for name in ("baseline","baseline-frames","candidate","candidate-frames","out"):
         p.add_argument("--"+name,type=Path,required=True)
     p.add_argument("--audit",type=Path)
+    p.add_argument("--learned",action="store_true",help="Compare a fitted encounter policy to its frozen control instead of timing ablation")
     p.add_argument("--baseline-a4",type=Path)
     p.add_argument("--candidate-a4",type=Path)
     p.add_argument("--poster",type=Path,help="Save the decoded frame just before candidate front entry; use midpoint when unverified")

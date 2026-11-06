@@ -46,7 +46,8 @@ class LearnedPanel:
         state=ACTION_STATES.get(current.get("state"),"当前没有策略评估")
         label(d,(43,35),"学习策略",30,"#ffffff",True)
         label(d,(204,37),state,23,"#c2dcdb")
-        end="本趟结果  "+self.outcome+f"   /   最小桶净距 {self.run['minGap']:.2f} m"
+        clearance=f"最小桶净距 {self.run['minGap']:.2f} m" if self.run["props"] else "场内无锥桶"
+        end="本趟结果  "+self.outcome+"   /   "+clearance
         label(d,(2004,34),end,24,"#ffd7a1" if self.run["status"] in ("obstacle","boundary") else "#c0e8d4",True,anchor="rm")
         d.line((43,67,2004,67),fill="#44616a",width=2)
         if source is None:
