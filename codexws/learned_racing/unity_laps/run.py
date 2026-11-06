@@ -152,7 +152,9 @@ class Lab:
             if time.monotonic()-began>520:raise TimeoutError(name+" saw no terminal result")
             time.sleep(.16)
         result["request"]=params;result["id"]=name
-        write(cache,result);out.unlink();jobpath.unlink()
+        temp_cache=cache.with_suffix(".json.tmp")
+        write(temp_cache,result);temp_cache.replace(cache)
+        out.unlink();jobpath.unlink()
         self.event("finish",trial=name,status=result["status"],seconds=result["seconds"],progress=result["progress"],minRoad=result["minRoad"],minGap=result["minGap"])
         print(f"{name} {result['status']} {result['seconds']:.2f}s {result['progress']:.1f}/{result['length']:.1f} gap={result['minGap']:.2f} road={result['minRoad']:.2f}",flush=True)
         if result["status"].startswith("error:"):raise RuntimeError(result["status"])
