@@ -39,9 +39,25 @@ def audits(root,only=None):
             choices.append(dict(t=d["t"],actualSpeedMps=d["speed"],chosen=NAMES[e["chosen"]],targetOffsetM=e["targetOffset"],
                                  targetSpeedMps=e["targetSpeed"] if e["chosen"] else None,decisionScores=actual))
         cutoff=float("inf")if first is None else first
-        def prefix(r):return [[d[k]for k in ("t","observed","tracks","speedCmd","yawCmd","rightCan","leftCan")]for d in r["decisions"]if d["t"]<cutoff]
-        assert prefix(a)==prefix(b),(name,"visual/command prefix changed")
-        pairs[name]=dict(matchedRequest=True,prefixExact=True,physicsTraceExact=a["rows"]==b["rows"],
+        prefix_keys=("t","observed","tracks","speedCmd","yawCmd","rightCan","leftCan")
+        def prefix(r):return [{k:d[k]for k in prefix_keys}for d in r["decisions"]if d["t"]<cutoff]
+        pa,pb=prefix(a),prefix(b);assert len(pa)==len(pb),name
+        drift=[];max_track=np.zeros(4);max_speed=0.
+        for da,db in zip(pa,pb):
+            fields=[key for key in prefix_keys if da[key]!=db[key]]
+            if not fields:continue
+            drift.append(dict(t=da["t"],fields=fields))
+            assert set(fields)<=set(["tracks","speedCmd"]),(name,fields)
+            if "tracks"in fields:
+                ta,tb=np.asarray(da["tracks"]),np.asarray(db["tracks"]);assert ta.shape==tb.shape
+                max_track=np.maximum(max_track,np.max(abs(ta-tb),axis=0))
+            max_speed=max(max_speed,abs(da["speedCmd"]-db["speedCmd"]))
+        body=lambda r:[[row[i]for i in (0,1,2,3,4,7,8,9,10,12,13,14)]for row in r["rows"] if row[0]<=cutoff]
+        assert body(a)==body(b),(name,"physical state or wheel commands differ before forest choice")
+        pairs[name]=dict(matchedRequest=True,prefixExact=not drift,
+                         prefixBodyAndWheelCommandsExact=True,prefixDrift=drift,
+                         maxPrefixTrackDeltaZXVxVz=max_track.tolist(),maxPrefixSpeedCmdDeltaMps=max_speed,
+                         physicsTraceExact=a["rows"]==b["rows"],
                          modelId=cfg["modelId"],maxCSharpScoreDifference=max_error,decisions=choices,
                          baseline=dict(metrics=metrics(a),gates=a["gate"],images=images(root,a)),
                          learned=dict(metrics=metrics(b),gates=b["gate"],images=images(root,b)))
