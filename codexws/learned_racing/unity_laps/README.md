@@ -27,6 +27,8 @@
 
 ## 文件与证据
 
+- [长训练、巡航与双侧空隙实验](long_training_evidence/README.md)。
+
 - [本轮两版学习控制器、训练过程、完整跑圈和避障录像](learned_evidence/README.md)。
 
 - [工作记录](WORKLOG.md)、[所有试车的参数与结果事件](evidence/events.jsonl)、[行驶轨迹](evidence/runs/)。
