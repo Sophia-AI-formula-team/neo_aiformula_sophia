@@ -1,0 +1,167 @@
+// Method body executed by the existing editor's CodeDOM bridge. The Python
+// runner supplies offset, trend, coneLayout, observeOnly and frameDirectory.
+if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode ||
+    UnityEditor.EditorApplication.isCompiling || UnityEngine.SceneManagement.SceneManager.GetActiveScene().isDirty)
+    throw new InvalidOperationException("Expected the original clean, idle editor.");
+const string path = "Assets/Scenes/MotorControllerValidation.unity";
+const string conePath = "Assets/TrainingEnvironment/Prefabs/TrafficCone_75cm.prefab";
+const float dt = .01f, finish = 11f;
+var open = typeof(UnityEditor.SceneManagement.EditorSceneManager).GetMethod(
+    "OpenPreviewScene", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+    null, new Type[]{ typeof(string) }, null);
+if (open == null) throw new NotSupportedException("Unity 2022 preview-scene API is required.");
+var scene = (UnityEngine.SceneManagement.Scene)open.Invoke(null, new object[]{ path });
+try {
+    var physics = scene.GetPhysicsScene();
+    if (!physics.IsValid() || physics.Equals(Physics.defaultPhysicsScene))
+        throw new InvalidOperationException("Expected private PhysX scene.");
+    var d = scene.GetRootGameObjects().SelectMany(r =>
+        r.GetComponentsInChildren<AIFormula.AIFormulaDifferentialDrive>(true)).Single();
+    if (!d.UsesRepositoryMotor || !d.TireContact.enabled || !d.TireContact.coupledRearContact ||
+        d.motorPlant.response.ToString() != "JanuaryLapIdentified" || d.EditorExperimentalStep != null)
+        throw new InvalidOperationException("Installed articulated physics baseline differs.");
+    var body = d.Body;
+    d.Initialize();
+    d.SetInput(0, 0, true);
+    for (int k = 0; k < 200; k++) { d.StepDrive(dt); physics.Simulate(dt); }
+    if (!d.UsesImplicitContact || d.TireContact.Contacts < 2)
+        throw new InvalidOperationException("Vehicle did not settle on the track.");
+    var origin = body.position;
+    var f = Vector3.ProjectOnPlane(body.rotation * Vector3.forward, Vector3.up).normalized;
+    var rgt = Vector3.Cross(Vector3.up, f);
+    var coneObjects = new List<GameObject>();
+    foreach (var point in coneLayout) {
+        var cone = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(
+            UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(conePath), scene);
+        var plane = origin + f * point[0] + rgt * point[1];
+        RaycastHit ground;
+        if (!physics.Raycast(plane + Vector3.up * 2, Vector3.down, out ground, 3f,
+                             Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            throw new InvalidOperationException("Cone placement missed the course.");
+        cone.transform.SetPositionAndRotation(ground.point, Quaternion.LookRotation(f, Vector3.up));
+        coneObjects.Add(cone);
+    }
+    Physics.SyncTransforms();
+    // Simulated semantics: body-frame centres within range and field of view,
+    // with a camera-height ray to the upper body of each actual cone.
+    var seen = new List<float[]>();
+    var sensor = origin + Vector3.up * .655f + f * .18f;
+    foreach (var cone in coneObjects) {
+        var box = cone.GetComponent<BoxCollider>();
+        var aim = cone.transform.TransformPoint(box.center + .32f * box.size.y * Vector3.up);
+        var delta = aim - sensor;
+        float s = Vector3.Dot(cone.transform.position - origin, f);
+        float x = Vector3.Dot(cone.transform.position - origin, rgt);
+        RaycastHit hit;
+        if (s > 0 && delta.magnitude <= 10f && Mathf.Abs(Mathf.Atan2(x,s)) <= 40f*Mathf.Deg2Rad &&
+            physics.Raycast(sensor,delta.normalized,out hit,delta.magnitude + .2f,~0,QueryTriggerInteraction.Ignore) &&
+            hit.collider == box)
+            seen.Add(new[]{s,x,.5f*box.size.x});
+    }
+    var profile = new { scene=path, version=Application.unityVersion, model=d.motorPlant.response.ToString(),
+        converter=d.motorController.profile.ToString(), coupled=d.TireContact.coupledRearContact, step_s=dt,
+        origin=new[]{origin.x,origin.y,origin.z}, forward=new[]{f.x,f.y,f.z}, contacts=d.TireContact.Contacts };
+    var road = new float[131][];
+    for (int i=0;i<road.Length;i++) road[i]=new[]{-1f+.1f*i,-2.6f,2.6f};
+    if (observeOnly || coneObjects.Count>0) {
+        // Local semantic ground truth. Only the next 12 m and the rear overhang enter planning.
+        // Stop the section at the first green edge, or at the narrower laboratory strip.
+        var surface=scene.GetRootGameObjects().Single(o=>o.name=="Renderer")
+            .transform.Find("Codex/LitRenderer/RebuiltTrackSurface");
+        foreach (var mf in surface.GetComponentsInChildren<MeshFilter>(true)) {
+            if (mf.name!="OuterGreenStrip" && !mf.name.StartsWith("Island_")) continue;
+            var mesh=mf.sharedMesh;
+            var points=mesh.vertices.Select(pt=>{
+                var rel=mf.transform.TransformPoint(pt)-origin;
+                return new Vector2(Vector3.Dot(rel,f),Vector3.Dot(rel,rgt));}).ToArray();
+            var tris=mesh.triangles;
+            for (int i=0;i<tris.Length;i+=3) for(int j=0;j<3;j++) {
+                var a=points[tris[i+j]]; var b=points[tris[i+(j+1)%3]];
+                if (Mathf.Abs(a.x-b.x)<1e-6f) continue;
+                int lo=Mathf.Max(0,Mathf.CeilToInt((Mathf.Min(a.x,b.x)+1f)*10f));
+                int hi=Mathf.Min(road.Length-1,Mathf.FloorToInt((Mathf.Max(a.x,b.x)+1f)*10f));
+                for (int h=lo;h<=hi;h++) {
+                    float xEdge=Mathf.Lerp(a.y,b.y,(road[h][0]-a.x)/(b.x-a.x));
+                    if (xEdge>0) road[h][2]=Mathf.Min(road[h][2],xEdge);
+                    else road[h][1]=Mathf.Max(road[h][1],xEdge);
+                }
+            }
+        }
+    }
+    if (observeOnly) return new {profile=profile, observed=seen, road=road};
+    Camera cam = null;
+    if (!string.IsNullOrEmpty(frameDirectory)) {
+        var go = UnityEditor.EditorUtility.CreateGameObjectWithHideFlags("Cone trial camera",
+            HideFlags.HideAndDontSave, typeof(Camera));
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+        cam = go.GetComponent<Camera>(); cam.enabled=false; cam.scene=scene;
+        cam.cullingMask=~((1<<LayerMask.NameToLayer("UnlitMask"))|(1<<LayerMask.NameToLayer("UI")));
+        cam.orthographic=true; cam.orthographicSize=3.9f; cam.nearClipPlane=.1f;cam.farClipPlane=38f;
+        cam.transform.SetPositionAndRotation(origin+f*5.6f+Vector3.up*14f,Quaternion.LookRotation(Vector3.down,-rgt));
+        cam.clearFlags=CameraClearFlags.SolidColor; cam.backgroundColor=Color.gray;
+    }
+    var rows = new List<float[]>();
+    var frames = new List<float[]>();
+    string result="timeout";
+    // A conservative rectangular vehicle envelope, extending .28 m forward and
+    // .88 m behind the body origin. Cone footprint comes from its prefab.
+    float minGap=99f, minRoad=99f;
+    for (int k=0; k<=1800; k++) {
+        var delta=body.position-origin;
+        float s=Vector3.Dot(delta,f), x=Vector3.Dot(delta,rgt);
+        var axis=body.rotation * Vector3.forward;
+        float yaw=Mathf.Atan2(Vector3.Dot(axis,rgt),Vector3.Dot(axis,f));
+        float vel=Vector3.Dot(body.velocity,axis), w=body.angularVelocity.y;
+        float localTarget=offset+trend*Mathf.Clamp01(s/finish);
+        float yawRequest=Mathf.Clamp(1.5f*(localTarget-x) - 3.3f*yaw - .36f*w,-2.5f,2.5f);
+        float co=Mathf.Cos(yaw), si=Mathf.Sin(yaw);
+        foreach (var cone in coneObjects) {
+            var rel=cone.transform.position-origin;
+            float ds=s-.30f*co-Vector3.Dot(rel,f), dx=x-.30f*si-Vector3.Dot(rel,rgt);
+            float a=cone.GetComponent<BoxCollider>().size.x*.5f;
+            float pc=a*(Mathf.Abs(co)+Mathf.Abs(si));
+            float gap=Mathf.Max(
+                Mathf.Max(Mathf.Abs(ds)-a-.58f*Mathf.Abs(co)-.38f*Mathf.Abs(si),
+                          Mathf.Abs(dx)-a-.58f*Mathf.Abs(si)-.38f*Mathf.Abs(co)),
+                Mathf.Max(Mathf.Abs(ds*co+dx*si)-.58f-pc,Mathf.Abs(-ds*si+dx*co)-.38f-pc));
+            minGap=Mathf.Min(minGap,gap);
+        }
+        if (coneObjects.Count>0) {
+            for(int ci=0;ci<4;ci++) {
+                float lon=ci<2 ? -.88f : .28f, lat=ci%2==0 ? -.38f : .38f;
+                float ss=s+lon*co-lat*si, xx=x+lon*si+lat*co;
+                float u=Mathf.Clamp((ss+1f)*10f,0f,road.Length-1f); int i=Mathf.Min((int)u,road.Length-2);
+                float left=Mathf.Lerp(road[i][1],road[i+1][1],u-i), right=Mathf.Lerp(road[i][2],road[i+1][2],u-i);
+                minRoad=Mathf.Min(minRoad,Mathf.Min(xx-left,right-xx));
+            }
+        }
+        bool failed=minGap<=0f || minRoad<0f, complete=s>=finish, leftStrip=Mathf.Abs(x)>2.6f;
+        if (k%5==0 || failed || complete || leftStrip)
+            rows.Add(new[]{k*dt,s,x,yaw,vel,w,(float)d.MotorCommand.rightCan,(float)d.MotorCommand.leftCan});
+        if (cam && (k%20==0 || failed || complete)) {
+            d.UpdateWheelVisuals();
+            var photo=d.GetComponentInChildren<AIFormula.AIFormulaPhotoVisualRig>(true);
+            if (photo) photo.ApplyVisualPose();
+            var prev=RenderTexture.active;
+            var rt=RenderTexture.GetTemporary(720,416,24);
+            var pixels=new Texture2D(720,416,TextureFormat.RGB24,false);
+            try {
+                cam.targetTexture=rt;cam.Render();RenderTexture.active=rt;
+                pixels.ReadPixels(new Rect(0,0,720,416),0,0);pixels.Apply();
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(frameDirectory,k.ToString("D4")+".png"),pixels.EncodeToPNG());
+            } finally {
+                cam.targetTexture=null;RenderTexture.active=prev;RenderTexture.ReleaseTemporary(rt);
+                UnityEngine.Object.DestroyImmediate(pixels);
+            }
+            frames.Add(new[]{k*dt,(float)k});
+        }
+        if (failed) { result=minGap<=0f ? "envelope_overlap" : "road_envelope"; break; }
+        if (complete) { result="finished"; break; }
+        if (leftStrip) { result="left_test_strip"; break; }
+        d.SetAutonomousVelocityCommand(1.65f,yawRequest);
+        d.StepDrive(dt); physics.Simulate(dt);
+        if (d.MotorFault.Length>0 || d.TireContact.Fault.Length>0)
+            throw new InvalidOperationException("Plant fault: "+d.MotorFault+d.TireContact.Fault);
+    }
+    return new {profile=profile,observed=seen,status=result,rows=rows,frames=frames,min_gap=minGap,min_road=minRoad};
+} finally { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); }

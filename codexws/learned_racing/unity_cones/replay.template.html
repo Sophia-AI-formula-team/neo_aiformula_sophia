@@ -1,0 +1,123 @@
+<section id="unity-cone-preview" aria-label="Unity 双桶对照回放">
+  <h2>第二只桶的位置与车辆选边</h2>
+  <div class="viz-controls cone-controls">
+    <label class="form-label">起步时的观测
+      <select class="form-select" id="cone-mode">
+        <option value="both">看两只桶</option><option value="nearest_only">只看第一只桶</option>
+      </select>
+    </label>
+    <label class="form-check"><input type="checkbox" class="form-check-input" id="cone-predictions" checked>显示左右候选轨迹</label>
+  </div>
+  <div class="cone-films"></div>
+  <div class="viz-row cone-timeline">
+    <button type="button" class="btn btn-primary" id="cone-play">播放</button>
+    <label class="form-label" for="cone-time">仿真时间 <output id="cone-clock" class="tabular-nums">3.0 s</output>
+      <input type="range" class="form-range" id="cone-time" min="0" max="6" step="0.01" value="3">
+    </label>
+  </div>
+  <div class="text-small text-muted cone-key">实线为已驶轨迹，虚线为起步时预测。两幅画面使用同一时钟，行进方向向右。</div>
+  <p class="sr-only" id="cone-announce" aria-live="polite"></p>
+</section>
+<style>
+  #unity-cone-preview {display:grid;gap:calc(var(--font-size-base)*.7)}
+  #unity-cone-preview .cone-films {display:grid;gap:calc(var(--font-size-base)*.65)}
+  #unity-cone-preview figure {margin:0;min-width:0}
+  #unity-cone-preview figcaption {display:flex;align-items:baseline;flex-wrap:wrap;gap:.45em 1em;margin-bottom:.25em}
+  #unity-cone-preview .cone-screen {position:relative;display:block;width:100%;aspect-ratio:686/249;overflow:hidden}
+  #unity-cone-preview .cone-screen img,#unity-cone-preview .cone-screen svg {position:absolute;inset:0;width:100%;height:100%;display:block}
+  #unity-cone-preview .cone-screen svg {pointer-events:none}
+  #unity-cone-preview .ghost {fill:none;stroke:var(--yellow);stroke-width:2;stroke-dasharray:5 6;stroke-opacity:.87}
+  #unity-cone-preview .actual {fill:none;stroke:var(--green);stroke-width:3;stroke-linecap:round}
+  #unity-cone-preview .cone-timeline label {flex:1;min-width:9em}
+  #unity-cone-preview .road-state {color:var(--foreground)}
+  #unity-cone-preview .cone-frame-label {font-weight:500}
+</style>
+<script>
+(() => {
+  const root=document.getElementById('unity-cone-preview');
+  const data=__CLIPS__;
+  const mode=root.querySelector('#cone-mode'), slider=root.querySelector('#cone-time');
+  const button=root.querySelector('#cone-play'), ghosts=root.querySelector('#cone-predictions');
+  const titles={second_left:'第二只桶在左',second_right:'第二只桶在右'};
+  const films=root.querySelector('.cone-films'), panels={};
+  const ns='http://www.w3.org/2000/svg';
+  let frameRequest=null,playClock=0,startTime=0;
+  function svgPath(container, name) {
+    const p=document.createElementNS(ns,'path');p.setAttribute('class',name);container.append(p);return p;
+  }
+  Object.entries(titles).forEach(([key,title])=>{
+    const fig=document.createElement('figure'),caption=document.createElement('figcaption');
+    const h=document.createElement('span'),badge=document.createElement('span');
+    h.className='cone-frame-label';h.textContent=title;badge.className='text-small road-state';
+    caption.append(h,badge);
+    const screen=document.createElement('div');screen.className='cone-screen';
+    const photo=document.createElement('img');photo.alt=title+'的 Unity 正交相机画面';
+    const overlay=document.createElementNS(ns,'svg');overlay.setAttribute('viewBox','0 0 686 249');
+    overlay.setAttribute('aria-hidden','true');
+    const predictions=[svgPath(overlay,'ghost'),svgPath(overlay,'ghost')];
+    const trace=svgPath(overlay,'actual');screen.append(photo,overlay);fig.append(caption,screen);films.append(fig);
+    panels[key]={photo,predictions,trace,badge,frame:-1,mode:null};
+  });
+  function path(points) {
+    return points.map(([x,y],i)=>(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)).join(' ');
+  }
+  function draw() {
+    const t=Number(slider.value), selected=mode.value;
+    root.querySelector('#cone-clock').textContent=t.toFixed(2)+' s';
+    for (const [key,p] of Object.entries(panels)) {
+      const c=data[key][selected];
+      let index=c.images.length-1;
+      while(index>0 && c.images[index][0]>t+.00001) index--;
+      if (p.frame!==index || p.mode!==selected) {
+        p.photo.src=c.images[index][1];
+        const sample=c.images[index][0];
+        const traveled=c.trace.filter(v=>v[0]<=sample+.00001).map(v=>[v[1],v[2]]);
+        p.trace.setAttribute('d',path(traveled));
+        p.frame=index;
+      }
+      if (p.mode!==selected) {
+        p.predictions.forEach((line,i)=>line.setAttribute('d',path(c.candidates[i])));
+        p.mode=selected;
+      }
+      p.predictions.forEach(line=>line.style.display=ghosts.checked?'':'none');
+      const state=t+.001>=c.end?c.result:'行驶中';
+      p.badge.textContent=c.side+'绕第一只桶 · '+state;
+    }
+  }
+  function duration() {return Math.max(...Object.keys(titles).map(key=>data[key][mode.value].end));}
+  function pause() {
+    if(frameRequest!==null) cancelAnimationFrame(frameRequest);
+    frameRequest=null;button.textContent='播放';
+  }
+  function tick(now) {
+    const t=Math.min(duration(),startTime+(now-playClock)/1000);
+    slider.value=t;draw();
+    if(t>=duration()-.004){pause();root.querySelector('#cone-announce').textContent='回放结束';save();return;}
+    frameRequest=requestAnimationFrame(tick);
+  }
+  function save() {
+    if(window.openai && typeof window.openai.setWidgetState==='function')
+      window.openai.setWidgetState({modelContent:{observation:mode.value},privateContent:{time:Number(slider.value),paths:ghosts.checked}}).catch(()=>{});
+  }
+  function restore(state) {
+    pause();
+    if(state && ['both','nearest_only'].includes(state.modelContent?.observation)) mode.value=state.modelContent.observation;
+    slider.max=duration().toFixed(2);
+    if(Number.isFinite(state?.privateContent?.time)) slider.value=Math.min(duration(),Math.max(0,state.privateContent.time));
+    if(typeof state?.privateContent?.paths==='boolean') ghosts.checked=state.privateContent.paths;
+    draw();
+  }
+  button.addEventListener('click',()=>{
+    if(frameRequest!==null){pause();save();return;}
+    if(Number(slider.value)>=duration()-.01) slider.value='0';
+    startTime=Number(slider.value);playClock=performance.now();
+    button.textContent='暂停';frameRequest=requestAnimationFrame(tick);
+  });
+  mode.addEventListener('change',()=>{pause();slider.max=duration().toFixed(2);draw();save();});
+  ghosts.addEventListener('change',()=>{draw();save();});
+  slider.addEventListener('input',()=>{pause();draw();});
+  slider.addEventListener('change',save);
+  window.addEventListener('openai:set_globals',e=>{if(e.detail?.globals?.widgetState)restore(e.detail.globals.widgetState);});
+  restore(window.openai?.widgetState);
+})();
+</script>
