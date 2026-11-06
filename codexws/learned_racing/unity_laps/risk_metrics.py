@@ -56,7 +56,19 @@ def _free_pace(rows, groups, end_progress=None):
     return {"meters": meters, "seconds": seconds, "mps": meters / seconds if seconds > 0 else None}
 
 
-def _moving_risk(rows, prop):
+def _decision_action(decisions, begin, end):
+    """Observations and the command at the lowest target speed in the following window."""
+    window = [d for d in decisions if begin - .0001 <= d["t"] <= end + .0001]
+    if not window:
+        return None
+    at_min = min(window, key=lambda d: d["speedCmd"])
+    fields = ("t", "reason", "conflictRange", "observed", "tracks", "speed", "yaw", "curvature", "cruise",
+              "look", "target", "preferred", "offset", "ratio", "guardCap",
+              "speedCmd", "yawCmd", "rightCan", "leftCan")
+    return {k: at_min[k] for k in fields if k in at_min}
+
+
+def _moving_risk(rows, prop, decisions):
     """Counterfactual short-horizon conflict under constant ego heading and cone velocity."""
     onset = prop[7] - APPROACH_M
     available = np.where((rows[:, 7] >= onset) & (rows[:, 7] <= prop[7]))[0]
@@ -99,6 +111,7 @@ def _moving_risk(rows, prop):
         "actualOnsetMps": float(r[i, 4]), "minActualNext1p5s": float(forward_window[:, 4].min()),
         "maxTargetOffsetChangeM": float(np.max(np.abs(forward_window[:, 11] - prior[11]))),
         "responseWindowS": float(forward_window[-1, 0] - t),
+        "lowestTargetDecision": _decision_action(decisions, t, t + 1.5),
     }
 
 
@@ -117,8 +130,21 @@ def measure(run):
              "entered": enter >= 0, "passed": leave >= 0,
              "seconds": float(leave - enter) if leave >= 0 else None,
              "coneGapM": min(run["propMin"][i] for i in ids) if enter >= 0 else None}
+        window = rows[(rows[:, 7] >= g["begin"] - APPROACH_M) & (rows[:, 7] <= g["end"] + RECOVERY_M)]
+        log = run.get("decisions", [])
+        if len(window) and log:
+            decisions = [d for d in log if window[0, 0] - .001 <= d["t"] <= window[-1, 0] + .001]
+            yields = [d for d in decisions if d.get("reason") == "yield"]
+            z["controller"] = {
+                "updates": len(decisions), "yieldUpdates": len(yields),
+                "recoveryUpdates": sum(d.get("reason") == "recover" for d in decisions),
+                "firstYield": yields[0] if yields else None,
+                "lowestYieldTarget": min(yields, key=lambda d: d["speedCmd"]) if yields else None,
+                "peakActualMps": float(window[:, 4].max()),
+                "minActualMps": float(window[:, 4].min()),
+            }
         if moving:
-            z["motionRisk"] = [_moving_risk(rows, run["props"][i]) for i in moving]
+            z["motionRisk"] = [_moving_risk(rows, run["props"][i], run.get("decisions", [])) for i in moving]
         zones.append(z)
     min_cone = min((z["coneGapM"] for z in zones if z["entered"]), default=None)
     return {"id": run.get("id"), "seed": run["request"]["seed"], "status": run["status"],
@@ -150,17 +176,21 @@ def rank(runs):
 
 def compare(before, after):
     """Compare controller versions using identical spawn, course, vehicle and sensing setup."""
-    for key in ("seed", "start", "offset", "yaw", "obstacles", "limit", "vision", "model"):
+    for key in ("seed", "start", "offset", "yaw", "obstacles", "limit", "vision"):
         if before["request"][key] != after["request"][key]:
             raise ValueError(f"Unmatched run setting: {key}")
     for key in ("length", "props", "profile", "coupled", "physicsStep", "unity"):
         if before[key] != after[key]:
             raise ValueError(f"Unmatched simulator setting: {key}")
+    models = [r["request"]["model"].split("/") for r in (before, after)]
+    if models[0][:3] != models[1][:3] or any("objects_muted" in m for m in models) and models[0] != models[1]:
+        raise ValueError("Unmatched perception model or ablation")
     metrics = [measure(r) for r in (before, after)]
     end = min(m["progressM"] for m in metrics)
     free = [_free_pace(np.asarray(r["rows"]), _groups(r), end) for r in (before, after)]
     delta = free[1]["mps"] - free[0]["mps"] if all(v["mps"] is not None for v in free) else None
     return {"before": metrics[0], "after": metrics[1], "matchedUntilM": end,
+            "observations": [r["request"]["model"] for r in (before, after)],
             "matchedFreeRoad": free, "matchedFreeSpeedDeltaMps": delta}
 
 
