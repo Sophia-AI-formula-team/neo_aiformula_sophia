@@ -220,6 +220,11 @@ def cohort(pairs):
         differences=[v-u for u,v in zip(*values)]
         diagnostic[key]=dict(medians=[median_or_none(v) for v in values],medianPairedDifference=median_or_none(differences),
                              signs=direction(differences))
+    pooled_yaw=[]
+    for arm in ("base","learned"):
+        observed=[p[arm]["shared"]["obstacle"] for p in completed_obstacles]
+        distance=sum(v["progressM"] for v in observed)
+        pooled_yaw.append(10*sum(v["yawTravelRad"] for v in observed)/distance if distance else None)
     return dict(pairs=total,success=[sum(p[a]["physicalSuccess"] for p in pairs) for a in ("base","learned")],
                 failureToSuccess=[p["id"] for p in pairs if pair_state(p)==(False,True)],
                 successToFailure=[p["id"] for p in pairs if pair_state(p)==(True,False)],
@@ -227,6 +232,7 @@ def cohort(pairs):
                 mutuallySuccessfulObstacles=[p["id"] for p in completed_obstacles],
                 medianMatchedYawPer10mChange=median_or_none(yaw),yawChangeSigns=direction(yaw),medianMatchedZoneTimeChange=median_or_none(zone_time),
                 zoneTimeSigns=direction(zone_time), pooledSharedStraightMps=free,
+                pooledMatchedYawRadPer10m=pooled_yaw,
                 pooledSharedStraightChange=free[1]/free[0]-1 if all(free) else None,
                 mutuallySuccessfulSteering=diagnostic,
                 bootstrap95=dict(completionRateDifference=percentile_ci(diff[resample].mean(axis=1)),medianYawFraction=med_ci("yawTravelRadPer10m"),
