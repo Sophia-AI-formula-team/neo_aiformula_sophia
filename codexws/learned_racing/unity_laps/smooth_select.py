@@ -41,6 +41,50 @@ def calibration(root,size):
     write(folder/"calibration.json",dict(source=cfg["modelId"],selected=best,all=trials,modelId=safe["modelId"]))
     return best
 
+def action_calibration(root,size):
+    ck=root/"checkpoints"/f"ck{size:02}";f=json.loads((ck/"training.json").read_bytes());cfg=json.loads((ck/"model.json").read_bytes())
+    pred=np.asarray(f["selected"]["oofScores"])
+    groups=[q["outcomes"] for q in f["outcomes"] if q["trigger"] is not None]
+    y,_=returns(groups,f["selected"]["spec"][2],[f["scales"][k]for k in COSTS])
+    def evidence(penalty):
+        chosen=np.argmax(pred-penalty,axis=1);counts=np.bincount(chosen,minlength=len(NAMES))
+        joined=[(b[0],b[a])for b,a in zip(groups,chosen)]
+        return dict(completed=sum(q["completed"] for _,q in joined),lost=sum(p["completed"] and not q["completed"]for p,q in joined),
+                    benefit=float(np.mean(y[np.arange(len(y)),chosen]-y[:,0])),actions=counts.tolist(),
+                    changed=int(np.sum(chosen!=0)),sufficient=bool(all(n==0 or n>=2 for n in counts[1:])))
+    def score(result):
+        return (result["sufficient"] and result["lost"]==0,result["completed"],result["benefit"],result["changed"])
+    all_options=[]
+    for ordering in [list(range(1,len(NAMES))),list(reversed(range(1,len(NAMES))))]:
+        pen=np.maximum(0.,np.max(pred-pred[:,[0]],axis=0))+.001;pen[0]=0
+        for round_ in range(4):
+            prev=pen.copy()
+            for a in ordering:
+                adjusted=pred-pen
+                other=np.max(np.delete(adjusted,a,axis=1),axis=1)
+                # Every candidate cutpoint is a measured out-of-fold advantage
+                # over the other accepted actions. No hidden-case constants.
+                delta=pred[:,a]-other
+                candidates=np.unique(np.r_[0,pen[a],np.maximum(0,delta)+1e-5])
+                best=evidence(pen);winner=pen[a]
+                for trial in candidates:
+                    tmp=pen.copy();tmp[a]=trial;v=evidence(tmp)
+                    if score(v)>score(best):best=v;winner=trial
+                pen[a]=winner
+            if np.array_equal(prev,pen):break
+        all_options.append((pen,evidence(pen)))
+    pen,best=max(all_options,key=lambda item:score(item[1]))
+    result=copy.deepcopy(cfg)
+    for tree in result["forest"]:
+        for node in tree:
+            if node[0]<0:node[1:]=(np.asarray(node[1:])-pen).tolist()
+    result.pop("modelId");result["modelId"]=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    dest=root/"checkpoints"/f"ck{size:02}m"
+    write(dest/"model.json",result)
+    write(dest/"calibration.json",dict(source=cfg["modelId"],selected=best,actionDebits=pen.tolist(),modelId=result["modelId"]))
+    return best
+
+
 def fixed_reference(root,size):
     meta=json.loads((root/"checkpoints"/f"ck{size:02}"/"training.json").read_bytes())
     sc=np.array([meta["scales"][k]for k in COSTS])
@@ -98,8 +142,9 @@ def development(root,tags):
         return chosen
 
 if __name__=="__main__":
-    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["calibrate","fixed","evaluate"]);p.add_argument("--size",type=int,default=80)
+    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["calibrate","calibrate_actions","fixed","evaluate"]);p.add_argument("--size",type=int,default=80)
     p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--tags",nargs="+");a=p.parse_args()
     if a.cmd=="calibrate":print(calibration(a.output,a.size))
+    if a.cmd=="calibrate_actions":print(action_calibration(a.output,a.size))
     if a.cmd=="fixed":print(fixed_reference(a.output,a.size))
     if a.cmd=="evaluate":print(development(a.output,a.tags or []))

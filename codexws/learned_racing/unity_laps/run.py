@@ -115,27 +115,43 @@ class Lab:
             if old["request"]!=params:raise ValueError("Trial ID already belongs to different settings: "+name)
             return old
         jobpath=self.work/(name+".request.json");out=self.work/(name+".result.json")
-        if out.exists():raise ValueError("Unclaimed prior result for "+name)
         cfg=dict(start=start,offset=offset,yaw=angle,weights=w,obstacles=specs,edge=self.edge,visionPort=vision,
                  output=str(out),media=str(self.work/"frames"/name) if media else "",limit=limit,captureInterval=capture)
         if timing is not None:
             cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])
         if encounter is not None:cfg["encounter"]=encounter
         if smooth is not None:cfg["smooth"]=smooth
-        write(jobpath,cfg);self.event("start",trial=name,params=params)
-        code="var asm=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name=="+json.dumps(self.dll.stem)+")??Assembly.Load(System.IO.File.ReadAllBytes("+json.dumps(str(self.dll))+"));return asm.GetType(\"LapLab.UnityRace\").GetMethod(\"Schedule\").Invoke(null,new object[]{"+json.dumps(str(jobpath))+"});"
+        if out.exists():
+            previous=json.loads(jobpath.read_bytes())
+            old_port=previous.pop("visionPort")
+            comparable=dict(cfg);comparable.pop("visionPort")
+            starts=[e for e in map(json.loads,(self.root/"events.jsonl").read_text(encoding="utf8").splitlines())
+                    if e.get("kind")=="start" and e.get("trial")==name]
+            if previous!=comparable or bool(old_port)!=bool(vision) or not starts or starts[-1]["params"]!=params:
+                raise ValueError("Unmatched unclaimed Unity result for "+name)
+            self.event("resume_finished_output",trial=name)
+        else:
+            if jobpath.exists():raise RuntimeError("An unfinished Unity request still owns "+name)
+            write(jobpath,cfg);self.event("start",trial=name,params=params)
+            if self.queue:
+                q=self.queue/"request"
+                if q.exists():raise RuntimeError("Private queue already has a request")
+                temp=q.with_suffix(".tmp");temp.write_text(str(self.dll)+"\n"+str(jobpath),encoding="utf8");temp.replace(q)
+            else:
+                code="var asm=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name=="+json.dumps(self.dll.stem)+")??Assembly.Load(System.IO.File.ReadAllBytes("+json.dumps(str(self.dll))+"));return asm.GetType(\"LapLab.UnityRace\").GetMethod(\"Schedule\").Invoke(null,new object[]{"+json.dumps(str(jobpath))+"});"
+                invoke_editor(self.bridge,code)
         began=time.monotonic()
-        if self.queue:
-            q=self.queue/"request"
-            if q.exists():raise RuntimeError("Private queue already has a request")
-            temp=q.with_suffix(".tmp");temp.write_text(str(self.dll)+"\n"+str(jobpath),encoding="utf8");temp.replace(q)
-        else:invoke_editor(self.bridge,code)
-        while not out.is_file():
+        while True:
+            try:
+                result=json.loads(out.read_bytes())
+                break
+            except (FileNotFoundError,PermissionError,json.JSONDecodeError):
+                pass  # Windows publishes the filename before the writer releases its file handle.
             if self.queue and (self.queue/"error").exists():
                 raise RuntimeError((self.queue/"error").read_text(encoding="utf-8-sig"))
             if time.monotonic()-began>520:raise TimeoutError(name+" saw no terminal result")
             time.sleep(.16)
-        result=json.loads(out.read_bytes()); result["request"]=params;result["id"]=name
+        result["request"]=params;result["id"]=name
         write(cache,result);out.unlink();jobpath.unlink()
         self.event("finish",trial=name,status=result["status"],seconds=result["seconds"],progress=result["progress"],minRoad=result["minRoad"],minGap=result["minGap"])
         print(f"{name} {result['status']} {result['seconds']:.2f}s {result['progress']:.1f}/{result['length']:.1f} gap={result['minGap']:.2f} road={result['minRoad']:.2f}",flush=True)
