@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>长训驾驶回放</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#16333a;background:#eff4f0;font:16px/1.5 "Microsoft YaHei UI","Segoe UI",sans-serif}
+main{max-width:1500px;margin:auto;padding:26px clamp(14px,3vw,46px) 44px}header,figcaption{display:flex;align-items:baseline;justify-content:space-between;gap:18px}
+h1{margin:0;font-size:clamp(26px,3vw,40px)}a{color:#146c70;text-underline-offset:3px}figure{margin:18px 0}
+video{display:block;width:100%;max-height:72vh;background:#142c31}figcaption{padding-top:8px;color:#49636b;font-size:15px}figcaption b{color:#16333a;font-size:18px}
+section{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(265px,100%),1fr));gap:14px}article{background:white;border:1px solid #bdcfc7;border-radius:6px;overflow:hidden}
+article:has([aria-current=true]){outline:2px solid #087b7c}button{display:block;width:100%;padding:0;background:transparent;color:inherit;border:0;text-align:left;cursor:pointer;font:inherit}
+button:focus-visible{outline:3px solid #146c70;outline-offset:-3px}.thumb{display:block;width:100%;aspect-ratio:2048/1496;object-fit:contain;background:#162e35}
+.caption{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 12px 0}.caption small{color:#537079;white-space:nowrap;font-variant-numeric:tabular-nums}
+article p{color:#4c6971;min-height:2.8em;margin:5px 12px;font-size:14px}article>a{display:inline-block;margin:0 12px 11px;font-size:14px}
+@media(max-width:620px){main{padding:12px 9px 22px}section{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.caption,figcaption{display:grid;gap:2px}.caption{padding:6px}article p{min-height:0;margin:3px 6px 6px;font-size:12px}.caption b{font-size:15px}article>a{margin-left:6px}}
+</style>
+</head><body><main>
+<header><h1>长训驾驶回放</h1><a href="videos/00-all-evidence.mp4">打开合辑 MP4</a></header>
+<figure><video id="player" controls playsinline preload="metadata" poster="evidence/posters/01-training-evidence.jpg" src="videos/00-all-evidence.mp4"></video>
+<figcaption><b id="current"></b><span id="detail"></span></figcaption></figure>
+<section aria-label="选择播放章节">{{CARDS}}</section>
+</main>
+<script id="chapters" type="application/json">{{CHAPTERS}}</script>
+<script>
+const chapters=JSON.parse(document.querySelector('#chapters').textContent)
+const player=document.querySelector('video')
+const buttons=Array.from(document.querySelectorAll('button'))
+function sync(){
+  let index=0
+  for(let i=1;i<chapters.length;i++) if(player.currentTime+.001>=chapters[i].startS) index=i
+  buttons.forEach((button,i)=>button.setAttribute('aria-current',String(i===index)))
+  document.querySelector('#current').textContent=chapters[index].title
+  document.querySelector('#detail').textContent=chapters[index].selection
+}
+buttons.forEach((button,i)=>button.addEventListener('click',()=>{
+  player.currentTime=chapters[i].startS
+  player.play().catch(()=>{})
+  sync()
+}))
+player.addEventListener('timeupdate',sync)
+player.addEventListener('seeked',sync)
+sync()
+</script></body></html>

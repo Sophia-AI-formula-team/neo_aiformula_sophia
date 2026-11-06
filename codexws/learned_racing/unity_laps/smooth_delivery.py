@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 from functools import lru_cache
+import av
 import numpy as np
 
 from assemble_obstacle_films import inspect,join
@@ -173,16 +174,25 @@ def assemble(args):
     fps,sz,_,marks=inspect(out)
     if all_marks!=marks:raise ValueError("Combined footage changed during muxing")
     running=0;chapters=[]
-    for name,path,title,n in zip(names,paths,titles,counts):
-        chapters.append(dict(name=name,title=title,file=path.name,sha256=digest(path),startS=float(running/fps),durationS=float(n/fps)))
+    notes=["同一布局试七种动作，随后比较共同开发集和独立考核。"]+[c["selection"] for c in plan["cases"]]
+    posters=ev/"posters"
+    posters.mkdir(exist_ok=True,parents=True)
+    inspect(paths[0],posters/(names[0]+".jpg"),3.0)
+    for name,path,title,n,note in zip(names,paths,titles,counts,notes):
+        chapters.append(dict(name=name,title=title,file=path.name,sha256=digest(path),startS=float(running/fps),
+                             durationS=float(n/fps),selection=note))
         running+=n
+    with av.open(str(out)) as video:
+        chapters_in_file=video.chapters()
+        if len(chapters_in_file)!=len(chapters):raise ValueError("Wrong number of chapters in MP4")
+        for cue,c in zip(chapters_in_file,chapters):
+            if abs(float(cue["start"]*cue["time_base"])-c["startS"])>=1/fps or cue["metadata"]["title"]!=c["title"]:
+                raise ValueError("Encoded chapter does not match the player")
     save(ev/"collection.json",dict(file=out.name,sha256=digest(out),frames=running,durationS=float(running/fps),chapters=chapters,
                                    allFrameFingerprintsVerified=running))
-    buttons="".join(f'<li><button data-t="{c["startS"]}">{escape(c["title"])}</button> <a href="videos/{c["file"]}">独立 MP4</a></li>' for c in chapters)
-    html='''<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>长训驾驶回放</title>
-<style>body{font:17px system-ui,sans-serif;color:#173239;background:#eff4f1;max-width:1200px;margin:auto;padding:24px}video{width:100%;max-height:68vh;background:#172f35}li{display:flex;align-items:center;gap:20px;padding:8px}button{color:#105f5c;border:1px solid #9bb6ac;border-radius:6px;padding:8px 12px;background:white;font:inherit;cursor:pointer}a{color:#226886}</style>
-<h1>长训驾驶回放</h1><video id=v controls preload=metadata src="videos/00-all-evidence.mp4"></video><ol>'''+buttons+'''</ol>
-<script>document.querySelectorAll('button').forEach(b=>b.onclick=()=>{v.currentTime=Number(b.dataset.t);v.play()})</script>'''
+    cards="".join(f'<article><button type="button" aria-current="false"><img class="thumb" src="evidence/posters/{c["name"]}.jpg" alt=""><span class="caption"><b>{escape(c["title"])}</b><small>{c["durationS"]:.1f} 秒</small></span></button><p>{escape(c["selection"])}</p><a href="videos/{c["file"]}">独立 MP4</a></article>' for c in chapters)
+    data=json.dumps(chapters,ensure_ascii=False).replace("<","\\u003c")
+    html=(HERE/"smooth_player.html").read_text(encoding="utf-8-sig").replace("{{CARDS}}",cards).replace("{{CHAPTERS}}",data)
     (args.package/"index.html").write_text(html,encoding="utf8");print(out,digest(out))
 
 
