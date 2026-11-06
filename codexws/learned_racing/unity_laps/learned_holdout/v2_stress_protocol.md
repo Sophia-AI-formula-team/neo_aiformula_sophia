@@ -1,0 +1,7 @@
+# Second selector revision: fresh four-pair stress test
+
+Register a distinct four-pair matrix before disclosure or measurement. The primary v1 eight-pair and one-full-lap records stay separate. Initial v1 test outcomes motivated exploring a second model; repeating v1's old test cases on v2 does not yield fresh validation.
+
+Use the same matched-request, safety gates, exact progress gates, pooled free pace, paired median obstacle-zone time and no-new-unsafe criterion in `protocol.md`. Do not select a different v2 policy based on these four results. Run the frozen timing controller with no learned action as the base, and the frozen v2 as the challenger. No v1 arm is required. The natural approaches and the two artificially capped crossings must be identified. A configured obstacle intersects the course centre only because its simulated trajectory does so; showing that the car actually crosses in front additionally requires measured trajectory, body clearance and temporal evidence in the traversed band.
+
+Execution order is s01 to s04, alternating base-first and challenger-first as before. All eight runs count. Publish the learned model/solver/source signatures, training IDs and feature/reward or risk model before revealing the layout. Exclude the new layout seeds and measured outcomes from fitting. If v2 uses wider training or a confidence-based fallback, preserve both its raw pre-fallback action estimates and final applied decisions so each can be audited where available.
