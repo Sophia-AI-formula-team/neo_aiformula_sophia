@@ -1,0 +1,3506 @@
+{
+  "layoutsSHA256": "8c4420d7a9cd5369d80d86c5f41078291422780405d2070af32ee676dcfaf38d",
+  "baseModelSHA256": "25eae55ecbe436b816ed50cc22f3ffd26ab8fd6a4c1ae607f876e898056b9f84",
+  "gapConfigurations": {
+    "base": null,
+    "learned": {
+      "openings": true,
+      "paceScale": 1.13,
+      "padding": 0.1590557845,
+      "lateralRate": 0.7750363308499936,
+      "responseTime": 0.5999998550000001,
+      "speedFractions": [
+        1.0,
+        0.8455237545901789,
+        0.7293085860011932,
+        0.41250561351918436
+      ]
+    },
+    "pace": {
+      "openings": false,
+      "paceScale": 1.13,
+      "padding": 0.1590557845,
+      "lateralRate": 0.7750363308499936,
+      "responseTime": 0.5999998550000001,
+      "speedFractions": [
+        1.0,
+        0.8455237545901789,
+        0.7293085860011932,
+        0.41250561351918436
+      ]
+    }
+  },
+  "freeze": {
+    "utc": "2026-11-06T19:31:55.901595+00:00",
+    "trainingCases": 12,
+    "chosen": "r3",
+    "sourceCommit": "1d52929e78139c919cafe1ed316fc147e183cbc7",
+    "reference": "25eae55ecbe436b816ed50cc22f3ffd26ab8fd6a4c1ae607f876e898056b9f84",
+    "challenger": "5331e78c21f968d42df22a6d034d87641368d0ecb34810dc4e8cf0c7090777e4",
+    "pace": "98f79c1df3e104ae18e2a67ab1a8b93b057453bb5e8f186cb95d52cc6721f5fe",
+    "report": "bbc2595acfb42601b9ab6da3b0697da030e6d3a519d44aac94b7dbefe9862b53"
+  },
+  "solver": "ceb672202fcc5e",
+  "disjointPracticeSeeds": 12,
+  "evaluationSeeds": 8,
+  "cohort": {
+    "order": [
+      "base",
+      "learned"
+    ],
+    "allCases": 8,
+    "plannedGates": 14,
+    "physicalSuccess": [
+      4,
+      7
+    ],
+    "physicalSuccessMeanPairedDifference95": [
+      0.125,
+      0.75
+    ],
+    "physicalSuccessRegressions": [],
+    "physicalSuccessRescues": [
+      "g02",
+      "g06",
+      "g07"
+    ],
+    "allMiddleSuccess": [
+      3,
+      6
+    ],
+    "allMiddleSuccessMeanPairedDifference95": [
+      0.125,
+      0.75
+    ],
+    "allMiddleSuccessRegressions": [],
+    "allMiddleSuccessRescues": [
+      "g02",
+      "g04",
+      "g07"
+    ],
+    "middleGates": [
+      6,
+      11
+    ],
+    "middleGatesMeanPairedDifference95": [
+      -0.125,
+      1.375
+    ],
+    "middleGatesRegressions": [
+      "g08"
+    ],
+    "middleGatesRescues": [
+      "g02",
+      "g04",
+      "g06",
+      "g07"
+    ],
+    "matchedPhysicalWindow": {
+      "n": 4,
+      "ids": [
+        "g01",
+        "g03",
+        "g04",
+        "g05"
+      ],
+      "medianTimeDifferenceS": -2.192872849985325,
+      "pairedDifferencesS": [
+        -3.320633411087436,
+        -1.0651122888832143,
+        0.9099668978774531,
+        -3.6882160015470884
+      ],
+      "lower": 3,
+      "tie": 0,
+      "higher": 1,
+      "bootstrapMedian95S": [
+        -3.6882160015470884,
+        0.9099668978774531
+      ]
+    },
+    "matchedMiddleWindow": {
+      "n": 3,
+      "ids": [
+        "g01",
+        "g03",
+        "g05"
+      ],
+      "medianTimeDifferenceS": -3.320633411087436,
+      "pairedDifferencesS": [
+        -3.320633411087436,
+        -1.0651122888832143,
+        -3.6882160015470884
+      ],
+      "lower": 3,
+      "tie": 0,
+      "higher": 0,
+      "bootstrapMedian95S": [
+        -3.6882160015470884,
+        -1.0651122888832143
+      ]
+    },
+    "demonstratesNewMiddle": true,
+    "demonstratesGeneralPace": true
+  },
+  "paceControl": {
+    "order": [
+      "pace",
+      "learned"
+    ],
+    "allCases": 8,
+    "plannedGates": 14,
+    "physicalSuccess": [
+      6,
+      7
+    ],
+    "physicalSuccessMeanPairedDifference95": [
+      -0.25,
+      0.5
+    ],
+    "physicalSuccessRegressions": [
+      "g08"
+    ],
+    "physicalSuccessRescues": [
+      "g04",
+      "g07"
+    ],
+    "allMiddleSuccess": [
+      5,
+      6
+    ],
+    "allMiddleSuccessMeanPairedDifference95": [
+      -0.25,
+      0.5
+    ],
+    "allMiddleSuccessRegressions": [
+      "g06"
+    ],
+    "allMiddleSuccessRescues": [
+      "g04",
+      "g07"
+    ],
+    "middleGates": [
+      10,
+      11
+    ],
+    "middleGatesMeanPairedDifference95": [
+      -0.5,
+      0.75
+    ],
+    "middleGatesRegressions": [
+      "g06",
+      "g08"
+    ],
+    "middleGatesRescues": [
+      "g04",
+      "g07"
+    ],
+    "matchedPhysicalWindow": {
+      "n": 5,
+      "ids": [
+        "g01",
+        "g02",
+        "g03",
+        "g05",
+        "g06"
+      ],
+      "medianTimeDifferenceS": -2.7307398824733227,
+      "pairedDifferencesS": [
+        -0.29810939363170075,
+        -2.7307398824733227,
+        -2.8032481275149657,
+        2.0912009386922206,
+        -3.058841676753876
+      ],
+      "lower": 4,
+      "tie": 0,
+      "higher": 1,
+      "bootstrapMedian95S": [
+        -3.058841676753876,
+        2.0912009386922206
+      ]
+    },
+    "matchedMiddleWindow": {
+      "n": 4,
+      "ids": [
+        "g01",
+        "g02",
+        "g03",
+        "g05"
+      ],
+      "medianTimeDifferenceS": -1.5144246380525117,
+      "pairedDifferencesS": [
+        -0.29810939363170075,
+        -2.7307398824733227,
+        -2.8032481275149657,
+        2.0912009386922206
+      ],
+      "lower": 3,
+      "tie": 0,
+      "higher": 1,
+      "bootstrapMedian95S": [
+        -2.8032481275149657,
+        2.0912009386922206
+      ]
+    },
+    "demonstratesNewMiddle": false,
+    "demonstratesGeneralPace": false
+  },
+  "pairs": [
+    {
+      "id": "g01",
+      "road": "straight",
+      "family": "static",
+      "runHashes": {
+        "base": "0d2006f53db9835a2f4f0ae476216f8063bcf00588d542ef0bbd517955f5a95d",
+        "learned": "95ea6fade2f24b17d5c6d4058cd62e2818d61be92f12b3f27746b50aacbc43f5",
+        "pace": "d3fed128ce4921afdbb8e0c1afb1e7195b4f8b3d62e98688ed2e8966ba6ed38b"
+      },
+      "base": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 13.58,
+        "gatesPassed": 4,
+        "progressM": 38.1630859,
+        "targetM": 38.14089910278944,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.1120435,
+        "minConeM": 0.7001575,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 0.7001575
+          },
+          {
+            "index": 1,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 1.24174213
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 25.735611,
+            "leftHomeXZ": [
+              69.0281,
+              21.9699287
+            ],
+            "rightHomeXZ": [
+              72.42014,
+              22.0315189
+            ],
+            "gateRightXZ": [
+              0.9998352005357153,
+              0.01815411164740053
+            ],
+            "approached": true,
+            "frontEnterS": 9.105561970980881,
+            "axleCrossS": 9.462777336497687,
+            "rearClearS": 10.070630047107414,
+            "entryBodyMps": 1.7463800101802633,
+            "exitBodyMps": 2.2021762926739457,
+            "minOfficialPropM": [
+              0.7001575,
+              1.24174213
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.6862833946774345,
+            "minRightProjectedM": 1.227396629989636,
+            "gateOccupancyS": 0.9650680761265331,
+            "gateMinFreeOpeningM": 2.712599108992362,
+            "entranceLaneOffsetM": -0.8612763297490932,
+            "axleLaneOffsetM": -0.8670377770003691,
+            "exitLaneOffsetM": -0.8865836102780905,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.4278677267167232,
+              "outerConeFromCenterM": 1.9647313822756387,
+              "footprintFromInnerConeEdgeM": 0.7037050535972174,
+              "outerConeEdgeFromFootprintM": 1.2315568367582865,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.0,
+          "seconds": 6.731270450710576,
+          "speedMps": 2.228405485983192,
+          "absLateralTravelM": 1.1132829952279981,
+          "signedLateralDisplacementM": 0.08109061696630865,
+          "yawTravelRad": 0.6316558334551963,
+          "complete": true
+        },
+        "windowFromToM": [
+          17.735611,
+          32.735611
+        ],
+        "allMiddleSuccess": true
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 9.929999,
+        "gatesPassed": 4,
+        "progressM": 38.17569,
+        "targetM": 38.14089910278944,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.427675,
+        "minConeM": 0.424430758,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 0.424430758
+          },
+          {
+            "index": 1,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 1.5058341
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 25.735611,
+            "leftHomeXZ": [
+              69.0281,
+              21.9699287
+            ],
+            "rightHomeXZ": [
+              72.42014,
+              22.0315189
+            ],
+            "gateRightXZ": [
+              0.9998352005357153,
+              0.01815411164740053
+            ],
+            "approached": true,
+            "frontEnterS": 6.946724640144561,
+            "axleCrossS": 7.1019990010237235,
+            "rearClearS": 7.412633450515477,
+            "entryBodyMps": 4.178478694037729,
+            "exitBodyMps": 4.017752740423494,
+            "minOfficialPropM": [
+              0.424430758,
+              1.5058341
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.27806949602607517,
+            "minRightProjectedM": 1.422021234036519,
+            "gateOccupancyS": 0.4659088103709159,
+            "gateMinFreeOpeningM": 2.712599108992362,
+            "entranceLaneOffsetM": -1.1019299473524073,
+            "axleLaneOffsetM": -1.1470998595451107,
+            "exitLaneOffsetM": -1.2660449673235719,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.1478035649949425,
+              "outerConeFromCenterM": 2.2447955439974194,
+              "footprintFromInnerConeEdgeM": 0.40746647832370686,
+              "outerConeEdgeFromFootprintM": 1.4584851130479115,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.0,
+          "seconds": 3.41063703962314,
+          "speedMps": 4.398005365489561,
+          "absLateralTravelM": 1.020204020594855,
+          "signedLateralDisplacementM": -1.020204020594855,
+          "yawTravelRad": 0.2625932635684045,
+          "complete": true
+        },
+        "windowFromToM": [
+          17.735611,
+          32.735611
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 10.3099995,
+        "gatesPassed": 4,
+        "progressM": 38.1507721,
+        "targetM": 38.14089910278944,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.21693039,
+        "minConeM": 0.89054966,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 0.89054966
+          },
+          {
+            "index": 1,
+            "stationM": 25.735611,
+            "approached": true,
+            "exited": true,
+            "minM": 1.05829108
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 25.735611,
+            "leftHomeXZ": [
+              69.0281,
+              21.9699287
+            ],
+            "rightHomeXZ": [
+              72.42014,
+              22.0315189
+            ],
+            "gateRightXZ": [
+              0.9998352005357153,
+              0.01815411164740053
+            ],
+            "approached": true,
+            "frontEnterS": 7.008161456610344,
+            "axleCrossS": 7.176214307842351,
+            "rearClearS": 7.511369637606539,
+            "entryBodyMps": 3.760312433333048,
+            "exitBodyMps": 3.6332388164876663,
+            "minOfficialPropM": [
+              0.89054966,
+              1.05829108
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.8651970173968928,
+            "minRightProjectedM": 1.0380937183832493,
+            "gateOccupancyS": 0.5032081809961957,
+            "gateMinFreeOpeningM": 2.712599108992362,
+            "entranceLaneOffsetM": -0.6951838838849103,
+            "axleLaneOffsetM": -0.6838070707092572,
+            "exitLaneOffsetM": -0.6620148757259521,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.6110960935892173,
+              "outerConeFromCenterM": 1.7815030154031446,
+              "footprintFromInnerConeEdgeM": 0.8735008691270615,
+              "outerConeEdgeFromFootprintM": 1.0559567825335627,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.0,
+          "seconds": 3.7087464332548405,
+          "speedMps": 4.044493272848481,
+          "absLateralTravelM": 0.5264439512001606,
+          "signedLateralDisplacementM": 0.2380646011321053,
+          "yawTravelRad": 0.28016182066442796,
+          "complete": true
+        },
+        "windowFromToM": [
+          17.735611,
+          32.735611
+        ],
+        "allMiddleSuccess": true
+      }
+    },
+    {
+      "id": "g02",
+      "road": "bend",
+      "family": "static",
+      "runHashes": {
+        "base": "843d3b24dc51b37a0e21927f6bef79958f5526ea6bbc7d9764bf7d473f57d587",
+        "learned": "1c09404cb656aa652d3885c0bea8cedf0605f66054c987dea6c1bb5377424015",
+        "pace": "6fe9f8b82adaa6cba8119d6a6ad306c8d1be31cf0c589152f8ea0b83e6be93b7"
+      },
+      "base": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 7.37,
+        "gatesPassed": 2,
+        "progressM": 22.5855713,
+        "targetM": 35.81639915747,
+        "unfinishedM": 13.23082785747,
+        "minRoadM": 1.00038409,
+        "minConeM": -0.013107568,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": false,
+            "minM": 2.84224749
+          },
+          {
+            "index": 1,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": false,
+            "minM": -0.013107568
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 23.1600342,
+            "leftHomeXZ": [
+              -10.477973,
+              24.9815674
+            ],
+            "rightHomeXZ": [
+              -13.447053,
+              25.577013
+            ],
+            "gateRightXZ": [
+              -0.9804770505104315,
+              0.1966335511105993
+            ],
+            "approached": true,
+            "frontEnterS": 7.358091288254092,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 3.854001065817096,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              2.84224749,
+              -0.013107568
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": 2.798409454325674,
+            "minRightProjectedM": -1.2401241228953914,
+            "gateOccupancyS": 0.011908711745908462,
+            "gateMinFreeOpeningM": 2.3481993839506936,
+            "entranceLaneOffsetM": 0.31363470380185027,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          }
+        ],
+        "middleGates": 0,
+        "window": {
+          "progressM": 7.4255371000000014,
+          "seconds": 2.087221269494865,
+          "speedMps": 3.557618546977091,
+          "absLateralTravelM": 0.4146273510796885,
+          "signedLateralDisplacementM": 0.4144488950796885,
+          "yawTravelRad": 0.4788519533200046,
+          "complete": false
+        },
+        "windowFromToM": [
+          15.160034199999998,
+          30.1600342
+        ],
+        "allMiddleSuccess": false
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 11.44,
+        "gatesPassed": 4,
+        "progressM": 35.8500137,
+        "targetM": 35.81639915747,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.20458221,
+        "minConeM": 0.3525996,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": true,
+            "minM": 1.21413136
+          },
+          {
+            "index": 1,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": true,
+            "minM": 0.3525996
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 23.1600342,
+            "leftHomeXZ": [
+              -10.477973,
+              24.9815674
+            ],
+            "rightHomeXZ": [
+              -13.447053,
+              25.577013
+            ],
+            "gateRightXZ": [
+              -0.9804770505104315,
+              0.1966335511105993
+            ],
+            "approached": true,
+            "frontEnterS": 7.9464001646580575,
+            "axleCrossS": 8.18786400187227,
+            "rearClearS": 8.602451643735629,
+            "entryBodyMps": 2.4918849017541294,
+            "exitBodyMps": 2.8848035534184175,
+            "minOfficialPropM": [
+              1.21413136,
+              0.3525996
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.05586165420949,
+            "minRightProjectedM": 0.2546784999531235,
+            "gateOccupancyS": 0.6560514790775711,
+            "gateMinFreeOpeningM": 2.3481993839506936,
+            "entranceLaneOffsetM": -1.2298771128047719,
+            "axleLaneOffsetM": -1.2924669973020522,
+            "exitLaneOffsetM": -1.3902822858370796,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.943655675574677,
+              "outerConeFromCenterM": 1.0845437083760168,
+              "footprintFromInnerConeEdgeM": 1.1980412992381138,
+              "outerConeEdgeFromFootprintM": 0.28012052649030045,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 14.999999999999998,
+          "seconds": 5.205140825860405,
+          "speedMps": 2.8817664116744646,
+          "absLateralTravelM": 1.3325241953105051,
+          "signedLateralDisplacementM": -1.3325241953105051,
+          "yawTravelRad": 0.6585310026313822,
+          "complete": true
+        },
+        "windowFromToM": [
+          15.160034199999998,
+          30.1600342
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 14.5199995,
+        "gatesPassed": 4,
+        "progressM": 35.85511,
+        "targetM": 35.81639915747,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.20458221,
+        "minConeM": 0.454197317,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": true,
+            "minM": 0.454197317
+          },
+          {
+            "index": 1,
+            "stationM": 23.1600342,
+            "approached": true,
+            "exited": true,
+            "minM": 1.1127243
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 23.1600342,
+            "leftHomeXZ": [
+              -10.477973,
+              24.9815674
+            ],
+            "rightHomeXZ": [
+              -13.447053,
+              25.577013
+            ],
+            "gateRightXZ": [
+              -0.9804770505104315,
+              0.1966335511105993
+            ],
+            "approached": true,
+            "frontEnterS": 8.909626834882989,
+            "axleCrossS": 9.282678544387705,
+            "rearClearS": 10.000200560562192,
+            "entryBodyMps": 1.757403456870869,
+            "exitBodyMps": 1.7420541339111757,
+            "minOfficialPropM": [
+              0.454197317,
+              1.1127243
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.3093993755640549,
+            "minRightProjectedM": 0.9908659115543841,
+            "gateOccupancyS": 1.090573725679203,
+            "gateMinFreeOpeningM": 2.3481993839506936,
+            "entranceLaneOffsetM": -1.989442337711245,
+            "axleLaneOffsetM": -2.057899448122357,
+            "exitLaneOffsetM": -2.1357974901062136,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.1783974017858143,
+              "outerConeFromCenterM": 1.8498019821648795,
+              "footprintFromInnerConeEdgeM": 0.4368517447259009,
+              "outerConeEdgeFromFootprintM": 1.0593809404743508,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.0,
+          "seconds": 7.935880708333728,
+          "speedMps": 1.8901493799230134,
+          "absLateralTravelM": 1.7127924778137555,
+          "signedLateralDisplacementM": -1.5014344063899325,
+          "yawTravelRad": 0.6810234713591543,
+          "complete": true
+        },
+        "windowFromToM": [
+          15.160034199999998,
+          30.1600342
+        ],
+        "allMiddleSuccess": true
+      }
+    },
+    {
+      "id": "g03",
+      "road": "straight",
+      "family": "moving",
+      "runHashes": {
+        "base": "bdaec32f3ab69e71d2dce6b1342c15cb80815e1c886135c69832b736e8af0fa6",
+        "learned": "1fe92e19d9cf8ba4b4b7feccd65b691c1b9fa33d7b7b47d35b1fbce1a7d551cf",
+        "pace": "6000542b50f90610fa3c1497aa8d440980f62d504e8f5a5512b95c8f0e2e5e50"
+      },
+      "base": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 11.0,
+        "gatesPassed": 4,
+        "progressM": 36.97917,
+        "targetM": 36.97499913021558,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.406522,
+        "minConeM": 0.955730438,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 0.955730438
+          },
+          {
+            "index": 1,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 1.17384136
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.3630371,
+            "leftHomeXZ": [
+              68.99314,
+              19.2237
+            ],
+            "rightHomeXZ": [
+              72.5078659,
+              19.2875156
+            ],
+            "gateRightXZ": [
+              0.999835205120656,
+              0.01815385913066187
+            ],
+            "approached": true,
+            "frontEnterS": 7.44027309701819,
+            "axleCrossS": 7.599959417221737,
+            "rearClearS": 7.9154212143116,
+            "entryBodyMps": 3.878427815295758,
+            "exitBodyMps": 3.848137594459058,
+            "minOfficialPropM": [
+              0.955730438,
+              1.17384136
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.945857345582755,
+            "minRightProjectedM": 1.1481779809206132,
+            "gateOccupancyS": 0.47514811729340956,
+            "gateMinFreeOpeningM": 2.906284154197566,
+            "entranceLaneOffsetM": -0.6961374373050474,
+            "axleLaneOffsetM": -0.6939979612703988,
+            "exitLaneOffsetM": -0.6834501729642294,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.6814280492540539,
+              "outerConeFromCenterM": 1.9176471947804883,
+              "footprintFromInnerConeEdgeM": 0.9566670485459197,
+              "outerConeEdgeFromFootprintM": 1.1961361319568478,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.0,
+          "seconds": 4.432287971404987,
+          "speedMps": 3.384256640537091,
+          "absLateralTravelM": 0.5205958597916505,
+          "signedLateralDisplacementM": -0.0661936818323316,
+          "yawTravelRad": 0.2607078762161816,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.3630371,
+          31.3630371
+        ],
+        "allMiddleSuccess": true
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 9.7,
+        "gatesPassed": 4,
+        "progressM": 36.98456,
+        "targetM": 36.97499913021558,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.408457,
+        "minConeM": 0.482255727,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 0.482255727
+          },
+          {
+            "index": 1,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 1.66841614
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.3630371,
+            "leftHomeXZ": [
+              68.99314,
+              19.2237
+            ],
+            "rightHomeXZ": [
+              72.5078659,
+              19.2875156
+            ],
+            "gateRightXZ": [
+              0.999835205120656,
+              0.01815385913066187
+            ],
+            "approached": true,
+            "frontEnterS": 6.627098271721751,
+            "axleCrossS": 6.773342200293355,
+            "rearClearS": 7.055903600511604,
+            "entryBodyMps": 4.4770155958772415,
+            "exitBodyMps": 4.361421676141019,
+            "minOfficialPropM": [
+              0.482255727,
+              1.66841614
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.38560238442856704,
+            "minRightProjectedM": 1.565366028666229,
+            "gateOccupancyS": 0.4288053287898528,
+            "gateMinFreeOpeningM": 2.93334700273785,
+            "entranceLaneOffsetM": -1.0522451041938956,
+            "axleLaneOffsetM": -1.1081072638836933,
+            "exitLaneOffsetM": -1.210148372898886,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.2094538717844454,
+              "outerConeFromCenterM": 2.4064271453393835,
+              "footprintFromInnerConeEdgeM": 0.46731224057910803,
+              "outerConeEdgeFromFootprintM": 1.6139710526133366,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.000000000000004,
+          "seconds": 3.367175682521773,
+          "speedMps": 4.454772014974306,
+          "absLateralTravelM": 1.0562291083219613,
+          "signedLateralDisplacementM": -0.8927912636200035,
+          "yawTravelRad": 0.07136546835652294,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.3630371,
+          31.3630371
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 12.5999994,
+        "gatesPassed": 4,
+        "progressM": 37.0082245,
+        "targetM": 36.97499913021558,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.3413204,
+        "minConeM": 0.9761447,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 1.072827
+          },
+          {
+            "index": 1,
+            "stationM": 24.3630371,
+            "approached": true,
+            "exited": true,
+            "minM": 0.9761447
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.3630371,
+            "leftHomeXZ": [
+              68.99314,
+              19.2237
+            ],
+            "rightHomeXZ": [
+              72.5078659,
+              19.2875156
+            ],
+            "gateRightXZ": [
+              0.999835205120656,
+              0.01815385913066187
+            ],
+            "approached": true,
+            "frontEnterS": 8.603438561623221,
+            "axleCrossS": 8.965816044340764,
+            "rearClearS": 9.56780532025353,
+            "entryBodyMps": 1.765913153948712,
+            "exitBodyMps": 2.4453674994228263,
+            "minOfficialPropM": [
+              1.072827,
+              0.9761447
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.0660506555043163,
+            "minRightProjectedM": 0.9674071124609149,
+            "gateOccupancyS": 0.9643667586303089,
+            "gateMinFreeOpeningM": 2.8241906784746944,
+            "entranceLaneOffsetM": -0.6417990773960582,
+            "axleLaneOffsetM": -0.6674108062244476,
+            "exitLaneOffsetM": -0.7058545522288635,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.801197708546977,
+              "outerConeFromCenterM": 1.7314566600245311,
+              "footprintFromInnerConeEdgeM": 1.069181416290723,
+              "outerConeEdgeFromFootprintM": 0.9728937600516383,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 15.000000000000004,
+          "seconds": 6.170423810036739,
+          "speedMps": 2.4309513352391097,
+          "absLateralTravelM": 0.6126799483136693,
+          "signedLateralDisplacementM": -0.05600692798116935,
+          "yawTravelRad": 0.4608652507029328,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.3630371,
+          31.3630371
+        ],
+        "allMiddleSuccess": true
+      }
+    },
+    {
+      "id": "g04",
+      "road": "bend",
+      "family": "moving",
+      "runHashes": {
+        "base": "dfc649ace3cfd772b9349b24a295eaecf66fad6af32706170d19b4a5b1b33346",
+        "learned": "f8b1ebb333fb8f509894eb2e2e4a3ac2f09749084ba1197468c71bb8ba4ea9c5",
+        "pace": "2d13bfc91286c407f94fd061ef8bfd45eb96bb4fc02f9e5443ee0f2146ae0fcb"
+      },
+      "base": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 11.83,
+        "gatesPassed": 3,
+        "progressM": 35.079567,
+        "targetM": 35.06449917515739,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.35084164,
+        "minConeM": 0.164718062,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": true,
+            "minM": 0.164718062
+          },
+          {
+            "index": 1,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": true,
+            "minM": 1.35133219
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 22.6687927,
+            "leftHomeXZ": [
+              55.32478,
+              -33.1471367
+            ],
+            "rightHomeXZ": [
+              55.9832077,
+              -36.1202
+            ],
+            "gateRightXZ": [
+              0.21622520355611646,
+              -0.9763435160572922
+            ],
+            "approached": true,
+            "frontEnterS": 6.947501924898521,
+            "axleCrossS": 7.196233267384017,
+            "rearClearS": 7.640704279453006,
+            "entryBodyMps": 3.335908026624399,
+            "exitBodyMps": 3.2628118281606318,
+            "minOfficialPropM": [
+              0.164718062,
+              1.35133219
+            ],
+            "route": "straddle_or_uncertain",
+            "minLeftProjectedM": -0.2179382895797095,
+            "minRightProjectedM": 0.9634206852559033,
+            "gateOccupancyS": 0.6932023545544848,
+            "gateMinFreeOpeningM": 2.4195804218344024,
+            "entranceLaneOffsetM": -1.8818247526577367,
+            "axleLaneOffsetM": -2.150308601198618,
+            "exitLaneOffsetM": -2.5396256656559593,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 0.9362547339201422,
+              "outerConeFromCenterM": 2.1943767609099796,
+              "footprintFromInnerConeEdgeM": 0.14515270707507388,
+              "outerConeEdgeFromFootprintM": 1.2053184629191196,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 0,
+        "window": {
+          "progressM": 15.000000000000002,
+          "seconds": 4.53782322522567,
+          "speedMps": 3.305549655750206,
+          "absLateralTravelM": 3.017887914511568,
+          "signedLateralDisplacementM": -2.492343610368467,
+          "yawTravelRad": 0.9648277374465132,
+          "complete": true
+        },
+        "windowFromToM": [
+          14.668792700000001,
+          29.6687927
+        ],
+        "allMiddleSuccess": false
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 11.55,
+        "gatesPassed": 3,
+        "progressM": 35.067215,
+        "targetM": 35.06449917515739,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.19599414,
+        "minConeM": 0.162057251,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": true,
+            "minM": 1.51365662
+          },
+          {
+            "index": 1,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": true,
+            "minM": 0.162057251
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 22.6687927,
+            "leftHomeXZ": [
+              55.32478,
+              -33.1471367
+            ],
+            "rightHomeXZ": [
+              55.9832077,
+              -36.1202
+            ],
+            "gateRightXZ": [
+              0.21622520355611646,
+              -0.9763435160572922
+            ],
+            "approached": true,
+            "frontEnterS": 7.245500807003001,
+            "axleCrossS": 7.603507057075269,
+            "rearClearS": 8.313385359115912,
+            "entryBodyMps": 1.8337517230981222,
+            "exitBodyMps": 1.777890319303317,
+            "minOfficialPropM": [
+              1.51365662,
+              0.162057251
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.494205016704606,
+            "minRightProjectedM": 0.10207161850933044,
+            "gateOccupancyS": 1.0678845521129112,
+            "gateMinFreeOpeningM": 2.456634935195032,
+            "entranceLaneOffsetM": -0.8346159704550349,
+            "axleLaneOffsetM": -0.894040395228027,
+            "exitLaneOffsetM": -0.9754110733167016,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.2572082265352393,
+              "outerConeFromCenterM": 0.9209409107432278,
+              "footprintFromInnerConeEdgeM": 1.5173905958985068,
+              "outerConeEdgeFromFootprintM": 0.13639073142289532,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 14.999999999999998,
+          "seconds": 5.447790123103123,
+          "speedMps": 2.753410036188367,
+          "absLateralTravelM": 1.2513473140933944,
+          "signedLateralDisplacementM": -0.1936832219066057,
+          "yawTravelRad": 0.7430964761033416,
+          "complete": true
+        },
+        "windowFromToM": [
+          14.668792700000001,
+          29.6687927
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 6.98,
+        "gatesPassed": 2,
+        "progressM": 22.0653,
+        "targetM": 35.06449917515739,
+        "unfinishedM": 12.999199175157386,
+        "minRoadM": 1.03108835,
+        "minConeM": -0.0157900453,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": false,
+            "minM": 2.64142346
+          },
+          {
+            "index": 1,
+            "stationM": 22.6687927,
+            "approached": true,
+            "exited": false,
+            "minM": -0.0157900453
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 22.6687927,
+            "leftHomeXZ": [
+              55.32478,
+              -33.1471367
+            ],
+            "rightHomeXZ": [
+              55.9832077,
+              -36.1202
+            ],
+            "gateRightXZ": [
+              0.21622520355611646,
+              -0.9763435160572922
+            ],
+            "approached": true,
+            "frontEnterS": 6.974206863984504,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 3.594217828057197,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              2.64142346,
+              -0.0157900453
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": 2.5819605447745237,
+            "minRightProjectedM": -0.9601041564514086,
+            "gateOccupancyS": 0.0057931360154963585,
+            "gateMinFreeOpeningM": 2.4229624238448193,
+            "entranceLaneOffsetM": 0.2898253513009019,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          }
+        ],
+        "middleGates": 0,
+        "window": {
+          "progressM": 7.3965073,
+          "seconds": 2.098795959386866,
+          "speedMps": 3.5241669238589473,
+          "absLateralTravelM": 0.41994166868130384,
+          "signedLateralDisplacementM": 0.41994166868130384,
+          "yawTravelRad": 0.451674384908548,
+          "complete": false
+        },
+        "windowFromToM": [
+          14.668792700000001,
+          29.6687927
+        ],
+        "allMiddleSuccess": false
+      }
+    },
+    {
+      "id": "g05",
+      "road": "straight",
+      "family": "double",
+      "runHashes": {
+        "base": "9796381dcd2d36e0aa58c896021bd8106ac26203ddecdc7fe6e8969957c498e0",
+        "learned": "a734328bd50c0346c6be0b3089b284f94587f9c2e8d98c50a6f64c5d9825e286",
+        "pace": "dda2fa21ecc5fe5ad3656db64265320083b7535cbd33f530fd4e40fd0fe0bd36"
+      },
+      "base": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 17.41,
+        "gatesPassed": 5,
+        "progressM": 43.97052,
+        "targetM": 43.93479896649617,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.14568138,
+        "minConeM": 0.5299183,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 0.5299183
+          },
+          {
+            "index": 1,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 1.51808238
+          },
+          {
+            "index": 2,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 0.8605058
+          },
+          {
+            "index": 3,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 0.613301754
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 23.5562057,
+            "leftHomeXZ": [
+              13.3644295,
+              -20.8210526
+            ],
+            "rightHomeXZ": [
+              12.0896149,
+              -24.1203289
+            ],
+            "gateRightXZ": [
+              -0.36042237685731404,
+              -0.9327892099829009
+            ],
+            "approached": true,
+            "frontEnterS": 8.678693434749123,
+            "axleCrossS": 9.061822573359189,
+            "rearClearS": 9.682450718776318,
+            "entryBodyMps": 1.787901887635736,
+            "exitBodyMps": 2.0430795818199483,
+            "minOfficialPropM": [
+              0.5299183,
+              1.51808238
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.36946119358385127,
+            "minRightProjectedM": 1.2941418720724676,
+            "gateOccupancyS": 1.0037572840271949,
+            "gateMinFreeOpeningM": 2.857001041576713,
+            "entranceLaneOffsetM": -1.0346078370466505,
+            "axleLaneOffsetM": -1.1418072037339664,
+            "exitLaneOffsetM": -1.2967782131143233,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.273593170710972,
+              "outerConeFromCenterM": 2.2634078708657412,
+              "footprintFromInnerConeEdgeM": 0.5176294576940643,
+              "outerConeEdgeFromFootprintM": 1.4220994034862464,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.4485168,
+            "leftHomeXZ": [
+              20.9665279,
+              -23.044054
+            ],
+            "rightHomeXZ": [
+              19.9083824,
+              -25.7824211
+            ],
+            "gateRightXZ": [
+              -0.36044058940931845,
+              -0.9327821725924348
+            ],
+            "approached": true,
+            "frontEnterS": 13.117013855749597,
+            "axleCrossS": 13.470992740714781,
+            "rearClearS": 14.117869087033814,
+            "entryBodyMps": 1.808308600063087,
+            "exitBodyMps": 2.173512654587649,
+            "minOfficialPropM": [
+              0.8605058,
+              0.613301754
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.7962111342611531,
+            "minRightProjectedM": 0.4652008639068237,
+            "gateOccupancyS": 1.0008552312842163,
+            "gateMinFreeOpeningM": 2.2556986005944637,
+            "entranceLaneOffsetM": -1.5226379665024437,
+            "axleLaneOffsetM": -1.4832065405572386,
+            "exitLaneOffsetM": -1.362082626558763,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.598692698388071,
+              "outerConeFromCenterM": 1.337005902206393,
+              "footprintFromInnerConeEdgeM": 0.8141840579700537,
+              "outerConeEdgeFromFootprintM": 0.5972005426782708,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 22.8923111,
+          "seconds": 11.179893417950236,
+          "speedMps": 2.047632320290685,
+          "absLateralTravelM": 2.655371987495082,
+          "signedLateralDisplacementM": -0.21693530800033906,
+          "yawTravelRad": 0.8914457448377578,
+          "complete": true
+        },
+        "windowFromToM": [
+          15.5562057,
+          38.4485168
+        ],
+        "allMiddleSuccess": true
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 13.5499992,
+        "gatesPassed": 5,
+        "progressM": 43.96427,
+        "targetM": 43.93479896649617,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.14568138,
+        "minConeM": 0.16090396,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 1.33427048
+          },
+          {
+            "index": 1,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 0.759426951
+          },
+          {
+            "index": 2,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 1.32350111
+          },
+          {
+            "index": 3,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 0.16090396
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 23.5562057,
+            "leftHomeXZ": [
+              13.3644295,
+              -20.8210526
+            ],
+            "rightHomeXZ": [
+              12.0896149,
+              -24.1203289
+            ],
+            "gateRightXZ": [
+              -0.36042237685731404,
+              -0.9327892099829009
+            ],
+            "approached": true,
+            "frontEnterS": 6.486714571481721,
+            "axleCrossS": 6.642495940547745,
+            "rearClearS": 6.949300533603218,
+            "entryBodyMps": 4.123066790080213,
+            "exitBodyMps": 4.007576151694047,
+            "minOfficialPropM": [
+              1.33427048,
+              0.759426951
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.275565755884619,
+            "minRightProjectedM": 0.6983114893784936,
+            "gateOccupancyS": 0.46258596212149694,
+            "gateMinFreeOpeningM": 2.857001041576713,
+            "entranceLaneOffsetM": -0.33284409840502455,
+            "axleLaneOffsetM": -0.35905050469184135,
+            "exitLaneOffsetM": -0.4089853124516384,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.056348157943159,
+              "outerConeFromCenterM": 1.4806528836335544,
+              "footprintFromInnerConeEdgeM": 1.3252216184302048,
+              "outerConeEdgeFromFootprintM": 0.7250033458997965,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.4485168,
+            "leftHomeXZ": [
+              20.9665279,
+              -23.044054
+            ],
+            "rightHomeXZ": [
+              19.9083824,
+              -25.7824211
+            ],
+            "gateRightXZ": [
+              -0.36044058940931845,
+              -0.9327821725924348
+            ],
+            "approached": true,
+            "frontEnterS": 9.144298237562452,
+            "axleCrossS": 9.514591490270412,
+            "rearClearS": 10.286215865964936,
+            "entryBodyMps": 1.8664987658309071,
+            "exitBodyMps": 1.5466042709064283,
+            "minOfficialPropM": [
+              1.32350111,
+              0.16090396
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.2946387964558954,
+            "minRightProjectedM": 0.06623417542439602,
+            "gateOccupancyS": 1.1419176284024832,
+            "gateMinFreeOpeningM": 2.2556986005944637,
+            "entranceLaneOffsetM": -0.9915595574638877,
+            "axleLaneOffsetM": -1.0278889425784643,
+            "exitLaneOffsetM": -1.0602494030725427,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.0540103457388956,
+              "outerConeFromCenterM": 0.8816882548555682,
+              "footprintFromInnerConeEdgeM": 1.3225092369919782,
+              "outerConeEdgeFromFootprintM": 0.1248134435853777,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 22.8923111,
+          "seconds": 7.491677416403148,
+          "speedMps": 3.055698988036634,
+          "absLateralTravelM": 1.3021481473635967,
+          "signedLateralDisplacementM": -0.6390113981481116,
+          "yawTravelRad": 0.383881652326214,
+          "complete": true
+        },
+        "windowFromToM": [
+          15.5562057,
+          38.4485168
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 11.53,
+        "gatesPassed": 5,
+        "progressM": 43.9623566,
+        "targetM": 43.93479896649617,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.14568138,
+        "minConeM": 0.616004467,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 1.43646121
+          },
+          {
+            "index": 1,
+            "stationM": 23.5562057,
+            "approached": true,
+            "exited": true,
+            "minM": 0.6250771
+          },
+          {
+            "index": 2,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 0.8486848
+          },
+          {
+            "index": 3,
+            "stationM": 31.4485168,
+            "approached": true,
+            "exited": true,
+            "minM": 0.616004467
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 23.5562057,
+            "leftHomeXZ": [
+              13.3644295,
+              -20.8210526
+            ],
+            "rightHomeXZ": [
+              12.0896149,
+              -24.1203289
+            ],
+            "gateRightXZ": [
+              -0.36042237685731404,
+              -0.9327892099829009
+            ],
+            "approached": true,
+            "frontEnterS": 6.749982340718015,
+            "axleCrossS": 6.898153371024601,
+            "rearClearS": 7.188611097391474,
+            "entryBodyMps": 4.391256339915766,
+            "exitBodyMps": 4.404723144226577,
+            "minOfficialPropM": [
+              1.43646121,
+              0.6250771
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.2491247979073006,
+            "minRightProjectedM": 0.5256625035453517,
+            "gateOccupancyS": 0.43862875667345946,
+            "gateMinFreeOpeningM": 2.857001041576713,
+            "entranceLaneOffsetM": -0.19042487725246632,
+            "axleLaneOffsetM": -0.24674688218351098,
+            "exitLaneOffsetM": -0.4082368108981241,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.1686533899063614,
+              "outerConeFromCenterM": 1.3683476516703519,
+              "footprintFromInnerConeEdgeM": 1.4217596997018707,
+              "outerConeEdgeFromFootprintM": 0.5594674071011124,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.4485168,
+            "leftHomeXZ": [
+              20.9665279,
+              -23.044054
+            ],
+            "rightHomeXZ": [
+              19.9083824,
+              -25.7824211
+            ],
+            "gateRightXZ": [
+              -0.36044058940931845,
+              -0.9327821725924348
+            ],
+            "approached": true,
+            "frontEnterS": 8.5419932524139,
+            "axleCrossS": 8.69630548524422,
+            "rearClearS": 8.978941844016044,
+            "entryBodyMps": 4.3792098250573215,
+            "exitBodyMps": 4.444716157446318,
+            "minOfficialPropM": [
+              0.8486848,
+              0.616004467
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.7557291265967341,
+            "minRightProjectedM": 0.42293593109668404,
+            "gateOccupancyS": 0.4369485916021443,
+            "gateMinFreeOpeningM": 2.2556986005944637,
+            "entranceLaneOffsetM": -1.4061774974066377,
+            "axleLaneOffsetM": -1.490380870698105,
+            "exitLaneOffsetM": -1.5900246450335953,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.5915245969516039,
+              "outerConeFromCenterM": 1.34417400364286,
+              "footprintFromInnerConeEdgeM": 0.8443332320938064,
+              "outerConeEdgeFromFootprintM": 0.534252835607876,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 22.8923111,
+          "seconds": 5.400476477710927,
+          "speedMps": 4.238942840410862,
+          "absLateralTravelM": 1.8331589608615788,
+          "signedLateralDisplacementM": -1.4399660289710206,
+          "yawTravelRad": 0.46925694794988715,
+          "complete": true
+        },
+        "windowFromToM": [
+          15.5562057,
+          38.4485168
+        ],
+        "allMiddleSuccess": true
+      }
+    },
+    {
+      "id": "g06",
+      "road": "bend",
+      "family": "double",
+      "runHashes": {
+        "base": "e07c16340292e49a3fc53470bbbc798c650b729848cf1452b8b986f278b1c279",
+        "learned": "d4a57979dfa04e91ff896bd06d923d4a4b477a19714fa1c36c5f06801c494882",
+        "pace": "77f573f090d4b7df79c8481669d80b1fd96bf097927da158521512ae8e40d836"
+      },
+      "base": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 8.87,
+        "gatesPassed": 2,
+        "progressM": 23.58722,
+        "targetM": 43.69019897225003,
+        "unfinishedM": 20.102978972250032,
+        "minRoadM": 1.21496928,
+        "minConeM": -0.00876683,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": false,
+            "minM": -0.00876683
+          },
+          {
+            "index": 1,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": false,
+            "minM": 1.94262612
+          },
+          {
+            "index": 2,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": false,
+            "minM": 5.987083
+          },
+          {
+            "index": 3,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": false,
+            "minM": 7.358426
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.177536,
+            "leftHomeXZ": [
+              50.5384979,
+              -33.49846
+            ],
+            "rightHomeXZ": [
+              50.34171,
+              -36.7186546
+            ],
+            "gateRightXZ": [
+              -0.06099725893395133,
+              -0.9981379335555504
+            ],
+            "approached": true,
+            "frontEnterS": 8.787437838405593,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 1.741172407715705,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              -0.00876683,
+              1.94262612
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": -0.14469515778078748,
+            "minRightProjectedM": 1.814039942401929,
+            "gateOccupancyS": 0.08256216159440655,
+            "gateMinFreeOpeningM": 2.5462019061821097,
+            "entranceLaneOffsetM": -2.5515470713915067,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.1408615,
+            "leftHomeXZ": [
+              56.5900154,
+              -33.6752739
+            ],
+            "rightHomeXZ": [
+              57.54488,
+              -36.9967461
+            ],
+            "gateRightXZ": [
+              0.27629210257585746,
+              -0.9610737089600422
+            ],
+            "approached": true,
+            "frontEnterS": null,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": null,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              5.987083,
+              7.358426
+            ],
+            "route": "not_reached"
+          }
+        ],
+        "middleGates": 0,
+        "window": {
+          "progressM": 7.409683999999999,
+          "seconds": 3.8407548865881544,
+          "speedMps": 1.9292259513551566,
+          "absLateralTravelM": 1.8725439891085893,
+          "signedLateralDisplacementM": -1.8725439891085893,
+          "yawTravelRad": 0.4013792574813285,
+          "complete": false
+        },
+        "windowFromToM": [
+          16.177536,
+          38.1408615
+        ],
+        "allMiddleSuccess": false
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 13.61,
+        "gatesPassed": 4,
+        "progressM": 43.7182465,
+        "targetM": 43.69019897225003,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.21496928,
+        "minConeM": 0.0328216255,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": true,
+            "minM": 1.2650553
+          },
+          {
+            "index": 1,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": true,
+            "minM": 0.490303427
+          },
+          {
+            "index": 2,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": true,
+            "minM": 0.0328216255
+          },
+          {
+            "index": 3,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": true,
+            "minM": 1.963549
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.177536,
+            "leftHomeXZ": [
+              50.5384979,
+              -33.49846
+            ],
+            "rightHomeXZ": [
+              50.34171,
+              -36.7186546
+            ],
+            "gateRightXZ": [
+              -0.06099725893395133,
+              -0.9981379335555504
+            ],
+            "approached": true,
+            "frontEnterS": 7.021082187033705,
+            "axleCrossS": 7.205096386130693,
+            "rearClearS": 7.547282092073849,
+            "entryBodyMps": 3.3408955039581207,
+            "exitBodyMps": 3.5887337089451115,
+            "minOfficialPropM": [
+              1.2650553,
+              0.490303427
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.0912344113462116,
+            "minRightProjectedM": 0.41885660472899877,
+            "gateOccupancyS": 0.5261999050401442,
+            "gateMinFreeOpeningM": 2.5462019061821097,
+            "entranceLaneOffsetM": -1.1277414299268627,
+            "axleLaneOffsetM": -1.1833078480071544,
+            "exitLaneOffsetM": -1.2859504882699395,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.9928348033495957,
+              "outerConeFromCenterM": 1.2333671028325142,
+              "footprintFromInnerConeEdgeM": 1.2499979852883685,
+              "outerConeEdgeFromFootprintM": 0.43853038020353297,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.1408615,
+            "leftHomeXZ": [
+              56.5900154,
+              -33.6752739
+            ],
+            "rightHomeXZ": [
+              57.54488,
+              -36.9967461
+            ],
+            "gateRightXZ": [
+              0.27629210257585746,
+              -0.9610737089600422
+            ],
+            "approached": true,
+            "frontEnterS": 9.427392920348646,
+            "axleCrossS": 9.747041197772386,
+            "rearClearS": 10.40845826456167,
+            "entryBodyMps": 1.9903973351255215,
+            "exitBodyMps": 1.8848268839594353,
+            "minOfficialPropM": [
+              0.0328216255,
+              1.963549
+            ],
+            "route": "straddle_or_uncertain",
+            "minLeftProjectedM": -0.057160490713068224,
+            "minRightProjectedM": 1.9572690794876664,
+            "gateOccupancyS": 0.9810653442130235,
+            "gateMinFreeOpeningM": 2.7760011544709284,
+            "entranceLaneOffsetM": -1.55665262773948,
+            "axleLaneOffsetM": -1.5742553667208496,
+            "exitLaneOffsetM": -1.6005983544254243,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 0.752845753945079,
+              "outerConeFromCenterM": 2.7031554005258496,
+              "footprintFromInnerConeEdgeM": 0.025652712591262363,
+              "outerConeEdgeFromFootprintM": 1.9602701436350551,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 21.9633255,
+          "seconds": 7.23420480854386,
+          "speedMps": 3.036038663718853,
+          "absLateralTravelM": 1.748746582596279,
+          "signedLateralDisplacementM": -0.21168844329286118,
+          "yawTravelRad": 0.8552982566873385,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.177536,
+          38.1408615
+        ],
+        "allMiddleSuccess": false
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 16.72,
+        "gatesPassed": 4,
+        "progressM": 43.70671,
+        "targetM": 43.69019897225003,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.15053952,
+        "minConeM": 0.339377433,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": true,
+            "minM": 0.8961879
+          },
+          {
+            "index": 1,
+            "stationM": 24.177536,
+            "approached": true,
+            "exited": true,
+            "minM": 0.8445872
+          },
+          {
+            "index": 2,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": true,
+            "minM": 0.339377433
+          },
+          {
+            "index": 3,
+            "stationM": 31.1408615,
+            "approached": true,
+            "exited": true,
+            "minM": 1.65935445
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.177536,
+            "leftHomeXZ": [
+              50.5384979,
+              -33.49846
+            ],
+            "rightHomeXZ": [
+              50.34171,
+              -36.7186546
+            ],
+            "gateRightXZ": [
+              -0.06099725893395133,
+              -0.9981379335555504
+            ],
+            "approached": true,
+            "frontEnterS": 8.954011353407754,
+            "axleCrossS": 9.34425509768244,
+            "rearClearS": 10.010380831919756,
+            "entryBodyMps": 1.6799596012900546,
+            "exitBodyMps": 1.8208954300864992,
+            "minOfficialPropM": [
+              0.8961879,
+              0.8445872
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.7180525730525003,
+            "minRightProjectedM": 0.8231727359251235,
+            "gateOccupancyS": 1.0563694785120017,
+            "gateMinFreeOpeningM": 2.5462019061821097,
+            "entranceLaneOffsetM": -1.6176518608785677,
+            "axleLaneOffsetM": -1.5522520573877834,
+            "exitLaneOffsetM": -1.4590333129043365,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.6240485248469598,
+              "outerConeFromCenterM": 1.60215338133515,
+              "footprintFromInnerConeEdgeM": 0.8250955958396159,
+              "outerConeEdgeFromFootprintM": 0.8581196384559162,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.1408615,
+            "leftHomeXZ": [
+              56.5900154,
+              -33.6752739
+            ],
+            "rightHomeXZ": [
+              57.54488,
+              -36.9967461
+            ],
+            "gateRightXZ": [
+              0.27629210257585746,
+              -0.9610737089600422
+            ],
+            "approached": true,
+            "frontEnterS": 12.694395265151234,
+            "axleCrossS": 13.053363919674366,
+            "rearClearS": 13.695893258567022,
+            "entryBodyMps": 1.72953738685414,
+            "exitBodyMps": 2.3167532079297013,
+            "minOfficialPropM": [
+              0.339377433,
+              1.65935445
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.2662169217935542,
+            "minRightProjectedM": 1.626111633121673,
+            "gateOccupancyS": 1.0014979934157875,
+            "gateMinFreeOpeningM": 2.7760011544709284,
+            "entranceLaneOffsetM": -1.2356914746531442,
+            "axleLaneOffsetM": -1.259883855454002,
+            "exitLaneOffsetM": -1.2891775093397964,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.0672172174606303,
+              "outerConeFromCenterM": 2.3887839370102983,
+              "footprintFromInnerConeEdgeM": 0.3344348412005455,
+              "outerConeEdgeFromFootprintM": 1.6277046746357773,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 21.9633255,
+          "seconds": 10.293046485297737,
+          "speedMps": 2.1338022257425653,
+          "absLateralTravelM": 2.2123606860427745,
+          "signedLateralDisplacementM": 0.32893160729837345,
+          "yawTravelRad": 1.070609921615743,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.177536,
+          38.1408615
+        ],
+        "allMiddleSuccess": true
+      }
+    },
+    {
+      "id": "g07",
+      "road": "bend",
+      "family": "mixed-triple",
+      "runHashes": {
+        "base": "02c23a64d508853f039fbe19977eaf294fdc4424beb33673ae85fb20a2a70df5",
+        "learned": "40a1ecb9e8dd22a957ef957c1e71ae7fc708a181a82378f604c7bebdfe457c66",
+        "pace": "54b02488b285ed7173750009a26833689879dd0228bdcb15035a3a83cc8e7327"
+      },
+      "base": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 9.34,
+        "gatesPassed": 2,
+        "progressM": 24.44217,
+        "targetM": 51.45549878958237,
+        "unfinishedM": 27.01332878958237,
+        "minRoadM": 1.03538156,
+        "minConeM": -0.0009923279,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": false,
+            "minM": -0.0009923279
+          },
+          {
+            "index": 1,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": false,
+            "minM": 1.96154225
+          },
+          {
+            "index": 2,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": false,
+            "minM": 6.184463
+          },
+          {
+            "index": 3,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": false,
+            "minM": 6.684614
+          },
+          {
+            "index": 4,
+            "stationM": 38.9724731,
+            "approached": false,
+            "exited": false,
+            "minM": null
+          },
+          {
+            "index": 5,
+            "stationM": 38.9724731,
+            "approached": false,
+            "exited": false,
+            "minM": null
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.6956482,
+            "leftHomeXZ": [
+              -0.659808636,
+              38.45092
+            ],
+            "rightHomeXZ": [
+              -2.11372948,
+              41.6737442
+            ],
+            "gateRightXZ": [
+              -0.4112232337192761,
+              0.9115346685943775
+            ],
+            "approached": true,
+            "frontEnterS": 9.040015303401534,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 1.6934196073490098,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              -0.0009923279,
+              1.96154225
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": -0.0125119879170279,
+            "minRightProjectedM": 1.6470231996111937,
+            "gateOccupancyS": 0.29998469659846627,
+            "gateMinFreeOpeningM": 2.855602020126477,
+            "entranceLaneOffsetM": -1.4918928283467856,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.9926758,
+            "leftHomeXZ": [
+              -5.59626341,
+              34.4574547
+            ],
+            "rightHomeXZ": [
+              -7.60075045,
+              36.5234566
+            ],
+            "gateRightXZ": [
+              -0.6963409960502808,
+              0.7177110959290673
+            ],
+            "approached": true,
+            "frontEnterS": null,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": null,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              6.184463,
+              6.684614
+            ],
+            "route": "not_reached"
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "outer-line",
+            "stationM": 38.9724731,
+            "leftHomeXZ": [
+              -9.619327,
+              29.8987064
+            ],
+            "rightHomeXZ": [
+              -12.8003969,
+              31.5109367
+            ],
+            "gateRightXZ": [
+              -0.8919806270543035,
+              0.452073623384302
+            ],
+            "approached": false,
+            "frontEnterS": null,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": null,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              null,
+              null
+            ],
+            "route": "not_reached"
+          }
+        ],
+        "middleGates": 0,
+        "window": {
+          "progressM": 7.7465218,
+          "seconds": 4.119272226701978,
+          "speedMps": 1.8805559267934364,
+          "absLateralTravelM": 0.9483670093430093,
+          "signedLateralDisplacementM": -0.9148072093430092,
+          "yawTravelRad": 0.6837859941467218,
+          "complete": false
+        },
+        "windowFromToM": [
+          16.6956482,
+          45.9724731
+        ],
+        "allMiddleSuccess": false
+      },
+      "learned": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 14.13,
+        "gatesPassed": 5,
+        "progressM": 51.4996338,
+        "targetM": 51.45549878958237,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.03538156,
+        "minConeM": 0.283068866,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": true,
+            "minM": 0.893445969
+          },
+          {
+            "index": 1,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": true,
+            "minM": 1.18149638
+          },
+          {
+            "index": 2,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": true,
+            "minM": 1.05907834
+          },
+          {
+            "index": 3,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": true,
+            "minM": 0.283068866
+          },
+          {
+            "index": 4,
+            "stationM": 38.9724731,
+            "approached": true,
+            "exited": true,
+            "minM": 0.5057751
+          },
+          {
+            "index": 5,
+            "stationM": 38.9724731,
+            "approached": true,
+            "exited": true,
+            "minM": 1.74132049
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.6956482,
+            "leftHomeXZ": [
+              -0.659808636,
+              38.45092
+            ],
+            "rightHomeXZ": [
+              -2.11372948,
+              41.6737442
+            ],
+            "gateRightXZ": [
+              -0.4112232337192761,
+              0.9115346685943775
+            ],
+            "approached": true,
+            "frontEnterS": 6.973747947219532,
+            "axleCrossS": 7.142759701740431,
+            "rearClearS": 7.465689500797935,
+            "entryBodyMps": 3.6492965250085345,
+            "exitBodyMps": 3.8904551874290263,
+            "minOfficialPropM": [
+              0.893445969,
+              1.18149638
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.8334698799885287,
+            "minRightProjectedM": 1.1821741247387276,
+            "gateOccupancyS": 0.4919415535784033,
+            "gateMinFreeOpeningM": 2.855602020126477,
+            "entranceLaneOffsetM": -0.8239084596173446,
+            "axleLaneOffsetM": -0.8255818669441297,
+            "exitLaneOffsetM": -0.8288190163743255,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.612616528589257,
+              "outerConeFromCenterM": 1.9229854915372202,
+              "footprintFromInnerConeEdgeM": 0.8913215614089981,
+              "outerConeEdgeFromFootprintM": 1.19890682646812,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.9926758,
+            "leftHomeXZ": [
+              -5.59626341,
+              34.4574547
+            ],
+            "rightHomeXZ": [
+              -7.60075045,
+              36.5234566
+            ],
+            "gateRightXZ": [
+              -0.6963409960502808,
+              0.7177110959290673
+            ],
+            "approached": true,
+            "frontEnterS": 9.095732209807503,
+            "axleCrossS": 9.270260126563882,
+            "rearClearS": 9.623503395610083,
+            "entryBodyMps": 3.4227766269519155,
+            "exitBodyMps": 2.9967488124085166,
+            "minOfficialPropM": [
+              1.05907834,
+              0.283068866
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.9547188681301961,
+            "minRightProjectedM": 0.28228949753512644,
+            "gateOccupancyS": 0.52777118580258,
+            "gateMinFreeOpeningM": 2.1204618769021852,
+            "entranceLaneOffsetM": -0.9277251237895795,
+            "axleLaneOffsetM": -0.9526058011092357,
+            "exitLaneOffsetM": -1.0006715573550669,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.779919670755763,
+              "outerConeFromCenterM": 1.0449626005029304,
+              "footprintFromInnerConeEdgeM": 1.0487579643819394,
+              "outerConeEdgeFromFootprintM": 0.2891980846210443,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "outer-line",
+            "stationM": 38.9724731,
+            "leftHomeXZ": [
+              -9.619327,
+              29.8987064
+            ],
+            "rightHomeXZ": [
+              -12.8003969,
+              31.5109367
+            ],
+            "gateRightXZ": [
+              -0.8919806270543035,
+              0.452073623384302
+            ],
+            "approached": true,
+            "frontEnterS": 11.175590672498778,
+            "axleCrossS": 11.336542009315881,
+            "rearClearS": 11.657168945513703,
+            "entryBodyMps": 3.8937935566531463,
+            "exitBodyMps": 3.9680638185466264,
+            "minOfficialPropM": [
+              0.5057751,
+              1.74132049
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.4229889234609799,
+            "minRightProjectedM": 1.7354638323320921,
+            "gateOccupancyS": 0.4815782730149252,
+            "gateMinFreeOpeningM": 3.0488604022475685,
+            "entranceLaneOffsetM": -1.255021054237503,
+            "axleLaneOffsetM": -1.28715040831438,
+            "exitLaneOffsetM": -1.3451700358169527,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.2327050511463638,
+              "outerConeFromCenterM": 2.5024822510030336,
+              "footprintFromInnerConeEdgeM": 0.4988903849882579,
+              "outerConeEdgeFromFootprintM": 1.7380003176225356,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 3,
+        "window": {
+          "progressM": 29.2768249,
+          "seconds": 7.831913684387839,
+          "speedMps": 3.738144479089512,
+          "absLateralTravelM": 0.721007139201493,
+          "signedLateralDisplacementM": -0.663483433201493,
+          "yawTravelRad": 1.362795952750254,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.6956482,
+          45.9724731
+        ],
+        "allMiddleSuccess": true
+      },
+      "pace": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 14.38,
+        "gatesPassed": 3,
+        "progressM": 31.41745,
+        "targetM": 51.45549878958237,
+        "unfinishedM": 20.038048789582373,
+        "minRoadM": 1.03538156,
+        "minConeM": -0.004039794,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": true,
+            "minM": 0.499400526
+          },
+          {
+            "index": 1,
+            "stationM": 24.6956482,
+            "approached": true,
+            "exited": true,
+            "minM": 1.575765
+          },
+          {
+            "index": 2,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": false,
+            "minM": 1.669228
+          },
+          {
+            "index": 3,
+            "stationM": 31.9926758,
+            "approached": true,
+            "exited": false,
+            "minM": -0.004039794
+          },
+          {
+            "index": 4,
+            "stationM": 38.9724731,
+            "approached": true,
+            "exited": false,
+            "minM": 6.38297367
+          },
+          {
+            "index": 5,
+            "stationM": 38.9724731,
+            "approached": true,
+            "exited": false,
+            "minM": 7.122501
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "outer-line",
+            "stationM": 24.6956482,
+            "leftHomeXZ": [
+              -0.659808636,
+              38.45092
+            ],
+            "rightHomeXZ": [
+              -2.11372948,
+              41.6737442
+            ],
+            "gateRightXZ": [
+              -0.4112232337192761,
+              0.9115346685943775
+            ],
+            "approached": true,
+            "frontEnterS": 9.19360212175868,
+            "axleCrossS": 9.563901812859582,
+            "rearClearS": 10.225746850120572,
+            "entryBodyMps": 1.6695620744732886,
+            "exitBodyMps": 1.9192860552719568,
+            "minOfficialPropM": [
+              0.499400526,
+              1.575765
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.3881586362097071,
+            "minRightProjectedM": 1.5601325683415062,
+            "gateOccupancyS": 1.0321447283618923,
+            "gateMinFreeOpeningM": 2.855602020126477,
+            "entranceLaneOffsetM": -1.2052403586225793,
+            "axleLaneOffsetM": -1.2187755058425516,
+            "exitLaneOffsetM": -1.2625130435685366,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.2199267565581793,
+              "outerConeFromCenterM": 2.315675263568298,
+              "footprintFromInnerConeEdgeM": 0.4899017629918274,
+              "outerConeEdgeFromFootprintM": 1.5636189533812634,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "shift",
+            "stationM": 31.9926758,
+            "leftHomeXZ": [
+              -5.59626341,
+              34.4574547
+            ],
+            "rightHomeXZ": [
+              -7.60075045,
+              36.5234566
+            ],
+            "gateRightXZ": [
+              -0.6963409960502808,
+              0.7177110959290673
+            ],
+            "approached": true,
+            "frontEnterS": 14.245415792202031,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 0.6634750100092176,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              1.669228,
+              -0.004039794
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": 1.5889185231043583,
+            "minRightProjectedM": -0.19071082078170587,
+            "gateOccupancyS": 0.1345842077979693,
+            "gateMinFreeOpeningM": 2.235727646456295,
+            "entranceLaneOffsetM": -0.7731972962304859,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "outer-line",
+            "stationM": 38.9724731,
+            "leftHomeXZ": [
+              -9.619327,
+              29.8987064
+            ],
+            "rightHomeXZ": [
+              -12.8003969,
+              31.5109367
+            ],
+            "gateRightXZ": [
+              -0.8919806270543035,
+              0.452073623384302
+            ],
+            "approached": true,
+            "frontEnterS": null,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": null,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              6.38297367,
+              7.122501
+            ],
+            "route": "not_reached"
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 14.721801799999998,
+          "seconds": 9.201491559834217,
+          "speedMps": 1.5999364564178593,
+          "absLateralTravelM": 1.0045187312520223,
+          "signedLateralDisplacementM": 0.11324602874797796,
+          "yawTravelRad": 1.0131163712962827,
+          "complete": false
+        },
+        "windowFromToM": [
+          16.6956482,
+          45.9724731
+        ],
+        "allMiddleSuccess": false
+      }
+    },
+    {
+      "id": "g08",
+      "road": "bend",
+      "family": "mixed-triple",
+      "runHashes": {
+        "base": "87784179727aa5e8c15f8f6b9a485bd2ce9cd3188f81dbf61d2fa1966bf3d75e",
+        "learned": "8664ed657c4519ed697f2ea4cd8e82d7ab05253bfad48abefe69434c61a90a84",
+        "pace": "e929fbccc8f6f71f42612d3ac04f0b183e7e7f326b3b99ce813ca931111aa1c3"
+      },
+      "base": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 21.73,
+        "gatesPassed": 4,
+        "progressM": 38.6305962,
+        "targetM": 51.79179878167138,
+        "unfinishedM": 13.161202581671382,
+        "minRoadM": 1.10800719,
+        "minConeM": -0.00325596333,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 0.6410682
+          },
+          {
+            "index": 1,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 0.7383208
+          },
+          {
+            "index": 2,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": true,
+            "minM": 1.23069429
+          },
+          {
+            "index": 3,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": true,
+            "minM": 0.6607336
+          },
+          {
+            "index": 4,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": false,
+            "minM": 2.021159
+          },
+          {
+            "index": 5,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": false,
+            "minM": -0.00325596333
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.99031,
+            "leftHomeXZ": [
+              -10.3720112,
+              -0.565669239
+            ],
+            "rightHomeXZ": [
+              -13.46379,
+              -0.911858
+            ],
+            "gateRightXZ": [
+              -0.9937896132902295,
+              -0.11127535448811676
+            ],
+            "approached": true,
+            "frontEnterS": 11.088799971081212,
+            "axleCrossS": 11.444585906266292,
+            "rearClearS": 12.45264335384496,
+            "entryBodyMps": 1.7915611277371701,
+            "exitBodyMps": 1.5800683416151917,
+            "minOfficialPropM": [
+              0.6410682,
+              0.7383208
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.6395381096109929,
+            "minRightProjectedM": 0.5424048568257738,
+            "gateOccupancyS": 1.3638433827637488,
+            "gateMinFreeOpeningM": 2.097945137787647,
+            "entranceLaneOffsetM": -1.6091156768298354,
+            "axleLaneOffsetM": -1.5974825494212452,
+            "exitLaneOffsetM": -1.4426686774705066,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.4513797263913644,
+              "outerConeFromCenterM": 1.5455552520030875,
+              "footprintFromInnerConeEdgeM": 0.6835674849886051,
+              "outerConeEdgeFromFootprintM": 0.8107342318885823,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.9670563,
+            "leftHomeXZ": [
+              -9.543045,
+              -6.591877
+            ],
+            "rightHomeXZ": [
+              -12.6703472,
+              -8.082066
+            ],
+            "gateRightXZ": [
+              -0.9027486849706882,
+              -0.4301683528383897
+            ],
+            "approached": true,
+            "frontEnterS": 15.763184568488342,
+            "axleCrossS": 16.178185047416353,
+            "rearClearS": 16.92793972855702,
+            "entryBodyMps": 1.7410802115142445,
+            "exitBodyMps": 1.563486481691669,
+            "minOfficialPropM": [
+              1.23069429,
+              0.6607336
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.921625078058377,
+            "minRightProjectedM": 0.479166937857995,
+            "gateOccupancyS": 1.1647551600686796,
+            "gateMinFreeOpeningM": 2.7498751320124923,
+            "entranceLaneOffsetM": -0.46954892520488284,
+            "axleLaneOffsetM": -0.2929736660451753,
+            "exitLaneOffsetM": -0.02210045029128647,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.0137555025095106,
+              "outerConeFromCenterM": 1.5374434345071921,
+              "footprintFromInnerConeEdgeM": 1.0883653449588806,
+              "outerConeEdgeFromFootprintM": 0.760103334652714,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "shift",
+            "stationM": 39.2608337,
+            "leftHomeXZ": [
+              -5.37723827,
+              -11.4061956
+            ],
+            "rightHomeXZ": [
+              -7.289386,
+              -13.3478088
+            ],
+            "gateRightXZ": [
+              -0.7016796857431415,
+              -0.7124925393401716
+            ],
+            "approached": true,
+            "frontEnterS": 21.654512900909783,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 0.8146065913553384,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              2.021159,
+              -0.00325596333
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": 1.9824522270373535,
+            "minRightProjectedM": -0.9175194671109907,
+            "gateOccupancyS": 0.07548709909021767,
+            "gateMinFreeOpeningM": 2.045100137565257,
+            "entranceLaneOffsetM": -0.18176336715960842,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 21.6402862,
+          "seconds": 14.181312526830022,
+          "speedMps": 1.5259720254425067,
+          "absLateralTravelM": 3.293352977087687,
+          "signedLateralDisplacementM": 0.2860580289123129,
+          "yawTravelRad": 1.6111096516815813,
+          "complete": false
+        },
+        "windowFromToM": [
+          16.99031,
+          46.2608337
+        ],
+        "allMiddleSuccess": false
+      },
+      "learned": {
+        "normalCompletion": false,
+        "physicalSuccess": false,
+        "terminal": "obstacle",
+        "elapsedS": 10.0199995,
+        "gatesPassed": 3,
+        "progressM": 31.4250889,
+        "targetM": 51.79179878167138,
+        "unfinishedM": 20.366709881671383,
+        "minRoadM": 1.31415725,
+        "minConeM": -0.008297473,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 1.28011966
+          },
+          {
+            "index": 1,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 0.56192863
+          },
+          {
+            "index": 2,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": false,
+            "minM": -0.008297473
+          },
+          {
+            "index": 3,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": false,
+            "minM": 2.01003718
+          },
+          {
+            "index": 4,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": false,
+            "minM": 6.27560949
+          },
+          {
+            "index": 5,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": false,
+            "minM": 6.936994
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.99031,
+            "leftHomeXZ": [
+              -10.3720112,
+              -0.565669239
+            ],
+            "rightHomeXZ": [
+              -13.46379,
+              -0.911858
+            ],
+            "gateRightXZ": [
+              -0.9937896132902295,
+              -0.11127535448811676
+            ],
+            "approached": true,
+            "frontEnterS": 7.576336691878296,
+            "axleCrossS": 7.768270572294527,
+            "rearClearS": 8.105672730163905,
+            "entryBodyMps": 3.2187510531580448,
+            "exitBodyMps": 4.003219998155569,
+            "minOfficialPropM": [
+              1.28011966,
+              0.56192863
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 1.0687621372210596,
+            "minRightProjectedM": 0.4302993411003988,
+            "gateOccupancyS": 0.5293360382856083,
+            "gateMinFreeOpeningM": 2.638424463737521,
+            "entranceLaneOffsetM": -1.346469821955761,
+            "axleLaneOffsetM": -1.418107572434072,
+            "exitLaneOffsetM": -1.5440487591204992,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 2.023199657969551,
+              "outerConeFromCenterM": 1.3075374248142348,
+              "footprintFromInnerConeEdgeM": 1.2751832929757856,
+              "outerConeEdgeFromFootprintM": 0.4947234439517555,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.9670563,
+            "leftHomeXZ": [
+              -9.543045,
+              -6.591877
+            ],
+            "rightHomeXZ": [
+              -12.6703472,
+              -8.082066
+            ],
+            "gateRightXZ": [
+              -0.9027486849706882,
+              -0.4301683528383897
+            ],
+            "approached": true,
+            "frontEnterS": 9.94610195798746,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": 1.82423524182244,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              -0.008297473,
+              2.01003718
+            ],
+            "route": "unfinished",
+            "minLeftProjectedM": -0.09310009350316464,
+            "minRightProjectedM": 2.0007450703059586,
+            "gateOccupancyS": 0.07389754201254028,
+            "gateMinFreeOpeningM": 2.676598841746999,
+            "entranceLaneOffsetM": -1.7764161025787035,
+            "axleLaneOffsetM": null,
+            "exitLaneOffsetM": null
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "shift",
+            "stationM": 39.2608337,
+            "leftHomeXZ": [
+              -5.37723827,
+              -11.4061956
+            ],
+            "rightHomeXZ": [
+              -7.289386,
+              -13.3478088
+            ],
+            "gateRightXZ": [
+              -0.7016796857431415,
+              -0.7124925393401716
+            ],
+            "approached": true,
+            "frontEnterS": null,
+            "axleCrossS": null,
+            "rearClearS": null,
+            "entryBodyMps": null,
+            "exitBodyMps": null,
+            "minOfficialPropM": [
+              6.27560949,
+              6.936994
+            ],
+            "route": "not_reached"
+          }
+        ],
+        "middleGates": 1,
+        "window": {
+          "progressM": 14.434778900000001,
+          "seconds": 4.886435242850477,
+          "speedMps": 2.9540509968120534,
+          "absLateralTravelM": 1.1505190186778806,
+          "signedLateralDisplacementM": -1.1371730413221193,
+          "yawTravelRad": 0.4902256535617134,
+          "complete": false
+        },
+        "windowFromToM": [
+          16.99031,
+          46.2608337
+        ],
+        "allMiddleSuccess": false
+      },
+      "pace": {
+        "normalCompletion": true,
+        "physicalSuccess": true,
+        "terminal": "segment",
+        "elapsedS": 23.89,
+        "gatesPassed": 5,
+        "progressM": 51.8357353,
+        "targetM": 51.79179878167138,
+        "unfinishedM": 0.0,
+        "minRoadM": 1.13669324,
+        "minConeM": 0.014739722,
+        "cones": [
+          {
+            "index": 0,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 0.942155957
+          },
+          {
+            "index": 1,
+            "stationM": 24.99031,
+            "approached": true,
+            "exited": true,
+            "minM": 0.547836661
+          },
+          {
+            "index": 2,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": true,
+            "minM": 0.5336752
+          },
+          {
+            "index": 3,
+            "stationM": 31.9670563,
+            "approached": true,
+            "exited": true,
+            "minM": 1.605596
+          },
+          {
+            "index": 4,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": true,
+            "minM": 1.232666
+          },
+          {
+            "index": 5,
+            "stationM": 39.2608337,
+            "approached": true,
+            "exited": true,
+            "minM": 0.014739722
+          }
+        ],
+        "gates": [
+          {
+            "index": 0,
+            "propIndices": [
+              0,
+              1
+            ],
+            "role": "shift",
+            "stationM": 24.99031,
+            "leftHomeXZ": [
+              -10.3720112,
+              -0.565669239
+            ],
+            "rightHomeXZ": [
+              -13.46379,
+              -0.911858
+            ],
+            "gateRightXZ": [
+              -0.9937896132902295,
+              -0.11127535448811676
+            ],
+            "approached": true,
+            "frontEnterS": 10.837235035954706,
+            "axleCrossS": 11.2218368029531,
+            "rearClearS": 11.859768525191894,
+            "entryBodyMps": 1.738809533593444,
+            "exitBodyMps": 1.9021567532434254,
+            "minOfficialPropM": [
+              0.942155957,
+              0.547836661
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.821447321371755,
+            "minRightProjectedM": 0.5095782674418774,
+            "gateOccupancyS": 1.0225334892371887,
+            "gateMinFreeOpeningM": 2.2218326624645917,
+            "entranceLaneOffsetM": -1.450416768094469,
+            "axleLaneOffsetM": -1.3921208431814762,
+            "exitLaneOffsetM": -1.3222704543184378,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.679139597887829,
+              "outerConeFromCenterM": 1.3688096136435728,
+              "footprintFromInnerConeEdgeM": 0.8951518043138093,
+              "outerConeEdgeFromFootprintM": 0.6291581960348531,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 1,
+            "propIndices": [
+              2,
+              3
+            ],
+            "role": "outer-line",
+            "stationM": 31.9670563,
+            "leftHomeXZ": [
+              -9.543045,
+              -6.591877
+            ],
+            "rightHomeXZ": [
+              -12.6703472,
+              -8.082066
+            ],
+            "gateRightXZ": [
+              -0.9027486849706882,
+              -0.4301683528383897
+            ],
+            "approached": true,
+            "frontEnterS": 14.571142287801328,
+            "axleCrossS": 15.22974638845528,
+            "rearClearS": 16.082332831850596,
+            "entryBodyMps": 1.3182760387548702,
+            "exitBodyMps": 1.7459215475463759,
+            "minOfficialPropM": [
+              0.5336752,
+              1.605596
+            ],
+            "route": "middle",
+            "minLeftProjectedM": 0.5339117282933876,
+            "minRightProjectedM": 1.463888841273247,
+            "gateOccupancyS": 1.5111905440492688,
+            "gateMinFreeOpeningM": 2.8853211145028435,
+            "entranceLaneOffsetM": -1.0765869334790497,
+            "axleLaneOffsetM": -1.0490926554134128,
+            "exitLaneOffsetM": -0.9173966939460307,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.3194135524475077,
+              "outerConeFromCenterM": 2.346576293161424,
+              "footprintFromInnerConeEdgeM": 0.5637231573219149,
+              "outerConeEdgeFromFootprintM": 1.6154372547740856,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          },
+          {
+            "index": 2,
+            "propIndices": [
+              4,
+              5
+            ],
+            "role": "shift",
+            "stationM": 39.2608337,
+            "leftHomeXZ": [
+              -5.37723827,
+              -11.4061956
+            ],
+            "rightHomeXZ": [
+              -7.289386,
+              -13.3478088
+            ],
+            "gateRightXZ": [
+              -0.7016796857431415,
+              -0.7124925393401716
+            ],
+            "approached": true,
+            "frontEnterS": 19.86310174464466,
+            "axleCrossS": 20.543562942907887,
+            "rearClearS": 21.153378542443384,
+            "entryBodyMps": 0.7390805570445089,
+            "exitBodyMps": 2.602797723744822,
+            "minOfficialPropM": [
+              1.232666,
+              0.014739722
+            ],
+            "route": "straddle_or_uncertain",
+            "minLeftProjectedM": 1.099069980928987,
+            "minRightProjectedM": -0.17087456361523845,
+            "gateOccupancyS": 1.2902767977987253,
+            "gateMinFreeOpeningM": 2.045100137565257,
+            "entranceLaneOffsetM": -0.8690075505266981,
+            "axleLaneOffsetM": -0.9728175855383965,
+            "exitLaneOffsetM": -1.0738710227964166,
+            "axleInstant": {
+              "centerBetweenCones": "inside_pair",
+              "centerFromInnerConeM": 1.983282626533944,
+              "outerConeFromCenterM": 0.7418175110313132,
+              "footprintFromInnerConeEdgeM": 1.2287067754205276,
+              "outerConeEdgeFromFootprintM": -0.09442813259743152,
+              "note": "Instantaneous, separate from the whole-passage label"
+            }
+          }
+        ],
+        "middleGates": 2,
+        "window": {
+          "progressM": 29.2705237,
+          "seconds": 15.562855227485404,
+          "speedMps": 1.8807939335132808,
+          "absLateralTravelM": 2.7721319510050186,
+          "signedLateralDisplacementM": 0.057676925304491644,
+          "yawTravelRad": 1.7171671748699473,
+          "complete": true
+        },
+        "windowFromToM": [
+          16.99031,
+          46.2608337
+        ],
+        "allMiddleSuccess": false
+      }
+    }
+  ]
+}

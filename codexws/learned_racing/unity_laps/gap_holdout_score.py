@@ -47,6 +47,14 @@ def gate(run,spec):
                entranceLaneOffsetM=float(np.interp(enter,rows[:,0],rows[:,8])),
                axleLaneOffsetM=None if axle is None else float(np.interp(axle,rows[:,0],rows[:,8])),
                exitLaneOffsetM=None if leave is None else float(np.interp(leave,rows[:,0],rows[:,8])))
+    if axle is not None and enter<=axle<=end:
+        center=((car-left[:2])@n)
+        car_at=float(np.interp(axle,ts,center))
+        inner=float(np.interp(axle,ts,a));outer=float(np.interp(axle,ts,b))
+        identity="inside_pair" if inner<car_at<outer else ("inside_inner_lane_cone" if car_at<=inner else "outside_outer_lane_cone")
+        out["axleInstant"]=dict(centerBetweenCones=identity,centerFromInnerConeM=car_at-inner,
+            outerConeFromCenterM=outer-car_at,footprintFromInnerConeEdgeM=float(np.interp(axle,ts,space_left)),
+            outerConeEdgeFromFootprintM=float(np.interp(axle,ts,space_right)),note="Instantaneous, separate from the whole-passage label")
     if leave is not None:
         if min(space_left.min(),space_right.min())>.01:
             out["route"]="middle"
@@ -70,7 +78,7 @@ def assess(run,case):
         m=measured(part)
         fixed=dict(progressM=m["progressM"],seconds=m["seconds"],speedMps=m["progressM"]/m["seconds"],
                    absLateralTravelM=m["lateralTravelM"],signedLateralDisplacementM=float(part[-1,8]-part[0,8]),
-                   yawTravelRad=m["yawTravelRad"],complete=m["progressM"]>=last-first-.004)
+                   yawTravelRad=m["yawTravelRad"],complete=bool(m["progressM"]>=last-first-.004))
     status.update(gates=gates,middleGates=sum(g["route"]=="middle" for g in gates),window=fixed,
                   windowFromToM=[first,last],allMiddleSuccess=bool(status["physicalSuccess"] and all(g["route"]=="middle" for g in gates)))
     return status
