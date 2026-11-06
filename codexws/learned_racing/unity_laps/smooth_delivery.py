@@ -6,12 +6,36 @@ import json
 import shutil
 import subprocess
 import sys
+from functools import lru_cache
+import numpy as np
 
 from assemble_obstacle_films import inspect,join
 from three_view import digest
 from verify_three_view import verify
 
 HERE=Path(__file__).parent
+
+
+@lru_cache(maxsize=1)
+def road_geometry():
+    from scenario_shots import geometry
+    center,_,_,curvature,_=geometry()
+    return center,curvature
+
+
+def local_scene(run,anchor):
+    if not run["props"] or anchor is None:return {"props":[],"categories":["clear"]}
+    group=[(i,p) for i,p in enumerate(run["props"]) if abs(p[7]-run["props"][anchor][7])<=8]
+    center,curvature=road_geometry()
+    facts=[]
+    for i,p in group:
+        idx=int(np.argmin(np.linalg.norm(center-np.asarray(p[:2]),axis=1)))
+        facts.append({"index":i,"stationM":p[7],"amplitudeM":p[4],"omegaRadS":p[6],
+                      "moving":bool(p[4] and p[6]),"curvaturePerM":float(curvature[idx])})
+    moving=sum(x["moving"] for x in facts)
+    tags=["static" if moving==0 else "moving" if moving==len(facts) else "mixed"]
+    if any(abs(x["curvaturePerM"])>.025 for x in facts):tags.append("bend")
+    return {"props":facts,"categories":tags}
 
 
 def load(p):return json.loads(p.read_bytes())
@@ -69,16 +93,31 @@ def selection(args):
         worst_why="双方均完成的局部场景中，横摆角行程相对增长最大"
     out=[]
     def add(p,name,title,reason):
-        if p:out.append(dict(name=name,title=title,case=p["id"],kind="pair",selection=reason,
-                             **short_scene(p,args.runs),
-                             base=p["base"]["terminal"],trained=p["learned"]["terminal"],
-                             fullCaseMatchedYawChange=yaw(p)))
+        if p:
+            window=short_scene(p,args.runs)
+            scene=local_scene(load(args.runs/(p["id"]+"_learned.json")),window["prop"])
+            out.append(dict(name=name,title=title,case=p["id"],kind="pair",selection=reason,
+                       **window,localScene=scene,base=p["base"]["terminal"],trained=p["learned"]["terminal"],
+                       fullCaseMatchedYawChange=yaw(p)))
     add(best,"02-matched-"+mode,"同场对照 "+best["id"].upper()+" · "+("改善例" if mode=="improvement" else "代表例"),why)
     if worst and worst["id"]!=best["id"]:
         add(worst,"03-matched-regression","同场对照 "+worst["id"].upper()+" · 回退例",worst_why)
     failed=next((p for p in traffic if not ok(p,"learned") and p["learned"]["terminal"] in ("obstacle","boundary")
                  and p["id"] not in (best["id"],worst["id"] if worst else "")),None)
     if failed:add(failed,"05-contact","失败回放 "+failed["id"].upper(),"登记顺序中尚未展示的首次长训实物碰撞或触边")
+    labels={"static":"静态桶","moving":"移动桶","mixed":"静动混合","bend":"弯中遇障"}
+    for number,(category,caption) in enumerate(labels.items(),7):
+        if any(category in q["localScene"]["categories"] for q in out):continue
+        eligible=[]
+        for q in local:
+            window=short_scene(q,args.runs)
+            facts=local_scene(load(args.runs/(q["id"]+"_learned.json")),window["prop"])
+            if category in facts["categories"]:eligible.append(q)
+        if not eligible:raise ValueError("No filmed local layout of required physical type: "+category)
+        choice=next((q for q in eligible if not q["exactPhysics"] and ok(q,"learned")),eligible[0])
+        add(choice,f"{number:02}-"+category,caption+"  "+choice["id"].upper(),
+            "补全实体场地类别；优先按登记顺序选择轨迹不同且长训能完成的场景")
+    coverage={k:next(row["name"] for row in out if k in row["localScene"]["categories"]) for k in labels}
     laps=[p for p in pairs if p["scope"]=="lap"]
     full=next((p for p in laps if ok(p,"learned")),laps[0])
     out.append(dict(name="04-first-complete-lap" if ok(full,"learned") else "04-full-attempt",
@@ -88,7 +127,8 @@ def selection(args):
         lap_with_traffic=next((p for p in laps if p["base"]["cones"] and ok(p,"learned")),None)
         if lap_with_traffic:out.append(dict(name="06-first-traffic-lap",case=lap_with_traffic["id"],kind="full",
             title="含障碍整圈 "+lap_with_traffic["id"].upper()+" · 从起步到终点",selection="首个完成的含障碍整圈"))
-    record=dict(scoreHash=digest(args.results),frozenHash=rep["frozenFileHashes"]["learned"],cases=sorted(out,key=lambda x:x["name"]))
+    record=dict(scoreHash=digest(args.results),frozenHash=rep["frozenFileHashes"]["learned"],
+                sceneCoverage=coverage,cases=sorted(out,key=lambda x:x["name"]))
     save(args.out,record);print(json.dumps(record,ensure_ascii=False,indent=2))
 
 

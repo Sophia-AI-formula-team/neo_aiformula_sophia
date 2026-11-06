@@ -34,7 +34,7 @@ def area_tv(run):
     return float(np.abs(np.diff(rows[:,14])[active]).sum()),distance
 
 
-def gather(root,blind_path,stage_tags):
+def gather(root,blind_path,stage_tags,final_tag):
     results=read(blind_path)
     sources={"blindScore":digest(blind_path)}
     train=[];models=[];stage=[]
@@ -83,9 +83,15 @@ def gather(root,blind_path,stage_tags):
     sample=results["pairs"][0]["id"]
     check=read(root/"runs"/(sample+"_learned.json"))
     model=(check["request"].get("smooth") or {}).get("modelId")
-    if model not in models:raise ValueError("Scored controller is absent from the training checkpoint list")
-    freeze_size=stage[1+models.index(model)][1]
-    return train,snapshots,results,sources,freeze_size
+    if model not in by_model:raise ValueError("Scored controller is absent from the fitted artifacts")
+    directory=by_model[model];size=int(re.match(r"ck(\d+)",directory.name)[1]);suffix=directory.name.removeprefix(f"ck{size}")
+    spec={"layouts":size,"tag":directory.name,"modelId":model,"kind":{"":"回报森林","p":"叶节点保守选择","s":"折外回退校准","m":"折外回退校准"}.get(suffix,"独立校准候选")}
+    if final_tag:
+        trials={k:read(root/"runs"/f"{final_tag}_{k}_learned.json") for k in base}
+        if any((r["request"].get("smooth") or {}).get("modelId")!=model for r in trials.values()):
+            raise ValueError("Final development tag does not match the actually frozen blind model")
+        spec["development"]={key:[sum(complete(trials[k]) for k in ids),len(ids)] for key,ids in (("local",local),("lap",lap))}
+    return train,snapshots,results,sources,spec
 
 
 def header(title,desc,chapter):
@@ -156,7 +162,10 @@ def dev_page(snapshots,freeze,ratio):
         for i,(x,y) in enumerate(pts[:shown]):
             d.ellipse((x-8,y-8,x+8,y+8),fill=FIT)
             label(d,(x,y-22),f"{tv[i]:.2f}",25,INK,True,True,"mm")
-    side_note(d,62,1220,f"冻结模型来自 {freeze} 个训练布局的检查点。","下面的独立考核在模型冻结后运行，单独报告局部和整圈结果；开发集用于选择模型。")
+    check=freeze.get("development")
+    detail=(f"冻结版本同一开发集实测：局部 {check['local'][0]}/{check['local'][1]}，整圈 {check['lap'][0]}/{check['lap'][1]}。"
+            if check else "下面单独报告冻结后的局部与整圈独立考核。")
+    side_note(d,62,1220,f"最终冻结：{freeze['layouts']} 布局 · {freeze['kind']}（{freeze['tag']}）。",detail)
     return im
 
 
@@ -233,7 +242,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument("--root",type=Path,required=True)
     p.add_argument("--blind-results",type=Path,required=True);p.add_argument("--out",type=Path,required=True)
     p.add_argument("--dev-stage",action="append",help="Exact run tag for a checkpoint evaluated on the common development set")
-    args=p.parse_args();train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage)
+    p.add_argument("--final-dev-stage",help="Optional independently replayed tuning/ablation candidate chosen for deployment")
+    args=p.parse_args();train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage,args.final_dev_stage)
     args.out.parent.mkdir(parents=True,exist_ok=True)
     # Independent data panels, with no animation pretending to be the real-world clock.
     sections=[("真实动作采样",7.0),("共同开发集与冻结",8.0),("独立局部与整圈",8.0),("实测直道与4m/s覆盖",9.0)]
@@ -263,7 +273,7 @@ def main():
         stream=movie.streams.video[0];num=sum(1 for _ in movie.decode(video=0))
         if num!=int(ends[-1]) or stream.width!=SIZE[0] or int(stream.average_rate)!=FPS:raise ValueError("Training movie timeline validation failed")
     receipt={"sha256":digest(args.out),"sourceHashes":sources,"frames":num,"fps":FPS,"sections":sections,
-        "checkpoints":stages,"frozenLayoutCount":freeze,"trainingLayoutCount":len(train),"probeCount":len(train)*len(NAMES),
+        "checkpoints":stages,"frozen":freeze,"trainingLayoutCount":len(train),"probeCount":len(train)*len(NAMES),
         "independentCohorts":report["cohorts"],"naturalCruise":report["naturalCruise"]}
     args.out.with_suffix(".json").write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(args.out,receipt["sha256"])

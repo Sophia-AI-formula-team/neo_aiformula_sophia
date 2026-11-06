@@ -164,6 +164,11 @@ def render(args):
               "#ffcd9e" if j==0 else "#b3ebe1",True)
     args.out.parent.mkdir(parents=True,exist_ok=True)
     checks={0,count//2,count-1,count+hold-1};samples_checked=[];missing=[[0,0],[0,0]]
+    for r in recs:
+        events=[d["t"] for d in r.decisions if (d.get("smooth") or {}).get("state")=="selected"]
+        events.append(r.run["seconds"])
+        for t in events:
+            if args.start<=t<=args.end:checks.add(min(count+hold-1,math.ceil(FPS*(t-args.start-.00002))))
     with av.open(str(args.out),"w",options={"movflags":"+faststart"}) as out:
         v=out.add_stream("libx264",rate=FPS,options={"preset":"veryfast","crf":"19","threads":"4"});v.width,v.height=SIZE;v.pix_fmt="yuv420p"
         for index in range(count+hold):
@@ -200,7 +205,10 @@ def render(args):
             label(d,(1411,1199),"黑线 = 0.50 m",21,INK,True)
             label(d,(1411,1244),"超过 0.50 m 的部分不增加余量奖励。",19,MUTED)
             if index in checks:
-                samples_checked.append({"i":index,"simTime":t,"sources":[{"chase":s["frame_id"],"a4":s["decision_id"],"chaseS":s["frame_t"],"a4S":s["decision"]["t"],"stopped":s["stopped"]} for s in samples]})
+                samples_checked.append({"i":index,"simTime":t,"sources":[{"chase":s["frame_id"],"a4":s["decision_id"],"chaseS":s["frame_t"],"a4S":s["decision"]["t"],
+                    "stopped":s["stopped"],"measuredSpeedMps":s["row"][4],"measuredYawRadS":s["row"][14],
+                    "requestedYawRadS":s["decision"]["yawCmd"],"leftMinusRightTargetRpm":s["decision"]["leftCan"]-s["decision"]["rightCan"],
+                    "coneMarginM":s["row"][10] if r.run["props"] else None,"edgeMarginM":s["row"][9]} for r,s in zip(recs,samples)]})
             for q in v.encode(av.VideoFrame.from_image(im)):out.mux(q)
         for q in v.encode():out.mux(q)
     if any(n for m in missing for n in m):raise ValueError(f"Missing genuine camera observations: {missing}")
