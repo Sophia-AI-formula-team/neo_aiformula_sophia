@@ -5,7 +5,7 @@ package_name = 'road_detector'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1',
     packages=find_packages(include=[package_name, package_name + '.*']),
     data_files=get_data_files(package_name, ("weights", "config")),
     install_requires=['setuptools'],
