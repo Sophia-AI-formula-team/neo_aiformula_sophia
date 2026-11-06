@@ -5,9 +5,11 @@ import math
 from pathlib import Path
 
 import av
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 from referee_inset import position
+from render import track
 from three_view import FPS, at, camera, digest, label
 from timing_comparison import Recording, optical, TERMINAL
 
@@ -69,6 +71,31 @@ class LocalPaths:
         self.mid_lat=(max(lateral)+min(lateral))*.5
         self.scale=min(36,250/(max(lateral)-min(lateral)+1))
         self.records=records
+        self.ground=Image.new("RGB",(630,330),"#eaf1eb")
+        self.road_check=self.draw_road(start,end)
+
+    def draw_road(self,start,end):
+        edges=track()
+        center=(edges[0]+edges[1])*.5;right=edges[0]-edges[1]
+        right/=np.linalg.norm(right,axis=1)[:,None]
+        errors=[]
+        for r in self.records:
+            rows=np.asarray([row for row in r.rows if start<=row[0]<=end])
+            for row in rows:
+                near=int(np.argmin(np.sum((center-row[1:3])**2,axis=1)))
+                errors.append(abs(float((row[1:3]-center[near])@right[near])-row[8]))
+        if not errors or max(errors)>.10:raise ValueError("Post-race road frame does not match logged lane-offset measurements")
+        d=ImageDraw.Draw(self.ground)
+        for j in range(-20,15,2):
+            x=383+j*self.scale;d.line((x,0,x,330),fill=GRID)
+            y=164+(j-self.mid_lat)*self.scale;d.line((0,y,630,y),fill=GRID)
+        for edge,points in enumerate(edges):
+            pts=[self.project(x,z) for x,z in points]
+            for i,(a,b) in enumerate(zip(pts,pts[1:]+pts[:1])):
+                if edge==1 and (i//5)%2:continue
+                d.line((a,b),fill="#a3b4ae" if edge==1 else "#5e7670",width=2 if edge==1 else 3)
+        label(d,(619,18),"实线边界 · 虚线分道",15,MUTED,anchor="rm")
+        return dict(laneOffsetSamples=len(errors),maxLaneOffsetErrorM=max(errors),physicalSource="calibrated track surface; verified against logged physical lateral offsets")
 
     def local(self,x,z):
         dx=x-self.center[0];dz=z-self.center[1]
@@ -79,10 +106,7 @@ class LocalPaths:
         return (round(383+f*self.scale),round(164+(l-self.mid_lat)*self.scale))
 
     def draw(self,samples,t):
-        f=Image.new("RGB",(630,330),"#eaf1eb");d=ImageDraw.Draw(f)
-        for j in range(-20,15,2):
-            x=383+j*self.scale;d.line((x,0,x,330),fill=GRID)
-            y=164+(j-self.mid_lat)*self.scale;d.line((0,y,630,y),fill=GRID)
+        f=self.ground.copy();d=ImageDraw.Draw(f)
         for p in self.props:
             x,y=self.project(*position(p,t))
             if p[4] and p[6]:
@@ -238,7 +262,7 @@ def render(args):
     report={"title":args.title,"ids":[args.base,args.trained],"rangeS":[args.start,args.end],"holdsS":hold/FPS,
             "frames":count+hold,"size":SIZE,"fps":FPS,"mp4SHA256":digest(args.out),"runSHA256":[digest(r.path) for r in recs],
             "terminalStates":[r.run["status"] for r in recs],"identicalPhysicalRows":identical_rows,
-            "physicalProps":recs[0].run["props"],"sampledFrames":samples_checked}
+            "physicalProps":recs[0].run["props"],"localRefereeRoad":scene.road_check,"sampledFrames":samples_checked}
     args.out.with_suffix(".json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(json.dumps({k:report[k] for k in ("ids","frames","mp4SHA256")},ensure_ascii=False))
 
