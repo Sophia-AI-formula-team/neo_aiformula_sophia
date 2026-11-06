@@ -53,6 +53,16 @@ def release_audit(run_dir, model_path):
                   changedExistingDecisionFields=fields, fullLapGate=rebuilt["gate"], seconds=rebuilt["seconds"],
                   trackFramesChanged=sum(p["tracks"] != q["tracks"] for p, q in zip(a, b)),
                   trackerMaxAbsDifferenceZ_X_Vx_Vz=np.concatenate(deltas).max(axis=0).tolist())
+    prior_solver = load(run_dir / "parity_old_current_no_film.json")
+    s1, s2 = prior_solver["request"], rebuilt["request"]
+    if any(s1.get(k) != s2.get(k) for k in (s1.keys() | s2.keys()) - {"solver", "smooth"}):
+        raise ValueError("Cross-version replay uses different camera or initial conditions")
+    older = prior_solver["decisions"]
+    if (prior_solver["rows"] != rebuilt["rows"] or len(older) != len(b)
+        or any(p[k] != q[k] for p, q in zip(older, b) for k in p)):
+        raise ValueError("Cross-version replay changed the existing physical or perception/control trace")
+    parity["equalCaptureComparison"] = dict(previousSolver=s1["solver"], currentSolver=s2["solver"],
+                media=s1["media"], physicalRowsExact=len(rebuilt["rows"]), allExistingDecisionFieldsExact=len(b))
     return dict(frozenSha256=sha(root / "frozen.json"), canonicalModelSha256=canonical_sha,
                 checkpoint=freeze["checkpoint"], sourceCommit=freeze["sourceCommit"], freezeUTC=freeze["utc"],
                 developmentRunsChecked=len(freeze["developmentTrialSHA256"]), solver=freeze["sourceCodeSolver"],
