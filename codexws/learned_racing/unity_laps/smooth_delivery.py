@@ -81,13 +81,21 @@ def verify_reshoot(args,base_original,trained_original):
         original=base_original if role=="base" else trained_original;replay=getattr(args,role+"_replay")
         source=runs/(original+".json");captured=runs/(replay+".json")
         old,new=load(source),load(captured)
-        for k in ("props","rows","status","seconds","progress","minGap","minRoad","zoneStart","zoneEnd","propMin"):
+        for k in ("props","status","seconds","progress","minGap","minRoad","zoneStart","zoneEnd","propMin"):
             if old[k]!=new[k]:raise ValueError(f"{original} vs {replay}: physical record differs in {k}")
-        keys=("t","speedCmd","yawCmd","rightCan","leftCan")
+        left,right=np.asarray(old["rows"]),np.asarray(new["rows"])
+        physical=(0,1,2,3,4,7,8,9,10,12,13,14)
+        if left.shape!=right.shape or not np.array_equal(left[:,physical],right[:,physical]):
+            raise ValueError(f"{original} vs {replay}: measured body states, clearances or wire commands differ")
+        keys=("t","rightCan","leftCan")
         cmd=lambda data:[[d[k] for k in keys] for d in data["decisions"]]
-        if cmd(old)!=cmd(new):raise ValueError(f"{original} vs {replay}: wheel or yaw/speed commands differ")
+        if cmd(old)!=cmd(new):raise ValueError(f"{original} vs {replay}: wheel command ticks differ")
+        floating={k:max(abs(a[k]-b[k]) for a,b in zip(old["decisions"],new["decisions"]))
+                  for k in ("speedCmd","yawCmd","offset")}
+        if max(floating.values())>.001:raise ValueError(f"Upstream requested speed, yaw or lateral target changed: {floating}")
         arms.append(new);proof[role]=dict(original=original,replay=replay,originalSHA256=digest(source),
-            replaySHA256=digest(captured),equalPhysicalRows=len(new["rows"]),equalCommandTicks=len(new["decisions"]))
+            replaySHA256=digest(captured),equalMeasuredBodyAndMarginRows=len(new["rows"]),equalWireCommandTicks=len(new["decisions"]),
+            maxUpstreamFloatDifferences=floating)
     return arms,proof
 
 
@@ -102,7 +110,7 @@ def development(args):
     if (arms[1]["request"].get("smooth") or {}).get("modelId")!=args.model_id:raise ValueError("Unknown frozen development model")
     w=short_window(arms)
     entry=dict(name="01b-development-replay",title="开发集复测 · 冻结前后同场实驾",case=args.trained_original,
-        selection="沿用开发时同一初始条件，重新拍摄的两臂均逐行复现原先的车身运动与速度、偏航、左右轮指令。",
+        selection="沿用开发时同一初始条件，重新拍摄的两臂均逐行复现原先的车身运动、余量与左右轮指令。",
         baseId=args.base_replay,trainedId=args.trained_replay,kind="pair",phase="development-replay",
         replayCheck=proof,localScene=local_scene(arms[1],w["prop"]),**w)
     upsert(args.plan,entry)
@@ -114,7 +122,7 @@ def training_choice(args):
     configs=[r["request"]["smooth"] for r in arms]
     if any(c["mode"]!="probe" for c in configs) or configs[0]["forced"]!=0:raise ValueError("Expected a recorded forced training comparison")
     forced=configs[1]["forced"];windows=short_window(arms)
-    title=("近障快速通过" if args.pair_number==1 else "减速动作挽回接触")
+    title=("近障快速通过" if args.pair_number==1 else "同一起点，慢行避开碰撞")
     if args.pair_number==2 and (arms[0]["status"]!="obstacle" or arms[1]["status"]!="segment"):raise ValueError("Training rescue is not a recorded contact and recovery")
     entry=dict(name=f"01a{args.pair_number}-training-probes",title=f"训练动作对照 · {title}",case=b,
         selection=f"预先登记的中位复演案例（候选 {chosen['population']} 组）。同一布局强制试动作 0 和 {forced}，两臂实拍均复现原轨迹与轮指令。",
