@@ -2,6 +2,7 @@
 import argparse
 import json
 import math
+import re
 from fractions import Fraction
 from pathlib import Path
 
@@ -33,29 +34,32 @@ def area_tv(run):
     return float(np.abs(np.diff(rows[:,14])[active]).sum()),distance
 
 
-def gather(root,blind_path):
+def gather(root,blind_path,stage_tags):
     results=read(blind_path)
     sources={"blindScore":digest(blind_path)}
     train=[];models=[];stage=[]
-    dirs=sorted((root/"checkpoints").glob("ck*"),key=lambda p:int(p.name[2:]))
+    candidates=[p for p in (root/"checkpoints").glob("ck*") if (p/"model.json").exists()]
+    dirs=sorted([p for p in candidates if p.name[2:].isdigit() and (p/"training.json").exists()],key=lambda p:int(p.name[2:]))
     if not dirs:raise ValueError("No fitted training checkpoints")
     basefiles=sorted((root/"runs").glob("dev_d*_base.json"))
     if not basefiles:raise ValueError("No common development references")
     base={p.stem.removeprefix("dev_").removesuffix("_base"):read(p) for p in basefiles}
     stage.append(("基线 V2",0,base))
-    for p in dirs:
-        if not (p/"training.json").is_file():continue
-        summary=read(p/"training.json");size=summary["cases"];cfg=read(p/"model.json")
-        if summary["modelId"]!=cfg["modelId"]:raise ValueError(f"Wrong checkpoint {p}")
+    by_model={read(p/"model.json")["modelId"]:p for p in candidates}
+    tags=stage_tags or [p.name for p in dirs]
+    train=read(dirs[-1]/"training.json")["outcomes"]
+    for tag in tags:
         inputs={}
         for id_ in base:
-            f=root/"runs"/f"{p.name}_{id_}_learned.json"
+            f=root/"runs"/f"{tag}_{id_}_learned.json"
             r=read(f);inputs[id_]=r
-            if (r["request"].get("smooth") or {}).get("modelId")!=cfg["modelId"]:raise ValueError(f"Mismatched model for {f}")
             if r["props"]!=base[id_]["props"] or r["request"]["seed"]!=base[id_]["request"]["seed"]:raise ValueError(f"Unmatched development trial {f}")
-        stage.append((f"{size} 布局",size,inputs));models.append(cfg["modelId"])
-        sources[p.name]=dict(model=digest(p/"model.json"),training=digest(p/"training.json"))
-        train=summary["outcomes"]
+        ids={(r["request"].get("smooth") or {}).get("modelId") for r in inputs.values()}
+        if len(ids)!=1 or next(iter(ids)) not in by_model:raise ValueError(f"Unknown/mixed fitted model in stage {tag}")
+        model_id=next(iter(ids));p=by_model[model_id];size=int(re.match(r"ck(\d+)",p.name)[1])
+        primary=p.parent/f"ck{size:02}"
+        stage.append((f"{size} 布局",size,inputs));models.append(model_id)
+        sources[tag]=dict(model=digest(p/"model.json"),training=digest(primary/"training.json"),checkpoint=p.name)
     if not train or not models:raise ValueError("Missing checkpoint outcomes")
     snapshots=[]
     local=[k for k,r in base.items() if r["request"]["limit"]<.999]
@@ -69,9 +73,9 @@ def gather(root,blind_path):
             "pooledYawRateTVPer10m":10*variation/distance if distance else None})
     source_digest={}
     for id_,r in base.items():source_digest["dev_"+id_+"_base"]=digest(root/"runs"/("dev_"+id_+"_base.json"))
-    for p in dirs:
+    for tag in tags:
         for id_ in base:
-            f=root/"runs"/f"{p.name}_{id_}_learned.json"
+            f=root/"runs"/f"{tag}_{id_}_learned.json"
             if f.exists():source_digest[f.stem]=digest(f)
     sources["developmentRuns"]=source_digest
     if len(train[-1]["outcomes"])!=len(NAMES):raise ValueError("Different action set")
@@ -228,7 +232,8 @@ def cruise_page(root,report,ratio):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument("--root",type=Path,required=True)
     p.add_argument("--blind-results",type=Path,required=True);p.add_argument("--out",type=Path,required=True)
-    args=p.parse_args();train,stages,report,sources,freeze=gather(args.root,args.blind_results)
+    p.add_argument("--dev-stage",action="append",help="Exact run tag for a checkpoint evaluated on the common development set")
+    args=p.parse_args();train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage)
     args.out.parent.mkdir(parents=True,exist_ok=True)
     # Independent data panels, with no animation pretending to be the real-world clock.
     sections=[("真实动作采样",7.0),("共同开发集与冻结",8.0),("独立局部与整圈",8.0),("实测直道与4m/s覆盖",9.0)]
