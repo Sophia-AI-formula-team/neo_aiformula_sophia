@@ -113,6 +113,24 @@ def pair_metrics(reference, learned):
     return dict(base=a, learned=b, firstCommandChange=first_control_change(reference, learned))
 
 
+def lap_metrics(reference, learned):
+    data = {}
+    for arm, run in (("base",reference),("learned",learned)):
+        state = status(run)
+        complete = run["status"] == "lap" and run["gate"] == 32
+        passed = [t >= 0 for t in run["zoneEnd"]]
+        safe = complete and state["minRoadM"] >= ROAD_MARGIN_M and state["minConeM"] >= CONE_MARGIN_M and all(passed)
+        data[arm] = dict(state, complete=complete, safe=safe, courseM=run["length"], gate=run["gate"],
+                         progressFraction=run["progress"]/run["length"], perProp=[
+                             dict(id=i, entered=run["zoneStart"][i]>=0, exited=exited,
+                                  observedGapM=run["propMin"][i] if run["zoneStart"][i]>=0 else None)
+                             for i,exited in enumerate(passed)])
+    both_safe = all(v["safe"] for v in data.values())
+    data["sameSafeLapTimeChangeS"] = learned["seconds"] - reference["seconds"] if both_safe else None
+    data["firstCommandChange"] = first_control_change(reference,learned)
+    return data
+
+
 def summarize(pairs):
     count = lambda arm, flag: sum(p[arm][flag] for p in pairs)
     both = [p for p in pairs if p["base"]["safe"] and p["learned"]["safe"]]
@@ -139,10 +157,13 @@ def summarize(pairs):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("runs", type=Path)
-    p.add_argument("--layouts", type=Path, default=HERE/"learned_holdout/layouts.json")
+    p.add_argument("--layouts", type=Path, help="Registered matrix; defaults to the chosen experiment")
+    p.add_argument("--full-lap", action="store_true", help="Score the supplementary full lap separately")
     p.add_argument("--model", type=Path, required=True, help="Frozen selector configuration JSON")
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
+    if args.layouts is None:
+        args.layouts = HERE/"learned_holdout"/("full_lap_layout.json" if args.full_lap else "layouts.json")
     plan = read(args.layouts)
     pairs, versions = [], set()
     artifact = read(args.model)
@@ -155,15 +176,18 @@ def main():
             raise ValueError("The compiled solver or camera model changed across the test")
         if base["request"].get("encounter") is not None:
             raise ValueError("Baseline unexpectedly enables an encounter selector")
+        measurements = lap_metrics(base,learned) if args.full_lap else pair_metrics(base,learned)
         pairs.append(dict(id=c["id"], context=c["context"], approachCapMps=c["approach"], runSha256=[
-            hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **pair_metrics(base, learned),
+            hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **measurements,
             selectorAudit=audit_loaded_selector(learned,artifact)))
-    report = dict(protocolCommit="4bfe2d7", layoutGitBlobNormalizedSha256=hashlib.sha256(
+    report = dict(protocolCommit="2b647e0" if args.full_lap else "4bfe2d7", layoutGitBlobNormalizedSha256=hashlib.sha256(
         args.layouts.read_bytes().replace(b"\r\n", b"\n")).hexdigest(), solver=versions.pop()[1],
         modelFileSha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
-        summary=summarize(pairs), approachSubgroups={
+        pairs=pairs)
+    if not args.full_lap:
+        report.update(summary=summarize(pairs), approachSubgroups={
             "natural": summarize([p for p in pairs if p["approachCapMps"] == 0]),
-            "configured": summarize([p for p in pairs if p["approachCapMps"] > 0])}, pairs=pairs)
+            "configured": summarize([p for p in pairs if p["approachCapMps"] > 0])})
     args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False)+"\n", encoding="utf8")
 
 

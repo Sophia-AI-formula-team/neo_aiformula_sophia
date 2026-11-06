@@ -1,0 +1,71 @@
+{
+  "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+  "modelFileSha256": "6a142b122b0b7d3e56dd5e233779ea4f7b31ae7950c836f51fb4bfe198df79b0",
+  "recordedTrainingFiles": 72,
+  "firstSelectionContexts": 12,
+  "probeRunsWithSelection": 72,
+  "runsWithMultipleSelections": 16,
+  "neverSelectedCases": [],
+  "trainingSeeds": [
+    8,
+    17,
+    25,
+    32,
+    36,
+    58
+  ],
+  "disjointHoldoutSeeds": true,
+  "embeddedReturnMaxError": 2.220446049250313e-16,
+  "developmentQuartileM": 0.449173048,
+  "selectedFeatureSet": "crossing_state",
+  "activeFeatures": [
+    "lateral_m",
+    "lateral_velocity_mps",
+    "extrapolated_lateral_m",
+    "observed_curvature_per_m",
+    "actual_speed_mps",
+    "current_offset_m"
+  ],
+  "width": 0.35,
+  "learnedByAction": [
+    "baseline",
+    "same_line_fast",
+    "inner_slow",
+    "inner_fast",
+    "outward_slow",
+    "same_line_slow"
+  ],
+  "codebook": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      4.297333999999999
+    ],
+    [
+      -2.6,
+      1.4
+    ],
+    [
+      -2.6,
+      4.297333999999999
+    ],
+    [
+      0.7,
+      1.4
+    ],
+    [
+      0.0,
+      1.4
+    ]
+  ],
+  "codebookSourceFiles": [
+    "frozen_20318_traffic.json",
+    "frozen_57846_traffic.json",
+    "frozen_81052_traffic.json",
+    "frozen_93677_traffic.json"
+  ],
+  "sourceObservations": 426
+}
