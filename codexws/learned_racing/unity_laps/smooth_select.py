@@ -3,6 +3,8 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
+from datetime import datetime,timezone
 from pathlib import Path
 
 import numpy as np
@@ -103,7 +105,7 @@ def straight_gate(run):
     start,end=np.interp([12,34],s,t)
     return float(22/(end-start))
 
-def development(root,tags):
+def development(root,tags,seal=False):
     out={};matrix=development_cases()["cases"]
     previous={}
     for tag in ["dev",*tags]:
@@ -136,15 +138,30 @@ def development(root,tags):
                     -(.35*r[COSTS[0]]+.30*r[COSTS[1]]+.20*r[COSTS[2]]+.15*min(2.,r[COSTS[3]])),-q["zoneTimeRatio"])
         chosen=max(tags,key=ranking)
         source=root/"checkpoints"/chosen/"model.json"
-        write(root/"frozen.json",dict(checkpoint=chosen,sourceCodeSolver=json.loads((root/"baseline.json").read_bytes())["solverHash"],
+        selection=dict(checkpoint=chosen,sourceCodeSolver=json.loads((root/"baseline.json").read_bytes())["solverHash"],
               modelFileSHA256=hashlib.sha256(source.read_bytes()).hexdigest(),selectedModel=json.loads(source.read_bytes())["modelId"],
-              meetsDevelopment=out[chosen]["satisfiesDevelopment"],tested=tags,coursePreviouslySeen=True))
+              meetsDevelopment=out[chosen]["satisfiesDevelopment"],tested=tags,coursePreviouslySeen=True)
+        write(root/"selection.json",selection)
+        if seal:
+            trial_hashes={}
+            for tag in ["dev",*tags]:
+                for case in matrix:
+                    p=root/"runs"/(tag+"_"+case["id"]+("_base" if tag=="dev" else "_learned")+".json")
+                    trial_hashes[p.name]=hashlib.sha256(p.read_bytes()).hexdigest()
+            selection.update(utc=datetime.now(timezone.utc).isoformat(),
+                   sourceCommit=subprocess.check_output(["git","rev-parse","HEAD"],cwd=Path(__file__).parent,text=True).strip(),
+                   devSHA256=hashlib.sha256((root/"development.json").read_bytes()).hexdigest(),
+                   fixedReference=json.loads((root/"fixed_reference.json").read_bytes())["chosen"],
+                   developmentTrialSHA256=trial_hashes)
+            frozen=root/"frozen.json"
+            if frozen.exists():raise ValueError("An immutable evaluation freeze already exists")
+            write(frozen,selection)
         return chosen
 
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("cmd",choices=["calibrate","calibrate_actions","fixed","evaluate"]);p.add_argument("--size",type=int,default=80)
-    p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--tags",nargs="+");a=p.parse_args()
+    p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--tags",nargs="+");p.add_argument("--seal",action="store_true");a=p.parse_args()
     if a.cmd=="calibrate":print(calibration(a.output,a.size))
     if a.cmd=="calibrate_actions":print(action_calibration(a.output,a.size))
     if a.cmd=="fixed":print(fixed_reference(a.output,a.size))
-    if a.cmd=="evaluate":print(development(a.output,a.tags or []))
+    if a.cmd=="evaluate":print(development(a.output,a.tags or [],a.seal))

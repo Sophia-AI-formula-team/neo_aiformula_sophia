@@ -125,8 +125,21 @@ def parity(args):
     write(args.output/"parity.json",dict(reference=ref["id"],previousSolver=req["solver"],solver=r["request"]["solver"],
           entirePhysicsAndVisionAndCommandsExact=same));assert same
 
+def film_training(args):
+    if not args.ids:raise ValueError("Choose a recorded training run ID")
+    lab=Lab(SIM,args.output);scenes=json.loads((args.output/"training_layouts.json").read_bytes())
+    for sample in args.ids:
+        ref=json.loads((lab.raw/(sample+".json")).read_bytes());case=scenes[sample.split("_")[0]]
+        name="film_"+sample
+        with detector(lab,"outer-edge",name,film=True) as (port,release):
+            r=run_one(lab,name,case,ref["request"]["smooth"],port,release,True)
+        matched=r["rows"]==ref["rows"] and r["decisions"]==ref["decisions"]
+        write(args.output/"film_replays"/(name+".json"),dict(trainingId=sample,replayId=name,
+              matchesPhysicsAndPerceptionAndCommands=matched,rows=len(r["rows"]),decisions=len(r["decisions"])))
+        assert matched
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","eval","parity"])
+    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","eval","parity","film_training"])
     p.add_argument("--start",type=int,default=1);p.add_argument("--end",type=int,default=80)
     p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--matrix",type=Path)
     p.add_argument("--model",type=Path);p.add_argument("--film",action="store_true");p.add_argument("--tag",default="")
@@ -136,5 +149,6 @@ def main():
     if not os.environ.get("AIFORMULA_LAP_COPY"):raise RuntimeError("Private Unity only")
     if args.cmd=="train":return training(args)
     if args.cmd=="parity":return parity(args)
+    if args.cmd=="film_training":return film_training(args)
     return evaluate(args)
 if __name__=="__main__":main()
