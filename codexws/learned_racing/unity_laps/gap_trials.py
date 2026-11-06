@@ -141,6 +141,9 @@ def evaluate_practice(model):
         for c in cases:
             path=ROOT/"runs"/(c["id"]+"_"+arm+".json")
             r=load(path)
+            expected=model if arm=="base" else dict(model,gap=menu[arm])
+            if r["request"].get("smooth")!=expected or r["request"]["seed"]!=c["seed"]:
+                raise ValueError("Practice trace does not belong to the model and seed: "+path.name)
             success=(r["status"]=="segment" and r["minGap"]>0 and r["minRoad"]>=0 and all(t>=0 for t in r["zoneEnd"]))
             z=min(r["zoneStart"]);end=max(r["zoneEnd"])
             scores[arm].append(dict(id=c["id"],result=r["status"],success=success,zoneS=end-z if success else None,
