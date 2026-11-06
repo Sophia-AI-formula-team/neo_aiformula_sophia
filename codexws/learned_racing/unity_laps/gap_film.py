@@ -24,22 +24,24 @@ class GateView:
     def __init__(self,report_path,records):
         src=json.loads(report_path.read_bytes())
         case,arm=records[0].path.stem.rsplit("_",1)
-        other,arm2=records[1].path.stem.rsplit("_",1)
-        if other!=case:raise ValueError("Pair is from different gate layouts")
+        names=[r.path.stem.rsplit("_",1) for r in records]
+        if any(k!=case for k,_ in names):raise ValueError("Recordings are from different gate layouts")
+        arms=[a for _,a in names]
         pair=next(p for p in src["pairs"] if p["id"]==case)
-        self.arms=[pair[arm]["gates"],pair[arm2]["gates"]]
+        self.arms=[pair[a]["gates"] for a in arms]
         self.props=records[0].run["props"]
         self.records=records
-        for r,k in zip(records,(arm,arm2)):
+        for r,k in zip(records,arms):
             if digest(r.path)!=pair["runHashes"][k]:raise ValueError("Gate judge and physical film have different source runs")
         self.indices=[i for g in self.arms[0] for i in g["propIndices"]]
         if len(set(self.indices))!=len(self.indices):raise ValueError("One prop appears in multiple gates")
-        for left,right in zip(*self.arms):
+        for group in zip(*self.arms):
+            left=group[0]
             ids=left["propIndices"]
-            if ids!=right["propIndices"]:raise ValueError("Compared gates differ")
+            if any(ids!=other["propIndices"] for other in group[1:]):raise ValueError("Compared gates differ")
             if any(math.dist(self.props[i][:2],left[key])>.001 for i,key in zip(ids,("leftHomeXZ","rightHomeXZ"))):
                 raise ValueError("Judge gate center does not match raw simulator coordinates")
-        self.provenance={"case":case,"compared":[arm,arm2],"judgeSHA256":digest(report_path),"arms":self.arms,
+        self.provenance={"case":case,"compared":arms,"judgeSHA256":digest(report_path),"arms":self.arms,
             "predictionSource":"decisions[].gap, projected ranges and travelTime; not a ground-truth measurement",
             "groundSource":"real logged prop positions, vehicle footprints at both axes; post-race only"}
 

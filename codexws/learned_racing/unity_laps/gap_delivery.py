@@ -33,10 +33,10 @@ def select(pairs,single):
 
 
 def window(p,root):
-    ids=[p["id"]+"_"+k for k in ("pace","learned")]
+    arms=("base","pace","learned");ids=[p["id"]+"_"+k for k in arms]
     runs=[read(root/"runs"/(id_+".json")) for id_ in ids]
     starts=[];ends=[]
-    for k,run in zip(("pace","learned"),runs):
+    for k,run in zip(arms,runs):
         gates=p[k]["gates"]
         entry=gates[0]["frontEnterS"]
         if entry is None:
@@ -67,9 +67,8 @@ def main(args):
     ev=args.package/"evidence";vid=args.package/"videos";ev.mkdir(parents=True,exist_ok=True);vid.mkdir(exist_ok=True)
     for p,why,label,name in specs:
         case=p["id"];start,end=window(p,args.root);title=f"二阶段独立考核 {case.upper()} · {label}";path=vid/(name+".mp4")
-        cmd=[sys.executable,"-B",str(HERE/"smooth_comparison.py"),"--root",str(args.root),"--base",case+"_pace","--trained",case+"_learned",
-            "--base-label","仅提高巡航速度","--trained-label","同巡航＋近障寻缝","--start",str(start),"--end",str(end),
-            "--title",title,"--gate-report",str(args.results),"--out",str(path)]
+        cmd=[sys.executable,"-B",str(HERE/"smooth_gate_triple.py"),"--root",str(args.root),"--case",case,
+             "--start",str(start),"--end",str(end),"--title",title,"--results",str(args.results),"--out",str(path)]
         subprocess.run(cmd,check=True)
         receipt=read(path.with_suffix(".json"));path.with_suffix(".json").replace(ev/(name+".json"))
         rate,size,code,marks=inspect(path,ev/(name+".jpg"),min(3.,(end-start)*.5))
@@ -77,7 +76,7 @@ def main(args):
         sig=rate,size,code;counts.append(len(marks));fingerprints+=marks;paths.append(path);titles.append(title)
         proof.append(dict(id=case,file=path.name,sha256=digest(path),fps=float(rate),frames=len(marks),reason=why,
             trainedMiddle=[g["route"] for g in p["learned"]["gates"]],paceMiddle=[g["route"] for g in p["pace"]["gates"]],
-            trialResults={a:p[a]["terminal"] for a in ("pace","learned")},selectionAudit=receipt["gateReferee"]["judgeSHA256"]))
+            trialResults={a:p[a]["terminal"] for a in ("base","pace","learned")},selectionAudit=receipt["judge"]["judgeSHA256"]))
     output=vid/"00-gate-scenes.mp4";join(paths,sig[0],counts,titles,output)
     _,_,_,joined=inspect(output)
     if joined!=fingerprints:raise ValueError("Changed source frames in joined gate reel")

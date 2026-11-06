@@ -122,10 +122,11 @@ class LocalPaths:
                 pts=[self.project(*position(p,max(0,t-1.5+j*.1))) for j in range(16)]
                 d.line(pts,fill=MOVING,width=5);d.ellipse((x-8,y-8,x+8,y+8),fill=MOVING,outline=WHITE,width=2)
             else:d.polygon([(x,y-8),(x+8,y+6),(x-8,y+6)],fill="#d69927",outline=INK,width=1)
-        for i,(r,s,color) in enumerate(zip(self.records,samples,(BASE,FIT))):
+        colors=("#65568c",BASE,FIT) if len(self.records)==3 else (BASE,FIT)
+        for i,(r,s,color) in enumerate(zip(self.records,samples,colors)):
             start=max(0,at(r.rt,s["t"]-2.5));end=at(r.rt,s["t"]);hist=r.rows[start:end+1]
             pts=[self.project(*q[1:3]) for q in hist]
-            if len(pts)>1:d.line(pts,fill=color,width=6 if i==0 else 3)
+            if len(pts)>1:d.line(pts,fill=color,width=8 if i==0 and len(colors)==3 else 6 if i<len(colors)-1 else 3)
             d.polygon(pose_hull(s["row"],self.project),outline=color,fill="#f6d1af" if i==0 else None,width=4)
         label(d,(10,18),"行进 →",19,MUTED,True)
         d.line((10,310,10+2*self.scale,310),fill=INK,width=2)

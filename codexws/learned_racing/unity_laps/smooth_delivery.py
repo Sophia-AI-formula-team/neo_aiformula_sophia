@@ -163,10 +163,10 @@ def selection(args):
     if reversal:best,mode,why=reversal[0],"improvement","首个基线失败、长训完成的局部场景"
     elif timely:best,mode,why=min(timely,key=yaw),"improvement","同段用时增幅不超2%，在双方完成的局部场景中横摆角行程降幅最大"
     else:best,mode,why=neutral,"comparison","首个出现实际轨迹差异的局部场景；若完全同轨则按登记顺序"
-    regress=[p for p in traffic if ok(p,"base") and not ok(p,"learned")]
+    regress=[p for p in local if ok(p,"base") and not ok(p,"learned")]
     if regress:
         worst=min(regress,key=lambda p:p["learned"]["progressM"]/p["learned"]["targetM"])
-        worst_why="基线完成而长训失败的含障碍场景中，长训完成路程比例最低"
+        worst_why="基线完成而长训失败的局部障碍场景中，长训完成路程比例最低"
     else:
         comparable=[p for p in common if yaw(p)>.0001]
         worst=max(comparable,key=yaw) if comparable else None
@@ -182,6 +182,18 @@ def selection(args):
     add(best,"02-matched-"+mode,"同场对照 "+best["id"].upper()+" · "+("改善例" if mode=="improvement" else "代表例"),why)
     if worst and worst["id"]!=best["id"]:
         add(worst,"03-matched-regression","同场对照 "+worst["id"].upper()+" · 回退例",worst_why)
+    traffic_laps=[p for p in traffic if p["scope"]=="lap"]
+    lost_laps=[p for p in traffic_laps if ok(p,"base") and not ok(p,"learned")]
+    if lost_laps:
+        loss=min(lost_laps,key=lambda p:p["learned"]["progressM"]/p["learned"]["targetM"])
+        add(loss,"03b-lap-regression","整圈退步 "+loss["id"].upper()+" · 终止路段",
+            "在基线完成而长训失败的整圈中，展示长训完成路程比例最低的一趟。")
+    else:
+        incomplete=[p for p in traffic_laps if p["learned"]["terminal"] in ("obstacle","boundary") and p["learned"]["progressM"]+.5<p["base"]["progressM"]]
+        if incomplete:
+            loss=min(incomplete,key=lambda p:(p["learned"]["progressM"]-p["base"]["progressM"])/p["learned"]["targetM"])
+            add(loss,"03b-lap-regression","整圈退步 "+loss["id"].upper()+" · 终止路段",
+                "两臂都未完整通过时，展示长训相对基线少跑里程最多的整圈。")
     failed=next((p for p in traffic if not ok(p,"learned") and p["learned"]["terminal"] in ("obstacle","boundary")
                  and p["id"] not in (best["id"],worst["id"] if worst else "")),None)
     if failed:add(failed,"05-contact","失败回放 "+failed["id"].upper(),"登记顺序中尚未展示的首次长训实物碰撞或触边")
@@ -202,11 +214,12 @@ def selection(args):
     if all(clear[a]["straightGates"]["totals"]["coverage"]>=.999 for a in ("base","learned")):
         out.append(straight_case(args.runs,clear["id"]))
     laps=[p for p in pairs if p["scope"]=="lap"]
-    full=next((p for p in laps if ok(p,"learned")),laps[0])
-    out.append(dict(name="04-first-complete-lap" if ok(full,"learned") else "04-full-attempt",
+    if not laps and not args.local_only:raise ValueError("The published plan requires the registered full laps")
+    full=next((p for p in laps if ok(p,"learned")),laps[0] if laps else None)
+    if full:out.append(dict(name="04-first-complete-lap" if ok(full,"learned") else "04-full-attempt",
                title="完整赛道 "+full["id"].upper()+" · 从起步到"+("终点" if ok(full,"learned") else "终止"),
                case=full["id"],kind="full",selection="登记顺序中首个完成的整圈；若全部失败则保留首趟完整尝试"))
-    if not full["base"]["cones"]:
+    if full and not full["base"]["cones"]:
         lap_with_traffic=next((p for p in laps if p["base"]["cones"] and ok(p,"learned")),None)
         if lap_with_traffic:out.append(dict(name="06-first-traffic-lap",case=lap_with_traffic["id"],kind="full",
             title="含障碍整圈 "+lap_with_traffic["id"].upper()+" · 从起步到终点",selection="首个完成的含障碍整圈"))
@@ -289,6 +302,7 @@ if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest="stage",required=True)
     a=sub.add_parser("plan")
     for k in ("runs","results","out"):a.add_argument("--"+k,type=Path,required=True)
+    a.add_argument("--local-only",action="store_true",help="Prepare clips after all registered segments, before the full-lap cohort exists")
     a=sub.add_parser("film")
     for k in ("root","plan","package"):a.add_argument("--"+k,type=Path,required=True)
     for k in ("name","model-id"):a.add_argument("--"+k,required=True)
