@@ -1,0 +1,70 @@
+--- a/codexws/learned_racing/unity_laps/Road.cs
++++ b/codexws/learned_racing/unity_laps/Road.cs
+@@ -55,3 +55,3 @@
+
+-public class Sight {public float z,x,vx,vz,history,age,fitVx,fitVz,noiseX,noiseZ,coherence;public int id;}
++public class Sight {public float z,x,vx,vz,history,age,fitVx,fitVz,noise,coherence;public int id;}
+ public class Tracklet {
+@@ -88,11 +88,6 @@
+                 s.fitVx=Vector2.Dot(fit,right);s.fitVz=Vector2.Dot(fit,forward);s.history=h[h.Count-1].z-h[0].z;
+-                foreach(var q in h){
+-                    var residual=new Vector2(q.x-mean.x,q.y-mean.y)-fit*(q.z-mean.z);
+-                    s.noiseX=Mathf.Max(s.noiseX,Mathf.Abs(Vector2.Dot(residual,right)));
+-                    s.noiseZ=Mathf.Max(s.noiseZ,Mathf.Abs(Vector2.Dot(residual,forward)));
+-                }
++                foreach(var q in h)s.noise=Mathf.Max(s.noise,(new Vector2(q.x-mean.x,q.y-mean.y)-fit*(q.z-mean.z)).magnitude);
+                 // Both independent half-window displacements must support the fitted direction.
+                 var middle=h[h.Count/2];var a=(Vector2)(middle-h[0]);var b=(Vector2)(h[h.Count-1]-middle);
+-                s.coherence=Mathf.Sign(s.fitVx)*Vector2.Dot(a,right);
+-                s.coherence=Mathf.Min(s.coherence,Mathf.Sign(s.fitVx)*Vector2.Dot(b,right));
++                s.coherence=Mathf.Min(Vector2.Dot(a,fit.normalized),Vector2.Dot(b,fit.normalized));
+             }
+@@ -109,3 +104,3 @@
+     public int id;
+-    public float range,cross,motion,history,fitNoise,rangeNoise,along,frontFast,rearFast,frontPace,rearPace,rawFast,rawPace,marginFast,marginPace,remaining;
++    public float range,cross,motion,history,fitNoise,along,frontFast,rearFast,frontPace,rearPace,marginFast,marginPace,remaining;
+ }
+@@ -122,3 +117,3 @@
+         float travelled=0;
+-        float v=speed;
++        float v=Mathf.Min(speed,target);
+         for(int i=1;i<=160;i++){
+@@ -151,3 +146,3 @@
+         if(objects.Count!=1){evidence.state=objects.Count==0?"no_track":"multiple_tracks";return false;}
+-        var o1=objects[0];var e=evidence;e.id=o1.id;e.range=o1.z;e.history=o1.history;
++        var o1=objects[0];var e=evidence;e.id=o1.id;e.range=o1.z;e.history=o1.history;e.fitNoise=o1.noise;
+         float slope=(Policy.CenterAt(line,o1.z+.35f)-Policy.CenterAt(line,o1.z-.35f))/.70f;
+@@ -157,4 +152,3 @@
+         e.along=(o1.fitVz+slope*o1.fitVx)/scale;
+-        e.fitNoise=(o1.noiseX+Mathf.Abs(slope)*o1.noiseZ)/scale;e.rangeNoise=(o1.noiseZ+Mathf.Abs(slope)*o1.noiseX)/scale;
+-        if(o1.history<.59f || o1.age>.21f || o1.coherence<.055f || e.fitNoise>.24f || e.rangeNoise>.65f){e.state="motion_unconfirmed";return false;}
++        if(o1.history<.59f || o1.age>.21f || o1.coherence<.075f || o1.noise>.32f){e.state="motion_unconfirmed";return false;}
+         if(e.cross*e.motion>=0 || Mathf.Abs(e.motion)<.32f || Mathf.Abs(e.motion)>1.65f || Mathf.Abs(e.along)>.8f){e.state="no_approaching_motion";return false;}
+@@ -164,12 +158,12 @@
+         // speed-command lag and short-range uphill drift of an observed target.
+-        float dist=o1.z*scale,subject=Mathf.Max(.1f,Mathf.Min(speed,command+.35f));
+-        e.frontFast=Arrive(dist-.62f-e.rangeNoise,subject,boost,e.along-.12f);
+-        e.rearFast=Arrive(dist+1.22f+e.rangeNoise,subject,boost,e.along+.12f);
+-        e.frontPace=Arrive(dist-.62f-e.rangeNoise,subject,pace,e.along-.12f);
+-        e.rearPace=Arrive(dist+1.22f+e.rangeNoise,subject,pace,e.along+.12f);
+-        e.rawFast=Clearance(e.cross,e.motion,e.frontFast,e.rearFast,.38f+.34f);
+-        e.rawPace=Clearance(e.cross,e.motion,e.frontPace,e.rearPace,.38f+.34f);
+-        e.marginFast=e.rawFast-(.12f+e.fitNoise+.10f*e.rearFast+.055f*e.rearFast*e.rearFast);
+-        e.marginPace=e.rawPace-(.12f+e.fitNoise+.10f*e.rearPace+.055f*e.rearPace*e.rearPace);
+-        if(e.rearFast>2.8f || e.marginFast<.12f || e.marginPace>.0f || e.rearPace-e.rearFast<.32f){e.state="timing_rejected";return false;}
++        float dist=o1.z*scale,subject=Mathf.Max(.1f,Mathf.Min(speed,command));
++        float conservativeAlong=e.along+.12f;
++        e.frontFast=Arrive(dist-.62f,subject,boost,conservativeAlong);
++        e.rearFast=Arrive(dist+1.22f,subject,boost,conservativeAlong);
++        e.frontPace=Arrive(dist-.62f,subject,Mathf.Min(pace,Mathf.Max(1.4f,speed)),e.along);
++        e.rearPace=Arrive(dist+1.22f,subject,Mathf.Min(pace,Mathf.Max(1.4f,speed)),e.along);
++        float uncertainty=.12f+o1.noise+.10f*e.rearFast+.055f*e.rearFast*e.rearFast;
++        e.marginFast=Clearance(e.cross,e.motion,e.frontFast,e.rearFast,.38f+.34f+uncertainty);
++        e.marginPace=Clearance(e.cross,e.motion,e.frontPace,e.rearPace,.38f+.34f);
++        if(e.rearFast>2.8f || e.marginFast<.12f || e.marginPace>.26f || e.rearPace-e.rearFast<.32f){e.state="timing_rejected";return false;}
+         e.offered=true;e.state=enabled?"accepted":"disabled";
+@@ -341,3 +335,3 @@
+         }
+-        if(timing!=null && timing.Act(line,objects,speed,speedCmd,nominalCruise,planningSpeed*pace,lineBias,offset,yaw,period)){
++        if(timing!=null && timing.Act(line,objects,speed,speedCmd,nominalCruise,cruise,lineBias,offset,yaw,period)){
+             reason="go_first";preferred=lineBias;guardCap=nominalCruise;planningSpeed=nominalCruise;pace=1;recovery=0;
