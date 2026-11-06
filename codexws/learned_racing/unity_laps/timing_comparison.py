@@ -4,6 +4,7 @@ import bisect
 import json
 import math
 from pathlib import Path
+from functools import lru_cache
 
 import av
 from PIL import Image, ImageChops, ImageDraw, ImageStat
@@ -15,6 +16,7 @@ LEFT, RIGHT = "#9b4908", "#006e6f"
 MOVING = "#b72865"
 XPOS = (42,1046)
 CHASE_Y = 157
+A4_X, A4_Y, A4_W, A4_H = 660, 12, 288, 162
 TERMINAL = {"obstacle":"碰桶终止", "boundary":"触边终止", "lap":"完成一圈", "segment":"完成录制路段",
             "stalled":"进度停滞", "lost_lane":"道路观测丢失", "invalid_progress":"进度无效"}
 REASONS = {"road":"按弯度调速", "yield":"减速避让", "recover":"恢复车速", "hold_pass":"保持避让侧",
@@ -26,8 +28,13 @@ def short_seconds(value):
 
 
 class Recording:
-    def __init__(self, path, frame_dir):
+    def __init__(self, path, frame_dir, overlays=None):
         self.path, self.frame_dir = path, frame_dir
+        self.overlays=overlays
+        if overlays:
+            ready=json.loads((overlays.parent/"ready.json").read_text(encoding="utf-8-sig"))
+            if ready.get("release")!="a4" or ready.get("sampleStride")!=1:
+                raise ValueError("Per-decision A4 frame archive required")
         self.run=json.loads(path.read_text(encoding="utf-8-sig"))
         self.frames=self.run.get("frames",[])
         self.decisions=self.run.get("decisions",[])
@@ -50,7 +57,7 @@ class Recording:
             raise ValueError("Requested interval precedes footage/decisions/poses")
         number=int(self.frames[fi][1])
         path=self.frame_dir/f"{number:04d}c.jpg"
-        return {"t":when,"frame_t":self.ft[fi], "file":path,"frame_id":number,
+        return {"t":when,"frame_t":self.ft[fi], "file":path,"frame_id":number,"decision_id":di,
                 "row":self.rows[ri],"decision":self.decisions[di],"stopped":t>=self.run["seconds"]-2e-5}
 
 
@@ -65,8 +72,15 @@ def check_pair(left,right,prop):
         raise ValueError("The selected prop must be a recorded moving obstacle")
     if any(abs(x-y)>.001 for x,y in zip(a["rows"][0][1:4],b["rows"][0][1:4])):
         raise ValueError("Recorded spawn poses differ")
-    if left.path.resolve()==right.path.resolve() or a["decisions"]==b["decisions"]:
+    modes=tuple(r["request"].get("timing",{}).get("mode") for r in (a,b))
+    if left.path.resolve()==right.path.resolve() or a.get("id")==b.get("id"):
         raise ValueError("Identical driving record; it cannot support a policy comparison")
+    if modes!=("yield_only","both"):
+        raise ValueError("Baseline must disable and candidate must enable the timing branch")
+    for key in ("weights","solver","limit"):
+        if a["request"].get(key)!=b["request"].get(key):raise ValueError(f"Unmatched control condition: {key}")
+    if a["request"]["timing"].get("approach")!=b["request"]["timing"].get("approach"):
+        raise ValueError("Unmatched approach speed cap")
 
 
 class Referee:
@@ -144,6 +158,13 @@ def draw_metric_band(d,x,s,name,color):
     label(d,(x+956,734),reason,22,color,True,anchor="rm")
 
 
+@lru_cache(maxsize=12)
+def optical(path):
+    if not path.is_file():return None
+    with Image.open(path) as source:
+        return source.convert("RGB").resize((A4_W,A4_H),Image.Resampling.LANCZOS)
+
+
 def stage(section,t):
     enter=section.get("frontEnterS")
     clear=section.get("rearClearS")
@@ -203,7 +224,8 @@ def prediction(dec,first_go):
 
 
 def render(args):
-    records=(Recording(args.baseline,args.baseline_frames),Recording(args.candidate,args.candidate_frames))
+    records=(Recording(args.baseline,args.baseline_frames,args.baseline_a4),
+             Recording(args.candidate,args.candidate_frames,args.candidate_a4))
     check_pair(*records,args.prop)
     audit=json.loads(args.audit.read_text(encoding="utf-8-sig")) if args.audit else {}
     if audit and any(audit.get(which,{}).get("id")!=r.run.get("id") for which,r in zip(("off","on"),records)):
@@ -238,7 +260,7 @@ def render(args):
     template=Image.new("RGB",SIZE,PAPER);d=ImageDraw.Draw(template)
     d.rectangle((0,0,2048,94),fill=INK)
     label(d,(44,46),args.title,41,WHITE,True)
-    for x,text,color in zip(XPOS,("冻结基线","时间规划候选"),(LEFT,RIGHT)):
+    for x,text,color in zip(XPOS,("先行分支关闭","先行分支开放"),(LEFT,RIGHT)):
         label(d,(x,125),text,31,color,True)
     d.rounded_rectangle((31,782,1002,1228),radius=16,fill=WHITE)
     d.rounded_rectangle((1038,782,2009,1228),radius=16,fill=WHITE)
@@ -247,7 +269,7 @@ def render(args):
     for x,txt,col in ((57,"基线车",LEFT),(210,"候选车",RIGHT),(362,"移动桶及 1.5 秒尾迹",MOVING)):
         label(d,(x,1198),txt,21,col,True)
     label(d,(43,1254),"两个追车机位均取自对应试验。下方裁判俯视和通行时间供回放核对，右侧预测只取当时的车端记录。",22,MUTED)
-    checks=[];missing=[0,0];max_age=[0.,0.]
+    checks=[];missing=[0,0];max_age=[0.,0.];optical_missing=[0,0];optical_age=[0.,0.]
     with av.open(str(args.out),"w",options={"movflags":"+faststart"}) as out:
         video=out.add_stream("libx264",rate=FPS,options={"preset":"veryfast","crf":"18","threads":"4"})
         video.width,video.height=SIZE;video.pix_fmt="yuv420p"
@@ -265,6 +287,17 @@ def render(args):
                 else:
                     canvas.paste(src,(x,CHASE_Y))
                     max_age[j]=max(max_age[j],s["t"]-s["frame_t"])
+                if r.overlays:
+                    ox,oy=x+A4_X,CHASE_Y+A4_Y
+                    overlay=optical(r.overlays/f"{s['decision_id']:05d}.jpg")
+                    d.rectangle((ox-2,oy-2,ox+A4_W+1,oy+A4_H+34),fill=INK,outline=WHITE,width=1)
+                    if overlay is not None:
+                        canvas.paste(overlay,(ox,oy))
+                        optical_age[j]=max(optical_age[j],s["t"]-s["decision"]["t"])
+                    else:
+                        optical_missing[j]+=1
+                        label(d,(ox+10,oy+80),"缺少此帧",19,WHITE)
+                    label(d,(ox+6,oy+A4_H+16),f"A4 前视  ·  {s['decision']['t']:.2f} s",17,WHITE)
                 if s["stopped"]:
                     d.rectangle((x,CHASE_Y+476,x+959,CHASE_Y+539),fill="#572e27")
                     status=TERMINAL.get(r.run["status"],r.run["status"])
@@ -280,7 +313,8 @@ def render(args):
             if n in inspected:
                 checks.append({"videoFrame":n,"simS":t,"sources":[{"sourceFrame":s["frame_id"],"sourceS":s["frame_t"],
                               "decisionS":s["decision"]["t"],"poseS":s["row"][0],"heldAfterEnd":s["stopped"],
-                              "sha256":digest(s["file"]) if s["file"].is_file() else None} for s in samples]})
+                              "sha256":digest(s["file"]) if s["file"].is_file() else None,
+                              "a4Frame":s["decision_id"] if r.overlays else None} for r,s in zip(records,samples)]})
             for packet in video.encode(av.VideoFrame.from_image(canvas)):out.mux(packet)
         for packet in video.encode():out.mux(packet)
     indexed={k["videoFrame"]:k for k in checks}
@@ -299,12 +333,23 @@ def render(args):
                 reference=camera(r.frame_dir/f"{s['sourceFrame']:04d}c.jpg")
                 height=470 if s["heldAfterEnd"] else 540
                 delta=ImageChops.difference(img.crop((x,CHASE_Y,x+960,CHASE_Y+height)),reference.crop((0,0,960,height)))
-                s["decodedMeanRGBError"]=round(sum(ImageStat.Stat(delta).mean)/3,3)
+                mask=Image.new("L",delta.size,255)
+                if r.overlays:
+                    ImageDraw.Draw(mask).rectangle((A4_X-2,A4_Y-2,A4_X+A4_W+1,A4_Y+A4_H+34),fill=0)
+                    source=r.overlays/f"{s['a4Frame']:05d}.jpg"
+                    s["a4SHA256"]=digest(source) if source.is_file() else None
+                    if source.is_file():
+                        ox,oy=x+A4_X,CHASE_Y+A4_Y
+                        a4diff=ImageChops.difference(img.crop((ox,oy,ox+A4_W,oy+A4_H)),optical(source))
+                        s["a4DecodedMeanRGBError"]=round(sum(ImageStat.Stat(a4diff).mean)/3,3)
+                        if s["a4DecodedMeanRGBError"]>8:raise ValueError("Decoded A4 does not match actual inference frame")
+                s["decodedMeanRGBError"]=round(sum(ImageStat.Stat(delta,mask).mean)/3,3)
                 if s["decodedMeanRGBError"]>8:raise ValueError("Decoded video differs from the referenced original camera pixels")
     evidence={"title":args.title,"fps":FPS,"width":SIZE[0],"height":SIZE[1],"playback":"1x common simulation clock",
               "startS":args.start,"endS":args.end,"terminalEndIncluded":include_end,"frames":nframes,
               "prop":args.prop,"runs":[r.run.get("id") for r in records],"trajectorySHA256":[digest(r.path) for r in records],
               "auditSHA256":digest(args.audit) if args.audit else None,"missingCameraFrames":missing,"maxCameraAgeS":max_age,
+              "a4ArchiveEnabled":[r.overlays is not None for r in records],"missingA4Frames":optical_missing,"maxA4AgeS":optical_age,
               "groundTruth":"Fixed prop coordinates from UnityRace.PropPosition; car from latest recorded referee pose. The two runs share an identical scene clock.",
               "lastPreEventFrameIndices":key_frames,"posterFrame":poster_index if args.poster else None,
               "checkFrames":checks}
@@ -317,6 +362,8 @@ def main():
     for name in ("baseline","baseline-frames","candidate","candidate-frames","out"):
         p.add_argument("--"+name,type=Path,required=True)
     p.add_argument("--audit",type=Path)
+    p.add_argument("--baseline-a4",type=Path)
+    p.add_argument("--candidate-a4",type=Path)
     p.add_argument("--poster",type=Path,help="Save the decoded frame just before candidate front entry; use midpoint when unverified")
     p.add_argument("--prop",type=int,required=True,help="Zero-based moving prop index")
     p.add_argument("--title",default="横移锥桶 · 同场双车对照")
