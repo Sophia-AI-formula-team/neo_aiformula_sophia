@@ -66,7 +66,9 @@ def main(args):
     paths=[];titles=[];counts=[];proof=[];fingerprints=[];sig=None
     ev=args.package/"evidence";vid=args.package/"videos";ev.mkdir(parents=True,exist_ok=True);vid.mkdir(exist_ok=True)
     for p,why,label,name in specs:
-        case=p["id"];start,end=window(p,args.root);title=f"二阶段独立考核 {case.upper()} · {label}";path=vid/(name+".mp4")
+        case=p["id"];start,end=window(p,args.root)
+        if name=="02-staggered-gates":label="连续"+{2:"双",3:"三"}[len(p["learned"]["gates"])]+"排门"
+        title=f"二阶段独立考核 {case.upper()} · {label}";path=vid/(name+".mp4")
         cmd=[sys.executable,"-B",str(HERE/"smooth_gate_triple.py"),"--root",str(args.root),"--case",case,
              "--start",str(start),"--end",str(end),"--title",title,"--results",str(args.results),"--out",str(path)]
         subprocess.run(cmd,check=True)

@@ -4,7 +4,7 @@ from bisect import bisect_right
 from PIL import Image,ImageDraw
 from learned_film_panel import HEIGHT, OUTCOMES
 
-STATE={"observing":"等待足够的局部观测","idle":"常规控制","selected":"本周期选取",
+STATE={"clear":"常规行驶","observing":"等待足够的局部观测","idle":"常规控制","selected":"本周期选取",
        "holding":"继续通过","returning":"通过后回线","released":"结束此动作"}
 
 

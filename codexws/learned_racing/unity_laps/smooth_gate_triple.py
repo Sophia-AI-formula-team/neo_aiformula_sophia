@@ -42,24 +42,29 @@ def records(root,case):
     return result
 
 
-def stat(d,x,y,g,sim,stop):
+def stat(d,x,y,g,sim,stop,compact_index=None):
     start=g["frontEnterS"];end=g["rearClearS"]
     entered=start is not None and sim>=start
     finished=end is not None and sim>=end
     status=ROUTE[g["route"]] if finished or stop else "车身正在过门" if entered else "正在接近"
-    label(d,(x,y),status,23,INK,True)
+    title=status if compact_index is None else f"第 {compact_index} 排 · {status}"
+    label(d,(x,y),title,23 if compact_index is None else 21,INK,True)
     va=number(g["entryBodyMps"] if entered else None);vb=number(g["exitBodyMps"] if finished else None)
     label(d,(x,y+36),f"实速进 / 出    {va} / {vb} m/s",18,MUTED)
     after=finished or (entered and stop)
     opening=number(g.get("gateMinFreeOpeningM") if after else None)
     le=number(g.get("minLeftProjectedM") if after else None);ri=number(g.get("minRightProjectedM") if after else None)
-    label(d,(x,y+69),f"最窄开口 {opening} m",18,MUTED)
-    label(d,(x,y+100),f"两侧投影净距   {le} / {ri} m",17,MUTED)
+    if compact_index is None:
+        label(d,(x,y+69),f"最窄开口 {opening} m",18,MUTED)
+        label(d,(x,y+100),f"两侧投影净距   {le} / {ri} m",17,MUTED)
+    else:
+        label(d,(x,y+68),f"最窄开口 {opening} m   净距 {le} / {ri} m",16,MUTED)
 
 
 def render(args):
     recs=records(args.root,args.case);judge=GateView(args.results,recs)
-    if len(judge.arms[0])>2:raise ValueError("This dashboard reserves separate rows for two gate stations")
+    if len(judge.arms[0])>3:raise ValueError("The panel fits up to three physical gate stations")
+    compact=len(judge.arms[0])==3
     scene=LocalPaths(recs,args.start,args.end,judge.indices[0],judge)
     count=math.ceil((args.end-args.start)*FPS-.000001)+1
     terminal=any(abs(args.end-r.run["seconds"])<.00002 and r.run["status"] in ("obstacle","boundary") for r in recs)
@@ -81,7 +86,7 @@ def render(args):
     label(d,(734,809),"每排双桶之间，全车有没有通过？",28,INK,True)
     for j,(name,col) in enumerate(zip(TITLES,COLORS)):
         x=736+428*j;label(d,(x,872),name,22,col,True)
-        for n,g in enumerate(judge.arms[j]):
+        for n,g in enumerate(judge.arms[j] if not compact else []):
             y=925+164*n
             label(d,(x,y),f"第 {n+1} 排",19,col,True)
     d.rectangle((0,1320,2048,1496),fill=INK)
@@ -117,7 +122,8 @@ def render(args):
                 else:
                     label(d,(x+280,704),f"左−右目标轮速 {q['leftCan']-q['rightCan']:+d} rpm",18,MUTED)
                 for n,g in enumerate(judge.arms[j]):
-                    stat(d,736+428*j,954+164*n,g,s["t"],s["t"]>=r.run["seconds"]-.00002)
+                    y=925+111*n if compact else 954+164*n
+                    stat(d,736+428*j,y,g,s["t"],s["t"]>=r.run["seconds"]-.00002,n+1 if compact else None)
                 refs.append(dict(chase=str(s["file"]),a4=str(obs),timeChase=s["frame_t"],timeA4=q["t"],held=s["stopped"],
                     measuredBodyMps=s["row"][4],requestedMps=q["speedCmd"],planner=gap))
             im.paste(scene.draw(ss,t),(44,875))

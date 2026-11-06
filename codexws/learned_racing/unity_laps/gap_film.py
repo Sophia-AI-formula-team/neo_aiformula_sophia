@@ -9,7 +9,7 @@ ROUTE={
     "middle":"从两桶中间通过",
     "outside_inner_lane_cone":"从内道一侧绕过",
     "outside_outer_lane_cone":"从外道一侧绕过",
-    "straddle_or_uncertain":"跨界或无法判定",
+    "straddle_or_uncertain":"整车中穿未确证",
     "unfinished":"未完全过门",
     "not_reached":"未到该排",
 }

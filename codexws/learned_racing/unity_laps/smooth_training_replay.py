@@ -92,6 +92,10 @@ def gather(root,blind_path,stage_tags,final_tag):
     if model not in by_model:raise ValueError("Scored controller is absent from the fitted artifacts")
     directory=by_model[model];size=int(re.match(r"ck(\d+)",directory.name)[1]);suffix=directory.name.removeprefix(f"ck{size}")
     spec={"layouts":size,"tag":directory.name,"modelId":model,"kind":{"":"回报森林","p":"叶节点保守选择","s":"折外回退校准","m":"折外回退校准"}.get(suffix,"独立校准候选")}
+    certificate=root/"frozen.json";seal=read(certificate)
+    if seal["selectedModel"]!=model or seal["modelFileSHA256"]!=digest(directory/"model.json"):
+        raise ValueError("Development certificate and independent testing model differ")
+    spec["meetsDevelopment"]=seal["meetsDevelopment"];spec["candidatesTested"]=seal["tested"];sources["freeze"]=digest(certificate)
     if final_tag:
         trials={k:read(root/"runs"/f"{final_tag}_{k}_learned.json") for k in base}
         if any((r["request"].get("smooth") or {}).get("modelId")!=model for r in trials.values()):
@@ -178,7 +182,8 @@ def dev_page(snapshots,freeze,ratio):
     check=freeze.get("development")
     detail=(f"冻结版本同一开发集实测：局部 {check['local'][0]}/{check['local'][1]}，整圈 {check['lap'][0]}/{check['lap'][1]}。"
             if check else "下面单独报告冻结后的局部与整圈独立考核。")
-    side_note(d,62,1220,f"最终冻结：{freeze['layouts']} 布局 · {freeze['kind']}（{freeze['tag']}）。",detail)
+    result="达成开发门槛" if freeze["meetsDevelopment"] else "未达开发门槛，冻结后继续独立检验"
+    side_note(d,62,1220,f"冻结 {freeze['tag']}（{freeze['layouts']} 布局，{freeze['kind']}） · {result}",detail)
     return im
 
 
