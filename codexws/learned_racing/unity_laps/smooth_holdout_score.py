@@ -22,6 +22,29 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def release_audit(run_dir, model_path):
+    root = run_dir.parent
+    freeze = load(root / "frozen.json")
+    original = load(HERE / "risk_revision/frozen.json")
+    selected = load(model_path)
+    if sha(model_path) != freeze["modelFileSHA256"] or selected["modelId"] != freeze["selectedModel"]:
+        raise ValueError("Holdout policy differs from the sealed model")
+    canonical = {key: value for key, value in selected.items() if key != "modelId"}
+    canonical_sha = hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if canonical_sha != selected["modelId"]:
+        raise ValueError("Frozen model ID differs from its actual exported coefficients")
+    development = root / "development.json"
+    if freeze["devSHA256"] != sha(development):
+        raise ValueError("The development decision file changed after freezing")
+    for name, expected in freeze["developmentTrialSHA256"].items():
+        if sha(run_dir / name) != expected:
+            raise ValueError("Development evidence changed: " + name)
+    return dict(frozenSha256=sha(root / "frozen.json"), canonicalModelSha256=canonical_sha,
+                checkpoint=freeze["checkpoint"], sourceCommit=freeze["sourceCommit"], freezeUTC=freeze["utc"],
+                developmentRunsChecked=len(freeze["developmentTrialSHA256"]), solver=freeze["sourceCodeSolver"],
+                A4=original["model"], ordinaryControllerWeights=original["weights"])
+
+
 def bin_margin(x,road=False):
     if x < 0 or (x == 0 and not road):return "contact_or_out"
     for cap,label in ((.10,"[0,.10)"),(.25,"[.10,.25)"),(.50,"[.25,.50)"),(1.,"[.50,1.00)")):
@@ -243,9 +266,13 @@ def main():
     ap.add_argument("--model",type=Path,required=True)
     args=ap.parse_args();plan=load(PROTOCOL/"layouts.json");bends=load(PROTOCOL/"bend_controls.json")
     base_model=load(args.base);model=load(args.model);pairs=[];versions=set();signals={}
+    sealed=release_audit(args.runs,args.model)
     for c in plan["cases"]:
         paths=[args.runs/f"{c['id']}_{arm}.json" for arm in ("base","learned")]
         a,b=map(load,paths); compare_request(a,b,c,plan["courseLengthForFractionsM"],base_model)
+        if (a["request"]["model"]!=sealed["A4"] or a["request"]["solver"]!=sealed["solver"]
+            or a["request"]["weights"]!=sealed["ordinaryControllerWeights"]):
+            raise ValueError("Unexpected perception, solver or ordinary driving settings in " + c["id"])
         versions.add((a["request"]["solver"],a["request"]["model"]))
         if len(versions)!=1:raise ValueError("Solver or A4 changed between held-out scenarios")
         row=observe(a,b,c,bends[c["id"]]);row["runSha256"]=[sha(f) for f in paths]
@@ -273,7 +300,7 @@ def main():
         margin[arm]=dict(approachedConeBins=dict(Counter(bin_margin(x) for x in vals)),unvisitedCones=sum(not c["approached"] for p in pairs for c in p[arm]["cones"]),
                          roadBins=dict(Counter(bin_margin(p[arm]["minRoadM"],True) for p in pairs)))
     report=dict(protocolCommit="7a91a5f",registeredLayoutsSha256=sha(PROTOCOL/"layouts.json"),
-                frozenFileHashes=dict(base=sha(args.base),learned=sha(args.model)),versions=sorted(versions),cohorts=parts,
+                frozenFileHashes=dict(base=sha(args.base),learned=sha(args.model)),releaseAudit=sealed,versions=sorted(versions),cohorts=parts,
                 naturalCruise=cruise,conditions=motion_by_road(pairs),demonstrates4MpsOnClear=clears,
                 meetsCombinedSmoothness=bool(smooth),margins=margin,pairs=pairs)
     args.out.write_text(json.dumps(report,allow_nan=False,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
