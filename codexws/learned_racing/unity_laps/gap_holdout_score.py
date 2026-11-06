@@ -122,12 +122,28 @@ def main():
     ap.add_argument("--out",type=Path,required=True);ap.add_argument("--pace",action="store_true")
     args=ap.parse_args();plan=load(PLAN/"layouts.json");model=load(args.model);pairs=[]
     arms=["base","learned"]+(["pace"] if args.pace else []);templates={}
+    root=args.runs.parent;freeze=load(root/"frozen.json");frozen_paths={"base":args.model,"learned":root/"challenger.json","pace":root/"pace_only.json"}
+    frozen_keys={"base":"reference","learned":"challenger","pace":"pace"}
+    frozen={a:load(frozen_paths[a]) for a in arms}
+    for a in arms:
+        if sha(frozen_paths[a])!=freeze[frozen_keys[a]]:raise ValueError("Pre-test freeze changed: "+a)
+    if sha(root/"practice_scores.json")!=freeze["report"]:raise ValueError("Practice selection changed")
+    practice=load(root/"practice.json")["cases"];test_seeds={c["seed"] for c in plan["cases"]}
+    if test_seeds & {c["seed"] for c in practice}:raise ValueError("Evaluation and calibration seeds overlap")
+    if args.pace:
+        expected=dict(frozen["learned"]["gap"],openings=False)
+        if not frozen["learned"]["gap"]["openings"] or frozen["pace"]["gap"]!=expected:
+            raise ValueError("Pace-only treatment differs beyond the opening planner")
+    solver=load(root/"baseline.json")["solverHash"];original=load(HERE/"risk_revision/frozen.json")
     for case in plan["cases"]:
         paths={a:args.runs/f"{case['id']}_{a}.json" for a in arms};logs={a:load(p) for a,p in paths.items()}
         pair=dict(id=case["id"],road=case["road"],family=case["family"],runHashes={a:sha(p) for a,p in paths.items()})
         for a,run in logs.items():
             check_run(run,case,logs["base"])
             cfg=run["request"]["smooth"]
+            if (cfg!=frozen[a] or run["request"]["solver"]!=solver or run["request"]["model"]!=original["model"]
+                or run["request"]["weights"]!=original["weights"]):
+                raise ValueError("Run does not match the frozen release: "+case["id"]+"_"+a)
             if a=="base" and cfg!=model:raise ValueError("Different baseline policy")
             if a!="base" and {k:v for k,v in cfg.items() if k!="gap"}!=model:
                 raise ValueError("The gap-enabled arm changed prior model coefficients")
@@ -137,6 +153,7 @@ def main():
             templates[a]=settings;pair[a]=assess(run,case)
         pairs.append(pair)
     result=dict(layoutsSHA256=sha(PLAN/"layouts.json"),baseModelSHA256=sha(args.model),gapConfigurations=templates,
+                freeze=freeze,solver=solver,disjointPracticeSeeds=len(practice),evaluationSeeds=len(test_seeds),
                 cohort=paired_summary(pairs,"base"),paceControl=paired_summary(pairs,"pace") if args.pace else None,pairs=pairs)
     args.out.write_text(json.dumps(result,ensure_ascii=False,allow_nan=False,indent=2)+"\n",encoding="utf8")
 
