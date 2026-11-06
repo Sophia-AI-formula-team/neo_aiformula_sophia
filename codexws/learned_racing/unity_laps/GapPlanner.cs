@@ -18,7 +18,7 @@ public sealed class GapDecision {
 public sealed class GapPlanner {
     const float HalfWidth=.38f, Front=.28f, Rear=.88f, Radius=.34f;
     readonly GapConfig cfg;
-    float held,remaining;
+    float held,heldSpeed,remaining;
     bool inPass;
     public GapDecision Decision;
     sealed class Row {
@@ -116,7 +116,7 @@ public sealed class GapPlanner {
         var rows=Rows(line,observed,speed);
         if(rows.Count==0){
             if(inPass && remaining>0){
-                Decision.state="hold_until_rear";Decision.speed=fast;Decision.offset=held;return true;
+                Decision.state="hold_until_rear";Decision.speed=heldSpeed;Decision.offset=held;return true;
             }
             inPass=false;
             if(cfg.paceScale==1)return false;
@@ -130,8 +130,19 @@ public sealed class GapPlanner {
             var path=Search(line,rows,speed,pace,ego,bias);
             if(path!=null && (best==null || path.time+path.tie<best.time+best.tie)){best=path;selected=pace;}
         }
-        if(best==null){Decision.state="no_reachable_opening";return false;}
+        if(best==null){
+            // At the last few metres a newly acquired cone or a lane estimate
+            // jump may remove every predicted path. Abruptly handing control
+            // to an unrelated passing side can then steer into the near cone.
+            if(inPass && remaining>0){
+                heldSpeed=Mathf.Min(heldSpeed,fast*cfg.speedFractions.Min());
+                Decision.state="hold_uncertain";Decision.offset=held;Decision.speed=heldSpeed;
+                return true;
+            }
+            Decision.state="no_reachable_opening";return false;
+        }
         held=best.path[0][3];remaining=Mathf.Max(0,rows[0].last+Rear+Radius);inPass=true;
+        heldSpeed=selected;
         Decision.state="visible_opening";Decision.offset=held;Decision.speed=selected;
         Decision.travelTime=best.time;Decision.crossings=best.path.ToArray();return true;
     }
