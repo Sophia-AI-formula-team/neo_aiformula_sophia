@@ -33,9 +33,19 @@ public sealed class GapPlanner {
     static float Slope(float[] line,float z){
         return (Policy.CenterAt(line,z+.25f)-Policy.CenterAt(line,z-.25f))/.5f;
     }
-    static List<Row> Rows(List<Sight> objects){
+    List<Row> Rows(float[] line,List<Sight> objects,float speed){
         var rows=new List<Row>();Row row=null;
         foreach(var track in objects.Where(o=>o.z>=-Rear-Radius && o.z<=12f).OrderBy(o=>o.z)){
+            // A4 may also track roadside objects. Keep those which can enter
+            // the physical road during the car's approach and passage.
+            float slope=Slope(line,track.z),norm=Mathf.Sqrt(1+slope*slope);
+            float cross=(track.x-Policy.CenterAt(line,track.z))/norm;
+            float velocity=(track.fitVx-slope*track.fitVz)/norm;
+            float horizon=Mathf.Max(0,track.z+Rear+Radius)/Mathf.Max(.5f,speed);
+            float future=cross+velocity*horizon;
+            float room=Radius+cfg.padding+Mathf.Min(.5f,track.noiseX+Mathf.Abs(slope)*track.noiseZ);
+            if(Mathf.Min(cross,future)-room>.5f*Track.Lane ||
+               Mathf.Max(cross,future)+room< -1.5f*Track.Lane)continue;
             if(row==null || track.z-row.last>Front+Rear+2*Radius){
                 row=new Row{first=track.z};rows.Add(row);
             }
@@ -103,7 +113,7 @@ public sealed class GapPlanner {
     public bool Plan(float[] line,List<Sight> observed,float speed,float nominal,float bias,float offset,float dt){
         Decision=new GapDecision{state="base"};float fast=nominal*cfg.paceScale;
         remaining-=speed*dt;
-        var rows=Rows(observed);
+        var rows=Rows(line,observed,speed);
         if(rows.Count==0){
             if(inPass && remaining>0){
                 Decision.state="hold_until_rear";Decision.speed=fast;Decision.offset=held;return true;
