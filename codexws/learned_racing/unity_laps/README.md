@@ -1,5 +1,7 @@
 # AI Formula · Unity 驾驶训练
 
+[加速先行与减速绕行的双车对照](crossing_evidence/paired-crossing.mp4) 在同一时钟下比较两种选择，包含实际车速、A4 识别、车尾驶离时间与横移桶到达时间。[测试条件、原录像审计与留出结果](crossing_evidence/README.md)。
+
 [七段避障实录](obstacle_films/index.html) 可连续播放，也能单独打开静止单桶、错列双桶、横移桶、直道动静混合、弯中单桶、弯中动静混合和碰桶复现。每段都同步展示跟车、A4 前视、车的局部选点与速度。跟车窗的小图使用场地固定坐标，显示裁判记录的车和桶的位置，方便辨别自车运动与锥桶横移。
 
 原始闭环轨迹分别在 `risk_revision/runs` 和 `scenario_shots/runs`。三个新布局用冻结策略跑至驶离障碍，另用原种子重跑碰撞场景。[镜头采集记录](scenario_shots/README.md) 给出了标定、通过区间和失败复现核验。从已录相机帧重出全部视频，在本目录运行 `python -B assemble_obstacle_films.py obstacle_films --render`。若新场景原始帧还在独立工作树，添加 `--capture-root scenario_shots <该工作树的场景素材目录>`。只从七支已有 MP4 重建带章节的合集时省略 `--render`。

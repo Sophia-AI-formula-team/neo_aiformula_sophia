@@ -89,7 +89,10 @@ def evaluate(run, index, trigger):
         onset_speed = float(np.interp(trigger, rows[:,0], rows[:,4]))
         peak_speed = max(onset_speed, float(np.interp(arrival, rows[:,0], rows[:,4])),
                          max(window[:,4],default=onset_speed))
+        front = sec["frontEnterS"]
+        at_front = float(np.interp(front,rows[:,0],rows[:,4])) if front is not None and front>=trigger else None
         early = dict(atS=trigger, actualMps=onset_speed, peakBeforeAxleCrossMps=peak_speed,
+                     actualAtFrontEntryMps=at_front,
                      actualAtAxleCrossMps=float(np.interp(arrival,rows[:,0],rows[:,4])),
                      increaseMps=float(peak_speed-onset_speed))
     zone_time = run["zoneEnd"][index]-run["zoneStart"][index] if run["zoneEnd"][index]>=0 else None
@@ -115,6 +118,10 @@ def audit(on, off, trigger_name, index):
         raise ValueError("The two timing modes must be the only change")
     start = next((d for d in on["decisions"] if d["reason"]==trigger_name),None)
     trigger = start["t"] if start else None
+    same_observation = None
+    if start:
+        off_at_trigger = next(d for d in off["decisions"] if abs(d["t"]-trigger)<.00002)
+        same_observation = all(start[key]==off_at_trigger[key] for key in ("observed","tracks","speed","yaw"))
     a, b = np.asarray(on["rows"]), np.asarray(off["rows"])
     ends = trigger if trigger is not None else min(a[-1,0], b[-1,0])+.0001
     # Trigger tick is excluded: it already includes the new actuator command.
@@ -126,16 +133,32 @@ def audit(on, off, trigger_name, index):
     if measured["qualifiesForTimeComparison"] and reference["qualifiesForTimeComparison"]:
         saved = reference["obstacleZoneS"] - measured["obstacleZoneS"]
     return dict(on=measured, off=reference, secondsSavedInMatchedSafeZone=saved,
-                firstDecision=start, identicalPreTriggerRows=shared, commonPrefixRows=len(a) if shared else 0)
+                firstDecision=start, identicalPreTriggerRows=shared, identicalObservationAtTrigger=same_observation,
+                commonPrefixRows=len(a) if shared else 0)
+
+
+def phase_checks(runs, protocol):
+    cases = {}
+    for i, phase in enumerate(protocol["phasesRad"],1):
+        name = f"h{i}"
+        on, off = (read(runs/f"{name}_{mode}.json") for mode in ("go","yield"))
+        if (on["request"]["seed"] != protocol["commonSeed"]
+                or on["request"]["timing"]["approach"] != protocol["commonApproachMps"]
+                or on["request"]["obstacles"][0][4] != phase):
+            raise ValueError("Phase or approach differs from the predefined test")
+        cases[str(phase)] = audit(on,off,"go_first",0)
+    return cases
 
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("on",type=Path)
-    parser.add_argument("off",type=Path)
+    parser.add_argument("on",type=Path,help="On-run JSON, or directory of runs with --phases")
+    parser.add_argument("off",type=Path,help="Off-run JSON, or predefined phase protocol with --phases")
+    parser.add_argument("--phases",action="store_true")
     parser.add_argument("--action",default="go_first")
     parser.add_argument("--prop",type=int,default=0)
     parser.add_argument("--out",type=Path,required=True)
     opts=parser.parse_args()
-    result=audit(read(opts.on),read(opts.off),opts.action,opts.prop)
+    result=(phase_checks(opts.on,read(opts.off)) if opts.phases
+            else audit(read(opts.on),read(opts.off),opts.action,opts.prop))
     opts.out.write_text(json.dumps(result,indent=2,allow_nan=False),encoding="utf8")

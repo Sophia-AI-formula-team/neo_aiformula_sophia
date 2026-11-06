@@ -1,0 +1,261 @@
+{
+  "title": "横移锥桶 · 同场双车对照",
+  "fps": 20,
+  "width": 2048,
+  "height": 1280,
+  "playback": "1x common simulation clock",
+  "startS": 5.5,
+  "endS": 12.5,
+  "terminalEndIncluded": false,
+  "frames": 140,
+  "prop": 0,
+  "runs": [
+    "explanatory_yield",
+    "explanatory_go"
+  ],
+  "trajectorySHA256": [
+    "d2298082b6fe1cc5077be6c4a30d8c92664e8004d4c54998583fe538a5c71344",
+    "11ff7cd62bef909130d5a9982ad34f022842ca6a9c0f7fb1823245bb67611f30"
+  ],
+  "auditSHA256": "68994d5e029b1652ad9f2bced5363c86d6645bf4a11976e0a2b9ee97f008e611",
+  "missingCameraFrames": [
+    0,
+    0
+  ],
+  "maxCameraAgeS": [
+    9.999999992515995e-07,
+    9.999999992515995e-07
+  ],
+  "a4ArchiveEnabled": [
+    true,
+    true
+  ],
+  "missingA4Frames": [
+    0,
+    0
+  ],
+  "maxA4AgeS": [
+    0.1500009999999996,
+    0.1500009999999996
+  ],
+  "groundTruth": "Fixed prop coordinates from UnityRace.PropPosition; car from latest recorded referee pose. The two runs share an identical scene clock.",
+  "lastPreEventFrameIndices": {
+    "off.lastFrameBefore.frontEnterS": 86,
+    "off.lastFrameBefore.rearClearS": 108,
+    "on.lastFrameBefore.frontEnterS": 71,
+    "on.lastFrameBefore.rearClearS": 80
+  },
+  "posterFrame": 71,
+  "checkFrames": [
+    {
+      "videoFrame": 0,
+      "simS": 5.5,
+      "sources": [
+        {
+          "sourceFrame": 110,
+          "sourceS": 5.5,
+          "decisionS": 5.4,
+          "poseS": 5.5,
+          "heldAfterEnd": false,
+          "sha256": "27c203efdb131b495adc990423670368d78013b5e5754eb45dabe0a91718bdcd",
+          "a4Frame": 27,
+          "a4SHA256": "a2a38fb24700fea687e2f7d906ccc6b369110d7b5270cb4ebb8355eab0625979",
+          "a4DecodedMeanRGBError": 2.183,
+          "decodedMeanRGBError": 1.331
+        },
+        {
+          "sourceFrame": 110,
+          "sourceS": 5.5,
+          "decisionS": 5.4,
+          "poseS": 5.5,
+          "heldAfterEnd": false,
+          "sha256": "27c203efdb131b495adc990423670368d78013b5e5754eb45dabe0a91718bdcd",
+          "a4Frame": 27,
+          "a4SHA256": "a2a38fb24700fea687e2f7d906ccc6b369110d7b5270cb4ebb8355eab0625979",
+          "a4DecodedMeanRGBError": 2.167,
+          "decodedMeanRGBError": 1.333
+        }
+      ]
+    },
+    {
+      "videoFrame": 70,
+      "simS": 9.0,
+      "sources": [
+        {
+          "sourceFrame": 180,
+          "sourceS": 9.0,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "61eb17a1719cfba9d1596ab55b2aab6dcd85c93cd4d7b8fe998d68cc4774c1e0",
+          "a4Frame": 45,
+          "a4SHA256": "82b411073919de46a76b13bfb5dfbcbfc252f46996962666fa36e4bd2fe8033c",
+          "a4DecodedMeanRGBError": 2.666,
+          "decodedMeanRGBError": 1.482
+        },
+        {
+          "sourceFrame": 180,
+          "sourceS": 9.0,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "b76ba9839a79bdc9a37ce85b3fa502eac9fb4363c8382573571cce9293f4b7b3",
+          "a4Frame": 45,
+          "a4SHA256": "56b1efaef74b0834a76f5c0d483708f37265203af7c1fcab7b15d71c2e095322",
+          "a4DecodedMeanRGBError": 2.152,
+          "decodedMeanRGBError": 1.471
+        }
+      ]
+    },
+    {
+      "videoFrame": 71,
+      "simS": 9.05,
+      "sources": [
+        {
+          "sourceFrame": 181,
+          "sourceS": 9.05,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "fa3b548bc849f4f6b031161ca93d1e75de86024edc2c7cb5791529ccae94dc79",
+          "a4Frame": 45,
+          "a4SHA256": "82b411073919de46a76b13bfb5dfbcbfc252f46996962666fa36e4bd2fe8033c",
+          "a4DecodedMeanRGBError": 2.647,
+          "decodedMeanRGBError": 1.502
+        },
+        {
+          "sourceFrame": 181,
+          "sourceS": 9.05,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "151269cdac430fcb42db9e7531eea2da3fe4cd3024bd66750f8832ca894157e5",
+          "a4Frame": 45,
+          "a4SHA256": "56b1efaef74b0834a76f5c0d483708f37265203af7c1fcab7b15d71c2e095322",
+          "a4DecodedMeanRGBError": 2.135,
+          "decodedMeanRGBError": 1.505
+        }
+      ]
+    },
+    {
+      "videoFrame": 80,
+      "simS": 9.5,
+      "sources": [
+        {
+          "sourceFrame": 190,
+          "sourceS": 9.5,
+          "decisionS": 9.4,
+          "poseS": 9.5,
+          "heldAfterEnd": false,
+          "sha256": "b0713cd52329c991a9251ab114e3efe9ba40b803f4669ec378d14e192565c327",
+          "a4Frame": 47,
+          "a4SHA256": "37cfa71951efc0a6299e23de7eb7f914aedf3613e66f41397fd9d7a2bc6c76f3",
+          "a4DecodedMeanRGBError": 2.242,
+          "decodedMeanRGBError": 1.47
+        },
+        {
+          "sourceFrame": 190,
+          "sourceS": 9.5,
+          "decisionS": 9.4,
+          "poseS": 9.5,
+          "heldAfterEnd": false,
+          "sha256": "ba42dca0fedfec03e825dc34c03040afa27d9dd71350006da44d2de94d71bec7",
+          "a4Frame": 47,
+          "a4SHA256": "1ee861134dd668d21ecc030405e99ab06481791f17d0d2214675db4ca6664ad0",
+          "a4DecodedMeanRGBError": 2.176,
+          "decodedMeanRGBError": 1.482
+        }
+      ]
+    },
+    {
+      "videoFrame": 86,
+      "simS": 9.8,
+      "sources": [
+        {
+          "sourceFrame": 196,
+          "sourceS": 9.8,
+          "decisionS": 9.8,
+          "poseS": 9.8,
+          "heldAfterEnd": false,
+          "sha256": "1b1319ed8608115b35f841180440036de642262567c38a3b1ef6e97b0d554629",
+          "a4Frame": 49,
+          "a4SHA256": "d848a2cf703ab559626296014b12de6c7a9121562b84e9433ac2263ec1752232",
+          "a4DecodedMeanRGBError": 2.213,
+          "decodedMeanRGBError": 1.484
+        },
+        {
+          "sourceFrame": 196,
+          "sourceS": 9.8,
+          "decisionS": 9.8,
+          "poseS": 9.8,
+          "heldAfterEnd": false,
+          "sha256": "f7bd0ceff488da1dd8010b85225443ef402db8808aa27e226019c06e73ba4756",
+          "a4Frame": 49,
+          "a4SHA256": "63b06aa475e4f710473d07f5ae826c2f41b11436bf8fd8b728c71fb74914eb61",
+          "a4DecodedMeanRGBError": 2.165,
+          "decodedMeanRGBError": 1.457
+        }
+      ]
+    },
+    {
+      "videoFrame": 108,
+      "simS": 10.9,
+      "sources": [
+        {
+          "sourceFrame": 218,
+          "sourceS": 10.9,
+          "decisionS": 10.8,
+          "poseS": 10.9,
+          "heldAfterEnd": false,
+          "sha256": "67e58af1efe4817f768c509bce762ec4d00f65d0cec6ff624139012a4e9f3f49",
+          "a4Frame": 54,
+          "a4SHA256": "a82da6d740fe51ed483c4159a7683aa0209c8be9b871d862858020562555ff83",
+          "a4DecodedMeanRGBError": 2.173,
+          "decodedMeanRGBError": 1.477
+        },
+        {
+          "sourceFrame": 218,
+          "sourceS": 10.9,
+          "decisionS": 10.8,
+          "poseS": 10.9,
+          "heldAfterEnd": false,
+          "sha256": "4e4b7c8ff06566cf1c44c4eedecb815132aca603a7f7dafb5391907ac041eae2",
+          "a4Frame": 54,
+          "a4SHA256": "0096a0c4270c3791a976b07ae9607db1a2efbe65a0f0e8e0795e64a76b1d7d7a",
+          "a4DecodedMeanRGBError": 2.185,
+          "decodedMeanRGBError": 1.427
+        }
+      ]
+    },
+    {
+      "videoFrame": 139,
+      "simS": 12.45,
+      "sources": [
+        {
+          "sourceFrame": 249,
+          "sourceS": 12.45,
+          "decisionS": 12.4,
+          "poseS": 12.4,
+          "heldAfterEnd": false,
+          "sha256": "3403f71ba497fb5c421801b59c815bcd20190ea155762fdb967a1f1baf6ccb62",
+          "a4Frame": 62,
+          "a4SHA256": "56101d992a3ccc1c9aecc76b97dde0348acd56309445dd3fb3f59edeaddb1812",
+          "a4DecodedMeanRGBError": 2.264,
+          "decodedMeanRGBError": 1.504
+        },
+        {
+          "sourceFrame": 249,
+          "sourceS": 12.45,
+          "decisionS": 12.4,
+          "poseS": 12.4,
+          "heldAfterEnd": false,
+          "sha256": "2a03b6b692630a51a84d4e434694095dc90b26b689db25cbf830389385f6f137",
+          "a4Frame": 62,
+          "a4SHA256": "b9fb7ab30e219497a20795445299efc517cc8dec446d06fc3d6bbc8c62eeaf55",
+          "a4DecodedMeanRGBError": 2.159,
+          "decodedMeanRGBError": 1.477
+        }
+      ]
+    }
+  ]
+}

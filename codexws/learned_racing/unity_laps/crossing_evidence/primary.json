@@ -1,0 +1,168 @@
+{
+  "on": {
+    "id": "explanatory_go",
+    "status": "segment",
+    "qualifiesForTimeComparison": true,
+    "obstacleZoneS": 3.4499999999999993,
+    "minConeClearanceM": 0.991071,
+    "minRoadClearanceM": 1.36368334,
+    "section": {
+      "frontEnterS": 9.091272397812222,
+      "axleCrossS": 9.232294667916833,
+      "rearClearS": 9.507888363090697,
+      "nextConeEntersCrossedStripS": 10.637975966550318,
+      "rearLeadS": 1.1300876034596214,
+      "approachingStripAtRear": true,
+      "inflatedStripM": [
+        0.8320697109003388,
+        2.304048629646378
+      ]
+    },
+    "earlyAcceleration": {
+      "atS": 7.79999971,
+      "actualMps": 2.7166872,
+      "peakBeforeAxleCrossMps": 4.469097845292932,
+      "actualAtFrontEntryMps": 4.446092983719501,
+      "actualAtAxleCrossMps": 4.469097845292932,
+      "increaseMps": 1.7524106452929322
+    },
+    "samePathLater": [
+      {
+        "delayS": 0.0,
+        "estimatedGapM": 0.9910697561151409
+      },
+      {
+        "delayS": 0.25,
+        "estimatedGapM": 0.7810376332814357
+      },
+      {
+        "delayS": 0.5,
+        "estimatedGapM": 0.5718465343909265
+      },
+      {
+        "delayS": 0.75,
+        "estimatedGapM": 0.3655326572505682
+      },
+      {
+        "delayS": 1.0,
+        "estimatedGapM": 0.16408517394012606
+      },
+      {
+        "delayS": 1.5,
+        "estimatedGapM": -0.21634969690440867
+      }
+    ]
+  },
+  "off": {
+    "id": "explanatory_yield",
+    "status": "segment",
+    "qualifiesForTimeComparison": true,
+    "obstacleZoneS": 5.42,
+    "minConeClearanceM": 0.328619331,
+    "minRoadClearanceM": 0.88249433,
+    "section": {
+      "frontEnterS": 9.827416109220595,
+      "axleCrossS": 10.205249249721584,
+      "rearClearS": 10.904696461176458,
+      "nextConeEntersCrossedStripS": 11.007505404155594,
+      "rearLeadS": 0.10280894297913612,
+      "approachingStripAtRear": true,
+      "inflatedStripM": [
+        1.111680084144592,
+        2.6841200532939924
+      ]
+    },
+    "earlyAcceleration": {
+      "atS": 7.79999971,
+      "actualMps": 2.7166872,
+      "peakBeforeAxleCrossMps": 2.7166872,
+      "actualAtFrontEntryMps": 1.827395472386697,
+      "actualAtAxleCrossMps": 1.7523289722424507,
+      "increaseMps": 0.0
+    },
+    "samePathLater": [
+      {
+        "delayS": 0.0,
+        "estimatedGapM": 0.32858121172226434
+      },
+      {
+        "delayS": 0.25,
+        "estimatedGapM": 0.14933386421794426
+      },
+      {
+        "delayS": 0.5,
+        "estimatedGapM": -0.020495276568738785
+      },
+      {
+        "delayS": 0.75,
+        "estimatedGapM": -0.17901648777928839
+      },
+      {
+        "delayS": 1.0,
+        "estimatedGapM": -0.3244781532880601
+      },
+      {
+        "delayS": 1.5,
+        "estimatedGapM": -0.34
+      }
+    ]
+  },
+  "secondsSavedInMatchedSafeZone": 1.9700000000000006,
+  "firstDecision": {
+    "t": 7.79999971,
+    "speed": 2.7166872,
+    "yaw": 0.000214854925,
+    "observed": [
+      0.0254487935,
+      0.0204583388,
+      0.01593366,
+      0.0153143406
+    ],
+    "tracks": [
+      [
+        5.13280869,
+        -3.02581763,
+        0.6092152,
+        -0.1495624
+      ]
+    ],
+    "reason": "go_first",
+    "curvature": 0.0007698074,
+    "cruise": 2.4,
+    "look": 3.9161706,
+    "target": 0.0193612147,
+    "preferred": -0.000155605434,
+    "offset": -0.000155605434,
+    "ratio": 1.0,
+    "guardCap": 4.42479372,
+    "conflictRange": 99.0,
+    "speedCmd": 2.76,
+    "yawCmd": 0.0354188979,
+    "rightCan": 251,
+    "leftCan": 351,
+    "timing": {
+      "state": "accepted",
+      "offered": true,
+      "id": 1,
+      "range": 5.13280869,
+      "cross": -3.04241872,
+      "motion": 0.5055373,
+      "history": 1.19999981,
+      "fitNoise": 0.1740655,
+      "rangeNoise": 0.41486904,
+      "along": -0.140776232,
+      "frontFast": 1.125,
+      "rearFast": 1.775,
+      "frontPace": 1.525,
+      "rearPace": 2.775,
+      "rawFast": 1.42509007,
+      "rawPace": 0.9195527,
+      "marginFast": 0.7802402,
+      "marginPace": -0.0755472258,
+      "remaining": 6.57282162
+    }
+  },
+  "identicalPreTriggerRows": true,
+  "identicalObservationAtTrigger": true,
+  "commonPrefixRows": 78
+}
