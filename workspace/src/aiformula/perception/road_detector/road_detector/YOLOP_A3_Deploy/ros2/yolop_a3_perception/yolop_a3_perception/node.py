@@ -9,7 +9,7 @@ from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Int32, String
 
-from yolop_a3_runtime import PerceptionModel, ROS_TOPICS
+from yolop_a3_runtime import PerceptionModel, ROS_TOPICS, RELEASE_NAME
 
 
 class YolopA3Node(Node):
@@ -32,7 +32,7 @@ class YolopA3Node(Node):
         self.light = self.create_publisher(String, ROS_TOPICS.traffic_light_state, 1)
         self.detections = self.create_publisher(String, ROS_TOPICS.detections_json, 1)
         self.subscription = self.create_subscription(Image, topic, self.receive, qos)
-        self.get_logger().info(f"A3 V76 single-frame mode; weights={weights}; input={topic}; "
+        self.get_logger().info(f"{RELEASE_NAME} single-frame mode; weights={weights}; input={topic}; "
                                "calibrated temporal input is available through Python predict_frame")
 
     def receive(self, message):

@@ -1,4 +1,4 @@
-"""Run a calibrated recorded sequence through the public V76 frame API."""
+"""Run a calibrated recorded sequence through the public A4 frame API."""
 import argparse
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ import cv2
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from yolop_a3_runtime import PerceptionModel
+from yolop_a3_runtime import PerceptionModel, RELEASE_NAME
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
                 raise OSError(f'Cannot write {destination}')
         metadata.append(dict(frame=number, timestamp=frame['timestamp'], **result.detections_payload()))
     (args.output / 'results.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
-    print(f'V76 sequence: {len(frames)} frames -> {args.output.resolve()}')
+    print(f'{RELEASE_NAME} sequence: {len(frames)} frames -> {args.output.resolve()}')
 
 
 if __name__ == '__main__':

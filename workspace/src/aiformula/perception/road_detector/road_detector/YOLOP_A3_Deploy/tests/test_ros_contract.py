@@ -15,7 +15,7 @@ from yolop_a3_runtime import PerceptionOutput
 def load_node(monkeypatch, result):
     class Node:
         def __init__(self, name):
-            self.publishers, self.errors = {}, []
+            self.publishers, self.errors, self.infos = {}, [], []
 
         def declare_parameter(self, name, default):
             return SimpleNamespace(value=default)
@@ -29,7 +29,7 @@ def load_node(monkeypatch, result):
             return SimpleNamespace(topic=topic, callback=callback, qos=qos)
 
         def get_logger(self):
-            return SimpleNamespace(info=lambda text: None, error=self.errors.append)
+            return SimpleNamespace(info=self.infos.append, error=self.errors.append)
 
     class Bridge:
         def imgmsg_to_cv2(self, message, desired_encoding):
@@ -77,6 +77,7 @@ def test_callback_preserves_headers_encodings_and_all_seven_outputs(monkeypatch)
     assert requested == [(Path("weights/shared_best.pth"), dict(device="auto", score_threshold=.5))]
     assert node.subscription.topic == "/aiformula_sensing/zed_node/left_image/undistorted"
     assert node.subscription.qos.depth == 1
+    assert any("A4 single-frame mode" in text for text in node.infos)
     header = SimpleNamespace(stamp=SimpleNamespace(sec=123, nanosec=456), frame_id="zed_left")
     node.receive(SimpleNamespace(pixels=image, header=header))
     encodings = {"pub_mask_image": "mono8", "pub_annotated_mask_image": "bgr8",

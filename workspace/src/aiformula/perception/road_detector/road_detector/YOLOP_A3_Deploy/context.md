@@ -1,4 +1,9 @@
-# A3 V76 Context
+# A4 Context
+
+Release identity: A4 / 4.0.0 / tag a4. This is a naming clarification of a3-v76,
+not a new training run. Weight bytes, numerical inference, source architecture
+and provenance are unchanged. Legacy folder, distribution, Python and ROS names
+remain compatible. See MODE_GUIDE_ZH.md for the actual deployment status.
 
 ## Selected Source
 

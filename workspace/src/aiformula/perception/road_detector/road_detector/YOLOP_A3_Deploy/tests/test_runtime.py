@@ -10,6 +10,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from yolop_a3_runtime import PerceptionModel, SharedFPNPerception, Detection, ROS_TOPICS
+from yolop_a3_runtime import RELEASE_NAME, __version__
 from yolop_a3_runtime.outputs import render
 from yolop_a3_runtime.color_semantics import classify_traffic_cone
 from yolop_a3_runtime.temporal import ARCHITECTURE, INPUT_CONTRACT, load_model
@@ -76,6 +77,26 @@ def test_bundled_checkpoint_is_single_model_without_training_state():
     assert payload["provenance"]["source_deployment_candidate"] is False
     assert list((ROOT / "weights").glob("*.pth")) == [path]
     assert not any("teacher" in name for name in payload["model"])
+
+
+def test_a4_identity_preserves_selected_weight_and_public_interfaces():
+    import ast
+    import xml.etree.ElementTree as ET
+    manifest = json.loads((ROOT / "weights/manifest.json").read_text())
+    assert RELEASE_NAME == manifest["release"] == "A4"
+    assert __version__ == manifest["package_version"] == "4.0.0"
+    assert manifest["tag"] == "a4" and manifest["previous_tag"] == "a3-v76"
+    assert manifest["sha256"] == "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3"
+    assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
+    ros = ROOT / "ros2/yolop_a3_perception"
+    package = ET.parse(ros / "package.xml").getroot()
+    assert package.findtext("name") == "yolop_a3_perception"
+    assert package.findtext("version") == __version__
+    tree = ast.parse((ros / "setup.py").read_text())
+    setup = next(node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == "setup")
+    assert next(ast.literal_eval(v.value) for v in setup.keywords if v.arg == "version") == __version__
+    assert PerceptionModel is SharedFPNPerception
 
 
 def test_wrong_architecture_fails_closed(tmp_path):

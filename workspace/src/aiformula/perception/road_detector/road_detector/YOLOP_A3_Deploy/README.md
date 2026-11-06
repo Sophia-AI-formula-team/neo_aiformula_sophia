@@ -1,10 +1,20 @@
-# YOLOP A3 V76 Deployment
+# YOLOP A4 Deployment
 
-User-selected stable release: **a3-v76**, Python package **0.76.0**.
+Current release: **A4**, tag **a4**, package version **4.0.0**.
+
+**当前 ROS 节点逐帧独立识别，并未启用时序增强。** 这与之前 V14 的运行方式相同，
+但使用的是本次新权重，不是退回 V14。时序模块和接口已发布，实车的标定与同步位姿
+尚未接入；因此直接启动 ROS 节点不能复现 Unity 演示中的时序增强效果。
+详见[单帧与时序模式说明](MODE_GUIDE_ZH.md)。
+
+A4 renames the previously published a3-v76 release without retraining, changing
+weight bytes or enabling temporal inference. The existing YOLOP_A3_Deploy folder,
+yolop-a3-runtime distribution, yolop_a3_runtime imports and ROS package/topic names
+are retained to keep current installation and caller contracts intact.
 
 One MobileNetV3 Large encoder, one FCOS detector, one continuous-lane decoder,
 one 49-parameter temporal gate, **one model-only weight file**.
-This replaces the old A3 deployment package; a3-v14 and a3-v6 remain immutable.
+Historical tags a3-v76, a3-v14 and a3-v6 remain immutable.
 
 ## Choose The Input Mode
 
@@ -15,9 +25,14 @@ This replaces the old A3 deployment package; a3-v14 and a3-v6 remain immutable.
 | Bundled ROS node | Image topic | Explicit **single-frame mode**; logs this at startup |
 
 The ROS node does not guess camera calibration or derive motion from timestamps.
-To use V76 temporal fusion, integrate the documented Python frame contract with
+To use A4 temporal fusion, integrate the documented Python frame contract with
 your calibrated, timestamp-aligned geometry source. See [TEMPORAL.md](TEMPORAL.md).
 Objects always use the current image; the temporal gate does not track objects.
+
+Single-frame means every video frame is processed independently, not that only
+one image is processed. The Unity temporal comparisons had accurate camera poses;
+the current ROS wrapper receives images only. The model and API are packaged,
+but the real-camera temporal input integration is not complete ([issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34)).
 
 ## Output Contract
 

@@ -9,10 +9,13 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from yolop_a3_runtime.temporal import ARCHITECTURE, INPUT_CONTRACT
+from yolop_a3_runtime import RELEASE_NAME, __version__
 
 
 def main():
     manifest = json.loads((ROOT / "weights/manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("release") != RELEASE_NAME or manifest.get("package_version") != __version__ or manifest.get("tag") != "a4":
+        raise ValueError("A4 release metadata mismatch")
     path = ROOT / manifest["file"]
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -35,7 +38,8 @@ def main():
     if any(not torch.isfinite(value).all() for value in payload["model"].values()):
         raise ValueError("Nonfinite model tensor")
     print(json.dumps(dict(sha256=checksum, bytes=path.stat().st_size,
-                          step=payload["provenance"]["step"], tag="a3-v76", inference_only=True), indent=2))
+                          step=payload["provenance"]["step"], release=RELEASE_NAME,
+                          version=__version__, tag=manifest["tag"], inference_only=True), indent=2))
 
 
 if __name__ == "__main__":
