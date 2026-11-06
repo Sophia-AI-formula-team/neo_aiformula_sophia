@@ -1,0 +1,106 @@
+{
+  "off": {
+    "id": "h05_base",
+    "status": "obstacle",
+    "qualifiesForTimeComparison": false,
+    "obstacleZoneS": null,
+    "minConeClearanceM": -0.00377330184,
+    "minRoadClearanceM": 0.7136564,
+    "section": {
+      "frontEnterS": 11.495746494836084,
+      "axleCrossS": 11.915889771576184,
+      "rearClearS": null,
+      "nextConeEntersCrossedStripS": null,
+      "rearLeadS": null,
+      "approachingStripAtRear": null
+    },
+    "earlyAcceleration": {
+      "atS": 6.79999971,
+      "actualMps": 2.71605539,
+      "peakBeforeAxleCrossMps": 2.71605539,
+      "actualAtFrontEntryMps": 1.7274369233477938,
+      "actualAtAxleCrossMps": 1.994984587398802,
+      "increaseMps": 0.0
+    },
+    "samePathLater": [
+      {
+        "delayS": 0.0,
+        "estimatedGapM": -0.0037730674829035693
+      },
+      {
+        "delayS": 0.25,
+        "estimatedGapM": -0.12272323234673727
+      },
+      {
+        "delayS": 0.5,
+        "estimatedGapM": -0.22275850687777948
+      },
+      {
+        "delayS": 0.75,
+        "estimatedGapM": -0.3026969831643544
+      },
+      {
+        "delayS": 1.0,
+        "estimatedGapM": -0.34
+      },
+      {
+        "delayS": 1.5,
+        "estimatedGapM": -0.34
+      }
+    ]
+  },
+  "on": {
+    "id": "h05_learned",
+    "status": "segment",
+    "qualifiesForTimeComparison": true,
+    "obstacleZoneS": 3.9700003099999988,
+    "minConeClearanceM": 1.26844776,
+    "minRoadClearanceM": 1.03975284,
+    "section": {
+      "frontEnterS": 9.046071110965727,
+      "axleCrossS": 9.215856180842096,
+      "rearClearS": 9.512652542142806,
+      "nextConeEntersCrossedStripS": 10.724791864136334,
+      "rearLeadS": 1.2121393219935275,
+      "approachingStripAtRear": true,
+      "inflatedStripM": [
+        -2.1255898947136656,
+        -0.4919191491354203
+      ]
+    },
+    "earlyAcceleration": {
+      "atS": 6.79999971,
+      "actualMps": 2.71605539,
+      "peakBeforeAxleCrossMps": 4.306695786997151,
+      "actualAtFrontEntryMps": 4.0365720967070455,
+      "actualAtAxleCrossMps": 4.306695786997151,
+      "increaseMps": 1.5906403969971512
+    },
+    "samePathLater": [
+      {
+        "delayS": 0.0,
+        "estimatedGapM": 1.2678994998071909
+      },
+      {
+        "delayS": 0.25,
+        "estimatedGapM": 1.0622601167560841
+      },
+      {
+        "delayS": 0.5,
+        "estimatedGapM": 0.8518169750812534
+      },
+      {
+        "delayS": 0.75,
+        "estimatedGapM": 0.6390645278238933
+      },
+      {
+        "delayS": 1.0,
+        "estimatedGapM": 0.4265326950973641
+      },
+      {
+        "delayS": 1.5,
+        "estimatedGapM": 0.012380317134165875
+      }
+    ]
+  }
+}

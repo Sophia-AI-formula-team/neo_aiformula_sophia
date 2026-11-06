@@ -1,0 +1,222 @@
+{
+  "title": "整圈挑战 · 冻结基线",
+  "run": "full01_base",
+  "seed": 764259,
+  "trajectory_sha256": "0f28b261f0f5f34ece1bcae584b383d19e8723bc86181275c1145b7f096d8fe7",
+  "model": "a4/single_frame/b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3/outer-edge/345d7be45c99",
+  "a4_worker": {
+    "port": 53949,
+    "release": "a4",
+    "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "mode": "single_frame",
+    "device": "cuda",
+    "sampleStride": 1,
+    "objectObservations": "enabled",
+    "laneObserver": "outer-edge"
+  },
+  "start_s": 0.0,
+  "end_s": 88.02,
+  "end_included": true,
+  "labelled_terminal_hold_s": 0.8,
+  "status": "lap",
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1280,
+    "fps": 20.0,
+    "frames": 1777,
+    "duration_s": 88.85
+  },
+  "referee_inset": {
+    "mode": "fixed per local encounter; hidden on free road",
+    "overlay_chase_pixel_box": [
+      11,
+      11,
+      351,
+      226
+    ],
+    "windows": [
+      {
+        "startS": 10.5599995,
+        "endS": 20.15,
+        "prop_ids_zero_based": [
+          0
+        ],
+        "anchor_id_zero_based": 0,
+        "center_world_xz": [
+          47.48889897081522,
+          42.11802805007303
+        ],
+        "road_forward_xz": [
+          -0.9998352032747077,
+          -0.018153960797140205
+        ],
+        "road_right_xz": [
+          -0.018153960797140205,
+          0.9998352032747077
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      },
+      {
+        "startS": 38.0,
+        "endS": 49.12,
+        "prop_ids_zero_based": [
+          1,
+          2
+        ],
+        "anchor_id_zero_based": 1,
+        "center_world_xz": [
+          -12.425491413124334,
+          15.064380188318344
+        ],
+        "road_forward_xz": [
+          0.01815416193082036,
+          -0.9998351996227127
+        ],
+        "road_right_xz": [
+          -0.9998351996227127,
+          -0.01815416193082036
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      },
+      {
+        "startS": 65.4799957,
+        "endS": 74.61,
+        "prop_ids_zero_based": [
+          3
+        ],
+        "anchor_id_zero_based": 3,
+        "center_world_xz": [
+          47.98411892113511,
+          -35.55285833403897
+        ],
+        "road_forward_xz": [
+          0.9829316747924294,
+          -0.18397098328201028
+        ],
+        "road_right_xz": [
+          -0.18397098328201028,
+          -0.9829316747924294
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      }
+    ]
+  },
+  "learned_panel": null,
+  "method": "Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
+  "unique_sources": {
+    "chase": 1761,
+    "a4": 441
+  },
+  "max_display_age_s": {
+    "chase": 0.01999999999999602,
+    "a4": 0.1500046000000026
+  },
+  "missing_camera_output_frames": {
+    "chase": 0,
+    "a4": 0
+  },
+  "samples": [
+    {
+      "film_frame": 0,
+      "simulation_s": 0.0,
+      "refereeActive": false,
+      "chase": {
+        "id": 0,
+        "time_s": 0.0,
+        "sha256": "266ca69f29b0e85b526567bf2bd73cbe5d8d298769db4873c3743d6bb7fe6fa2"
+      },
+      "a4": {
+        "id": 0,
+        "time_s": 0.0,
+        "sha256": "dc5f88b0aaaa56147bbc70c27542c70fe9501699dd4c2a05c9abb94af95856c8"
+      },
+      "track_count": 1,
+      "phase": "road"
+    },
+    {
+      "film_frame": 880,
+      "simulation_s": 44.0,
+      "refereeActive": true,
+      "chase": {
+        "id": 880,
+        "time_s": 44.0,
+        "sha256": "bc2b3b13f0dd25f06acaafa57ca8bd78d06209120b9a4c9f5603f2d8077cdeba"
+      },
+      "a4": {
+        "id": 220,
+        "time_s": 44.0,
+        "sha256": "0c97e2de8c2eb664e9617030250070909d581c6acf7b5841ee600f2e55b1214a"
+      },
+      "track_count": 1,
+      "phase": "yield"
+    },
+    {
+      "film_frame": 1760,
+      "simulation_s": 88.0,
+      "refereeActive": false,
+      "chase": {
+        "id": 1760,
+        "time_s": 88.0,
+        "sha256": "1bbaaa1344ecff1974bf1fdd86aa335ff588d9c740d7fdf5876d75ba7436a641"
+      },
+      "a4": {
+        "id": 440,
+        "time_s": 88.0,
+        "sha256": "60a85674e60c081b665cfd7eb358e436d7991b960eec00b326c2ae8b4b32462f"
+      },
+      "track_count": 2,
+      "phase": "road"
+    },
+    {
+      "film_frame": 1776,
+      "simulation_s": 88.02,
+      "refereeActive": false,
+      "chase": {
+        "id": 1760,
+        "time_s": 88.0,
+        "sha256": "1bbaaa1344ecff1974bf1fdd86aa335ff588d9c740d7fdf5876d75ba7436a641"
+      },
+      "a4": {
+        "id": 440,
+        "time_s": 88.0,
+        "sha256": "60a85674e60c081b665cfd7eb358e436d7991b960eec00b326c2ae8b4b32462f"
+      },
+      "track_count": 2,
+      "phase": "road"
+    }
+  ]
+}

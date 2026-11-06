@@ -27,6 +27,8 @@
 
 ## 文件与证据
 
+- [本轮两版学习控制器、训练过程、完整跑圈和避障录像](learned_evidence/README.md)。
+
 - [工作记录](WORKLOG.md)、[所有试车的参数与结果事件](evidence/events.jsonl)、[行驶轨迹](evidence/runs/)。
 - [实际相机冻结策略](evidence/camera_policy.json)、[联合预训练策略](evidence/joint_policy.json)、[全部考核](evidence/summary.json)、[物理与视频核验](evidence/validation.json)。
 - [车道与障碍决策](Road.cs)、[Unity 测试环境、裁判和摄像机](UnityRace.cs)、[RGB 识别适配](vision.py)、[A4 相机练习与预置盲测种子](camera_training.py)。

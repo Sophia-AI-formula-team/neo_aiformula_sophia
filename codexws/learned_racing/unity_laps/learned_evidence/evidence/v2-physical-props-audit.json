@@ -1,0 +1,135 @@
+{
+  "source": "Unity run.props; physical count derived from prop amplitude and angular frequency",
+  "films": [
+    {
+      "file": "v2-01-stress-s01.mp4",
+      "title": "V2 新压力 S01 · 弯道横移单桶",
+      "run": "s01_learned",
+      "sourceSHA256": "5f0a22b7fe5c472eda222febd4655683c6611811873872dd3cb499503ffa6295",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.37,
+          "omegaRadS": 0.57,
+          "stationFromStartM": 25.2275085,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "v2-02-stress-s02.mp4",
+      "title": "V2 新压力 S02 · 横移单桶",
+      "run": "s02_learned",
+      "sourceSHA256": "b4347f949ea2778b10bc94eb779df52a601cb26f8bd1471d60f592d7b0e1250f",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 2.0,
+          "omegaRadS": 0.51,
+          "stationFromStartM": 23.2293663,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "v2-03-stress-s03.mp4",
+      "title": "V2 新压力 S03 · 弯道静动双桶",
+      "run": "s03_learned",
+      "sourceSHA256": "4186b04ee6a8cac277e07ab687872db11f9f41413b978b46b64b7c886b543116",
+      "static": 1,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 30.5597076,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 1.13,
+          "omegaRadS": 0.55,
+          "stationFromStartM": 33.7240143,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "v2-04-stress-s04.mp4",
+      "title": "V2 新压力 S04 · 横移单桶",
+      "run": "s04_learned",
+      "sourceSHA256": "5c38af11ead3076eaefea5a473b82706ea31d993a08a4c9a8acefcef233c4637",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.7,
+          "omegaRadS": 0.52,
+          "stationFromStartM": 26.259079,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "v2-05-diagnostic-full01.mp4",
+      "title": "V2 已知场景诊断 · 完整一圈",
+      "run": "diag_full01_learned",
+      "sourceSHA256": "6fad0ca774dd9bdde2025463480a951c220911428e207e8feb171c2a97348e32",
+      "static": 2,
+      "moving": 2,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 48.4293671,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 126.712433,
+          "moving": false
+        },
+        {
+          "index": 2,
+          "amplitudeM": 1.03,
+          "omegaRadS": 0.61,
+          "stationFromStartM": 130.14386,
+          "moving": true
+        },
+        {
+          "index": 3,
+          "amplitudeM": 1.34,
+          "omegaRadS": 0.52,
+          "stationFromStartM": 218.727142,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "v2-06-diagnostic-h07.mp4",
+      "title": "V2 已知场景诊断 · 弯中内移慢行",
+      "run": "diag_h07_learned",
+      "sourceSHA256": "8c3c7d399280f20b0448012a176182ca8ffda99ead8b6421224d6347354ca91f",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.21,
+          "omegaRadS": 0.62,
+          "stationFromStartM": 24.9879,
+          "moving": true
+        }
+      ]
+    }
+  ]
+}

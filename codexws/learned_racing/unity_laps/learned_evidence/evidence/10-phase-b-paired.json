@@ -1,0 +1,230 @@
+{
+  "title": "盲测 H05 · 冻结基线与学习策略",
+  "fps": 20,
+  "width": 2048,
+  "height": 1280,
+  "playback": "1x common simulation clock",
+  "startS": 5.5,
+  "endS": 13.1,
+  "terminalEndIncluded": false,
+  "frames": 152,
+  "prop": 0,
+  "runs": [
+    "h05_base",
+    "h05_learned"
+  ],
+  "trajectorySHA256": [
+    "e1b002c85ffca8e7e8a6ab82a46ec15b70a421ce2deb74ca92c27cd90f62b241",
+    "50ebdcca91dc387928a33208bac165197c7193154ee8f66fd60d7ed081531f40"
+  ],
+  "auditSHA256": "10b3d72cad145f2e6959239b6a92b42c6aab2f29d22be451a5f649624859626d",
+  "missingCameraFrames": [
+    0,
+    0
+  ],
+  "maxCameraAgeS": [
+    9.999999992515995e-07,
+    9.999999992515995e-07
+  ],
+  "a4ArchiveEnabled": [
+    true,
+    true
+  ],
+  "missingA4Frames": [
+    0,
+    0
+  ],
+  "maxA4AgeS": [
+    0.1500009999999996,
+    0.1500009999999996
+  ],
+  "groundTruth": "Fixed prop coordinates from UnityRace.PropPosition; car from latest recorded referee pose. The two runs share an identical scene clock.",
+  "lastPreEventFrameIndices": {
+    "off.lastFrameBefore.frontEnterS": 119,
+    "on.lastFrameBefore.frontEnterS": 70,
+    "on.lastFrameBefore.rearClearS": 80
+  },
+  "posterFrame": 70,
+  "checkFrames": [
+    {
+      "videoFrame": 0,
+      "simS": 5.5,
+      "sources": [
+        {
+          "sourceFrame": 110,
+          "sourceS": 5.5,
+          "decisionS": 5.4,
+          "poseS": 5.5,
+          "heldAfterEnd": false,
+          "sha256": "20f3dc9a05d0578450156ba9de29ef1f847646340bee3cc9be3a10fba19fb61b",
+          "a4Frame": 27,
+          "a4SHA256": "2cabe7dacf854e0fab0cadfab638dd4aa6a2489815b289a5beda0b0b6cf5608e",
+          "a4DecodedMeanRGBError": 2.232,
+          "decodedMeanRGBError": 1.358
+        },
+        {
+          "sourceFrame": 110,
+          "sourceS": 5.5,
+          "decisionS": 5.4,
+          "poseS": 5.5,
+          "heldAfterEnd": false,
+          "sha256": "20f3dc9a05d0578450156ba9de29ef1f847646340bee3cc9be3a10fba19fb61b",
+          "a4Frame": 27,
+          "a4SHA256": "2cabe7dacf854e0fab0cadfab638dd4aa6a2489815b289a5beda0b0b6cf5608e",
+          "a4DecodedMeanRGBError": 2.217,
+          "decodedMeanRGBError": 1.349
+        }
+      ]
+    },
+    {
+      "videoFrame": 70,
+      "simS": 9.0,
+      "sources": [
+        {
+          "sourceFrame": 180,
+          "sourceS": 9.0,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "8fad97c271aa0d35b1d0484ea55ec9f54f9797916d1bf35b2ce9d49465fd2afe",
+          "a4Frame": 45,
+          "a4SHA256": "5d5b0fbfd25aad20492bc97ee0475c7dd32d3a7f2376e0b88d1dd1f4c5c2b451",
+          "a4DecodedMeanRGBError": 2.364,
+          "decodedMeanRGBError": 1.526
+        },
+        {
+          "sourceFrame": 180,
+          "sourceS": 9.0,
+          "decisionS": 9.0,
+          "poseS": 9.0,
+          "heldAfterEnd": false,
+          "sha256": "c3a471a5758ba5569bd85c3d72f883367c083eb2243463eceb2ef8ef980b91eb",
+          "a4Frame": 45,
+          "a4SHA256": "a0b8bc9374d2200a5bfe91b54b0cec81991c211f168f533193db31bd98a9fcc0",
+          "a4DecodedMeanRGBError": 2.365,
+          "decodedMeanRGBError": 1.523
+        }
+      ]
+    },
+    {
+      "videoFrame": 76,
+      "simS": 9.3,
+      "sources": [
+        {
+          "sourceFrame": 186,
+          "sourceS": 9.3,
+          "decisionS": 9.2,
+          "poseS": 9.3,
+          "heldAfterEnd": false,
+          "sha256": "8ca8c8d00b1f43c07c51cbeb435aae8b707857f1bdb3449ca8450c9ffb679f1d",
+          "a4Frame": 46,
+          "a4SHA256": "7bc6fdc5e3714af6f8e073c849b39661ce21abf1d52c9592e0625aeb8d630572",
+          "a4DecodedMeanRGBError": 2.367,
+          "decodedMeanRGBError": 1.489
+        },
+        {
+          "sourceFrame": 186,
+          "sourceS": 9.3,
+          "decisionS": 9.2,
+          "poseS": 9.3,
+          "heldAfterEnd": false,
+          "sha256": "a7eed77f895ae0eaf6ce53aab1b205ef163f865e92e5034408c4c6b328786e93",
+          "a4Frame": 46,
+          "a4SHA256": "a2838ae7a5db278eee929a4c5649e828686ad6a21ec108373b0f9d7f66d8e881",
+          "a4DecodedMeanRGBError": 2.22,
+          "decodedMeanRGBError": 1.527
+        }
+      ]
+    },
+    {
+      "videoFrame": 80,
+      "simS": 9.5,
+      "sources": [
+        {
+          "sourceFrame": 190,
+          "sourceS": 9.5,
+          "decisionS": 9.4,
+          "poseS": 9.5,
+          "heldAfterEnd": false,
+          "sha256": "885c9dd866399826a12258ccf8315afdbd8072353fcadbba2add7ecaaf1b6ae0",
+          "a4Frame": 47,
+          "a4SHA256": "209e3a2f4840422fba409c08e3521f0b40eac950fb613c29488403aaaa5868ab",
+          "a4DecodedMeanRGBError": 2.357,
+          "decodedMeanRGBError": 1.502
+        },
+        {
+          "sourceFrame": 190,
+          "sourceS": 9.5,
+          "decisionS": 9.4,
+          "poseS": 9.5,
+          "heldAfterEnd": false,
+          "sha256": "70549b0dca65488a20a572ceaeebed78f99d30e9fe489f2f27953395309012a0",
+          "a4Frame": 47,
+          "a4SHA256": "99b37fe99de5678bba122b114f33618030b2eccc2c8d8ae4dcdab839b3ea3618",
+          "a4DecodedMeanRGBError": 2.253,
+          "decodedMeanRGBError": 1.525
+        }
+      ]
+    },
+    {
+      "videoFrame": 119,
+      "simS": 11.45,
+      "sources": [
+        {
+          "sourceFrame": 229,
+          "sourceS": 11.45,
+          "decisionS": 11.4,
+          "poseS": 11.4,
+          "heldAfterEnd": false,
+          "sha256": "ffc022121b55da5ecdab30f601dce0e57b55051baf6e464f2b7950ecad691dc3",
+          "a4Frame": 57,
+          "a4SHA256": "2940ec82f705399d6fef6041a7f656c19ea580d8d5c85e1718e3976e7cbda475",
+          "a4DecodedMeanRGBError": 2.364,
+          "decodedMeanRGBError": 1.561
+        },
+        {
+          "sourceFrame": 229,
+          "sourceS": 11.45,
+          "decisionS": 11.4,
+          "poseS": 11.4,
+          "heldAfterEnd": false,
+          "sha256": "11cc80eea7baf7e4a27b5d1b93fc6f0efcfbee5f35097ae29a51c398ba12b910",
+          "a4Frame": 57,
+          "a4SHA256": "cc31826c2fd6ef06e163aeabe641ef9ec216640019f9348111223d07c9504362",
+          "a4DecodedMeanRGBError": 2.233,
+          "decodedMeanRGBError": 1.527
+        }
+      ]
+    },
+    {
+      "videoFrame": 151,
+      "simS": 13.05,
+      "sources": [
+        {
+          "sourceFrame": 245,
+          "sourceS": 12.21,
+          "decisionS": 12.2,
+          "poseS": 12.21,
+          "heldAfterEnd": true,
+          "sha256": "4b5b8c5cf9af7f77eff571e42ef2b39a9b7227c91fdeed95e8b7db1bffd18325",
+          "a4Frame": 61,
+          "a4SHA256": "9efb03e391c8e78521ca6f90c98410a4f13df2aa1e60511fdefbab5d97222573",
+          "a4DecodedMeanRGBError": 2.236,
+          "decodedMeanRGBError": 1.402
+        },
+        {
+          "sourceFrame": 261,
+          "sourceS": 13.0499992,
+          "decisionS": 13.0,
+          "poseS": 13.0,
+          "heldAfterEnd": false,
+          "sha256": "3a562b9060a52465ff5b4af4ae228700ee782692c879473fe799899ea6845293",
+          "a4Frame": 65,
+          "a4SHA256": "0ada83e67d551ebfcfdd99effee8acef9f76e5bf2d226ccb37dac3d8fd5a644a",
+          "a4DecodedMeanRGBError": 2.191,
+          "decodedMeanRGBError": 1.549
+        }
+      ]
+    }
+  ]
+}

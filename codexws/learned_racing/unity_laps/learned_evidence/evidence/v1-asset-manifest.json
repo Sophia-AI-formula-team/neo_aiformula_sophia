@@ -1,0 +1,249 @@
+{
+  "assets": [
+    {
+      "file": "00-all-scenes.mp4",
+      "sizeBytes": 20866331,
+      "sha256": "70db04d01fbf3608f5849eff18d95ced171ff34b06302bb6d7a7cae147f461dd",
+      "frameCount": 1294,
+      "durationS": 64.7,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ]
+    },
+    {
+      "file": "01-static.mp4",
+      "sizeBytes": 2552964,
+      "sha256": "5c7bf7ddce51ff6b4ebf7e2c0899b6ab89be28988e64017085f1bac00ce76569",
+      "frameCount": 149,
+      "durationS": 7.45,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h02_learned",
+      "rangeS": [
+        5.2,
+        12.61
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "02-moving-fast.mp4",
+      "sizeBytes": 2341894,
+      "sha256": "14bed976aedb0c8356a1bf8a12edfe4f520c3326c897be4e96eddf3831fdcc32",
+      "frameCount": 150,
+      "durationS": 7.5,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h05_learned",
+      "rangeS": [
+        5.57,
+        13.04
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "03-moving-yield.mp4",
+      "sizeBytes": 1808189,
+      "sha256": "1a3de93c3daf7b26c0e5a9e2e3a242caabc454b4697a7d6a000eece8418ef444",
+      "frameCount": 131,
+      "durationS": 6.55,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h04_learned",
+      "rangeS": [
+        5.55,
+        12.09
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "04-slow-moving.mp4",
+      "sizeBytes": 2870264,
+      "sha256": "fc3ea50a48801816c3dc5c42d76eeb2e9aaa2360d9a6febda9ff140f4d79c308",
+      "frameCount": 151,
+      "durationS": 7.55,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h06_learned",
+      "rangeS": [
+        4.74,
+        12.26
+      ],
+      "status": "segment",
+      "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7"
+    },
+    {
+      "file": "05-bend-contact.mp4",
+      "sizeBytes": 1216806,
+      "sha256": "22793dcf807a262117bf9a722023d58b13f56bf118c2012526eae7552af1a20a",
+      "frameCount": 92,
+      "durationS": 4.6,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h07_learned",
+      "rangeS": [
+        5.02,
+        8.8
+      ],
+      "status": "obstacle"
+    },
+    {
+      "file": "06-staggered-static.mp4",
+      "sizeBytes": 3428722,
+      "sha256": "5cc0a928a9702a1f65c188a5e27ee4b3ea53c3599094e9a5e961430503218dda",
+      "frameCount": 204,
+      "durationS": 10.2,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h03_learned",
+      "rangeS": [
+        3.35,
+        13.55
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "08-bend-mixed.mp4",
+      "sizeBytes": 2813744,
+      "sha256": "dada60ebdcd49456ec4653a2cc5d8894c7a3ddf57b29c623a51fbeb289996f12",
+      "frameCount": 179,
+      "durationS": 8.95,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h08_learned",
+      "rangeS": [
+        4.24,
+        13.15
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "09-clear-course.mp4",
+      "sizeBytes": 3838345,
+      "sha256": "57b52c376b9799d163bc6373a5b73ce533391257394ccb5c9714103ee300282a",
+      "frameCount": 238,
+      "durationS": 11.9,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "h01_learned",
+      "rangeS": [
+        0.0,
+        11.88
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "10-phase-b-paired.mp4",
+      "sizeBytes": 3687744,
+      "sha256": "e4497a2a15ab0547ce24b4261d68b494299d1902059f7f0dbf66480c0b03f798",
+      "frameCount": 152,
+      "durationS": 7.6,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1280
+      ],
+      "runs": [
+        "h05_base",
+        "h05_learned"
+      ]
+    },
+    {
+      "file": "11-full-lap-baseline.mp4",
+      "sizeBytes": 29973483,
+      "sha256": "a122f097f4e0dc6f95659f6f06b4d9e03d661dbc03d11082d1ceeb5b9544c9c5",
+      "frameCount": 1777,
+      "durationS": 88.85,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1280
+      ],
+      "sourceRun": "full01_base",
+      "rangeS": [
+        0.0,
+        88.02
+      ],
+      "status": "lap"
+    },
+    {
+      "file": "12-full-lap-learned.mp4",
+      "sizeBytes": 22472506,
+      "sha256": "e414a091de3ead5dfb36be07cc8c50d47e3cfed4db62134a6298ad7f75f0fdac",
+      "frameCount": 1284,
+      "durationS": 64.2,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "full01_learned",
+      "rangeS": [
+        0.0,
+        63.39
+      ],
+      "status": "obstacle"
+    },
+    {
+      "file": "dev-moving-fast.mp4",
+      "sizeBytes": 2075318,
+      "sha256": "846e2a045a1d1a43b5b70ca656e0ff185c4eb766ccfe5af91a5ff53072456cbe",
+      "frameCount": 139,
+      "durationS": 6.95,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "dev_t03_learned",
+      "rangeS": [
+        3.77,
+        10.72
+      ],
+      "status": "segment"
+    },
+    {
+      "file": "dev-moving-slow.mp4",
+      "sizeBytes": 3211450,
+      "sha256": "d0427f5138e391e00c67cd0e2f3bf69d7dc649a9ff9813f1a3ac236c58904268",
+      "frameCount": 208,
+      "durationS": 10.4,
+      "fps": 20.0,
+      "dimensions": [
+        2048,
+        1496
+      ],
+      "sourceRun": "dev_t02_learned",
+      "rangeS": [
+        5.08,
+        15.46
+      ],
+      "status": "segment"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "run": "h02_learned",
+  "start_s": 5.2,
+  "end_s": 12.61,
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1496,
+    "fps": 20.0,
+    "frames": 149,
+    "duration_s": 7.45
+  },
+  "source_counts": {
+    "chase": 149,
+    "a4": 38
+  },
+  "max_display_age_s": {
+    "chase": 1.0000000010279564e-06,
+    "a4": 0.1500009999999996
+  },
+  "verified_samples": [
+    {
+      "frame": 0,
+      "video_s": 0.0,
+      "simulation_s": 5.2,
+      "chase": {
+        "source_time": 5.2,
+        "source_frame": 104,
+        "decoded_mean_abs_rgb_error_0_255": 1.382,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 5.2,
+        "source_frame": 26,
+        "decoded_mean_abs_rgb_error_0_255": 1.579,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    },
+    {
+      "frame": 28,
+      "video_s": 1.4,
+      "simulation_s": 6.6,
+      "chase": {
+        "source_time": 6.6,
+        "source_frame": 132,
+        "decoded_mean_abs_rgb_error_0_255": 1.488,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 6.6,
+        "source_frame": 33,
+        "decoded_mean_abs_rgb_error_0_255": 1.633,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    },
+    {
+      "frame": 74,
+      "video_s": 3.7,
+      "simulation_s": 8.9,
+      "chase": {
+        "source_time": 8.9,
+        "source_frame": 178,
+        "decoded_mean_abs_rgb_error_0_255": 1.537,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 8.8,
+        "source_frame": 44,
+        "decoded_mean_abs_rgb_error_0_255": 1.614,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    },
+    {
+      "frame": 148,
+      "video_s": 7.4,
+      "simulation_s": 12.600000000000001,
+      "chase": {
+        "source_time": 12.5999994,
+        "source_frame": 252,
+        "decoded_mean_abs_rgb_error_0_255": 1.564,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 12.5999994,
+        "source_frame": 63,
+        "decoded_mean_abs_rgb_error_0_255": 1.662,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    }
+  ]
+}

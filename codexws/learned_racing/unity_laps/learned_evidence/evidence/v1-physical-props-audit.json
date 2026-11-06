@@ -1,0 +1,291 @@
+{
+  "source": "Unity run.props; physical count derived from prop amplitude and angular frequency",
+  "films": [
+    {
+      "file": "01-static.mp4",
+      "title": "盲测 · 单个静态锥桶",
+      "run": "h02_learned",
+      "sourceSHA256": "34843c753e8b19b879a982b8459ba0a073a7e866ab213d907af10013559a328a",
+      "static": 1,
+      "moving": 0,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 24.5759354,
+          "moving": false
+        }
+      ]
+    },
+    {
+      "file": "02-moving-fast.mp4",
+      "title": "盲测 · 横移相位 B，内移提速",
+      "run": "h05_learned",
+      "sourceSHA256": "50ebdcca91dc387928a33208bac165197c7193154ee8f66fd60d7ed081531f40",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.96,
+          "omegaRadS": 0.435,
+          "stationFromStartM": 24.3630829,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "03-moving-yield.mp4",
+      "title": "盲测 · 横移相位 A，保留常规避让",
+      "run": "h04_learned",
+      "sourceSHA256": "f0ee378a29b31ed277b255654e51c452441b2d4669e80b9e1c45bdd557557312",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.96,
+          "omegaRadS": 0.435,
+          "stationFromStartM": 24.3630829,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "04-slow-moving.mp4",
+      "title": "盲测 · 缓慢横移的单桶",
+      "run": "h06_learned",
+      "sourceSHA256": "8b58951d2bfca50619114db3b521c65351a2412c35996d8f42eb1eccc03a9bdc",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.73,
+          "omegaRadS": 0.49,
+          "stationFromStartM": 25.6221466,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "05-bend-contact.mp4",
+      "title": "盲测 · 弯道横移桶碰撞",
+      "run": "h07_learned",
+      "sourceSHA256": "871b8bf8315b2eacde3ccd12497558bd44049673f0666c3e2193185aaf0b797d",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.21,
+          "omegaRadS": 0.62,
+          "stationFromStartM": 24.9879,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "06-staggered-static.mp4",
+      "title": "盲测 · 连续双静桶",
+      "run": "h03_learned",
+      "sourceSHA256": "d15a39b06396472e574d8605cde2a54c351d31a05f96e0096ffc51c624fdaf9e",
+      "static": 2,
+      "moving": 0,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 22.9904938,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 27.1082153,
+          "moving": false
+        }
+      ]
+    },
+    {
+      "file": "08-bend-mixed.mp4",
+      "title": "盲测 · 弯道静动双桶",
+      "run": "h08_learned",
+      "sourceSHA256": "1fed29b80484400536b51231372a880d76206f8b3d91997c3631d41e48455234",
+      "static": 1,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 25.8103638,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 0.92,
+          "omegaRadS": 0.66,
+          "stationFromStartM": 28.6589584,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "09-clear-course.mp4",
+      "title": "盲测 · 无障碍路段",
+      "run": "h01_learned",
+      "sourceSHA256": "317f887b9823f836b4b542269fc0568014ef14bb0616923ae9e1824a907c84cf",
+      "static": 0,
+      "moving": 0,
+      "physicalProps": []
+    },
+    {
+      "file": "10-phase-b-paired.mp4",
+      "title": "盲测 H05 · 冻结基线与学习策略",
+      "run": "h05_base",
+      "sourceSHA256": "e1b002c85ffca8e7e8a6ab82a46ec15b70a421ce2deb74ca92c27cd90f62b241",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.96,
+          "omegaRadS": 0.435,
+          "stationFromStartM": 24.3630829,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "10-phase-b-paired.mp4",
+      "title": "盲测 H05 · 冻结基线与学习策略",
+      "run": "h05_learned",
+      "sourceSHA256": "50ebdcca91dc387928a33208bac165197c7193154ee8f66fd60d7ed081531f40",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.96,
+          "omegaRadS": 0.435,
+          "stationFromStartM": 24.3630829,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "11-full-lap-baseline.mp4",
+      "title": "整圈挑战 · 冻结基线",
+      "run": "full01_base",
+      "sourceSHA256": "0f28b261f0f5f34ece1bcae584b383d19e8723bc86181275c1145b7f096d8fe7",
+      "static": 2,
+      "moving": 2,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 48.4293671,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 126.712433,
+          "moving": false
+        },
+        {
+          "index": 2,
+          "amplitudeM": 1.03,
+          "omegaRadS": 0.61,
+          "stationFromStartM": 130.14386,
+          "moving": true
+        },
+        {
+          "index": 3,
+          "amplitudeM": 1.34,
+          "omegaRadS": 0.52,
+          "stationFromStartM": 218.727142,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "12-full-lap-learned.mp4",
+      "title": "整圈挑战 · 学习策略",
+      "run": "full01_learned",
+      "sourceSHA256": "1a26ec78d2ed6f8cdab31de799d7a6bdfd277e26dc9bcce7b916818c08699a50",
+      "static": 2,
+      "moving": 2,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 48.4293671,
+          "moving": false
+        },
+        {
+          "index": 1,
+          "amplitudeM": 0.0,
+          "omegaRadS": 0.0,
+          "stationFromStartM": 126.712433,
+          "moving": false
+        },
+        {
+          "index": 2,
+          "amplitudeM": 1.03,
+          "omegaRadS": 0.61,
+          "stationFromStartM": 130.14386,
+          "moving": true
+        },
+        {
+          "index": 3,
+          "amplitudeM": 1.34,
+          "omegaRadS": 0.52,
+          "stationFromStartM": 218.727142,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "dev-moving-fast.mp4",
+      "title": "开发场景复跑 · 横移桶前沿线提速",
+      "run": "dev_t03_learned",
+      "sourceSHA256": "028f73e8d10a28fc34337a08beb69c23bfc0d9fa1b83726df3bd1a1b12766417",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 1.9,
+          "omegaRadS": 0.54,
+          "stationFromStartM": 20.2453041,
+          "moving": true
+        }
+      ]
+    },
+    {
+      "file": "dev-moving-slow.mp4",
+      "title": "开发场景复跑 · 降速并改变通过侧",
+      "run": "dev_t02_learned",
+      "sourceSHA256": "3599994b29bf612114e59d1c55dabdadc547d928bb36d979c346330fa5c0351c",
+      "static": 0,
+      "moving": 1,
+      "physicalProps": [
+        {
+          "index": 0,
+          "amplitudeM": 0.55,
+          "omegaRadS": 0.42,
+          "stationFromStartM": 21.9577789,
+          "moving": true
+        }
+      ]
+    }
+  ]
+}

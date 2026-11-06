@@ -1,0 +1,209 @@
+{
+  "title": "V2 已知场景诊断 · 弯中内移慢行",
+  "run": "diag_h07_learned",
+  "seed": 651123,
+  "trajectory_sha256": "8c3c7d399280f20b0448012a176182ca8ffda99ead8b6421224d6347354ca91f",
+  "model": "a4/single_frame/b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3/outer-edge/345d7be45c99",
+  "a4_worker": {
+    "port": 55022,
+    "release": "a4",
+    "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "mode": "single_frame",
+    "device": "cuda",
+    "sampleStride": 1,
+    "objectObservations": "enabled",
+    "laneObserver": "outer-edge"
+  },
+  "start_s": 5.93,
+  "end_s": 15.36,
+  "end_included": false,
+  "labelled_terminal_hold_s": 0.0,
+  "status": "segment",
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1496,
+    "fps": 20.0,
+    "frames": 189,
+    "duration_s": 9.45
+  },
+  "referee_inset": {
+    "prop_ids_zero_based": [
+      0
+    ],
+    "anchor_id_zero_based": 0,
+    "center_world_xz": [
+      60.32046107874107,
+      -33.64593085569055
+    ],
+    "road_forward_xz": [
+      0.8934008266444583,
+      0.44926046226103467
+    ],
+    "road_right_xz": [
+      0.44926046226103467,
+      -0.8934008266444583
+    ],
+    "overlay_chase_pixel_box": [
+      11,
+      11,
+      351,
+      226
+    ],
+    "meters_per_pixel": 0.05,
+    "trail_s": 1.5,
+    "display_time": "Recorded chase-frame timestamp",
+    "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+    "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+    "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+  },
+  "matchedReference": {
+    "id": "h07_base",
+    "sha256": "90553ebcbe58043b8de537ad72a3c9adb3b10997ae44e5f535c48c10e294ce57",
+    "identicalPhysicalRows": false
+  },
+  "learned_panel": {
+    "modelId": "55d0a6f6fb53de107db805f8dfa1c0d8c17360d7242ac99e005fa88dd750b0bc",
+    "actionTable": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        4.297333999999999
+      ],
+      [
+        -2.6,
+        1.4
+      ],
+      [
+        -2.6,
+        4.297333999999999
+      ],
+      [
+        0.7,
+        1.4
+      ],
+      [
+        0.0,
+        1.4
+      ]
+    ],
+    "selections": [
+      {
+        "t": 6.0,
+        "state": "selected",
+        "modelId": "55d0a6f6fb53de107db805f8dfa1c0d8c17360d7242ac99e005fa88dd750b0bc",
+        "chosen": 2,
+        "chosenSpeed": 1.4,
+        "chosenOffset": -2.6,
+        "remaining": 9.16462,
+        "features": [
+          -1.77398646,
+          -0.30964607,
+          -2.58080244,
+          7.94462061,
+          1.0,
+          -1.77398646,
+          -1.77398646,
+          -0.0489899367,
+          3.04904747,
+          -0.139109135,
+          0.0
+        ],
+        "actionScores": [
+          -3.991981,
+          -2.50961685,
+          -1.9458406,
+          -7.528162,
+          -8.148877,
+          -3.25863957
+        ]
+      }
+    ]
+  },
+  "method": "Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
+  "unique_sources": {
+    "chase": 189,
+    "a4": 48
+  },
+  "max_display_age_s": {
+    "chase": 0.030000999999998612,
+    "a4": 0.18000099999999897
+  },
+  "missing_camera_output_frames": {
+    "chase": 0,
+    "a4": 0
+  },
+  "samples": [
+    {
+      "film_frame": 0,
+      "simulation_s": 5.93,
+      "refereeActive": true,
+      "chase": {
+        "id": 118,
+        "time_s": 5.9,
+        "sha256": "7273d2d35140956e8b791149ab47491329b0e0ce9206d0fcc848a149fa87b87b"
+      },
+      "a4": {
+        "id": 29,
+        "time_s": 5.79999971,
+        "sha256": "ba2df5ca5b79e132a6580920a75e67c9ae04b9ac51bfcb457d38f6356f5049e0"
+      },
+      "track_count": 1,
+      "phase": "road"
+    },
+    {
+      "film_frame": 2,
+      "simulation_s": 6.029999999999999,
+      "refereeActive": true,
+      "chase": {
+        "id": 120,
+        "time_s": 6.0,
+        "sha256": "f0ec4890fea717beb3e0563694861465426057a2aa85935532f7277283376b4c"
+      },
+      "a4": {
+        "id": 30,
+        "time_s": 6.0,
+        "sha256": "be8ab922ddda3a0d74822ba625a8ee3a32362ed95e603865fea7782bb8aea907"
+      },
+      "track_count": 1,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 94,
+      "simulation_s": 10.629999999999999,
+      "refereeActive": true,
+      "chase": {
+        "id": 212,
+        "time_s": 10.5999994,
+        "sha256": "e7fe24fe3dd3aaa1f0580bd0515132ec5e6105f7b2276747cabb06a7b7dae653"
+      },
+      "a4": {
+        "id": 53,
+        "time_s": 10.5999994,
+        "sha256": "c0025bcf2f03df4790a74bcbf9ba33018bdd17a4c88bc5ae2bca26f5f8332638"
+      },
+      "track_count": 2,
+      "phase": "yield"
+    },
+    {
+      "film_frame": 188,
+      "simulation_s": 15.33,
+      "refereeActive": true,
+      "chase": {
+        "id": 306,
+        "time_s": 15.2999992,
+        "sha256": "38501dad3999d216f7d381bea16902e0152d3bf983561358bf26e38b12ecffa0"
+      },
+      "a4": {
+        "id": 76,
+        "time_s": 15.2,
+        "sha256": "bf4a6a7a577e3b195eb74e41a53e8a77457c65fb75555be4b9a947ca5d9295bf"
+      },
+      "track_count": 0,
+      "phase": "recover"
+    }
+  ]
+}

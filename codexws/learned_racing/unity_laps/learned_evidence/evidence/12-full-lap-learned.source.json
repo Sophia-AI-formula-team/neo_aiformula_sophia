@@ -1,0 +1,581 @@
+{
+  "title": "整圈挑战 · 学习策略",
+  "run": "full01_learned",
+  "seed": 764259,
+  "trajectory_sha256": "1a26ec78d2ed6f8cdab31de799d7a6bdfd277e26dc9bcce7b916818c08699a50",
+  "model": "a4/single_frame/b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3/outer-edge/345d7be45c99",
+  "a4_worker": {
+    "port": 54777,
+    "release": "a4",
+    "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "mode": "single_frame",
+    "device": "cuda",
+    "sampleStride": 1,
+    "objectObservations": "enabled",
+    "laneObserver": "outer-edge"
+  },
+  "start_s": 0.0,
+  "end_s": 63.39,
+  "end_included": true,
+  "labelled_terminal_hold_s": 0.8,
+  "status": "obstacle",
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1496,
+    "fps": 20.0,
+    "frames": 1284,
+    "duration_s": 64.2
+  },
+  "referee_inset": {
+    "mode": "fixed per local encounter; hidden on free road",
+    "overlay_chase_pixel_box": [
+      11,
+      11,
+      351,
+      226
+    ],
+    "windows": [
+      {
+        "startS": 11.0199995,
+        "endS": 19.22,
+        "prop_ids_zero_based": [
+          0
+        ],
+        "anchor_id_zero_based": 0,
+        "center_world_xz": [
+          47.49391669733067,
+          41.841675155703996
+        ],
+        "road_forward_xz": [
+          -0.9998352032747077,
+          -0.018153960797140205
+        ],
+        "road_right_xz": [
+          -0.018153960797140205,
+          0.9998352032747077
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      },
+      {
+        "startS": 35.01,
+        "endS": 43.9899979,
+        "prop_ids_zero_based": [
+          1,
+          2
+        ],
+        "anchor_id_zero_based": 2,
+        "center_world_xz": [
+          -12.759135925863529,
+          15.05832180172279
+        ],
+        "road_forward_xz": [
+          0.018153884522289745,
+          -0.9998352046596236
+        ],
+        "road_right_xz": [
+          -0.9998352046596236,
+          -0.018153884522289745
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      },
+      {
+        "startS": 59.96,
+        "endS": 63.39,
+        "prop_ids_zero_based": [
+          3
+        ],
+        "anchor_id_zero_based": 3,
+        "center_world_xz": [
+          47.93087,
+          -35.83736
+        ],
+        "road_forward_xz": [
+          0.9829316747924294,
+          -0.18397098328201028
+        ],
+        "road_right_xz": [
+          -0.18397098328201028,
+          -0.9829316747924294
+        ],
+        "overlay_chase_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ],
+        "meters_per_pixel": 0.05,
+        "trail_s": 1.5,
+        "display_time": "Recorded chase-frame timestamp",
+        "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+        "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+        "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+      }
+    ]
+  },
+  "learned_panel": {
+    "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+    "actionTable": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        4.297333999999999
+      ],
+      [
+        -2.6,
+        1.4
+      ],
+      [
+        -2.6,
+        4.297333999999999
+      ],
+      [
+        0.7,
+        1.4
+      ],
+      [
+        0.0,
+        1.4
+      ]
+    ],
+    "selections": [
+      {
+        "t": 2.39999986,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 3,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": -2.6,
+        "remaining": 2.85086,
+        "features": [
+          3.370525,
+          0.0,
+          3.370525,
+          1.63086009,
+          1.0,
+          3.370525,
+          3.370525,
+          -3.274018e-05,
+          4.177829,
+          -0.0206810329,
+          0.0
+        ],
+        "actionScores": [
+          1.44370258,
+          -4.0,
+          1.47639716,
+          1.75,
+          -4.0,
+          -4.0
+        ]
+      },
+      {
+        "t": 12.5999994,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 3,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": -2.6,
+        "remaining": 8.745134,
+        "features": [
+          -0.286736667,
+          0.0264569428,
+          -0.226307869,
+          7.525134,
+          1.0,
+          -0.286736667,
+          -0.286736667,
+          -0.0251582265,
+          3.29465485,
+          -0.179533541,
+          -1.55
+        ],
+        "actionScores": [
+          1.44411135,
+          -3.98560786,
+          1.47668421,
+          1.74987936,
+          -3.99999762,
+          -3.99999762
+        ]
+      },
+      {
+        "t": 16.8,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 1,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": 0.0,
+        "remaining": 11.2966642,
+        "features": [
+          2.81465054,
+          0.40412,
+          3.74609137,
+          5.365495,
+          2.0,
+          2.81465054,
+          3.62812352,
+          -0.002321382,
+          2.32790279,
+          0.106562212,
+          -1.55
+        ],
+        "actionScores": [
+          1.426866,
+          1.74402225,
+          1.42805541,
+          1.55357254,
+          1.42258835,
+          1.452208
+        ]
+      },
+      {
+        "t": 18.8,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 0,
+        "chosenSpeed": 0.0,
+        "chosenOffset": 0.0,
+        "remaining": 6.545073,
+        "features": [
+          -1.82978141,
+          0.0,
+          -1.82978141,
+          1.7001,
+          3.0,
+          -1.82978141,
+          3.38788223,
+          0.00102452934,
+          2.0629108,
+          -0.131674185,
+          -0.78
+        ],
+        "actionScores": [
+          1.65315139,
+          -0.203835115,
+          1.45151424,
+          0.6441001,
+          -1.11548281,
+          -3.99999881
+        ]
+      },
+      {
+        "t": 36.0,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 3,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": -2.6,
+        "remaining": 10.8215647,
+        "features": [
+          1.61495233,
+          0.0552251637,
+          1.74279082,
+          7.24740362,
+          2.0,
+          0.5173918,
+          1.61495233,
+          -0.0367239565,
+          3.13081717,
+          -0.199626341,
+          -0.78
+        ],
+        "actionScores": [
+          1.44086874,
+          -3.9926405,
+          1.47351623,
+          1.74974108,
+          -3.99712634,
+          -3.99712348
+        ]
+      },
+      {
+        "t": 39.3999977,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 3,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": -2.6,
+        "remaining": 2.0983026,
+        "features": [
+          0.5223566,
+          0.27598384,
+          0.6191442,
+          0.8783026,
+          1.0,
+          0.5223566,
+          0.5223566,
+          0.004367294,
+          2.50442648,
+          0.1334085,
+          -2.6
+        ],
+        "actionScores": [
+          -3.96349478,
+          0.675135553,
+          -3.96348667,
+          1.64306235,
+          1.42963243,
+          1.43461585
+        ]
+      },
+      {
+        "t": 61.3999977,
+        "state": "selected",
+        "modelId": "12435afdf5f375d30736eec07fa4eb9f4183dec62b5a4fe97a0d8459a076a6f7",
+        "chosen": 3,
+        "chosenSpeed": 4.297334,
+        "chosenOffset": -2.6,
+        "remaining": 10.1073675,
+        "features": [
+          -1.8689481,
+          -0.23432143,
+          -2.25940824,
+          7.465476,
+          2.0,
+          -1.99658453,
+          -1.8689481,
+          -0.02517343,
+          4.48015356,
+          0.00493439427,
+          0.0
+        ],
+        "actionScores": [
+          -3.98393059,
+          -4.0,
+          -3.983834,
+          1.75,
+          0.436507881,
+          -4.0
+        ]
+      }
+    ]
+  },
+  "method": "Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
+  "unique_sources": {
+    "chase": 1269,
+    "a4": 317
+  },
+  "max_display_age_s": {
+    "chase": 3.1000000006997652e-06,
+    "a4": 0.19000309999999843
+  },
+  "missing_camera_output_frames": {
+    "chase": 0,
+    "a4": 0
+  },
+  "samples": [
+    {
+      "film_frame": 0,
+      "simulation_s": 0.0,
+      "refereeActive": false,
+      "chase": {
+        "id": 0,
+        "time_s": 0.0,
+        "sha256": "266ca69f29b0e85b526567bf2bd73cbe5d8d298769db4873c3743d6bb7fe6fa2"
+      },
+      "a4": {
+        "id": 0,
+        "time_s": 0.0,
+        "sha256": "dc5f88b0aaaa56147bbc70c27542c70fe9501699dd4c2a05c9abb94af95856c8"
+      },
+      "track_count": 1,
+      "phase": "road"
+    },
+    {
+      "film_frame": 48,
+      "simulation_s": 2.4,
+      "refereeActive": false,
+      "chase": {
+        "id": 48,
+        "time_s": 2.39999986,
+        "sha256": "c80fa077fcfe4758241d627e7d8d1dbe1eacfecd01bfce5409eb930893deb53f"
+      },
+      "a4": {
+        "id": 12,
+        "time_s": 2.39999986,
+        "sha256": "8afdfbbfd4bb1d2292a4025c14b24acd5ab52eefb9378cd51e58842b5bd84205"
+      },
+      "track_count": 1,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 252,
+      "simulation_s": 12.6,
+      "refereeActive": true,
+      "chase": {
+        "id": 252,
+        "time_s": 12.5999994,
+        "sha256": "58736da77981f4c2c68062929fba39429ef1fa28796243da366247df44306fae"
+      },
+      "a4": {
+        "id": 63,
+        "time_s": 12.5999994,
+        "sha256": "ff323a04da02a049dad1396485ca5d4b9f913833d7c35e3c4fa828842ac4a795"
+      },
+      "track_count": 1,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 336,
+      "simulation_s": 16.8,
+      "refereeActive": true,
+      "chase": {
+        "id": 336,
+        "time_s": 16.8,
+        "sha256": "41989396143ac6b82c633e306fdd5da8875ecf68875f366af4e1825e3f2a1e52"
+      },
+      "a4": {
+        "id": 84,
+        "time_s": 16.8,
+        "sha256": "a538265fd6e3e3ee07a1c3c6cc2f946fa87c978be32725222205789275e67ce1"
+      },
+      "track_count": 2,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 376,
+      "simulation_s": 18.8,
+      "refereeActive": true,
+      "chase": {
+        "id": 376,
+        "time_s": 18.8,
+        "sha256": "3444158eefcfd5eb219d4656ee5fd1e17bd5832ff6e9aaf6c60ddedcfac97e41"
+      },
+      "a4": {
+        "id": 94,
+        "time_s": 18.8,
+        "sha256": "137ef2ac043b075eca7a07216e19bb177537b086f193c5568f39571ac59bf05a"
+      },
+      "track_count": 3,
+      "phase": "recover"
+    },
+    {
+      "film_frame": 634,
+      "simulation_s": 31.7,
+      "refereeActive": false,
+      "chase": {
+        "id": 634,
+        "time_s": 31.6999989,
+        "sha256": "4df93535019fc90a1c610071997ecf74ad7854ac8c9e3255e4385a76d20e0f66"
+      },
+      "a4": {
+        "id": 158,
+        "time_s": 31.5999985,
+        "sha256": "c5205cd0012e9992197565677ff5dcbe5685deec4154330e33ccc69a90ecd5eb"
+      },
+      "track_count": 0,
+      "phase": "road"
+    },
+    {
+      "film_frame": 720,
+      "simulation_s": 36.0,
+      "refereeActive": true,
+      "chase": {
+        "id": 720,
+        "time_s": 36.0,
+        "sha256": "d1234c9566dab84b44f696d1d80064fbbce266c30146d148aacbefb6d51f5b67"
+      },
+      "a4": {
+        "id": 180,
+        "time_s": 36.0,
+        "sha256": "7f21f128f979821fe1c976df3f10f0e5f35ddd338411fad3feddc0067850e6b9"
+      },
+      "track_count": 2,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 788,
+      "simulation_s": 39.4,
+      "refereeActive": true,
+      "chase": {
+        "id": 788,
+        "time_s": 39.3999977,
+        "sha256": "ce55c04a8d76814cbf37197b9a6f6647ae937bc800cdf2c92ffb866db5364d41"
+      },
+      "a4": {
+        "id": 197,
+        "time_s": 39.3999977,
+        "sha256": "7b053380c60999bc4627cd5f91066974635c911cc4655f48ad7a061bf5fa34ec"
+      },
+      "track_count": 1,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 1228,
+      "simulation_s": 61.4,
+      "refereeActive": true,
+      "chase": {
+        "id": 1228,
+        "time_s": 61.3999977,
+        "sha256": "d1b542b141c2303f0600b6b0a89d167c3ad6a20a17242aa22161a22fb7a5c653"
+      },
+      "a4": {
+        "id": 307,
+        "time_s": 61.3999977,
+        "sha256": "71ca9d79c0b8799acab766f012ec3b91dcce9eec3a939e61d4dece5594963625"
+      },
+      "track_count": 2,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 1267,
+      "simulation_s": 63.35,
+      "refereeActive": true,
+      "chase": {
+        "id": 1267,
+        "time_s": 63.35,
+        "sha256": "78dcfd6e2d5e2597722c19e163fac5514aa5a6fd614b8f496205a0bf36f63b04"
+      },
+      "a4": {
+        "id": 316,
+        "time_s": 63.1999969,
+        "sha256": "c4ea562b6ae2f64b400b6f38b89d3b840263a02c6f88f2d18e3e98c1a344273d"
+      },
+      "track_count": 2,
+      "phase": "learned_encounter"
+    },
+    {
+      "film_frame": 1283,
+      "simulation_s": 63.39,
+      "refereeActive": true,
+      "chase": {
+        "id": 1268,
+        "time_s": 63.39,
+        "sha256": "0c72909458d642031774bac499315a25db39e1d938a0fc0ab29f6046edc16aa7"
+      },
+      "a4": {
+        "id": 316,
+        "time_s": 63.1999969,
+        "sha256": "c4ea562b6ae2f64b400b6f38b89d3b840263a02c6f88f2d18e3e98c1a344273d"
+      },
+      "track_count": 2,
+      "phase": "learned_encounter"
+    }
+  ]
+}
