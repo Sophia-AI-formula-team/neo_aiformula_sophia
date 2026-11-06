@@ -85,9 +85,13 @@ def test_callback_preserves_headers_encodings_and_all_seven_outputs(monkeypatch)
     assert all(len(messages) == 1 for messages in node.publishers.values())
     for topic, encoding in encodings.items():
         message = node.publishers[topic][0]
-        assert message.header is header and message.encoding == encoding
+        assert message.header == header and message.header is not header
+        assert message.header.stamp is not header.stamp and message.encoding == encoding
+    headers = [node.publishers[topic][0].header for topic in encodings]
+    assert len({id(value) for value in headers}) == 4
     payload = json.loads(node.publishers["/aiformula_perception/yolop_a3/detections"][0].data)
     assert payload["header"] == dict(stamp=dict(sec=123, nanosec=456), frame_id="zed_left")
+    assert payload["temporal_status"] == "single_frame"
     assert node.publishers["/traffic_light/state"][0].data == "unknown"
     assert node.publishers["/red_pixels_count"][0].data == 0
     assert not node.errors

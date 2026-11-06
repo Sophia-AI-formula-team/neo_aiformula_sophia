@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "frames": 900,
+  "native_shape": [
+    720,
+    1280
+  ],
+  "sequences": 36,
+  "exact_lane_logits": true,
+  "exact_object_boxes_labels_scores": true,
+  "exact_previous_raw_probability": true,
+  "one_encoder_per_frame": true,
+  "public_adapter_checks": 3,
+  "temporal_status_counts": {
+    "warmup": 1,
+    "aligned": 864,
+    "sequence_reset": 35
+  },
+  "detected_class_counts_at_point5": {
+    "10": 1067,
+    "1": 910,
+    "91": 2961,
+    "3": 13
+  },
+  "device": "NVIDIA GeForce RTX 4070 Ti",
+  "torch": "2.11.0+cu130",
+  "elapsed_seconds": 73.70665269996971,
+  "source_sha256": "1fc29a6cd4bb5de3390570ce805adca5167303176cecdd867eddb6d36752f1ca",
+  "package_sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+  "deterministic": true,
+  "tf32": false
+}

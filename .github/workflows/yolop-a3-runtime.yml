@@ -1,0 +1,38 @@
+name: A3 deployment contract
+on:
+  pull_request:
+    paths:
+      - 'workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/**'
+      - '.github/workflows/yolop-a3-runtime.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/**'
+      - '.github/workflows/yolop-a3-runtime.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cpu-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OMP_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '1'
+      A3: workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU reference dependencies
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'numpy>=2.0' 'opencv-python-headless>=4.10' 'pytest>=8' 'setuptools>=77' wheel
+      - name: Verify checksum and inference contracts
+        run: |
+          python -B "$A3/tools/verify_weights.py"
+          python -B -m pytest "$A3/tests" -q
+          python -B -m pytest workspace/src/aiformula/perception/road_detector/test/test_output_contract.py -q
+      - name: Build runtime wheel
+        run: python -m pip wheel "$A3" --no-deps --no-build-isolation --wheel-dir work/a3-wheels

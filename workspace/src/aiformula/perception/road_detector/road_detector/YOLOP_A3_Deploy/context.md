@@ -1,57 +1,45 @@
-# A3 V14 Context
+# A3 V76 Context
 
-## Architecture
+## Selected Source
 
-One MobileNetV3 encoder traversal feeds both the multiscale lane decoder and
-TorchVision Faster R-CNN FPN/RPN/ROI detector. There is one loaded model and one
-weight file, not two YOLO networks. Cone detection has an independent calibrated
-predictor. This package does not contain the remote A1/FCOS experiment.
+The selected snapshot is V76 aligned step 1024, built on the frozen V73 image model.
+Architecture: `a3_shared_fcos_temporal_probability_v76`.
+Source SHA256: `1fc29a6cd4bb5de3390570ce805adca5167303176cecdd867eddb6d36752f1ca`.
+Export SHA256: `b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3`.
 
-Runtime architecture tag: `a3_mobilenet_shared_fpn_contract_v14`.
-Training wrapper tag: `a3_shared_contract_v14`, arm `a3`.
-Export removes only `core.` from the 328 tensor names; all FP32 values are exact.
-The underlying neural topology remains the shared independent-v4 layout; V14
-identifies the new weights and explicit input contract, not another backbone.
+The user selected this version as stable on 2026-11-06 and authorized publication
+and merge. The source's automated direction gate remains recorded as failed
+(gap improvement below 2 percentage points); export does not rewrite that history.
 
-Input is uint8 BGR, converted to RGB [0,1], ImageNet-normalized and resized with
-TorchVision min_size=640/max_size=1280. Normalized padding is bottom/right to a
-multiple of 32. Lane logits are cropped to the resized image, bilinearly restored
-to source resolution, then thresholded at 0.5. No morphology is applied by default.
-Boxes are restored to the original image coordinates. Do not replace this with
-A1's square letterbox or silently shrink input dimensions.
+## Runtime
 
-Lane targets are continuous/amodal boundaries, ignoring road symbols, zebra
-crossings and occluders. These are intended semantics, not current guarantees.
-The obstacle mask is filled person/car/cone rectangles; it excludes lights.
-Cone color and light red/green/unknown state use crop HSV rules, not separately
-learned state classes. ROS outputs remain independent and preserve image headers.
+The shared MobileNetV3 Large features feed a multiscale lane decoder and a compact
+four-class FCOS detector (width 32, depth 2). This intentionally replaces V14's
+Faster R-CNN/RPN/ROI layout. Old checkpoints require the old tagged package;
+there is no legacy checkpoint fallback in this version.
 
-## Provenance
+The serialized input contract is min_size=640/max_size=1152, RGB [0,1] with
+ImageNet normalization and bottom/right normalized-zero padding to 32.
+Lane logits are resized to padded shape, cropped to resized content, then
+bilinearly restored to native shape with align_corners=False before thresholding.
+The temporal gate works on native floating probabilities, not binary masks.
+The combined checkpoint has 341 tensors and 3,403,740 parameters (49 temporal).
 
-Release tag `a3-v14`, package version 0.3.0; prior package tag `a3-v6`.
-Selected local final snapshot: `contract_v14/local/a3/snapshots/16384.pth`.
-Source SHA256: `aad5df29a3a97f959ac7f582b2d45255bd23cb2436c7e0820eb69549ad6d48a9`.
-Model-only SHA256: `a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c`.
-The source still has `deployment_candidate=false`; user-selected publication is
-not an assertion that automated quality gates passed.
+Each stream stores only the previous raw probability, capture timestamp and
+metric plane projection. No labels, future images or stored lane map are inputs.
+History is cleared by explicit reset or independent-image prediction and bypassed
+on first frame, changed sequence/size or non-increasing/>0.25s capture time.
+Object output is never temporally modified.
 
-V14 repaired the native input contract, added 1,200 RGB renders/200 poses with
-near-field/near-horizontal views, and retained real/empty/object replay. The
-synthetic pool has 4,866 RGB/811 poses; real lane/empty/real object replay has
-987/235/1,247 records. Holdouts remained 594 geometry/32 real/16 empty/101 object
-images. Geometry-gap labels differ from the old dark-pixel proxy. Test was unused.
+## Integration Boundary
 
-Local A3 reached 16,384 steps in 176.73 minutes and stopped normally. The remote
-route starts from A1 with a new FCOS head and differs in architecture,
-initialization and input contract; host comparisons are not pure GPU experiments.
+The Python input/output API remains compatible through PerceptionModel;
+SharedFPNPerception is only an import alias, not a second model.
+predict_frame is a new explicit API. The bundled ROS image-only wrapper runs the
+single-frame base and reports that fact. It does not fabricate motion.
+Source Headers are independently copied into every image output.
 
-## Boundaries
-
-Only this deployment directory changes in neo. Original YOLOP/A1/A2, vehicle
-launch wiring, external Unity, training sources and optimizer checkpoints stay
-unchanged. No datasets, bags, credentials, training loops or old ONNX graphs are
-distributed. MIT and TorchVision BSD-3-Clause notices are retained.
-
-The runtime wheel installs code, not bundled weights or the ROS overlay. Keep
-this checkout beside the installed runtime and provide an absolute weights path.
-Read DEPLOYMENT.md, handoff.md and AGENTS.md before integration.
+This release updates only the A3 deployment package and its handoff records.
+Legacy road_detector, default launchers, A1/A2, motor/controller/watchdog and
+source training/Unity projects remain unchanged.
+MIT and TorchVision BSD-3-Clause notices are retained.

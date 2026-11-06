@@ -1,9 +1,9 @@
 # Third-Party Notices
 
 The package retains the original YOLOP MIT license in LICENSE. The shared
-MobileNet/FPN/ROI architecture uses TorchVision. The independent cone
-postprocessing in `yolop_a3_runtime/shared_fpn.py` is adapted from TorchVision
-RoIHeads postprocessing, under the following license.
+MobileNet/FPN/FCOS architecture uses TorchVision. The inference model in
+`yolop_a3_runtime/shared_fcos.py` uses its model components and detection
+postprocessing under the following license. The former ROI adapter is removed.
 
 ## TorchVision
 

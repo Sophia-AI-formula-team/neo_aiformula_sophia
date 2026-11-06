@@ -1,7 +1,7 @@
 # Jetson Orin Validation Boundary
 
-Target:Jetson Orin. Exact module,RAM,JetPack,power mode and ROS/Python versions
-were not provided. No Orin FPS,TensorRT engine or vehicle acceptance is claimed.
+Target:Jetson AGX Orin. RAM,JetPack,power mode and ROS/Python versions must be
+recorded on the target. No new Orin measurement or TensorRT engine is bundled.
 
 Use a PyTorch wheel compatible with the actual JetPack and a matching TorchVision
 build with CUDA operators. NVIDIA's [Jetson PyTorch installation guide](https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html)
@@ -22,12 +22,12 @@ python -c "import torch,torchvision; from torchvision.ops import nms; print(torc
 
 Then run the checksum check,package tests,offline demo and isolated shadow node
 from DEPLOYMENT.md. Tests use reduced-size CPU inputs for fast structural QA;
-the deployment runtime still uses min_size640/max_size1280 unless deliberately
+the deployment runtime still uses min_size640/max_size1152 unless deliberately
 changed and revalidated. Do not silently reduce that size and reuse accuracy claims.
 
-The old A3 SSD ONNX export is incompatible with this shared FPN checkpoint.
+Old A3 SSD/Faster R-CNN ONNX exports are incompatible with this FCOS checkpoint.
 No ONNX or TensorRT artifact is provided here. A future export must include the
-correct transform,shared features,lane decoder,RPN/ROI and detection postprocessing,
+correct transform,shared features,lane decoder,FCOS and detection postprocessing,
 and compare both outputs against this exact model. Do not reuse a desktop engine.
 
 Record module/RAM,JetPack,driver,Torch/TorchVision,power mode,temperatures and input
@@ -39,3 +39,7 @@ environment are recorded in verification/runtime_smoke.json.
 Keep current FP32 behavior as the reference. FP16/INT8 or other optimizations
 require target-device output/accuracy regression tests for lanes and objects.
 No accelerator conversion or quantization has been validated in this package.
+Temporal warping/gating is FP32; blindly calling half() is not supported.
+Benchmark single-frame and calibrated temporal modes separately. The ROS wrapper
+is image-only and reports single-frame; installing the weight does not supply
+the calibrated motion needed by the temporal API.

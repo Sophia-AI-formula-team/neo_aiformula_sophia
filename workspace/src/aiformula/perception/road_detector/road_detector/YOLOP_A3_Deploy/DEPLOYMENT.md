@@ -2,9 +2,10 @@
 
 ## Status And Environment
 
-This is an offline/shadow candidate. Do not connect its outputs to moving-vehicle
-control until the remaining gates in handoff.md pass. The upload does not modify
-main launch wiring or stop/start any existing ROS node.
+This is the user-selected stable A3 V76 package. First run it on isolated shadow
+topics. Publication does not modify main launch wiring or start/stop any ROS node.
+The bundled ROS wrapper runs single-frame inference and says so at startup.
+For calibrated temporal inference use predict_frame and TEMPORAL.md.
 
 Tested reference:Windows,x86-64,Python3.12.10,Torch2.11.0+cu130,
 TorchVision0.26.0,RTX4070Ti. Package requires Python>=3.10,<3.14.
@@ -23,8 +24,8 @@ Use a clean dedicated deployment checkout. Fetch/check out the release tag,
 then from the repository root:
 
 ```sh
-git fetch origin tag a3-v14
-git switch --detach a3-v14
+git fetch origin tag a3-v76
+git switch --detach a3-v76
 export A3="$PWD/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy"
 python -c "import sys,torch,torchvision,cv2,numpy; print(sys.version); print(torch.__version__,torchvision.__version__,torch.cuda.is_available())"
 python -m pip install --no-deps "$A3"
@@ -38,17 +39,17 @@ Do not rename a different checkpoint to shared_best.pth;verify its checksum.
 
 Bundled SHA256:
 ```text
-a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c
+b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3
 ```
 
-The file is local V14 step 16,384 (not the remote A1/FCOS experiment). It has one
+The file is V76 aligned step 1024, including its frozen image model. It has one
 architecture tag, an explicit input contract and one shared state dictionary. It contains
 no optimizer/AMP/RNG state and cannot be used to resume the original training
 trajectory. Training resume checkpoints remain in the separate training workspace.
 
 The default lane output is raw softmax foreground >=0.5. Closing and connected
 component filtering are disabled. Do not enable the old morphology or change
-min_size640/max_size1280 while claiming parity with V14 review images.
+min_size640/max_size1152 while claiming parity with the selected V76 model.
 
 ## Offline Smoke
 
@@ -126,7 +127,7 @@ the source sec/nanosec and frame_id. Int32/String state topics have no ROS Heade
 do not assume they independently encode freshness.
 
 Object class IDs follow COCO plus cone:person1,car3,traffic_light10,traffic_cone91.
-The detector may return other COCO categories in JSON;only1/3/91 fill cone_mask.
+This FCOS model has exactly those four classes; only1/3/91 fill cone_mask.
 The avoidance consumers oa_neo*.py subscribe to cone_mask/cone_bbox_image and
 apply their own ROI/pixel threshold (oa_neo.py defaults1000/500 enter/exit).
 Whole-image mask area or a detected box does not prove avoidance activation.
@@ -152,15 +153,15 @@ To restore the previous A3 package, stop its node, then in the clean dedicated
 deployment checkout:
 
 ```sh
-git fetch origin tag a3-v6
-git switch --detach a3-v6
+git fetch origin tag a3-v14
+git switch --detach a3-v14
 python -m pip install --no-deps --force-reinstall "$A3"
 python "$A3/tools/verify_weights.py"
 ```
 
 Restart the previously recorded shadow command and verify publishers/freshness.
 Roll back the entire runtime and weight together, not only shared_best.pth. The
-v6 tag preserves the former PR #13 package, including its older postprocessing.
+v14 tag preserves the previous runtime, input contract and weight together.
 Alternatively restart the recorded legacy/A2 command. No launch file needs
 reverting because this publication changes none.
 
