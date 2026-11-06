@@ -10,6 +10,7 @@ archive does not install it into Unity or enable it on the vehicle.
 | [unity_semantic_left_turn_20261012](unity_semantic_left_turn_20261012/README.md) | PR #18 | Historical left-turn failures and default-disabled calibrated candidate |
 | [unity_semantic_official_matching_20261012](unity_semantic_official_matching_20261012/README.md) | PR #21 and #22 | Official-map diagnostics and opt-in bbox-distance experiment |
 | [unity_neo_topo_20261015](unity_neo_topo_20261015/RESULTS.md) | PR #26 | Stop/wait, odometry-reference closure and checkpoint restart verification |
+| [learned_racing](learned_racing/README.md) | Oct 27 CAN/VectorNav recordings and simulator outer loop | Offline policy training, portable wheel-speed inference and measured simulation replay |
 
 PR #18 remains in its original dated experiment path, with its complete
 before/overlay/evidence payload and original checksums. The selected follow-up

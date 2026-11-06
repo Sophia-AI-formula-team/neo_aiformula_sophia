@@ -1,0 +1,344 @@
+{
+  "track_length_m": 270.10296861684355,
+  "layouts": {
+    "outer": {
+      "first": {
+        "finished": true,
+        "time_s": 81.28641809324938,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 2.369204838820812
+      },
+      "best": {
+        "finished": true,
+        "time_s": 76.59781404934843,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.12184415506248314
+      },
+      "fixed_rpm_steering_frozen": {
+        "finished": 2,
+        "tried": 111,
+        "best_rpm": 300.0,
+        "time_s": 76.59098651188448
+      },
+      "first_success_generation": 1,
+      "candidate_evaluations": 2080,
+      "simulated_starts": 2080
+    },
+    "gates": {
+      "first": {
+        "finished": true,
+        "time_s": 130.23138355409517,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.1576021045567908
+      },
+      "best": {
+        "finished": true,
+        "time_s": 83.8791402709038,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.14732557050715833
+      },
+      "fixed_rpm_steering_frozen": {
+        "finished": 6,
+        "tried": 111,
+        "best_rpm": 298.0,
+        "time_s": 83.83517144778641
+      },
+      "first_success_generation": 6,
+      "candidate_evaluations": 2080,
+      "simulated_starts": 2080
+    },
+    "tight": {
+      "first": {
+        "finished": true,
+        "time_s": 180.78302265676624,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.3680201969076651
+      },
+      "best": {
+        "finished": true,
+        "time_s": 98.60859130939555,
+        "progress_m": 270.1029686168435,
+        "min_clearance_m": 0.3472520200298381
+      },
+      "fixed_rpm_steering_frozen": {
+        "finished": 13,
+        "tried": 111,
+        "best_rpm": 226.0,
+        "time_s": 110.95437262032627
+      },
+      "first_success_generation": 12,
+      "candidate_evaluations": 2080,
+      "simulated_starts": 6240
+    }
+  },
+  "heldout_1s_speed_yaw_mae": {
+    "rosbag2_2026_10_27-mixed1": {
+      "windows": 17,
+      "model_mae": [
+        0.2713689231819694,
+        0.07342100030548156
+      ],
+      "persistence_mae": [
+        0.4239791380984152,
+        0.06851945968125672
+      ]
+    },
+    "rosbag2_2026_10_27-turn2": {
+      "windows": 9,
+      "model_mae": [
+        0.10893723573663525,
+        0.03944320416406905
+      ],
+      "persistence_mae": [
+        0.4146383882231107,
+        0.09036337263468239
+      ]
+    },
+    "rosbag2_2026_10_27-lya2": {
+      "windows": 175,
+      "model_mae": [
+        0.7141445457686577,
+        0.07436660300336034
+      ],
+      "persistence_mae": [
+        0.16745810144276607,
+        0.07443298762398107
+      ]
+    }
+  },
+  "changed_conditions": [
+    {
+      "layout": "outer",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": true,
+        "time_s": 90.81137627876062,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.4551788821037692
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 30.10530665639334,
+        "min_clearance_m": 0.11961969061365352
+      }
+    },
+    {
+      "layout": "outer",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 23.53941645451944,
+        "min_clearance_m": 0.11301746551363934
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 29.126233588222792,
+        "min_clearance_m": 0.11912705394164735
+      }
+    },
+    {
+      "layout": "outer",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": true,
+        "time_s": 71.89564363700903,
+        "progress_m": 270.1029686168435,
+        "min_clearance_m": 0.5234887500709009
+      },
+      "adaptive": {
+        "finished": true,
+        "time_s": 76.43170296829923,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.12580815716380034
+      }
+    },
+    {
+      "layout": "outer",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 23.972076989437777,
+        "min_clearance_m": 0.09856215270920687
+      },
+      "adaptive": {
+        "finished": true,
+        "time_s": 76.44561350416296,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.12421959328971921
+      }
+    },
+    {
+      "layout": "gates",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 30.5983737226504,
+        "min_clearance_m": -0.05110442114859848
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 30.5808826554987,
+        "min_clearance_m": -0.0918463377466423
+      }
+    },
+    {
+      "layout": "gates",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 23.200073752325203,
+        "min_clearance_m": 0.0805627243464937
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 150.7254055513901,
+        "min_clearance_m": 0.1167011369952431
+      }
+    },
+    {
+      "layout": "gates",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 29.59785599736682,
+        "min_clearance_m": -0.20020146716123244
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 30.38624506080391,
+        "min_clearance_m": -0.07553451913219034
+      }
+    },
+    {
+      "layout": "gates",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 150.33273363829437,
+        "min_clearance_m": 0.03868220066415584
+      },
+      "adaptive": {
+        "finished": true,
+        "time_s": 83.86116632980706,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.15171179284931124
+      }
+    },
+    {
+      "layout": "tight",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 156.85995406411544,
+        "min_clearance_m": 0.06098270815554124
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 155.9612011081816,
+        "min_clearance_m": -0.09037915148286069
+      }
+    },
+    {
+      "layout": "tight",
+      "speed_gain_factor": 0.85,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 41.322287837017235,
+        "min_clearance_m": 0.11648328761652693
+      },
+      "adaptive": {
+        "finished": true,
+        "time_s": 105.41074715834591,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.2958544420041216
+      }
+    },
+    {
+      "layout": "tight",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": -0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 29.906271720401406,
+        "min_clearance_m": 0.03293762688860147
+      },
+      "adaptive": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 155.53237114094085,
+        "min_clearance_m": 0.11523023281875089
+      }
+    },
+    {
+      "layout": "tight",
+      "speed_gain_factor": 1.1,
+      "added_yaw_per_100rpm": 0.055,
+      "frozen": {
+        "finished": false,
+        "time_s": null,
+        "progress_m": 164.29910435236522,
+        "min_clearance_m": 0.1138539192866398
+      },
+      "adaptive": {
+        "finished": true,
+        "time_s": 98.33433668430723,
+        "progress_m": 270.10296861684355,
+        "min_clearance_m": 0.352035105530911
+      }
+    }
+  ],
+  "same_driver_across_layouts": {
+    "outer": {
+      "finished": true,
+      "time_s": 89.00656229711936,
+      "progress_m": 270.1029686168436,
+      "min_clearance_m": 2.9013218827950045
+    },
+    "gates": {
+      "finished": true,
+      "time_s": 98.24281567011059,
+      "progress_m": 270.10296861684355,
+      "min_clearance_m": 0.47823483633956076
+    },
+    "tight": {
+      "finished": true,
+      "time_s": 98.60859130939555,
+      "progress_m": 270.1029686168435,
+      "min_clearance_m": 0.3472520200298381
+    }
+  },
+  "fixed_rpm_grid": [
+    80,
+    300,
+    2
+  ],
+  "clip_section_times_s_first_best": [
+    21.527137988902425,
+    15.53340670935323
+  ]
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Formula · 学习驾驶回放</title><link rel="icon" href="data:,">
+<style>
+:root{font:15px/1.5 "Segoe UI","Microsoft YaHei",sans-serif;color:#152f3a;background:#f4f5f1;--first:#b45c32;--best:#007771}*{box-sizing:border-box}
+body{margin:0}main{max-width:1200px;margin:auto;padding:24px 32px}header,.controls,.legend,.statline,.plothead,.clock{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header,.plothead{justify-content:space-between}h1{font-size:clamp(25px,4vw,39px);letter-spacing:-.05em;margin:2px 0;font-weight:680}p{margin:4px 0 15px;color:#54676d}
+button,select{font:inherit;color:inherit;border:1px solid #c9d1cd;background:white;border-radius:7px;padding:6px 11px}button{cursor:pointer}button:hover{border-color:#007771}
+.card{border:1px solid #d2d9d4;border-radius:13px;background:white;padding:12px 16px;min-width:0}.layout{display:grid;grid-template-columns:minmax(0,1.33fr) minmax(290px,.85fr);gap:16px}
+.legend{margin:3px 0 7px}.first{color:var(--first)}.best{color:var(--best)}.tag{font-weight:650}label{color:#40565f}
+.track{width:100%;height:clamp(295px,44vh,465px)}.plot{width:100%;height:154px}canvas{display:block}.clock{margin:12px 0 4px;flex-wrap:nowrap}
+.clock input{width:100%;min-width:0;accent-color:#007771}.clock output{min-width:73px;text-align:right;font-variant-numeric:tabular-nums}
+.primary{background:#105951;border-color:#105951;color:white;white-space:nowrap}.controls{gap:8px}.note{font-size:13px;color:#53666d;margin-top:9px}
+.statline{border-bottom:1px solid #e3e8e3;padding:11px 0;justify-content:space-between}.statline:last-child{border:0}
+.num{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums}.small{font-size:13px;color:#5a6d73}.mono{font-variant-numeric:tabular-nums}
+@media(max-width:760px){main{padding:14px}.layout{grid-template-columns:1fr}.track{height:305px}.card{padding:10px}.legend{gap:9px}}
+</style>
+<main><header><h1>AI Formula 学习驾驶回放</h1><label>模拟布局 <select id="scene"></select></label></header>
+<p>同一起点、车况和轮速上限。橙色为首批达标策略，青色为训练后策略。紧门训练要求同一策略在三种练习条件下均能完圈。</p>
+<div class="layout"><section class="card"><div class="plothead"><div class="legend"><b class="first">● 首批达标</b><b class="best">● 训练后</b></div><button id="zoom">看第二组窄门</button></div>
+<canvas class="track" id="track" aria-label="两台模拟车的同步轨迹"></canvas>
+<div class="clock"><button id="play" class="primary">播放</button><input id="time" type="range" min="0" value="0" step=".05" aria-label="回放时间"><output id="stamp">0.0 s</output></div>
+<div class="controls"><button id="reset">从发车重放</button><label>倍速 <select id="rate"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></label></div>
+</section><section class="card"><div class="plothead"><b>整圈结果</b><span class="small">模拟用时</span></div>
+<div class="statline"><b class="first">首批达标</b><span class="num" id="firstLap"></span></div>
+<div class="statline"><b class="best">训练后</b><span class="num" id="bestLap"></span></div>
+<div class="statline"><span>首次达标批次</span><b id="generation"></b></div>
+<div class="statline"><span>训练后最小轮边余量</span><b id="margin"></b></div>
+<div class="statline"><span>固定纵向指令对照</span><b id="fixed"></b></div>
+<p class="note">对照保留训练后的转向策略，扫描 80 至 300 RPM，共 111 档。各组使用相同的单轮限幅。</p>
+<div class="statline"><span>此刻轮速指令<br><small>右 / 左 · RPM</small></span><div class="mono"><b class="first" id="rpmFirst"></b><br><b class="best" id="rpmBest"></b></div></div>
+</section></div>
+<section class="card" style="margin-top:16px"><div class="plothead"><label>沿赛道查看 <select id="signal"><option value="rpm">平均目标轮速 · RPM</option><option value="speed">车身速度 · m/s</option></select></label><span class="small">横轴为赛道进度（米）</span></div><canvas class="plot" id="plot"></canvas></section>
+<p class="note">车端策略每步只接收近场 0–8 米的模拟边界、车速和偏航角速度。全图仅供回放。车体采用 bag 拟合的平面模型，紧门与窄门均为虚拟布置。</p></main>
+<script>
+const scenes=/* TRACE_DATA */;
+const el=id=>document.getElementById(id);
+let name="tight", seconds=0, playing=false, zoom=false, last=0;
+for(const [key,data] of Object.entries(scenes)){const op=document.createElement("option");op.value=key;op.textContent=data.name;el("scene").append(op)}
+const colors={first:"#b45c32",best:"#007771"};
+function sample(run,t){
+  let lo=0,hi=run.length-1;while(lo<hi){const m=(lo+hi)>>1;if(run[m][0]<t)lo=m+1;else hi=m}
+  if(lo===0)return run[0];const a=run[lo-1],b=run[lo],f=Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));
+  return a.map((v,i)=>i===7?b[i]:v+f*(b[i]-v));
+}
+function canvas(id){const c=el(id),box=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  const w=Math.round(box.width),h=Math.round(box.height);
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr)}
+  const ctx=c.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);return [ctx,w,h];
+}
+function shape(g,pts,project,close=false){pts.forEach((p,i)=>{const xy=project(p);if(i===0)g.moveTo(...xy);else g.lineTo(...xy)});if(close)g.closePath()}
+function map(t){
+  const [g,w,h]=canvas("track"), d=scenes[name];let pts=d.left.concat(d.right);
+  if(zoom){const n=d.left.length,a=Math.floor(.52*n),b=Math.floor(.66*n);pts=d.left.slice(a,b).concat(d.right.slice(a,b))}
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const scale=Math.min((w-34)/(x1-x0),(h-34)/(y1-y0)), project=p=>[w/2+(p[0]-(x0+x1)/2)*scale,h/2-(p[1]-(y0+y1)/2)*scale];
+  g.fillStyle="#f7f8f4";g.fillRect(0,0,w,h);g.beginPath();shape(g,d.left,project,true);shape(g,d.right,project,true);
+  g.fillStyle="#dfe6df";g.fill("evenodd");g.strokeStyle="#83948e";g.lineWidth=1.1;g.stroke();
+  for(const key of ["first","best"]){const run=d[key], row=sample(run,t), xy=project(row.slice(1,3));g.strokeStyle=colors[key];g.lineWidth=1.25;g.globalAlpha=.45;
+    g.beginPath();shape(g,run.map(r=>r.slice(1,3)),project);g.stroke();g.globalAlpha=1;
+    const active=run.filter(r=>r[0]<=t&&r[0]>=t-4).map(r=>r.slice(1,3));active.push(row.slice(1,3));g.lineWidth=3;
+    g.beginPath();shape(g,active,project);g.stroke();g.beginPath();g.arc(...xy,5,0,Math.PI*2);g.fillStyle=colors[key];g.fill();g.lineWidth=1.6;g.strokeStyle="white";g.stroke();
+    el(key==="first"?"rpmFirst":"rpmBest").textContent=Math.round(row[5])+" / "+Math.round(row[6]);
+  }
+}
+function plot(t){
+  const [g,w,h]=canvas("plot"), d=scenes[name], maxS=d.best.at(-1)[3], rpm=el("signal").value==="rpm", ymax=rpm?320:4;
+  const val=r=>rpm?(r[5]+r[6])/2:r[4], project=p=>[42+(w-58)*p[0]/maxS,h-24-(h-36)*p[1]/ymax];
+  g.font="11px Segoe UI, sans-serif";g.fillStyle="#52666c";g.strokeStyle="#e3e8e5";g.lineWidth=1;
+  for(const y of (rpm?[0,100,200,300]:[0,1,2,3,4])){const q=project([0,y]);g.fillText(y,8,q[1]+3);g.beginPath();g.moveTo(q[0],q[1]);g.lineTo(w-14,q[1]);g.stroke()}
+  for(let s=0;s<=maxS;s+=50){g.fillText(s,project([s,0])[0]-4,h-6)}
+  for(const key of ["first","best"]){const run=d[key];g.lineWidth=2;g.strokeStyle=colors[key];g.beginPath();shape(g,run.map(r=>[r[3],val(r)]),project);g.stroke();
+    const r=sample(run,t),xy=project([r[3],val(r)]);g.fillStyle=colors[key];g.beginPath();g.arc(...xy,4,0,7);g.fill()}
+}
+function draw(){el("time").value=seconds;el("stamp").textContent=seconds.toFixed(1)+" s";el("play").textContent=playing?"暂停":"播放";map(seconds);plot(seconds)}
+function change(){name=el("scene").value;const d=scenes[name],s=d.score;seconds=0;playing=false;zoom=false;
+  el("time").max=Math.max(d.first.at(-1)[0],d.best.at(-1)[0]);el("zoom").hidden=name==="outer";el("zoom").textContent="看第二组窄门";
+  el("firstLap").textContent=s.first.time_s.toFixed(2)+" s";el("bestLap").textContent=s.best.time_s.toFixed(2)+" s";el("generation").textContent="第 "+s.first_success_generation+" 批";
+  el("margin").textContent=s.best.min_clearance_m.toFixed(2)+" m";const f=s.fixed_rpm_steering_frozen;el("fixed").textContent=f.time_s===null?"全部未完成":f.time_s.toFixed(2)+" s";draw()}
+function animate(now){if(playing){seconds=Math.min(+el("time").max,seconds+Math.min(.15,(now-last)/1000)*Number(el("rate").value));if(seconds>=+el("time").max)playing=false;draw()}last=now;requestAnimationFrame(animate)}
+el("scene").value=name;el("scene").onchange=change;el("play").onclick=()=>{if(seconds>=+el("time").max)seconds=0;playing=!playing;draw()};
+el("reset").onclick=()=>{seconds=0;playing=false;draw()};el("time").oninput=e=>{playing=false;seconds=+e.target.value;draw()};
+el("signal").onchange=draw;el("zoom").onclick=()=>{zoom=!zoom;el("zoom").textContent=zoom?"看全圈":"看第二组窄门";
+  if(zoom){const r=scenes[name].best;seconds=r.find(x=>x[3]>=r.at(-1)[3]*.52)[0]}draw()};
+window.addEventListener("resize",draw);change();requestAnimationFrame(animate);
+</script></html>

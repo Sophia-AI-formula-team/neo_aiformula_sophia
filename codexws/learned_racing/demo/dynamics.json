@@ -1,0 +1,88 @@
+{
+  "parameter_order": [
+    "speed_per_100rpm",
+    "drive_tau_s",
+    "lift_tau_s",
+    "stop_tau_s",
+    "left_yaw_gain",
+    "right_yaw_gain",
+    "straight_yaw_bias",
+    "yaw_tau_s"
+  ],
+  "parameters": [
+    1.1107130541367163,
+    0.9063959969100431,
+    0.9714729687052184,
+    0.46312517687432375,
+    0.15328463774756382,
+    0.25533790049086924,
+    0.012538869234347539,
+    0.31171128343877896
+  ],
+  "delay_steps": 0,
+  "dt_s": 0.1,
+  "train": [
+    "1027_manual_1",
+    "rosbag2_2026_10_27-speed1",
+    "rosbag2_2026_10_27-stop1",
+    "rosbag2_2026_10_27-turn1"
+  ],
+  "heldout_1s_speed_yaw_mae": {
+    "rosbag2_2026_10_27-mixed1": {
+      "windows": 17,
+      "model_mae": [
+        0.2713689231819694,
+        0.07342100030548156
+      ],
+      "persistence_mae": [
+        0.4239791380984152,
+        0.06851945968125672
+      ]
+    },
+    "rosbag2_2026_10_27-turn2": {
+      "windows": 9,
+      "model_mae": [
+        0.10893723573663525,
+        0.03944320416406905
+      ],
+      "persistence_mae": [
+        0.4146383882231107,
+        0.09036337263468239
+      ]
+    },
+    "rosbag2_2026_10_27-lya2": {
+      "windows": 175,
+      "model_mae": [
+        0.7141445457686577,
+        0.07436660300336034
+      ],
+      "persistence_mae": [
+        0.16745810144276607,
+        0.07443298762398107
+      ]
+    }
+  },
+  "source_sha256": {
+    "1027_manual_1": {
+      "1027_manual_1_0.db3": "861ff3f6de85b740a5a240ee11268ac81cd348ec276db1af849e353dca7555da"
+    },
+    "rosbag2_2026_10_27-speed1": {
+      "rosbag2_2026_10_27-speed1_0.db3": "83e6d8aa8f37be85bc3b02adc1f1da0b6ad4c0b20da24487a6eef8020a07954b"
+    },
+    "rosbag2_2026_10_27-stop1": {
+      "rosbag2_2026_10_27-stop1_0.db3": "8f77fa2ecba273a0117ae5b9267924d988914ea950be4fa2a4c47af1622bc9a3"
+    },
+    "rosbag2_2026_10_27-turn1": {
+      "rosbag2_2026_10_27-turn1_0.db3": "830ee7cb3ca86a568bb26861d36dc53fe137e2baca9717923205353b244e9dcb"
+    },
+    "rosbag2_2026_10_27-mixed1": {
+      "rosbag2_2026_10_27-mixed1_0.db3": "22424ef0b219a7d236648586392d72b24f62d2d29122d2bdb2cddea55d62b055"
+    },
+    "rosbag2_2026_10_27-turn2": {
+      "rosbag2_2026_10_27-turn2_0.db3": "d5a625e08eff53230e5ab885164e6963aa762fe410d5d5f5535dab254154d433"
+    },
+    "rosbag2_2026_10_27-lya2": {
+      "rosbag2_2026_10_27-lya_0.db3": "6b5c01ae2a9440b94bfdffa3242d18fb3b5c16834d55435e12ddacce90179114"
+    }
+  }
+}
