@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from referee_inset import CHASE_INSET, RefereeInset, RefereeTimeline
 from learned_film_panel import HEIGHT as LEARNED_HEIGHT, LearnedPanel
+from smooth_film_panel import SmoothFilmPanel
 
 
 SIZE = (2048, 1280)
@@ -34,6 +35,7 @@ PHASE = {
     "yield_corridor": ("选择通过空间", "按障碍与道路之间的余量调整目标", ORANGE),
     "insufficient_lane": ("道路观测不足", "控制器限制目标速度", ORANGE),
     "learned_encounter": ("执行学习动作", "按所选动作限制车速并跟踪横移目标", PURPLE),
+    "smooth_encounter": ("执行长训动作", "平滑调整横移目标并跟踪所选速度", PURPLE),
     "go_first": ("选择加速先行", "根据车身清空断面的预测时间调整车速", TEAL),
 }
 
@@ -246,6 +248,7 @@ def main():
     parser.add_argument("--note", help="Optional factual footer for this recording")
     parser.add_argument("--referee-inset", action="store_true", help="Show a fixed local ground-truth referee inset on the chase camera")
     parser.add_argument("--learned-panel", action="store_true", help="Add actual fitted-action choices, scores and terminal outcome")
+    parser.add_argument("--smooth-panel",action="store_true",help="Show fitted long-training action and filtered steering target")
     parser.add_argument("--whole-lap", action="store_true", help="Show recorded progress and switch the fixed referee view only between encounters")
     parser.add_argument("--reference-run",type=Path,help="Compare the identical physical scenario to the archived baseline")
     args = parser.parse_args()
@@ -280,7 +283,8 @@ def main():
                 or any(reference["request"].get(k)!=run["request"].get(k) for k in ("seed","start","offset","yaw","limit","model","weights","timing"))):
             raise ValueError("The reference is not the same physical scenario and baseline driving request")
         comparison=reference["rows"]==run["rows"]
-    panel = LearnedPanel(run,comparison) if args.learned_panel else None
+    if args.smooth_panel and args.learned_panel:raise ValueError("Choose one actual policy panel")
+    panel = SmoothFilmPanel(run) if args.smooth_panel else LearnedPanel(run,comparison) if args.learned_panel else None
     size = (SIZE[0],SIZE[1]+LEARNED_HEIGHT) if panel else SIZE
     if panel:
         base=Image.new("RGB",size,PAPER)
@@ -365,7 +369,7 @@ def main():
                "referee_inset":timeline.receipt() if timeline else referee.receipt() if referee and referee.ids else None,
                "matchedReference":None if reference is None else {"id":reference["id"],"sha256":digest(args.reference_run),"identicalPhysicalRows":comparison},
                "learned_panel":None if panel is None else {"modelId":panel.model, "actionTable":panel.actions,
-                   "selections":[{"t":decisions[i]["t"],**decisions[i]["encounter"]} for i in panel.selected]},
+                   "selections":[{"t":decisions[i]["t"],**decisions[i]["smooth" if args.smooth_panel else "encounter"]} for i in panel.selected]},
                "method":"Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
                "unique_sources":{key:len(value) for key,value in indices.items()},"max_display_age_s":max_age,
                "missing_camera_output_frames":gaps,"samples":checks}
