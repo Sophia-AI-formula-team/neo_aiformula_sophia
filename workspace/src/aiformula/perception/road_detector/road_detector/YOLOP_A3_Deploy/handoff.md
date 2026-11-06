@@ -1,15 +1,28 @@
-# A3 V76 Deployment Handoff
+# A4 Deployment Handoff
 
 ## Release Decision
 
-The user selected V76 aligned step 1024 as the new stable package and authorized
-merge. Release tag: **a3-v76**. Prior rollback tag: **a3-v14**.
+The user renamed the selected V76 aligned step 1024 package to **A4**.
+Release tag: **a4**; package version **4.0.0**. Identical prior model tag:
+**a3-v76**; earlier model rollback tag: **a3-v14**. No retraining or weight change.
 See weights/manifest.json for exact source/export hashes and input contract.
 
 This release contains the actual temporal module and its learned weights.
 The existing ROS image-only node runs single-frame inference; enabling temporal
 fusion requires the explicit calibrated frame API in TEMPORAL.md. No vehicle
 launch or perception publisher has been switched by this publication.
+
+### Actual Deployment Status
+
+Model and temporal API publication is complete; real-camera temporal input
+integration is not complete. Single-frame means each video frame is independently
+processed, as in the previous V14 ROS node, using the new base weights rather than
+V14. It does not mean only the first image is processed or that GPU is disabled.
+The Unity temporal comparisons used accurate camera poses. The image-only ROS
+node cannot reproduce their temporal enhancement until calibrated capture-time
+geometry is integrated. The A4 rename does not enable that integration.
+Chinese explanation: [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md).
+Next work: [issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34).
 
 ## Measured Results
 
@@ -37,10 +50,13 @@ per-class object-quality comparison against V14.
 
 ## Packaging Verification
 
-- Before replacement: all 26 old package tests passed.
+- Before the A4 rename: all 40 package tests passed; after it: 41 passed,
+  including release/manifest/Python/ROS version consistency.
 - New unit/contract checks cover actual weights, one encoder traversal, independent
   outputs, native restoration, temporal resets, invalid metadata and ROS headers.
-- Full-resolution source/export comparison: see verification/runtime_smoke.json.
+- The unchanged V76 model's 900-frame full-resolution source/export comparison
+  remains in verification/runtime_smoke.json. The A4 rename did not rerun this
+  experiment; exact weight and inference-source identity were checked instead.
 - Wheel/install/CLI results: see verification/package_smoke.json.
 - Sanitized experiment summary: verification/training_summary.json.
 

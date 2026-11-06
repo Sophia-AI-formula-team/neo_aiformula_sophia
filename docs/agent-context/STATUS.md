@@ -1,3 +1,16 @@
+# A4 release identity prepared - 2026-11-06
+
+The user renamed the current release A4 (software4.0.0, tag a4); its model and
+weights are unchanged from a3-v76. Existing package/import/ROS names are retained.
+The image-only ROS node still processes frames independently. The temporal API
+is packaged, but real-camera calibration and synchronized pose inputs are not
+integrated; Unity demos supplied those inputs. This distinction is documented in
+the package MODE_GUIDE_ZH.md, README, DEPLOYMENT and handoff.
+[A4 review receipt](receipts/2026-11-06-planner-a4-identity-039.md):41 package tests,
+installed-wheel CUDA and both CLIs pass; no new training or vehicle action.
+Issue #35 tracks this rename; issue #34 remains the temporal-integration task.
+Old a3-v76/a3-v14/a3-v6 tags are immutable. PR/merge outcome is recorded on GitHub.
+
 # A3 V76 deployment prepared - 2026-11-06
 
 User selected V76 aligned step1024 as stable and authorized merge. The package

@@ -1,11 +1,20 @@
-# Deployment Guide
+# A4 Deployment Guide
 
 ## Status And Environment
 
-This is the user-selected stable A3 V76 package. First run it on isolated shadow
+This is the A4 package (version 4.0.0, tag a4), renamed from a3-v76 with identical
+weights and inference behavior. First run it on isolated shadow
 topics. Publication does not modify main launch wiring or start/stop any ROS node.
 The bundled ROS wrapper runs single-frame inference and says so at startup.
 For calibrated temporal inference use predict_frame and TEMPORAL.md.
+
+**Model/API publication is complete; real-camera temporal integration is not.**
+Single-frame processes every video frame independently, as the V14 ROS node did,
+but uses the new image-model weights. Unity temporal demos had accurate camera
+poses; this image-only ROS wrapper does not receive that geometry. Starting it
+does not reproduce the temporal demo effect. See [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md)
+and [integration issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34).
+Existing folder/Python/ROS names are retained as compatibility interfaces.
 
 Tested reference:Windows,x86-64,Python3.12.10,Torch2.11.0+cu130,
 TorchVision0.26.0,RTX4070Ti. Package requires Python>=3.10,<3.14.
@@ -24,8 +33,8 @@ Use a clean dedicated deployment checkout. Fetch/check out the release tag,
 then from the repository root:
 
 ```sh
-git fetch origin tag a3-v76
-git switch --detach a3-v76
+git fetch origin tag a4
+git switch --detach a4
 export A3="$PWD/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy"
 python -c "import sys,torch,torchvision,cv2,numpy; print(sys.version); print(torch.__version__,torchvision.__version__,torch.cuda.is_available())"
 python -m pip install --no-deps "$A3"

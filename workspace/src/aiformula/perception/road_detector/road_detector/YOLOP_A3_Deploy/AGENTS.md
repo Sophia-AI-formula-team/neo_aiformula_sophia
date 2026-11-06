@@ -1,9 +1,10 @@
-# A3 Deployment Maintainer Instructions
+# A4 Deployment Maintainer Instructions
 
 Scope: this package only. Read README, context, handoff, TEMPORAL and the weight
 manifest. Inspect Git status and preserve unrelated edits.
 
-- Selected release is a3-v76 aligned step 1024. Keep one shared encoder, one
+- Current identity is A4 / 4.0.0 / tag a4, with unchanged V76 aligned step1024
+  weights from a3-v76. Keep one shared encoder, one
   model-only checkpoint and independent lane/object outputs.
 - No training loop, optimizer, teacher, dataset or second detector.
 - Match serialized FP32 min640/max1152 resize, normalization, padding and
@@ -24,5 +25,10 @@ manifest. Inspect Git status and preserve unrelated edits.
 - Do not alter sibling YOLOP/A2, launcher, controller or watchdog incidentally.
 - Start ROS with all shadow remaps. Do not enable vehicle motion or duplicate
   publishers. Target-device timing, DDS and real calibration require their own tests.
-- Tags a3-v6/a3-v14/a3-v76 are immutable; rollback the entire runtime and weight.
+- Explain publication versus activation: the model and temporal API are shipped,
+  but real-camera temporal input integration is unfinished. The bundled ROS node
+  is single-frame, unlike the calibrated Unity temporal demos. See MODE_GUIDE_ZH.md.
+- Keep existing folder/distribution/Python/ROS names as compatibility interfaces;
+  do not rename serialized source architecture or historical hashes to A4.
+- Tags a3-v6/a3-v14/a3-v76/a4 are immutable; rollback the entire runtime and weight.
   Update manifest, verification, context and handoff together.

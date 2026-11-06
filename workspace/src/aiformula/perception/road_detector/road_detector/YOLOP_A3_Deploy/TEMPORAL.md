@@ -1,4 +1,9 @@
-# Calibrated Temporal Input
+# A4 Calibrated Temporal Input
+
+This interface is packaged, but the bundled image-only ROS node does not call it.
+Unity comparisons supplied accurate camera geometry; real-camera integration
+remains unfinished. A4 renames a3-v76 without enabling temporal inference.
+See [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md) for the mode and release explanation.
 
 ## Python API
 

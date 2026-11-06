@@ -1,4 +1,4 @@
-"""Run one image through the public A3 entrypoint and save both task outputs."""
+"""Run one image through the public A4 entrypoint and save both task outputs."""
 import argparse
 import json
 from pathlib import Path
@@ -8,7 +8,7 @@ import cv2
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from yolop_a3_runtime import PerceptionModel
+from yolop_a3_runtime import PerceptionModel, RELEASE_NAME
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
             raise OSError(f"Cannot write output image: {name}")
     (args.output / "detections.json").write_text(
         json.dumps(result.detections_payload(), indent=2), encoding="utf-8")
-    print(f"A3 outputs saved: {args.output.resolve()}")
+    print(f"{RELEASE_NAME} outputs saved: {args.output.resolve()}")
 
 
 if __name__ == "__main__":
