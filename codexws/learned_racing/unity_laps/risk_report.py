@@ -147,15 +147,79 @@ def practice_report(training):
     return ''.join(sections)
 
 
+def command_figure(view, seed, output):
+    """Plot the measured speed and both wheel commands during one moving encounter."""
+    decisions = view["decisions"]
+    chosen = min((d for d in decisions if d.get("reason") == "yield"),
+                 key=lambda d: d["speedCmd"], default=None)
+    if chosen is None:
+        return False
+    im = Image.new("RGB", (1280, 760), "#f6f7f0")
+    pen = ImageDraw.Draw(im)
+    def text(x, y, value, size=18, color="#22312d", bold=False):
+        name = "msyhbd.ttc" if bold else "msyh.ttc"
+        face = ImageFont.truetype(str(Path("C:/Windows/Fonts") / name), size)
+        pen.text((x,y), value, font=face, fill=color, anchor="lt")
+    text(35, 25, "横移路障前后的实际控制指令", 34, bold=True)
+    text(35, 78, f'种子 {seed}　·　新策略　·　进入桶前 {APPROACH_M:.0f} m 时开始　·　{"通过" if view["passed"] else "未通过"}　·　最小净距 {fmt(view["gap"])} m')
+    x0, x1 = 96, 869
+    duration = max(.2, view["until"] - view["from"])
+    def xp(t):
+        return x0 + (x1-x0) * np.clip((t-view["from"])/duration,0,1)
+    colors = {"yield":"#f9e4c7","recover":"#e1ecf4"}
+    v_max=max(1,int(np.ceil(max(max(d["cruise"],d["speed"],d["speedCmd"]) for d in decisions))))
+    lo=min(0,int(np.floor(min(min(d["leftCan"],d["rightCan"]) for d in decisions)/100))*100)
+    hi=max(100,int(np.ceil(max(max(d["leftCan"],d["rightCan"]) for d in decisions)/100))*100)
+    def axes(top, bottom, v0, v1, tags):
+        def y(v):return bottom-(bottom-top)*(v-v0)/(v1-v0)
+        for i,d in enumerate(decisions):
+            fill=colors.get(d.get("reason"))
+            if fill:
+                end=decisions[i+1]["t"] if i+1<len(decisions) else view["until"]
+                pen.rectangle((xp(d["t"]),top,xp(end),bottom),fill=fill)
+        for a in np.linspace(v0,v1,5):
+            pen.line((x0,y(a),x1,y(a)),fill="#cbd6ce")
+            text(32,y(a)-7,f'{a:.1f}' if v1<=10 else f'{a:.0f}',14)
+        for key,color,is_step in tags:
+            pts=[]
+            for d in decisions:
+                q=(xp(d["t"]),y(d[key]))
+                if pts and is_step:pts.append((q[0],pts[-1][1]))
+                pts.append(q)
+            if len(pts)>1:pen.line(pts,fill=color,width=3)
+        xx=xp(chosen["t"]);pen.line((xx,top,xx,bottom),fill="#694d3c",width=2)
+        for a in np.linspace(0,duration,6):
+            text(xp(view["from"]+a)-10,bottom+5,f'{a:.1f}',14)
+    text(35,140,"车速　m/s",19,bold=True)
+    text(245,140,"曲率巡航",17,"#718176");text(385,140,"最终目标",17,ORANGE);text(524,140,"车身实测",17,BLUE)
+    axes(183,358,0,v_max,[("cruise","#8c988d",True),("speedCmd",ORANGE,True),("speed",BLUE,False)])
+    text(35,422,"轮速指令　RPM",19,bold=True);text(245,422,"左轮",17,ORANGE);text(385,422,"右轮",17,BLUE)
+    axes(466,640,lo,hi,[("leftCan",ORANGE,True),("rightCan",BLUE,True)])
+    text(350,683,"进入评价区后的仿真时间（s）",16)
+    pen.rounded_rectangle((907,142,1246,659),radius=15,fill="#eaf0e7")
+    text(929,170,"最低让行目标的时刻",19,bold=True);text(929,211,f'仿真 {chosen["t"]:.2f} s',23,bold=True)
+    values=[("当前曲率巡航",f'{chosen["cruise"]:.2f} m/s'),("让行速度上限",f'{chosen["guardCap"]:.2f} m/s'),
+            ("规划速度比例",fmt(chosen["ratio"])),("最终车速目标",f'{chosen["speedCmd"]:.2f} m/s'),
+            ("实测车速",f'{chosen["speed"]:.2f} m/s'),("目标偏航速度",f'{chosen["yawCmd"]:.2f} rad/s'),
+            ("左右轮指令",f'{chosen["leftCan"]} / {chosen["rightCan"]} RPM')]
+    for i,(a,b) in enumerate(values):
+        y=274+49*i;text(929,y,a,15,"#5b6a60");text(1061,y,b,17)
+    text(35,720,"浅橙为控制器的让行阶段，浅蓝为避让后恢复。竖线对应右侧同一控制周期。",16,"#53655a")
+    im.save(output)
+    return True
+
+
 def write_report(pairs, output_path, training=()):
     """pairs is an ordered iterable of (reference, challenger); training may be grouped by phase."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True,exist_ok=True)
-    records=[]; blocks=[]; options=[];snapshots=[]
+    records=[]; blocks=[]; options=[];snapshots=[];moving_views=[]
     for a,b in pairs:
         c=compare(a,b);records.append(c)
         for z,(ga,gb) in enumerate(zip(c["before"]["zones"],c["after"]["zones"])):
             views=[timeline(a,ga,"旧策略"),timeline(b,gb,"新策略")]
+            if gb["kind"]=="moving" and views[1] and any(d["reason"]=="yield" for d in views[1]["decisions"]):
+                moving_views.append((ga["passed"] and gb["passed"],gb["passed"],c["after"]["seed"],views[1]))
             k=len(blocks);name=f'种子 {c["before"]["seed"]} · {KIND[ga["kind"]]}'
             options.append(f'<option value="{k}">{name}</option>')
             desc=[]
@@ -171,6 +235,13 @@ def write_report(pairs, output_path, training=()):
     if not records:raise ValueError("At least one matched pair is required")
     image_path=output_path.with_suffix(".png")
     seed_summary(records,image_path)
+    figure=""
+    if moving_views:
+        # Prefer the first pair where both passed, then a new-policy pass, then the first reached case.
+        _,_,seed,representative=max(moving_views,key=lambda row:row[:2])
+        path=output_path.with_name(output_path.stem+"-moving.png")
+        if command_figure(representative,seed,path):
+            figure=f'<h2>一次横移路障的完整发令过程</h2><img src="{escape(path.name)}" alt="曲率巡航、最终速度目标、实测速度和左右轮转速随时间变化">'
     traffic=[c for c in records if c["before"]["zones"]];clean=[c for c in records if not c["before"]["zones"]]
     def completed(seq,side):return sum(c[side]["finished"] for c in seq)
     practice=practice_report(training)
@@ -195,6 +266,7 @@ def write_report(pairs, output_path, training=()):
 </style><main>"""
     html+=f'<h1>A4 驾驶考核</h1><p>{head}</p><img src="{escape(image_path.name)}" alt="各起点完圈和自由区速度对比"><div class="scroll"><table><thead><tr><th>起点</th><th>旧策略</th><th>新策略</th><th>共同自由距离 m</th><th>速度差 m/s</th><th>分区用时 s（旧 → 新）</th></tr></thead><tbody>{"".join(table)}</tbody></table></div><small>分区秒数用于描述驾驶动作。遇到横移桶的让行耗时不进入速度评分。部分路线的共同区间速度不能替代完圈成绩。</small>{chart}{practice}</main>'
     dataset=json.dumps(snapshots,allow_nan=False,separators=(",",":")).replace("<","\\u003c")
+    html=html.replace("</main>", figure+"</main>")
     html+='<script type="application/json" id="actions">'+dataset+'</script><script>'+JS+'</script></html>'
     output_path.write_text(html,encoding="utf8")
     return records
