@@ -210,6 +210,7 @@ def render(args):
     label(d,(42,1375),"赛后裁判记录",25,WHITE,True)
     for j,(r,x,title) in enumerate(zip(recs,X,(args.base_label,args.trained_label))):
         rule=TERMINAL.get(r.run["status"],r.run["status"])
+        if args.lap_times:rule+=f"  {r.run['seconds']:.2f} s"
         gap=f"桶 {r.run['minGap']:.2f} m   /  " if r.run["props"] else "场内无桶   /  "
         label(d,(x,1439),f"{title}  ·  {rule}     最小净距   "+gap+f"边界 {r.run['minRoad']:.2f} m",26,
               "#ffcd9e" if j==0 else "#b3ebe1",True)
@@ -309,5 +310,6 @@ if __name__=="__main__":
     p.add_argument("--model-id",help="Require the exact frozen smooth-controller model ID")
     p.add_argument("--gate-report",type=Path,help="Second-stage paired gate judge with true crossing times")
     p.add_argument("--straight-gate",nargs=2,type=float,metavar=("START_M","END_M"))
+    p.add_argument("--lap-times",action="store_true",help="Include the physically recorded complete-course times")
     for name in ("start","end"):p.add_argument("--"+name,type=float,required=True)
     render(p.parse_args())

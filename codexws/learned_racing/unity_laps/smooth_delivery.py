@@ -151,6 +151,21 @@ def straight_case(runs,case):
         selection="登记顺序中首个自然无障碍直道，同一 12–34 m 距离门。按车身实际测速累计达到 4.0 m/s 的行进里程。")
 
 
+def improved_lap_case(runs,p):
+    arms=[load(runs/(p["id"]+"_"+a+".json")) for a in ("base","learned")]
+    groups=[]
+    for i,prop in enumerate(arms[0]["props"]):
+        if groups and prop[7]-arms[0]["props"][groups[-1][-1]][7]<=8:groups[-1].append(i)
+        else:groups.append([i])
+    periods=[[(min(r["zoneStart"][i] for i in ids),max(r["zoneEnd"][i] for i in ids)) for r in arms] for ids in groups]
+    gain=lambda times:(times[0][1]-times[0][0])-(times[1][1]-times[1][0])
+    idx=max(range(len(periods)),key=lambda i:gain(periods[i]));times=periods[idx];anchor=groups[idx][0]
+    return dict(name="06-largest-complete-lap-gain",title="完圈用时对照 "+p["id"].upper()+" · 同一障碍区",kind="pair",case=p["id"],prop=anchor,
+        start=max(0,min(t[0] for t in times)-1.3),end=min(max(r["seconds"] for r in arms),max(t[1] for t in times)+.8),
+        localScene=local_scene(arms[1],anchor),lapTimes=True,completeLapSeconds=[r["seconds"] for r in arms],zoneSeconds=[t[1]-t[0] for t in times],
+        selection="双方都完成的有障碍整圈中，按整圈用时相对降幅选择；片中展示这一圈减时最多的障碍区。")
+
+
 def selection(args):
     rep=load(args.results);pairs=rep["pairs"]
     local=[p for p in pairs if p["scope"]=="segment" and p["base"]["cones"]]
@@ -210,6 +225,10 @@ def selection(args):
         add(choice,f"{number:02}-"+category,caption+"  "+choice["id"].upper(),
             "补全实体场地类别；优先按登记顺序选择轨迹不同且长训能完成的场景")
     coverage={k:next(row["name"] for row in out if k in row["localScene"]["categories"]) for k in labels}
+    quicker=[p for p in traffic_laps if ok(p,"base") and ok(p,"learned") and p["learned"]["elapsedS"]<.98*p["base"]["elapsedS"]]
+    if quicker:
+        fastest=min(quicker,key=lambda p:p["learned"]["elapsedS"]/p["base"]["elapsedS"])
+        out.append(improved_lap_case(args.runs,fastest))
     clear=next(p for p in pairs if p["scope"]=="segment" and p["family"]=="clear")
     if all(clear[a]["straightGates"]["totals"]["coverage"]>=.999 for a in ("base","learned")):
         out.append(straight_case(args.runs,clear["id"]))
@@ -245,6 +264,7 @@ def film(args):
         if not is_probe:cmd.extend(("--model-id",args.model_id))
         if spec.get("baseLabel"):cmd.extend(("--base-label",spec["baseLabel"],"--trained-label",spec["trainedLabel"]))
         if spec.get("straightGate"):cmd.extend(("--straight-gate",*map(str,spec["straightGate"])))
+        if spec.get("lapTimes"):cmd.append("--lap-times")
         if spec["prop"] is not None:cmd.extend(("--prop",str(spec["prop"])))
         subprocess.run(cmd,check=True)
     else:

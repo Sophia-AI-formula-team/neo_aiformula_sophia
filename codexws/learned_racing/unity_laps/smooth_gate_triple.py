@@ -63,6 +63,8 @@ def stat(d,x,y,g,sim,stop,compact_index=None):
 
 def render(args):
     recs=records(args.root,args.case);judge=GateView(args.results,recs)
+    scoring=json.loads(args.results.read_bytes())
+    measured=next(q for q in scoring["pairs"] if q["id"]==args.case)
     if len(judge.arms[0])>3:raise ValueError("The panel fits up to three physical gate stations")
     compact=len(judge.arms[0])==3
     scene=LocalPaths(recs,args.start,args.end,judge.indices[0],judge)
@@ -90,10 +92,16 @@ def render(args):
             y=925+164*n
             label(d,(x,y),f"第 {n+1} 排",19,col,True)
     d.rectangle((0,1320,2048,1496),fill=INK)
-    label(d,(38,1355),"整段裁判结果",23,"#dce9e5",True)
-    for x,r in zip(X,recs):
+    first,last=measured["base"]["windowFromToM"]
+    footer=f"同一障碍区   沿程 {first:.1f}–{last:.1f} m   ·   实际通过时间与进度均速" if args.compare_window else "整段裁判结果"
+    label(d,(38,1355),footer,23,"#dce9e5",True)
+    for x,r,arm in zip(X,recs,ARMS):
         obj=r.run
-        label(d,(x,1410),TERMINAL.get(obj["status"],obj["status"])+f"   {obj['seconds']:.2f} s",27,WHITE,True)
+        if args.compare_window:
+            win=measured[arm]["window"]
+            if not win or not win["complete"]:raise ValueError("A comparable-time presentation needs all three complete windows")
+            label(d,(x,1410),f"{win['seconds']:.2f} s    ·    {win['speedMps']:.2f} m/s",29,WHITE,True)
+        else:label(d,(x,1410),TERMINAL.get(obj["status"],obj["status"])+f"   {obj['seconds']:.2f} s",27,WHITE,True)
         label(d,(x,1460),f"最小实物净距 {obj['minGap']:.2f} m    路界 {obj['minRoad']:.2f} m",20,"#d3e6e1")
     args.out.parent.mkdir(parents=True,exist_ok=True)
     samples_qa={}
@@ -148,6 +156,7 @@ def render(args):
                 s["decodedMeanRGBErrors"]=errs
     data=dict(case=args.case,title=args.title,sha256=digest(args.out),frames=total,fps=FPS,sameClock=[args.start,args.end],
         originalRunSHA256=[digest(r.path) for r in recs],compared=list(ARMS),judge=judge.provenance,localRoad=scene.road_check,sampledFrames=samples_qa)
+    if args.compare_window:data["comparedWindows"]={a:measured[a]["window"] for a in ARMS}
     args.out.with_suffix(".json").write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(args.case,digest(args.out))
 
@@ -157,4 +166,5 @@ if __name__=="__main__":
     for k in ("root","results","out"):p.add_argument("--"+k,type=Path,required=True)
     for k in ("start","end"):p.add_argument("--"+k,type=float,required=True)
     for k in ("case","title"):p.add_argument("--"+k,required=True)
+    p.add_argument("--compare-window",action="store_true")
     render(p.parse_args())

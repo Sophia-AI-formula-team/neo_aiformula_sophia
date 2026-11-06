@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import av
+import numpy as np
 
 from assemble_obstacle_films import inspect, join
 from three_view import digest
@@ -54,6 +55,24 @@ def main(args):
     cfg=score["gapConfigurations"]
     if not cfg["learned"]["openings"] or cfg["pace"]["openings"] or cfg["pace"]["paceScale"]!=cfg["learned"]["paceScale"]:
         raise ValueError("The selected control must share the frozen straight pace while disabling local opening selection")
+    if args.comparable_only:
+        arms=("base","pace","learned")
+        p=next(p for p in pairs if len(p["learned"]["gates"])>=2 and all(p[a]["allMiddleSuccess"] and p[a]["window"]["complete"] for a in arms))
+        case=p["id"];bounds=p["base"]["windowFromToM"];times=[]
+        for a in arms:
+            rows=np.asarray(read(args.root/"runs"/(case+"_"+a+".json"))["rows"])
+            times.append(np.interp(bounds,rows[:,7],rows[:,0]))
+        start=max(0,min(t[0] for t in times)-.3);end=max(t[1] for t in times)+.3
+        name="04-comparable-time";out=args.package/"videos"/(name+".mp4");ev=args.package/"evidence"
+        ev.mkdir(parents=True,exist_ok=True);out.parent.mkdir(parents=True,exist_ok=True)
+        title=f"三臂全部中穿 {case.upper()} · 同一障碍区用时"
+        subprocess.run([sys.executable,"-B",str(HERE/"smooth_gate_triple.py"),"--root",str(args.root),"--case",case,"--title",title,
+            "--start",str(start),"--end",str(end),"--results",str(args.results),"--out",str(out),"--compare-window"],check=True)
+        receipt=read(out.with_suffix(".json"))
+        receipt["selection"]="预登记顺序中首个三臂均能从每排中间完整通过的多排障碍场景，使用同一固定沿程窗口比较用时。"
+        write(ev/(name+".json"),receipt)
+        inspect(out,ev/(name+".jpg"),min(5.,(end-start)*.50))
+        return
     specs=[]
     for single,label,name in ((True,"双桶单排","01-single-gate"),(False,"连续双排门","02-staggered-gates")):
         pick=select(pairs,single)
@@ -91,4 +110,5 @@ def main(args):
 if __name__=="__main__":
     a=argparse.ArgumentParser(description=__doc__)
     for key in ("root","results","package"):a.add_argument("--"+key,type=Path,required=True)
+    a.add_argument("--comparable-only",action="store_true")
     main(a.parse_args())

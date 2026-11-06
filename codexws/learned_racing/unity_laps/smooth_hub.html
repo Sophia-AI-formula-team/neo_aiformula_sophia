@@ -1,0 +1,22 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>训练、圈速与障碍通行</title>
+<style>
+:root{color-scheme:light;--ink:#15323a;--muted:#546c71;--surface:#fff;--border:#bed0c7;--active:#157d79}*{box-sizing:border-box}body{margin:0;background:#eff4ef;color:var(--ink);font:16px/1.55 "Microsoft YaHei UI","Segoe UI",sans-serif}main{max-width:1480px;margin:auto;padding:24px clamp(12px,3.5vw,52px) 45px}h1{font-size:clamp(25px,3vw,43px);line-height:1.2;margin:0}header p{margin:6px 0;color:var(--muted)}.top,nav{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}nav{justify-content:flex-start;margin-top:8px;font-size:14px}a{color:#12636b;text-underline-offset:3px}figure{margin:18px 0}video{max-height:70vh;width:100%;background:#172e34;display:block}figcaption{margin-top:9px;padding-left:14px;border-left:3px solid var(--active)}#name{margin:0;font-size:20px}#note{display:block;color:var(--muted);font-size:15px}section{margin-top:23px}h2{font-size:24px;margin:8px 0}.grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr))}article{display:flex;flex-direction:column;border:1px solid var(--border);background:var(--surface);border-radius:5px;overflow:hidden}article:has([aria-current=true]){box-shadow:0 0 0 2px var(--active)}button{color:inherit;text-align:left;cursor:pointer;border:0;background:none;padding:0;font:inherit}button:focus-visible{outline:3px solid var(--active);outline-offset:-3px}button>img{width:100%;aspect-ratio:2048/1496;display:block;object-fit:contain;background:#173238}button>b{display:block;font-size:16px;padding:9px 11px 0}article p{margin:6px 11px;color:var(--muted);font-size:13px}article footer{margin-top:auto;display:flex;gap:13px;padding:3px 11px 12px;font-size:13px}
+@media(max-width:650px){main{padding:13px 9px 25px}.top{gap:7px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#name{font-size:17px}button>b{padding:6px;font-size:14px}article p{margin:4px 6px;font-size:12px}article footer{padding:4px 6px}}
+</style></head><body><main>
+<header><div class="top"><h1>训练、圈速与障碍通行</h1><a href="SHA256SUMS.txt">文件 SHA-256 校验清单</a></div><p>{{CAPTION}}</p><nav>{{REELS}}<a href="films.json">试验与影片索引</a></nav></header>
+<figure><video id="player" controls playsinline preload="metadata" poster="{{POSTER}}" src="{{SOURCE}}"></video><figcaption><h3 id="name"></h3><span id="note"></span></figcaption></figure>
+{{GROUPS}}
+</main><script type="application/json" id="data">{{DATA}}</script><script>
+const videos=JSON.parse(document.querySelector('#data').textContent).items
+const player=document.querySelector('video')
+const choices=[...document.querySelectorAll('button[data-id]')]
+function select(id,play){
+  const v=videos[id]
+  choices.forEach(b=>b.setAttribute('aria-current',String(Number(b.dataset.id)===id)))
+  document.querySelector('#name').textContent=v.title
+  document.querySelector('#note').textContent=v.note
+  if(play){player.poster=v.poster;player.src=v.path;player.play().catch(()=>{});player.scrollIntoView({block:'start',behavior:'smooth'})}
+}
+choices.forEach(b=>b.addEventListener('click',()=>select(Number(b.dataset.id),true)))
+select(0,false)
+</script></body></html>
