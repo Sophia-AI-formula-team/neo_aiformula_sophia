@@ -1,3 +1,12 @@
+# A3 V76 deployment prepared - 2026-11-06
+
+User selected V76 aligned step1024 as stable and authorized merge. The package
+has one model-only weight and explicit calibrated temporal API. The bundled ROS
+image-only node remains single-frame; vehicle launch/control wiring is unchanged.
+[Release review](receipts/2026-11-06-planner-a3-v76-038.md) records package,
+900-frame parity, source-Header and installed-wheel checks. Tag target: a3-v76;
+old a3-v14/a3-v6 remain rollback points. PR/merge outcome is recorded on GitHub.
+
 # Header repair prepared — 2026-11-06
 
 road_detector 0.0.1 restores full independent source Headers on both image outputs.
