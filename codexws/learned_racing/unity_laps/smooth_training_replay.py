@@ -34,9 +34,8 @@ def area_tv(run):
     return float(np.abs(np.diff(rows[:,14])[active]).sum()),distance
 
 
-def gather(root,blind_path,stage_tags,final_tag):
-    results=read(blind_path)
-    sources={"blindScore":digest(blind_path)}
+def development_evidence(root,stage_tags):
+    sources={}
     train=[];models=[];stage=[]
     candidates=[p for p in (root/"checkpoints").glob("ck*") if (p/"model.json").exists()]
     dirs=sorted([p for p in candidates if p.name[2:].isdigit() and (p/"training.json").exists()],key=lambda p:int(p.name[2:]))
@@ -79,6 +78,13 @@ def gather(root,blind_path,stage_tags,final_tag):
             if f.exists():source_digest[f.stem]=digest(f)
     sources["developmentRuns"]=source_digest
     if len(train[-1]["outcomes"])!=len(NAMES):raise ValueError("Different action set")
+    return train,snapshots,sources,by_model,base,local,lap
+
+
+def gather(root,blind_path,stage_tags,final_tag):
+    results=read(blind_path)
+    train,snapshots,sources,by_model,base,local,lap=development_evidence(root,stage_tags)
+    sources["blindScore"]=digest(blind_path)
     # Use the exact frozen model from the scored independent trials, including if an earlier checkpoint won.
     sample=results["pairs"][0]["id"]
     check=read(root/"runs"/(sample+"_learned.json"))
@@ -162,6 +168,9 @@ def dev_page(snapshots,freeze,ratio):
         for i,(x,y) in enumerate(pts[:shown]):
             d.ellipse((x-8,y-8,x+8,y+8),fill=FIT)
             label(d,(x,y-22),f"{tv[i]:.2f}",25,INK,True,True,"mm")
+    if freeze is None:
+        side_note(d,62,1220,"阶段性开发实测 · 尚未冻结","样本数是每个检查点累计使用的训练布局数。相同开发场景用于择模，独立盲测另行统计。")
+        return im
     check=freeze.get("development")
     detail=(f"冻结版本同一开发集实测：局部 {check['local'][0]}/{check['local'][1]}，整圈 {check['lap'][0]}/{check['lap'][1]}。"
             if check else "下面单独报告冻结后的局部与整圈独立考核。")
@@ -240,11 +249,19 @@ def cruise_page(root,report,ratio):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument("--root",type=Path,required=True)
-    p.add_argument("--blind-results",type=Path,required=True);p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--blind-results",type=Path);p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--checkpoint-poster",action="store_true",help="Render available common development trials before freeze")
     p.add_argument("--dev-stage",action="append",help="Exact run tag for a checkpoint evaluated on the common development set")
     p.add_argument("--final-dev-stage",help="Optional independently replayed tuning/ablation candidate chosen for deployment")
-    args=p.parse_args();train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage,args.final_dev_stage)
+    args=p.parse_args()
     args.out.parent.mkdir(parents=True,exist_ok=True)
+    if args.checkpoint_poster:
+        _,stages,sources,*_=development_evidence(args.root,args.dev_stage)
+        dev_page(stages,None,1).save(args.out,quality=90,optimize=True)
+        args.out.with_suffix(".json").write_text(json.dumps(dict(stages=stages,sources=sources),ensure_ascii=False,indent=2)+"\n",encoding="utf8")
+        return
+    if args.blind_results is None:p.error("--blind-results is required for the complete film")
+    train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage,args.final_dev_stage)
     # Independent data panels, with no animation pretending to be the real-world clock.
     sections=[("真实动作采样",7.0),("共同开发集与冻结",8.0),("独立局部与整圈",8.0),("实测直道与4m/s覆盖",9.0)]
     card_results=result_page(report)
