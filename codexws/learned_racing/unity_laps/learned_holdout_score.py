@@ -198,12 +198,15 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("runs", type=Path)
     p.add_argument("--layouts", type=Path, help="Registered matrix; defaults to the chosen experiment")
-    p.add_argument("--full-lap", action="store_true", help="Score the supplementary full lap separately")
+    test_group=p.add_mutually_exclusive_group()
+    test_group.add_argument("--full-lap", action="store_true", help="Score the supplementary full lap separately")
+    test_group.add_argument("--v2-stress", action="store_true", help="Score the separately frozen second selector")
     p.add_argument("--model", type=Path, required=True, help="Frozen selector configuration JSON")
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
     if args.layouts is None:
-        args.layouts = HERE/"learned_holdout"/("full_lap_layout.json" if args.full_lap else "layouts.json")
+        layout_name="full_lap_layout.json" if args.full_lap else "v2_stress_layouts.json" if args.v2_stress else "layouts.json"
+        args.layouts=HERE/"learned_holdout"/layout_name
     plan = read(args.layouts)
     pairs, versions = [], set()
     artifact = read(args.model)
@@ -221,7 +224,8 @@ def main():
         pairs.append(dict(id=c["id"], context=c["context"], approachCapMps=c["approach"], runSha256=[
             hashlib.sha256(path.read_bytes()).hexdigest() for path in paths], **measurements,
             selectorAudit=audit, movingObstacles=movement_evidence(learned,audit)))
-    report = dict(protocolCommit="2b647e0" if args.full_lap else "4bfe2d7", layoutGitBlobNormalizedSha256=hashlib.sha256(
+    commit="2b647e0" if args.full_lap else "7b3239b" if args.v2_stress else "4bfe2d7"
+    report = dict(protocolCommit=commit, layoutGitBlobNormalizedSha256=hashlib.sha256(
         args.layouts.read_bytes().replace(b"\r\n", b"\n")).hexdigest(), solver=versions.pop()[1],
         modelFileSha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
         pairs=pairs)
