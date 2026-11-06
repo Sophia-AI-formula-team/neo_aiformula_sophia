@@ -85,10 +85,17 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic"):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
-        if obstacles:
+        if obstacle_specs is not None:
+            if obstacles:
+                raise ValueError("Choose either explicit or seeded obstacle placement")
+            for spec in obstacle_specs:
+                if len(spec)!=5 or not all(np.isfinite(spec)) or not 0<spec[0]<1 or spec[2]<0 or spec[3]<0:
+                    raise ValueError("Invalid [station fraction, lateral m, amplitude m, angular frequency, phase]")
+                specs.append([float(x) for x in spec])
+        elif obstacles:
             station=rng.uniform(.15,.22);pair=rng.uniform(.43,.55);moving=rng.uniform(.72,.85)
             specs=[[station,rng.uniform(-.22,.22),0,0,0],[pair,-.38,0,0,0],[pair+.014,.70,0,0,0],
                    [moving,0,1.55,.57,rng.uniform(-np.pi,np.pi)]]
