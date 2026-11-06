@@ -14,7 +14,7 @@ OUTCOMES = {"segment":"跑完本段", "lap":"完成一圈", "obstacle":"碰桶�
 def action_text(index,actions):
     if index==0:return "沿用常规避让"
     offset,speed=actions[index]
-    side="直行" if abs(offset)<.01 else f"{'左' if offset<0 else '右'}移 {abs(offset):.1f} m"
+    side="沿参考线" if abs(offset)<.01 else f"{'左' if offset<0 else '右'}移 {abs(offset):.1f} m"
     return f"{side} · {speed:.1f} m/s"
 
 
