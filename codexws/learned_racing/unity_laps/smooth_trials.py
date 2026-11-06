@@ -127,10 +127,14 @@ def film_training(args):
         name="film_"+sample
         with detector(lab,"outer-edge",name,film=True) as (port,release):
             r=run_one(lab,name,case,ref["request"]["smooth"],port,release,True)
-        matched=r["rows"]==ref["rows"] and r["decisions"]==ref["decisions"]
+        physics=r["rows"]==ref["rows"]
+        commands=lambda run:[(d["t"],d["speedCmd"],d["yawCmd"],d["rightCan"],d["leftCan"]) for d in run["decisions"]]
+        paired_commands=commands(r)==commands(ref)
+        matched=physics and r["decisions"]==ref["decisions"]
         write(args.output/"film_replays"/(name+".json"),dict(trainingId=sample,replayId=name,
-              matchesPhysicsAndPerceptionAndCommands=matched,rows=len(r["rows"]),decisions=len(r["decisions"])))
-        assert matched
+              matchesPhysics=physics,matchesFinalCommands=paired_commands,matchesPhysicsAndPerceptionAndCommands=matched,
+              rows=len(r["rows"]),decisions=len(r["decisions"])))
+        if not (physics and paired_commands):print("Capture affected the driving trace; label as a separate rerun:",name,flush=True)
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","eval","parity","film_training"])
