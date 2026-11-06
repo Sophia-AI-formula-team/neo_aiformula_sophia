@@ -25,11 +25,7 @@ def tangent(points):
     return delta / np.linalg.norm(delta, axis=1)[:, None]
 
 
-def build_course(surface_dir: Path):
-    surface = surface_dir / "track_surface.json"
-    calibration = surface_dir / "TrackMetricCalibration.json"
-    meshes = json.loads(surface.read_text(encoding="utf-8-sig"))["meshes"]
-    metric = json.loads(calibration.read_text(encoding="utf-8-sig"))
+def outer_verge(meshes):
     strip = next(m for m in meshes if m["name"] == "OuterGreenStrip")
     vertices = np.asarray(strip["vertices"])
     triangles = np.asarray(strip["triangles"]).reshape(-1, 3)
@@ -62,6 +58,15 @@ def build_course(surface_dir: Path):
     road_edge = min(rings, key=lambda ring: abs(area(ring)))
     if area(road_edge) < 0:
         road_edge = road_edge[::-1]
+    return road_edge
+
+
+def build_course(surface_dir: Path):
+    surface = surface_dir / "track_surface.json"
+    calibration = surface_dir / "TrackMetricCalibration.json"
+    meshes = json.loads(surface.read_text(encoding="utf-8-sig"))["meshes"]
+    metric = json.loads(calibration.read_text(encoding="utf-8-sig"))
+    road_edge = outer_verge(meshes)
     outer = resample(road_edge * metric["scale"], 0.2)
     outer = gaussian_filter1d(outer, 1.5, axis=0, mode="wrap")
     direction = tangent(outer)

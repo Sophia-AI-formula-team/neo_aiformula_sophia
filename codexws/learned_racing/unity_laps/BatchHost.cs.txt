@@ -1,0 +1,25 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
+public static class LapExperimentHost {
+    static string queue;
+    public static void Start(){
+        queue=Environment.GetEnvironmentVariable("AIFORMULA_EXPERIMENT_QUEUE");
+        if(string.IsNullOrEmpty(queue))throw new ArgumentException("Missing private queue");
+        Directory.CreateDirectory(queue);File.WriteAllText(Path.Combine(queue,"ready"),Application.dataPath);
+        EditorApplication.update+=Poll;
+    }
+    static void Poll(){
+        if(File.Exists(Path.Combine(queue,"stop"))){EditorApplication.update-=Poll;EditorApplication.Exit(0);return;}
+        string request=Path.Combine(queue,"request");if(!File.Exists(request))return;
+        try{
+            var lines=File.ReadAllLines(request);File.Delete(request);
+            var name=Path.GetFileNameWithoutExtension(lines[0]);
+            var asm=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name==name)??Assembly.Load(File.ReadAllBytes(lines[0]));
+            asm.GetType("LapLab.UnityRace").GetMethod("Schedule").Invoke(null,new object[]{lines[1]});
+        }catch(Exception ex){File.WriteAllText(Path.Combine(queue,"error"),ex.ToString());}
+    }
+}
