@@ -38,6 +38,9 @@ def export(args):
     if Path(args.trial).name!=args.trial:raise ValueError("Expected a run ID")
     run_path=args.capture_root/"runs"/(args.trial+".json")
     run=json.loads(run_path.read_bytes())
+    policy=run.get("request",{}).get("encounter") or {}
+    if args.model_id and policy.get("modelId")!=args.model_id:
+        raise ValueError("Recording does not use the specified frozen model ID")
     baseline=args.baseline_full
     if baseline and (not args.whole_lap or run["request"].get("encounter") is not None):
         raise ValueError("A whole-lap reference film must be an actual baseline trial")
@@ -84,7 +87,7 @@ def export(args):
     if len(frames)!=receipt["encoded"]["frames"]:raise ValueError("Decoded timeline length differs")
     record={"name":name,"title":args.title,"sourceRun":args.trial,"status":run["status"],
             "rangeS":[start,end],"sourceSHA256":sha(run_path),"weightsSHA256":ready["sha256"],
-            "solver":run["request"].get("solver"),"videoSHA256":sha(temp),"bytes":temp.stat().st_size,
+            "solver":run["request"].get("solver"),"modelId":policy.get("modelId"),"videoSHA256":sha(temp),"bytes":temp.stat().st_size,
             "posterSourceTimeS":min(end,start+round(poster_offset*fps)/float(fps)),"minRoadM":run["minRoad"],"minConeM":run["minGap"],
             "fps":int(fps),"frameSize":list(size),"frames":len(frames),"durationS":float(len(frames)/fps)}
     write(evidence/(name+".verified.json"),audit)
@@ -130,6 +133,7 @@ def main():
     clip.add_argument("--package",type=Path,required=True)
     clip.add_argument("--whole-lap",action="store_true")
     clip.add_argument("--baseline-full",action="store_true")
+    clip.add_argument("--model-id",help="Require this exact model digest in the actual Unity request")
     for key in ("trial","name","title"):clip.add_argument("--"+key,required=True)
     for key in ("start","end","poster-at"):clip.add_argument("--"+key,type=float)
     reel=sub.add_parser("join")
