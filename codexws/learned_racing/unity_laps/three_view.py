@@ -30,7 +30,7 @@ AHEAD = (2, 3.5, 5.5, 8)
 PHASE = {
     "road": ("沿道路选线", "按道路弯曲程度调整目标速度", TEAL),
     "yield": ("减速避让", "预测锥桶位置，调整速度和横向目标", ORANGE),
-    "recover": ("通过后恢复", "继续控制横移，逐步放开速度限制", PURPLE),
+    "recover": ("回到参考线", "控制横移，并限制此时的目标速度", PURPLE),
     "hold_pass": ("保持通过侧", "短时保持已选一侧", ORANGE),
     "yield_corridor": ("选择通过空间", "按障碍与道路之间的余量调整目标", ORANGE),
     "insufficient_lane": ("道路观测不足", "控制器限制目标速度", ORANGE),

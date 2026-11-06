@@ -55,7 +55,7 @@ def main(args):
     if not cfg["learned"]["openings"] or cfg["pace"]["openings"] or cfg["pace"]["paceScale"]!=cfg["learned"]["paceScale"]:
         raise ValueError("The selected control must share the frozen straight pace while disabling local opening selection")
     specs=[]
-    for single,label,name in ((True,"双桶单排","01-single-gate"),(False,"连续错位门","02-staggered-gates")):
+    for single,label,name in ((True,"双桶单排","01-single-gate"),(False,"连续双排门","02-staggered-gates")):
         pick=select(pairs,single)
         if pick:specs.append((*pick,label,name))
     covered={p["id"] for p,*_ in specs}

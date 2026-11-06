@@ -170,7 +170,7 @@ def selected_text(dec):
     gap=dec.get("gap") or {}
     if gap.get("state")=="visible_opening":return f"选择可见开口  ·  偏移 {gap['offset']:+.2f} m"
     reason=dec.get("reason","")
-    tags={"road":"沿道路选线","yield":"避让","recover":"恢复速度","go_first":"选择先行",
+    tags={"road":"沿道路选线","yield":"避让","recover":"回到参考线 · 限速","go_first":"选择先行",
           "learned_encounter":"执行学习动作","insufficient_lane":"道路观测不足","hold_pass":"保持通过侧"}
     if dec.get("smooth"):
         e=dec["smooth"]
@@ -249,7 +249,7 @@ def render(args):
                 if gate_view:
                     gate_view.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col)
                 elif straight:
-                    straight.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col)
+                    straight.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col,s["decision"])
                 else:
                     label(d,(1410,920+j*131),args.base_label if j==0 else args.trained_label,22,col,True)
                     margin(d,1412,961+j*131,"锥桶",row[10] if r.run["props"] else None)

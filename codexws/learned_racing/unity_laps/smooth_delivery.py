@@ -130,7 +130,8 @@ def training_choice(args):
     forced=configs[1]["forced"];windows=short_window(arms)
     title=("近障快速通过" if args.pair_number==1 else "同一起点，慢行避开碰撞")
     if args.pair_number==2 and (arms[0]["status"]!="obstacle" or arms[1]["status"]!="segment"):raise ValueError("Training rescue is not a recorded contact and recovery")
-    entry=dict(name=f"01a{args.pair_number}-training-probes",title=f"训练动作对照 · {title}",case=b,
+    name="01a1-training-probes-v2" if args.pair_number==1 else "01a2-training-probes"
+    entry=dict(name=name,title=f"训练动作对照 · {title}",case=b,
         selection=f"预先登记的中位复演案例（候选 {chosen['population']} 组）。同一布局强制试动作 0 和 {forced}，两臂实拍均复现原轨迹与轮指令。",
         baseId=args.base_replay,trainedId=args.trained_replay,baseLabel="训练 · 动作 0",trainedLabel=f"训练 · 动作 {forced}",
         kind="pair",phase="training-probes",trainedAction=forced,replayCheck=proof,
@@ -144,7 +145,7 @@ def straight_case(runs,case):
         raw=load(runs/(case+"_"+arm+".json"));rows=np.asarray(raw["rows"])
         if raw["props"] or rows[-1,7]<hi:raise ValueError("Clear-road film requires the full prespecified window")
         times.append(np.interp([lo,hi],rows[:,7],rows[:,0]))
-    return dict(name="02b-natural-cruise",title="自然无障碍直道 "+case.upper()+" · 实速达到 4 m/s 的距离",
+    return dict(name="02b-natural-cruise-v2",title="自然无障碍直道 "+case.upper()+" · 实速达到 4 m/s 的距离",
         case=case,kind="pair",start=float(np.min(times,axis=0)[0]-1.),end=float(np.max(times,axis=0)[1]+.6),prop=None,
         localScene={"props":[],"categories":["clear"]},straightGate=[lo,hi],
         selection="登记顺序中首个自然无障碍直道，同一 12–34 m 距离门。按车身实际测速累计达到 4.0 m/s 的行进里程。")

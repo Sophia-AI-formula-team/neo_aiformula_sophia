@@ -32,9 +32,10 @@ class StraightGate:
         widths[cross]=np.where(b[cross]>=4.,1-frac[cross],frac[cross])
         return float(s[-1]-s[0]),float(widths@np.diff(s))
 
-    def stats(self,d,j,t,name,color):
+    def stats(self,d,j,t,name,color,decision):
         dist,above=self.measure(t,j);y=920+j*149
         label(d,(1410,y),name,22,color,True)
+        label(d,(1987,y),f"估计路面曲率 {decision['curvature']:+.3f} /m",17,"#49636b",anchor="rm")
         label(d,(1410,y+45),f"达到 4.0 m/s 的里程    {above:.2f} / {self.hi-self.lo:.0f} m",22,"#16333a",True)
         x,y0,w=1412,y+75,565;span=self.hi-self.lo
         d.rectangle((x,y0,x+w,y0+14),fill="#dbe7e0")
