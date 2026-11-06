@@ -117,7 +117,7 @@ def side_note(d,x,y,headline,note):
     label(d,(x,y),headline,30,INK,True);label(d,(x,y+51),note,23,MUTED)
 
 
-def sample_page(train,ratio):
+def sample_page(train,ratio,actions=None):
     im=header("同一个场景，分别试七种控制动作","每格是一次独立的 Unity 闭环运行，格子按训练布局编号依次揭示。","训练采样")
     d=ImageDraw.Draw(im);card(d,(43,219,2003,1221))
     total=len(train);seen=max(1,min(total,math.ceil(total*ratio)))
@@ -129,7 +129,11 @@ def sample_page(train,ratio):
     counter=[0,0,0]
     for a,name in enumerate(NAMES):
         y=top+a*rh
-        label(d,(76,y+33),name,28,INK,a==0)
+        label(d,(76,y+(24 if actions else 33)),name,27,INK,a==0)
+        if actions:
+            _,margin,speed=actions[a]
+            command="使用已有策略指令" if a==0 else f"目标 {speed:.2f} m/s"+(f" · 附加 {margin:.2f} m" if margin>0 else "")
+            label(d,(77,y+57),command,18,MUTED)
         for i,c in enumerate(train):
             v=c["outcomes"][a];x=left+cw*i
             n=2 if not v["completed"] else 0 if v["minConeM"] is None or v["minConeM"]>=.5 else 1
@@ -262,6 +266,7 @@ def main():
         return
     if args.blind_results is None:p.error("--blind-results is required for the complete film")
     train,stages,report,sources,freeze=gather(args.root,args.blind_results,args.dev_stage,args.final_dev_stage)
+    action_path=args.root/"action_bank.json";actions=read(action_path)["actions"];sources["actionBank"]=digest(action_path)
     # Independent data panels, with no animation pretending to be the real-world clock.
     sections=[("真实动作采样",7.0),("共同开发集与冻结",8.0),("独立局部与整圈",8.0),("实测直道与4m/s覆盖",9.0)]
     card_results=result_page(report)
@@ -279,7 +284,7 @@ def main():
             fraction=min(1.,(i-first+1)/(max(1,ends[s]-first)*.68))
             key=(s,math.ceil(fraction*(len(train) if s==0 else len(stages) if s==1 else 18 if s==3 else 1)))
             if key not in cache:
-                if s==0:frame=sample_page(train,key[1]/len(train))
+                if s==0:frame=sample_page(train,key[1]/len(train),actions)
                 elif s==1:frame=dev_page(stages,freeze,key[1]/len(stages))
                 elif s==2:frame=card_results
                 else:frame=cruise_page(args.root,report,key[1]/18)
