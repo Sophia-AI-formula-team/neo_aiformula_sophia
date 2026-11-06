@@ -210,6 +210,32 @@ def cruise_summary(pairs,signals):
     return groups
 
 
+def motion_by_road(pairs):
+    """Keep the turn geometry, capped approaches and complete-only time comparisons visible."""
+    groupings = {
+        "straightTrafficLocal": [p for p in pairs if p["scope"] == "segment" and p["road"] == "straight" and p["family"] != "clear"],
+        "bendTrafficLocal": [p for p in pairs if p["scope"] == "segment" and p["road"] == "bend"],
+        "externallyCappedLocal": [p for p in pairs if p["capMps"]],
+        "naturalTrafficLocal": [p for p in pairs if p["scope"] == "segment" and p["family"] != "clear" and not p["capMps"]],
+        "trafficLaps": [p for p in pairs if p["family"] == "full-traffic"],
+        "clearLaps": [p for p in pairs if p["family"] == "full-clear"],
+    }
+    reports = {}
+    for name, members in groupings.items():
+        together = [p for p in members if all(pair_state(p))]
+        report = cohort(members)
+        report["ids"] = [p["id"] for p in members]
+        report["matchedSuccessSpeedMps"] = {
+            section: [speed(together, section, arm) for arm in ("base", "learned")]
+            for section in ("obstacle", "free", "freeBend", "straight")
+        }
+        report["jointSuccessElapsedSeconds"] = [
+            {"id": p["id"], "base": p["base"]["elapsedS"], "learned": p["learned"]["elapsedS"]} for p in together
+        ]
+        reports[name] = report
+    return reports
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("runs",type=Path);ap.add_argument("--out",type=Path,required=True)
@@ -248,7 +274,8 @@ def main():
                          roadBins=dict(Counter(bin_margin(p[arm]["minRoadM"],True) for p in pairs)))
     report=dict(protocolCommit="7a91a5f",registeredLayoutsSha256=sha(PROTOCOL/"layouts.json"),
                 frozenFileHashes=dict(base=sha(args.base),learned=sha(args.model)),versions=sorted(versions),cohorts=parts,
-                naturalCruise=cruise,demonstrates4MpsOnClear=clears,meetsCombinedSmoothness=bool(smooth),margins=margin,pairs=pairs)
+                naturalCruise=cruise,conditions=motion_by_road(pairs),demonstrates4MpsOnClear=clears,
+                meetsCombinedSmoothness=bool(smooth),margins=margin,pairs=pairs)
     args.out.write_text(json.dumps(report,allow_nan=False,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
 
 if __name__=="__main__":

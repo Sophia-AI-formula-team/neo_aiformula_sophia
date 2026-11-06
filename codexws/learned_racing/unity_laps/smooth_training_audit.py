@@ -2,7 +2,6 @@
 import argparse
 import json
 from pathlib import Path
-import re
 
 import numpy as np
 from scenario_shots import geometry
