@@ -56,6 +56,22 @@ def gate(run,spec):
             outerConeFromCenterM=outer-car_at,footprintFromInnerConeEdgeM=float(np.interp(axle,ts,space_left)),
             outerConeEdgeFromFootprintM=float(np.interp(axle,ts,space_right)),note="Instantaneous, separate from the whole-passage label")
     if leave is not None:
+        # Descriptive geometric check after the primary route has been defined. Slice the physical rectangle
+        # at the immobile gate plane; unlike the strict primary test, its distant corners do not extend the slice.
+        tangent=np.array([-n[1],n[0]])
+        corners=np.array([(car-left[:2])+z*f+w*r for z,w in ((-.88,-.38),(-.88,.38),(.28,.38),(.28,-.38))])
+        xs=corners@n;zs=corners@tangent;left_margins=[];right_margins=[]
+        for j,k in ((0,1),(1,2),(2,3),(3,0)):
+            cross=(zs[j]*zs[k]<=0.) & (np.abs(zs[j]-zs[k])>1e-12)
+            fraction=zs[j,cross]/(zs[j,cross]-zs[k,cross])
+            cut=xs[j,cross]+fraction*(xs[k,cross]-xs[j,cross])
+            if len(cut):
+                left_margins.extend(cut-a[cross]-.34);right_margins.extend(b[cross]-.34-cut)
+        if left_margins:
+            vl,vr=float(min(left_margins)),float(min(right_margins))
+            out["planeSliceDiagnostic"]=dict(minInnerM=vl,minOuterM=vr,centralAtPlane=min(vl,vr)>.01,
+                note="Supplementary body/gate-plane intersection only; not used in primary scores.")
+    if leave is not None:
         if min(space_left.min(),space_right.min())>.01:
             out["route"]="middle"
         elif (a-.34-hi).min()>.01:
