@@ -10,6 +10,8 @@ from pathlib import Path
 import av
 from PIL import Image, ImageDraw, ImageFont
 
+from referee_inset import CHASE_INSET, RefereeInset
+
 
 SIZE = (2048, 1280)
 FPS = 20
@@ -239,6 +241,7 @@ def main():
         parser.add_argument("--"+name, type=float, required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument("--note", help="Optional factual footer for this recording")
+    parser.add_argument("--referee-inset", action="store_true", help="Show a fixed local ground-truth referee inset on the chase camera")
     args = parser.parse_args()
     run = json.loads(args.trajectory.read_text(encoding="utf-8-sig"))
     frames, decisions = run["frames"], run["decisions"]
@@ -262,6 +265,7 @@ def main():
     hold_frames = round(.8*FPS) if terminal else 0
     count = motion_frames+hold_frames
     background = layout(args.title, args.note)
+    referee = RefereeInset(run,args.start,args.end) if args.referee_inset else None
     indices = {"chase": set(), "a4": set()}
     gaps = {"chase": 0, "a4": 0}
     max_age = {"chase": 0.0, "a4": 0.0}
@@ -292,6 +296,8 @@ def main():
                     max_age[key] = max(max_age[key], t-ts)
             map_view(canvas,decisions[di])
             controls(canvas,decisions,dt,di)
+            if referee and referee.ids:
+                canvas.paste(referee.render(ft[fi],label),(42+CHASE_INSET[0],173+CHASE_INSET[1]))
             if stopped:
                 message = "发生接触" if run["status"]=="obstacle" else "车辆触及边界"
                 d.rectangle((42, 636, 1001, 712),fill="#7b2b13")
@@ -319,6 +325,7 @@ def main():
                "trajectory_sha256":digest(args.trajectory),"model":run.get("request",{}).get("model"),"a4_worker":meta,
                "start_s":args.start,"end_s":args.end,"end_included":terminal,
                "labelled_terminal_hold_s":hold_frames/FPS,"status":run.get("status"),"encoded":encoded,
+               "referee_inset":referee.receipt() if referee and referee.ids else None,
                "method":"Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
                "unique_sources":{key:len(value) for key,value in indices.items()},"max_display_age_s":max_age,
                "missing_camera_output_frames":gaps,"samples":checks}

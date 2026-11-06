@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import av
-from PIL import Image, ImageChops, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 
 def verify(receipt_path, frames, a4):
@@ -33,12 +33,19 @@ def verify(receipt_path, frames, a4):
                 height = 460 if channel=="chase" and receipt.get("end_included") and sample["simulation_s"]==receipt["end_s"] else 540
                 actual = rendered.crop((x,173,x+960,173+height))
                 delta = ImageChops.difference(actual, expected.crop((0,0,960,height)))
-                error = sum(ImageStat.Stat(delta).mean)/3
+                mask = Image.new("L",delta.size,255)
+                excluded = None
+                if channel=="chase" and receipt.get("referee_inset"):
+                    excluded=receipt["referee_inset"]["overlay_chase_pixel_box"]
+                    left,top,right,bottom=excluded
+                    ImageDraw.Draw(mask).rectangle((left,top,right-1,bottom-1),fill=0)
+                comparison=ImageStat.Stat(delta,mask)
+                error = sum(comparison.mean)/3
                 if error > 8:
                     raise ValueError(f"Unexpected pixel error {error:.2f} at frame {number}, {channel}")
                 row[channel] = {"source_time":item["time_s"], "source_frame":item["id"],
                                 "decoded_mean_abs_rgb_error_0_255":round(error,3),
-                                "pixels_compared":960*height}
+                                "pixels_compared":comparison.count[0], "excluded_referee_pixel_box":excluded}
             results.append(row)
     if len(results)!=len(samples):
         raise ValueError("Unable to decode all sampled video frames")
