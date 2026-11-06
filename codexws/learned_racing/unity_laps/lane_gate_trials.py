@@ -2,6 +2,7 @@
 from contextlib import ExitStack
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -37,6 +38,7 @@ def main():
     if matrix_path.exists():assert json.loads(matrix_path.read_bytes())==cases
     else:write(matrix_path,cases)
     if args.prepare:return
+    if not os.environ.get("AIFORMULA_LAP_COPY"):raise RuntimeError("Use an isolated private Unity project")
     lab=Lab(SIM,ROOT)
     with ExitStack()as stack:
         shared=None if args.film else stack.enter_context(detector(lab,"outer-edge","evaluation"))
