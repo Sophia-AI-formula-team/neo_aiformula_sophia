@@ -280,6 +280,11 @@ def main():
     gaps = {"chase": 0, "a4": 0}
     max_age = {"chase": 0.0, "a4": 0.0}
     checks = []
+    check_frames={0,motion_frames//2,motion_frames-1,count-1}
+    if panel:
+        for i in panel.selected:
+            if args.start-.00002<=dt[i]<args.end:
+                check_frames.add(max(0,math.ceil((dt[i]-args.start-.00002)*FPS)))
     with av.open(str(args.out), "w", options={"movflags": "+faststart"}) as out:
         video = out.add_stream("libx264", rate=FPS, options={"preset":"veryfast","crf":"19","threads":"4"})
         video.width, video.height = size
@@ -318,7 +323,7 @@ def main():
                 d.rectangle((1560,57,2004,90),fill=INK)
                 label(d,(2000,73),f"末次感知与控制  {dt[di]:.2f} s",21,"#b9d9d6",anchor="rm")
                 # Map and control sections continue to show the last issued action.
-            if n in {0, motion_frames//2, motion_frames-1, count-1}:
+            if n in check_frames:
                 checks.append({"film_frame":n, "simulation_s":t,
                                "chase":{"id":cf,"time_s":ft[fi],"sha256":digest(sources["chase"]) if sources["chase"].is_file() else None},
                                "a4":{"id":di,"time_s":dt[di],"sha256":digest(sources["a4"]) if sources["a4"].is_file() else None},
