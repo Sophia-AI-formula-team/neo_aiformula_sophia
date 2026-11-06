@@ -1,6 +1,5 @@
 """Compare corridor commitment to the first guarded finalist using only practice/qualification outcomes."""
 import json
-import shutil
 from risk_trials import BLIND,CHECK,PRACTICE,HERE,ROOT,Lab,SIM,detector,write
 from risk_metrics import rank
 
@@ -13,7 +12,7 @@ def main():
     previous=json.loads((ROOT/"frozen.json").read_bytes())
     seeds=(*PRACTICE,*CHECK)
     old=[load_run(f"fit_{previous['name']}_{s}") for s in seeds]
-    lab=Lab(SIM,ROOT)
+    lab=Lab(SIM,ROOT,"27d298ede25138")
     with detector(lab,"outer-edge","corridor_practice") as (port,model):
         challengers=[lab.run(f"corridor_{s}",CORRIDOR,s,True,port,model=model,capture=.15) for s in seeds]
         if rank(challengers)>rank(old):

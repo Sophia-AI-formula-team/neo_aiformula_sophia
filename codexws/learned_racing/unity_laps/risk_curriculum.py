@@ -6,7 +6,7 @@ from risk_trials import BLIND, CHECK, PRACTICE, ROOT, INITIAL, Lab, SIM, HERE, d
 from risk_metrics import rank
 
 def main():
-    lab = Lab(SIM, ROOT)
+    lab = Lab(SIM, ROOT, "f25947e8af56df")
     # Shared local feedback architecture. Each candidate can drive its own line and choose to yield.
     candidates = {
         "stable": [4.15, 8.7, 6.4, 3.5, .35, 4.8, 1.18, .55, -.35, 1.25, 1.70, .95],

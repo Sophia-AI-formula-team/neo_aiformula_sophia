@@ -175,7 +175,7 @@ def encode(root, run_id, out):
             text(draw,(693,564),f"{d['yawCmd']:+.2f} / {d['yaw']:+.2f} rad/s",21,INK,True,True)
             text(draw,(24,622),"目标与实测车速",19,INK,True)
             text(draw,(219,622),f"{d['speedCmd']:.2f} / {d['speed']:.2f} m/s",20,LIME,True,True)
-            text(draw,(662,622),"左右轮 CAN 目标",19,INK,True)
+            text(draw,(662,622),"右轮 / 左轮 CAN 目标",19,INK,True)
             text(draw,(879,622),f"{d['rightCan']} / {d['leftCan']} RPM",20,BLUE,True,True)
             plot(draw,(58,681,608,762),dtimes,speed,start,end,now,(0,v_max),("目标 m/s","实测 m/s"))
             plot(draw,(701,681,1237,762),dtimes,rpm,start,end,now,(rpm_min,rpm_max),("右轮 RPM","左轮 RPM"))

@@ -68,6 +68,38 @@ def _decision_action(decisions, begin, end):
     return {k: at_min[k] for k in fields if k in at_min}
 
 
+def free_steering(run, end_progress):
+    """Score measured body motion on shared free road, excluding stops and zone crossings."""
+    rows = np.asarray(run["rows"], dtype=float)
+    times, speed, distance, yaw = rows[:, 0], rows[:, 4], rows[:, 7], rows[:, 14]
+    valid = (speed >= 1.) & (distance <= end_progress)
+    for group in _groups(run):
+        valid &= (distance < group["begin"] - APPROACH_M) | (distance > group["end"] + RECOVERY_M)
+    dt = np.diff(times)
+    accepted = valid[1:] & valid[:-1] & (dt > 0)
+    squared_rate_time = float(np.sum(np.diff(yaw)[accepted] ** 2 / dt[accepted]))
+    seconds = float(dt[accepted].sum())
+    # Hysteresis rejects small measurement noise. Count only a rapid return
+    # after a turn reversal, so entering a corner gives no oscillation by itself.
+    sign = 0
+    last_reversal = None
+    returns = 0
+    for t, rate, keep in zip(times, yaw, valid):
+        if not keep:
+            sign, last_reversal = 0, None
+            continue
+        direction = 1 if rate >= .08 else -1 if rate <= -.08 else 0
+        if direction:
+            if sign and direction != sign:
+                if last_reversal is not None and t - last_reversal <= 1.00001:
+                    returns += 1
+                last_reversal = t
+            sign = direction
+    return dict(seconds=seconds, squaredRateTime=squared_rate_time,
+                rmsYawAccel=float(np.sqrt(squared_rate_time / seconds)) if seconds else None,
+                rapidReturns=returns, meters=float(np.diff(distance)[accepted].sum()))
+
+
 def _moving_risk(rows, prop, decisions):
     """Counterfactual short-horizon conflict under constant ego heading and cone velocity."""
     onset = prop[7] - APPROACH_M

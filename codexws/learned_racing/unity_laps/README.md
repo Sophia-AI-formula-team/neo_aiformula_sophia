@@ -1,5 +1,9 @@
 # AI Formula · Unity 驾驶训练
 
+最新的 [A4 避让与圈速对照](risk_revision/index.html) 包含真实 Unity 前视、追车和同步轮速，两场空场赛与四个留出障碍布局的成对结果。可以选任一路障并拖动控制周期，查看 A4 看到了什么、车选了哪条线、何时收油以及它实际发出的两个轮速。页面下方列有训练和资格记录、车身回摆指标、单独放宽避让限速的对照。
+
+在已启用的私有仿真工程跑本批实验时，依次使用 `python -B risk_trials.py baseline`、`python -B risk_curriculum.py`、`python -B risk_select.py`、`python -B risk_ablation.py` 和 `python -B risk_film.py`。各实验采用冻结求解器。最后执行 `python -B command_replay.py --root risk_revision --run decision_film --out risk_revision/commands.mp4`，再运行 `python -B risk_audit.py` 和 `python -B risk_results.py`。已有记录可直接离线运行最后的报告生成步骤。对移动障碍加大预测范围的独立试验见 [失败记录](reversal_diagnostic/README.md)。
+
 打开 [驾驶回放](replay/index.html)。录像来自 Unity 实际机位。可按章节跳到单桶、连续双桶或横移路障，点击每个预训练试次查看车辆轨迹，也可在不同策略和传感器条件之间切换。页面支持本地文件打开。
 
 ## 车如何驾驶
