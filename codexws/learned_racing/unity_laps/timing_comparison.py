@@ -225,6 +225,16 @@ def render(args):
     # Include the exact terminal camera tick for an encounter truncated by a collision/boundary.
     include_end=any(abs(r.run["seconds"]-args.end)<2e-5 and r.run["status"] in ("obstacle","boundary") for r in records)
     if include_end:nframes+=1
+    key_frames={}
+    for which in ("off","on"):
+        section=audit.get(which,{}).get("section",{})
+        for name in ("frontEnterS","rearClearS"):
+            event_s=section.get(name)
+            if event_s is not None and args.start<event_s<=args.end:
+                previous=math.ceil((event_s-args.start)*FPS-1e-7)-1
+                key_frames[f"{which}.lastFrameBefore.{name}"]=max(0,min(previous,nframes-1))
+    poster_index=key_frames.get("on.lastFrameBefore.frontEnterS",nframes//2)
+    inspected={0,nframes//2,nframes-1,*key_frames.values()}
     template=Image.new("RGB",SIZE,PAPER);d=ImageDraw.Draw(template)
     d.rectangle((0,0,2048,94),fill=INK)
     label(d,(44,46),args.title,41,WHITE,True)
@@ -267,7 +277,7 @@ def render(args):
             if known_go:
                 label(d,(2001,127),f"首次选择先行  {known_go['t']:.2f} s",22,RIGHT,anchor="rm")
             label(d,(1058,1187),prediction(decision,known_go),22,MUTED)
-            if n in {0,nframes//2,nframes-1}:
+            if n in inspected:
                 checks.append({"videoFrame":n,"simS":t,"sources":[{"sourceFrame":s["frame_id"],"sourceS":s["frame_t"],
                               "decisionS":s["decision"]["t"],"poseS":s["row"][0],"heldAfterEnd":s["stopped"],
                               "sha256":digest(s["file"]) if s["file"].is_file() else None} for s in samples]})
@@ -279,6 +289,9 @@ def render(args):
         if stream.frames!=nframes or stream.average_rate!=FPS or stream.codec_context.name!="h264":
             raise ValueError("Incorrect output timing or codec")
         for index,frame in enumerate(playback.decode(video=0)):
+            if index==poster_index and args.poster:
+                args.poster.parent.mkdir(parents=True,exist_ok=True)
+                frame.to_image().save(args.poster,quality=92)
             if index not in indexed:continue
             sample=indexed[index];img=frame.to_image()
             for x,r,s in zip(XPOS,records,sample["sources"]):
@@ -293,6 +306,7 @@ def render(args):
               "prop":args.prop,"runs":[r.run.get("id") for r in records],"trajectorySHA256":[digest(r.path) for r in records],
               "auditSHA256":digest(args.audit) if args.audit else None,"missingCameraFrames":missing,"maxCameraAgeS":max_age,
               "groundTruth":"Fixed prop coordinates from UnityRace.PropPosition; car from latest recorded referee pose. The two runs share an identical scene clock.",
+              "lastPreEventFrameIndices":key_frames,"posterFrame":poster_index if args.poster else None,
               "checkFrames":checks}
     args.out.with_suffix(".json").write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     return evidence
@@ -303,6 +317,7 @@ def main():
     for name in ("baseline","baseline-frames","candidate","candidate-frames","out"):
         p.add_argument("--"+name,type=Path,required=True)
     p.add_argument("--audit",type=Path)
+    p.add_argument("--poster",type=Path,help="Save the decoded frame just before candidate front entry; use midpoint when unverified")
     p.add_argument("--prop",type=int,required=True,help="Zero-based moving prop index")
     p.add_argument("--title",default="横移锥桶 · 同场双车对照")
     for name in ("start","end"):p.add_argument("--"+name,type=float,required=True)
