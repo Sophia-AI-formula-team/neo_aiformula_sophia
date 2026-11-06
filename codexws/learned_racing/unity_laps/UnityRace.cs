@@ -20,6 +20,7 @@ public class Setup {
     public float start,offset,yaw, limit=1f, captureInterval=.5f;
     public int visionPort;
     public string timingMode="";
+    public EncounterConfig encounter;
     public float approachCap;
 }
 public class Perception {public float?[] lane;public float[][] objects;public string error;}
@@ -63,7 +64,7 @@ public sealed class UnityRace {
         Physics.SyncTransforms();d.Initialize();d.SetInput(0,0,true);
         for(int i=0;i<200;i++){d.StepDrive(dt);ph.Simulate(dt);}
         if(!d.UsesImplicitContact||d.TireContact.Contacts<2)throw new InvalidOperationException("No ground contact at spawn");
-        policy=new Policy(cfg.weights,cfg.timingMode,cfg.approachCap);previous=startStation=track.Station(Track.XZ(d.Body.position),near);
+        policy=new Policy(cfg.weights,cfg.timingMode,cfg.approachCap,cfg.encounter);previous=startStation=track.Station(Track.XZ(d.Body.position),near);
         foreach(var spec in cfg.obstacles){
             int idx=track.AtFraction(cfg.start+spec[0]);
             var cone=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TrainingEnvironment/Prefabs/TrafficCone_75cm.prefab"),scene);
@@ -160,7 +161,7 @@ public sealed class UnityRace {
         d.SetAutonomousVelocityCommand(policy.speedCmd,policy.yawCmd);d.StepDrive(dt);scene.GetPhysicsScene().Simulate(dt);k++;
         if(observed!=null)decisions.Add(new{t,speed,yaw,observed,tracks=tracks.Select(o=>new[]{o.z,o.x,o.vx,o.vz}).ToArray(),
             policy.reason,policy.curvature,policy.cruise,policy.look,policy.target,policy.preferred,policy.offset,ratio=policy.chosenSpeed,
-            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing});
+            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing,encounter=policy.Encounter});
         if(d.MotorFault.Length>0||d.TireContact.Fault.Length>0)throw new InvalidOperationException(d.MotorFault+d.TireContact.Fault);
     }
     void Capture(float t){

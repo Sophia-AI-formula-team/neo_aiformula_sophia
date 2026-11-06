@@ -243,10 +243,13 @@ public sealed class Policy {
         conflictRange=hazard;
     }
     readonly LocalTiming timing;
+    readonly EncounterPolicy encounter;
+    public EncounterEvidence Encounter {get{return encounter==null?null:encounter.evidence;}}
     readonly float approach;
     public TimingEvidence Timing {get{return timing==null?null:timing.evidence;}}
-    public Policy(float[] weights,string timingMode="",float approachCap=0){
+    public Policy(float[] weights,string timingMode="",float approachCap=0,EncounterConfig encounterConfig=null){
         p=weights;approach=approachCap;if(!string.IsNullOrEmpty(timingMode))timing=new LocalTiming(timingMode=="both");
+        if(encounterConfig!=null)encounter=new EncounterPolicy(encounterConfig);
     }
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
@@ -341,6 +344,10 @@ public sealed class Policy {
         }
         if(timing!=null && timing.Act(line,objects,speed,speedCmd,nominalCruise,planningSpeed*pace,lineBias,offset,yaw,period)){
             reason="go_first";preferred=lineBias;guardCap=nominalCruise;planningSpeed=nominalCruise;pace=1;recovery=0;
+        }
+        if(encounter!=null && encounter.Act(line,objects,speed,yaw,curvature,offset,period)){
+            reason="learned_encounter";preferred=encounter.evidence.chosenOffset;guardCap=encounter.evidence.chosenSpeed;
+            planningSpeed=Mathf.Min(nominalCruise,guardCap);pace=1;recovery=0;
         }
         float shiftStep=guarded?period*(yielding?2.5f:p[11]):.52f;
         offset=Mathf.MoveTowards(offset,preferred,shiftStep);chosenSpeed=pace;

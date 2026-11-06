@@ -51,14 +51,15 @@ class Lab:
             if not self.dll.is_file() and previous.is_file():
                 self.dll=previous
             if not self.dll.is_file():
-                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed", "27d298ede25138":"743e85f"}
+                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed", "27d298ede25138":"743e85f", "ca509cc0c9c239":"6e96acd"}
                 if solver not in revisions:raise RuntimeError("No recorded source revision for "+solver)
                 source_dir=self.work/"sources"/solver
                 source_dir.mkdir(exist_ok=True,parents=True)
+                tree=revisions[solver]+":codexws/learned_racing/unity_laps"
+                names=subprocess.check_output(["git","ls-tree","--full-tree","--name-only",tree],cwd=HERE,text=True).splitlines()
+                sources=[source_dir/name for name in sorted(names) if name.endswith(".cs")]
                 for source in sources:
-                    revision=revisions[solver]+":codexws/learned_racing/unity_laps/"+source.name
-                    (source_dir/source.name).write_bytes(subprocess.check_output(["git","show",revision],cwd=HERE))
-                sources=sorted(source_dir.glob("*.cs"))
+                    (source_dir/source.name).write_bytes(subprocess.check_output(["git","show",tree+"/"+source.name],cwd=HERE))
                 digest=hashlib.sha256(b"".join(p.read_text(encoding="utf8").encode("utf8") for p in sources)).hexdigest()[:14]
                 if digest!=solver:raise RuntimeError("Historical source hash mismatch")
         if not self.dll.exists():
@@ -85,7 +86,7 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
         if obstacle_specs is not None:
@@ -106,6 +107,7 @@ class Lab:
             if timing["mode"] not in ("both","yield_only") or not 0<=timing["approach"]<=6:
                 raise ValueError("Unknown timing action or invalid approach speed")
             params["timing"]=timing
+        if encounter is not None:params["encounter"]=encounter
         cache=self.raw/(name+".json")
         if cache.exists():
             old=json.loads(cache.read_bytes())
@@ -117,6 +119,7 @@ class Lab:
                  output=str(out),media=str(self.work/"frames"/name) if media else "",limit=limit,captureInterval=capture)
         if timing is not None:
             cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])
+        if encounter is not None:cfg["encounter"]=encounter
         write(jobpath,cfg);self.event("start",trial=name,params=params)
         code="var asm=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name=="+json.dumps(self.dll.stem)+")??Assembly.Load(System.IO.File.ReadAllBytes("+json.dumps(str(self.dll))+"));return asm.GetType(\"LapLab.UnityRace\").GetMethod(\"Schedule\").Invoke(null,new object[]{"+json.dumps(str(jobpath))+"});"
         began=time.monotonic()
