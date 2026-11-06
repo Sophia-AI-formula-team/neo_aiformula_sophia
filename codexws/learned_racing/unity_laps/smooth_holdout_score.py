@@ -39,10 +39,24 @@ def release_audit(run_dir, model_path):
     for name, expected in freeze["developmentTrialSHA256"].items():
         if sha(run_dir / name) != expected:
             raise ValueError("Development evidence changed: " + name)
+    archived = load(HERE / "learned_risk_revision/runs/diag_full01_learned.json")
+    rebuilt = load(run_dir / "default_v2_parity.json")
+    a, b = archived["decisions"], rebuilt["decisions"]
+    if len(a) != len(b):
+        raise ValueError("Changing the solver changed the reference decision count")
+    fields = [k for k in a[0] if any(p[k] != q[k] for p, q in zip(a, b))]
+    control_exact = all(k not in fields for k in ("t", "speedCmd", "yawCmd", "leftCan", "rightCan"))
+    if archived["rows"] != rebuilt["rows"] or not control_exact:
+        raise ValueError("Default V2 changed its full-lap physical motion or motor requests")
+    deltas = [np.abs(np.array(p["tracks"])-np.array(q["tracks"])) for p, q in zip(a, b) if p["tracks"]]
+    parity = dict(measuredRowsIdentical=len(rebuilt["rows"]), motorDecisionsIdentical=len(b),
+                  changedExistingDecisionFields=fields, fullLapGate=rebuilt["gate"], seconds=rebuilt["seconds"],
+                  trackFramesChanged=sum(p["tracks"] != q["tracks"] for p, q in zip(a, b)),
+                  trackerMaxAbsDifferenceZ_X_Vx_Vz=np.concatenate(deltas).max(axis=0).tolist())
     return dict(frozenSha256=sha(root / "frozen.json"), canonicalModelSha256=canonical_sha,
                 checkpoint=freeze["checkpoint"], sourceCommit=freeze["sourceCommit"], freezeUTC=freeze["utc"],
                 developmentRunsChecked=len(freeze["developmentTrialSHA256"]), solver=freeze["sourceCodeSolver"],
-                A4=original["model"], ordinaryControllerWeights=original["weights"])
+                A4=original["model"], ordinaryControllerWeights=original["weights"], priorFullLapParity=parity)
 
 
 def bin_margin(x,road=False):
