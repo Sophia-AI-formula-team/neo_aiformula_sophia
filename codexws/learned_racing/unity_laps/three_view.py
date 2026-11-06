@@ -11,6 +11,7 @@ import av
 from PIL import Image, ImageDraw, ImageFont
 
 from referee_inset import CHASE_INSET, RefereeInset
+from learned_film_panel import HEIGHT as LEARNED_HEIGHT, LearnedPanel
 
 
 SIZE = (2048, 1280)
@@ -32,6 +33,8 @@ PHASE = {
     "hold_pass": ("保持通过侧", "短时保持已选一侧", ORANGE),
     "yield_corridor": ("选择通过空间", "按障碍与道路之间的余量调整目标", ORANGE),
     "insufficient_lane": ("道路观测不足", "控制器限制目标速度", ORANGE),
+    "learned_encounter": ("执行学习动作", "按所选动作限制车速并跟踪横移目标", PURPLE),
+    "go_first": ("选择加速先行", "根据车身清空断面的预测时间调整车速", TEAL),
 }
 
 
@@ -242,6 +245,7 @@ def main():
     parser.add_argument("--title", required=True)
     parser.add_argument("--note", help="Optional factual footer for this recording")
     parser.add_argument("--referee-inset", action="store_true", help="Show a fixed local ground-truth referee inset on the chase camera")
+    parser.add_argument("--learned-panel", action="store_true", help="Add actual fitted-action choices, scores and terminal outcome")
     args = parser.parse_args()
     run = json.loads(args.trajectory.read_text(encoding="utf-8-sig"))
     frames, decisions = run["frames"], run["decisions"]
@@ -265,6 +269,12 @@ def main():
     hold_frames = round(.8*FPS) if terminal else 0
     count = motion_frames+hold_frames
     background = layout(args.title, args.note)
+    panel = LearnedPanel(run) if args.learned_panel else None
+    size = (SIZE[0],SIZE[1]+LEARNED_HEIGHT) if panel else SIZE
+    if panel:
+        base=Image.new("RGB",size,PAPER)
+        base.paste(background,(0,0))
+        background=base
     referee = RefereeInset(run,args.start,args.end) if args.referee_inset else None
     indices = {"chase": set(), "a4": set()}
     gaps = {"chase": 0, "a4": 0}
@@ -272,7 +282,7 @@ def main():
     checks = []
     with av.open(str(args.out), "w", options={"movflags": "+faststart"}) as out:
         video = out.add_stream("libx264", rate=FPS, options={"preset":"veryfast","crf":"19","threads":"4"})
-        video.width, video.height = SIZE
+        video.width, video.height = size
         video.pix_fmt = "yuv420p"
         for n in range(count):
             stopped = terminal and n >= motion_frames
@@ -296,6 +306,8 @@ def main():
                     max_age[key] = max(max_age[key], t-ts)
             map_view(canvas,decisions[di])
             controls(canvas,decisions,dt,di)
+            if panel:
+                canvas.paste(panel.render(di,label),(0,SIZE[1]))
             if referee and referee.ids:
                 canvas.paste(referee.render(ft[fi],label),(42+CHASE_INSET[0],173+CHASE_INSET[1]))
             if stopped:
@@ -319,13 +331,15 @@ def main():
         stream = playback.streams.video[0]
         encoded = {"codec":stream.codec_context.name,"width":stream.width,"height":stream.height,
                    "fps":float(stream.average_rate),"frames":stream.frames,"duration_s":float(stream.duration*stream.time_base)}
-        if stream.frames != count or (stream.width,stream.height) != SIZE or abs(encoded["duration_s"]-count/FPS)>1e-5:
+        if stream.frames != count or (stream.width,stream.height) != size or abs(encoded["duration_s"]-count/FPS)>1e-5:
             raise ValueError(f"Encoded stream did not match the requested timing: {encoded}")
     receipt = {"title":args.title,"run":run.get("id"),"seed":run.get("request",{}).get("seed"),
                "trajectory_sha256":digest(args.trajectory),"model":run.get("request",{}).get("model"),"a4_worker":meta,
                "start_s":args.start,"end_s":args.end,"end_included":terminal,
                "labelled_terminal_hold_s":hold_frames/FPS,"status":run.get("status"),"encoded":encoded,
                "referee_inset":referee.receipt() if referee and referee.ids else None,
+               "learned_panel":None if panel is None else {"modelId":panel.model, "actionTable":panel.actions,
+                   "selections":[{"t":decisions[i]["t"],**decisions[i]["encounter"]} for i in panel.selected]},
                "method":"Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
                "unique_sources":{key:len(value) for key,value in indices.items()},"max_display_age_s":max_age,
                "missing_camera_output_frames":gaps,"samples":checks}
