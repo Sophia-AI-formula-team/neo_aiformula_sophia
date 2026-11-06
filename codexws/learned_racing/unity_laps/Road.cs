@@ -244,12 +244,15 @@ public sealed class Policy {
     }
     readonly LocalTiming timing;
     readonly EncounterPolicy encounter;
+    readonly SmoothEncounter smooth;
+    public SmoothEvidence Smooth {get{return smooth==null?null:smooth.evidence;}}
     public EncounterEvidence Encounter {get{return encounter==null?null:encounter.evidence;}}
     readonly float approach;
     public TimingEvidence Timing {get{return timing==null?null:timing.evidence;}}
-    public Policy(float[] weights,string timingMode="",float approachCap=0,EncounterConfig encounterConfig=null){
+    public Policy(float[] weights,string timingMode="",float approachCap=0,EncounterConfig encounterConfig=null,SmoothConfig smoothConfig=null){
         p=weights;approach=approachCap;if(!string.IsNullOrEmpty(timingMode))timing=new LocalTiming(timingMode=="both");
         if(encounterConfig!=null)encounter=new EncounterPolicy(encounterConfig);
+        if(smoothConfig!=null)smooth=new SmoothEncounter(smoothConfig);
     }
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
@@ -347,6 +350,10 @@ public sealed class Policy {
         }
         if(encounter!=null && encounter.Act(line,objects,speed,yaw,curvature,offset,period)){
             reason="learned_encounter";preferred=encounter.evidence.chosenOffset;guardCap=encounter.evidence.chosenSpeed;
+            planningSpeed=Mathf.Min(nominalCruise,guardCap);pace=1;recovery=0;
+        }
+        if(smooth!=null && smooth.Act(line,objects,speed,yaw,curvature,offset,lineBias,period)){
+            reason="smooth_encounter";preferred=smooth.evidence.targetOffset;guardCap=smooth.evidence.targetSpeed;
             planningSpeed=Mathf.Min(nominalCruise,guardCap);pace=1;recovery=0;
         }
         float shiftStep=guarded?period*(yielding?2.5f:p[11]):.52f;
