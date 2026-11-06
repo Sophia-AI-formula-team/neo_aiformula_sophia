@@ -53,28 +53,129 @@ public sealed class Track {
     }
 }
 
-public class Sight {public float z,x,vx,vz;}
+public class Sight {public float z,x,vx,vz,history,age,fitVx,fitVz,noiseX,noiseZ,coherence;public int id;}
 public class Tracklet {
     public Vector2 p,v;public float t;public bool matched;
+    public int id;
+    public List<Vector3> history=new List<Vector3>();
 }
 public sealed class ObjectTracker {
     readonly List<Tracklet> items=new List<Tracklet>();
+    int nextId;
     public List<Sight> Update(List<Vector2> measured,Vector2 pos,Vector2 forward,float t){
         var right=new Vector2(forward.y,-forward.x);
         items.RemoveAll(k=>t-k.t>1.25f);foreach(var k in items)k.matched=false;
         foreach(var local in measured.OrderBy(o=>o.x)){
             var world=pos+forward*local.x+right*local.y;Tracklet chosen=null;float best=1.15f;
             foreach(var k in items){if(k.matched)continue;float e=(world-(k.p+k.v*(t-k.t))).magnitude;if(e<best){best=e;chosen=k;}}
-            if(chosen==null){chosen=new Tracklet{p=world,t=t};items.Add(chosen);}
+            if(chosen==null){chosen=new Tracklet{p=world,t=t,id=++nextId};items.Add(chosen);}
             else {float age=t-chosen.t;if(age>.04f)chosen.v=Vector2.Lerp(chosen.v,Vector2.ClampMagnitude((world-chosen.p)/age,2.2f),.42f);}
             chosen.p=world;chosen.t=t;chosen.matched=true;
+            chosen.history.RemoveAll(s=>t-s.z>1.21f);
+            chosen.history.Add(new Vector3(world.x,world.y,t));
         }
         var outp=new List<Sight>();
         foreach(var k in items){
             var delta=k.p+k.v*(t-k.t)-pos;float z=Vector2.Dot(delta,forward),x=Vector2.Dot(delta,right);
-            if(z>-1.2f && z<12.5f && Mathf.Abs(x)<5.8f)
-                outp.Add(new Sight{z=z,x=x,vx=Vector2.Dot(k.v,right),vz=Vector2.Dot(k.v,forward)});
+            if(z<=-1.2f || z>=12.5f || Mathf.Abs(x)>=5.8f)continue;
+            var s=new Sight{z=z,x=x,vx=Vector2.Dot(k.v,right),vz=Vector2.Dot(k.v,forward),id=k.id,age=t-k.t};
+            var h=k.history;
+            if(h.Count>=4){
+                var mean=Vector3.zero;foreach(var q in h)mean+=q;mean/=h.Count;
+                float tt=0;var st=Vector2.zero;
+                foreach(var q in h){float dt=q.z-mean.z;tt+=dt*dt;st+=new Vector2(q.x-mean.x,q.y-mean.y)*dt;}
+                var fit=st/Mathf.Max(.001f,tt);
+                s.fitVx=Vector2.Dot(fit,right);s.fitVz=Vector2.Dot(fit,forward);s.history=h[h.Count-1].z-h[0].z;
+                foreach(var q in h){
+                    var residual=new Vector2(q.x-mean.x,q.y-mean.y)-fit*(q.z-mean.z);
+                    s.noiseX=Mathf.Max(s.noiseX,Mathf.Abs(Vector2.Dot(residual,right)));
+                    s.noiseZ=Mathf.Max(s.noiseZ,Mathf.Abs(Vector2.Dot(residual,forward)));
+                }
+                // Both independent half-window displacements must support the fitted direction.
+                var middle=h[h.Count/2];var a=(Vector2)(middle-h[0]);var b=(Vector2)(h[h.Count-1]-middle);
+                s.coherence=Mathf.Sign(s.fitVx)*Vector2.Dot(a,right);
+                s.coherence=Mathf.Min(s.coherence,Mathf.Sign(s.fitVx)*Vector2.Dot(b,right));
+            }
+            outp.Add(s);
         }return outp;
+    }
+}
+
+// Local, opt-in temporal alternative to the frozen lateral planner. Distances are
+// in metres, times in seconds, velocities in the observed road's moving frame.
+public sealed class TimingEvidence {
+    public string state="no_track";
+    public bool offered;
+    public int id;
+    public float range,cross,motion,history,fitNoise,rangeNoise,along,frontFast,rearFast,frontPace,rearPace,rawFast,rawPace,marginFast,marginPace,remaining;
+}
+public sealed class LocalTiming {
+    readonly bool enabled;
+    int passing=-1;
+    float remaining;
+    public TimingEvidence evidence;
+    public LocalTiming(bool enabled){this.enabled=enabled;}
+
+    // Conservative acceleration after a command update. Integrate the same
+    // acceleration cap and target speed for both front and rear arrival.
+    static float Arrive(float distance,float speed,float target,float objectSpeed){
+        float travelled=0;
+        float v=speed;
+        for(int i=1;i<=160;i++){
+            if(i>3)v=Mathf.MoveTowards(v,target,1.45f*.025f);
+            travelled+=Mathf.Max(.05f,v-objectSpeed)*.025f;
+            if(travelled>=distance)return i*.025f;
+        }
+        return 4.025f;
+    }
+
+    static float Clearance(float cross,float velocity,float first,float last,float padding){
+        float a=cross+velocity*first,b=cross+velocity*last;
+        float closest=a*b<=0?0:Mathf.Min(Mathf.Abs(a),Mathf.Abs(b));
+        return closest-padding;
+    }
+
+    public bool Act(float[] line,List<Sight> objects,float speed,float command,float boost,float pace,float bias,float offset,float yaw,float dt){
+        evidence=new TimingEvidence();
+        if(passing>=0){
+            remaining-=speed*dt;
+            var track=objects.Find(o=>o.id==passing);
+            bool intruder=objects.Exists(o=>o.id!=passing && o.z>-.5f && o.z<remaining+1f);
+            bool drift=track!=null && track.z>1.8f && track.age<.23f &&
+                Mathf.Abs(track.x-Policy.CenterAt(line,track.z)-bias)<.86f;
+            if(remaining<=0 || intruder || drift || (remaining>4f && (track==null || track.age>.41f))){
+                passing=-1;evidence.state=remaining<=0?"finished":"abort";return false;
+            }
+            evidence.id=passing;evidence.remaining=remaining;evidence.state="committed";return true;
+        }
+        if(objects.Count!=1){evidence.state=objects.Count==0?"no_track":"multiple_tracks";return false;}
+        var o1=objects[0];var e=evidence;e.id=o1.id;e.range=o1.z;e.history=o1.history;
+        float slope=(Policy.CenterAt(line,o1.z+.35f)-Policy.CenterAt(line,o1.z-.35f))/.70f;
+        float scale=Mathf.Sqrt(1+slope*slope);
+        e.cross=(o1.x-Policy.CenterAt(line,o1.z)-bias)/scale;
+        e.motion=(o1.fitVx-slope*o1.fitVz)/scale;
+        e.along=(o1.fitVz+slope*o1.fitVx)/scale;
+        e.fitNoise=(o1.noiseX+Mathf.Abs(slope)*o1.noiseZ)/scale;e.rangeNoise=(o1.noiseZ+Mathf.Abs(slope)*o1.noiseX)/scale;
+        if(o1.history<.59f || o1.age>.21f || o1.coherence<.055f || e.fitNoise>.24f || e.rangeNoise>.65f){e.state="motion_unconfirmed";return false;}
+        if(e.cross*e.motion>=0 || Mathf.Abs(e.motion)<.32f || Mathf.Abs(e.motion)>1.65f || Mathf.Abs(e.along)>.8f){e.state="no_approaching_motion";return false;}
+        if(o1.z<1.4f || o1.z>10.5f || Mathf.Abs(slope)>.25f || Mathf.Abs(yaw)>.28f || Mathf.Abs(offset-bias)>.75f ||
+           Mathf.Abs(Policy.CenterAt(line,0)+bias)>.65f || boost<speed+.48f){e.state="outside_envelope";return false;}
+        // Include cone radius, front (+.28) and rear (-.88) of the rover. Include
+        // speed-command lag and short-range uphill drift of an observed target.
+        float dist=o1.z*scale,subject=Mathf.Max(.1f,Mathf.Min(speed,command+.35f));
+        e.frontFast=Arrive(dist-.62f-e.rangeNoise,subject,boost,e.along-.12f);
+        e.rearFast=Arrive(dist+1.22f+e.rangeNoise,subject,boost,e.along+.12f);
+        e.frontPace=Arrive(dist-.62f-e.rangeNoise,subject,pace,e.along-.12f);
+        e.rearPace=Arrive(dist+1.22f+e.rangeNoise,subject,pace,e.along+.12f);
+        e.rawFast=Clearance(e.cross,e.motion,e.frontFast,e.rearFast,.38f+.34f);
+        e.rawPace=Clearance(e.cross,e.motion,e.frontPace,e.rearPace,.38f+.34f);
+        e.marginFast=e.rawFast-(.12f+e.fitNoise+.10f*e.rearFast+.055f*e.rearFast*e.rearFast);
+        e.marginPace=e.rawPace-(.12f+e.fitNoise+.10f*e.rearPace+.055f*e.rearPace*e.rearPace);
+        if(e.rearFast>2.8f || e.marginFast<.12f || e.marginPace>.0f || e.rearPace-e.rearFast<.32f){e.state="timing_rejected";return false;}
+        e.offered=true;e.state=enabled?"accepted":"disabled";
+        if(!enabled)return false;
+        passing=o1.id;remaining=dist+1.22f+Mathf.Max(0,e.along+.12f)*e.rearFast+.22f;
+        e.remaining=remaining;return true;
     }
 }
 
@@ -141,13 +242,18 @@ public sealed class Policy {
         }
         conflictRange=hazard;
     }
-    public Policy(float[] weights){p=weights;}
+    readonly LocalTiming timing;
+    readonly float approach;
+    public TimingEvidence Timing {get{return timing==null?null:timing.evidence;}}
+    public Policy(float[] weights,string timingMode="",float approachCap=0){
+        p=weights;approach=approachCap;if(!string.IsNullOrEmpty(timingMode))timing=new LocalTiming(timingMode=="both");
+    }
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
         for(int i=1;i<Ahead.Length;i++)if(s<=Ahead[i])return Mathf.Lerp(line[i-1],line[i],(s-Ahead[i-1])/(Ahead[i]-Ahead[i-1]));
         return line[line.Length-1];
     }
-    static float CenterAt(float[] line,float s){
+    internal static float CenterAt(float[] line,float s){
         if(s<Ahead[0])return line[0]+(s-Ahead[0])*(line[1]-line[0])/(Ahead[1]-Ahead[0]);
         if(s>Ahead[3])return line[3]+(s-Ahead[3])*(line[3]-line[2])/(Ahead[3]-Ahead[2]);
         return Interpolate(line,s);
@@ -191,6 +297,8 @@ public sealed class Policy {
                 guardCap=p[10];reason="recover";
             }
         }
+        float nominalCruise=cruise;
+        if(approach>0)cruise=Mathf.Min(cruise,approach);
         float planningSpeed=Mathf.Min(cruise,guardCap);
         if(p.Length>=13){
             ChooseCorridor(line,objects,speed,lineBias,period);
@@ -230,6 +338,9 @@ public sealed class Policy {
                     if(cost<best){best=cost;preferred=lateral;pace=ratio;}
                 }
             }
+        }
+        if(timing!=null && timing.Act(line,objects,speed,speedCmd,nominalCruise,planningSpeed*pace,lineBias,offset,yaw,period)){
+            reason="go_first";preferred=lineBias;guardCap=nominalCruise;planningSpeed=nominalCruise;pace=1;recovery=0;
         }
         float shiftStep=guarded?period*(yielding?2.5f:p[11]):.52f;
         offset=Mathf.MoveTowards(offset,preferred,shiftStep);chosenSpeed=pace;

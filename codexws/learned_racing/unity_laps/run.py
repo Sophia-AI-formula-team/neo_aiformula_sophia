@@ -51,7 +51,7 @@ class Lab:
             if not self.dll.is_file() and previous.is_file():
                 self.dll=previous
             if not self.dll.is_file():
-                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed"}
+                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed", "27d298ede25138":"743e85f"}
                 if solver not in revisions:raise RuntimeError("No recorded source revision for "+solver)
                 source_dir=self.work/"sources"/solver
                 source_dir.mkdir(exist_ok=True,parents=True)
@@ -85,7 +85,7 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
         if obstacle_specs is not None:
@@ -102,6 +102,10 @@ class Lab:
         w=[round(float(x),5) for x in weights]
         params=dict(weights=w,seed=int(seed),start=float(start),offset=float(offset),yaw=float(angle),obstacles=specs,
                     limit=limit,vision=bool(vision),model=model,captureInterval=capture,solver=self.build,media=media)
+        if timing is not None:
+            if timing["mode"] not in ("both","yield_only") or not 0<=timing["approach"]<=6:
+                raise ValueError("Unknown timing action or invalid approach speed")
+            params["timing"]=timing
         cache=self.raw/(name+".json")
         if cache.exists():
             old=json.loads(cache.read_bytes())
@@ -111,6 +115,8 @@ class Lab:
         if out.exists():raise ValueError("Unclaimed prior result for "+name)
         cfg=dict(start=start,offset=offset,yaw=angle,weights=w,obstacles=specs,edge=self.edge,visionPort=vision,
                  output=str(out),media=str(self.work/"frames"/name) if media else "",limit=limit,captureInterval=capture)
+        if timing is not None:
+            cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])
         write(jobpath,cfg);self.event("start",trial=name,params=params)
         code="var asm=AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a=>a.GetName().Name=="+json.dumps(self.dll.stem)+")??Assembly.Load(System.IO.File.ReadAllBytes("+json.dumps(str(self.dll))+"));return asm.GetType(\"LapLab.UnityRace\").GetMethod(\"Schedule\").Invoke(null,new object[]{"+json.dumps(str(jobpath))+"});"
         began=time.monotonic()
