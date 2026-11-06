@@ -3,6 +3,7 @@ import argparse
 from html import escape
 import json
 from pathlib import Path
+import re
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -115,8 +116,39 @@ def seed_summary(records, output):
     im.save(output)
 
 
+def practice_report(training):
+    """Optionally provide {phase_label: runs} to keep practice and qualification separate."""
+    phases = training if isinstance(training, dict) else {"训练": training}
+    sections = []
+    for phase, runs in phases.items():
+        measurements = [measure(r) for r in runs]
+        if not measurements:
+            continue
+        candidates = {}
+        for m in measurements:
+            name = re.sub(r"_"+str(m["seed"])+r"(_clear|_traffic)?$", "", m["id"])
+            candidates.setdefault(name, []).append(m)
+        heading = escape(str(phase))
+        sections.append(f'<h2>{heading}</h2><div class="scroll"><table><thead><tr><th>候选</th><th>完圈</th><th>障碍区通过</th><th>最差试次完成距离</th><th>完圈自由速度 m/s</th></tr></thead><tbody>')
+        for name, group in candidates.items():
+            done = [m for m in group if m["finished"]]
+            secs = sum(m["freeRoad"]["seconds"] for m in done)
+            pace = sum(m["freeRoad"]["meters"] for m in done) / secs if secs else None
+            zones = [z for m in group for z in m["zones"]]
+            minimum = min(min(1., m["progressM"]/m["courseM"]) for m in group)
+            sections.append(f'<tr><td>{escape(name)}</td><td>{len(done)}/{len(group)}</td><td>{sum(z["passed"] for z in zones)}/{len(zones)}</td>'
+                            f'<td><meter min="0" max="1" value="{minimum:.5f}"></meter> {minimum:.0%}</td><td>{fmt(pace)}</td></tr>')
+        sections.append(f'</tbody></table></div><details><summary>展开{heading}全部 {len(measurements)} 趟记录</summary><div class="scroll"><table>'
+                        '<thead><tr><th>试次</th><th>终止结果</th><th>通过区</th><th>路边最小余量 m</th><th>已行驶自由速度 m/s</th></tr></thead><tbody>')
+        for m in measurements:
+            sections.append(f'<tr><td>{escape(m["id"])}</td><td>{result(m)}</td><td>{sum(z["passed"] for z in m["zones"])}/{len(m["zones"])}</td>'
+                            f'<td>{fmt(m["minRoadM"])}</td><td>{fmt(m["freeRoad"]["mps"])}</td></tr>')
+        sections.append('</tbody></table></div></details>')
+    return ''.join(sections)
+
+
 def write_report(pairs, output_path, training=()):
-    """pairs is an ordered iterable of (reference run, challenger run)."""
+    """pairs is an ordered iterable of (reference, challenger); training may be grouped by phase."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True,exist_ok=True)
     records=[]; blocks=[]; options=[];snapshots=[]
@@ -141,14 +173,7 @@ def write_report(pairs, output_path, training=()):
     seed_summary(records,image_path)
     traffic=[c for c in records if c["before"]["zones"]];clean=[c for c in records if not c["before"]["zones"]]
     def completed(seq,side):return sum(c[side]["finished"] for c in seq)
-    train=list(training)
-    def trs(r):
-        m=measure(r)
-        return (f'<tr><td>{escape(r["id"])}</td><td>{result(m)}</td><td>{sum(z["passed"] for z in m["zones"])}/{len(m["zones"])}</td>'
-                f'<td>{fmt(m["minRoadM"])}</td><td>{fmt(m["freeRoad"]["mps"])}</td></tr>')
-    practice=('<details><summary>查看训练试次（'+str(len(train))+' 趟）</summary><div class="scroll"><table><thead><tr>'
-              '<th>试次</th><th>终止结果</th><th>通过区</th><th>路边最小余量 m</th><th>已行驶自由速度 m/s</th></tr></thead>'
-              '<tbody>'+"".join(trs(r) for r in train)+'</tbody></table></div></details>') if train else ""
+    practice=practice_report(training)
     table=[]
     for c in records:
         a,b=c["before"],c["after"]
@@ -197,6 +222,7 @@ if(zone){
     for(const msg of lines){let p=document.createElement('p');p.textContent=msg;box.append(p)}
   }
   function change(){document.querySelectorAll('.encounter').forEach(el=>el.hidden=el.dataset.key!==zone.value);const actions=frames[Number(zone.value)];step.max=Math.max(0,actions.length-1);const lowest=actions.reduce((best,d,i)=>d.reason==='yield'&&(best<0||d.speedCmd<actions[best].speedCmd)?i:best,-1);step.value=Math.max(0,lowest);draw()}
+  const moving=[...zone.options].find(o=>o.textContent.includes('横移')&&frames[Number(o.value)].some(d=>d.reason==='yield'));if(moving)zone.value=moving.value;
   step.oninput=draw;zone.onchange=change;change();
 }
 """
