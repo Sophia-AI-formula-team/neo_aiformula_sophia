@@ -62,14 +62,14 @@ def fit(root,size):
     specs=[(d,leaf,p) for d in (3,5,8) for leaf in (1,3) for p in (5.,10.)]
     attempts=[]
     for spec in specs:
-        choices=np.zeros(len(x),int);scores=[]
+        choices=np.zeros(len(x),int);scores=[];predicted=np.zeros((len(x),len(NAMES)))
         for test in folds:
             train=np.ones(len(x),bool);train[test]=False
             y,sc=returns([b for i,b in enumerate(obs)if train[i]],spec[2]);model=estimator(spec).fit(x[train],y)
-            choices[test]=np.argmax(model.predict(x[test]),axis=1)
+            predicted[test]=model.predict(x[test]);choices[test]=np.argmax(predicted[test],axis=1)
             test_y,_=returns([obs[i]for i in test],spec[2],sc);scores.extend(test_y[np.arange(len(test)),choices[test]].tolist())
         pairs=[(b[0],b[j])for b,j in zip(obs,choices)]
-        attempts.append(dict(spec=spec,choices=choices.tolist(),completed=sum(r["completed"]for _,r in pairs),
+        attempts.append(dict(spec=spec,choices=choices.tolist(),oofScores=predicted.tolist(),completed=sum(r["completed"]for _,r in pairs),
                    newFailure=sum(a["completed"] and not b["completed"]for a,b in pairs),meanUtility=float(np.mean(scores)),
                    changed=int(np.sum(choices!=0))))
     best=max(attempts,key=lambda a:(a["completed"],-a["newFailure"],a["meanUtility"]))

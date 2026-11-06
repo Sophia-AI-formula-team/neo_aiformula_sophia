@@ -103,13 +103,17 @@ def evaluate(args):
             if args.arm:order=[args.arm]
             for arm in order:
                 if arm=="learned" and not model:raise ValueError("Frozen smooth model required")
+                cfg=model if arm=="learned" else None
+                if arm=="fixed":
+                    if args.force is None or not 0<=args.force<len(NAMES):raise ValueError("Expected a training-selected fixed action")
+                    cfg=dict(mode="probe",modelId="fixed_training_choice",forced=args.force,actions=bank())
                 name=(args.tag+"_" if args.tag else "")+label+"_"+arm
                 if args.film:
                     with detector(lab,"outer-edge",name,film=True)as (port,release):
-                        run_one(lab,name,case,model if arm=="learned" else None,port,release,True)
+                        run_one(lab,name,case,cfg,port,release,True)
                 else:
                     if shared is None:shared=stack.enter_context(detector(lab,"outer-edge","evaluation"))
-                    run_one(lab,name,case,model if arm=="learned" else None,*shared,False)
+                    run_one(lab,name,case,cfg,*shared,False)
 
 def parity(args):
     ref=json.loads((HERE/"learned_risk_revision/runs/diag_full01_learned.json").read_bytes())
@@ -127,7 +131,7 @@ def main():
     p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--matrix",type=Path)
     p.add_argument("--model",type=Path);p.add_argument("--film",action="store_true");p.add_argument("--tag",default="")
     p.add_argument("--ids",nargs="+")
-    p.add_argument("--arm",choices=["base","learned"])
+    p.add_argument("--arm",choices=["base","learned","fixed"]);p.add_argument("--force",type=int)
     args=p.parse_args()
     if not os.environ.get("AIFORMULA_LAP_COPY"):raise RuntimeError("Private Unity only")
     if args.cmd=="train":return training(args)
