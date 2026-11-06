@@ -51,7 +51,7 @@ class Lab:
             if not self.dll.is_file() and previous.is_file():
                 self.dll=previous
             if not self.dll.is_file():
-                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed", "27d298ede25138":"743e85f", "ca509cc0c9c239":"6e96acd","788eb7af5abf9f":"ca33d0b"}
+                revisions={"db4aecaf3e5c7d":"e7af050", "f25947e8af56df":"43423aed", "27d298ede25138":"743e85f", "ca509cc0c9c239":"6e96acd","788eb7af5abf9f":"ca33d0b","82c17a6e48068f":"7a99e84"}
                 if solver not in revisions:raise RuntimeError("No recorded source revision for "+solver)
                 source_dir=self.work/"sources"/solver
                 source_dir.mkdir(exist_ok=True,parents=True)
@@ -86,7 +86,7 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None,lane_gate=None):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
         if obstacle_specs is not None:
@@ -109,6 +109,9 @@ class Lab:
             params["timing"]=timing
         if encounter is not None:params["encounter"]=encounter
         if smooth is not None:params["smooth"]=smooth
+        if lane_gate is not None:
+            if len(lane_gate)!=3 or not all(np.isfinite(lane_gate)) or min(lane_gate)<=0:raise ValueError("Invalid lane innovation limits")
+            params["laneGateThresholdsM"]=list(lane_gate)
         cache=self.raw/(name+".json")
         if cache.exists():
             old=json.loads(cache.read_bytes())
@@ -121,6 +124,7 @@ class Lab:
             cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])
         if encounter is not None:cfg["encounter"]=encounter
         if smooth is not None:cfg["smooth"]=smooth
+        if lane_gate is not None:cfg["laneGateThresholdsM"]=params["laneGateThresholdsM"]
         if out.exists():
             previous=json.loads(jobpath.read_bytes())
             old_port=previous.pop("visionPort")

@@ -22,6 +22,7 @@ public class Setup {
     public string timingMode="";
     public EncounterConfig encounter;
     public SmoothConfig smooth;
+    public float[] laneGateThresholdsM;
     public float approachCap;
 }
 public class Perception {public float?[] lane;public float[][] objects;public string error;}
@@ -33,6 +34,7 @@ public sealed class UnityRace {
     AIFormulaRgbCameraTopic feed;Camera chase;AIFormulaPhotoVisualRig photo;
     TcpClient net;BinaryReader netIn;BinaryWriter netOut;
     readonly ObjectTracker tracker=new ObjectTracker();
+    readonly OdometryLaneGate laneGate;
     readonly List<Prop> props=new List<Prop>();readonly List<float[]> rows=new List<float[]>(), frames=new List<float[]>();
     readonly List<object> decisions=new List<object>();
     int k,near,gate,seenFrames,empty,coneseens,closestProp=-1;float startStation,previous,progress,peakProgress,lastAdvance;
@@ -45,7 +47,10 @@ public sealed class UnityRace {
         try{job.Open();EditorApplication.update+=job.Batch;AssemblyReloadEvents.beforeAssemblyReload+=job.Interrupt;}
         catch{job.Dispose();throw;}return "scheduled";
     }
-    UnityRace(Setup config){cfg=config;}
+    UnityRace(Setup config){
+        cfg=config;
+        if(config.laneGateThresholdsM!=null)laneGate=new OdometryLaneGate(Policy.Ahead,config.laneGateThresholdsM);
+    }
     void Open(){
         var open=typeof(EditorSceneManager).GetMethod("OpenPreviewScene",BindingFlags.NonPublic|BindingFlags.Static,null,new[]{typeof(string)},null);
         scene=(Scene)open.Invoke(null,new object[]{ScenePath});var ph=scene.GetPhysicsScene();
@@ -138,7 +143,7 @@ public sealed class UnityRace {
         if(localGap<=0){Finish("obstacle");return;}if(road<0){Finish("boundary");return;}
         if(progress>=track.length*cfg.limit && (cfg.limit<.999f||gate==32)){Finish(cfg.limit<.999f?"segment":"lap");return;}
         if(t>260||t-lastAdvance>9){Finish("stalled");return;}
-        float?[] observed=null;List<Sight> tracks=null;
+        float?[] observed=null,filtered=null;List<Sight> tracks=null;int laneGateMask=0;
         if(k%(net==null?10:20)==0){
             List<Vector2> visible=new List<Vector2>();float[] lane;
             if(net!=null){
@@ -156,13 +161,25 @@ public sealed class UnityRace {
             }
             seenFrames++;if(lane.Count(v=>!float.IsNaN(v))<2)empty++;if(visible.Count>0)coneseens++;
             observed=lane.Select(v=>float.IsNaN(v)?(float?)null:v).ToArray();
+            if(laneGate!=null){
+                laneGateMask=laneGate.Apply(lane,t,speed,yaw);
+                filtered=lane.Select(v=>float.IsNaN(v)?(float?)null:v).ToArray();
+            }
             tracks=tracker.Update(visible,pos,forward,t);
             if(!policy.Act(lane,tracks,Mathf.Max(0,speed),yaw,net==null?.10f:.20f)){Finish("lost_lane");return;}
         }
         d.SetAutonomousVelocityCommand(policy.speedCmd,policy.yawCmd);d.StepDrive(dt);scene.GetPhysicsScene().Simulate(dt);k++;
-        if(observed!=null)decisions.Add(new{t,speed,yaw,observed,tracks=tracks.Select(o=>new[]{o.z,o.x,o.vx,o.vz}).ToArray(),
+        if(observed!=null){
+            var decision=new{t,speed,yaw,observed,tracks=tracks.Select(o=>new[]{o.z,o.x,o.vx,o.vz}).ToArray(),
             policy.reason,policy.curvature,policy.cruise,policy.look,policy.target,policy.preferred,policy.offset,ratio=policy.chosenSpeed,
-            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing,encounter=policy.Encounter,smooth=policy.Smooth,gap=policy.Gap});
+            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan,timing=policy.Timing,encounter=policy.Encounter,smooth=policy.Smooth,gap=policy.Gap};
+            if(laneGate==null)decisions.Add(decision);
+            else{
+                var record=Newtonsoft.Json.Linq.JObject.FromObject(decision);
+                record["laneGate"]=Newtonsoft.Json.Linq.JObject.FromObject(new {mask=laneGateMask,filtered});
+                decisions.Add(record);
+            }
+        }
         if(d.MotorFault.Length>0||d.TireContact.Fault.Length>0)throw new InvalidOperationException(d.MotorFault+d.TireContact.Fault);
     }
     void Capture(float t){
