@@ -21,7 +21,7 @@ fig.text(.045,.88,"每格是一个完整场景。时间为整段用时；碰撞�
          fontsize=11,color="#4d655f")
 for x,title in enumerate(("原控制","只提速","提速 + 寻缝"),start=1):
     ax.text(x+.47,8.16,title,ha="center",va="bottom",fontsize=12,weight="bold",color=ink)
-labels={"static":"静态双桶","moving":"移动双桶","sequence":"连续障碍","mixed":"动静混合"}
+labels={"static":"静态双桶","moving":"移动双桶","double":"两排障碍","mixed-triple":"三排动静混合"}
 for i,case in enumerate(report["pairs"]):
     y=7-i
     family=labels.get(case["family"],case["family"])
