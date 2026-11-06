@@ -139,13 +139,18 @@ def selected_text(dec):
           "learned_encounter":"执行学习动作","insufficient_lane":"道路观测不足","hold_pass":"保持通过侧"}
     if dec.get("smooth"):
         e=dec["smooth"]
-        if e.get("chosen",-1)>=0 and e.get("state") not in ("observing","idle"):
-            return "动作 0 · 沿用 V2" if e["chosen"]==0 else f"动作 {e['chosen']}  ·  目标偏移 {e.get('targetOffset',e.get('chosenOffset',0)):+.2f} m"
+        if e.get("state") in ("selected","holding","returning") and e.get("chosen",-1)>=0:
+            action=e["chosen"]
+            if action==0:return "沿用 V2 控制"
+            names=("沿用 V2","沿参考线快行","左侧快行","右侧快行","左侧稳行","右侧稳行","沿参考线慢行")
+            name="回归参考线" if e["state"]=="returning" else names[action]
+            return f"{name}  ·  偏移 {e['targetOffset']:+.2f} m"
     return tags.get(reason,reason)
 
 
 def render(args):
     recs=pair(args);scene=LocalPaths(recs,args.start,args.end,args.prop)
+    identical_rows=recs[0].run["rows"]==recs[1].run["rows"]
     count=math.ceil((args.end-args.start)*FPS-1e-7)
     terminal=any(abs(args.end-r.run["seconds"])<.00002 and r.run["status"] in ("obstacle","boundary") for r in recs)
     hold=round(.8*FPS) if terminal else 0
@@ -200,7 +205,8 @@ def render(args):
                 margin(d,1412,961+j*131,"锥桶",row[10] if r.run["props"] else None)
                 margin(d,1715,961+j*131,"道路边界",row[9])
             im.paste(scene.draw(samples,t),(45,890))
-            label(d,(45,1249),f"橙 · {args.base_label}    青 · {args.trained_label}    最近 2.5 s 轨迹",19,MUTED)
+            trail_note="两臂实测轨迹逐行相同" if identical_rows else "最近 2.5 s 轨迹"
+            label(d,(45,1249),f"橙 · {args.base_label}    青 · {args.trained_label}    {trail_note}",19,MUTED)
             label(d,(736,1249),"彩色实线：车身实测     灰虚线：偏航指令（rad/s）",18,MUTED)
             label(d,(1411,1199),"黑线 = 0.50 m",21,INK,True)
             label(d,(1411,1244),"超过 0.50 m 的部分不增加余量奖励。",19,MUTED)
@@ -231,7 +237,8 @@ def render(args):
                 if max(s["decodedMeanRGBError"])>8:raise ValueError("Original camera comparison failed")
     report={"title":args.title,"ids":[args.base,args.trained],"rangeS":[args.start,args.end],"holdsS":hold/FPS,
             "frames":count+hold,"size":SIZE,"fps":FPS,"mp4SHA256":digest(args.out),"runSHA256":[digest(r.path) for r in recs],
-            "terminalStates":[r.run["status"] for r in recs],"physicalProps":recs[0].run["props"],"sampledFrames":samples_checked}
+            "terminalStates":[r.run["status"] for r in recs],"identicalPhysicalRows":identical_rows,
+            "physicalProps":recs[0].run["props"],"sampledFrames":samples_checked}
     args.out.with_suffix(".json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(json.dumps({k:report[k] for k in ("ids","frames","mp4SHA256")},ensure_ascii=False))
 
