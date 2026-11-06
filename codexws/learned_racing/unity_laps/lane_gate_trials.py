@@ -1,6 +1,7 @@
 """One locked A4 comparison of the optional odometry gate against frozen ck64."""
 from contextlib import ExitStack
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -33,13 +34,21 @@ def matrix():
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("--prepare",action="store_true");p.add_argument("--film",action="store_true")
-    args=p.parse_args();cases=matrix();ROOT.mkdir(exist_ok=True)
-    matrix_path=ROOT/"layouts.json"
+    p.add_argument("--known-b01",type=Path,help="Separately replay a known original blind failure after primary evaluation")
+    args=p.parse_args();cases=matrix();root=ROOT
+    if args.known_b01:
+        data=args.known_b01.read_bytes()
+        assert hashlib.sha256(data).hexdigest()=="7fbc1a929be8622f0995ab98a478c336ebcb8b4964c3e36341953c52147d36e9"
+        cases=[c for c in json.loads(data)["cases"]if c["id"]=="b01"]
+        assert len(cases)==1
+        root=ROOT/"known_b01"
+    root.mkdir(exist_ok=True)
+    matrix_path=root/"layouts.json"
     if matrix_path.exists():assert json.loads(matrix_path.read_bytes())==cases
     else:write(matrix_path,cases)
     if args.prepare:return
     if not os.environ.get("AIFORMULA_LAP_COPY"):raise RuntimeError("Use an isolated private Unity project")
-    lab=Lab(SIM,ROOT)
+    lab=Lab(SIM,root)
     with ExitStack()as stack:
         shared=None if args.film else stack.enter_context(detector(lab,"outer-edge","evaluation"))
         for i,case in enumerate(cases):
