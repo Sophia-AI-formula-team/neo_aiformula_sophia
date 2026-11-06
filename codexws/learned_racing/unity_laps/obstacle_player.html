@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,">
+<title>A4 避障实录</title>
+<style>
+:root{color-scheme:dark;--bg:#10191c;--surface:#1b282c;--ink:#edf1ea;--muted:#b0bfbe;--line:#39494c;--accent:#cbe794}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI","Microsoft YaHei",sans-serif}main{max-width:1380px;padding:24px clamp(14px,3.3vw,50px) 36px;margin:auto}header{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:14px}h1{font-size:clamp(24px,3.2vw,40px);line-height:1.2;margin:0}a{color:var(--accent);text-underline-offset:3px}video{width:100%;display:block;max-height:76vh;background:#0c1315}figure{margin:0}figcaption{padding:12px 0 18px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}figcaption b{font-size:18px}figcaption span{color:var(--muted)}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:14px}article{padding:10px 10px 15px;background:var(--surface);border:1px solid var(--line);border-radius:6px}article:has([aria-pressed=true]){border-color:var(--accent)}button.choice{width:100%;display:block;text-align:left;padding:0;color:var(--ink);background:transparent;border:0;cursor:pointer;font:inherit}.choice:focus-visible{outline:2px solid var(--accent)}.choice img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;object-position:50% 40%;border-radius:3px}.choice span{margin:8px 0 0;display:flex;justify-content:space-between;gap:7px;align-items:baseline}.choice b{font-size:16px}.choice small{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}article p,article a{font-size:14px}article p{color:var(--muted);margin:6px 0}footer{margin-top:22px;color:var(--muted);font-size:14px}footer a{margin-left:8px}
+@media(max-width:600px){main{padding:15px 10px 24px}header{align-items:center}header a{font-size:14px}video{max-height:none}figcaption{gap:3px;display:grid}section{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}article{padding:6px}.choice span{display:grid;gap:0}.choice img{aspect-ratio:1.8}figcaption span,article p,article a{font-size:13px}}
+</style></head>
+<body><main>
+<header><h1>A4 避障实录</h1><a href="all-scenes.mp4">打开完整 MP4</a></header>
+<figure><video id="player" controls playsinline preload="metadata" poster="{{POSTER}}" src="all-scenes.mp4"></video><figcaption><b id="active"></b><span id="note"></span></figcaption></figure>
+<section aria-label="选择避障场景">{{SCENES}}</section>
+<footer>跟车窗内的小图固定在地面，显示裁判记录的实际运动。右上是 A4 前视识别，左下是车自己看到的目标与选点。点击场景可跳转，手机横屏全屏可看清标注。<a href="verification.json">录像与试验索引</a></footer>
+</main>
+<script id="data" type="application/json">{{DATA}}</script>
+<script>
+const cases=JSON.parse(document.getElementById('data').textContent);
+const player=document.getElementById('player'), buttons=[...document.querySelectorAll('.choice')];
+function current(){
+  let i=0;
+  for(let n=1;n<cases.length;n++){if(player.currentTime+.001>=cases[n].reelSecond)i=n}
+  buttons.forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));
+  document.getElementById('active').textContent=cases[i].title;
+  document.getElementById('note').textContent=cases[i].description;
+}
+buttons.forEach((button,i)=>button.addEventListener('click',()=>{
+  player.currentTime=cases[i].reelSecond;
+  player.play().catch(()=>{});
+  current();
+}));
+player.addEventListener('timeupdate',current); player.addEventListener('seeked',current); current();
+</script></body></html>

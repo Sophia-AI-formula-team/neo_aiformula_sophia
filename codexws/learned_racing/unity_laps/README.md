@@ -1,5 +1,9 @@
 # AI Formula · Unity 驾驶训练
 
+[七段避障实录](obstacle_films/index.html) 可连续播放，也能单独打开静止单桶、错列双桶、横移桶、直道动静混合、弯中单桶、弯中动静混合和碰桶复现。每段都同步展示跟车、A4 前视、车的局部选点与速度。跟车窗的小图使用场地固定坐标，显示裁判记录的车和桶的位置，方便辨别自车运动与锥桶横移。
+
+原始闭环轨迹分别在 `risk_revision/runs` 和 `scenario_shots/runs`。三个新布局用冻结策略跑至驶离障碍，另用原种子重跑碰撞场景。[镜头采集记录](scenario_shots/README.md) 给出了标定、通过区间和失败复现核验。从已录相机帧重出全部视频，在本目录运行 `python -B assemble_obstacle_films.py obstacle_films --render`。若新场景原始帧还在独立工作树，添加 `--capture-root scenario_shots <该工作树的场景素材目录>`。只从七支已有 MP4 重建带章节的合集时省略 `--render`。
+
 最新的 [A4 避让与圈速对照](risk_revision/index.html) 包含真实 Unity 前视、追车和同步轮速，两场空场赛与四个留出障碍布局的成对结果。可以选任一路障并拖动控制周期，查看 A4 看到了什么、车选了哪条线、何时收油以及它实际发出的两个轮速。页面下方列有训练和资格记录、车身回摆指标、单独放宽避让限速的对照。
 
 在已启用的私有仿真工程跑本批实验时，依次使用 `python -B risk_trials.py baseline`、`python -B risk_curriculum.py`、`python -B risk_select.py`、`python -B risk_ablation.py` 和 `python -B risk_film.py`。各实验采用冻结求解器。最后执行 `python -B command_replay.py --root risk_revision --run decision_film --out risk_revision/commands.mp4`，再运行 `python -B risk_audit.py` 和 `python -B risk_results.py`。已有记录可直接离线运行最后的报告生成步骤。对移动障碍加大预测范围的独立试验见 [失败记录](reversal_diagnostic/README.md)。

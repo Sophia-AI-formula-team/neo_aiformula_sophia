@@ -1,0 +1,139 @@
+{
+  "title": "失败复现 · 横移桶换向",
+  "run": "failure_20318",
+  "seed": 20318,
+  "trajectory_sha256": "21b4f7047eb914323ff23435ad9ca90fadbfed6380c24274ae5ab5b102f4e1e3",
+  "model": "a4/single_frame/b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3/outer-edge/345d7be45c99",
+  "a4_worker": {
+    "port": 55817,
+    "release": "a4",
+    "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "mode": "single_frame",
+    "device": "cuda",
+    "sampleStride": 1,
+    "objectObservations": "enabled",
+    "laneObserver": "outer-edge"
+  },
+  "start_s": 65.5,
+  "end_s": 71.74,
+  "end_included": true,
+  "labelled_terminal_hold_s": 0.8,
+  "status": "obstacle",
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1280,
+    "fps": 20.0,
+    "frames": 141,
+    "duration_s": 7.05
+  },
+  "referee_inset": {
+    "prop_ids_zero_based": [
+      3
+    ],
+    "anchor_id_zero_based": 3,
+    "center_world_xz": [
+      11.1006575,
+      42.61759
+    ],
+    "road_forward_xz": [
+      -0.9998354068321056,
+      -0.01814274634331011
+    ],
+    "road_right_xz": [
+      -0.01814274634331011,
+      0.9998354068321056
+    ],
+    "overlay_chase_pixel_box": [
+      11,
+      11,
+      351,
+      226
+    ],
+    "meters_per_pixel": 0.05,
+    "trail_s": 1.5,
+    "display_time": "Recorded chase-frame timestamp",
+    "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+    "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+    "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+  },
+  "method": "Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
+  "unique_sources": {
+    "chase": 126,
+    "a4": 32
+  },
+  "max_display_age_s": {
+    "chase": 4.599999996912629e-06,
+    "a4": 0.1500046000000026
+  },
+  "missing_camera_output_frames": {
+    "chase": 0,
+    "a4": 0
+  },
+  "samples": [
+    {
+      "film_frame": 0,
+      "simulation_s": 65.5,
+      "chase": {
+        "id": 1310,
+        "time_s": 65.5,
+        "sha256": "6df9b67819182449040a8d1b2b96dae0416057e362ea0f902bd3e3422e6dd9d3"
+      },
+      "a4": {
+        "id": 327,
+        "time_s": 65.4,
+        "sha256": "7f74dc668c82feb3a4da86f767efe95a7fb9e66584d17cbffe2520792e6539a1"
+      },
+      "track_count": 0,
+      "phase": "road"
+    },
+    {
+      "film_frame": 62,
+      "simulation_s": 68.6,
+      "chase": {
+        "id": 1372,
+        "time_s": 68.6,
+        "sha256": "316099913cd41da453ac1bbdeaa2997982d13f38ef80f9ae61b1a2ddff333b50"
+      },
+      "a4": {
+        "id": 343,
+        "time_s": 68.6,
+        "sha256": "c84ecf8533e75b9223e1c21e2af13bfabde3d8f57d1be3bd25d33076afd3fa92"
+      },
+      "track_count": 1,
+      "phase": "yield"
+    },
+    {
+      "film_frame": 124,
+      "simulation_s": 71.7,
+      "chase": {
+        "id": 1434,
+        "time_s": 71.7,
+        "sha256": "bb31372053ea7e2750612126d2b59e5fb5c0dceb84910ce4c47debee99ed6085"
+      },
+      "a4": {
+        "id": 358,
+        "time_s": 71.6,
+        "sha256": "4fa6ad07a06f6e350ce43ba6b1fb63a388e5f441c7d0204ab9afee9fba2c7b29"
+      },
+      "track_count": 1,
+      "phase": "yield"
+    },
+    {
+      "film_frame": 140,
+      "simulation_s": 71.74,
+      "chase": {
+        "id": 1435,
+        "time_s": 71.74,
+        "sha256": "c3d093c14441bb0ff58bc562c412178a419c69fc77daa82a0955438e92a7dd19"
+      },
+      "a4": {
+        "id": 358,
+        "time_s": 71.6,
+        "sha256": "4fa6ad07a06f6e350ce43ba6b1fb63a388e5f441c7d0204ab9afee9fba2c7b29"
+      },
+      "track_count": 1,
+      "phase": "yield"
+    }
+  ]
+}

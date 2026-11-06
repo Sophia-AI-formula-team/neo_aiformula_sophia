@@ -1,0 +1,124 @@
+{
+  "title": "错列的双静态锥桶",
+  "run": "decision_film",
+  "seed": 93677,
+  "trajectory_sha256": "2e050fc9abbf2705fd6244f167ac11d7602e75993b9f951d936df9c241a77e9d",
+  "model": "a4/single_frame/b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3/outer-edge/345d7be45c99",
+  "a4_worker": {
+    "port": 55030,
+    "release": "a4",
+    "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "mode": "single_frame",
+    "device": "cuda",
+    "sampleStride": 1,
+    "objectObservations": "enabled",
+    "laneObserver": "outer-edge"
+  },
+  "start_s": 33.0,
+  "end_s": 45.7,
+  "end_included": false,
+  "labelled_terminal_hold_s": 0.0,
+  "status": "lap",
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1280,
+    "fps": 20.0,
+    "frames": 254,
+    "duration_s": 12.7
+  },
+  "referee_inset": {
+    "prop_ids_zero_based": [
+      1,
+      2
+    ],
+    "anchor_id_zero_based": 1,
+    "center_world_xz": [
+      70.74608977609691,
+      2.095573137950027
+    ],
+    "road_forward_xz": [
+      -0.01814274634331011,
+      0.9998354068321056
+    ],
+    "road_right_xz": [
+      0.9998354068321056,
+      0.01814274634331011
+    ],
+    "overlay_chase_pixel_box": [
+      11,
+      11,
+      351,
+      226
+    ],
+    "meters_per_pixel": 0.05,
+    "trail_s": 1.5,
+    "display_time": "Recorded chase-frame timestamp",
+    "world_source": "UnityRace.PropPosition home + road_right * amplitude * sin(phase + t * omega)",
+    "ego_source": "Recorded rows x,z,yaw; linear position and shortest-arc angle interpolation only between logged poses.",
+    "selection": "Closest obstacle station to mid-clip ego progress, within 16 m; show only neighboring stations within 8 m of it."
+  },
+  "method": "Latest available capture and decision at each simulation tick. A4 JPEG uses the same optical inference index as the decision. Orange arrow is one second of tracked velocity. The blue arrow illustrates commanded yaw held for half a second; arrow length has no distance meaning. Terminal hold uses the actual final chase capture and last available decision.",
+  "unique_sources": {
+    "chase": 127,
+    "a4": 64
+  },
+  "max_display_age_s": {
+    "chase": 0.05000230000000272,
+    "a4": 0.15000229999999704
+  },
+  "missing_camera_output_frames": {
+    "chase": 0,
+    "a4": 0
+  },
+  "samples": [
+    {
+      "film_frame": 0,
+      "simulation_s": 33.0,
+      "chase": {
+        "id": 330,
+        "time_s": 33.0,
+        "sha256": "8e39c1603135342da490ae88d0c4437d9d699e194c5f609514cbf54b93543528"
+      },
+      "a4": {
+        "id": 165,
+        "time_s": 33.0,
+        "sha256": "2a51fb71d3066f2cdd4ae62150bd5f74c3a33d4bb3c4c9a83b6b4b91f7744ad6"
+      },
+      "track_count": 0,
+      "phase": "road"
+    },
+    {
+      "film_frame": 127,
+      "simulation_s": 39.35,
+      "chase": {
+        "id": 393,
+        "time_s": 39.3,
+        "sha256": "2f5f340263a5777e914aa043049b40bc2150b179a76195aaf6a72d4ff2ca4819"
+      },
+      "a4": {
+        "id": 196,
+        "time_s": 39.2,
+        "sha256": "360ca4b99801eb48476ac415483d542f317649e326c645d88790912159baee68"
+      },
+      "track_count": 2,
+      "phase": "yield"
+    },
+    {
+      "film_frame": 253,
+      "simulation_s": 45.65,
+      "chase": {
+        "id": 456,
+        "time_s": 45.6,
+        "sha256": "87b09ad45b09b66918a84804a9fdb9d68ffdf21671e2e53a395d6a8c256a112b"
+      },
+      "a4": {
+        "id": 228,
+        "time_s": 45.6,
+        "sha256": "67ff05cfa0dc17493b7256fb7500bdcacf11271acad1aa6bd3409a0c093047e3"
+      },
+      "track_count": 2,
+      "phase": "recover"
+    }
+  ]
+}

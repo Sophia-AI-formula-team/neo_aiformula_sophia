@@ -1,0 +1,95 @@
+{
+  "run": "apex_01",
+  "start_s": 4.4,
+  "end_s": 14.6,
+  "encoded": {
+    "codec": "h264",
+    "width": 2048,
+    "height": 1280,
+    "fps": 20.0,
+    "frames": 204,
+    "duration_s": 10.2
+  },
+  "source_counts": {
+    "chase": 204,
+    "a4": 51
+  },
+  "max_display_age_s": {
+    "chase": 1.0000000010279564e-06,
+    "a4": 0.1500009999999996
+  },
+  "verified_samples": [
+    {
+      "frame": 0,
+      "video_s": 0.0,
+      "simulation_s": 4.4,
+      "chase": {
+        "source_time": 4.4,
+        "source_frame": 88,
+        "decoded_mean_abs_rgb_error_0_255": 1.339,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 4.4,
+        "source_frame": 22,
+        "decoded_mean_abs_rgb_error_0_255": 1.521,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    },
+    {
+      "frame": 102,
+      "video_s": 5.1,
+      "simulation_s": 9.5,
+      "chase": {
+        "source_time": 9.5,
+        "source_frame": 190,
+        "decoded_mean_abs_rgb_error_0_255": 1.539,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 9.4,
+        "source_frame": 47,
+        "decoded_mean_abs_rgb_error_0_255": 1.491,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    },
+    {
+      "frame": 203,
+      "video_s": 10.15,
+      "simulation_s": 14.55,
+      "chase": {
+        "source_time": 14.5499992,
+        "source_frame": 291,
+        "decoded_mean_abs_rgb_error_0_255": 1.5,
+        "pixels_compared": 445300,
+        "excluded_referee_pixel_box": [
+          11,
+          11,
+          351,
+          226
+        ]
+      },
+      "a4": {
+        "source_time": 14.4,
+        "source_frame": 72,
+        "decoded_mean_abs_rgb_error_0_255": 1.586,
+        "pixels_compared": 518400,
+        "excluded_referee_pixel_box": null
+      }
+    }
+  ]
+}
