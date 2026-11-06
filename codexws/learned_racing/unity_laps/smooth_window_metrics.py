@@ -109,15 +109,34 @@ def measured(data):
     return dict(seconds=seconds,progressM=distance,bodyPathM=path,excessPathM=path-distance,
                 yawTravelRad=absolute,signedYawRad=signed,excessYawRad=max(0.,absolute-abs(signed)),
                 yawRateVariationRadS=float(np.abs(np.diff(yaw)).sum()),yawReversals=reversals(yaw),
+                lateralTravelM=float(np.abs(np.diff(data[:,8])).sum()),commandYawReversals=reversals(data[:,6]),
                 wheelDifferentialAbsRpmS=abs_integral(wheel,t),wheelDifferentialVariationRpm=float(np.abs(np.diff(wheel)).sum()),
                 atLeast4M=elevated,longestAtLeast4M=longest)
 
+def body_speed(parts):
+    """Time-weighted mean and median of the measured longitudinal body speed with piecewise-linear interpolation."""
+    if not parts:return dict(measuredBodyMeanMps=None,measuredBodyMedianMps=None)
+    w=np.concatenate([np.diff(p[:,0]) for p in parts])
+    v0=np.concatenate([p[:-1,4] for p in parts])
+    v1=np.concatenate([p[1:,4] for p in parts])
+    lo=np.minimum(v0,v1);hi=np.maximum(v0,v1)
+    left,right=float(lo.min()),float(hi.max())
+    for _ in range(45):
+        mid=(left+right)*.5
+        frac=np.divide(mid-lo,hi-lo,out=(mid>=lo).astype(float),where=hi>lo)
+        if np.dot(np.clip(frac,0,1),w)>=.5*w.sum():right=mid
+        else:left=mid
+    return dict(measuredBodyMeanMps=float(np.dot(.5*(v0+v1),w)/w.sum()),measuredBodyMedianMps=right)
+
 
 def intervals_report(rows,windows,stop_at=None):
-    readings=[]
+    readings=[];parts=[]
     for lo,hi in windows:
         part=extract(rows,lo,hi,stop_at)
-        readings.append(dict(fromM=lo,toM=hi,measurement=measured(part) if part is not None else None))
+        value=None
+        if part is not None:
+            parts.append(part); value=measured(part)
+        readings.append(dict(fromM=lo,toM=hi,measurement=value))
     stats=[g["measurement"] for g in readings if g["measurement"] is not None]
     totals={k:sum(s[k] for s in stats) for k in (stats[0] if stats else ()) if k!="longestAtLeast4M"}
     planned=sum(hi-lo for lo,hi in windows)
@@ -126,7 +145,10 @@ def intervals_report(rows,windows,stop_at=None):
                   progressSpeedMps=metres/seconds if seconds else None,
                   fractionPlannedAtLeast4=totals.get("atLeast4M",0.)/planned if planned else None,
                   longestAtLeast4M=max((s["longestAtLeast4M"] for s in stats),default=0.))
-    for key in ("yawTravelRad","excessYawRad","yawRateVariationRadS","yawReversals","excessPathM","wheelDifferentialVariationRpm"):
+    for key in ("yawTravelRad","excessYawRad","yawRateVariationRadS","yawReversals","excessPathM","wheelDifferentialVariationRpm","lateralTravelM","commandYawReversals"):
         totals[key+"Per10m"]=10.*totals.get(key,0.)/metres if metres else None
     totals["meanAbsWheelDifferentialRpm"]=totals.get("wheelDifferentialAbsRpmS",0.)/seconds if seconds else None
+    totals.update(body_speed(parts))
+    for gate,part in zip((g for g in readings if g["measurement"] is not None),parts):
+        gate["measurement"].update(body_speed([part]))
     return dict(gates=readings,totals=totals)

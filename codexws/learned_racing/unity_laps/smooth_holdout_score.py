@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from learned_holdout_score import first_control_change
-from smooth_window_metrics import intervals_report, merged, obstacle_windows
+from smooth_window_metrics import body_speed, extract, intervals_report, obstacle_windows
 
 HERE=Path(__file__).resolve().parent
 PROTOCOL=HERE/"smooth_holdout"
@@ -165,6 +165,14 @@ def cohort(pairs):
         cruise.append(np.divide(sums[:,0],sums[:,1],out=np.full(10000,np.nan),where=sums[:,1]>0))
     def direction(data):
         return dict(lower=sum(v<-.000001 for v in data),tie=sum(abs(v)<=.000001 for v in data),higher=sum(v>.000001 for v in data))
+    diagnostic={}
+    for key in ("yawTravelRadPer10m","yawRateVariationRadSPer10m","excessYawRadPer10m","yawReversalsPer10m",
+                "commandYawReversalsPer10m","meanAbsWheelDifferentialRpm","wheelDifferentialVariationRpmPer10m",
+                "excessPathMPer10m","lateralTravelMPer10m"):
+        values=[[p[arm]["shared"]["obstacle"][key] for p in completed_obstacles] for arm in ("base","learned")]
+        differences=[v-u for u,v in zip(*values)]
+        diagnostic[key]=dict(medians=[median_or_none(v) for v in values],medianPairedDifference=median_or_none(differences),
+                             signs=direction(differences))
     return dict(pairs=total,success=[sum(p[a]["physicalSuccess"] for p in pairs) for a in ("base","learned")],
                 failureToSuccess=[p["id"] for p in pairs if pair_state(p)==(False,True)],
                 successToFailure=[p["id"] for p in pairs if pair_state(p)==(True,False)],
@@ -173,11 +181,19 @@ def cohort(pairs):
                 medianMatchedYawPer10mChange=median_or_none(yaw),yawChangeSigns=direction(yaw),medianMatchedZoneTimeChange=median_or_none(zone_time),
                 zoneTimeSigns=direction(zone_time), pooledSharedStraightMps=free,
                 pooledSharedStraightChange=free[1]/free[0]-1 if all(free) else None,
+                mutuallySuccessfulSteering=diagnostic,
                 bootstrap95=dict(completionRateDifference=percentile_ci(diff[resample].mean(axis=1)),medianYawFraction=med_ci("yawTravelRadPer10m"),
                                  medianZoneTimeFraction=med_ci("seconds"),pooledSharedStraightMpsDifference=percentile_ci(cruise[1]-cruise[0])))
 
 
-def cruise_summary(pairs):
+def cruise_group(p):
+    if p["family"]=="clear":return "clearLocal"
+    if p["family"]=="full-clear":return "clearLaps"
+    if p["family"]=="full-traffic":return "trafficLaps"
+    return "otherNaturalLocal" if not p["capMps"] else None
+
+
+def cruise_summary(pairs,signals):
     groups={}
     for name,which in (("clearLocal",lambda p:p["family"]=="clear"),("clearLaps",lambda p:p["family"]=="full-clear"),
                        ("trafficLaps",lambda p:p["family"]=="full-traffic"),("otherNaturalLocal",lambda p:p["scope"]=="segment" and p["family"]!="clear" and not p["capMps"])):
@@ -189,6 +205,7 @@ def cruise_summary(pairs):
             reports[arm]=dict(cases=[p["id"] for p in rows],plannedM=plan,observedM=seen,speedOnObservedMps=seen/duration if duration else None,
                               fractionPlannedAtLeast4=sum(s.get("atLeast4M",0) for s in vals)/plan if plan else None,
                               fullSuccessAt4=[p["id"] for p,s in zip(rows,vals) if p[arm]["physicalSuccess"] and (s["coverage"] or 0)>=.99999 and (s["progressSpeedMps"] or 0)>=4.])
+            reports[arm].update(body_speed(signals.get((name,arm),[])))
         groups[name]=reports
     return groups
 
@@ -199,7 +216,7 @@ def main():
     ap.add_argument("--base",type=Path,default=HERE/"learned_risk_revision/model.json")
     ap.add_argument("--model",type=Path,required=True)
     args=ap.parse_args();plan=load(PROTOCOL/"layouts.json");bends=load(PROTOCOL/"bend_controls.json")
-    base_model=load(args.base);model=load(args.model);pairs=[];versions=set()
+    base_model=load(args.base);model=load(args.model);pairs=[];versions=set();signals={}
     for c in plan["cases"]:
         paths=[args.runs/f"{c['id']}_{arm}.json" for arm in ("base","learned")]
         a,b=map(load,paths); compare_request(a,b,c,plan["courseLengthForFractionsM"],base_model)
@@ -207,9 +224,17 @@ def main():
         if len(versions)!=1:raise ValueError("Solver or A4 changed between held-out scenarios")
         row=observe(a,b,c,bends[c["id"]]);row["runSha256"]=[sha(f) for f in paths]
         row["selector"]=replay_selector(b,model);pairs.append(row)
+        group=cruise_group(row)
+        if group:
+            for arm,run in (("base",a),("learned",b)):
+                parts=signals.setdefault((group,arm),[])
+                trace=np.asarray(run["rows"])
+                for lo,hi in c["straightCruiseGatesM"]:
+                    part=extract(trace,lo,hi)
+                    if part is not None:parts.append(part)
     seg=[p for p in pairs if p["scope"]=="segment"];laps=[p for p in pairs if p["scope"]=="lap"]
     parts={k:cohort(v) for k,v in (("segment",seg),("lap",laps))}
-    cruise=cruise_summary(pairs)
+    cruise=cruise_summary(pairs,signals)
     local=parts["segment"];pooled=[speed([p for p in pairs if not p["capMps"]],"straight",a) for a in ("base","learned")]
     clears={a:len(cruise["clearLocal"][a]["fullSuccessAt4"])==4 and len(cruise["clearLaps"][a]["fullSuccessAt4"])==2 for a in ("base","learned")}
     smooth=(not any(r["successToFailure"] for r in parts.values()) and all(r["success"][1]>=r["success"][0] for r in parts.values())

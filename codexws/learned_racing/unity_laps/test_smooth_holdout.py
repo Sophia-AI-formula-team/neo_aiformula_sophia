@@ -16,6 +16,8 @@ class HoldoutSignals(unittest.TestCase):
         window=intervals_report(rows,[[2,6]])["totals"]
         self.assertEqual(window["progressSpeedMps"],4.)
         self.assertEqual(window["fractionPlannedAtLeast4"],1.)
+        self.assertAlmostEqual(window["measuredBodyMeanMps"],4.5)
+        self.assertAlmostEqual(window["measuredBodyMedianMps"],4.5)
         rows[:,5]=99.  # a command cannot improve measured-speed attainment
         self.assertEqual(high_speed_distance(rows),(4.,4.))
 
