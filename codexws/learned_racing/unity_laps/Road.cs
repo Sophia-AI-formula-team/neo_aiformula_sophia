@@ -85,6 +85,9 @@ public sealed class Policy {
     readonly float[] p;
     public float speedCmd,yawCmd,offset,curvature,chosenSpeed=1f;
     public int blind,calls,withObjects;
+    public float cruise, look, target, preferred, guardCap, conflictRange;
+    public string reason="start";
+    float recovery;
     public Policy(float[] weights){p=weights;}
     static float Interpolate(float[] line,float s){
         if(s<=Ahead[0])return line[0];
@@ -96,9 +99,9 @@ public sealed class Policy {
         if(s>Ahead[3])return line[3]+(s-Ahead[3])*(line[3]-line[2])/(Ahead[3]-Ahead[2]);
         return Interpolate(line,s);
     }
-    public bool Act(float[] line,List<Sight> objects,float speed,float yaw){
+    public bool Act(float[] line,List<Sight> objects,float speed,float yaw,float period){
         calls++;int n=line.Count(q=>!float.IsNaN(q));
-        if(n<2){blind++;speedCmd=blind<=2?Mathf.Min(speedCmd,1.2f):0;return blind<9;}
+        if(n<2){blind++;reason="insufficient_lane";speedCmd=blind<=2?Mathf.Min(speedCmd,1.2f):0;return blind<9;}
         blind=0;
         for(int i=0;i<line.Length;i++)if(float.IsNaN(line[i])){
             int a=-1,b=-1;
@@ -110,21 +113,42 @@ public sealed class Policy {
         }
         float near=(line[1]-line[0])/1.5f,mid=(line[2]-line[1])/2f,far=(line[3]-line[2])/2.5f;
         curvature=(Mathf.Atan(far)-Mathf.Atan(near))/4f;
-        float cruise=Mathf.Clamp(p[0]/(1f+p[1]*Mathf.Abs(curvature)),1.05f,p[0]);
+        cruise=Mathf.Clamp(p[0]/(1f+p[1]*Mathf.Abs(curvature)),1.05f,p[0]);
         // The two fitted gains choose a lateral racing line using only visible changes of direction.
         float lineBias=Mathf.Clamp(p[7]*(Mathf.Atan(mid)-Mathf.Atan(near))+
                                     p[8]*(Mathf.Atan(far)-Mathf.Atan(mid)),-1.15f,.82f);
-        float preferred=lineBias, pace=1;float best=float.PositiveInfinity;
+        preferred=lineBias;float pace=1;float best=float.PositiveInfinity;
+        bool guarded=p.Length>=12;
+        conflictRange=99;
+        foreach(var o in objects){
+            if(o.z<-.9f)continue;
+            float dist=Mathf.Abs(o.x-CenterAt(line,o.z)-lineBias);
+            if(dist<1.65f+Mathf.Min(.85f,Mathf.Abs(o.vx)*1.1f))conflictRange=Mathf.Min(conflictRange,o.z);
+        }
+        bool yielding=conflictRange<12f;
+        if(yielding)recovery=1.4f;else recovery=Mathf.Max(0,recovery-period);
+        // Limit approach speed from the distance available before lateral displacement is needed.
+        // Restore cruise only after the visible road and the body heading agree again.
+        guardCap=cruise;reason="road";
+        if(guarded){
+            if(yielding){
+                guardCap=Mathf.Sqrt(p[9]*p[9]+2f*1.25f*Mathf.Max(0,conflictRange-6.5f));
+                reason="yield";
+            }else if(recovery>0||Mathf.Abs(offset-lineBias)>.48f||Mathf.Abs(near)>.32f){
+                guardCap=p[10];reason="recover";
+            }
+        }
+        float planningSpeed=Mathf.Min(cruise,guardCap);
         if(objects.Count>0){
             withObjects++;
             foreach(float lateral in new[]{-3.65f,-3.08f,-2.6f,-2.05f,-1.55f,-1.15f,-.78f,0f,.70f,.92f}){
                 foreach(float ratio in new[]{1f,.68f,.40f}){
-                    float cost=.14f*Mathf.Abs(lateral-lineBias)+.22f*Mathf.Abs(lateral-offset)+1.55f*(1-ratio);
+                    float cost=.14f*Mathf.Abs(lateral-lineBias)+.22f*Mathf.Abs(lateral-offset)+(guarded?.48f:1.55f)*(1-ratio);
                     // Reduce the appeal of a path that leaves no space to correct toward the outside curb.
                     float edgeRoom=Mathf.Min(Track.Lane*.5f-lateral,Track.Lane*1.5f+lateral)-.38f;
                     cost+=.40f/Mathf.Max(.05f,edgeRoom);
                     foreach(var o in objects){
-                        float tau=Mathf.Clamp((o.z-.28f)/Mathf.Max(.55f,.45f*speed+.55f*cruise*ratio-o.vz),0,4.5f);
+                        float tau=Mathf.Clamp((o.z-.28f)/Mathf.Max(.55f,.45f*speed+.55f*planningSpeed*ratio-o.vz),0,4.5f);
                         float ahead=Mathf.Clamp(o.z+o.vz*tau,-1.2f,13f);
                         float endX=CenterAt(line,ahead)+lateral;
                         float nowX=o.x, predictedX=nowX+o.vx*tau*p[6];
@@ -133,6 +157,12 @@ public sealed class Policy {
                         // A slower arrival gives the chassis more time to move sideways.
                         float u=tau*Mathf.Max(1.15f,11f/p[5]);
                         float attainable=endX*(1f-(1f+u)*Mathf.Exp(-u));
+                        if(guarded){
+                            // Camera practice around 3 m/s measured |v*yawRate| near 0.9–1.4 m/s².
+                            // Body-frame lateral reach over this horizon limits late side changes.
+                            float reach=.5f*1.20f*tau*tau;
+                            attainable=Mathf.Clamp(attainable,-reach,reach);
+                        }
                         float detectionWidth=.06f+Mathf.Min(.55f,.28f*tau*Mathf.Min(Mathf.Abs(o.vx),1.2f));
                         float required=.76f+p[4]+detectionWidth;
                         float sep=Mathf.Max(low-attainable,attainable-high,0);
@@ -145,11 +175,17 @@ public sealed class Policy {
                 }
             }
         }
-        offset=Mathf.MoveTowards(offset,preferred,.52f);chosenSpeed=pace;
-        float look=Mathf.Clamp(p[3]+.19f*speed,2.3f,6f);
-        float target=Interpolate(line,look)+offset;
+        float shiftStep=guarded?period*(yielding?2.5f:p[11]):.52f;
+        offset=Mathf.MoveTowards(offset,preferred,shiftStep);chosenSpeed=pace;
+        look=Mathf.Clamp(p[3]+.19f*speed,2.3f,6f);
+        target=Interpolate(line,look)+offset;
         yawCmd=Mathf.Clamp(p[2]*Mathf.Atan2(target,look)-.38f*yaw+.9f*speed*curvature,-5f,5f);
-        speedCmd=cruise*pace;
+        float requested=planningSpeed*pace;
+        if(guarded){
+            // The archived asymmetric motor map saturates beyond these yaw inputs.
+            yawCmd=Mathf.Clamp(yawCmd,-1.60119f,1.69546f);
+            speedCmd=Mathf.Min(requested,speedCmd+1.8f*period);
+        }else speedCmd=requested;
         return true;
     }
 }

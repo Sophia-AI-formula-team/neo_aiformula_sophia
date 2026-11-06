@@ -30,6 +30,7 @@ public sealed class UnityRace {
     TcpClient net;BinaryReader netIn;BinaryWriter netOut;
     readonly ObjectTracker tracker=new ObjectTracker();
     readonly List<Prop> props=new List<Prop>();readonly List<float[]> rows=new List<float[]>(), frames=new List<float[]>();
+    readonly List<object> decisions=new List<object>();
     int k,near,gate,seenFrames,empty,coneseens,closestProp=-1;float startStation,previous,progress,peakProgress,lastAdvance;
     float minRoad=99,minGap=99,localGap=99;float[] zoneStart,zoneEnd,propMin;
     bool done; string status="running";float speed,yaw;int captures;float lastCapture=-99,lastLaneOffset;
@@ -133,6 +134,7 @@ public sealed class UnityRace {
         if(localGap<=0){Finish("obstacle");return;}if(road<0){Finish("boundary");return;}
         if(progress>=track.length*cfg.limit && (cfg.limit<.999f||gate==32)){Finish(cfg.limit<.999f?"segment":"lap");return;}
         if(t>260||t-lastAdvance>9){Finish("stalled");return;}
+        float?[] observed=null;List<Sight> tracks=null;
         if(k%(net==null?10:20)==0){
             List<Vector2> visible=new List<Vector2>();float[] lane;
             if(net!=null){
@@ -149,9 +151,14 @@ public sealed class UnityRace {
                 }
             }
             seenFrames++;if(lane.Count(v=>!float.IsNaN(v))<2)empty++;if(visible.Count>0)coneseens++;
-            if(!policy.Act(lane,tracker.Update(visible,pos,forward,t),Mathf.Max(0,speed),yaw)){Finish("lost_lane");return;}
+            observed=lane.Select(v=>float.IsNaN(v)?(float?)null:v).ToArray();
+            tracks=tracker.Update(visible,pos,forward,t);
+            if(!policy.Act(lane,tracks,Mathf.Max(0,speed),yaw,net==null?.10f:.20f)){Finish("lost_lane");return;}
         }
         d.SetAutonomousVelocityCommand(policy.speedCmd,policy.yawCmd);d.StepDrive(dt);scene.GetPhysicsScene().Simulate(dt);k++;
+        if(observed!=null)decisions.Add(new{t,speed,yaw,observed,tracks=tracks.Select(o=>new[]{o.z,o.x,o.vx,o.vz}).ToArray(),
+            policy.reason,policy.curvature,policy.cruise,policy.look,policy.target,policy.preferred,policy.offset,ratio=policy.chosenSpeed,
+            policy.guardCap,policy.conflictRange,policy.speedCmd,policy.yawCmd,d.MotorCommand.rightCan,d.MotorCommand.leftCan});
         if(d.MotorFault.Length>0||d.TireContact.Fault.Length>0)throw new InvalidOperationException(d.MotorFault+d.TireContact.Fault);
     }
     void Capture(float t){
@@ -169,7 +176,7 @@ public sealed class UnityRace {
         if(done)return;done=true;status=outcome;
         try{
             var result=new{status,seconds=k*dt,progress,length=track.length,gate,minRoad,minGap,seenFrames,empty,coneseens,
-                propMin,zoneStart,zoneEnd,rows,frames,profile=d.motorPlant.response.ToString(),coupled=d.TireContact.coupledRearContact,
+                propMin,zoneStart,zoneEnd,rows,frames,decisions,profile=d.motorPlant.response.ToString(),coupled=d.TireContact.coupledRearContact,
                 unity=Application.unityVersion,physicsStep=dt,props=props.Select(o=>new[]{o.home.x,o.home.y,o.right.x,o.right.y,o.amplitude,o.phase,o.hz,o.progress}).ToArray()};
             File.WriteAllText(cfg.output+".tmp",JsonConvert.SerializeObject(result));
             File.Move(cfg.output+".tmp",cfg.output);
