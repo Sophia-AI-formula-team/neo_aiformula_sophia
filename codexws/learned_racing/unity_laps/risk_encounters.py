@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 from learn_encounters import (CASES, FEATURES, FROZEN, HERE, LENGTH, NAMES, ROOT as V1, Lab, SIM, codebook, detector,
-                             digest, drive, external, outcome, predictive_scores, selected, write)
+                             digest, drive, evaluate_cases, external, outcome, predictive_scores, selected, write)
 
 ROOT=HERE/"learned_risk_revision"
 
@@ -123,12 +123,16 @@ def fit_risk(args):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","fit","external"]);p.add_argument("ids",nargs="*")
+    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","fit","external","replay"]);p.add_argument("ids",nargs="*")
     p.add_argument("--film",action="store_true");p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--matrix",type=Path)
     args=p.parse_args()
     if args.cmd!="fit" and not os.environ.get("AIFORMULA_LAP_COPY"):raise ValueError("Private Unity required")
     if args.cmd=="train":return rollouts(args)
     if args.cmd=="fit":return fit_risk(args)
+    if args.cmd=="replay":
+        cases=json.loads(args.matrix.read_bytes())["cases"]
+        return evaluate_cases(args,[("diag_"+c["id"],(c["seed"],c["approach"],c["props"],c["limitM"]),["learned"],args.film)
+                                    for c in cases if c["id"] in args.ids])
     return external(args)
 
 if __name__=="__main__":main()
