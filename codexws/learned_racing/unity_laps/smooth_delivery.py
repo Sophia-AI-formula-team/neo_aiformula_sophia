@@ -109,9 +109,15 @@ def development(args):
     arms,proof=verify_reshoot(args,args.base_original,args.trained_original)
     if (arms[1]["request"].get("smooth") or {}).get("modelId")!=args.model_id:raise ValueError("Unknown frozen development model")
     w=short_window(arms)
-    entry=dict(name="01b-development-replay",title="开发集复测 · 冻结前后同场实驾",case=args.trained_original,
+    halfway=args.base_original.startswith("ck32_")
+    if halfway and (arms[0]["request"].get("smooth") or {}).get("modelId")!=load(args.root/"checkpoints/ck32/model.json")["modelId"]:
+        raise ValueError("Development film did not use the 32-layout checkpoint")
+    name="01c-development-32-to-freeze" if halfway else "01b-development-replay"
+    title="开发集复测 · 32布局检查点与冻结版" if halfway else "开发集复测 · 基线与冻结版"
+    entry=dict(name=name,title=title,case=args.trained_original,
         selection="沿用开发时同一初始条件，重新拍摄的两臂均逐行复现原先的车身运动、余量与左右轮指令。",
-        baseId=args.base_replay,trainedId=args.trained_replay,kind="pair",phase="development-replay",
+        baseId=args.base_replay,trainedId=args.trained_replay,baseLabel="32 布局检查点" if halfway else "冻结基线 V2",trainedLabel="冻结长训策略",
+        kind="pair",phase="development-replay",
         replayCheck=proof,localScene=local_scene(arms[1],w["prop"]),**w)
     upsert(args.plan,entry)
 
@@ -130,6 +136,18 @@ def training_choice(args):
         kind="pair",phase="training-probes",trainedAction=forced,replayCheck=proof,
         choicesFileSHA256=digest(choice_path),localScene=local_scene(arms[1],windows["prop"]),**windows)
     upsert(args.plan,entry)
+
+
+def straight_case(runs,case):
+    lo,hi=12.,34.;times=[]
+    for arm in ("base","learned"):
+        raw=load(runs/(case+"_"+arm+".json"));rows=np.asarray(raw["rows"])
+        if raw["props"] or rows[-1,7]<hi:raise ValueError("Clear-road film requires the full prespecified window")
+        times.append(np.interp([lo,hi],rows[:,7],rows[:,0]))
+    return dict(name="02b-natural-cruise",title="自然无障碍直道 "+case.upper()+" · 实速达到 4 m/s 的距离",
+        case=case,kind="pair",start=float(np.min(times,axis=0)[0]-1.),end=float(np.max(times,axis=0)[1]+.6),prop=None,
+        localScene={"props":[],"categories":["clear"]},straightGate=[lo,hi],
+        selection="登记顺序中首个自然无障碍直道，同一 12–34 m 距离门。按车身实际测速累计达到 4.0 m/s 的行进里程。")
 
 
 def selection(args):
@@ -179,6 +197,9 @@ def selection(args):
         add(choice,f"{number:02}-"+category,caption+"  "+choice["id"].upper(),
             "补全实体场地类别；优先按登记顺序选择轨迹不同且长训能完成的场景")
     coverage={k:next(row["name"] for row in out if k in row["localScene"]["categories"]) for k in labels}
+    clear=next(p for p in pairs if p["scope"]=="segment" and p["family"]=="clear")
+    if all(clear[a]["straightGates"]["totals"]["coverage"]>=.999 for a in ("base","learned")):
+        out.append(straight_case(args.runs,clear["id"]))
     laps=[p for p in pairs if p["scope"]=="lap"]
     full=next((p for p in laps if ok(p,"learned")),laps[0])
     out.append(dict(name="04-first-complete-lap" if ok(full,"learned") else "04-full-attempt",
@@ -209,6 +230,7 @@ def film(args):
              "--start",str(spec["start"]),"--end",str(spec["end"]),"--title",spec["title"],"--out",str(temp)]
         if not is_probe:cmd.extend(("--model-id",args.model_id))
         if spec.get("baseLabel"):cmd.extend(("--base-label",spec["baseLabel"],"--trained-label",spec["trainedLabel"]))
+        if spec.get("straightGate"):cmd.extend(("--straight-gate",*map(str,spec["straightGate"])))
         if spec["prop"] is not None:cmd.extend(("--prop",str(spec["prop"])))
         subprocess.run(cmd,check=True)
     else:
@@ -278,4 +300,9 @@ if __name__=="__main__":
     for k in ("root","plan"):a.add_argument("--"+k,type=Path,required=True)
     for k in ("base-replay","trained-replay"):a.add_argument("--"+k,required=True)
     a.add_argument("--pair-number",type=int,choices=(1,2),required=True)
-    args=p.parse_args();{"plan":selection,"film":film,"assemble":assemble,"development":development,"training-choice":training_choice}[args.stage](args)
+    a=sub.add_parser("straight")
+    for k in ("root","plan"):a.add_argument("--"+k,type=Path,required=True)
+    a.add_argument("--case",required=True)
+    args=p.parse_args()
+    if args.stage=="straight":upsert(args.plan,straight_case(args.root/"runs",args.case))
+    else:{"plan":selection,"film":film,"assemble":assemble,"development":development,"training-choice":training_choice}[args.stage](args)

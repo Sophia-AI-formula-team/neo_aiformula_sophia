@@ -189,6 +189,10 @@ def render(args):
     if args.gate_report:
         from gap_film import GateView
         gate_view=GateView(args.gate_report,recs)
+    straight=None
+    if args.straight_gate:
+        from cruise_film import StraightGate
+        straight=StraightGate(recs,args.straight_gate)
     scene=LocalPaths(recs,args.start,args.end,args.prop,gate_view)
     identical_rows=recs[0].run["rows"]==recs[1].run["rows"]
     count=math.ceil((args.end-args.start)*FPS-1e-7)
@@ -197,7 +201,8 @@ def render(args):
     base=Image.new("RGB",SIZE,PAPER);d=ImageDraw.Draw(base)
     d.rectangle((0,0,SIZE[0],90),fill=INK);label(d,(40,45),args.title,39,WHITE,True)
     for x,title,color in zip(X,(args.base_label,args.trained_label),(BASE,FIT)):label(d,(x,119),title,29,color,True)
-    for x1,x2,head in ((27,693,"场地俯视 · 裁判"),(710,1369,"车身横摆 · 最近 4 秒"),(1385,2019,"双桶门裁判 · 物理实测" if gate_view else "实测余量 · 米")):
+    side_title="双桶门裁判 · 物理实测" if gate_view else "无障碍直道 · 实速 ≥4.0 m/s" if straight else "实测余量 · 米"
+    for x1,x2,head in ((27,693,"场地俯视 · 裁判"),(710,1369,"车身横摆 · 最近 4 秒"),(1385,2019,side_title)):
         d.rounded_rectangle((x1,824,x2,1281),radius=15,fill=WHITE);label(d,(x1+18,858),head,26,INK,True)
     label(d,(43,1306),"同一仿真时钟  ·  路径与余量来自裁判；目标偏航和轮速差来自车辆发出的控制指令。",21,MUTED)
     d.rectangle((0,1342,SIZE[0],SIZE[1]),fill=INK)
@@ -243,6 +248,8 @@ def render(args):
                 chart_yaw(d,r,s,741,934+j*157,592,96,col)
                 if gate_view:
                     gate_view.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col)
+                elif straight:
+                    straight.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col)
                 else:
                     label(d,(1410,920+j*131),args.base_label if j==0 else args.trained_label,22,col,True)
                     margin(d,1412,961+j*131,"锥桶",row[10] if r.run["props"] else None)
@@ -253,6 +260,8 @@ def render(args):
             label(d,(736,1249),"彩色实线：车身实测     灰虚线：偏航指令（rad/s）",18,MUTED)
             if gate_view:
                 gate_view.footer(d,samples)
+            elif straight:
+                straight.footer(d)
             else:
                 label(d,(1411,1199),"黑线 = 0.50 m",21,INK,True)
                 label(d,(1411,1244),"超过 0.50 m 的部分不增加余量奖励。",19,MUTED)
@@ -286,6 +295,7 @@ def render(args):
             "terminalStates":[r.run["status"] for r in recs],"identicalPhysicalRows":identical_rows,
             "physicalProps":recs[0].run["props"],"localRefereeRoad":scene.road_check,"sampledFrames":samples_checked}
     if gate_view:report["gateReferee"]=gate_view.provenance
+    if straight:report["clearStraight"]=straight.provenance
     args.out.with_suffix(".json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(json.dumps({k:report[k] for k in ("ids","frames","mp4SHA256")},ensure_ascii=False))
 
@@ -297,5 +307,6 @@ if __name__=="__main__":
     p.add_argument("--prop",type=int);p.add_argument("--out",required=True,type=Path)
     p.add_argument("--model-id",help="Require the exact frozen smooth-controller model ID")
     p.add_argument("--gate-report",type=Path,help="Second-stage paired gate judge with true crossing times")
+    p.add_argument("--straight-gate",nargs=2,type=float,metavar=("START_M","END_M"))
     for name in ("start","end"):p.add_argument("--"+name,type=float,required=True)
     render(p.parse_args())
