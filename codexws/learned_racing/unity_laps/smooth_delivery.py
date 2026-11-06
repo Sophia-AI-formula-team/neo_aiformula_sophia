@@ -53,8 +53,7 @@ def yaw(p):
     return vals[1]/vals[0]-1
 
 
-def short_scene(p,runs):
-    arms=[load(runs/(p["id"]+"_"+a+".json")) for a in ("base","learned")]
+def short_window(arms):
     failures=[r for r in arms if r["status"] in ("obstacle","boundary")]
     if not arms[0]["props"]:
         return dict(start=2.,end=min(12.,max(r["seconds"] for r in arms)),prop=None)
@@ -70,6 +69,33 @@ def short_scene(p,runs):
     first=min(first,min(r["seconds"] for r in arms)-.3)
     last=min(max(r["seconds"] for r in arms),max(ends or [first+8])+1)
     return dict(start=float(f"{first:.2f}"),end=last,prop=prop)
+
+
+def short_scene(p,runs):
+    return short_window([load(runs/(p["id"]+"_"+a+".json")) for a in ("base","learned")])
+
+
+def development(args):
+    plan=load(args.plan);runs=args.root/"runs";arms=[];proof={}
+    for role in ("base","trained"):
+        original=getattr(args,role+"_original");replay=getattr(args,role+"_replay")
+        source=runs/(original+".json");captured=runs/(replay+".json")
+        old,new=load(source),load(captured)
+        for k in ("props","rows","status","seconds","progress","minGap","minRoad","zoneStart","zoneEnd","propMin"):
+            if old[k]!=new[k]:raise ValueError(f"{original} vs {replay}: physical record differs in {k}")
+        keys=("t","speedCmd","yawCmd","rightCan","leftCan")
+        cmd=lambda data:[[d[k] for k in keys] for d in data["decisions"]]
+        if cmd(old)!=cmd(new):raise ValueError(f"{original} vs {replay}: wheel or yaw/speed commands differ")
+        arms.append(new);proof[role]=dict(original=original,replay=replay,originalSHA256=digest(source),
+            replaySHA256=digest(captured),equalPhysicalRows=len(new["rows"]),equalCommandTicks=len(new["decisions"]))
+    if (arms[1]["request"].get("smooth") or {}).get("modelId")!=args.model_id:raise ValueError("Unknown frozen development model")
+    w=short_window(arms)
+    entry=dict(name="01b-development-replay",title="开发集复测 · 冻结前后同场实驾",case=args.trained_original,
+        selection="沿用开发时同一初始条件，重新拍摄的两臂均逐行复现原先的车身运动与速度、偏航、左右轮指令。",
+        baseId=args.base_replay,trainedId=args.trained_replay,kind="pair",phase="development-replay",
+        replayCheck=proof,localScene=local_scene(arms[1],w["prop"]),**w)
+    plan["cases"]=[c for c in plan["cases"] if c["name"]!=entry["name"]]+[entry]
+    plan["cases"].sort(key=lambda c:c["name"]);save(args.plan,plan)
 
 
 def selection(args):
@@ -135,7 +161,8 @@ def selection(args):
 
 def film(args):
     spec=next(x for x in load(args.plan)["cases"] if x["name"]==args.name)
-    name=spec["name"];case=spec["case"];raw=args.root/".work";base,learned=case+"_base",case+"_learned"
+    name=spec["name"];case=spec["case"];raw=args.root/".work"
+    base,learned=spec.get("baseId",case+"_base"),spec.get("trainedId",case+"_learned")
     cfg=load(args.root/"runs"/(learned+".json"))["request"].get("smooth") or {}
     if cfg.get("modelId")!=args.model_id or cfg.get("mode")=="probe":raise ValueError("Not the frozen model")
     temp=args.package/".work"/name/(name+".mp4");temp.parent.mkdir(parents=True,exist_ok=True)
@@ -205,4 +232,7 @@ if __name__=="__main__":
     for k in ("name","model-id"):a.add_argument("--"+k,required=True)
     a=sub.add_parser("assemble")
     for k in ("plan","package"):a.add_argument("--"+k,type=Path,required=True)
-    args=p.parse_args();{"plan":selection,"film":film,"assemble":assemble}[args.stage](args)
+    a=sub.add_parser("development")
+    for k in ("root","plan"):a.add_argument("--"+k,type=Path,required=True)
+    for k in ("base-original","base-replay","trained-original","trained-replay","model-id"):a.add_argument("--"+k,required=True)
+    args=p.parse_args();{"plan":selection,"film":film,"assemble":assemble,"development":development}[args.stage](args)
