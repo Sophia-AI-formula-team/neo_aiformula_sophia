@@ -1,0 +1,23 @@
+"""Frozen, no-refit lateral-acceleration uncertainty diagnostic; Unity is already owned."""
+import argparse
+import json
+from pathlib import Path
+from risk_trials import run_group
+from run import HERE,Lab,SIM
+
+ROOT=HERE/"risk_revision"
+REGRESSION=(20318,57846,93677)
+FRESH=(36721,82139)
+WEIGHTS=(4.45,7.4,6.8,3.4,.27,5.,1.1,.8,-.5,1.4,1.9,1.15)
+
+if __name__=="__main__":
+    parser=argparse.ArgumentParser()
+    parser.add_argument("phase",choices=["diagnose","pair"])
+    args=parser.parse_args()
+    if args.phase=="diagnose":
+        lab=Lab(SIM,ROOT)
+        run_group(lab,"reversal",WEIGHTS,[(s,True) for s in REGRESSION],"outer-edge")
+    else:
+        for name,solver in (("prior","f25947e8af56df"),("reversal",None)):
+            lab=Lab(SIM,ROOT,solver)
+            run_group(lab,name,WEIGHTS,[(s,True) for s in FRESH],"outer-edge")
