@@ -1,0 +1,42 @@
+name: Road detector Header contract
+
+on:
+  pull_request:
+    paths:
+      - 'workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py'
+      - 'workspace/src/aiformula/perception/road_detector/test/test_output_contract.py'
+      - 'workspace/src/aiformula/perception/road_detector/package.xml'
+      - 'workspace/src/aiformula/perception/road_detector/setup.py'
+      - '.github/workflows/road-detector-header.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py'
+      - 'workspace/src/aiformula/perception/road_detector/test/test_output_contract.py'
+      - 'workspace/src/aiformula/perception/road_detector/package.xml'
+      - 'workspace/src/aiformula/perception/road_detector/setup.py'
+      - '.github/workflows/road-detector-header.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-header:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Install isolated test dependencies
+        run: python -m pip install 'pytest==8.3.5' 'numpy==1.24.4' 'opencv-python-headless==4.10.0.84'
+      - name: Verify production callback and image outputs without ROS or inference
+        run: python -B -m pytest -q workspace/src/aiformula/perception/road_detector/test/test_output_contract.py --junitxml=work/header.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: road-detector-header-contract
+          path: work/header.xml
+          retention-days: 14

@@ -1,3 +1,10 @@
+# Header repair prepared — 2026-11-06
+
+road_detector 0.0.1 restores full independent source Headers on both image outputs.
+Existing offline regression: 4 passed (before repair: 1 passed, 3 failed).
+[Repair receipt](receipts/2026-11-06-planner-header-fix-037.md).
+YOLOP and fixed-trajectory code are unchanged; this is not vehicle deployment.
+
 # 当前状态：2026-11-04 实验源码选择
 
 用户授权先合并 1027/1102 实验版本，保留已知问题并准备回退；不改变下方历史验收结论。
