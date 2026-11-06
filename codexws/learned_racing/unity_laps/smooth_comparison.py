@@ -48,7 +48,7 @@ def pose_hull(row,project):
 
 
 class LocalPaths:
-    def __init__(self,records,start,end,prop_index):
+    def __init__(self,records,start,end,prop_index,gate_view=None):
         a=records[0]
         mid=a.rows[at(a.rt,(start+min(a.run["seconds"],end))*.5)]
         props=a.run["props"]
@@ -56,8 +56,11 @@ class LocalPaths:
         if props and anchor is None: anchor=min(range(len(props)),key=lambda i:abs(props[i][7]-mid[7]))
         if anchor is not None and not 0<=anchor<len(props):raise ValueError("Unknown local prop")
         self.props=[] if anchor is None else [p for p in props if abs(p[7]-props[anchor][7])<=8.]
+        self.gate_view=gate_view
+        if gate_view:self.props=[props[i] for i in gate_view.indices]
         if self.props:
             prop=props[anchor];self.center=prop[:2];self.right=prop[2:4]
+            if gate_view:self.center=np.mean([p[:2] for p in self.props],axis=0)
         else:
             self.center=mid[1:3];self.right=(math.cos(mid[3]),-math.sin(mid[3]))
         self.forward=(-self.right[1],self.right[0])
@@ -70,6 +73,11 @@ class LocalPaths:
                 if start<=row[0]<=end and -10<=f<=7:lateral.append(l)
         self.mid_lat=(max(lateral)+min(lateral))*.5
         self.scale=min(36,250/(max(lateral)-min(lateral)+1))
+        self.origin=383
+        if gate_view:
+            bounds=[self.local(*p[:2])[0] for p in self.props]
+            self.scale=min(self.scale,580/(max(bounds)-min(bounds)+7.))
+            self.origin=315
         self.records=records
         self.ground=Image.new("RGB",(630,330),"#eaf1eb")
         self.road_check=self.draw_road(start,end)
@@ -87,7 +95,7 @@ class LocalPaths:
         if not errors or max(errors)>.10:raise ValueError("Post-race road frame does not match logged lane-offset measurements")
         d=ImageDraw.Draw(self.ground)
         for j in range(-20,15,2):
-            x=383+j*self.scale;d.line((x,0,x,330),fill=GRID)
+            x=self.origin+j*self.scale;d.line((x,0,x,330),fill=GRID)
             y=164+(j-self.mid_lat)*self.scale;d.line((0,y,630,y),fill=GRID)
         for edge,points in enumerate(edges):
             pts=[self.project(x,z) for x,z in points]
@@ -103,10 +111,11 @@ class LocalPaths:
 
     def project(self,x,z):
         f,l=self.local(x,z)
-        return (round(383+f*self.scale),round(164+(l-self.mid_lat)*self.scale))
+        return (round(self.origin+f*self.scale),round(164+(l-self.mid_lat)*self.scale))
 
     def draw(self,samples,t):
         f=self.ground.copy();d=ImageDraw.Draw(f)
+        if self.gate_view:self.gate_view.draw_gates(d,self.project,t)
         for p in self.props:
             x,y=self.project(*position(p,t))
             if p[4] and p[6]:
@@ -158,6 +167,8 @@ def margin(d,x,y,name,value):
 
 
 def selected_text(dec):
+    gap=dec.get("gap") or {}
+    if gap.get("state")=="visible_opening":return f"选择可见开口  ·  偏移 {gap['offset']:+.2f} m"
     reason=dec.get("reason","")
     tags={"road":"沿道路选线","yield":"避让","recover":"恢复速度","go_first":"选择先行",
           "learned_encounter":"执行学习动作","insufficient_lane":"道路观测不足","hold_pass":"保持通过侧"}
@@ -173,7 +184,12 @@ def selected_text(dec):
 
 
 def render(args):
-    recs=pair(args);scene=LocalPaths(recs,args.start,args.end,args.prop)
+    recs=pair(args)
+    gate_view=None
+    if args.gate_report:
+        from gap_film import GateView
+        gate_view=GateView(args.gate_report,recs)
+    scene=LocalPaths(recs,args.start,args.end,args.prop,gate_view)
     identical_rows=recs[0].run["rows"]==recs[1].run["rows"]
     count=math.ceil((args.end-args.start)*FPS-1e-7)
     terminal=any(abs(args.end-r.run["seconds"])<.00002 and r.run["status"] in ("obstacle","boundary") for r in recs)
@@ -181,7 +197,7 @@ def render(args):
     base=Image.new("RGB",SIZE,PAPER);d=ImageDraw.Draw(base)
     d.rectangle((0,0,SIZE[0],90),fill=INK);label(d,(40,45),args.title,39,WHITE,True)
     for x,title,color in zip(X,(args.base_label,args.trained_label),(BASE,FIT)):label(d,(x,119),title,29,color,True)
-    for x1,x2,head in ((27,693,"场地俯视 · 裁判"),(710,1369,"车身横摆 · 最近 4 秒"),(1385,2019,"实测余量 · 米")):
+    for x1,x2,head in ((27,693,"场地俯视 · 裁判"),(710,1369,"车身横摆 · 最近 4 秒"),(1385,2019,"双桶门裁判 · 物理实测" if gate_view else "实测余量 · 米")):
         d.rounded_rectangle((x1,824,x2,1281),radius=15,fill=WHITE);label(d,(x1+18,858),head,26,INK,True)
     label(d,(43,1306),"同一仿真时钟  ·  路径与余量来自裁判；目标偏航和轮速差来自车辆发出的控制指令。",21,MUTED)
     d.rectangle((0,1342,SIZE[0],SIZE[1]),fill=INK)
@@ -225,15 +241,21 @@ def render(args):
                 label(d,(x+957,782),f"左−右目标轮速 {conf['leftCan']-conf['rightCan']:+d} rpm",19,MUTED,anchor="rm")
                 label(d,(735,913+j*157),args.base_label if j==0 else args.trained_label,18,col,True)
                 chart_yaw(d,r,s,741,934+j*157,592,96,col)
-                label(d,(1410,920+j*131),args.base_label if j==0 else args.trained_label,22,col,True)
-                margin(d,1412,961+j*131,"锥桶",row[10] if r.run["props"] else None)
-                margin(d,1715,961+j*131,"道路边界",row[9])
+                if gate_view:
+                    gate_view.stats(d,j,s["t"],args.base_label if j==0 else args.trained_label,col)
+                else:
+                    label(d,(1410,920+j*131),args.base_label if j==0 else args.trained_label,22,col,True)
+                    margin(d,1412,961+j*131,"锥桶",row[10] if r.run["props"] else None)
+                    margin(d,1715,961+j*131,"道路边界",row[9])
             im.paste(scene.draw(samples,t),(45,890))
             trail_note="两臂实测轨迹逐行相同" if identical_rows else "最近 2.5 s 轨迹"
             label(d,(45,1249),f"橙 · {args.base_label}    青 · {args.trained_label}    {trail_note}",19,MUTED)
             label(d,(736,1249),"彩色实线：车身实测     灰虚线：偏航指令（rad/s）",18,MUTED)
-            label(d,(1411,1199),"黑线 = 0.50 m",21,INK,True)
-            label(d,(1411,1244),"超过 0.50 m 的部分不增加余量奖励。",19,MUTED)
+            if gate_view:
+                gate_view.footer(d,samples)
+            else:
+                label(d,(1411,1199),"黑线 = 0.50 m",21,INK,True)
+                label(d,(1411,1244),"超过 0.50 m 的部分不增加余量奖励。",19,MUTED)
             if index in checks:
                 samples_checked.append({"i":index,"simTime":t,"sources":[{"chase":s["frame_id"],"a4":s["decision_id"],"chaseS":s["frame_t"],"a4S":s["decision"]["t"],
                     "stopped":s["stopped"],"measuredSpeedMps":s["row"][4],"measuredYawRadS":s["row"][14],
@@ -263,6 +285,7 @@ def render(args):
             "frames":count+hold,"size":SIZE,"fps":FPS,"mp4SHA256":digest(args.out),"runSHA256":[digest(r.path) for r in recs],
             "terminalStates":[r.run["status"] for r in recs],"identicalPhysicalRows":identical_rows,
             "physicalProps":recs[0].run["props"],"localRefereeRoad":scene.road_check,"sampledFrames":samples_checked}
+    if gate_view:report["gateReferee"]=gate_view.provenance
     args.out.with_suffix(".json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     print(json.dumps({k:report[k] for k in ("ids","frames","mp4SHA256")},ensure_ascii=False))
 
@@ -273,5 +296,6 @@ if __name__=="__main__":
     p.add_argument("--base-label",default="冻结基线");p.add_argument("--trained-label",default="长训策略")
     p.add_argument("--prop",type=int);p.add_argument("--out",required=True,type=Path)
     p.add_argument("--model-id",help="Require the exact frozen smooth-controller model ID")
+    p.add_argument("--gate-report",type=Path,help="Second-stage paired gate judge with true crossing times")
     for name in ("start","end"):p.add_argument("--"+name,type=float,required=True)
     render(p.parse_args())
