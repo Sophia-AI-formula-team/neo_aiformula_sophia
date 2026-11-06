@@ -63,28 +63,36 @@ def identify(training):
         t,x,command = r[:,0],r[:,8],r[:,11]
         v = r[:,4]
         rate = (x[4:]-x[:-4]) / (t[4:]-t[:-4])
-        rates.extend(abs(rate[abs(rate)>.10]))
         all_speeds.extend(v[v>1.])
         clear.extend(v[(v>1.) & (abs(r[:,14])<.1)])
         safe_gaps.append(record["minGap"])
         if np.ptp(x)<.6 or np.ptp(command)<.6:
             continue
-        # Align commanded and realized lateral velocity. The envelope retains
-        # tracking lag, including the observed camera/control latency.
-        dx,dc=np.diff(x),np.diff(command)
-        error=[]
-        for lag in range(10):
-            a=dx[lag:];b=dc[:len(a)]
-            error.append(np.dot(a,b)/max(1e-9,np.linalg.norm(a)*np.linalg.norm(b)))
-        lags.append(np.argmax(error)*np.median(np.diff(t)))
+        selection=next((d for d in record["decisions"] if (d.get("smooth") or {}).get("state")=="selected"),None)
+        if selection is None:continue
+        start=int(np.searchsorted(t,selection["t"]))
+        # Detect the onset of a commanded quarter-half-width lateral shift and
+        # time the first corresponding physical displacement of that size.
+        threshold=.38/4
+        steps=np.flatnonzero(abs(command[start:]-command[start])>=threshold)
+        if not len(steps):continue
+        change=start+steps[0];direction=np.sign(command[change]-command[start])
+        finish=np.searchsorted(t,t[change]+3.)
+        moved=np.flatnonzero(direction*(x[change:finish]-x[change])>=threshold)
+        if not len(moved):continue
+        lags.append(float(t[change+moved[0]]-t[change]))
+        # Characterize attainable motion during a maneuver, distinct from the
+        # many logged straight samples with little demand for lateral movement.
+        segment=direction*rate[change:min(len(rate),finish)]
+        rates.append(float(np.quantile(segment,.90)))
     if len(inputs)<250 or not lags:
         raise ValueError("Need the recorded long training set")
     fast=np.quantile(clear,.9)
     quantiles=np.quantile(all_speeds,[.12,.40,.72])
     fractions=sorted(set([1.,*(min(.96,float(v/fast)) for v in quantiles)]),reverse=True)
-    estimate=dict(lateralRate=float(np.quantile(rates,.86)), responseTime=float(np.median(lags)),
+    estimate=dict(lateralRate=float(np.quantile(rates,.75)), responseTime=float(np.median(lags)),
                   speedFractions=fractions, measuredFastMps=float(fast), gaps=np.quantile(safe_gaps,[.10,.30]).tolist(),
-                  successfulSources=inputs)
+                  matchedLateralResponses=len(lags),successfulSources=inputs)
     return estimate
 
 
