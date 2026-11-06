@@ -127,17 +127,41 @@ def film_training(args):
         name="film_"+sample
         with detector(lab,"outer-edge",name,film=True) as (port,release):
             r=run_one(lab,name,case,ref["request"]["smooth"],port,release,True)
-        physics=r["rows"]==ref["rows"]
-        commands=lambda run:[(d["t"],d["speedCmd"],d["yawCmd"],d["rightCan"],d["leftCan"]) for d in run["decisions"]]
-        paired_commands=commands(r)==commands(ref)
-        matched=physics and r["decisions"]==ref["decisions"]
-        write(args.output/"film_replays"/(name+".json"),dict(trainingId=sample,replayId=name,
-              matchesPhysics=physics,matchesFinalCommands=paired_commands,matchesPhysicsAndPerceptionAndCommands=matched,
-              rows=len(r["rows"]),decisions=len(r["decisions"])))
-        if not (physics and paired_commands):print("Capture affected the driving trace; label as a separate rerun:",name,flush=True)
+        receipt=replay_evidence(ref,r)
+        write(args.output/"film_replays"/(name+".json"),receipt)
+        if not (receipt["physicalBodyTraceExact"] and receipt["finalWheelCommandsExact"]):
+            print("Capture affected the driving trace; label as a separate rerun:",name,flush=True)
+
+def replay_evidence(ref,r):
+    body=[0,1,2,3,4,7,8,9,10,14]
+    wheels=lambda run:[(d["t"],d["rightCan"],d["leftCan"]) for d in run["decisions"]]
+    dx=np.array(r["rows"]);dy=np.array(ref["rows"])
+    same_shape=dx.shape==dy.shape
+    continuous=lambda run:[(d["t"],d["speedCmd"],d["yawCmd"]) for d in run["decisions"]]
+    return dict(trainingId=ref["id"],replayId=r["id"],allRecordedRowsExact=r["rows"]==ref["rows"],
+                physicalBodyTraceExact=same_shape and np.array_equal(dx[:,body],dy[:,body]),
+                finalWheelCommandsExact=wheels(r)==wheels(ref),continuousSpeedAndYawCommandsExact=continuous(r)==continuous(ref),
+                allPerceptionAndPolicyFieldsExact=r["decisions"]==ref["decisions"],
+                maximumColumnDifferences=np.max(abs(dx-dy),axis=0).tolist() if same_shape else None,
+                rows=len(dx),decisions=len(r["decisions"]))
+
+def fixed_zero_regression(args):
+    if json.loads((args.output/"fixed_reference.json").read_bytes())["chosen"]["action"]!=0:
+        raise ValueError("The registered constant winner is a different action")
+    ref=json.loads((args.output/"runs/tr001_a0.json").read_bytes())
+    case=json.loads((args.output/"training_layouts.json").read_bytes())["tr001"]
+    lab=Lab(SIM,args.output)
+    with detector(lab,"outer-edge","fixed_zero_check") as (port,release):
+        actual=run_one(lab,"fixed_zero_reference_check",case,None,port,release,False)
+    prior=[{k:v for k,v in d.items() if k!="smooth"} for d in ref["decisions"]]
+    new=[{k:v for k,v in d.items() if k!="smooth"} for d in actual["decisions"]]
+    evidence=dict(trainingProbe=ref["id"],noSmooth=actual["id"],physicsExact=actual["rows"]==ref["rows"],
+                  allReferenceDecisionFieldsExact=prior==new)
+    write(args.output/"fixed_zero_check.json",evidence)
+    assert evidence["physicsExact"] and evidence["allReferenceDecisionFieldsExact"]
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","eval","parity","film_training"])
+    p=argparse.ArgumentParser();p.add_argument("cmd",choices=["train","eval","parity","film_training","fixed_zero_check"])
     p.add_argument("--start",type=int,default=1);p.add_argument("--end",type=int,default=80)
     p.add_argument("--output",type=Path,default=ROOT);p.add_argument("--matrix",type=Path)
     p.add_argument("--model",type=Path);p.add_argument("--film",action="store_true");p.add_argument("--tag",default="")
@@ -148,5 +172,6 @@ def main():
     if args.cmd=="train":return training(args)
     if args.cmd=="parity":return parity(args)
     if args.cmd=="film_training":return film_training(args)
+    if args.cmd=="fixed_zero_check":return fixed_zero_regression(args)
     return evaluate(args)
 if __name__=="__main__":main()
