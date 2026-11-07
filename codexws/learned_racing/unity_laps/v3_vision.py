@@ -39,20 +39,26 @@ class VisibleRoad:
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("release",type=Path);p.add_argument("ready",type=Path)
-    p.add_argument("--model",type=Path);a=p.parse_args();sys.path.insert(0,str(a.release))
+    p.add_argument("--model",type=Path);p.add_argument("--audit",action="store_true")
+    a=p.parse_args();sys.path.insert(0,str(a.release))
     from yolop_a3_runtime import PerceptionModel
     weights=a.release/"weights/shared_best.pth";sha=hashlib.sha256(weights.read_bytes()).hexdigest()
     if json.loads((a.release/"weights/manifest.json").read_bytes())["sha256"]!=sha:raise ValueError("A4 weight hash")
     model=PerceptionModel(str(weights),device="cuda");model.predict(np.zeros((360,640,3),np.uint8))
-    params=json.loads(a.model.read_bytes())["parameters"] if a.model else None
+    record=json.loads(a.model.read_bytes()) if a.model else {}
+    params=record.get("parameters")
+    planner_type=Planner
+    if a.audit:
+        from acceptance_audit import AuditedPlanner
+        planner_type=AuditedPlanner
     with socket.socket() as server:
         server.bind(("127.0.0.1",0));server.listen(1)
         control_sha=hashlib.sha256((Path(__file__).parent/"v3_model.py").read_bytes()+Path(__file__).read_bytes()+(a.model.read_bytes() if a.model else b"default")).hexdigest()
-        a.ready.write_text(json.dumps(dict(port=server.getsockname()[1],weights=sha,controlSha=control_sha,version="V3.1" if params else "V3.0",sensorContract="camera pixels, wheel proxy RPM, raw gyro")),encoding="utf8")
+        a.ready.write_text(json.dumps(dict(port=server.getsockname()[1],weights=sha,controlSha=control_sha,version=record.get("version","V3.0"),sensorContract="camera pixels, wheel proxy RPM, raw gyro")),encoding="utf8")
         while True:
             connection,_=server.accept()
             with connection:
-                observer=VisibleRoad();planner=Planner(params);tracker=LocalTracker();last=None;frame=0
+                observer=VisibleRoad();planner=planner_type(params);tracker=LocalTracker();last=None;frame=0
                 try:
                     while True:
                         n=struct.unpack("<I",receive(connection,4))[0]

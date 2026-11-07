@@ -1,0 +1,1765 @@
+{
+  "totals": {
+    "V3_0": {
+      "completed": 2,
+      "cases": 16,
+      "full_laps": 0,
+      "full_lap_attempts": 3,
+      "collisions": 0,
+      "departures": 14
+    },
+    "V3_2": {
+      "completed": 2,
+      "cases": 16,
+      "full_laps": 0,
+      "full_lap_attempts": 3,
+      "collisions": 2,
+      "departures": 12
+    }
+  },
+  "cases": [
+    {
+      "case": {
+        "id": "01",
+        "title": "随机起点：空场完整一圈",
+        "kind": "full_clear",
+        "seed": 965834308,
+        "props": [],
+        "limitM": 280.87656260722264,
+        "full_lap": true,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "01_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 7.66,
+          "progress_m": 17.3240967,
+          "target_m": 280.87656260722264,
+          "travel_m": 18.63962872472412,
+          "mean_body_speed": 2.4333718961780835,
+          "peak_body_speed": 4.36133146,
+          "clear_straight_distance_m": 11.860102068076985,
+          "clear_straight_mean_speed": 2.1331118827476594,
+          "clear_straight_at_least_4_distance_fraction": 0.3921002346397679,
+          "yaw_command_tv_per_s": 0.8420365422976502,
+          "min_body_road_clearance": -0.7372112,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 11,
+          "decision_frames": 39,
+          "first_body_edge": 6.2,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.48128222393368736,
+          "terminal_wheel_gaps": [
+            -0.56392765,
+            -0.0021147728,
+            -0.0158529282
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "1c673c7d17a6ba951833f4383256aa8e9c68d6230b508be5c69ceff1287e6023"
+        },
+        "V3_2": {
+          "id": "01_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 7.10999966,
+          "progress_m": 18.4734955,
+          "target_m": 280.87656260722264,
+          "travel_m": 19.552387285964166,
+          "mean_body_speed": 2.749984278615868,
+          "peak_body_speed": 4.387306,
+          "clear_straight_distance_m": 12.619967897608035,
+          "clear_straight_mean_speed": 2.5189558391323392,
+          "clear_straight_at_least_4_distance_fraction": 0.3069367486789812,
+          "yaw_command_tv_per_s": 0.9895188177828971,
+          "min_body_road_clearance": -0.723835468,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 8,
+          "decision_frames": 36,
+          "first_body_edge": 5.06999969,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.07561776631304044,
+          "terminal_wheel_gaps": [
+            -0.5902672,
+            -0.0019903183,
+            -0.146221638
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "0d6c8d2cca59af9d79f9437add6344f790f76537b5905b46c2f50b3f7e47a75a"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "02",
+        "title": "另一随机起点：空场完整一圈",
+        "kind": "full_clear",
+        "seed": 934903929,
+        "props": [],
+        "limitM": 280.87656260722264,
+        "full_lap": true,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "02_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 7.50999975,
+          "progress_m": 14.870163,
+          "target_m": 280.87656260722264,
+          "travel_m": 16.377057168587168,
+          "mean_body_speed": 2.18070009504157,
+          "peak_body_speed": 4.3808527,
+          "clear_straight_distance_m": 9.604031959340817,
+          "clear_straight_mean_speed": 1.7752370430961328,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 1.4603958920238311,
+          "min_body_road_clearance": -0.8584571,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 21,
+          "decision_frames": 38,
+          "first_body_edge": 6.39,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.1311332914139427,
+          "terminal_wheel_gaps": [
+            -0.6479001,
+            -0.130008221,
+            -0.004867077
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "35e9b521a5e89ddb19d539deaa57724f14f877a2414283af2042d5a9da9500f9"
+        },
+        "V3_2": {
+          "id": "02_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 8.96,
+          "progress_m": 14.8827972,
+          "target_m": 280.87656260722264,
+          "travel_m": 16.30427104395407,
+          "mean_body_speed": 1.8196731075841595,
+          "peak_body_speed": 3.65459943,
+          "clear_straight_distance_m": 10.874024483732164,
+          "clear_straight_mean_speed": 1.5851347643924434,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 2.278324848883928,
+          "min_body_road_clearance": -0.8087015,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 24,
+          "decision_frames": 45,
+          "first_body_edge": 7.62,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.829166428707911,
+          "terminal_wheel_gaps": [
+            -0.611619,
+            -0.07521677,
+            -0.00254964828
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "3a8c6122cf109491e9a8a31efb29aadc061f7b577e3abec3c1beabf5df44fadc"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "03",
+        "title": "动静混合：完整一圈",
+        "kind": "full_traffic",
+        "seed": 916368216,
+        "props": [
+          [
+            22,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            88,
+            -0.4,
+            0,
+            0,
+            0
+          ],
+          [
+            92,
+            0.5,
+            1.1,
+            0.7,
+            0.6
+          ],
+          [
+            196,
+            -0.3,
+            1.2,
+            0.55,
+            2.1
+          ]
+        ],
+        "limitM": 280.87656260722264,
+        "full_lap": true,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "03_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 19.71,
+          "progress_m": 48.5926666,
+          "target_m": 280.87656260722264,
+          "travel_m": 50.67649409485945,
+          "mean_body_speed": 2.571105737943148,
+          "peak_body_speed": 4.456656,
+          "clear_straight_distance_m": 12.358046398878026,
+          "clear_straight_mean_speed": 3.520809836463591,
+          "clear_straight_at_least_4_distance_fraction": 0.7375865024802202,
+          "yaw_command_tv_per_s": 1.1719886342748242,
+          "min_body_road_clearance": -0.921020031,
+          "min_cone_clearance": 0.1646764,
+          "obstacles_passed": 1,
+          "obstacles_total": 4,
+          "encounter_seconds": null,
+          "no_feasible_frames": 50,
+          "decision_frames": 99,
+          "first_body_edge": 18.83,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.5909063174663156,
+          "terminal_wheel_gaps": [
+            -0.691781044,
+            -0.205984116,
+            -0.0025305748
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "3ac586117962ebc0bac5ab4e95ad3bbe73f8e09f03bf4c12d36df172607a5c8e"
+        },
+        "V3_2": {
+          "id": "03_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": true,
+          "seconds": 15.11,
+          "progress_m": 50.78418,
+          "target_m": 280.87656260722264,
+          "travel_m": 51.576621048109544,
+          "mean_body_speed": 3.413409731840473,
+          "peak_body_speed": 4.46148252,
+          "clear_straight_distance_m": 14.446509061583285,
+          "clear_straight_mean_speed": 2.8271054915035787,
+          "clear_straight_at_least_4_distance_fraction": 0.6268720156596423,
+          "yaw_command_tv_per_s": 1.354537607621966,
+          "min_body_road_clearance": -0.8818445,
+          "min_cone_clearance": 0.0558042228,
+          "obstacles_passed": 1,
+          "obstacles_total": 4,
+          "encounter_seconds": null,
+          "no_feasible_frames": 22,
+          "decision_frames": 76,
+          "first_body_edge": 13.92,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.1673482336918592,
+          "terminal_wheel_gaps": [
+            -0.664827347,
+            -0.157094,
+            -0.00572443
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "6efe2fee781b9425aac43849dded0559927e7ce31dacb0f3194d9f55d38ed868"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "04",
+        "title": "无障碍直路：实际提速与摆动",
+        "kind": "cruise",
+        "seed": 929118737,
+        "props": [],
+        "limitM": 38,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "04_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.809999,
+          "progress_m": 24.3244476,
+          "target_m": 38,
+          "travel_m": 25.126891098191233,
+          "mean_body_speed": 2.8520878490668653,
+          "peak_body_speed": 4.478868,
+          "clear_straight_distance_m": 18.254921314068167,
+          "clear_straight_mean_speed": 2.7205549977083705,
+          "clear_straight_at_least_4_distance_fraction": 0.16686274789075597,
+          "yaw_command_tv_per_s": 1.7439912346414568,
+          "min_body_road_clearance": -0.8004637,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 12,
+          "decision_frames": 45,
+          "first_body_edge": 8.28,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.5978990226765049,
+          "terminal_wheel_gaps": [
+            -0.6067996,
+            -0.06621027,
+            -0.007139206
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "53880ddab537272f18d0e4dac311bdc032ea413fc22ab2fe78322f4aa91232d0"
+        },
+        "V3_2": {
+          "id": "04_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 7.02,
+          "progress_m": 20.2991333,
+          "target_m": 38,
+          "travel_m": 21.102683323088495,
+          "mean_body_speed": 3.0060802454542017,
+          "peak_body_speed": 4.37105,
+          "clear_straight_distance_m": 15.523648591120939,
+          "clear_straight_mean_speed": 3.155213128276614,
+          "clear_straight_at_least_4_distance_fraction": 0.05486643210867858,
+          "yaw_command_tv_per_s": 1.8300812823361823,
+          "min_body_road_clearance": -0.7154517,
+          "min_cone_clearance": null,
+          "obstacles_passed": 0,
+          "obstacles_total": 0,
+          "encounter_seconds": null,
+          "no_feasible_frames": 7,
+          "decision_frames": 36,
+          "first_body_edge": 5.72,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.055487968618821104,
+          "terminal_wheel_gaps": [
+            -0.5973401,
+            -0.003145218,
+            -0.194487572
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "46c27b265fd9294e9f2bd66e7f060f96239f7ffffeb8ca54757e8039f371a2a1"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "05",
+        "title": "A：两桶中缝可通行",
+        "kind": "gap_A",
+        "seed": 972446746,
+        "props": [
+          [
+            18.0,
+            -1.8,
+            0,
+            0,
+            0
+          ],
+          [
+            18.0,
+            0.7,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 30.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "05_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 5.79,
+          "progress_m": 17.6941376,
+          "target_m": 30.0,
+          "travel_m": 19.299464401384633,
+          "mean_body_speed": 3.3332408292546862,
+          "peak_body_speed": 4.394933,
+          "clear_straight_distance_m": 0.438799311593991,
+          "clear_straight_mean_speed": 4.387993115939906,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.4117538784110537,
+          "min_body_road_clearance": -0.957906246,
+          "min_cone_clearance": 2.45348787,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 8,
+          "decision_frames": 29,
+          "first_body_edge": 4.87,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.8823271142433184,
+          "terminal_wheel_gaps": [
+            -0.7171416,
+            -0.255983829,
+            -1.47819519e-05
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "924b05989c15a36cacf6741a9d1c7277a7f3277cf0112406c91187794a5cd24e"
+        },
+        "V3_2": {
+          "id": "05_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 6.56,
+          "progress_m": 16.2431641,
+          "target_m": 30.0,
+          "travel_m": 17.688167428247578,
+          "mean_body_speed": 2.6963669860133503,
+          "peak_body_speed": 4.38198233,
+          "clear_straight_distance_m": 0.8764417330004914,
+          "clear_straight_mean_speed": 4.382208665002463,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 2.3181267662611997,
+          "min_body_road_clearance": -0.8609061,
+          "min_cone_clearance": 3.48325443,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 9,
+          "decision_frames": 33,
+          "first_body_edge": 5.4,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.3933494759041576,
+          "terminal_wheel_gaps": [
+            -0.6499057,
+            -0.132691383,
+            -0.00568819046
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "1d7fca6c3e365c3b098cc8ed2eec3d5717bbb5280f48d4256e08cb0182e914fe"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "06",
+        "title": "B：中缝太窄，必须绕行",
+        "kind": "gap_B",
+        "seed": 974347874,
+        "props": [
+          [
+            18.0,
+            -0.9,
+            0,
+            0,
+            0
+          ],
+          [
+            18.0,
+            0.3,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 30.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "06_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 6.17,
+          "progress_m": 14.5763092,
+          "target_m": 30.0,
+          "travel_m": 16.163207040241133,
+          "mean_body_speed": 2.619644577024495,
+          "peak_body_speed": 4.363402,
+          "clear_straight_distance_m": 0.43555625776063844,
+          "clear_straight_mean_speed": 4.35556257760638,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.162074491410049,
+          "min_body_road_clearance": -0.9462185,
+          "min_cone_clearance": 5.221707,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 10,
+          "decision_frames": 31,
+          "first_body_edge": 5.15,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.6968798956895546,
+          "terminal_wheel_gaps": [
+            -0.71037674,
+            -0.238159657,
+            -0.00514125824
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "78804521d29f4be15f56ceb3d6fb18a48b53d787f47b083385bdf3899716259e"
+        },
+        "V3_2": {
+          "id": "06_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 7.21,
+          "progress_m": 15.475647,
+          "target_m": 30.0,
+          "travel_m": 16.68207208596851,
+          "mean_body_speed": 2.3137409273187948,
+          "peak_body_speed": 4.37442827,
+          "clear_straight_distance_m": 0.769055379791419,
+          "clear_straight_mean_speed": 3.8452768989571005,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 2.090418242995839,
+          "min_body_road_clearance": -0.737267,
+          "min_cone_clearance": 4.515567,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 8,
+          "decision_frames": 37,
+          "first_body_edge": 5.81999969,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.5640666692850955,
+          "terminal_wheel_gaps": [
+            -0.5710621,
+            -0.00320386887,
+            -0.0413999557
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "1f10ed0c5e1c6575db15943dcf8c79c2e8b4a85afbd93fb07fea7739ed1c583e"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "07",
+        "title": "C：可钻缝也可绕行，自选路线",
+        "kind": "gap_C",
+        "seed": 977789944,
+        "props": [
+          [
+            18.0,
+            -2.35,
+            0,
+            0,
+            0
+          ],
+          [
+            18.0,
+            -0.05,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 30.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "07_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 4.35,
+          "progress_m": 14.1476593,
+          "target_m": 30.0,
+          "travel_m": 15.590410781442564,
+          "mean_body_speed": 3.5840024784925437,
+          "peak_body_speed": 4.38308239,
+          "clear_straight_distance_m": 0.8558733837540582,
+          "clear_straight_mean_speed": 4.279366918770297,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.3697466057471266,
+          "min_body_road_clearance": -0.9902415,
+          "min_cone_clearance": 4.226956,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 4,
+          "decision_frames": 22,
+          "first_body_edge": 3.94999981,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.5598479918487242,
+          "terminal_wheel_gaps": [
+            -0.741820335,
+            -0.299867153,
+            -0.00659036636
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "ef6af2c193f372417885c7460dc511cf0b1457aee2c851268524231357a1ff1f"
+        },
+        "V3_2": {
+          "id": "07_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 4.31,
+          "progress_m": 13.6022644,
+          "target_m": 30.0,
+          "travel_m": 15.043303994425731,
+          "mean_body_speed": 3.4903257527669913,
+          "peak_body_speed": 4.356549,
+          "clear_straight_distance_m": 0.8707080020722954,
+          "clear_straight_mean_speed": 4.353540010361483,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.8942222976397054,
+          "min_body_road_clearance": -0.99842453,
+          "min_cone_clearance": 4.63122845,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 0,
+          "decision_frames": 22,
+          "first_body_edge": 3.92999983,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.17532665055673446,
+          "terminal_wheel_gaps": [
+            -0.7511277,
+            -0.306115627,
+            -0.0192995071
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "4d217b0e19664aedbaf309c22615ea2d3f2c6007af7f3263ab48365f91ab9006"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "08",
+        "title": "A：两桶中缝可通行",
+        "kind": "gap_A",
+        "seed": 937044726,
+        "props": [
+          [
+            20.0,
+            -1.8,
+            0,
+            0,
+            0
+          ],
+          [
+            20.0,
+            0.7,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 32.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "08_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 7.33999968,
+          "progress_m": 24.23758,
+          "target_m": 32.0,
+          "travel_m": 25.44050061318895,
+          "mean_body_speed": 3.4660084090342833,
+          "peak_body_speed": 4.47913074,
+          "clear_straight_distance_m": 2.225619671334457,
+          "clear_straight_mean_speed": 4.451239342668914,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.3754473958778155,
+          "min_body_road_clearance": -0.925524235,
+          "min_cone_clearance": 0.08462992,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 8,
+          "decision_frames": 37,
+          "first_body_edge": 6.85,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.32658682429957997,
+          "terminal_wheel_gaps": [
+            -0.695976734,
+            -0.210808277,
+            -0.00598335266
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "967f0e0a380cda39ed01883a3d822125fbd61382f251fc11c716087ac9a6c213"
+        },
+        "V3_2": {
+          "id": "08_V3_2",
+          "status": "obstacle",
+          "success": false,
+          "full_lap": false,
+          "seconds": 7.45,
+          "progress_m": 19.2045746,
+          "target_m": 32.0,
+          "travel_m": 19.568067891871095,
+          "mean_body_speed": 2.626586294210885,
+          "peak_body_speed": 3.7248733,
+          "clear_straight_distance_m": 2.968172670426064,
+          "clear_straight_mean_speed": 3.710216487320466,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 1.3545409002128828,
+          "min_body_road_clearance": 1.21415865,
+          "min_cone_clearance": -0.02967292,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 14,
+          "decision_frames": 38,
+          "first_body_edge": -1.0,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.6556809582452992,
+          "terminal_wheel_gaps": [
+            3.07854843,
+            3.26984525,
+            3.13179636
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "42a64e8f5a2c429895534811ed1632ee99525b76823aefcf2d124b03d04d859e"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "09",
+        "title": "B：中缝太窄，必须绕行",
+        "kind": "gap_B",
+        "seed": 948263430,
+        "props": [
+          [
+            20.0,
+            -0.9,
+            0,
+            0,
+            0
+          ],
+          [
+            20.0,
+            0.3,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 32.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "09_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 7.18,
+          "progress_m": 21.888752,
+          "target_m": 32.0,
+          "travel_m": 23.558271869118748,
+          "mean_body_speed": 3.281096360601497,
+          "peak_body_speed": 4.40998,
+          "clear_straight_distance_m": 2.1986631031795745,
+          "clear_straight_mean_speed": 4.397326206359149,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.2157185405849587,
+          "min_body_road_clearance": -1.03184843,
+          "min_cone_clearance": 1.84287608,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 5,
+          "decision_frames": 36,
+          "first_body_edge": 6.16,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.1450702822182748,
+          "terminal_wheel_gaps": [
+            -0.770012856,
+            -0.368720055,
+            -0.00501775742
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "a84974bb4e2fe4553f0c5aec6b55d88daa2b22af9875a705747347bad231191f"
+        },
+        "V3_2": {
+          "id": "09_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.2,
+          "progress_m": 23.1287041,
+          "target_m": 32.0,
+          "travel_m": 24.542278157440766,
+          "mean_body_speed": 2.9929607509074105,
+          "peak_body_speed": 4.470271,
+          "clear_straight_distance_m": 2.2116099918840866,
+          "clear_straight_mean_speed": 4.423219983768173,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.714585909268293,
+          "min_body_road_clearance": -0.7902503,
+          "min_cone_clearance": 1.60961914,
+          "obstacles_passed": 0,
+          "obstacles_total": 2,
+          "encounter_seconds": null,
+          "no_feasible_frames": 6,
+          "decision_frames": 41,
+          "first_body_edge": 6.91,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -1.0404523943755837,
+          "terminal_wheel_gaps": [
+            -0.597685337,
+            -0.0557980537,
+            -0.000109195709
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "38c309b30514add8cc2d68a08ebf143bb460227241029e23e78fc8b32f2a139e"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "10",
+        "title": "C：可钻缝也可绕行，自选路线",
+        "kind": "gap_C",
+        "seed": 948014790,
+        "props": [
+          [
+            20.0,
+            -2.35,
+            0,
+            0,
+            0
+          ],
+          [
+            20.0,
+            -0.05,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 32.0,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "10_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.75,
+          "progress_m": 28.2141724,
+          "target_m": 32.0,
+          "travel_m": 29.483899175805636,
+          "mean_body_speed": 3.3695884772349296,
+          "peak_body_speed": 4.474498,
+          "clear_straight_distance_m": 2.2320035987655977,
+          "clear_straight_mean_speed": 4.4640071975311955,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.1373094105142854,
+          "min_body_road_clearance": -0.991832733,
+          "min_cone_clearance": 0.23397693,
+          "obstacles_passed": 2,
+          "obstacles_total": 2,
+          "encounter_seconds": 4.04,
+          "no_feasible_frames": 15,
+          "decision_frames": 44,
+          "first_body_edge": 8.04,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.9257108198067469,
+          "terminal_wheel_gaps": [
+            -0.741783142,
+            -0.304127216,
+            -0.00258731842
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "cb7c4f054fc8d9cc94754aa4b648d235e77db98577b8dc3e9984e58603d0f1e7"
+        },
+        "V3_2": {
+          "id": "10_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.929999,
+          "progress_m": 26.75203,
+          "target_m": 32.0,
+          "travel_m": 28.251514419185703,
+          "mean_body_speed": 3.1636637830738503,
+          "peak_body_speed": 4.37552261,
+          "clear_straight_distance_m": 2.9826320701801303,
+          "clear_straight_mean_speed": 3.7282907401760434,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 2.4329814783529877,
+          "min_body_road_clearance": -0.9517102,
+          "min_cone_clearance": 0.343068868,
+          "obstacles_passed": 2,
+          "obstacles_total": 2,
+          "encounter_seconds": 4.019999,
+          "no_feasible_frames": 13,
+          "decision_frames": 45,
+          "first_body_edge": 8.24,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": 0.018422707505236224,
+          "terminal_wheel_gaps": [
+            -0.7151365,
+            -0.244515419,
+            -0.008187294
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "e0a61ac9f18eef2532e661de2669ca6d7f089a3b4a41c13369916713bb645e21"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "11",
+        "title": "弯中静止障碍",
+        "kind": "bend_static",
+        "seed": 964545779,
+        "props": [
+          [
+            18,
+            0,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 32,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "11_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 9.95,
+          "progress_m": 26.4405518,
+          "target_m": 32,
+          "travel_m": 27.782928642818796,
+          "mean_body_speed": 2.792254134956663,
+          "peak_body_speed": 4.40969229,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 0.9499356802010048,
+          "min_body_road_clearance": -0.9584923,
+          "min_cone_clearance": 0.308750182,
+          "obstacles_passed": 1,
+          "obstacles_total": 1,
+          "encounter_seconds": 4.99,
+          "no_feasible_frames": 13,
+          "decision_frames": 50,
+          "first_body_edge": 9.559999,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.9129542074195789,
+          "terminal_wheel_gaps": [
+            -0.7220168,
+            -0.251218319,
+            -0.0160617828
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "abaadc91f1de18acfff722ac0756938ff861dda6b3e89f1003826f3e01d6eeac"
+        },
+        "V3_2": {
+          "id": "11_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 11.45,
+          "progress_m": 28.1074371,
+          "target_m": 32,
+          "travel_m": 29.59703278868281,
+          "mean_body_speed": 2.5848936933347435,
+          "peak_body_speed": 4.381678,
+          "clear_straight_distance_m": 0.22625109503778623,
+          "clear_straight_mean_speed": 1.5083406335852558,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 1.138120283231441,
+          "min_body_road_clearance": -0.9343991,
+          "min_cone_clearance": 0.00652083755,
+          "obstacles_passed": 1,
+          "obstacles_total": 1,
+          "encounter_seconds": 5.45000029,
+          "no_feasible_frames": 15,
+          "decision_frames": 58,
+          "first_body_edge": 10.58,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.9460400536397803,
+          "terminal_wheel_gaps": [
+            -0.7016592,
+            -0.222903728,
+            -0.004395008
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "1b13b33ddf3411bee07d54c0af47ba5112ed5958b665186e03cc4ab55d8a5553"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "12",
+        "title": "连续双桶空隙：衔接下一个入口",
+        "kind": "sequence",
+        "seed": 909120589,
+        "props": [
+          [
+            14,
+            -1.8,
+            0,
+            0,
+            0
+          ],
+          [
+            14,
+            0.7,
+            0,
+            0,
+            0
+          ],
+          [
+            23,
+            -3.0,
+            0,
+            0,
+            0
+          ],
+          [
+            23,
+            -0.5,
+            0,
+            0,
+            0
+          ],
+          [
+            31,
+            -1.8,
+            0,
+            0,
+            0
+          ],
+          [
+            31,
+            0.7,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 42,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "12_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 5.97,
+          "progress_m": 19.4716034,
+          "target_m": 42,
+          "travel_m": 20.240977495731602,
+          "mean_body_speed": 3.390448491747337,
+          "peak_body_speed": 4.46754074,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 1.318352549916248,
+          "min_body_road_clearance": -0.73058176,
+          "min_cone_clearance": 0.8726207,
+          "obstacles_passed": 0,
+          "obstacles_total": 6,
+          "encounter_seconds": null,
+          "no_feasible_frames": 6,
+          "decision_frames": 30,
+          "first_body_edge": 5.27999973,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.4968889663522046,
+          "terminal_wheel_gaps": [
+            -0.5812659,
+            -0.00165605545,
+            -0.08015108
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "d5a650bc53a10c8a0bb2e50b36d625c5179b4e8f9b7a0da5bd3aae98e6abbe4a"
+        },
+        "V3_2": {
+          "id": "12_V3_2",
+          "status": "segment",
+          "success": true,
+          "full_lap": false,
+          "seconds": 10.0999994,
+          "progress_m": 42.0139,
+          "target_m": 42,
+          "travel_m": 38.172156495448725,
+          "mean_body_speed": 3.7794216597130417,
+          "peak_body_speed": 4.47611046,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 2.384323323801386,
+          "min_body_road_clearance": -0.6261749,
+          "min_cone_clearance": 0.415328,
+          "obstacles_passed": 6,
+          "obstacles_total": 6,
+          "encounter_seconds": 6.0,
+          "no_feasible_frames": 11,
+          "decision_frames": 51,
+          "first_body_edge": 5.04999971,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.9103976826661726,
+          "terminal_wheel_gaps": [
+            2.67924285,
+            3.25118279,
+            2.74732184
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "20b48cd35bdc5af36289e00513038b279a6b02b5c8f6eee197b435ac1d1b5cb7"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "13",
+        "title": "弯中连续避障",
+        "kind": "bend_sequence",
+        "seed": 906218197,
+        "props": [
+          [
+            15,
+            0.3,
+            0,
+            0,
+            0
+          ],
+          [
+            21,
+            -0.8,
+            0,
+            0,
+            0
+          ],
+          [
+            27,
+            0.3,
+            0,
+            0,
+            0
+          ]
+        ],
+        "limitM": 38,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "13_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.75,
+          "progress_m": 26.5036316,
+          "target_m": 38,
+          "travel_m": 27.615746997577247,
+          "mean_body_speed": 3.1560853711516854,
+          "peak_body_speed": 4.38703442,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 0.8403992605714287,
+          "min_body_road_clearance": -0.9792819,
+          "min_cone_clearance": 0.174039632,
+          "obstacles_passed": 1,
+          "obstacles_total": 3,
+          "encounter_seconds": null,
+          "no_feasible_frames": 12,
+          "decision_frames": 44,
+          "first_body_edge": 8.33,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.6363722386903166,
+          "terminal_wheel_gaps": [
+            -0.7334094,
+            -0.284701824,
+            -0.004869461
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "3d58595374a0f085dfec34502eb523dd82ae5ba454354f39293cc79d91793205"
+        },
+        "V3_2": {
+          "id": "13_V3_2",
+          "status": "obstacle",
+          "success": false,
+          "full_lap": false,
+          "seconds": 6.02,
+          "progress_m": 14.7296295,
+          "target_m": 38,
+          "travel_m": 14.925728327947892,
+          "mean_body_speed": 2.4793568651076234,
+          "peak_body_speed": 4.04576159,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 0.9559862827242527,
+          "min_body_road_clearance": 0.89359045,
+          "min_cone_clearance": -0.0006160736,
+          "obstacles_passed": 0,
+          "obstacles_total": 3,
+          "encounter_seconds": null,
+          "no_feasible_frames": 9,
+          "decision_frames": 31,
+          "first_body_edge": -1.0,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.2571780926525903,
+          "terminal_wheel_gaps": [
+            2.35885429,
+            1.76703918,
+            1.92390883
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "1783bbf9ea75f29b9c8cb1e6c219fba61405df8d150dd0f89c0220ce238af8fe"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "14",
+        "title": "移动桶横穿：相位一",
+        "kind": "moving",
+        "seed": 957620165,
+        "props": [
+          [
+            18,
+            -0.5,
+            1.25,
+            0.7,
+            0.1
+          ]
+        ],
+        "limitM": 32,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "14_V3_0",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 6.54999971,
+          "progress_m": 17.0664673,
+          "target_m": 32,
+          "travel_m": 18.155044831779065,
+          "mean_body_speed": 2.771762692456526,
+          "peak_body_speed": 4.38822174,
+          "clear_straight_distance_m": 0.4387919333922651,
+          "clear_straight_mean_speed": 4.387919333922647,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.407451235444406,
+          "min_body_road_clearance": -0.7328448,
+          "min_cone_clearance": 3.02687383,
+          "obstacles_passed": 0,
+          "obstacles_total": 1,
+          "encounter_seconds": null,
+          "no_feasible_frames": 10,
+          "decision_frames": 33,
+          "first_body_edge": 5.33999968,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.6618923050012384,
+          "terminal_wheel_gaps": [
+            -0.572954655,
+            -0.000224113464,
+            -0.0597462654
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "d9572a1facd44bdd0a8bbac49e473aba5f65a3fa9de35bf398c884a3de327bd4"
+        },
+        "V3_2": {
+          "id": "14_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 6.37999964,
+          "progress_m": 15.9048767,
+          "target_m": 32,
+          "travel_m": 17.170005597239903,
+          "mean_body_speed": 2.691223599699122,
+          "peak_body_speed": 4.39646626,
+          "clear_straight_distance_m": 0.4359425360077169,
+          "clear_straight_mean_speed": 4.359425360077165,
+          "clear_straight_at_least_4_distance_fraction": 1.0,
+          "yaw_command_tv_per_s": 1.6875224594840257,
+          "min_body_road_clearance": -0.780104637,
+          "min_cone_clearance": 3.475354,
+          "obstacles_passed": 0,
+          "obstacles_total": 1,
+          "encounter_seconds": null,
+          "no_feasible_frames": 8,
+          "decision_frames": 32,
+          "first_body_edge": 4.97,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.690392132667514,
+          "terminal_wheel_gaps": [
+            -0.591560841,
+            -0.0450620651,
+            -0.00424718857
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "522303ce452d1a853b4283e4b724cebf96da9a1bd2513870d344c5e8f8a16484"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "15",
+        "title": "移动桶横穿：相位二",
+        "kind": "moving",
+        "seed": 908255699,
+        "props": [
+          [
+            18,
+            -0.5,
+            1.25,
+            0.7,
+            2.4
+          ]
+        ],
+        "limitM": 32,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "15_V3_0",
+          "status": "segment",
+          "success": true,
+          "full_lap": false,
+          "seconds": 9.69,
+          "progress_m": 32.0062561,
+          "target_m": 32,
+          "travel_m": 33.29352360562247,
+          "mean_body_speed": 3.4358641491870454,
+          "peak_body_speed": 4.40170574,
+          "clear_straight_distance_m": 3.6722722167336324,
+          "clear_straight_mean_speed": 1.60361205561618,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 1.0215692509803922,
+          "min_body_road_clearance": -0.6924968,
+          "min_cone_clearance": 0.187826544,
+          "obstacles_passed": 1,
+          "obstacles_total": 1,
+          "encounter_seconds": 2.75999964,
+          "no_feasible_frames": 15,
+          "decision_frames": 49,
+          "first_body_edge": 8.57,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.6022117250683521,
+          "terminal_wheel_gaps": [
+            -0.5041046,
+            0.04255867,
+            0.082816124
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "f35bfd4fda0ac5c0c5ecf0c249d8a84b1175e731b3c1251f7297e55ce2cddde2"
+        },
+        "V3_2": {
+          "id": "15_V3_2",
+          "status": "boundary",
+          "success": false,
+          "full_lap": false,
+          "seconds": 8.98,
+          "progress_m": 29.797287,
+          "target_m": 32,
+          "travel_m": 31.593739501588136,
+          "mean_body_speed": 3.5182337975042466,
+          "peak_body_speed": 4.3823514,
+          "clear_straight_distance_m": 1.955974983228107,
+          "clear_straight_mean_speed": 1.5281054556469584,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 1.2720377922049,
+          "min_body_road_clearance": -0.9098673,
+          "min_cone_clearance": 0.145032108,
+          "obstacles_passed": 1,
+          "obstacles_total": 1,
+          "encounter_seconds": 2.82,
+          "no_feasible_frames": 6,
+          "decision_frames": 45,
+          "first_body_edge": 7.95,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.42198309217136004,
+          "terminal_wheel_gaps": [
+            -0.684368134,
+            -0.191446781,
+            -0.004293442
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "4a7c2dab7ffa7e4b95b0cdc7e9582009b34459bd5326db62b3f2861704419745"
+        }
+      },
+      "paired_time_delta_s": null
+    },
+    {
+      "case": {
+        "id": "16",
+        "title": "弯中动静混合",
+        "kind": "bend_mixed",
+        "seed": 944351928,
+        "props": [
+          [
+            17,
+            0.25,
+            0,
+            0,
+            0
+          ],
+          [
+            22,
+            -0.4,
+            1.2,
+            0.65,
+            1.4
+          ]
+        ],
+        "limitM": 34,
+        "full_lap": false,
+        "geometry_selected_only_by_referee": true
+      },
+      "pair": {
+        "V3_0": {
+          "id": "16_V3_0",
+          "status": "segment",
+          "success": true,
+          "full_lap": false,
+          "seconds": 9.889999,
+          "progress_m": 34.04331,
+          "target_m": 34,
+          "travel_m": 32.14595054510721,
+          "mean_body_speed": 3.250349220976384,
+          "peak_body_speed": 4.48203325,
+          "clear_straight_distance_m": 0.0,
+          "clear_straight_mean_speed": null,
+          "clear_straight_at_least_4_distance_fraction": null,
+          "yaw_command_tv_per_s": 1.219131928057829,
+          "min_body_road_clearance": 0.9388647,
+          "min_cone_clearance": 0.589020252,
+          "obstacles_passed": 2,
+          "obstacles_total": 2,
+          "encounter_seconds": 5.630000000000001,
+          "no_feasible_frames": 16,
+          "decision_frames": 50,
+          "first_body_edge": -1.0,
+          "terminal_decision": "feasible",
+          "terminal_predicted_margin": 0.8777920621666093,
+          "terminal_wheel_gaps": [
+            1.03320456,
+            1.63196087,
+            1.39322472
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "cfa48c284d10f0ab8de8d6ca2000ee7fdcfc5eeea53a7871770d60a6de04bc27"
+        },
+        "V3_2": {
+          "id": "16_V3_2",
+          "status": "segment",
+          "success": true,
+          "full_lap": false,
+          "seconds": 9.49,
+          "progress_m": 34.01552,
+          "target_m": 34,
+          "travel_m": 31.93849735428084,
+          "mean_body_speed": 3.3654897106723753,
+          "peak_body_speed": 4.452849,
+          "clear_straight_distance_m": 1.996558130905544,
+          "clear_straight_mean_speed": 3.3275968848425728,
+          "clear_straight_at_least_4_distance_fraction": 0.0,
+          "yaw_command_tv_per_s": 2.1316407479452053,
+          "min_body_road_clearance": 1.06112635,
+          "min_cone_clearance": 0.8464513,
+          "obstacles_passed": 2,
+          "obstacles_total": 2,
+          "encounter_seconds": 3.79000016,
+          "no_feasible_frames": 16,
+          "decision_frames": 48,
+          "first_body_edge": -1.0,
+          "terminal_decision": "no_feasible_trajectory",
+          "terminal_predicted_margin": -0.28391755924242257,
+          "terminal_wheel_gaps": [
+            3.29111624,
+            2.97745657,
+            3.38191
+          ],
+          "policy_sensor_fields": [
+            "gyro",
+            "leftRpm",
+            "rightRpm",
+            "source",
+            "t",
+            "wheelRadius"
+          ],
+          "source_sha256": "0dad65825134717eb6db39f7edeb9ff7b98f52c0f0c3d3abb82757054b75673c"
+        }
+      },
+      "paired_time_delta_s": -0.3999989999999993
+    }
+  ]
+}

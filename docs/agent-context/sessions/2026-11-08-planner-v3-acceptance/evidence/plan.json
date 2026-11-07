@@ -1,0 +1,409 @@
+{
+  "created_utc": "2026-11-07T15:27:36.831881+00:00",
+  "base": "bf63f2044af1addebf5acf65972a4f1164f6283c",
+  "versions": [
+    "V3_0",
+    "V3_2"
+  ],
+  "course_length_m": 280.87656260722264,
+  "cases": [
+    {
+      "id": "01",
+      "title": "随机起点：空场完整一圈",
+      "kind": "full_clear",
+      "seed": 965834308,
+      "props": [],
+      "limitM": 280.87656260722264,
+      "full_lap": true,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "02",
+      "title": "另一随机起点：空场完整一圈",
+      "kind": "full_clear",
+      "seed": 934903929,
+      "props": [],
+      "limitM": 280.87656260722264,
+      "full_lap": true,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "03",
+      "title": "动静混合：完整一圈",
+      "kind": "full_traffic",
+      "seed": 916368216,
+      "props": [
+        [
+          22,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          88,
+          -0.4,
+          0,
+          0,
+          0
+        ],
+        [
+          92,
+          0.5,
+          1.1,
+          0.7,
+          0.6
+        ],
+        [
+          196,
+          -0.3,
+          1.2,
+          0.55,
+          2.1
+        ]
+      ],
+      "limitM": 280.87656260722264,
+      "full_lap": true,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "04",
+      "title": "无障碍直路：实际提速与摆动",
+      "kind": "cruise",
+      "seed": 929118737,
+      "props": [],
+      "limitM": 38,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "05",
+      "title": "A：两桶中缝可通行",
+      "kind": "gap_A",
+      "seed": 972446746,
+      "props": [
+        [
+          18.0,
+          -1.8,
+          0,
+          0,
+          0
+        ],
+        [
+          18.0,
+          0.7,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 30.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "06",
+      "title": "B：中缝太窄，必须绕行",
+      "kind": "gap_B",
+      "seed": 974347874,
+      "props": [
+        [
+          18.0,
+          -0.9,
+          0,
+          0,
+          0
+        ],
+        [
+          18.0,
+          0.3,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 30.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "07",
+      "title": "C：可钻缝也可绕行，自选路线",
+      "kind": "gap_C",
+      "seed": 977789944,
+      "props": [
+        [
+          18.0,
+          -2.35,
+          0,
+          0,
+          0
+        ],
+        [
+          18.0,
+          -0.05,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 30.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "08",
+      "title": "A：两桶中缝可通行",
+      "kind": "gap_A",
+      "seed": 937044726,
+      "props": [
+        [
+          20.0,
+          -1.8,
+          0,
+          0,
+          0
+        ],
+        [
+          20.0,
+          0.7,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 32.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "09",
+      "title": "B：中缝太窄，必须绕行",
+      "kind": "gap_B",
+      "seed": 948263430,
+      "props": [
+        [
+          20.0,
+          -0.9,
+          0,
+          0,
+          0
+        ],
+        [
+          20.0,
+          0.3,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 32.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "10",
+      "title": "C：可钻缝也可绕行，自选路线",
+      "kind": "gap_C",
+      "seed": 948014790,
+      "props": [
+        [
+          20.0,
+          -2.35,
+          0,
+          0,
+          0
+        ],
+        [
+          20.0,
+          -0.05,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 32.0,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "11",
+      "title": "弯中静止障碍",
+      "kind": "bend_static",
+      "seed": 964545779,
+      "props": [
+        [
+          18,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 32,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "12",
+      "title": "连续双桶空隙：衔接下一个入口",
+      "kind": "sequence",
+      "seed": 909120589,
+      "props": [
+        [
+          14,
+          -1.8,
+          0,
+          0,
+          0
+        ],
+        [
+          14,
+          0.7,
+          0,
+          0,
+          0
+        ],
+        [
+          23,
+          -3.0,
+          0,
+          0,
+          0
+        ],
+        [
+          23,
+          -0.5,
+          0,
+          0,
+          0
+        ],
+        [
+          31,
+          -1.8,
+          0,
+          0,
+          0
+        ],
+        [
+          31,
+          0.7,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 42,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "13",
+      "title": "弯中连续避障",
+      "kind": "bend_sequence",
+      "seed": 906218197,
+      "props": [
+        [
+          15,
+          0.3,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          -0.8,
+          0,
+          0,
+          0
+        ],
+        [
+          27,
+          0.3,
+          0,
+          0,
+          0
+        ]
+      ],
+      "limitM": 38,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "14",
+      "title": "移动桶横穿：相位一",
+      "kind": "moving",
+      "seed": 957620165,
+      "props": [
+        [
+          18,
+          -0.5,
+          1.25,
+          0.7,
+          0.1
+        ]
+      ],
+      "limitM": 32,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "15",
+      "title": "移动桶横穿：相位二",
+      "kind": "moving",
+      "seed": 908255699,
+      "props": [
+        [
+          18,
+          -0.5,
+          1.25,
+          0.7,
+          2.4
+        ]
+      ],
+      "limitM": 32,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    },
+    {
+      "id": "16",
+      "title": "弯中动静混合",
+      "kind": "bend_mixed",
+      "seed": 944351928,
+      "props": [
+        [
+          17,
+          0.25,
+          0,
+          0,
+          0
+        ],
+        [
+          22,
+          -0.4,
+          1.2,
+          0.65,
+          1.4
+        ]
+      ],
+      "limitM": 34,
+      "full_lap": false,
+      "geometry_selected_only_by_referee": true
+    }
+  ],
+  "criteria": {
+    "completion": "full lap or complete declared local segment without contact or body-edge departure",
+    "contact": "1.16 m x 0.76 m body rectangle intersects cone circle radius 0.34 m",
+    "departure": "any body corner beyond two-lane road: stricter than competition four wheels out",
+    "comparison": "same seed and layout; paired elapsed times only if both complete; otherwise completion first",
+    "first_lap": "camera RGB, A4 lane/object output, motor RPM proxy, raw gyro; no map or global pose",
+    "risk": "uncertainty margin, NOT calibrated probability",
+    "limits": "static geometry and ideal virtual sensors; not real-car acceptance"
+  },
+  "training": {
+    "attempts": 30000,
+    "completed": 18022,
+    "contact": 11502,
+    "departure": 169
+  }
+}

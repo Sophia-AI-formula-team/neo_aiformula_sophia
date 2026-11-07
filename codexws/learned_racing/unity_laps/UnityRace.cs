@@ -20,6 +20,7 @@ public class Setup {
     public float start,offset,yaw, limit=1f, captureInterval=.5f;
     public int visionPort;
     public bool externalControl;
+    public string departureRule="body_edge";
     public string timingMode="";
     public EncounterConfig encounter;
     public SmoothConfig smooth;
@@ -38,6 +39,8 @@ public sealed class UnityRace {
     readonly OdometryLaneGate laneGate;
     readonly List<Prop> props=new List<Prop>();readonly List<float[]> rows=new List<float[]>(), frames=new List<float[]>();
     readonly List<object> decisions=new List<object>();
+    readonly List<float[]> wheelRows=new List<float[]>();
+    float firstBodyEdge=-1;
     int k,near,gate,seenFrames,empty,coneseens,closestProp=-1;float startStation,previous,progress,peakProgress,lastAdvance;
     float minRoad=99,minGap=99,localGap=99;float[] zoneStart,zoneEnd,propMin;
     bool done; string status="running";float speed,yaw;int captures;float lastCapture=-99,lastLaneOffset;
@@ -53,6 +56,7 @@ public sealed class UnityRace {
         if(config.laneGateThresholdsM!=null)laneGate=new OdometryLaneGate(Policy.Ahead,config.laneGateThresholdsM);
     }
     void Open(){
+        if(cfg.departureRule!="body_edge" && cfg.departureRule!="all_wheel_centers")throw new InvalidOperationException("Unknown departure rule");
         var open=typeof(EditorSceneManager).GetMethod("OpenPreviewScene",BindingFlags.NonPublic|BindingFlags.Static,null,new[]{typeof(string)},null);
         scene=(Scene)open.Invoke(null,new object[]{ScenePath});var ph=scene.GetPhysicsScene();
         if(!ph.IsValid()||ph.Equals(Physics.defaultPhysicsScene))throw new InvalidOperationException("Unisolated physics scene");
@@ -146,10 +150,19 @@ public sealed class UnityRace {
             road=Mathf.Min(road,Mathf.Min(Track.Lane*.5f-x,Track.Lane*1.5f+x));
         }
         minRoad=Mathf.Min(minRoad,road);
-        if(k%10==0 || localGap<=0 || road<0 || progress>=track.length*cfg.limit)
+        if(road<0 && firstBodyEdge<0)firstBodyEdge=t;
+        // Referee only. This installed Honda model has TWO front driven wheels
+        // and ONE rear caster. Do not claim a four-wheel model or feed positions
+        // to the controller. Tire contact-patch width is not represented here.
+        var wheelPositions=new[]{d.frontLeft.transform.position,d.frontRight.transform.position,d.rearWheelBody.position};
+        var wheelGaps=wheelPositions.Select(wp=>{var p=Track.XZ(wp);int nn=track.Nearest(p,near);float x=track.Offset(p,nn);return Mathf.Min(Track.Lane*.5f-x,Track.Lane*1.5f+x);}).ToArray();
+        bool departure=cfg.departureRule=="all_wheel_centers" ? wheelGaps.All(g=>g<0) : road<0;
+        if(k%10==0 || localGap<=0 || departure || progress>=track.length*cfg.limit){
             rows.Add(new[]{t,pos.x,pos.y,Mathf.Atan2(forward.x,forward.y),speed,policy.speedCmd,policy.yawCmd,progress,off,road,localGap,policy.offset,(float)d.MotorCommand.rightCan,(float)d.MotorCommand.leftCan,yaw});
-        if(chase && (t-lastCapture>=cfg.captureInterval-.0005f || k==0 || localGap<=0 || road<0)){Capture(t);lastCapture=t;}
-        if(localGap<=0){Finish("obstacle");return;}if(road<0){Finish("boundary");return;}
+            wheelRows.Add(new[]{t,wheelGaps[0],wheelGaps[1],wheelGaps[2]});
+        }
+        if(chase && (t-lastCapture>=cfg.captureInterval-.0005f || k==0 || localGap<=0 || departure)){Capture(t);lastCapture=t;}
+        if(localGap<=0){Finish("obstacle");return;}if(departure){Finish("boundary");return;}
         if(progress>=track.length*cfg.limit && (cfg.limit<.999f||gate==32)){Finish(cfg.limit<.999f?"segment":"lap");return;}
         if(t>260||t-lastAdvance>9){Finish("stalled");return;}
         float?[] observed=null,filtered=null;List<Sight> tracks=null;int laneGateMask=0;
@@ -216,7 +229,7 @@ public sealed class UnityRace {
         if(done)return;done=true;status=outcome;
         try{
             var result=new{status,seconds=k*dt,progress,length=track.length,gate,minRoad,minGap,seenFrames,empty,coneseens,
-                propMin,zoneStart,zoneEnd,rows,frames,decisions,profile=d.motorPlant.response.ToString(),coupled=d.TireContact.coupledRearContact,
+                propMin,zoneStart,zoneEnd,rows,frames,decisions,wheelRows,firstBodyEdge,departureRule=cfg.departureRule,profile=d.motorPlant.response.ToString(),coupled=d.TireContact.coupledRearContact,
                 unity=Application.unityVersion,physicsStep=dt,props=props.Select(o=>new[]{o.home.x,o.home.y,o.right.x,o.right.y,o.amplitude,o.phase,o.hz,o.progress}).ToArray()};
             File.WriteAllText(cfg.output+".tmp",JsonConvert.SerializeObject(result));
             File.Move(cfg.output+".tmp",cfg.output);

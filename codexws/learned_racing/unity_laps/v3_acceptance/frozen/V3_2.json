@@ -1,0 +1,24 @@
+{
+  "version": "V3.2",
+  "trained_attempts": 30000,
+  "generation": 118,
+  "parameters": {
+    "pace": 4.222146281607914,
+    "lookahead": 1.3793625186256029,
+    "steer_gain": 1.9957569084837703,
+    "yaw_damping": 0.7174727569461214,
+    "slew": 3.152757841038519,
+    "clearance": 0.06820966406774592,
+    "uncertainty": 1.5104652500305014,
+    "smoothness": 0.09947527885948719,
+    "response": 0.5844528854100934
+  },
+  "sources": {
+    "v3_model.py": "2aefc7d5719bf4eda53f1fa8edc174112b7bc8c935258e8f3fec6b07b58513db",
+    "v3_train.py": "606d7f82f2202b672282f5f9c4b2af8a900130f0457ec9be843d5029cd536f58",
+    "v3_visual.py": "bf1c1117819e6f45a7a32d042b0e8778c43d373105b0f806e86af2d2a7dfc6e5",
+    "v3_gpu.py": "61f37f0fe245e046b958d069394fe470cacf76a497fbcb395ff956a07b3f0521",
+    "v3_evidence/plant_fit.json": "c4700f5682f003821c8445630ba80693bc6a62654b5e736813c7faa4581afdee"
+  },
+  "acceptance": "training checkpoint only, independent Unity validation required"
+}

@@ -1,0 +1,17 @@
+{
+  "rule": "all_wheel_centers",
+  "actual_wheel_count": 3,
+  "wheel_locations": "frontLeft and frontRight WheelCollider transforms; rearWheelBody.position",
+  "scope": "All three installed virtual wheel centers must be outside the road; contact patch width is not modeled. Same frozen models and original 16 layouts.",
+  "reason": "Earlier body-edge stop is stricter than the user rule. Separate additional cohort, not overwritten evidence.",
+  "changed_sources": {
+    "UnityRace.cs": "95abb4a72509f95231051a1794b53f82adc24b54c7ac3bdfa4cc031c8c09c03c",
+    "run.py": "c7b09f5033169ca9b0a2b7ea634bb4a35a08c0b1cbb2bcc08933ee423f480db0",
+    "acceptance_race.py": "b2da689172d95a07a34faa088c555bf91eba6b79230a271a054609258fd97a53"
+  },
+  "plan_sha256": "2b912d100dbbaf6d42f61e08ee595a6b827456f8a27be95a59f0674d09866b78",
+  "models": {
+    "V3_0": "88a9a0cfd3fdc10bb91d4b7db0ae0b8bb916fa82ea873603c991812955a2a070",
+    "V3_2": "0c797fd09a8ff2dbfcdc7f34e1f314476f0300b6db4b9183183080fa503180fb"
+  }
+}
