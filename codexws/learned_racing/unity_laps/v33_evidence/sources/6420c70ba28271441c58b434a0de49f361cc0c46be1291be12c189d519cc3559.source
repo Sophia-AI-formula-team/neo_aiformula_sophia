@@ -1,0 +1,125 @@
+"""V3.4: sample local passages, predict feedback along each, include stopping.
+
+All geometry is in the current sensor frame. Cubic routes are candidates,
+not preassigned avoidance paths. Learned/interpretable coefficients rank them.
+"""
+import numpy as np
+from v3_model import Observation,DEFAULT_PARAMETERS,PLANT_FIT,yaw_response,BODY_HALF_WIDTH,BODY_FRONT,BODY_REAR
+
+class Planner34:
+    def __init__(self,parameters=None):
+        self.p={**DEFAULT_PARAMETERS,**(parameters or {})};self.command=np.zeros(2);self.last={}
+
+    def step(self,obs):
+        if not isinstance(obs,Observation):raise TypeError('Only local sensor Observation accepted')
+        road=np.asarray(obs.road);p=self.p
+        if len(road)<3:
+            self.command=np.array([max(0.,self.command[0]-3*obs.dt),self.command[1]*.65])
+            self.last=dict(reason='unobserved_road',candidates=0,audit=dict(selected=None,table=[],paths=[]))
+            return self.command.copy()
+        if not np.all(np.isfinite(road)) or np.any(np.diff(road[:,0])<=0):raise ValueError('Invalid local road')
+        moving=[o[0] for o in obs.objects if .2<o[0]<9.]
+        look=max(3.,1.5+p['lookahead']*max(1.,obs.speed))
+        if moving:look=max(look,min(moving)+1.)
+        look=float(min(look,road[-1,0]-.4))
+        lo,hi=[float(np.interp(look,road[:,0],road[:,k])) for k in (1,2)]
+        inset=BODY_HALF_WIDTH+p['clearance'];lo+=inset;hi-=inset
+        if lo>hi:
+            self.command=np.array([0.,self.command[1]*.65]);self.last=dict(reason='unobserved_road',candidates=0,audit=dict(selected=None,table=[],paths=[]))
+            return self.command.copy()
+        targets=np.linspace(lo,hi,9).tolist()+[float(np.clip(0.,lo,hi))]
+        openings=[(lo,hi)]
+        for oz,ox,vz,vx,r,noise in obs.objects:
+            if abs(oz-look)>2.:continue
+            at=ox+vx*oz/max(obs.speed,1.);radius=r+inset+p['uncertainty']*noise
+            newer=[]
+            for a,b in openings:
+                if at-radius>a:newer.append((a,min(b,at-radius)))
+                if at+radius<b:newer.append((max(a,at+radius),b))
+            openings=[q for q in newer if q[1]>q[0]]
+        extra=[(a+b)/2 for a,b in sorted(openings,key=lambda q:q[1]-q[0],reverse=True)[:5]]
+        targets=np.sort(targets+extra+[targets[-1]]*(5-len(extra)))
+        speeds=np.array([0.,.25,.55,.8,1.])*p['pace']
+        uu=np.tile(speeds,len(targets));target=np.repeat(targets,len(speeds));n=len(uu)
+        endpoint_heading=float(np.interp(look,road[:,0],obs.heading))
+        slope=np.tan(np.clip(endpoint_heading,-1,1))
+        aa=(slope*look-2*target)/look**3;bb=(3*target-slope*look)/look**2
+        x=np.zeros(n);z=np.zeros(n);h=np.zeros(n);v=np.full(n,max(0.,obs.speed));w=np.full(n,obs.yaw)
+        prev=self.command.copy();last_yaw=np.full(n,prev[1]);first=None
+        clearance=np.full(n,np.inf);robust=np.full(n,np.inf);paths=[]
+        horizon=float(np.clip((look+2.)/max(obs.speed,1.2),2.,5.));steps=25;dt=horizon/steps
+        yaw_limit=p.get('yaw_limit',1.55)
+        for j in range(steps):
+            # The rollout includes future feedback and return of the steering;
+            # a single constant circular arc cannot represent a cone passage.
+            pursue=z+np.clip(1.+.7*v,1.2,3.)
+            q=np.minimum(pursue,look);ref=aa*q**3+bb*q**2+np.maximum(pursue-look,0)*slope
+            dz=pursue-z;dx=ref-x
+            lateral=dx*np.cos(h)-dz*np.sin(h)
+            turn=p['steer_gain']*np.maximum(v,.5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*w
+            cmd=turn/np.maximum(.05,yaw_response(np.minimum(v,3.5)))
+            cmd=np.clip(cmd,-yaw_limit,yaw_limit)
+            command_dt=obs.dt if j==0 else dt
+            cmd=np.clip(cmd,last_yaw-p['slew']*command_dt,last_yaw+p['slew']*command_dt);last_yaw=cmd
+            if first is None:first=cmd.copy()
+            v+=np.clip((np.minimum(uu,PLANT_FIT['body_speed_cap'])-v)/max(.15,p['response']),-3.,2.)*dt
+            w+=np.clip((cmd*yaw_response(v)-w)/max(.2,PLANT_FIT['yaw']['tau']),-4.,4.)*dt
+            h+=w*dt;x+=v*np.sin(h)*dt;z+=v*np.cos(h)*dt
+            half=BODY_HALF_WIDTH*np.abs(np.cos(h))+BODY_REAR*np.abs(np.sin(h))
+            left=np.interp(z,road[:,0],road[:,1]);right=np.interp(z,road[:,0],road[:,2])
+            gap=np.minimum(x-half-left,right-x-half)
+            gap=np.minimum(gap,road[-1,0]-z-BODY_FRONT);clearance=np.minimum(clearance,gap)
+            # Each uncertainty belongs to its own constraint. An uncertain
+            # distant cone must not shrink an unrelated nearby road edge.
+            road_sigma=np.interp(z,road[:,0],road[:,3])
+            robust=np.minimum(robust,gap-p['uncertainty']*road_sigma)
+            for oz,ox,vz,vx,r,noise in obs.objects:
+                dz=oz+vz*(j+1)*dt-z;dx=ox+vx*(j+1)*dt-x
+                side=dx*np.cos(h)-dz*np.sin(h);along=dz*np.cos(h)+dx*np.sin(h)
+                gap=np.hypot(np.maximum(abs(side)-BODY_HALF_WIDTH,0),np.maximum(np.maximum(along-BODY_FRONT,-BODY_REAR-along),0))-r
+                clearance=np.minimum(clearance,gap)
+                robust=np.minimum(robust,gap-p['uncertainty']*(noise+.04*(j+1)*dt))
+            paths.append(np.stack([z.copy(),x.copy()],axis=1))
+        uncertainty=(clearance-robust)/p['uncertainty'];feasible=robust>=p['clearance']
+        progress=z/horizon;road_heading=np.interp(z,road[:,0],obs.heading)
+        heading=.8*v*(h-road_heading)**2;smooth=p['smoothness']*((first-prev[1])**2+.15*first**2)
+        risk=.15*np.maximum(0,.5-robust)**2;score=progress-heading-smooth-risk
+        if feasible.any():score=np.where(feasible,score,-1e6)
+        else:
+            # No positive-speed least-harm fallback. Compare only stopping
+            # trajectories; if even those fail, record the infeasibility.
+            score=np.where(uu==0,100*robust+score,-1e6)
+        pick=int(np.argmax(score));self.command=np.array([uu[pick],first[pick]])
+        table=np.c_[uu,first,target,clearance,uncertainty,robust,feasible,score,progress,heading,smooth,risk]
+        self.last=dict(reason='feasible' if feasible[pick] else 'no_feasible_trajectory',candidates=n,feasible=int(feasible.sum()),
+            margin=float(robust[pick]),target=[look,float(target[pick])],path=np.asarray(paths)[:,pick].round(4).tolist(),
+            audit=dict(columns=['speed','yaw','target_x','geometric_clearance','sigma','robust_clearance','feasible','score','progress_score','heading_penalty','smooth_penalty','margin_penalty'],
+                       selected=pick,horizon=horizon,threshold=p['clearance'],uncertainty_scale=p['uncertainty'],previous_command=prev.tolist(),
+                       table=table.round(6).tolist(),paths=np.asarray(paths).transpose(1,0,2).round(4).tolist(),
+                       sigma_definition='Equivalent margin between minimum geometry and minimum independently uncertainty-adjusted constraint',
+                       rule='Highest feasible progress score; no feasible path permits only zero-speed candidates'))
+        return self.command.copy()
+
+class PersistentTracker:
+    """Ego-compensated short trajectories; disappearance is not proof of passage."""
+    def __init__(self):self.tracks=[]
+    def update(self,detections,speed,yaw,dt):
+        dt=max(.01,dt);c,s=np.cos(yaw*dt),np.sin(yaw*dt);old=[]
+        for track in self.tracks:
+            points=[]
+            for z,x,age in track:
+                z-=speed*dt;points.append([c*z+s*x,-s*z+c*x,age+dt])
+            if points[0][2]<2. and points[0][0]>-1.4:old.append(points)
+        taken=set();new=[]
+        for z,x in detections:
+            distance,i=min([(np.hypot(z-t[0][0],x-t[0][1]),i) for i,t in enumerate(old) if i not in taken],default=(99,-1))
+            history=[]
+            if distance<1.:taken.add(i);history=[q for q in old[i] if q[2]<=1.0]
+            new.append([[z,x,0.]]+history)
+        new += [t for i,t in enumerate(old) if i not in taken];self.tracks=new;result=[]
+        for history in new:
+            points=np.asarray(history);vz=vx=0.
+            if len(points)>=3 and np.ptp(points[:,2])>=.35:
+                vz,vx=np.polyfit(-points[:,2],points[:,:2],1)[0]
+            z,x,age=points[0];result.append([z,x,np.clip(vz,-2,2),np.clip(vx,-2,2),.34,.07+.18*age])
+        return np.asarray(result).reshape(-1,6)

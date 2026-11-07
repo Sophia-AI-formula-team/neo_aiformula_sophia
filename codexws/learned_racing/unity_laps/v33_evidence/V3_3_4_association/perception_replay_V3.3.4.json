@@ -1,0 +1,87 @@
+{
+  "results": [
+    {
+      "run": "01",
+      "methods": [
+        {
+          "version": "V3.0",
+          "p50_m": 0.014115445944360233,
+          "p95_m": 0.24158267139137451,
+          "p99_m": 1.262119929794833,
+          "max_m": 3.7447978287312376,
+          "compared_edges": 3057,
+          "near_visible_rows": 2412,
+          "frames": 564,
+          "equal_count_frames_p95_m": 0.05956306637692192,
+          "equal_count_comparisons": 1714
+        },
+        {
+          "version": "V3.3.4 spatial",
+          "p50_m": 0.015144736626101607,
+          "p95_m": 0.3564165705329786,
+          "p99_m": 1.1788298051298511,
+          "max_m": 3.7479149946331622,
+          "compared_edges": 3262,
+          "near_visible_rows": 3601,
+          "frames": 564,
+          "equal_count_frames_p95_m": 0.04659305508939915,
+          "equal_count_comparisons": 1714
+        },
+        {
+          "version": "V3.3.4 temporal",
+          "p50_m": 0.009673888716989598,
+          "p95_m": 0.3479853070082588,
+          "p99_m": 1.154717704478672,
+          "max_m": 3.8657446629235728,
+          "compared_edges": 3261,
+          "near_visible_rows": 3601,
+          "frames": 564,
+          "equal_count_frames_p95_m": 0.025791304526915297,
+          "equal_count_comparisons": 1714
+        }
+      ]
+    },
+    {
+      "run": "02",
+      "methods": [
+        {
+          "version": "V3.0",
+          "p50_m": 0.01377254743628542,
+          "p95_m": 0.5290670076727966,
+          "p99_m": 1.988000502851127,
+          "max_m": 4.39592497116799,
+          "compared_edges": 3626,
+          "near_visible_rows": 2822,
+          "frames": 577,
+          "equal_count_frames_p95_m": 0.05120170291771987,
+          "equal_count_comparisons": 1502
+        },
+        {
+          "version": "V3.3.4 spatial",
+          "p50_m": 0.011804162813167776,
+          "p95_m": 0.07453758521778167,
+          "p99_m": 1.4768394726717877,
+          "max_m": 3.7118996117979055,
+          "compared_edges": 3838,
+          "near_visible_rows": 4222,
+          "frames": 577,
+          "equal_count_frames_p95_m": 0.03746338575081744,
+          "equal_count_comparisons": 1502
+        },
+        {
+          "version": "V3.3.4 temporal",
+          "p50_m": 0.007317454989329342,
+          "p95_m": 0.03869901404477304,
+          "p99_m": 1.687241393497212,
+          "max_m": 3.696153365843939,
+          "compared_edges": 3838,
+          "near_visible_rows": 4222,
+          "frames": 577,
+          "equal_count_frames_p95_m": 0.019514709783770637,
+          "equal_count_comparisons": 1502
+        }
+      ]
+    }
+  ],
+  "limits": "Camera-derived correspondence and planar metric; not ground-truth road accuracy. All methods use the same 7 depths from 1.2 to 3m and replay the identical JPEG RGB and saved mask; original inference used PNG RGB. Counts and support differ and are reported. Equal-count subset is diagnostic, not guaranteed same physical-edge identity or a qualification pass."
+}

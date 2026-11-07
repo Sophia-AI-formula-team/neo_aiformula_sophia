@@ -86,7 +86,7 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None,lane_gate=None,external_control=False,departure_rule=None):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None,lane_gate=None,external_control=False,departure_rule=None,external_yaw_limit=None):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
         if obstacle_specs is not None:
@@ -104,6 +104,9 @@ class Lab:
         params=dict(weights=w,seed=int(seed),start=float(start),offset=float(offset),yaw=float(angle),obstacles=specs,
                     limit=limit,vision=bool(vision),model=model,captureInterval=capture,solver=self.build,media=media)
         if external_control:params["externalControl"]=True
+        if external_yaw_limit is not None:
+            if not 0<float(external_yaw_limit)<=8:raise ValueError("External yaw exceeds installed interface")
+            params["externalYawLimit"]=float(external_yaw_limit)
         if departure_rule is not None:
             if departure_rule not in ("body_edge","all_wheel_centers"):raise ValueError("Unknown departure rule")
             params["departureRule"]=departure_rule
@@ -125,6 +128,7 @@ class Lab:
         cfg=dict(start=start,offset=offset,yaw=angle,weights=w,obstacles=specs,edge=self.edge,visionPort=vision,
                  output=str(out),media=str(self.work/"frames"/name) if media else "",limit=limit,captureInterval=capture)
         if external_control:cfg["externalControl"]=True
+        if external_yaw_limit is not None:cfg["externalYawLimit"]=float(external_yaw_limit)
         if departure_rule is not None:cfg["departureRule"]=departure_rule
         if timing is not None:
             cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])

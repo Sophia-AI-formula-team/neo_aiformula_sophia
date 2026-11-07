@@ -20,6 +20,7 @@ public class Setup {
     public float start,offset,yaw, limit=1f, captureInterval=.5f;
     public int visionPort;
     public bool externalControl;
+    public float externalYawLimit=1.60119f;
     public string departureRule="body_edge";
     public string timingMode="";
     public EncounterConfig encounter;
@@ -173,7 +174,9 @@ public sealed class UnityRace {
                 seenFrames++;
                 if(obs.control==null || obs.control.Length!=2 || obs.control.Any(v=>float.IsNaN(v)||float.IsInfinity(v)))
                     throw new InvalidOperationException("Invalid V3 command");
-                policy.speedCmd=Mathf.Clamp(obs.control[0],0,6);policy.yawCmd=Mathf.Clamp(obs.control[1],-1.60119f,1.69546f);
+                if(cfg.externalYawLimit<=0 || cfg.externalYawLimit>8)throw new InvalidOperationException("External yaw limit exceeds installed autonomous interface");
+                policy.speedCmd=Mathf.Clamp(obs.control[0],0,6);
+                policy.yawCmd=cfg.externalYawLimit==1.60119f ? Mathf.Clamp(obs.control[1],-1.60119f,1.69546f) : Mathf.Clamp(obs.control[1],-cfg.externalYawLimit,cfg.externalYawLimit);
                 decisions.Add(new {t,version="V3",sensorSource="wheel proxy + raw gyro + A4/RGB",obs.decision,policy.speedCmd,policy.yawCmd});
             }else{
             List<Vector2> visible=new List<Vector2>();float[] lane;

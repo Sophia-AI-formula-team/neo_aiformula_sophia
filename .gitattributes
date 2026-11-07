@@ -48,3 +48,13 @@
 # Preserve this acceptance record and its frozen source hashes byte for byte.
 /docs/agent-context/sessions/2026-11-08-planner-v3-acceptance/** -text -eol whitespace=cr-at-eol
 /codexws/learned_racing/unity_laps/v3_acceptance/** -text -eol whitespace=cr-at-eol
+# V3.3 / V3.4 experiment manifests refer to byte-exact source hashes.
+/codexws/learned_racing/unity_laps/v33* -text -eol whitespace=cr-at-eol
+/codexws/learned_racing/unity_laps/v34* -text -eol whitespace=cr-at-eol
+/codexws/learned_racing/unity_laps/test_v34.py -text -eol whitespace=cr-at-eol
+/codexws/learned_racing/unity_laps/v33_evidence/** -text -eol whitespace=cr-at-eol
+/docs/agent-context/sessions/2026-11-08-planner-v33-perception/** -text -eol whitespace=cr-at-eol
+# Retained frozen sources/session include an existing final empty line.
+/codexws/learned_racing/unity_laps/v33_controller.py whitespace=cr-at-eol,-blank-at-eof
+/codexws/learned_racing/unity_laps/v33_evidence/sources/*.source whitespace=cr-at-eol,-blank-at-eof
+/docs/agent-context/sessions/2026-11-08-planner-v33-perception/SESSION.md whitespace=cr-at-eol,-blank-at-eof

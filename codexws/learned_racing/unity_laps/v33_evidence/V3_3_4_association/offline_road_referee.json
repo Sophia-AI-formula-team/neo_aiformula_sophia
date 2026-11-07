@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "id": "01",
+      "status": "lap",
+      "visible_edge_opportunities": 3068,
+      "estimated_edges": 2725,
+      "coverage": 0.8882007822685789,
+      "absolute_edge_error_p95_m": 1.2820666347858962,
+      "false_free_fraction": 0.03044819107218085,
+      "road_recall": 0.9224694271258287,
+      "worst_frames": [
+        [
+          3.5075912819590807,
+          38.2,
+          3.0
+        ],
+        [
+          3.501439744898649,
+          38.0,
+          3.0
+        ],
+        [
+          3.481934011532151,
+          37.8,
+          3.0
+        ],
+        [
+          3.4747466804548877,
+          37.6,
+          3.0
+        ],
+        [
+          3.4619180452414224,
+          37.3999977,
+          3.0
+        ]
+      ]
+    },
+    {
+      "id": "02",
+      "status": "lap",
+      "visible_edge_opportunities": 3292,
+      "estimated_edges": 3192,
+      "coverage": 0.9696233292831106,
+      "absolute_edge_error_p95_m": 0.18245452831898956,
+      "false_free_fraction": 0.009875217722095849,
+      "road_recall": 0.9014873940715215,
+      "worst_frames": [
+        [
+          3.4911769643523485,
+          28.4,
+          3.0
+        ],
+        [
+          3.4860612213087485,
+          52.8,
+          3.0
+        ],
+        [
+          3.480403950881818,
+          28.1999989,
+          3.0
+        ],
+        [
+          3.480403950881818,
+          28.0,
+          3.0
+        ],
+        [
+          3.4793681568649864,
+          27.8,
+          3.0
+        ]
+      ]
+    }
+  ],
+  "qualification_pass": false,
+  "limits": "Offline planar diagnostic only, 2 cm sampling of installed referee corridor. World pose and map are scoring inputs only; pitch/roll and occlusion are not modeled. Not a substitute for same-physical-edge temporal acceptance or manual image labels."
+}

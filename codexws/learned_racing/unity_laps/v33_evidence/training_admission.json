@@ -1,0 +1,15 @@
+{
+  "allowed": false,
+  "training_started": false,
+  "new_training_episodes": 0,
+  "reason": "No candidate passed all preregistered gates",
+  "gates": {
+    "perception": "not passed: diagnostic correspondence is not physical-edge acceptance",
+    "clear": "V3.3.4: 3 completed laps but third averaged 1.94 m/s; stopped at first gate failure. V3.4.5: 0/2 development full laps.",
+    "disturbance": "not run",
+    "obstacles": "V3.4.5 development A/B/C passed, sequence departed; 16 fresh obstacle trials not run",
+    "execution_model": "new fixed-command calibration not run; inherited fit is not 5-second validation"
+  },
+  "checkpoint_reuse": "V3.2 checkpoint retained; not promoted or retrained",
+  "subagents": "Stale activation reset once as user authorized. Existing workers reused; context-limit 413 and provider 429, no independent review returned. Failed retries exhausted 8-request activation. No paid overflow or provider selection change."
+}

@@ -1,0 +1,79 @@
+"""A4/RGB to V3 local road + controller, with no map, pose or station input."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import socket
+import struct
+import sys
+import cv2
+import numpy as np
+from vision import receive,FOCAL,CX,CY,HEIGHT
+from v3_model import LocalTracker
+from v33_controller import Planner33 as Planner
+from v33_road import EvidenceRoad, RoadObservation as Observation
+
+def main():
+    p=argparse.ArgumentParser();p.add_argument("release",type=Path);p.add_argument("ready",type=Path)
+    p.add_argument("--model",type=Path);p.add_argument("--audit",action="store_true")
+    p.add_argument("--spatial",action="store_true");p.add_argument("--pace",type=float);p.add_argument("--yaw-limit",type=float,default=1.55);p.add_argument("--disturbance",action="store_true");a=p.parse_args();sys.path.insert(0,str(a.release))
+    from yolop_a3_runtime import PerceptionModel
+    weights=a.release/"weights/shared_best.pth";sha=hashlib.sha256(weights.read_bytes()).hexdigest()
+    if json.loads((a.release/"weights/manifest.json").read_bytes())["sha256"]!=sha:raise ValueError("A4 weight hash")
+    model=PerceptionModel(str(weights),device="cuda");model.predict(np.zeros((360,640,3),np.uint8))
+    record=json.loads(a.model.read_bytes()) if a.model else {}
+    params=record.get("parameters",{}).copy()
+    if a.pace is not None:params["pace"]=a.pace
+    params["yaw_limit"]=a.yaw_limit
+    planner_type=Planner
+    if a.audit:
+        from v33_audit import AuditedPlanner
+        planner_type=AuditedPlanner
+    with socket.socket() as server:
+        server.bind(("127.0.0.1",0));server.listen(1)
+        control_sha=hashlib.sha256((Path(__file__).parent/"v3_model.py").read_bytes()+Path(__file__).read_bytes()+(a.model.read_bytes() if a.model else b"default")).hexdigest()
+        version="V3.3.2" if a.yaw_limit>1.55 else "V3.3.0" if a.spatial else "V3.3.1"
+        a.ready.write_text(json.dumps(dict(port=server.getsockname()[1],weights=sha,controlSha=control_sha,version=version,sensorContract="camera pixels, wheel proxy RPM, raw gyro")),encoding="utf8")
+        while True:
+            connection,_=server.accept()
+            with connection:
+                observer=EvidenceRoad(temporal=not a.spatial);planner=planner_type(params);tracker=LocalTracker();last=None;frame=0
+                try:
+                    while True:
+                        n=struct.unpack("<I",receive(connection,4))[0]
+                        if n==0:return
+                        if n>2048:raise ValueError("Unexpected sensor packet")
+                        sensor=json.loads(receive(connection,n))
+                        if set(sensor)!={"t","leftRpm","rightRpm","gyro","wheelRadius","source"}:raise ValueError("Forbidden or missing sensor field")
+                        n=struct.unpack("<I",receive(connection,4))[0]
+                        if n>4000000:raise ValueError("Unexpected image size")
+                        image=cv2.imdecode(np.frombuffer(receive(connection,n),np.uint8),cv2.IMREAD_COLOR)
+                        prediction=model.predict(image)
+                        measured=[]
+                        for obj in prediction.detections:
+                            if obj.class_id!=91:continue
+                            x0,y0,x1,y1=obj.box_xyxy
+                            if y1<=CY+5:continue
+                            z=HEIGHT*FOCAL/(y1-CY);x=(.5*(x0+x1)-CX)*z/FOCAL
+                            if z<12:measured.append([z,x])
+                        dt=.2 if last is None else float(sensor["t"]-last);last=float(sensor["t"])
+                        speed=max(0,(sensor["leftRpm"]+sensor["rightRpm"])*np.pi*sensor["wheelRadius"]/60)
+                        mask=prediction.lane_mask.copy()
+                        if a.disturbance:
+                            if frame%37 in (12,13,14):mask[:]=0
+                            elif frame%7==0:mask=np.roll(mask,12,axis=1)
+                        road,pixels,heading=observer.read(image,mask,speed,sensor["gyro"],dt)
+                        objects=tracker.update(measured,speed,sensor["gyro"],dt)
+                        command=planner.step(Observation(road,objects,speed,sensor["gyro"],dt,heading))
+                        decision=dict(**planner.last,road=road.tolist(),objects=objects.tolist(),speedEstimate=speed,roadSources="RGB+A4; clipped FOV is not physical road heading; wheel/gyro memory",roadEvidence=observer.last,heading=heading.tolist(),sensor=sensor)
+                        payload=dict(control=command.tolist(),decision=decision)
+                        overlay=prediction.combined_overlay.copy()
+                        for x0,x1,v in pixels:cv2.line(overlay,(x0,v),(x1,v),(220,180,70),1)
+                        frames=a.ready.parent/"frames";frames.mkdir(exist_ok=True)
+                        cv2.imwrite(str(frames/f"{frame:05d}.jpg"),overlay)
+                        cv2.imwrite(str(frames/f"{frame:05d}_mask.png"),mask);frame+=1
+                        msg=json.dumps(payload,allow_nan=False).encode();connection.sendall(struct.pack("<I",len(msg))+msg)
+                except (EOFError,ConnectionResetError,BrokenPipeError):pass
+                except Exception as e:
+                    msg=json.dumps(dict(error=repr(e))).encode();connection.sendall(struct.pack("<I",len(msg))+msg);raise
+if __name__=="__main__":main()

@@ -1,0 +1,63 @@
+{
+  "results": [
+    {
+      "run": "01",
+      "methods": [
+        {
+          "version": "V3.0",
+          "p50_m": 0.015802881924845247,
+          "p95_m": 0.14112696840014777,
+          "compared_edges": 2537,
+          "near_visible_rows": 2395,
+          "frames": 545
+        },
+        {
+          "version": "V3.3.0 spatial",
+          "p50_m": 0.014511495466140223,
+          "p95_m": 0.447640980511011,
+          "compared_edges": 3686,
+          "near_visible_rows": 3606,
+          "frames": 545
+        },
+        {
+          "version": "V3.3.1 temporal",
+          "p50_m": 0.011558435162539848,
+          "p95_m": 0.46731548786668353,
+          "compared_edges": 3686,
+          "near_visible_rows": 3606,
+          "frames": 545
+        }
+      ]
+    },
+    {
+      "run": "02",
+      "methods": [
+        {
+          "version": "V3.0",
+          "p50_m": 0.01602934936324152,
+          "p95_m": 0.10801954012567529,
+          "compared_edges": 2199,
+          "near_visible_rows": 2087,
+          "frames": 519
+        },
+        {
+          "version": "V3.3.0 spatial",
+          "p50_m": 0.016204655764122916,
+          "p95_m": 0.7871131123156798,
+          "compared_edges": 3336,
+          "near_visible_rows": 3286,
+          "frames": 519
+        },
+        {
+          "version": "V3.3.1 temporal",
+          "p50_m": 0.013970973482625992,
+          "p95_m": 0.7959407040302802,
+          "compared_edges": 3336,
+          "near_visible_rows": 3286,
+          "frames": 519
+        }
+      ]
+    }
+  ],
+  "limits": "Camera-derived correspondence and planar metric; not ground-truth road accuracy. All methods replay the identical recorded JPEG RGB and original saved mask; original controller inference used PNG RGB. Coverage and correspondence counts differ and are reported explicitly."
+}
