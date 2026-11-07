@@ -19,13 +19,14 @@ public class Setup {
     public float[] weights;
     public float start,offset,yaw, limit=1f, captureInterval=.5f;
     public int visionPort;
+    public bool externalControl;
     public string timingMode="";
     public EncounterConfig encounter;
     public SmoothConfig smooth;
     public float[] laneGateThresholdsM;
     public float approachCap;
 }
-public class Perception {public float?[] lane;public float[][] objects;public string error;}
+public class Perception {public float?[] lane;public float[][] objects;public float[] control;public object decision;public string error;}
 public class Prop {public GameObject go;public Vector2 home,right;public float amplitude,phase,hz,progress;}
 public sealed class UnityRace {
     const float dt=.01f;
@@ -103,6 +104,14 @@ public sealed class UnityRace {
     Vector2 PropPosition(Prop o,float t){return o.home+o.right*(o.amplitude*Mathf.Sin(o.phase+t*o.hz));}
     static float[] Floats(Perception v){return v.lane.Select(n=>n.HasValue?n.Value:float.NaN).ToArray();}
     Perception Detect(){
+        if(cfg.externalControl){
+            // Only virtual wheel/gyro sensor channels cross this boundary.
+            // Implicit-contact RPM is a motor-plant proxy, not an independent encoder.
+            var sensor=Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new {
+                t=k*dt,leftRpm=d.LeftWheelRpm,rightRpm=d.RightWheelRpm,gyro=d.Body.angularVelocity.y,
+                wheelRadius=.127f,source="Unity motor-plant RPM proxy and ideal raw gyro"}));
+            netOut.Write(sensor.Length);netOut.Write(sensor);
+        }
         var bytes=feed.Capture().EncodeToPNG();netOut.Write(bytes.Length);netOut.Write(bytes);netOut.Flush();
         int count=netIn.ReadInt32();if(count<2||count>1000000)throw new IOException("Invalid detector packet");
         var obs=JsonConvert.DeserializeObject<Perception>(Encoding.UTF8.GetString(netIn.ReadBytes(count)));
@@ -145,6 +154,15 @@ public sealed class UnityRace {
         if(t>260||t-lastAdvance>9){Finish("stalled");return;}
         float?[] observed=null,filtered=null;List<Sight> tracks=null;int laneGateMask=0;
         if(k%(net==null?10:20)==0){
+            if(cfg.externalControl){
+                if(net==null)throw new InvalidOperationException("V3 requires a camera sensor server");
+                var obs=Detect();
+                seenFrames++;
+                if(obs.control==null || obs.control.Length!=2 || obs.control.Any(v=>float.IsNaN(v)||float.IsInfinity(v)))
+                    throw new InvalidOperationException("Invalid V3 command");
+                policy.speedCmd=Mathf.Clamp(obs.control[0],0,6);policy.yawCmd=Mathf.Clamp(obs.control[1],-1.60119f,1.69546f);
+                decisions.Add(new {t,version="V3",sensorSource="wheel proxy + raw gyro + A4/RGB",obs.decision,policy.speedCmd,policy.yawCmd});
+            }else{
             List<Vector2> visible=new List<Vector2>();float[] lane;
             if(net!=null){
                 var obs=Detect();lane=Floats(obs);foreach(var o in obs.objects)visible.Add(new Vector2(o[0],o[1]));
@@ -167,6 +185,7 @@ public sealed class UnityRace {
             }
             tracks=tracker.Update(visible,pos,forward,t);
             if(!policy.Act(lane,tracks,Mathf.Max(0,speed),yaw,net==null?.10f:.20f)){Finish("lost_lane");return;}
+            }
         }
         d.SetAutonomousVelocityCommand(policy.speedCmd,policy.yawCmd);d.StepDrive(dt);scene.GetPhysicsScene().Simulate(dt);k++;
         if(observed!=null){

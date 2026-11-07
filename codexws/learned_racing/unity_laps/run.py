@@ -86,7 +86,7 @@ class Lab:
     def event(self,kind,**extra):
         with (self.root/"events.jsonl").open("a",encoding="utf8") as fp:
             fp.write(json.dumps({"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"kind":kind,**extra},ensure_ascii=False)+"\n")
-    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None,lane_gate=None):
+    def run(self,name,weights,seed=41021,obstacles=False,vision=0,media=False,limit=1.,capture=.5,model="local_semantic",*,obstacle_specs=None,timing=None,encounter=None,smooth=None,lane_gate=None,external_control=False):
         rng=np.random.default_rng(seed);start=rng.random(); offset=rng.uniform(-.30,.30); angle=rng.uniform(-3.2,3.2)
         specs=[]
         if obstacle_specs is not None:
@@ -103,6 +103,7 @@ class Lab:
         w=[round(float(x),5) for x in weights]
         params=dict(weights=w,seed=int(seed),start=float(start),offset=float(offset),yaw=float(angle),obstacles=specs,
                     limit=limit,vision=bool(vision),model=model,captureInterval=capture,solver=self.build,media=media)
+        if external_control:params["externalControl"]=True
         if timing is not None:
             if timing["mode"] not in ("both","yield_only") or not 0<=timing["approach"]<=6:
                 raise ValueError("Unknown timing action or invalid approach speed")
@@ -120,6 +121,7 @@ class Lab:
         jobpath=self.work/(name+".request.json");out=self.work/(name+".result.json")
         cfg=dict(start=start,offset=offset,yaw=angle,weights=w,obstacles=specs,edge=self.edge,visionPort=vision,
                  output=str(out),media=str(self.work/"frames"/name) if media else "",limit=limit,captureInterval=capture)
+        if external_control:cfg["externalControl"]=True
         if timing is not None:
             cfg.update(timingMode=timing["mode"],approachCap=timing["approach"])
         if encounter is not None:cfg["encounter"]=encounter
