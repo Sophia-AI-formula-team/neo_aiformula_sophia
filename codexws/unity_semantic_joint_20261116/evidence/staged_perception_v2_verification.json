@@ -1,0 +1,154 @@
+{
+  "scope": "No-model single-thread staging verification; no live/source edits",
+  "tests": [
+    "three_real_red_pixels_below_without_cone_rejected",
+    "fewer_than_three_preserves_model",
+    "one_pixel_cell_crossing_horizon_preserves_model",
+    "colored_pixels_above_horizon_preserved",
+    "large_post_box_does_not_reject_upper_lamp_pixels",
+    "matching_current_rgb_identity_overrides_pixels",
+    "wrong_color_identity_does_not_override",
+    "missing_camera_preserves_input",
+    "invalid_rotation_preserves_input",
+    "no_rgb_preserves_nonconflict",
+    "v1_conflict_remains_without_pixel_proof",
+    "equal_score_cone_alone_not_rejected",
+    "separate_true_red_survives_rejected_false_red"
+  ],
+  "passed": 13,
+  "runs": [
+    {
+      "run": "outer_joint_01",
+      "frames": 327,
+      "elapsed_sec": 3.930290699994657,
+      "default_full_schema_equal": true,
+      "v1_rejected_preserved": 5,
+      "preservation": {
+        "green_v1": 35,
+        "green_v2": 35
+      },
+      "counts": {
+        "original": {
+          "green/unknown": 284,
+          "green/green": 34,
+          "green/red": 9
+        },
+        "default": {
+          "green/unknown": 284,
+          "green/green": 34,
+          "green/red": 9
+        },
+        "v1": {
+          "green/unknown": 287,
+          "green/green": 35,
+          "green/red": 5
+        },
+        "v2": {
+          "green/unknown": 290,
+          "green/green": 35,
+          "green/red": 2
+        }
+      }
+    },
+    {
+      "run": "inner_joint_04",
+      "frames": 839,
+      "elapsed_sec": 10.06499569999869,
+      "default_full_schema_equal": true,
+      "v1_rejected_preserved": 12,
+      "preservation": {
+        "green_v1": 98,
+        "green_v2": 98,
+        "red_v1": 61,
+        "red_v2": 61
+      },
+      "counts": {
+        "original": {
+          "green/unknown": 666,
+          "green/green": 101,
+          "green/red": 9,
+          "red/green": 1,
+          "red/unknown": 1,
+          "red/red": 61
+        },
+        "default": {
+          "green/unknown": 666,
+          "green/green": 101,
+          "green/red": 9,
+          "red/green": 1,
+          "red/unknown": 1,
+          "red/red": 61
+        },
+        "v1": {
+          "green/unknown": 677,
+          "green/green": 98,
+          "green/red": 1,
+          "red/green": 1,
+          "red/unknown": 1,
+          "red/red": 61
+        },
+        "v2": {
+          "green/unknown": 677,
+          "green/green": 98,
+          "green/red": 1,
+          "red/green": 1,
+          "red/unknown": 1,
+          "red/red": 61
+        }
+      }
+    },
+    {
+      "run": "inner_joint_05",
+      "frames": 963,
+      "elapsed_sec": 12.28167329999269,
+      "default_full_schema_equal": true,
+      "v1_rejected_preserved": 14,
+      "preservation": {
+        "green_v1": 79,
+        "green_v2": 79,
+        "red_v1": 58,
+        "red_v2": 58
+      },
+      "counts": {
+        "original": {
+          "green/unknown": 804,
+          "green/green": 85,
+          "green/red": 12,
+          "red/green": 2,
+          "red/unknown": 2,
+          "red/red": 58
+        },
+        "default": {
+          "green/unknown": 804,
+          "green/green": 85,
+          "green/red": 12,
+          "red/green": 2,
+          "red/unknown": 2,
+          "red/red": 58
+        },
+        "v1": {
+          "green/unknown": 818,
+          "green/green": 79,
+          "green/red": 4,
+          "red/green": 2,
+          "red/unknown": 2,
+          "red/red": 58
+        },
+        "v2": {
+          "green/unknown": 820,
+          "green/green": 79,
+          "red/green": 2,
+          "red/unknown": 2,
+          "red/red": 58,
+          "green/red": 2
+        }
+      }
+    }
+  ],
+  "limitations": "Saved JPEG is not original inference PNG; capture sim_time replaces arrival clock for RGB association",
+  "hashes": {
+    "worker.py": "b515fdb2e0abd7f21555acc09b83632d73a8ca71db3e9dc3c5298d3a8985f4d6",
+    "signal_panel_rgb.py": "939a59a6d4cb8d9efd19198700ea26afd460dbbf9e641551f14a245a52f40cee",
+    "signal_model_identity.py": "3e626adb605d55a6818c7473959692f606fd35e26f6d1b7c81d0fd4e62413841"
+  }
+}

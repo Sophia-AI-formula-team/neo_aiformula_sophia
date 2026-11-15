@@ -23,7 +23,15 @@ failures. Report necessary code repairs before making them. Do not overwrite
 older source/experiment receipts, change another worktree, or reuse old videos
 as evidence for this package.
 
-## User intent and delivered baseline
+The current simulation has its own
+[handoff and source index](../../../../../codexws/unity_semantic_joint_20261116/AGENT_HANDOFF.md)
+and [result ledger](../../../../../codexws/unity_semantic_joint_20261116/RESULTS.md).
+They distinguish completed laps, odom closure, rejected official fusion and
+unobserved interior turns. Read the problem reports before changing thresholds
+or selecting a different signal input. The original package has no checkpoint
+restore; do not inherit an older version's restart acceptance.
+
+## Historical user intent and delivered baseline — not 0.4.0 acceptance
 
 The user requested the updated semantic package in neo, MCP-only Unity testing,
 inner/outer starts over the marked northeast segment, red/green trajectories and

@@ -1,0 +1,245 @@
+{
+  "scope": "Saved clouds and pinned native callbacks only; no model, fusion or Unity",
+  "elapsed_sec": 0.9133525999786798,
+  "checks": [
+    "all_saved_cloud_default_selections_equal",
+    "actual_667_default_callback_output_unchanged_unsupported",
+    "actual_666_to_667_native_callbacks_and_later_stopped_clouds_supported",
+    "nonfinite",
+    "wrong_side",
+    "behind",
+    "nonmonotonic",
+    "tiny_segment",
+    "inconsistent_heading",
+    "outside_projection_envelope",
+    "requires_exactly_four",
+    "right_side_identity",
+    "truthy_non_bool_does_not_enable",
+    "normal_center_has_priority"
+  ],
+  "passed": 14,
+  "default_selection_frames_equal": 827,
+  "default_667": {
+    "valid": true,
+    "supported": false,
+    "mode": "default_straight",
+    "v": 2.45,
+    "w": 1.8119999999999998e-06,
+    "target": [
+      3.0,
+      0.0,
+      0.0
+    ],
+    "selected_points": [
+      [
+        3.0,
+        0.0
+      ],
+      [
+        4.0,
+        0.0
+      ],
+      [
+        5.0,
+        0.0
+      ]
+    ],
+    "selected_indices": [
+      2,
+      4,
+      6
+    ],
+    "frame": "base_link",
+    "selection_source": "default_straight",
+    "selection_reason": "no_observed_triplet",
+    "omega_t": 0.0,
+    "counts": [
+      4,
+      0,
+      0
+    ]
+  },
+  "enabled_native_callback_replay": {
+    "666": {
+      "valid": true,
+      "supported": true,
+      "mode": "center",
+      "v": 2.243534964713803,
+      "w": 0.8314701451418103,
+      "target": [
+        2.0,
+        0.48461902141571045,
+        0.2228090909729875
+      ],
+      "selected_points": [
+        [
+          2.0,
+          0.48461902141571045
+        ],
+        [
+          2.5,
+          0.5979044437408447
+        ],
+        [
+          3.5,
+          0.8244753479957581
+        ]
+      ],
+      "selected_indices": [
+        0,
+        1,
+        3
+      ],
+      "frame": "base_link",
+      "selection_source": "center",
+      "selection_reason": "adapter_opt_in_short_observed_center",
+      "omega_t": 5.669428010390831e-07,
+      "counts": [
+        6,
+        5,
+        4
+      ],
+      "theta_1": 0.2228090909729875,
+      "theta_2": 0.22280914766726762
+    },
+    "667": {
+      "valid": true,
+      "supported": true,
+      "mode": "left_only",
+      "v": 2.2473688373589993,
+      "w": 0.9990409517678231,
+      "target": [
+        3.0,
+        1.1893129507700602,
+        0.11875102282081569
+      ],
+      "selected_points": [
+        [
+          3.0,
+          1.1893129507700602
+        ],
+        [
+          3.5,
+          1.2489691461835586
+        ],
+        [
+          4.5,
+          1.4730439186096191
+        ]
+      ],
+      "selected_indices": [
+        0,
+        1,
+        3
+      ],
+      "frame": "base_link",
+      "selection_source": "left_only",
+      "selection_reason": "adapter_opt_in_short_observed_side",
+      "omega_t": 1.0168260030007192,
+      "counts": [
+        4,
+        0,
+        0
+      ],
+      "theta_1": 0.11875102282081569,
+      "theta_2": 0.22043362312088763
+    },
+    "670": {
+      "valid": true,
+      "supported": true,
+      "mode": "left_only",
+      "v": 2.1989975942331728,
+      "w": 1.1059085996106486,
+      "target": [
+        3.0,
+        1.348314062754313,
+        0.13420123115800187
+      ],
+      "selected_points": [
+        [
+          3.0,
+          1.348314062754313
+        ],
+        [
+          3.5,
+          1.4158204283033096
+        ],
+        [
+          4.5,
+          1.6555955410003662
+        ]
+      ],
+      "selected_indices": [
+        0,
+        1,
+        3
+      ],
+      "frame": "base_link",
+      "selection_source": "left_only",
+      "selection_reason": "adapter_opt_in_short_observed_side",
+      "omega_t": 1.0113109943340899,
+      "counts": [
+        4,
+        0,
+        0
+      ],
+      "theta_1": 0.13420123115800187,
+      "theta_2": 0.23533233059141087
+    },
+    "827": {
+      "valid": true,
+      "supported": true,
+      "mode": "left_only",
+      "v": 2.197059002115445,
+      "w": 1.1148175676077325,
+      "target": [
+        3.0,
+        1.3590378920237223,
+        0.13795180743682792
+      ],
+      "selected_points": [
+        [
+          3.0,
+          1.3590378920237223
+        ],
+        [
+          3.5,
+          1.4284547056470596
+        ],
+        [
+          4.5,
+          1.6720502376556396
+        ]
+      ],
+      "selected_indices": [
+        0,
+        1,
+        3
+      ],
+      "frame": "base_link",
+      "selection_source": "left_only",
+      "selection_reason": "adapter_opt_in_short_observed_side",
+      "omega_t": 1.0099009733759412,
+      "counts": [
+        4,
+        0,
+        0
+      ],
+      "theta_1": 0.13795180743682792,
+      "theta_2": 0.23894190477442204
+    }
+  },
+  "transition_666_to_667": {
+    "v": 0.0038338726451963012,
+    "w": 0.16757080662601287,
+    "omega_t": 1.016825436057918,
+    "theta_1": -0.10405806815217182,
+    "theta_2": -0.0023755245463799868
+  },
+  "source_sha256": {
+    "baseline_upstream_adapter.py": "8be126cfc98395858f81ac61a855bb3d5fa4d8b19ade1ad4788cceb6db8c672d",
+    "staged_upstream_adapter.py": "d7129d6bf97780391a38a0a24d42f487ca25d408047b02b1ae8c8b628261c6f0",
+    "upstream_provenance.json": "c56f7a6d8e4add40e5185a7160456ff186e37a759c0335563b2172d7c22347af"
+  },
+  "limitations": "Original left-side A/B/C offsets and omega differencing retained. Callback response is not physical stability or closed-loop acceptance. No raw mask/projection replay performed."
+}

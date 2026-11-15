@@ -1,0 +1,109 @@
+{
+  "schema": "joint_media_owned_receipt/v1",
+  "status": "machine_checks_complete_visual_QA_pending",
+  "exit_code": 0,
+  "primary_limit_sec": 300,
+  "cleanup_limit_sec": 5,
+  "automatic_retry": false,
+  "mutex_name": "Local\\AIFormulaSemanticJointMediaOneEncoder",
+  "previous_mutex_abandoned": false,
+  "attempt_directory": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1",
+  "output_directory": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render",
+  "visual_qa": "not performed",
+  "launcher": {
+    "pid": 45484,
+    "filetime_100ns": "134392495459883255",
+    "utc": "2026-11-15T20:52:25.988325+00:00",
+    "source": "GetProcessTimes_on_owned_process_handle"
+  },
+  "initial_thread": {
+    "tid": 44844,
+    "owner_pid": 45484,
+    "creation_filetime_100ns": "134392495459883271",
+    "enumeration": "Toolhelp unique owned thread while initial process suspended",
+    "query": "OpenThread/GetProcessIdOfThread/GetThreadId/GetThreadTimes"
+  },
+  "containment": "CREATE_SUSPENDED -> assign owned KILL_ON_JOB_CLOSE Job -> verify unique initial thread -> ResumeThread(1)",
+  "actual_interpreter_identity": {
+    "pid": 45484,
+    "creation_filetime_100ns": "134392495459883255",
+    "executable": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "kernel_in_any_job": true,
+    "recorded_before_site_main": true
+  },
+  "actual_interpreter_independent_check": {
+    "pid": 45484,
+    "creation_filetime_100ns": "134392495459883255",
+    "in_owned_job": true,
+    "state": "live"
+  },
+  "primary_elapsed_sec": 108.72644209998543,
+  "job_active_before_stop": 0,
+  "job_active_after_stop": 0,
+  "launcher_exit_code": 0,
+  "independent_final_checks": [
+    {
+      "pid": 45484,
+      "creation_filetime_100ns": "134392495459883255",
+      "in_owned_job": true,
+      "state": "exited"
+    },
+    {
+      "pid": 31916,
+      "state": "absent",
+      "error": 87
+    }
+  ],
+  "cleanup_elapsed_sec": 5.830000736750662e-05,
+  "cleanup_verified": true,
+  "known_processes": [
+    {
+      "pid": 45484,
+      "creation_filetime_100ns": "134392495459883255",
+      "in_owned_job": true,
+      "state": "live"
+    },
+    {
+      "pid": 31916,
+      "creation_filetime_100ns": "134392495460908449",
+      "in_owned_job": true,
+      "state": "live"
+    }
+  ],
+  "process_scope": "Job member birth tokens sampled at 50 ms; short-lived processes may be unsampled. ActiveProcesses=0 verifies whole owned tree.",
+  "source_hashes_before_after_equal": true,
+  "case_boundaries_sha256": "e470128161bf4d6b8e61d13c4b07d4bcd506e6606d2bbcead858dae439a3cf74",
+  "cases": [
+    {
+      "case_index": 1,
+      "name": "INNER07_2LAPS_PANEL_ONLY",
+      "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07",
+      "plan_file": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\inner07_plan_v1.json",
+      "plan_sha256": "77eec8b733b24e62486e1b93044d3334a534e5dab36126e60e35b334f2940a20",
+      "frame_count": 450,
+      "first_output_frame": 0,
+      "last_output_frame": 449,
+      "first_output_time": 0.0,
+      "end_output_time_exclusive": 30.0,
+      "duration_seconds": 30.0,
+      "scheduled_seconds": 30.0
+    },
+    {
+      "case_index": 2,
+      "name": "OUTER03_2LAPS_PANEL_ONLY",
+      "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03",
+      "plan_file": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\outer03_plan_v1.json",
+      "plan_sha256": "9ec169c5c08a8a828558eb133f7eaa2c41e131b5ba53cce97767bc6ac3b26f75",
+      "frame_count": 450,
+      "first_output_frame": 450,
+      "last_output_frame": 899,
+      "first_output_time": 30.0,
+      "end_output_time_exclusive": 60.0,
+      "duration_seconds": 30.0,
+      "scheduled_seconds": 30.0
+    }
+  ],
+  "video": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\semantic_joint.mp4",
+  "video_sha256": "815285ea9da67903df8fc92d67deafb8845aff9159670c8c8a1c2d49a9994c9b",
+  "frames": 900
+}

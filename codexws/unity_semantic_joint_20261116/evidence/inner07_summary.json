@@ -1,0 +1,239 @@
+{
+  "accepted": false,
+  "reason": "Two physical laps completed after green recovery; red detour failed: Red wait persisted for 12 s: red_wait_map_fusion",
+  "travelled_m": 519.832642,
+  "physical_laps": 2,
+  "physical_lap_events": [
+    {
+      "event": "physical_lap_completed",
+      "stage": "learned_continuing",
+      "t": 100.08701119955367,
+      "wall": 100.1555986000003,
+      "detail": {
+        "completed_laps": 1,
+        "travelled": 259.515381,
+        "reference_ready": true
+      },
+      "x": 67.896,
+      "z": -9.943374
+    },
+    {
+      "event": "physical_lap_completed",
+      "stage": "green_recovery_second_lap",
+      "t": 213.9765199995536,
+      "wall": 214.0455079000003,
+      "detail": {
+        "completed_laps": 2,
+        "travelled": 519.1544,
+        "reference_ready": true
+      },
+      "x": 67.97791,
+      "z": -9.978607
+    }
+  ],
+  "first_moving_command": {
+    "sequence": 62,
+    "sim_time": 3.249999927356839,
+    "odom": {
+      "x": -9.999916,
+      "y": -68.76,
+      "yaw": 3.613642616370373e-07,
+      "v": 3.85230052e-08,
+      "w": 5.86091353e-09
+    },
+    "v": 2.2248456404481183,
+    "w": 0.6740196234848004
+  },
+  "first_odom_reference": {
+    "sequence": 1989,
+    "sim_time": 99.58999777399004,
+    "odom": {
+      "x": -11.2826071,
+      "y": -68.05578,
+      "yaw": 0.13019491251836277,
+      "v": 2.67611,
+      "w": -0.04495317
+    },
+    "reference_length_m": 259.5193895021528
+  },
+  "first_official_fusion": null,
+  "first_detour": null,
+  "red_scheduled": true,
+  "red_observed": true,
+  "detour_entered": false,
+  "detour_completed": false,
+  "measured_left_motion": false,
+  "worker_shutdown": {
+    "clean": true,
+    "forced": false,
+    "exited": true,
+    "exit_code": 0,
+    "elapsed_ms": 31.992700000000003,
+    "error": null,
+    "acknowledgement": {
+      "type": "shutdown",
+      "experiment_mode": "semantic_joint_1115",
+      "clean": true,
+      "fusion_pending_on_close": false,
+      "persistence": "not_implemented_in_supplied_package"
+    }
+  },
+  "semantic_tick_count": 4233,
+  "status_reason_ticks": {
+    "visual_points_stale": 65,
+    "learning_first_lap": 1927,
+    "route_match_unavailable": 4,
+    "unavailable": 52,
+    "within_tolerance": 1892,
+    "red_wait_map_fusion": 261,
+    "resume_delay": 5,
+    "pending": 27
+  },
+  "traffic_reason_ticks": {
+    "traffic_idle": 2009,
+    "red_wait_map_fusion": 261,
+    "green_resume": 1963
+  },
+  "vision_result_ticks": {
+    "none": 3266,
+    "stale": 1,
+    "accepted": 960,
+    "light_only_unsupported_lane": 6
+  },
+  "terminal_reference_length_m": 259.5193895021528,
+  "terminal_map_fusion": {
+    "available": false,
+    "mode": "odom_only",
+    "metric_source": "odometry",
+    "recorded_length_m": 259.5386560398998,
+    "official_size_used": false,
+    "field_validation_required": true,
+    "reason": "ambiguous_correspondence",
+    "final_length_m": 259.5087938488447
+  },
+  "terminal_topology_mapping": {
+    "available": false,
+    "reason": "waiting_for_odom"
+  },
+  "terminal_topology_alignment": {
+    "scale": 0.8890305015427739,
+    "rotation_rad": 2.420100213546359,
+    "translation_x": 25.57811905289668,
+    "translation_y": -24.000051169581955,
+    "rmse_m": 0.0583205123664817,
+    "phase_fraction": 0.5673888838210586,
+    "direction": 1,
+    "available": false,
+    "reason": "ambiguous_correspondence",
+    "alternative_rmse_m": 0.27246131440056154,
+    "alternative_phase_fraction": 0.5648622248854367,
+    "alternative_direction": 1,
+    "ambiguity_gap_m": 0.23417084945849814,
+    "closure_gap_m": 1.4632872033654971,
+    "recorded_closed_length_m": 259.5280463623444,
+    "official_chord_length_m": 215.73047338474703,
+    "sample_count": 5,
+    "transform_direction": "recorded_odom_to_official_xy",
+    "matching_method": "joint_ordered_node_candidates",
+    "matching_scale_map_to_odom": 1.1248208000340325,
+    "node_max_distance_m": 0.07284279338462872,
+    "edge_angle_rmse_deg": 0.09564571023794592,
+    "edge_angle_max_deg": 0.15761409167551504,
+    "edge_chord_rmse_m": 0.03522043472097902,
+    "ambiguity_margin_m": 0.3,
+    "field_validation_required": true,
+    "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+    "candidate_count": 68,
+    "comparison_point_count": 2,
+    "same_transform_alternatives_checked": true,
+    "ambiguity_position_m": 1.0,
+    "alternative_node_spread_m": 1.3058267528261542,
+    "search_exhaustive": false
+  },
+  "graph_frame": "official_unaligned",
+  "physical_junction_error_m": null,
+  "topology_correctness": "not established: needs independent physical junction correspondence; fusion availability alone is insufficient",
+  "internal_map_evidence": "internal nodes are official-graph estimates, not observed internal-road mapping",
+  "rendering_acceptance": "no recorded rendering transition",
+  "signal_source_counts": {
+    "none/unknown": 835,
+    "rgb_panel/green": 72,
+    "rgb_panel/red": 60
+  },
+  "native_light_trace_counts": {
+    "unknown": 949,
+    "green": 9,
+    "red": 9
+  },
+  "signal_policy_counts": {
+    "calibrated_rgb_panel_only": 967
+  },
+  "stationary_green_inputs": [
+    {
+      "sequence": 504,
+      "t": 113.70688779955344,
+      "age": 0.11423409999952128,
+      "capture_relative_sim_time": 113.61818889955339,
+      "raw_model_state": "unknown",
+      "final_signal": "green",
+      "signal_source": "rgb_panel",
+      "signal_policy": "calibrated_rgb_panel_only",
+      "native_light": "unknown",
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_map_fusion",
+      "actual_v": 6.813896e-08,
+      "x": 67.68032,
+      "z": -7.302632,
+      "yaw": 356.475769,
+      "vehicle_center_to_panel_root_planar_m_evaluation_only": 24.83809579100585,
+      "panel_root_forward_m_evaluation_only": 23.121278618564276
+    },
+    {
+      "sequence": 505,
+      "t": 113.94714349955302,
+      "age": 0.13849649999974645,
+      "capture_relative_sim_time": 113.8425874995537,
+      "raw_model_state": "unknown",
+      "final_signal": "green",
+      "signal_source": "rgb_panel",
+      "signal_policy": "calibrated_rgb_panel_only",
+      "native_light": "unknown",
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_map_fusion",
+      "actual_v": 1.71724622e-07,
+      "x": 67.68032,
+      "z": -7.302632,
+      "yaw": 356.475769,
+      "vehicle_center_to_panel_root_planar_m_evaluation_only": 24.83809579100585,
+      "panel_root_forward_m_evaluation_only": 23.121278618564276
+    },
+    {
+      "sequence": 506,
+      "t": 114.15311889955319,
+      "age": 0.1399253999998109,
+      "capture_relative_sim_time": 114.0412653995536,
+      "raw_model_state": "unknown",
+      "final_signal": "green",
+      "signal_source": "rgb_panel",
+      "signal_policy": "calibrated_rgb_panel_only",
+      "native_light": "unknown",
+      "traffic_mode": "normal",
+      "traffic_reason": "green_resume",
+      "actual_v": 7.872534e-08,
+      "x": 67.68032,
+      "z": -7.302632,
+      "yaw": 356.4758,
+      "vehicle_center_to_panel_root_planar_m_evaluation_only": 24.83809579100585,
+      "panel_root_forward_m_evaluation_only": 23.12128352806741
+    }
+  ],
+  "red_inputs_outside_scheduled_capture_interval": [],
+  "signal_evaluation_limits": "Panel-root gap is horizontal distance from recorded vehicle Body position, not bumper/camera or stop-line distance; world signal position is evaluation only. Trace native status can lag the current detector frame. Counts are detector receipts, not unique native votes.",
+  "scope": "completed-run log analysis only; no model/test/Unity execution, no motion.jsonl full scan",
+  "run": "inner_joint_07",
+  "provenance": {
+    "source": "TRIAL/audit/inner07_metrics.json",
+    "source_sha256": "435f5a0fe1b1b687ea8505ccde25d61578bd1c9da85b38892809b441aac5c272",
+    "condensation": "Omit per-frame arrays, worker identities and large map geometry; physical lap events and semantic verdicts retained."
+  }
+}

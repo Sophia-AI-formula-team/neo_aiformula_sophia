@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "experiment_mode": "semantic_joint_1115",
+  "source_version": "0.4.0",
+  "source_commit": "6b71267e24e81459220c7e6d30d84c3f7a00e591",
+  "source_relative_to_repository": "workspace/src/aiformula/perception/semantic_planning_system",
+  "validation_status": "identity_guard_v2_payloads_complete; 13_checks_and_2129_saved_frame_replay_passed; corrected_live_two_lap_acceptance_pending; semantic_source_unchanged",
+  "unity_files": [
+    {
+      "path": "Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+      "before_path": "before/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+      "before_sha256": "49d83845a35aca9315cac888db5f58b9d3fbc458e898af5e35e59d2d88db6c7c",
+      "after_path": "overlay/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs",
+      "after_sha256": "cf506d82e22f1cf10ea26011229bad71c3e368a97121d9673039bb25ea0911a8",
+      "previous_after_sha256": "a521406189fdb6152c6f255e34515a879d70b83691773d966f1a067f9b675f46",
+      "earlier_after_sha256": [
+        "788ffac4fc69bb6f39b9fa3657bb5c95faa597bd27a0add3fc86072f64fc0fd3"
+      ]
+    },
+    {
+      "path": "Assets/AIFormula/Editor/Validation/AIFormulaJointTopoTrial.cs",
+      "before_path": null,
+      "before_sha256": null,
+      "after_path": "overlay/Assets/AIFormula/Editor/Validation/AIFormulaJointTopoTrial.cs",
+      "after_sha256": "331bbf60ca4f951b4f94e03de354e2409a9cd43313599cef8b1cb923e5e646e8",
+      "previous_after_sha256": "90c1428401a36eb41f933c282ea93da8fefd95918b7dcc1f212073ff5d4b6be9",
+      "earlier_after_sha256": [
+        "dc373a9609f948b40815b9dee30eea4bc68c5ed82b9ec5db7c0dbfb521ed2729"
+      ],
+      "identity_v1_sha256": "215d0cb19a78ca13b4a8996493c9fad9f8dee0b6bbbb77abba5d030faeb3f7f2"
+    },
+    {
+      "path": "Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs",
+      "before_path": "before/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs",
+      "before_sha256": "2d6cde601311e9ce3d2a97011332d5a5ae80a1477504a83312538a1be66e71bd",
+      "after_path": "overlay/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs",
+      "after_sha256": "ad9dfd2e2353babe55cc9b7e30f26040b20821a8249fd4ffd5ea6c1dfc626a08"
+    },
+    {
+      "path": "Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+      "before_path": "before/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+      "before_sha256": "44893dfec5c5d6e75844a8b161bb8dbf7862112f88b40a8fbec553593641ae51",
+      "after_path": "overlay/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs",
+      "after_sha256": "4d10bb110522dbfeb95cf039481741a50b70128d25c4fbf2ecb41d00d2f9a54c",
+      "identity_v1_sha256": "5140b0e12b0ae78db5f42b744d562caf6c905d02322650d4e41739885fedabb4"
+    },
+    {
+      "path": "Assets/StreamingAssets/RoadDetector/worker.py",
+      "before_path": "before/Assets/StreamingAssets/RoadDetector/worker.py",
+      "before_sha256": "e78fa6d52c64f5ab375c25c31c5bef23b384c9c4ea6bdab43cd2ea650736220b",
+      "after_path": "overlay/Assets/StreamingAssets/RoadDetector/worker.py",
+      "after_sha256": "b515fdb2e0abd7f21555acc09b83632d73a8ca71db3e9dc3c5298d3a8985f4d6",
+      "identity_v1_sha256": "afdb387d74d1b8068cba7b3b0c0d0ecf14ede8a30ce40d978c4bc97bf0d10f7c"
+    },
+    {
+      "path": "Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py",
+      "before_path": "before/Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py",
+      "before_sha256": "aeb7b9c23d019b67fcf795a3a5067d9de55eacb33af9e0220f7095cb7dd61326",
+      "after_path": "overlay/Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py",
+      "after_sha256": "939a59a6d4cb8d9efd19198700ea26afd460dbbf9e641551f14a245a52f40cee",
+      "identity_v1_sha256": "38884c9c368691f7a842e61841a88f6e3878e01aa6441c54d237c6b68789e508"
+    },
+    {
+      "path": "Assets/StreamingAssets/RoadDetector/signal_model_identity.py",
+      "before_path": null,
+      "before_sha256": null,
+      "after_path": "overlay/Assets/StreamingAssets/RoadDetector/signal_model_identity.py",
+      "after_sha256": "3e626adb605d55a6818c7473959692f606fd35e26f6d1b7c81d0fd4e62413841",
+      "identity_v1_sha256": "ea9cbfaff2a8b9c8fa104644e77d413180fb4ec99b72e21f95944ace70e41eb4"
+    }
+  ],
+  "archive_files": {
+    "overlay/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs": "cf506d82e22f1cf10ea26011229bad71c3e368a97121d9673039bb25ea0911a8",
+    "overlay/Assets/AIFormula/Editor/Validation/AIFormulaJointTopoTrial.cs": "331bbf60ca4f951b4f94e03de354e2409a9cd43313599cef8b1cb923e5e646e8",
+    "before/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs": "49d83845a35aca9315cac888db5f58b9d3fbc458e898af5e35e59d2d88db6c7c",
+    "transport/semantic_joint_worker.py": "cff1e44ffd6fe5fc2184c6659e933277a6db79454c1f7c04afe23f5ac8591674",
+    "trials/run_joint_trial.py": "10ac1752b93791c54850942fba26f86dfeca3b6670785d4151b1040f177219b9",
+    "install.py": "e68d167a2d99a09aa99957cc150e11ad78175b700fc35c5a29d582ede3fdbe71",
+    "before/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs": "2d6cde601311e9ce3d2a97011332d5a5ae80a1477504a83312538a1be66e71bd",
+    "overlay/Assets/AIFormula/Runtime/Control/AIFormulaVisionLaneFollower.cs": "ad9dfd2e2353babe55cc9b7e30f26040b20821a8249fd4ffd5ea6c1dfc626a08",
+    "before/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs": "44893dfec5c5d6e75844a8b161bb8dbf7862112f88b40a8fbec553593641ae51",
+    "overlay/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs": "4d10bb110522dbfeb95cf039481741a50b70128d25c4fbf2ecb41d00d2f9a54c",
+    "overlay/Assets/StreamingAssets/RoadDetector/worker.py": "b515fdb2e0abd7f21555acc09b83632d73a8ca71db3e9dc3c5298d3a8985f4d6",
+    "before/Assets/StreamingAssets/RoadDetector/worker.py": "e78fa6d52c64f5ab375c25c31c5bef23b384c9c4ea6bdab43cd2ea650736220b",
+    "overlay/Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py": "939a59a6d4cb8d9efd19198700ea26afd460dbbf9e641551f14a245a52f40cee",
+    "before/Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py": "aeb7b9c23d019b67fcf795a3a5067d9de55eacb33af9e0220f7095cb7dd61326",
+    "overlay/Assets/StreamingAssets/RoadDetector/signal_model_identity.py": "3e626adb605d55a6818c7473959692f606fd35e26f6d1b7c81d0fd4e62413841",
+    "history/perception_identity_v1/Assets/AIFormula/Editor/Validation/AIFormulaJointTopoTrial.cs": "215d0cb19a78ca13b4a8996493c9fad9f8dee0b6bbbb77abba5d030faeb3f7f2",
+    "history/perception_identity_v1/Assets/AIFormula/Runtime/Perception/AIFormulaRoadDetector.cs": "5140b0e12b0ae78db5f42b744d562caf6c905d02322650d4e41739885fedabb4",
+    "history/perception_identity_v1/Assets/StreamingAssets/RoadDetector/worker.py": "afdb387d74d1b8068cba7b3b0c0d0ecf14ede8a30ce40d978c4bc97bf0d10f7c",
+    "history/perception_identity_v1/Assets/StreamingAssets/RoadDetector/signal_panel_rgb.py": "38884c9c368691f7a842e61841a88f6e3878e01aa6441c54d237c6b68789e508",
+    "history/perception_identity_v1/Assets/StreamingAssets/RoadDetector/signal_model_identity.py": "ea9cbfaff2a8b9c8fa104644e77d413180fb4ec99b72e21f95944ace70e41eb4"
+  },
+  "previous_worker_sha256": "74940f8eb67a522150e2c1fdb2b6d7e801374007f2f4d690e8a58805da7559e9",
+  "semantic_map_assist_sha256": "9b8590588e707173d6e623f144c41e6c1dd97531f92ce4282415eb4dc7eedb5b",
+  "evidence_files": {
+    "evidence/CRITICAL_ISSUES.md": "b11212fa84ab87cad14b1bea77219795fbbac7f0378721c470fe46b21f983de7",
+    "evidence/inner01_replay_diagnostics/receipt.json": "99aab9ececcb3f9cac8f2544697367fe2f7e639e245e73bfa8cdb969d6208af6",
+    "evidence/inner03_summary.json": "06004c2887fa2914d4b8cee279b40cda4c2038c39a59f5121ed317fd4e829ade",
+    "evidence/inner04_render_cap_transition.json": "1f64d2c85fc56fab50918a8d20c958e994ffc6b745e7dd058b512ae7e1f6e079",
+    "evidence/inner04_summary.json": "d073baf39cad80bbd313bd962106a0acb232b94e6f04596ff86825920e04f297",
+    "evidence/PERCEPTION_INPUT_ANALYSIS.md": "3eb01f602a0323c17d8e0f5659b5fdf956e328ae86338e8f2f7896bedac0ce91",
+    "evidence/README.md": "8f14e9537bff30946f3e937eda1c4f225aba23b427ed7bc34693425175d9dd29",
+    "evidence/RENDER_LOAD_ANALYSIS.md": "6868d097a06963cfc94280fc9e98d87e499babaf49ab384f4ba8a9f83bf40f13",
+    "evidence/smoke_callbacks_01/smoke_receipt.json": "4056838effb0bc74d3b99691e3753a77e6ccd5519e7f760e50b37a62253c79ef",
+    "evidence/staged_perception_verification.json": "0f4be1d2de654c1036d1eb77a734408180d991ac2c5bbd06fddac10810a32a8d",
+    "evidence/TEST_REPORT.md": "99255d0e4154910eb315ad9cc59023a3129e23f6631cbd73fa1fafe157d24074",
+    "evidence/staged_perception_v2_verification.json": "a3b2eda68fe8e4ea9582e553e866ae662bf977cfc16eceefb795491ee49d5c5b"
+  },
+  "documentation_files": {
+    "README.md": "f3b367c80e1812eb4bc6d21057a267cda3fcf922556c271d166c67d3a9fe46d0",
+    "RESULTS.md": "1dba46eb30da115031af61b21b7f1b2532fb8d5a96697366c5833755387eee12",
+    "DEPLOYMENT.md": "945914df2095d5e434b9ba5fcf8cd995a23019a6d40ae903c19bf2f532e2bdf1",
+    "AGENT_HANDOFF.md": "11103570a60ae1adc071ff917611785cecf158d71f4b4f177853bb992b745ce6",
+    "PROBLEM_ANALYSIS.md": "c89e3d09cde1089f7936da874011eae612ac82991ca154833bb92ad46569bda5"
+  },
+  "perception_verification_scope": "Audit agent ran v2 pure-math/saved-JPEG checks. Default-off full dictionaries preserved across 2129 frames; 31 v1 rejected cases, 119 red and 212 green outputs preserved relative to JPEG v1 baseline. No new tests or live changes during archive integration."
+}

@@ -1,0 +1,76 @@
+{
+  "source": "trace.jsonl second detection; C# Joint request schema at lines 183-198",
+  "reconstruction_limit": "tick sequence 619 and last logged near-stationary odom; fault depends only on omitted provenance field",
+  "trials": [
+    {
+      "name": "csharp_before",
+      "exit_code": 1,
+      "elapsed_sec": 0.27959459999692626,
+      "replies": [
+        {
+          "type": "error",
+          "error": "ValueError: Visual ABC provenance differs from the pinned LLP/LYA source",
+          "valid": false,
+          "v": 0.0,
+          "w": 0.0,
+          "vision_result": null,
+          "selected_points": null,
+          "command_new": null,
+          "controller_v": null,
+          "controller_w": null,
+          "clean": null
+        }
+      ],
+      "error_artifact": true,
+      "failed_request_artifact": true
+    },
+    {
+      "name": "with_commit",
+      "exit_code": 0,
+      "elapsed_sec": 0.31921330001205206,
+      "replies": [
+        {
+          "type": "tick",
+          "error": null,
+          "valid": true,
+          "v": 2.2248456404481183,
+          "w": 0.6740196234848004,
+          "vision_result": "accepted",
+          "selected_points": [
+            [
+              3.0,
+              0.8865649859110514
+            ],
+            [
+              4.0,
+              0.7847529138837539
+            ],
+            [
+              5.0,
+              0.6638932228088379
+            ]
+          ],
+          "command_new": true,
+          "controller_v": 2.2248456404481183,
+          "controller_w": 0.6740196234848004,
+          "clean": null
+        },
+        {
+          "type": "shutdown",
+          "error": null,
+          "valid": null,
+          "v": null,
+          "w": null,
+          "vision_result": null,
+          "selected_points": null,
+          "command_new": null,
+          "controller_v": null,
+          "controller_w": null,
+          "clean": true
+        }
+      ],
+      "error_artifact": false,
+      "failed_request_artifact": false
+    }
+  ]
+}

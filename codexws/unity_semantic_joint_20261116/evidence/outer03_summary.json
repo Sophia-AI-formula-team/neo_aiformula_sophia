@@ -1,0 +1,142 @@
+{
+  "accepted": false,
+  "reason": "Two physical laps completed after green recovery; red detour failed: Red wait persisted for 12 s: red_wait_map_fusion",
+  "travelled_m": 563.1467,
+  "physical_laps": 2,
+  "physical_lap_events": [
+    {
+      "event": "physical_lap_completed",
+      "stage": "learned_continuing",
+      "t": 108.2541658995533,
+      "wall": 108.32723699999951,
+      "detail": {
+        "completed_laps": 1,
+        "travelled": 281.4036,
+        "reference_ready": true
+      },
+      "x": 72.23036,
+      "z": -9.954635
+    },
+    {
+      "event": "physical_lap_completed",
+      "stage": "green_recovery_second_lap",
+      "t": 229.74816539955282,
+      "wall": 229.8541250999997,
+      "detail": {
+        "completed_laps": 2,
+        "travelled": 562.4804,
+        "reference_ready": true
+      },
+      "x": 72.30239,
+      "z": -9.803161
+    }
+  ],
+  "first_moving_command": {
+    "sequence": 68,
+    "sim_time": 3.6299999188631773,
+    "odom": {
+      "x": -9.999915,
+      "y": -72.53,
+      "yaw": 3.5848152982180434e-07,
+      "v": 5.12482e-08,
+      "w": 2.984894e-09
+    },
+    "v": 2.2765874720109007,
+    "w": 0.32729654450692053
+  },
+  "first_odom_reference": {
+    "sequence": 2150,
+    "sim_time": 107.71999759227037,
+    "odom": {
+      "x": -11.4189138,
+      "y": -72.26488,
+      "yaw": 0.018764887375094713,
+      "v": 2.73392773,
+      "w": 0.107990883
+    },
+    "reference_length_m": 281.35635511271363
+  },
+  "first_official_fusion": null,
+  "first_detour": null,
+  "red_scheduled": true,
+  "red_observed": true,
+  "detour_entered": false,
+  "detour_completed": false,
+  "measured_left_motion": false,
+  "worker_shutdown": {
+    "clean": true,
+    "forced": false,
+    "exited": true,
+    "exit_code": 0,
+    "elapsed_ms": 31.1945,
+    "error": null,
+    "acknowledgement": {
+      "type": "shutdown",
+      "experiment_mode": "semantic_joint_1115",
+      "clean": true,
+      "fusion_pending_on_close": false,
+      "persistence": "not_implemented_in_supplied_package"
+    }
+  },
+  "semantic_tick_count": 4525,
+  "status_reason_ticks": {
+    "visual_points_stale": 67,
+    "learning_first_lap": 2082,
+    "first_lap_odom_ready": 3,
+    "unavailable": 51,
+    "within_tolerance": 2053,
+    "red_wait_map_fusion": 264,
+    "resume_delay": 5
+  },
+  "traffic_reason_ticks": {
+    "traffic_idle": 2187,
+    "red_wait_map_fusion": 264,
+    "green_resume": 2074
+  },
+  "vision_result_ticks": {
+    "none": 3489,
+    "stale": 1,
+    "accepted": 1035
+  },
+  "terminal_reference_length_m": 281.35635511271363,
+  "terminal_map_fusion": {
+    "available": false,
+    "mode": "odom_only",
+    "metric_source": "odometry",
+    "recorded_length_m": 281.3703850016276,
+    "official_size_used": false,
+    "field_validation_required": true,
+    "reason": "ambiguous_correspondence",
+    "final_length_m": 281.35603363433023
+  },
+  "terminal_topology_mapping": {
+    "available": false,
+    "reason": "waiting_for_odom"
+  },
+  "graph_frame": "official_unaligned",
+  "physical_junction_error_m": null,
+  "topology_correctness": "not established: needs independent physical junction correspondence; fusion availability alone is insufficient",
+  "internal_map_evidence": "internal nodes are official-graph estimates, not observed internal-road mapping",
+  "rendering_acceptance": "no recorded rendering transition",
+  "signal_source_counts": {
+    "none/unknown": 896,
+    "rgb_panel/green": 78,
+    "rgb_panel/red": 62
+  },
+  "native_light_trace_counts": {
+    "unknown": 1014,
+    "green": 13,
+    "red": 9
+  },
+  "signal_policy_counts": {
+    "calibrated_rgb_panel_only": 1036
+  },
+  "signal_evaluation_limits": "Panel-root gap is horizontal distance from recorded vehicle Body position, not bumper/camera or stop-line distance; world signal position is evaluation only. Trace native status can lag the current detector frame. Counts are detector receipts, not unique native votes.",
+  "scope": "completed-run log analysis only; no model/test/Unity execution, no motion.jsonl full scan",
+  "run": "outer_joint_03",
+  "provenance": {
+    "source": "TRIAL/audit/outer03_metrics.json",
+    "source_sha256": "0cf54b45e2b4b097438cfb7996df176aa223b365d9738cfb64f1397a3a55860a",
+    "condensation": "Omit per-frame arrays, worker identities and large map geometry; physical lap events and semantic verdicts retained."
+  }
+}

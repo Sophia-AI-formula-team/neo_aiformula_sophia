@@ -1,0 +1,227 @@
+{
+  "schema": "semantic_joint_video_event_index/v1",
+  "video_sha256": "815285ea9da67903df8fc92d67deafb8845aff9159670c8c8a1c2d49a9994c9b",
+  "timeline": "source wall -> first sampled video frame at or after; asynchronous inputs retain their own recorded ages",
+  "events": [
+    {
+      "case_index": 1,
+      "event": "started_green_first_lap",
+      "stage": "learning_lap_1",
+      "source_sim_time": 0.0,
+      "source_wall": 0.02751170000010461,
+      "first_output_at_or_after": 0.06666666666666667,
+      "output_frame": 1,
+      "sampled_source_wall": 0.07330038525433549
+    },
+    {
+      "case_index": 1,
+      "event": "same_chain_identity",
+      "stage": "learning_lap_1",
+      "source_sim_time": 0.2528026995532855,
+      "source_wall": 0.29803290000018023,
+      "first_output_at_or_after": 0.3333333333333333,
+      "output_frame": 5,
+      "sampled_source_wall": 0.36650192627167744
+    },
+    {
+      "case_index": 1,
+      "event": "motion_control_started",
+      "stage": "learning_lap_1",
+      "source_sim_time": 3.30901949955296,
+      "source_wall": 3.352370100000371,
+      "first_output_at_or_after": 3.066666666666667,
+      "output_frame": 46,
+      "sampled_source_wall": 3.3718177216994327
+    },
+    {
+      "case_index": 1,
+      "event": "package_reference_closed",
+      "stage": "learned_continuing",
+      "source_sim_time": 99.6866189995535,
+      "source_wall": 99.76735960000042,
+      "first_output_at_or_after": 9.2,
+      "output_frame": 138,
+      "sampled_source_wall": 99.80866964377599
+    },
+    {
+      "case_index": 1,
+      "event": "physical_lap_completed",
+      "stage": "learned_continuing",
+      "source_sim_time": 100.08701119955367,
+      "source_wall": 100.1555986000003,
+      "first_output_at_or_after": 9.533333333333333,
+      "output_frame": 143,
+      "sampled_source_wall": 100.17517157004767
+    },
+    {
+      "case_index": 1,
+      "event": "physical_panel_red",
+      "stage": "red_second_lap",
+      "source_sim_time": 100.08701119955367,
+      "source_wall": 100.1559513000002,
+      "first_output_at_or_after": 9.533333333333333,
+      "output_frame": 143,
+      "sampled_source_wall": 100.17517157004767
+    },
+    {
+      "case_index": 1,
+      "event": "package_observed_red",
+      "stage": "red_second_lap",
+      "source_sim_time": 100.72841579955366,
+      "source_wall": 100.78748460000043,
+      "first_output_at_or_after": 10.133333333333333,
+      "output_frame": 152,
+      "sampled_source_wall": 100.83487503733669
+    },
+    {
+      "case_index": 1,
+      "event": "red_detour_failed",
+      "stage": "red_second_lap",
+      "source_sim_time": 113.3902755995532,
+      "source_wall": 113.460959,
+      "first_output_at_or_after": 22.733333333333334,
+      "output_frame": 341,
+      "sampled_source_wall": 113.50070250817832
+    },
+    {
+      "case_index": 1,
+      "event": "physical_panel_green_for_second_lap_completion",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 113.3902755995532,
+      "source_wall": 113.46106120000059,
+      "first_output_at_or_after": 22.733333333333334,
+      "output_frame": 341,
+      "sampled_source_wall": 113.50070250817832
+    },
+    {
+      "case_index": 1,
+      "event": "physical_lap_completed",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 213.9765199995536,
+      "source_wall": 214.0455079000003,
+      "first_output_at_or_after": 29.133333333333333,
+      "output_frame": 437,
+      "sampled_source_wall": 214.08341009169376
+    },
+    {
+      "case_index": 1,
+      "event": "trial_stop",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 213.9765199995536,
+      "source_wall": 214.04841940000006,
+      "first_output_at_or_after": 29.133333333333333,
+      "output_frame": 437,
+      "sampled_source_wall": 214.08341009169376
+    },
+    {
+      "case_index": 2,
+      "event": "started_green_first_lap",
+      "stage": "learning_lap_1",
+      "source_sim_time": 0.0,
+      "source_wall": 0.031357899999420624,
+      "first_output_at_or_after": 30.066666666666666,
+      "output_frame": 451,
+      "sampled_source_wall": 0.0806811691370992
+    },
+    {
+      "case_index": 2,
+      "event": "same_chain_identity",
+      "stage": "learning_lap_1",
+      "source_sim_time": 0.3288502995528688,
+      "source_wall": 0.38448179999977583,
+      "first_output_at_or_after": 30.333333333333332,
+      "output_frame": 455,
+      "sampled_source_wall": 0.403405845685496
+    },
+    {
+      "case_index": 2,
+      "event": "motion_control_started",
+      "stage": "learning_lap_1",
+      "source_sim_time": 3.695279199552715,
+      "source_wall": 3.7639602999997805,
+      "first_output_at_or_after": 33.13333333333333,
+      "output_frame": 497,
+      "sampled_source_wall": 3.792014949443663
+    },
+    {
+      "case_index": 2,
+      "event": "package_reference_closed",
+      "stage": "learned_continuing",
+      "source_sim_time": 107.81790899955286,
+      "source_wall": 107.88840439999967,
+      "first_output_at_or_after": 38.93333333333333,
+      "output_frame": 584,
+      "sampled_source_wall": 107.93020195039365
+    },
+    {
+      "case_index": 2,
+      "event": "physical_lap_completed",
+      "stage": "learned_continuing",
+      "source_sim_time": 108.2541658995533,
+      "source_wall": 108.32723699999951,
+      "first_output_at_or_after": 39.266666666666666,
+      "output_frame": 589,
+      "sampled_source_wall": 108.33360779607915
+    },
+    {
+      "case_index": 2,
+      "event": "physical_panel_red",
+      "stage": "red_second_lap",
+      "source_sim_time": 108.2541658995533,
+      "source_wall": 108.32773019999968,
+      "first_output_at_or_after": 39.266666666666666,
+      "output_frame": 589,
+      "sampled_source_wall": 108.33360779607915
+    },
+    {
+      "case_index": 2,
+      "event": "package_observed_red",
+      "stage": "red_second_lap",
+      "source_sim_time": 109.75262379955257,
+      "source_wall": 109.84074299999975,
+      "first_output_at_or_after": 40.53333333333333,
+      "output_frame": 608,
+      "sampled_source_wall": 109.86655000968403
+    },
+    {
+      "case_index": 2,
+      "event": "red_detour_failed",
+      "stage": "red_second_lap",
+      "source_sim_time": 122.42733059955299,
+      "source_wall": 122.52411009999923,
+      "first_output_at_or_after": 53.13333333333333,
+      "output_frame": 797,
+      "sampled_source_wall": 122.59180886490063
+    },
+    {
+      "case_index": 2,
+      "event": "physical_panel_green_for_second_lap_completion",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 122.42733059955299,
+      "source_wall": 122.52423519999957,
+      "first_output_at_or_after": 53.13333333333333,
+      "output_frame": 797,
+      "sampled_source_wall": 122.59180886490063
+    },
+    {
+      "case_index": 2,
+      "event": "physical_lap_completed",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 229.74816539955282,
+      "source_wall": 229.8541250999997,
+      "first_output_at_or_after": 59.2,
+      "output_frame": 888,
+      "sampled_source_wall": 229.8657320703545
+    },
+    {
+      "case_index": 2,
+      "event": "trial_stop",
+      "stage": "green_recovery_second_lap",
+      "source_sim_time": 229.74816539955282,
+      "source_wall": 229.85745139999926,
+      "first_output_at_or_after": 59.2,
+      "output_frame": 888,
+      "sampled_source_wall": 229.8657320703545
+    }
+  ]
+}

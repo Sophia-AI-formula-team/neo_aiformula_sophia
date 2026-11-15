@@ -16,6 +16,19 @@ as part of this source preparation. The supplied bare entry is
 off. Simulation wiring must record its overrides and maintain a distinct export
 and output directory. Preserve the archived ZIP and prior source pins for rollback.
 
+For this source's MCP simulation, use the separately pinned
+[Joint Unity deployment guide](../../../../../codexws/unity_semantic_joint_20261116/DEPLOYMENT.md)
+and [actual results](../../../../../codexws/unity_semantic_joint_20261116/RESULTS.md).
+Its calibrated RGB-panel-only signal mode is specific to the known Unity panel
+and camera calibration; it is not an onboard traffic-light detector upgrade.
+Keep the original LYA, official OSM, and unchanged 0.4.0 package algorithms.
+
+## Historical 0.2.x integration below
+
+The following commands, versions and acceptance records belong to the older
+integration. They are retained for provenance and are not current 0.4.0 launch
+or hardware acceptance instructions.
+
 This repository offers two distinct deployment paths. The frozen Unity path
 has four recorded closed-loop runs. The new native ROS path is a shadow wiring
 entry and has no physical vehicle acceptance.

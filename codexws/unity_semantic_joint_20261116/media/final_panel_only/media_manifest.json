@@ -1,0 +1,310 @@
+{
+  "schema": "semantic_joint_final_media/v1",
+  "status": "video_evidence_complete_semantic_topology_and_detour_failed",
+  "video": {
+    "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\semantic_joint.mp4",
+    "relative_to_task": "media/final_panel_only/encode_v1/render/semantic_joint.mp4",
+    "bytes": 8343024,
+    "sha256": "815285ea9da67903df8fc92d67deafb8845aff9159670c8c8a1c2d49a9994c9b"
+  },
+  "video_format": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 15,
+    "frame_count": 900,
+    "duration_seconds": 60.0,
+    "codec": "h264",
+    "pixel_format": "yuv420p"
+  },
+  "single_encoding": true,
+  "complete_decode": true,
+  "owned_job_cleanup_verified": true,
+  "visual_qa": "VIDEO_QA.md; machine receipts intentionally immutable",
+  "cases": [
+    {
+      "name": "INNER07_2LAPS_PANEL_ONLY",
+      "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07",
+      "recorded_laps": 2,
+      "travelled_m": 519.832642,
+      "sim_seconds": 214.97975779955323,
+      "covered_source_wall_seconds": 215.03631510000014,
+      "video_seconds": 30.0,
+      "accepted": false,
+      "reference_ready": true,
+      "map_fusion": {
+        "available": false,
+        "mode": "odom_only",
+        "metric_source": "odometry",
+        "recorded_length_m": 259.5386560398998,
+        "official_size_used": false,
+        "field_validation_required": true,
+        "reason": "ambiguous_correspondence",
+        "final_length_m": 259.5087938488447
+      },
+      "detour_completed": false,
+      "protected_red_wait_seconds": 11.938455799999247,
+      "playback_speeds": [
+        1.0,
+        1.0995057788150324,
+        37.33258218387862
+      ]
+    },
+    {
+      "name": "OUTER03_2LAPS_PANEL_ONLY",
+      "source": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03",
+      "recorded_laps": 2,
+      "travelled_m": 563.1467,
+      "sim_seconds": 230.77832609955294,
+      "covered_source_wall_seconds": 230.8339060999997,
+      "video_seconds": 30.0,
+      "accepted": false,
+      "reference_ready": true,
+      "map_fusion": {
+        "available": false,
+        "mode": "odom_only",
+        "metric_source": "odometry",
+        "recorded_length_m": 281.3703850016276,
+        "official_size_used": false,
+        "field_validation_required": true,
+        "reason": "ambiguous_correspondence",
+        "final_length_m": 281.35603363433023
+      },
+      "detour_completed": false,
+      "protected_red_wait_seconds": 12.004146499999479,
+      "playback_speeds": [
+        1.0,
+        1.210217537056488,
+        40.31661940505078
+      ]
+    }
+  ],
+  "code_frozen": true,
+  "small_artifacts": [
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\joint_media.py",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/joint_media.py",
+      "bytes": 57357,
+      "sha256": "89cf5c30e670294d1d74dc21f242aba4b652bac6a0f28b84f7f81d8b2ff7bc8a"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\run_joint_bounded.py",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/run_joint_bounded.py",
+      "bytes": 19732,
+      "sha256": "593dbcdfbcbbb858fb4d619691f2f77993b34ffb5299ec1958adc0b2460c8615"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\windows_owned_job.py",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/windows_owned_job.py",
+      "bytes": 7675,
+      "sha256": "aa6f98f52029502a5ad4452acafc7829f99d1a31e55a7d1b518b21446f98fd24"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\README.md",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/README.md",
+      "bytes": 12125,
+      "sha256": "d88a90afa783258255593fad779a5da28678c2d313731618375dbc8d79f571fb"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\COMBINED_VIDEO.md",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/COMBINED_VIDEO.md",
+      "bytes": 3029,
+      "sha256": "6c2f4df8a82b411f1d9ed7c2fb3fc5b1f9fb8a10c89d1bed218eab8ec7b60fc1"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encoded_sources_v1\\sha256.json",
+      "relative_to_task": "media/final_panel_only/encoded_sources_v1/sha256.json",
+      "bytes": 460,
+      "sha256": "0532616b15476de4020820aa57fad1256636f53ea8584a16f60b5018d2ccc454"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\inner07_plan_v1.json",
+      "relative_to_task": "media/final_panel_only/inner07_plan_v1.json",
+      "bytes": 618879,
+      "sha256": "77eec8b733b24e62486e1b93044d3334a534e5dab36126e60e35b334f2940a20"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\outer03_plan_v1.json",
+      "relative_to_task": "media/final_panel_only/outer03_plan_v1.json",
+      "bytes": 663498,
+      "sha256": "9ec169c5c08a8a828558eb133f7eaa2c41e131b5ba53cce97767bc6ac3b26f75"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\combined_plan_v1.json",
+      "relative_to_task": "media/final_panel_only/combined_plan_v1.json",
+      "bytes": 1065280,
+      "sha256": "3cb0bebad2785101282417b46a7619b9b03134fe1f8a5e49f93eee71f5fce33b"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\VIDEO_QA.md",
+      "relative_to_task": "media/final_panel_only/VIDEO_QA.md",
+      "bytes": 6524,
+      "sha256": "bc42cf7712f40dcc08019bf08ef8b7b777387d30c2f5e62a0f6c4519139eb75e"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\event_time_index.json",
+      "relative_to_task": "media/final_panel_only/event_time_index.json",
+      "bytes": 7633,
+      "sha256": "38d45bd9567e194c2fab2d44736472d3d99dc9c768bd49ec786ec5c905132e4c"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_actual_frames.py",
+      "relative_to_task": "media/final_panel_only/qa_actual_frames.py",
+      "bytes": 5413,
+      "sha256": "b818ec1ca656bf4e877cf560e6592b1542b0c9475a4fb7a1e564981af78af526"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\receipt.json",
+      "relative_to_task": "media/final_panel_only/qa_decoded/receipt.json",
+      "bytes": 46710,
+      "sha256": "1d80195a5fda9c3d53503f48c35bcbb0bb8b266cf0681bd66522a46852624767"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\attempt.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/attempt.json",
+      "bytes": 1055,
+      "sha256": "2ee31649f9e5bee4f59f18ff0e19151b6434d31029661ec684f60c21015f38ab"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\receipt.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/receipt.json",
+      "bytes": 4461,
+      "sha256": "9041ada6e9b16c5af70943e47a451dcb5f65fb4a0aba5a98e5d3512f85a86296"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\actual_interpreter_identity.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/actual_interpreter_identity.json",
+      "bytes": 231,
+      "sha256": "2e2340ae6e2f420a1f1dcd1e6f9aac2dd3f7bec42dc28dce4bbcceb9774c74a2"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\source_hashes_before.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/source_hashes_before.json",
+      "bytes": 816314,
+      "sha256": "591e8bd3d4e3ad7f1c15cd40d29214c19c619f88ec60855e9d76bfd01b41f76c"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\source_hashes_after.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/source_hashes_after.json",
+      "bytes": 816314,
+      "sha256": "591e8bd3d4e3ad7f1c15cd40d29214c19c619f88ec60855e9d76bfd01b41f76c"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\stdout.log",
+      "relative_to_task": "media/final_panel_only/encode_v1/stdout.log",
+      "bytes": 222,
+      "sha256": "15b29104914d19ba6b67a64b455f5ca13eb6ea3901b614812cca37af5f39679b"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\stderr.log",
+      "relative_to_task": "media/final_panel_only/encode_v1/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\receipt.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/receipt.json",
+      "bytes": 1065388,
+      "sha256": "bbcb5df867b76809e9c54ca29b58ccf1c110dc211efb15614542f87930c2bbcb"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\output_frames.jsonl",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/output_frames.jsonl",
+      "bytes": 1685473,
+      "sha256": "5e7e6c6010e81cfec3c5340d95818543f5a7b10f7d530c77303da51e69bd3362"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_frames.jsonl",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_frames.jsonl",
+      "bytes": 403825,
+      "sha256": "82e9f8655a1d02ec5ab939c390b84c1cf3fe57145cfbd7c5d799429bb35ca90e"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\case_boundaries.json",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/case_boundaries.json",
+      "bytes": 1577,
+      "sha256": "e470128161bf4d6b8e61d13c4b07d4bcd506e6606d2bbcead858dae439a3cf74"
+    }
+  ],
+  "evaluation_surface_dependency": {
+    "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\audit\\evaluation_surface.json",
+    "relative_to_task": "audit/evaluation_surface.json",
+    "bytes": 212608,
+    "sha256": "5e408afb76ce691765ef8dcd57221cc2de0db1401cdae696c4b6417b4e1f0a29"
+  },
+  "external_dependencies": "Original absolute run/image paths, recorded source and library hashes, installed Python313/PyAV17.1.0/Pillow. Small archive alone is not a self-contained replay.",
+  "images": [
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0346.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0346.png",
+      "bytes": 827873,
+      "sha256": "ecc32ba55dcb334bac6fc284392af58fbbb94b1dae72f486abb711c123437c4a"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0351.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0351.png",
+      "bytes": 827552,
+      "sha256": "a5bfff077aac35db0150846aab46f0ec56d2890779e4c38c6e1af17ad9a7c04c"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0359.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0359.png",
+      "bytes": 825061,
+      "sha256": "c1ebb8b45ced6b3252056850f816a4ef7752aa3561999efe59a8aaeb6c5c2258"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0804.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0804.png",
+      "bytes": 810808,
+      "sha256": "35cab9fc23d30673b7e286c78af116fe9eb1d5c66c0e346e67fd46561ef2a45c"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0808.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0808.png",
+      "bytes": 810271,
+      "sha256": "08ad073532d16e3d139bea8da5ac3ea3aeb65c25be0280a3645d495503d4e763"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\qa_decoded\\decoded_0817.png",
+      "relative_to_task": "media/final_panel_only/qa_decoded/decoded_0817.png",
+      "bytes": 793046,
+      "sha256": "cca673029546f1cb0608bba7d4c132d7df43d53fe902a64d263a6f90a51928e7"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0000.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0000.png",
+      "bytes": 417331,
+      "sha256": "35d5e0137b5075ed13fbc0995a324232c8effcf95bf2e0d83389c294768de46b"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0225.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0225.png",
+      "bytes": 852907,
+      "sha256": "0ccd9e9c00915bd35a9784ef633be2a1ebbc1c407c43be152b914e18d5f72eb3"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0449.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0449.png",
+      "bytes": 808517,
+      "sha256": "bcd6c0cc76cde9fa7b61fb55028874e9fa35daeaed898be6e8515b10fa5c2bf1"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0450.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0450.png",
+      "bytes": 417318,
+      "sha256": "7d138f72b0f1c031d1947f7e54162494ef4134719d1da976ca1a7fb8136756b8"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0675.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0675.png",
+      "bytes": 807184,
+      "sha256": "d07f96b94ffae1d60843abd81f9d6b8d5abbca5b7423295e22aa7283a4d186b5"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\media\\final_panel_only\\encode_v1\\render\\decoded_0899.png",
+      "relative_to_task": "media/final_panel_only/encode_v1/render/decoded_0899.png",
+      "bytes": 768998,
+      "sha256": "b7938e131f82280f9ba7e6bc5f7281057e80a2b1d7564f95c2a86603661ff5e9"
+    }
+  ],
+  "archive_policy": "Copy listed small artifacts plus this manifest and archive_files.json only. Do not copy videos/images or raw simulation logs."
+}

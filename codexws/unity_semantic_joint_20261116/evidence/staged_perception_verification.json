@@ -1,0 +1,95 @@
+{
+  "scope": "Single-thread no-model staged verification; no Unity or live/source writes",
+  "tests": [
+    "same_box_higher_cone_below_horizon_rejected",
+    "no_cone_true_red_preserved",
+    "equal_cone_score_not_rejected",
+    "low_iou_not_rejected",
+    "above_horizon_conflict_not_rejected",
+    "current_same_color_rgb_identity_overrides_conflict",
+    "different_color_does_not_override",
+    "other_true_red_survives_rejection",
+    "other_true_green_survives_rejection",
+    "missing_calibration_preserves_model",
+    "invalid_rotation_preserves_model",
+    "nonfinite_box_preserves_model",
+    "cropped_invalid_model_box_preserves_model",
+    "all_839_frames_default_schema_and_behavior_equal",
+    "all_61_baseline_true_reds_preserved",
+    "frames_674_675_676_false_reds_removed",
+    "default_duplicate_schema_equal"
+  ],
+  "passed": 17,
+  "frames": 839,
+  "elapsed_sec": 7.669701300008455,
+  "baseline_true_red": 61,
+  "preserved_true_red": 61,
+  "changes": [
+    {
+      "sequence": 128,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 145,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 467,
+      "old": "green",
+      "new": "unknown"
+    },
+    {
+      "sequence": 487,
+      "old": "green",
+      "new": "unknown"
+    },
+    {
+      "sequence": 490,
+      "old": "green",
+      "new": "unknown"
+    },
+    {
+      "sequence": 492,
+      "old": "green",
+      "new": "unknown"
+    },
+    {
+      "sequence": 624,
+      "old": "red",
+      "new": "green"
+    },
+    {
+      "sequence": 657,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 671,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 674,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 675,
+      "old": "red",
+      "new": "unknown"
+    },
+    {
+      "sequence": 676,
+      "old": "red",
+      "new": "unknown"
+    }
+  ],
+  "limitations": "Saved RGB is JPEG, not original inference PNG; color replay is not byte-identical",
+  "hashes": {
+    "worker.py": "afdb387d74d1b8068cba7b3b0c0d0ecf14ede8a30ce40d978c4bc97bf0d10f7c",
+    "signal_panel_rgb.py": "38884c9c368691f7a842e61841a88f6e3878e01aa6441c54d237c6b68789e508",
+    "signal_model_identity.py": "ea9cbfaff2a8b9c8fa104644e77d413180fb4ec99b72e21f95944ace70e41eb4"
+  }
+}

@@ -89,3 +89,22 @@ Before any necessary algorithm repair, record the concrete input, failure and
 minimal proposed change in a new problem report. Keep the original archive and
 its test outcomes immutable. Publication uses scoped commits and a reviewable
 feature PR; no release tag or physical vehicle deployment is implied.
+
+## Current simulation evidence
+
+The versioned MCP/Unity wiring is kept outside the ROS source tree at
+[codexws/unity_semantic_joint_20261116](../../codexws/unity_semantic_joint_20261116/README.md).
+Its results, problem reports, guarded deployment and handoff document the new
+experiments independently of this immutable source-import snapshot. The latest
+signal adapter is an explicit calibrated RGB-panel-only mode for this Unity
+fixture. A4 remains the lane/object perception source and its raw overlay is
+preserved. No supplied semantic algorithm, official OSM, LYA implementation or
+source-import hash was changed to turn a failed topology result into a pass.
+
+Final inner/outer runs each completed two physical laps and observed real red
+stopping followed by stationary green detection and resumed motion. Odom paths
+closed, but official fusion rejected `ambiguous_correspondence`; neither run
+executed the requested interior turn. Both retain `accepted=false`. The video
+combines these actual outcomes in approximately one minute. This package has no
+checkpoint restore and still stops immediately on confirmed red; earlier restart
+or 8–9 m approach results must not be attributed to version 0.4.0.

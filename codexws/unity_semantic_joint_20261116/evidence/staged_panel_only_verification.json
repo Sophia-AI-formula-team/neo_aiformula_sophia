@@ -1,0 +1,87 @@
+{
+  "scope": "Frozen staged helper/worker no-model checks and five recorded JPEG streams; no Unity or semantic changes",
+  "elapsed_sec": 39.69995850001578,
+  "passed": 13,
+  "tests": [
+    "model_red_without_panel_is_unknown",
+    "default_model_red_is_preserved",
+    "two_actual_test_images_are_distinct",
+    "first_panel_frame_unconfirmed",
+    "second_actual_panel_frame_red_over_model_green",
+    "duplicate_never_replays_confirmed_color",
+    "calibration_none_fails_closed",
+    "calibration_missing_fails_closed",
+    "calibration_invalid_fails_closed",
+    "rgb_disabled_rejected",
+    "missing_frame_state_rejected",
+    "removed_identity_guard_conflict_rejected",
+    "non_bool_only_rejected"
+  ],
+  "runs": [
+    {
+      "run": "inner_joint_04",
+      "frames": 835,
+      "default_full_dictionary_equal": true,
+      "panel_only_original_unknown_core_equal": true,
+      "input_image_and_detections_unchanged": true,
+      "panel_only_output_counts": {
+        "unknown": 756,
+        "green": 73,
+        "red": 6
+      }
+    },
+    {
+      "run": "inner_joint_05",
+      "frames": 959,
+      "default_full_dictionary_equal": true,
+      "panel_only_original_unknown_core_equal": true,
+      "input_image_and_detections_unchanged": true,
+      "panel_only_output_counts": {
+        "unknown": 847,
+        "green": 53,
+        "red": 59
+      }
+    },
+    {
+      "run": "inner_joint_06",
+      "frames": 827,
+      "default_full_dictionary_equal": true,
+      "panel_only_original_unknown_core_equal": true,
+      "input_image_and_detections_unchanged": true,
+      "panel_only_output_counts": {
+        "unknown": 711,
+        "green": 58,
+        "red": 58
+      }
+    },
+    {
+      "run": "outer_joint_01",
+      "frames": 322,
+      "default_full_dictionary_equal": true,
+      "panel_only_original_unknown_core_equal": true,
+      "input_image_and_detections_unchanged": true,
+      "panel_only_output_counts": {
+        "unknown": 287,
+        "green": 35
+      }
+    },
+    {
+      "run": "outer_joint_02",
+      "frames": 325,
+      "default_full_dictionary_equal": true,
+      "panel_only_original_unknown_core_equal": true,
+      "input_image_and_detections_unchanged": true,
+      "panel_only_output_counts": {
+        "unknown": 292,
+        "green": 33
+      }
+    }
+  ],
+  "total_frames": 3268,
+  "hashes": {
+    "worker.py": "9ea581515738c8a8b900185405e2d7c01e5ff3fafd8d183e16207e7910a32a22",
+    "signal_panel_rgb.py": "a473e9eb81ee009f7b5eaaed5fbefc743b06f375b8cdd695f86137c0a60431cf"
+  },
+  "initial_test_fixture_failure": "First attempt expected seq443+444 to confirm red, but original seq444 has no panel candidate. Corrected fixture to distinct actual seq441+442; no runtime code or gate changed.",
+  "limitations": "JPEG is not original inference PNG; recorded receipt wall clock used. Signal study retains inner04 stationary-green failure. Live acceptance pending."
+}

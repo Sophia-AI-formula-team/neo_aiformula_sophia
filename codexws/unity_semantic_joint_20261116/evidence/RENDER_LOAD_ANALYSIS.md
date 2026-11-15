@@ -1,0 +1,5 @@
+# Rendering resource diagnostic, before runtime adjustment
+
+inner_joint_04 advances but cannot sustain perception freshness: at wall 94 s it has travelled 7.429 m; recent inference durations range from 20 ms to 4.342 s. Native 0.5 s capture/command gates hold stale data and subsequently resume; this is not a reason to increase any TTL. NVIDIA query reports RTX 4070 Ti GPU utilization 100%, 7611 MiB allocated. Multiple graphics/compute applications are active; this measurement alone does not attribute the load to a specific process.
+
+The trial's own starting render parameters are fps=-1, vsync=1. Apply only a temporary own-Unity render cap: targetFrameRate=30, vSyncCount=0, while leaving Time.timeScale=1 and the actual physics timestep unchanged. Record the parameter transition, before/after values and source time. This is a bounded rendering-resource diagnostic inside the continuous trial, not an algorithm change or evidence of an exclusive resource window. Restore original values at the end. Do not modify another process, model, TTL, camera, official map or vehicle physics.

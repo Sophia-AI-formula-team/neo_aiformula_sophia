@@ -1,0 +1,509 @@
+{
+  "scope": "Recorded RGB-panel-only evidence; no model or control; original helper and native filter",
+  "elapsed_sec": 17.177630499994848,
+  "runs": [
+    {
+      "run": "inner_joint_04",
+      "frames": 835,
+      "fresh_frames": 786,
+      "stale_frames": 49,
+      "output_counts": {
+        "green/unknown": 700,
+        "green/green": 73,
+        "red/unknown": 56,
+        "red/red": 6
+      },
+      "native_vote_opportunity_counts": {
+        "green/unknown": 739,
+        "green/green": 34,
+        "red/green": 1,
+        "red/unknown": 57,
+        "red/red": 4
+      },
+      "signal_switches_evaluation_only": [
+        [
+          0.0,
+          "green"
+        ],
+        [
+          260.99378454282055,
+          "red"
+        ],
+        [
+          274.6141904428205,
+          "green"
+        ]
+      ],
+      "first_true_red_vote": {
+        "sequence": 508,
+        "t": 262.1696355428205,
+        "wall": 262.72687240000005,
+        "capture_relative_sim_time": 262.0946178428205,
+        "capture_age": 0.10733100000015838,
+        "capture_admitted": true,
+        "truth_evaluation_only": "red",
+        "recorded_signal": "red",
+        "recorded_source": "a3_model",
+        "recorded_model_state": "red",
+        "panel_only_state": "red",
+        "vote": "red",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 3,
+          "green_count": 0,
+          "unknown_count": 0,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "red",
+          "bbox": [
+            422,
+            177,
+            426,
+            180
+          ],
+          "pixels": 11,
+          "fill": 0.9167,
+          "aspect": 1.3333,
+          "dark_pixels": 6,
+          "dark_sides": [
+            3,
+            3,
+            0,
+            6
+          ],
+          "background_luma": 127.0,
+          "background_color_fraction": 0.0,
+          "color_value": 130.5,
+          "dark_value": 97.5,
+          "model_associated": true,
+          "mixed_border": true,
+          "confirmed_frames": 5,
+          "image_velocity_px_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "actual_v": 0.722731352,
+        "x": 67.5998,
+        "z": -7.4153924,
+        "rgb": "rgb_00508.jpg"
+      },
+      "first_green_recovery_vote": {
+        "sequence": 597,
+        "t": 281.46875024282053,
+        "wall": 282.0245225000001,
+        "capture_relative_sim_time": 281.36839214282054,
+        "capture_age": 0.13687989999993988,
+        "capture_admitted": true,
+        "truth_evaluation_only": "green",
+        "recorded_signal": "green",
+        "recorded_source": "rgb_panel",
+        "recorded_model_state": "unknown",
+        "panel_only_state": "green",
+        "vote": "green",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 0,
+          "green_count": 2,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "green",
+          "bbox": [
+            416,
+            176,
+            420,
+            180
+          ],
+          "pixels": 14,
+          "fill": 0.875,
+          "aspect": 1.0,
+          "dark_pixels": 9,
+          "dark_sides": [
+            6,
+            3,
+            1,
+            6
+          ],
+          "background_luma": 136.0,
+          "background_color_fraction": 0.0,
+          "color_value": 153.5,
+          "dark_value": 105.0,
+          "model_associated": false,
+          "mixed_border": true,
+          "confirmed_frames": 3,
+          "image_velocity_px_s": [
+            -4.2651234881209374,
+            0.0
+          ]
+        },
+        "actual_v": 2.659302,
+        "x": 67.58018,
+        "z": -4.728429,
+        "rgb": "rgb_00597.jpg"
+      },
+      "stationary_green_native_vote_frames": 0,
+      "terminal_counterfactual_latch": "normal"
+    },
+    {
+      "run": "inner_joint_05",
+      "frames": 959,
+      "fresh_frames": 958,
+      "stale_frames": 1,
+      "output_counts": {
+        "green/unknown": 844,
+        "green/green": 53,
+        "red/unknown": 3,
+        "red/red": 59
+      },
+      "native_vote_opportunity_counts": {
+        "green/unknown": 846,
+        "green/green": 50,
+        "red/green": 1,
+        "red/unknown": 7,
+        "red/red": 54,
+        "green/red": 1
+      },
+      "signal_switches_evaluation_only": [
+        [
+          0.0,
+          "green"
+        ],
+        [
+          99.75261279955294,
+          "red"
+        ],
+        [
+          113.20685859955302,
+          "green"
+        ]
+      ],
+      "first_true_red_vote": {
+        "sequence": 443,
+        "t": 100.45868529955305,
+        "wall": 100.544128,
+        "capture_relative_sim_time": 100.34710659955272,
+        "capture_age": 0.15829150000035952,
+        "capture_admitted": true,
+        "truth_evaluation_only": "red",
+        "recorded_signal": "red",
+        "recorded_source": "rgb_panel",
+        "recorded_model_state": "unknown",
+        "panel_only_state": "red",
+        "vote": "red",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 2,
+          "green_count": 0,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "red",
+          "bbox": [
+            421,
+            176,
+            424,
+            180
+          ],
+          "pixels": 11,
+          "fill": 0.9167,
+          "aspect": 0.75,
+          "dark_pixels": 6,
+          "dark_sides": [
+            2,
+            4,
+            1,
+            4
+          ],
+          "background_luma": 127.0,
+          "background_color_fraction": 0.0,
+          "color_value": 131.0,
+          "dark_value": 90.5,
+          "model_associated": false,
+          "mixed_border": true,
+          "confirmed_frames": 3,
+          "image_velocity_px_s": [
+            -4.290687192173277,
+            -2.1453435960866387
+          ]
+        },
+        "actual_v": 2.7344172,
+        "x": 67.72981,
+        "z": -8.038721,
+        "rgb": "rgb_00443.jpg"
+      },
+      "first_green_recovery_vote": {
+        "sequence": 505,
+        "t": 113.92979609955273,
+        "wall": 113.99396710000019,
+        "capture_relative_sim_time": 113.83374349955284,
+        "capture_age": 0.12731979999989562,
+        "capture_admitted": true,
+        "truth_evaluation_only": "green",
+        "recorded_signal": "green",
+        "recorded_source": "rgb_panel",
+        "recorded_model_state": "unknown",
+        "panel_only_state": "green",
+        "vote": "green",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 0,
+          "green_count": 2,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "green",
+          "bbox": [
+            421,
+            176,
+            425,
+            180
+          ],
+          "pixels": 12,
+          "fill": 0.75,
+          "aspect": 1.0,
+          "dark_pixels": 5,
+          "dark_sides": [
+            5,
+            0,
+            0,
+            3
+          ],
+          "background_luma": 128.0,
+          "background_color_fraction": 0.0,
+          "color_value": 154.5,
+          "dark_value": 50.0,
+          "model_associated": false,
+          "mixed_border": true,
+          "confirmed_frames": 3,
+          "image_velocity_px_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "actual_v": -2.95032621e-08,
+        "x": 67.68623,
+        "z": -6.8698225,
+        "rgb": "rgb_00505.jpg"
+      },
+      "stationary_green_native_vote_frames": 2,
+      "terminal_counterfactual_latch": "normal"
+    },
+    {
+      "run": "inner_joint_06",
+      "frames": 827,
+      "fresh_frames": 826,
+      "stale_frames": 1,
+      "output_counts": {
+        "green/unknown": 707,
+        "green/green": 57,
+        "red/green": 1,
+        "red/unknown": 4,
+        "red/red": 58
+      },
+      "native_vote_opportunity_counts": {
+        "green/unknown": 708,
+        "green/green": 56,
+        "red/unknown": 8,
+        "red/red": 55
+      },
+      "signal_switches_evaluation_only": [
+        [
+          0.0,
+          "green"
+        ],
+        [
+          118.86785479955324,
+          "red"
+        ],
+        [
+          132.37567489955336,
+          "green"
+        ]
+      ],
+      "first_true_red_vote": {
+        "sequence": 536,
+        "t": 120.49055439955328,
+        "wall": 120.56860580000011,
+        "capture_relative_sim_time": 120.39763829955291,
+        "capture_age": 0.14758919999985665,
+        "capture_admitted": true,
+        "truth_evaluation_only": "red",
+        "recorded_signal": "red",
+        "recorded_source": "a3_model",
+        "recorded_model_state": "red",
+        "panel_only_state": "red",
+        "vote": "red",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 2,
+          "green_count": 0,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "red",
+          "bbox": [
+            420,
+            177,
+            424,
+            180
+          ],
+          "pixels": 11,
+          "fill": 0.9167,
+          "aspect": 1.3333,
+          "dark_pixels": 4,
+          "dark_sides": [
+            4,
+            0,
+            1,
+            2
+          ],
+          "background_luma": 120.5,
+          "background_color_fraction": 0.0,
+          "color_value": 144.0,
+          "dark_value": 44.5,
+          "model_associated": true,
+          "mixed_border": true,
+          "confirmed_frames": 3,
+          "image_velocity_px_s": [
+            2.3301702049538298,
+            0.0
+          ]
+        },
+        "actual_v": 0.000821237,
+        "x": 67.67299,
+        "z": -6.881564,
+        "rgb": "rgb_00536.jpg"
+      },
+      "first_green_recovery_vote": {
+        "sequence": 594,
+        "t": 133.24514139955272,
+        "wall": 133.31608219999998,
+        "capture_relative_sim_time": 133.14731409955266,
+        "capture_age": 0.13528519999999844,
+        "capture_admitted": true,
+        "truth_evaluation_only": "green",
+        "recorded_signal": "green",
+        "recorded_source": "rgb_panel",
+        "recorded_model_state": "unknown",
+        "panel_only_state": "green",
+        "vote": "green",
+        "snapshot": {
+          "window_sec": 0.5,
+          "min_samples": 3,
+          "ready": true,
+          "sample_count": 3,
+          "red_count": 0,
+          "green_count": 2,
+          "unknown_count": 1,
+          "last_message_age_sec": 0.0
+        },
+        "panel": {
+          "state": "green",
+          "bbox": [
+            420,
+            176,
+            424,
+            180
+          ],
+          "pixels": 13,
+          "fill": 0.8125,
+          "aspect": 1.0,
+          "dark_pixels": 5,
+          "dark_sides": [
+            5,
+            0,
+            0,
+            3
+          ],
+          "background_luma": 126.0,
+          "background_color_fraction": 0.0,
+          "color_value": 160.0,
+          "dark_value": 40.0,
+          "model_associated": false,
+          "mixed_border": true,
+          "confirmed_frames": 3,
+          "image_velocity_px_s": [
+            0.0,
+            0.0
+          ]
+        },
+        "actual_v": -2.78975048e-08,
+        "x": 67.67299,
+        "z": -6.881528,
+        "rgb": "rgb_00594.jpg"
+      },
+      "stationary_green_native_vote_frames": 2,
+      "terminal_counterfactual_latch": "normal"
+    },
+    {
+      "run": "outer_joint_01",
+      "frames": 322,
+      "fresh_frames": 321,
+      "stale_frames": 1,
+      "output_counts": {
+        "green/unknown": 287,
+        "green/green": 35
+      },
+      "native_vote_opportunity_counts": {
+        "green/unknown": 291,
+        "green/green": 31
+      },
+      "signal_switches_evaluation_only": [
+        [
+          0.0,
+          "green"
+        ]
+      ],
+      "first_true_red_vote": null,
+      "first_green_recovery_vote": null,
+      "stationary_green_native_vote_frames": 0,
+      "terminal_counterfactual_latch": "normal"
+    },
+    {
+      "run": "outer_joint_02",
+      "frames": 325,
+      "fresh_frames": 324,
+      "stale_frames": 1,
+      "output_counts": {
+        "green/unknown": 292,
+        "green/green": 33
+      },
+      "native_vote_opportunity_counts": {
+        "green/unknown": 294,
+        "green/green": 31
+      },
+      "signal_switches_evaluation_only": [
+        [
+          0.0,
+          "green"
+        ]
+      ],
+      "first_true_red_vote": null,
+      "first_green_recovery_vote": null,
+      "stationary_green_native_vote_frames": 0,
+      "terminal_counterfactual_latch": "normal"
+    }
+  ],
+  "limits": "JPEG not original PNG; C# receipt wall clock approximates semantic arrival; original capture age<=.5; physical state used only for evaluation"
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 2,
+  "scope": "Final archived Unity integration and actual MCP evidence; no hardware acceptance",
+  "source_version": "0.4.0",
+  "source_commit": "6b71267e24e81459220c7e6d30d84c3f7a00e591",
+  "source_algorithm_changed": false,
+  "final_runs": {
+    "inner_joint_07": {
+      "physical_laps": 2,
+      "red_stop": true,
+      "stationary_green_resume": true,
+      "official_topology_fused": false,
+      "red_interior_turn": false,
+      "accepted": false,
+      "failure": "ambiguous_correspondence",
+      "input_files_unchanged": 125,
+      "worker_exit_code": 0
+    },
+    "outer_joint_03": {
+      "physical_laps": 2,
+      "red_stop": true,
+      "stationary_green_resume": true,
+      "official_topology_fused": false,
+      "red_interior_turn": false,
+      "accepted": false,
+      "failure": "ambiguous_correspondence",
+      "input_files_unchanged": 125,
+      "worker_exit_code": 0
+    }
+  },
+  "final_perception_verification": {
+    "receipt": "evidence/staged_panel_only_verification.json",
+    "boundary_checks": 13,
+    "recorded_frames": 3268,
+    "default_off_full_dictionary_equal": true,
+    "only_core_equals_original_helper_with_unknown_model": true,
+    "independent_review": "evidence/PANEL_ONLY_INDEPENDENT_REVIEW.md"
+  },
+  "archive_validation": {
+    "live_installer_comparison": "evidence/final_installer_readonly.json",
+    "six_live_files_exact_final_hash": true,
+    "comparison_read_only": true,
+    "source_manifest": "manifest.json",
+    "read_only_checker": "verify_archive.py",
+    "check_command": "python verify_archive.py",
+    "actual_staged_blob_check_command": "python verify_archive.py --staged",
+    "staged_git_blob_check": "Performed by publishing owner after staging; never inferred from worktree hashes."
+  },
+  "cleanup": {
+    "editor_clean_edit": true,
+    "protected_original_files_unchanged": 35,
+    "expected_transport_overlay": true,
+    "temporary_mcp_bootstrap_removed": true,
+    "evidence": "evidence/final_editor_restored.json"
+  },
+  "not_deployed": [
+    "four-point short-side candidate",
+    "75/100 refinement-budget source change",
+    "manual official-map alignment",
+    "bbox distance",
+    "old 8-9m approach"
+  ],
+  "remaining_limits": [
+    "Official topo correspondence ambiguous; internal-road map/left turn not established",
+    "Immediate confirmed-red stop remains about 21-25m Body-to-lamp-root, evaluation only",
+    "Supplied package has no checkpoint persistence/restart recovery",
+    "Earlier unsupported-lane failure retained; final pair does not prove robustness",
+    "Simulator calibrated-panel policy is not general model/hardware acceptance"
+  ],
+  "historical_validation": "history/documentation_before_final/validation.json",
+  "media_validation": {
+    "status": "complete_video_evidence_not_topology_acceptance",
+    "video_seconds": 60,
+    "frames": 900,
+    "width": 1920,
+    "height": 1080,
+    "fps": 15,
+    "single_encoding": true,
+    "complete_decode": true,
+    "actual_decoded_visual_qa": "media/final_panel_only/VIDEO_QA.md",
+    "source_manifest": "media/final_panel_only/media_manifest.json",
+    "video_sha256": "815285ea9da67903df8fc92d67deafb8845aff9159670c8c8a1c2d49a9994c9b",
+    "owned_job_cleanup_verified": true,
+    "original_text_artifacts": 25,
+    "binary_committed": false
+  }
+}

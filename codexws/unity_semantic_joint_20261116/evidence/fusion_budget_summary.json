@@ -1,0 +1,256 @@
+{
+  "scope": "Read-only offline diagnostics. No source change or solver-budget candidate deployed.",
+  "source_route_fusion_sha256": "f79be602021295dd59bd76a22d8bc475303f0da30212d1e4f363558912b1a633",
+  "source_map_sha256": "9a515361f3e897a3b929a69f75568938a879ffcb4a14cb7535a8ac1e344ae083",
+  "original_reproduction": {
+    "elapsed_sec": 2.671631700010039,
+    "input_sequence": 1981,
+    "input_sim_time": 99.27999778091908,
+    "runtime_alignment": {
+      "scale": 0.8882660159196171,
+      "rotation_rad": 2.412607026539117,
+      "translation_x": 25.320648858313948,
+      "translation_y": -24.241854949494748,
+      "rmse_m": 0.1592974060637865,
+      "phase_fraction": 0.5681089019835894,
+      "direction": 1,
+      "available": false,
+      "reason": "ambiguous_correspondence",
+      "alternative_rmse_m": 0.22272180163300362,
+      "alternative_phase_fraction": 0.5690348731012145,
+      "alternative_direction": 1,
+      "ambiguity_gap_m": 0.06627544246325795,
+      "closure_gap_m": 1.4695787482337408,
+      "recorded_closed_length_m": 259.42774068542354,
+      "official_chord_length_m": 215.73047338474703,
+      "sample_count": 5,
+      "transform_direction": "recorded_odom_to_official_xy",
+      "matching_method": "joint_ordered_node_candidates",
+      "matching_scale_map_to_odom": 1.1257888763927384,
+      "node_max_distance_m": 0.2574389264161637,
+      "edge_angle_rmse_deg": 0.17732787312634662,
+      "edge_angle_max_deg": 0.2877774263364814,
+      "edge_chord_rmse_m": 0.17692375816058947,
+      "ambiguity_margin_m": 0.3,
+      "field_validation_required": true,
+      "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+      "candidate_count": 69,
+      "comparison_point_count": 2,
+      "same_transform_alternatives_checked": true,
+      "ambiguity_position_m": 1.0,
+      "alternative_node_spread_m": 1.4846015815582756,
+      "search_exhaustive": false
+    },
+    "runtime_replay_metric_difference": {
+      "rmse_m": 0.0,
+      "alternative_rmse_m": 0.0,
+      "ambiguity_gap_m": 0.0,
+      "phase_fraction": 0.0,
+      "alternative_phase_fraction": 0.0,
+      "alternative_node_spread_m": 0.0,
+      "closure_gap_m": 0.0
+    },
+    "runtime_replay_matches": true,
+    "node_displacements": {
+      "10000000000": {
+        "kind": "outer_projection",
+        "best": [
+          36.801675555837114,
+          1.5300651254514774
+        ],
+        "alternative": [
+          36.89531317755398,
+          1.308847436493476
+        ],
+        "displacement_m": 0.24021921261362497
+      },
+      "10000000001": {
+        "kind": "outer_projection",
+        "best": [
+          -12.717921066750018,
+          3.2056100729700514
+        ],
+        "alternative": [
+          -12.074761566934065,
+          3.977443404691743
+        ],
+        "displacement_m": 1.0046794683679534
+      },
+      "10000000002": {
+        "kind": "outer_projection",
+        "best": [
+          -27.041931055296917,
+          -65.33136460212495
+        ],
+        "alternative": [
+          -28.142542546523526,
+          -64.33502319409993
+        ],
+        "displacement_m": 1.4846015815582756
+      },
+      "10000000003": {
+        "kind": "outer_projection",
+        "best": [
+          19.353417592954816,
+          -67.61276887338
+        ],
+        "alternative": [
+          18.397134529733318,
+          -67.5521446144853
+        ],
+        "displacement_m": 0.9582027957435859
+      },
+      "10000000004": {
+        "kind": "outer_projection",
+        "best": [
+          39.050242609845455,
+          -46.743541128668674
+        ],
+        "alternative": [
+          39.06723726966888,
+          -46.88423544339012
+        ],
+        "displacement_m": 0.14171700200558332
+      },
+      "10000000005": {
+        "kind": "internal_transform_estimate",
+        "best": [
+          13.738620431855857,
+          -22.210631282070413
+        ],
+        "alternative": [
+          13.698123329782689,
+          -21.846936577341257
+        ],
+        "displacement_m": 0.36594241831789914
+      },
+      "10000000006": {
+        "kind": "internal_transform_estimate",
+        "best": [
+          -5.583349178558777,
+          -43.31927482579746
+        ],
+        "alternative": [
+          -6.091720888297999,
+          -42.604773262301
+        ],
+        "displacement_m": 0.876900381743593
+      }
+    },
+    "continuation_limit": "Unconstrained continuation of actual best/alternative only; does not rerun all coarse seeds or remove same-transform ambiguity probes"
+  },
+  "complete_search_budget_experiments": [
+    {
+      "budget": 75,
+      "elapsed_sec": 7.613696300017182,
+      "stopping_change_threshold": 1e-05,
+      "thresholds_changed": false,
+      "source_edited": false,
+      "alignment": {
+        "scale": 0.886944308997339,
+        "rotation_rad": 2.416660894820284,
+        "translation_x": 25.520980679558434,
+        "translation_y": -24.011514842286854,
+        "rmse_m": 0.0011158139642173889,
+        "phase_fraction": 0.5674967449079011,
+        "direction": 1,
+        "available": false,
+        "reason": "ambiguous_correspondence",
+        "alternative_rmse_m": 0.24855931303401035,
+        "alternative_phase_fraction": 0.4417600683863745,
+        "alternative_direction": 1,
+        "ambiguity_gap_m": 0.25804388898088254,
+        "closure_gap_m": 1.4695787482337408,
+        "recorded_closed_length_m": 259.42774068542354,
+        "official_chord_length_m": 215.73047338474703,
+        "sample_count": 5,
+        "transform_direction": "recorded_odom_to_official_xy",
+        "matching_method": "joint_ordered_node_candidates",
+        "matching_scale_map_to_odom": 1.1274665047802908,
+        "node_max_distance_m": 0.001623348831341492,
+        "edge_angle_rmse_deg": 0.0019848826889337246,
+        "edge_angle_max_deg": 0.0035622139830505787,
+        "edge_chord_rmse_m": 0.0008543929679619132,
+        "ambiguity_margin_m": 0.3,
+        "field_validation_required": true,
+        "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+        "candidate_count": 69,
+        "comparison_point_count": 2,
+        "same_transform_alternatives_checked": true,
+        "ambiguity_position_m": 1.0,
+        "alternative_node_spread_m": 37.93011517322706,
+        "search_exhaustive": false
+      },
+      "status": {
+        "available": false,
+        "mode": "odom_only",
+        "metric_source": "odometry",
+        "recorded_length_m": 259.44220440493064,
+        "official_size_used": false,
+        "field_validation_required": true,
+        "reason": "ambiguous_correspondence",
+        "final_length_m": 259.40848287696986
+      },
+      "interpretation": "Budget-only audit. Unconverged candidates remain in original eligibility checks; no candidate is dropped to force acceptance.",
+      "final_candidate_count": 69,
+      "refinement_call_count": 128,
+      "full_receipt_sha256": "b9aff9242a6ae237b393fc5b11b72eb539441156ca7281e1f802f8c16acbdf19"
+    },
+    {
+      "budget": 100,
+      "elapsed_sec": 9.867332900001202,
+      "stopping_change_threshold": 1e-05,
+      "thresholds_changed": false,
+      "source_edited": false,
+      "alignment": {
+        "scale": 0.8869440596989513,
+        "rotation_rad": 2.4166658338688354,
+        "translation_x": 25.52111510603603,
+        "translation_y": -24.01151470714768,
+        "rmse_m": 0.001109080175517432,
+        "phase_fraction": 0.5674972339703968,
+        "direction": 1,
+        "available": false,
+        "reason": "ambiguous_correspondence",
+        "alternative_rmse_m": 0.24846465241321034,
+        "alternative_phase_fraction": 0.4416642090740496,
+        "alternative_direction": 1,
+        "ambiguity_gap_m": 0.2578247694846261,
+        "closure_gap_m": 1.4695787482337408,
+        "recorded_closed_length_m": 259.42774068542354,
+        "official_chord_length_m": 215.73047338474703,
+        "sample_count": 5,
+        "transform_direction": "recorded_odom_to_official_xy",
+        "matching_method": "joint_ordered_node_candidates",
+        "matching_scale_map_to_odom": 1.1274668216836836,
+        "node_max_distance_m": 0.0015999438871954193,
+        "edge_angle_rmse_deg": 0.001943716862487834,
+        "edge_angle_max_deg": 0.0035128361859359932,
+        "edge_chord_rmse_m": 0.0008627869496790744,
+        "ambiguity_margin_m": 0.3,
+        "field_validation_required": true,
+        "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+        "candidate_count": 69,
+        "comparison_point_count": 2,
+        "same_transform_alternatives_checked": true,
+        "ambiguity_position_m": 1.0,
+        "alternative_node_spread_m": 37.95314798280165,
+        "search_exhaustive": false
+      },
+      "status": {
+        "available": false,
+        "mode": "odom_only",
+        "metric_source": "odometry",
+        "recorded_length_m": 259.44220440493064,
+        "official_size_used": false,
+        "field_validation_required": true,
+        "reason": "ambiguous_correspondence",
+        "final_length_m": 259.40848287696986
+      },
+      "interpretation": "Budget-only audit. Unconverged candidates remain in original eligibility checks; no candidate is dropped to force acceptance.",
+      "final_candidate_count": 69,
+      "refinement_call_count": 128,
+      "full_receipt_sha256": "0b6ffdb0d7cd0479d1344b64715281d20d85e6351d2d02aa3c017f857a1c3ffd"
+    }
+  ]
+}

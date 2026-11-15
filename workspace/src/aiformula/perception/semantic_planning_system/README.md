@@ -5,6 +5,16 @@
 > [source, compatibility and verification record](../../../../../docs/semantic_joint_20261115/README.md).
 > Older results below remain historical and are not acceptance of this source.
 
+The current Unity export and its guarded installer are in
+[unity_semantic_joint_20261116](../../../../../codexws/unity_semantic_joint_20261116/README.md).
+Read its [results](../../../../../codexws/unity_semantic_joint_20261116/RESULTS.md),
+deployment and agent handoff before running this experiment. Its explicit Unity
+signal input uses the existing calibrated RGB-panel detector; A4 detections stay
+visible but do not vote on the signal. Native MapAssist/LYA algorithms remain
+unchanged. Bbox distance and the older stop_wait/checkpoint modes are separate.
+
+## Historical integration — not 0.4.0 acceptance
+
 The planner remains in `perception/semantic_planning_system`, matching the neo
 repository layout. ROS command adapters live in `control/semantic_drive_bridge`,
 launch entry points in `launchers`, and the verified Unity integration in

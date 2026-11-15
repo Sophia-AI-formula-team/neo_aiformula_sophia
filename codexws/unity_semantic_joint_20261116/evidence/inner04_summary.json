@@ -1,0 +1,321 @@
+{
+  "scope": "Reviewed completed-run summary only; raw frames and individual detections omitted; no new test/model/Unity execution",
+  "source_evidence_sha256": {
+    "audit/inner04_metrics.json": "78b69c63ee442041d70358a480aad3404481c6bd1a792d10a5d07eb974b2e161",
+    "audit/inner04_behavior.json": "b47c2d1f840fc7a4f83f2b7ac27bd1a7113a97540c5e74aba4f00e7b1dc0f6ed",
+    "runs/inner_joint_04/result.json": "35b763f01cff57be8e8e1fd2d1757f5367d36280cde5fec5ed23e2b1d02fae9e",
+    "runs/inner_joint_04/events.jsonl": "c1cddc7af49b5e5b0e294a5f1e6d76576d8d36f3a03ed8fcc51dbe33dbe23fad",
+    "runs/inner_joint_04/integration_hashes_after.json": "b2885285b63ca3e51f5832b533dcf84c69d991d617b59447992a96093f6c50f3"
+  },
+  "metrics": {
+    "run": "runs/inner_joint_04",
+    "accepted": false,
+    "reason": "No physical progress for 35 simulation seconds after motion control started",
+    "travelled_m": 308.3987,
+    "physical_laps": 1,
+    "physical_lap_events": [
+      {
+        "event": "physical_lap_completed",
+        "stage": "learned_continuing",
+        "t": 260.99378454282055,
+        "wall": 261.52932080000005,
+        "detail": {
+          "completed_laps": 1,
+          "travelled": 259.410553,
+          "reference_ready": true
+        },
+        "x": 67.7562256,
+        "z": -9.992518
+      }
+    ],
+    "first_moving_command": {
+      "sequence": 543,
+      "sim_time": 27.519999384880066,
+      "odom": {
+        "x": -9.999916,
+        "y": -68.76,
+        "yaw": 6.909624540570404e-07,
+        "v": 3.33253034e-08,
+        "w": 5.202989e-08
+      },
+      "v": 2.2249622722080087,
+      "w": 0.6743689092061134
+    },
+    "first_odom_reference": {
+      "sequence": 5180,
+      "sim_time": 260.5999941751361,
+      "odom": {
+        "x": -11.0742636,
+        "y": -67.86237,
+        "yaw": 0.10923006207823048,
+        "v": 2.71270871,
+        "w": -0.06420569
+      },
+      "reference_length_m": 259.5645928659006
+    },
+    "first_official_fusion": null,
+    "first_detour": null,
+    "red_scheduled": true,
+    "red_observed": true,
+    "detour_entered": false,
+    "detour_completed": false,
+    "measured_left_motion": false,
+    "worker_shutdown": {
+      "clean": true,
+      "forced": false,
+      "exited": true,
+      "exit_code": 0,
+      "error": null
+    },
+    "semantic_tick_count": 6612,
+    "status_reason_ticks": {
+      "visual_points_stale": 3048,
+      "learning_first_lap": 2131,
+      "route_match_unavailable": 4,
+      "unavailable": 128,
+      "red_wait_map_fusion": 1041,
+      "resume_delay": 4,
+      "within_tolerance": 256
+    },
+    "traffic_reason_ticks": {
+      "traffic_idle": 5208,
+      "red_wait_map_fusion": 1041,
+      "green_resume": 363
+    },
+    "vision_result_ticks": {
+      "none": 5778,
+      "stale": 49,
+      "accepted": 782,
+      "light_only_unsupported_lane": 3
+    },
+    "terminal_reference_length_m": 259.5645928659006,
+    "terminal_map_fusion": {
+      "available": false,
+      "mode": "odom_only",
+      "metric_source": "odometry",
+      "recorded_length_m": 259.5831870320646,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "excluded_gap_too_long",
+      "final_length_m": 259.5645928659006
+    },
+    "terminal_topology_mapping": {
+      "available": false,
+      "reason": "waiting_for_odom"
+    },
+    "graph_frame": "official_unaligned",
+    "physical_junction_error_m": null,
+    "topology_correctness": "not established: needs independent physical junction correspondence; fusion availability alone is insufficient",
+    "internal_map_evidence": "internal nodes are official-graph estimates, not observed internal-road mapping",
+    "render_cap_transition": {
+      "sim_time": 168.4207971995529,
+      "utc": "2026-11-15T19:26:17.6206850Z",
+      "fps_before": -1,
+      "vsync_before": 1,
+      "physics_step": 0.01,
+      "time_scale": 1.0,
+      "scope": "own Unity render load only; no source or physical parameter change",
+      "fps_after": 30,
+      "vsync_after": 0
+    },
+    "render_segment_metrics": {
+      "before_cap": {
+        "frames": 80,
+        "inference_ms": {
+          "n": 80,
+          "minimum": 19.627,
+          "median": 692.3718,
+          "p95": 4447.844,
+          "maximum": 8025.80957
+        },
+        "capture_age_sec": {
+          "n": 80,
+          "minimum": 0.09969739999996818,
+          "median": 0.8793866500000149,
+          "p95": 4.59115840000004,
+          "maximum": 8.319929100000081
+        },
+        "frames_with_capture_age_over_point_ttl": 48
+      },
+      "spans_transition": {
+        "frames": 1,
+        "inference_ms": {
+          "n": 1,
+          "minimum": 1262.98535,
+          "median": 1262.98535,
+          "p95": 1262.98535,
+          "maximum": 1262.98535
+        },
+        "capture_age_sec": {
+          "n": 1,
+          "minimum": 2.1252680000000055,
+          "median": 2.1252680000000055,
+          "p95": 2.1252680000000055,
+          "maximum": 2.1252680000000055
+        },
+        "frames_with_capture_age_over_point_ttl": 1
+      },
+      "after_cap": {
+        "frames": 754,
+        "inference_ms": {
+          "n": 754,
+          "minimum": 19.4974,
+          "median": 26.747799999999998,
+          "p95": 43.6292,
+          "maximum": 60.0001
+        },
+        "capture_age_sec": {
+          "n": 754,
+          "minimum": 0.09557340000014847,
+          "median": 0.12993014999995012,
+          "p95": 0.16496489999985897,
+          "maximum": 0.32409869999992225
+        },
+        "frames_with_capture_age_over_point_ttl": 0
+      }
+    },
+    "rendering_acceptance": "mixed rendering settings; not exclusive GPU validation",
+    "scope": "completed-run log analysis only; no model/test/Unity execution, no motion.jsonl full scan"
+  },
+  "result": {
+    "accepted": false,
+    "reason": "No physical progress for 35 simulation seconds after motion control started",
+    "seconds": 334.6853866428205,
+    "wallSeconds": 335.23927960000015,
+    "completedLaps": 1,
+    "travelled": 308.3987,
+    "firstLapClosed": true,
+    "redScheduled": true,
+    "redObserved": true,
+    "detourEntered": false,
+    "detourCompleted": false,
+    "leftObserved": false,
+    "red_detour_failed": true,
+    "redFailureReason": "Red wait persisted for 12 s: red_wait_map_fusion",
+    "recoveryGreenScheduled": true,
+    "motionControlStarted": true,
+    "motionControlStartedTime": 27.550173999552953,
+    "cleanupErrors": []
+  },
+  "behavior": {
+    "learned_sample_count": 966,
+    "excluded_sample_count": 33,
+    "reference_untrusted_gaps": [
+      {
+        "start_index": 14,
+        "end_index": 73,
+        "count_untrusted": 58,
+        "length_m": 11.799560720850012,
+        "start_xy": [
+          -7.1783474148216015,
+          -68.61445621689822
+        ],
+        "end_xy": [
+          4.507579512967995,
+          -67.00212052119393
+        ]
+      },
+      {
+        "start_index": 1290,
+        "end_index": 5,
+        "count_untrusted": 12,
+        "length_m": 2.5941516491805254,
+        "start_xy": [
+          -11.374141265297002,
+          -67.896572955196
+        ],
+        "end_xy": [
+          -8.973106191477866,
+          -68.74510582080353
+        ]
+      },
+      {
+        "start_index": 10,
+        "end_index": 13,
+        "count_untrusted": 2,
+        "length_m": 0.5999735412495518,
+        "start_xy": [
+          -7.974818317295811,
+          -68.68878900817181
+        ],
+        "end_xy": [
+          -7.377224119887547,
+          -68.63553415481368
+        ]
+      },
+      {
+        "start_index": 5,
+        "end_index": 8,
+        "count_untrusted": 2,
+        "length_m": 0.5999689716945026,
+        "start_xy": [
+          -8.973106191477866,
+          -68.74510582080353
+        ],
+        "end_xy": [
+          -8.37380761078633,
+          -68.71692180004268
+        ]
+      }
+    ],
+    "detected_light_counts": {
+      "unknown": 667,
+      "green": 102,
+      "red": 70
+    },
+    "terminal_traffic_vote": {
+      "window_sec": 0.5,
+      "min_samples": 3,
+      "ready": false,
+      "sample_count": 2,
+      "red_count": 0,
+      "green_count": 0,
+      "unknown_count": 2,
+      "last_message_age_sec": 0.15700000000651926
+    }
+  },
+  "traffic_transitions": [
+    {
+      "sequence": 1,
+      "sim_time": 0.2299999948590994,
+      "mode": "normal",
+      "reason": "traffic_idle",
+      "light": "unknown",
+      "raw": "unknown",
+      "v": 0.0,
+      "w": 0.0
+    },
+    {
+      "sequence": 5209,
+      "sim_time": 262.16999414004385,
+      "mode": "wait",
+      "reason": "red_wait_map_fusion",
+      "light": "red",
+      "raw": "red",
+      "v": 0.0,
+      "w": 0.0
+    },
+    {
+      "sequence": 5562,
+      "sim_time": 279.9999937415123,
+      "mode": "normal",
+      "reason": "green_resume",
+      "light": "green",
+      "raw": "green",
+      "v": 0.0,
+      "w": 0.0
+    },
+    {
+      "sequence": 5925,
+      "sim_time": 298.5899933259934,
+      "mode": "wait",
+      "reason": "red_wait_map_fusion",
+      "light": "red",
+      "raw": "red",
+      "v": 0.0,
+      "w": 0.0
+    }
+  ],
+  "integration_hashes_unchanged": true,
+  "perception_cross_classification": "pending independent review; no fix or definitive attribution in this archive"
+}

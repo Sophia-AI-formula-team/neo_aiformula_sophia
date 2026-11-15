@@ -1,0 +1,44 @@
+{
+  "run": "runs/inner_joint_03",
+  "source_result_sha256": "1747a53619fbc4bf2eb3797a65aaf3e7246098641ed55512723567b0d4e99865",
+  "result": {
+    "accepted": false,
+    "reason": "No physical progress for 35 simulation seconds",
+    "seconds": 36.00273139955311,
+    "wallSeconds": 36.055053700000144,
+    "completedLaps": 0,
+    "travelled": 0.367093235,
+    "firstLapClosed": false,
+    "redScheduled": false,
+    "detourEntered": false,
+    "cleanupErrors": []
+  },
+  "detector_frame_summary": [
+    {
+      "sequence": 1,
+      "t": 30.522784999553096,
+      "age": 10.603472900000043,
+      "inference_ms": 10282.8145
+    },
+    {
+      "sequence": 2,
+      "t": 30.70285379955294,
+      "age": 0.19505670000012287,
+      "inference_ms": 22.7375
+    },
+    {
+      "sequence": 3,
+      "t": 35.03346109955305,
+      "age": 4.405387999999903,
+      "inference_ms": 4235.8877
+    },
+    {
+      "sequence": 4,
+      "t": 35.16262319955308,
+      "age": 0.1458732000000964,
+      "inference_ms": 21.1823
+    }
+  ],
+  "integration_hashes_unchanged": true,
+  "analysis": "Cold startup incorrectly consumed the original 35-s progress timer; fixed in harness90c14284 without changing semantic source or TTL"
+}
