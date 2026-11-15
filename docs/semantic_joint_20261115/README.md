@@ -108,3 +108,7 @@ executed the requested interior turn. Both retain `accepted=false`. The video
 combines these actual outcomes in approximately one minute. This package has no
 checkpoint restore and still stops immediately on confirmed red; earlier restart
 or 8–9 m approach results must not be attributed to version 0.4.0.
+
+See [topology failure analysis and proposed changes](TOPO_FAILURE_ANALYSIS.md)
+for the exact failure chain, the one-lap learning limitation, solver convergence
+evidence, and a staged plan for real junction observations and multi-lap updates.
