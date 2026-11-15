@@ -112,3 +112,8 @@ or 8–9 m approach results must not be attributed to version 0.4.0.
 See [topology failure analysis and proposed changes](TOPO_FAILURE_ANALYSIS.md)
 for the exact failure chain, the one-lap learning limitation, solver convergence
 evidence, and a staged plan for real junction observations and multi-lap updates.
+
+The [Chinese evidence guide](evidence_cn/README_中文.md) includes original run
+logs, native semantic output snapshots, red/green detection records and exact
+source-line provenance. The locally delivered ZIP additionally contains the
+60-second video and frames decoded from that actual video.
