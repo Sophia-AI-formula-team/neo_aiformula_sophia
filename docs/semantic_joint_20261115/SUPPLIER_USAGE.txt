@@ -1,0 +1,28 @@
+map_assist_joint 简要使用说明
+
+1. 复制
+把 ros2_packages 下的 semantic_planner_core 和 semantic_local_planner_ros 两个完整包复制到车辆工作区 src，替换原同名包。官方 topo 地图已包含在 semantic_local_planner_ros/config 中。已安装 lane_0927oa 时无需再复制 lane。
+
+2. 编译并加载工作区
+colcon build --symlink-install --packages-select semantic_planner_core semantic_local_planner_ros
+source install/setup.bash
+
+3. 新 lane 上车启动
+ros2 run semantic_local_planner_ros map_assist
+
+4. 旧 rosbag 测试启动（与第 3 条二选一）
+ros2 run semantic_local_planner_ros map_assist --ros-args --params-file "$(ros2 pkg prefix semantic_local_planner_ros)/share/semantic_local_planner_ros/config/map_assist_bag.yaml"
+
+5. 查看状态和地图
+ros2 topic echo /map_assist/status
+rviz2
+
+RViz 固定坐标系填 odom 的实际 frame；添加 Path，选择 /map_assist/path，Durability 设为 Transient Local。
+首圈结束后先显示 Odom 外圈；后台 topo 匹配完成后，如通过检查，会更新为融合路线。
+odom_reference_ready=true 表示首圈 Odom 路线就绪；fusion_pending=true 表示仍在匹配或等待安全切换；map_fusion.available=true 表示 topo 通过当前算法检查。
+phase=odom_only 且 fusion_pending=false 表示 topo 未通过，可信的 Odom 路段仍可辅助视觉。旧 bag 测试配置关闭车辆纠偏和速度输出。
+
+6. 红灯和避障
+裸命令默认关闭红灯控制和速度门控。首圈红灯停车、后续绕行需要按 map_assist_traffic_wiring_1011.txt 启用参数并接线。OA flag=true 时 map 不发送三点。
+
+本版未用真实 rosbag 或实车验证。节点匹配通过不代表内部道路边界及转弯路径可靠；具体测试结果见 验证结果.txt。

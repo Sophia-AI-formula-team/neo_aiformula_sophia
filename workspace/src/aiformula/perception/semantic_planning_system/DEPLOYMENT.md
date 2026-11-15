@@ -1,5 +1,21 @@
 # Deployment
 
+## Current experiment 0.4.0 — 2026-11-16
+
+Use the [1115 source record](../../../../../docs/semantic_joint_20261115/README.md)
+for the current package locations and compatibility boundary. This new-function
+experiment retains the supplied traffic algorithm. Old motor, stop_wait, bbox,
+race_map or checkpoint launches below must not be assumed compatible. Source
+preparation does not deploy a vehicle or establish a new Unity result.
+
+Build only the two selected ROS packages from the chosen neo worktree in a
+compatible ROS environment: `colcon build --symlink-install --packages-select
+semantic_planner_core semantic_local_planner_ros`. This command has not been run
+as part of this source preparation. The supplied bare entry is
+`ros2 run semantic_local_planner_ros map_assist`; its traffic control defaults
+off. Simulation wiring must record its overrides and maintain a distinct export
+and output directory. Preserve the archived ZIP and prior source pins for rollback.
+
 This repository offers two distinct deployment paths. The frozen Unity path
 has four recorded closed-loop runs. The new native ROS path is a shadow wiring
 entry and has no physical vehicle acceptance.

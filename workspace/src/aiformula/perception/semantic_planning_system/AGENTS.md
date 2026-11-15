@@ -1,5 +1,19 @@
 # Agent instructions: semantic planning
 
+## Current experiment — user clarification, 2026-11-16
+
+The user supplied the 1115 package to test its new topo-map and traffic/detour
+functionality, and explicitly requested a version increment without forcing
+the old traffic implementation into it. Both selected packages are 0.4.0.
+Read [the experimental source record](../../../../../docs/semantic_joint_20261115/README.md)
+and its manifest before interpreting older instructions below. Preserve the
+supplied algorithm unless a concrete problem analysis precedes a needed fix.
+Current simulation acceptance must cover first-person/semantic output, actual
+map correctness, and red-triggered entry into the internal route after mapping.
+Historical stop_wait, bbox, race_map and checkpoint evidence is not compatibility
+proof for this new implementation. Keep source, Unity wiring and immutable raw
+archive distinct; no physical vehicle deployment is authorized by this import.
+
 Read README.md, DEPLOYMENT.md, AGENT_HANDOFF.md, and INTEGRATION_ISSUES.md first.
 Inspect the current branch and dirty state. This subtree contains multiple ROS
 packages and two different planning pipelines. Do not combine their launches.

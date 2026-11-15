@@ -1,5 +1,28 @@
 # Agent handoff — 2026-10-12
 
+## Current task — new-function experiment 0.4.0, 2026-11-16
+
+The user clarified that 1115 is a new-function test package: increment its
+version, keep its traffic algorithm, run it in simulation, and produce
+first-person plus semantic output. The main criteria are correct topo mapping
+and subsequent red-triggered entry into an internal route. The prior suggestion
+to force a compatibility merge with old traffic code is superseded.
+
+Source is prepared in branch `feat/semantic-joint-20261115`, worktree
+`E:/Mess/Projects/Programming/aiformula/workspace/semantic_joint_20261116`,
+based on `9369bbabf097c405d27e15f738d70e72f917a3a0`. Both selected packages are
+0.4.0; their algorithms/tests retain the provided input. See the
+[current source record](../../../../../docs/semantic_joint_20261115/README.md)
+and SOURCE_MANIFEST.json for exact hashes, omitted legacy interfaces, preserved
+repository-only files and the separately archived lane indices change.
+
+Root owns commit/publication and Unity testing. Source-preparation checks are
+not algorithm, ROS/DDS or driving acceptance. Independently reproduce the
+supplier's seven reported route-fusion failures and retain actual simulation
+failures. Report necessary code repairs before making them. Do not overwrite
+older source/experiment receipts, change another worktree, or reuse old videos
+as evidence for this package.
+
 ## User intent and delivered baseline
 
 The user requested the updated semantic package in neo, MCP-only Unity testing,

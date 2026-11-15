@@ -1,5 +1,10 @@
 # Semantic planning integration
 
+> **Current 0.4.0 experiment, 2026-11-16:** the user-supplied 1115 source tests
+> joint topo fusion and its own traffic/detour behavior. Start with the
+> [source, compatibility and verification record](../../../../../docs/semantic_joint_20261115/README.md).
+> Older results below remain historical and are not acceptance of this source.
+
 The planner remains in `perception/semantic_planning_system`, matching the neo
 repository layout. ROS command adapters live in `control/semantic_drive_bridge`,
 launch entry points in `launchers`, and the verified Unity integration in
