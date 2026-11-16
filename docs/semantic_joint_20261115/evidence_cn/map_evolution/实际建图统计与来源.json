@@ -1,0 +1,258 @@
+{
+  "inner_joint_07": {
+    "原始日志": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\worker\\semantic_joint_ticks.jsonl",
+    "原始日志SHA256": "665b48c85547752937d33d082adef5bfe337077dfc2cf57253bd8612cdd171e0",
+    "快照": [
+      {
+        "阶段": "15秒：采集中",
+        "仿真秒": 15.059999663382769,
+        "原日志行": 298,
+        "学习点数": 115,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\15秒.json",
+        "原始行SHA256": "5c0f83fa9c232c8a0a2d85d6b23b75691da262dae9d8228a759606a89ec79930"
+      },
+      {
+        "阶段": "45秒：采集中",
+        "仿真秒": 45.059998992830515,
+        "原日志行": 898,
+        "学习点数": 414,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\45秒.json",
+        "原始行SHA256": "c0213458fd50c7ff9687039aae6cb9de4c7849e1f77eda5b74ee059d776268df"
+      },
+      {
+        "阶段": "80秒：采集中",
+        "仿真秒": 80.01999821141362,
+        "原日志行": 1597,
+        "学习点数": 761,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\80秒.json",
+        "原始行SHA256": "27b4d023b1689787ad3dd7c0c83db1587d0c57477f650256182bfc2b031b3693"
+      },
+      {
+        "阶段": "首圈：参考路径闭合",
+        "仿真秒": 99.58999777399004,
+        "原日志行": 1989,
+        "学习点数": 955,
+        "无效或排除点数": 2,
+        "参考点数": 1298,
+        "参考长度米": 259.5193895021528,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "reason": "alignment_pending"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\首圈.json",
+        "原始行SHA256": "51c77cffffcb719b57b8c281c6a1fcfb716575f1c6439f87f959ad2b96aa7683"
+      },
+      {
+        "阶段": "官方图：匹配被拒绝",
+        "仿真秒": 102.69999770447612,
+        "原日志行": 2051,
+        "学习点数": 955,
+        "无效或排除点数": 2,
+        "参考点数": 1298,
+        "参考长度米": 259.5193895021528,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "metric_source": "odometry",
+          "recorded_length_m": 259.5386560398998,
+          "official_size_used": false,
+          "field_validation_required": true,
+          "reason": "ambiguous_correspondence",
+          "final_length_m": 259.5087938488447
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\官方图.json",
+        "原始行SHA256": "b3be9841876448a589a32bf98f35282fc58479a37cabac8f7bc1829ec0427a22"
+      },
+      {
+        "阶段": "第二圈结束前：实际地图",
+        "仿真秒": 213.9199952185154,
+        "原日志行": 4233,
+        "学习点数": 955,
+        "无效或排除点数": 2,
+        "参考点数": 1298,
+        "参考长度米": 259.5193895021528,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "metric_source": "odometry",
+          "recorded_length_m": 259.5386560398998,
+          "official_size_used": false,
+          "field_validation_required": true,
+          "reason": "ambiguous_correspondence",
+          "final_length_m": 259.5087938488447
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "inner_joint_07\\第二圈结束前.json",
+        "原始行SHA256": "609c27089090148eed29348963f6497dc21ba531e898f3c0a3aece06182083e2"
+      }
+    ],
+    "首圈后学习点是否相同": true
+  },
+  "outer_joint_03": {
+    "原始日志": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\worker\\semantic_joint_ticks.jsonl",
+    "原始日志SHA256": "aac6ea0afbc4eb873ce1f0236b524da59130c02ef79c50a51086a9e28808f8f8",
+    "快照": [
+      {
+        "阶段": "15秒：采集中",
+        "仿真秒": 15.019999664276838,
+        "原日志行": 296,
+        "学习点数": 112,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\15秒.json",
+        "原始行SHA256": "ff36327ec1f15e6f49ed810aa6f1c0bc21b2b2f494de3130db1148300d171acd"
+      },
+      {
+        "阶段": "45秒：采集中",
+        "仿真秒": 45.019998993724585,
+        "原日志行": 896,
+        "学习点数": 411,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\45秒.json",
+        "原始行SHA256": "681a5e51d08bb98a3db2309d8044f0f69df0759a53f00f9392cfe753fa52fb5d"
+      },
+      {
+        "阶段": "80秒：采集中",
+        "仿真秒": 80.0299982111901,
+        "原日志行": 1596,
+        "学习点数": 757,
+        "无效或排除点数": 2,
+        "参考点数": 0,
+        "参考长度米": null,
+        "融合状态": {
+          "available": false,
+          "reason": "waiting_for_odom"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\80秒.json",
+        "原始行SHA256": "724edaaa3f1f29c8f7cb89323e0a20424039efe95056b81fc28201b99edd47ba"
+      },
+      {
+        "阶段": "首圈：参考路径闭合",
+        "仿真秒": 107.71999759227037,
+        "原日志行": 2150,
+        "学习点数": 1031,
+        "无效或排除点数": 2,
+        "参考点数": 1407,
+        "参考长度米": 281.35635511271363,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "reason": "alignment_pending"
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\首圈.json",
+        "原始行SHA256": "bbca99c5e04d04eaa50c455e6297d48fce8eb63ab73069a06d125928f82efddc"
+      },
+      {
+        "阶段": "官方图：匹配被拒绝",
+        "仿真秒": 111.02999751828611,
+        "原日志行": 2216,
+        "学习点数": 1031,
+        "无效或排除点数": 2,
+        "参考点数": 1407,
+        "参考长度米": 281.35635511271363,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "metric_source": "odometry",
+          "recorded_length_m": 281.3703850016276,
+          "official_size_used": false,
+          "field_validation_required": true,
+          "reason": "ambiguous_correspondence",
+          "final_length_m": 281.35603363433023
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\官方图.json",
+        "原始行SHA256": "7853608a9836edddfc1b8842404b4246331c773424639d28cd0b801c08844b59"
+      },
+      {
+        "阶段": "第二圈结束前：实际地图",
+        "仿真秒": 229.66999486647546,
+        "原日志行": 4525,
+        "学习点数": 1031,
+        "无效或排除点数": 2,
+        "参考点数": 1407,
+        "参考长度米": 281.35635511271363,
+        "融合状态": {
+          "available": false,
+          "mode": "odom_only",
+          "metric_source": "odometry",
+          "recorded_length_m": 281.3703850016276,
+          "official_size_used": false,
+          "field_validation_required": true,
+          "reason": "ambiguous_correspondence",
+          "final_length_m": 281.35603363433023
+        },
+        "官方图坐标系": "official_unaligned",
+        "已映射官方节点数": 0,
+        "绕行点数": 0,
+        "文件": "outer_joint_03\\第二圈结束前.json",
+        "原始行SHA256": "f640645cbef8f3e6a4a1492dc53c2f1cdd888a3f88479dda27f32ebc1027eaf7"
+      }
+    ],
+    "首圈后学习点是否相同": true
+  }
+}
