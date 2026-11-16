@@ -118,8 +118,9 @@ logs, native semantic output snapshots, red/green detection records and exact
 source-line provenance. The locally delivered ZIP additionally contains the
 60-second video and frames decoded from that actual video.
 
-The [native ROS topic bag guide](native_rosbag/README_中文.md) documents a single
-ROS 2 sqlite3 bag containing both two-lap trials, the original MapAssist input
-topics, camera Image/JPEG/CameraInfo, isolated recorded outputs, and a direct
-original-package replay entry. The database remains at the indexed local path;
-the guide discloses JPEG-derived raw pixels and non-DDS reconstruction limits.
+The current [two-bag delivery](native_rosbag/TWO_BAGS_中文.md) contains separate
+inner/outer two-lap ROS 2 bags, each ZIP containing only metadata.yaml and db3.
+Only original MapAssist inputs and raw camera/CameraInfo are retained. The
+previous combined bag and auxiliary package are superseded. Both complete ZIPs
+are uploaded and read-back verified; sharing remains restricted. The historical
+native-topic guide records input reconstruction and original-package wiring.

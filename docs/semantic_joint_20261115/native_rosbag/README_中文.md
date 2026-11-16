@@ -1,5 +1,7 @@
 # 内外圈原包话题重放包（中文说明）
 
+> 当前交付已按用户纠正改成[两个独立且仅含bag文件的ZIP](TWO_BAGS_中文.md)。下面合并包及附属资料的说明作为旧版来源记录保留，不再作为当前下载方式。
+
 本交付是**一个ROS 2 bag**：`bag/metadata.yaml`和`bag/bag.db3`，sqlite3存储、CDR序列化、ROS 2标准消息。内圈inner_joint_07与外圈outer_joint_03各包含两物理圈；总消息41,997条，bag时间跨度约450.70秒，数据库1,549,475,840字节（约1.55 GB）。
 
 数据来自既有Unity MCP实跑记录，按原semantic 0.4.0的订阅话题和标准消息类型导出。没有修改原包源码，没有启动Unity或重跑模型；这是从仿真接线日志还原的原生话题包，**不是现场DDS直接录制的bag**。原包入口为`semantic_local_planner_ros/map_assist`，来源与源码校验见`原包源码位置与校验.json`。
