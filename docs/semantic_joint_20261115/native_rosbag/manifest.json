@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "format": "rosbag2 sqlite3 CDR; metadata version8",
+  "source_version": "0.4.0",
+  "source_commit": "6b71267e24e81459220c7e6d30d84c3f7a00e591",
+  "integration_commit": "149d97c0ad13b36962d91330f80481194a884f50",
+  "segments": [
+    {
+      "case": "inner_joint_07",
+      "offset_sec": 1.0,
+      "source_duration_sec": 214.97975779955323,
+      "physical_laps": 2,
+      "accepted": false,
+      "source_image_receipts": 2359,
+      "duplicate_image_receipts_not_republished": 1388,
+      "exported_images": 971,
+      "accepted_ABC_events": 960,
+      "signal_votes": 966,
+      "counts": {
+        "odom": 4233,
+        "controller": 898
+      },
+      "original_worker_log_sha256": "665b48c85547752937d33d082adef5bfe337077dfc2cf57253bd8612cdd171e0",
+      "original_worker_log": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\worker\\semantic_joint_ticks.jsonl",
+      "startup_reset_bag_sec": 0.9
+    },
+    {
+      "case": "outer_joint_03",
+      "offset_sec": 220.97975779955323,
+      "source_duration_sec": 230.77832609955294,
+      "physical_laps": 2,
+      "accepted": false,
+      "source_image_receipts": 2519,
+      "duplicate_image_receipts_not_republished": 1478,
+      "exported_images": 1041,
+      "accepted_ABC_events": 1035,
+      "signal_votes": 1035,
+      "counts": {
+        "odom": 4525,
+        "controller": 972
+      },
+      "original_worker_log_sha256": "aac6ea0afbc4eb873ce1f0236b524da59130c02ef79c50a51086a9e28808f8f8",
+      "original_worker_log": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\worker\\semantic_joint_ticks.jsonl",
+      "startup_reset_bag_sec": 220.87975779955323
+    }
+  ],
+  "topics": {
+    "/aiformula_sensing/gyro_odometry_publisher/odom": "nav_msgs/msg/Odometry",
+    "/original_processed_point_a": "geometry_msgs/msg/Pose2D",
+    "/original_processed_point_b": "geometry_msgs/msg/Pose2D",
+    "/original_processed_point_c": "geometry_msgs/msg/Pose2D",
+    "/lane_stop_flag": "std_msgs/msg/Bool",
+    "/map_assist/branch_active": "std_msgs/msg/Bool",
+    "/map_assist/reset": "std_msgs/msg/Bool",
+    "/map_assist/traffic_light_input": "std_msgs/msg/String",
+    "/map_assist/controller_cmd_vel": "geometry_msgs/msg/Twist",
+    "/camera/image_raw": "sensor_msgs/msg/Image",
+    "/camera/image_raw/compressed": "sensor_msgs/msg/CompressedImage",
+    "/camera/camera_info": "sensor_msgs/msg/CameraInfo",
+    "/semantic_replay/session": "std_msgs/msg/String",
+    "/semantic_replay/camera_calibration": "std_msgs/msg/String",
+    "/recorded/map_assist/status": "std_msgs/msg/String",
+    "/recorded/map_assist/map_data": "std_msgs/msg/String",
+    "/recorded/map_assist/path": "nav_msgs/msg/Path",
+    "/recorded/map_assist/cmd_vel": "geometry_msgs/msg/Twist",
+    "/recorded/processed_point_a": "geometry_msgs/msg/Pose2D",
+    "/recorded/processed_point_b": "geometry_msgs/msg/Pose2D",
+    "/recorded/processed_point_c": "geometry_msgs/msg/Pose2D"
+  },
+  "message_counts": {
+    "/semantic_replay/session": 2,
+    "/semantic_replay/camera_calibration": 2,
+    "/map_assist/reset": 2,
+    "/lane_stop_flag": 2,
+    "/map_assist/branch_active": 2,
+    "/aiformula_sensing/gyro_odometry_publisher/odom": 8758,
+    "/recorded/map_assist/status": 8758,
+    "/recorded/map_assist/cmd_vel": 2537,
+    "/recorded/map_assist/map_data": 428,
+    "/recorded/map_assist/path": 4,
+    "/camera/image_raw": 2012,
+    "/camera/image_raw/compressed": 2012,
+    "/camera/camera_info": 2012,
+    "/map_assist/traffic_light_input": 2001,
+    "/original_processed_point_a": 1995,
+    "/original_processed_point_b": 1995,
+    "/original_processed_point_c": 1995,
+    "/map_assist/controller_cmd_vel": 1870,
+    "/recorded/processed_point_a": 1870,
+    "/recorded/processed_point_b": 1870,
+    "/recorded/processed_point_c": 1870
+  },
+  "sources": [
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\trace.jsonl",
+      "sha256": "603c931e9916d1c27479b5aa09b602a294baf1fb6979eee237e6f294de7e7b6a"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\frames.jsonl",
+      "sha256": "aac609cc941939df861517077a0cd71a8ce749b8b3e82b65bf35c7380f1bb0b3"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\camera_calibration.json",
+      "sha256": "e5b6a2aec28841a780c0a4d9d919aad9d14ac1efb3adb4761103bb61f8cecbdf"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\inner_joint_07\\worker\\ready.json",
+      "sha256": "b14814205e4cd20964b0084963e89855094519af58f5ffb7658b6c566a4c4c0e"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\trace.jsonl",
+      "sha256": "1967af3bbf2750946f4b2ad92f1d4a1c419d0f90a6934cc67c6d1000c79f2bfc"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\frames.jsonl",
+      "sha256": "b079ab49df6b5a361072e18f6b0148cf046d93505ff956d02bd67918cf09347b"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\camera_calibration.json",
+      "sha256": "e5b6a2aec28841a780c0a4d9d919aad9d14ac1efb3adb4761103bb61f8cecbdf"
+    },
+    {
+      "path": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_joint_trial_20261116\\runs\\outer_joint_03\\worker\\ready.json",
+      "sha256": "797c1909d17f333377c87b1e2aa433d45a08b454b2e9e05f7e915df74a021e35"
+    }
+  ],
+  "camera_raw_origin": "Decoded actual detector.Input JPEG, bgr8. Original lossless pixels were not retained. Compressed topic retains exact JPEG bytes.",
+  "output_provenance": "Native inputs reconstructed from saved pre-semantic candidates at recorded worker receive times. Not a native DDS recording. Recorded outputs are isolated under /recorded.",
+  "clock": "Not stored. ros2 bag play --clock supplies /clock; stamps are continuous rebased sim time; each session starts with an explicit reset."
+}

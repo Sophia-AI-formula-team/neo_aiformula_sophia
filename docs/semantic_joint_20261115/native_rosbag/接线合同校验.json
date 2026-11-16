@@ -1,0 +1,18 @@
+{
+  "required_input_topics": [
+    "/aiformula_sensing/gyro_odometry_publisher/odom",
+    "/lane_stop_flag",
+    "/map_assist/branch_active",
+    "/map_assist/controller_cmd_vel",
+    "/map_assist/reset",
+    "/map_assist/traffic_light_input",
+    "/original_processed_point_a",
+    "/original_processed_point_b",
+    "/original_processed_point_c"
+  ],
+  "all_required_native_inputs_present": true,
+  "recorded_output_not_fed_to_native_inputs": true,
+  "original_entrypoint": "semantic_local_planner_ros/map_assist",
+  "native_ros_execution_verified": false,
+  "sqlite_quick_check": "ok"
+}

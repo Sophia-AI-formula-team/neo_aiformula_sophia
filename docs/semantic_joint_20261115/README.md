@@ -117,3 +117,9 @@ The [Chinese evidence guide](evidence_cn/README_中文.md) includes original run
 logs, native semantic output snapshots, red/green detection records and exact
 source-line provenance. The locally delivered ZIP additionally contains the
 60-second video and frames decoded from that actual video.
+
+The [native ROS topic bag guide](native_rosbag/README_中文.md) documents a single
+ROS 2 sqlite3 bag containing both two-lap trials, the original MapAssist input
+topics, camera Image/JPEG/CameraInfo, isolated recorded outputs, and a direct
+original-package replay entry. The database remains at the indexed local path;
+the guide discloses JPEG-derived raw pixels and non-DDS reconstruction limits.
