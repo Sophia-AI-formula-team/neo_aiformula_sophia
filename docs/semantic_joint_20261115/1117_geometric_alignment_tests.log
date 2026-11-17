@@ -1,0 +1,78 @@
+test_expired_search_returns_odom_reference_only (test_geometric_alignment.GeometricAlignmentTests.test_expired_search_returns_odom_reference_only) ... FAIL
+test_hash_checks_actual_distance_across_cell_boundaries (test_geometric_alignment.GeometricAlignmentTests.test_hash_checks_actual_distance_across_cell_boundaries) ... ok
+test_low_iteration_budget_cannot_silently_accept_unfinished_candidates (test_geometric_alignment.GeometricAlignmentTests.test_low_iteration_budget_cannot_silently_accept_unfinished_candidates) ... FAIL
+test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) ... 
+  test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=0.0, scale=1.0, shift=23, reverse=False) ... FAIL
+  test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=0.61, scale=1.2, shift=183, reverse=False) ... FAIL
+  test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=-1.25, scale=0.8, shift=61, reverse=True) ... FAIL
+test_pair_and_triangle_hypotheses_create_diverse_candidates (test_geometric_alignment.GeometricAlignmentTests.test_pair_and_triangle_hypotheses_create_diverse_candidates) ... ok
+test_refinement_uses_monotone_point_curve_objective (test_geometric_alignment.GeometricAlignmentTests.test_refinement_uses_monotone_point_curve_objective) ... ok
+test_symmetric_curve_is_rejected_as_global_ambiguity (test_geometric_alignment.GeometricAlignmentTests.test_symmetric_curve_is_rejected_as_global_ambiguity) ... FAIL
+
+======================================================================
+FAIL: test_expired_search_returns_odom_reference_only (test_geometric_alignment.GeometricAlignmentTests.test_expired_search_returns_odom_reference_only)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 87, in test_expired_search_returns_odom_reference_only
+    self.assertEqual(result.status["reason"], "solver_budget_exhausted")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'branch_connections_missing' != 'solver_budget_exhausted'
+- branch_connections_missing
++ solver_budget_exhausted
+
+
+======================================================================
+FAIL: test_low_iteration_budget_cannot_silently_accept_unfinished_candidates (test_geometric_alignment.GeometricAlignmentTests.test_low_iteration_budget_cannot_silently_accept_unfinished_candidates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 102, in test_low_iteration_budget_cannot_silently_accept_unfinished_candidates
+    self.assertEqual(result.status["reason"], "solver_not_converged")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'branch_connections_missing' != 'solver_not_converged'
+- branch_connections_missing
++ solver_not_converged
+
+
+======================================================================
+FAIL: test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=0.0, scale=1.0, shift=23, reverse=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 66, in test_nodes_on_straights_match_under_transform_start_and_direction
+    self.assertTrue(result.status["available"], result.status)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : {'available': False, 'mode': 'odom_only', 'metric_source': 'odometry', 'recorded_length_m': 109.78664533070265, 'official_size_used': False, 'field_validation_required': True, 'reason': 'branch_connections_missing', 'final_length_m': 109.83514314810903}
+
+======================================================================
+FAIL: test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=0.61, scale=1.2, shift=183, reverse=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 66, in test_nodes_on_straights_match_under_transform_start_and_direction
+    self.assertTrue(result.status["available"], result.status)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : {'available': False, 'mode': 'odom_only', 'metric_source': 'odometry', 'recorded_length_m': 131.86638631497914, 'official_size_used': False, 'field_validation_required': True, 'reason': 'branch_connections_missing', 'final_length_m': 131.9418471830506}
+
+======================================================================
+FAIL: test_nodes_on_straights_match_under_transform_start_and_direction (test_geometric_alignment.GeometricAlignmentTests.test_nodes_on_straights_match_under_transform_start_and_direction) (angle=-1.25, scale=0.8, shift=61, reverse=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 66, in test_nodes_on_straights_match_under_transform_start_and_direction
+    self.assertTrue(result.status["available"], result.status)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : {'available': False, 'mode': 'odom_only', 'metric_source': 'odometry', 'recorded_length_m': 87.6824825835132, 'official_size_used': False, 'field_validation_required': True, 'reason': 'branch_connections_missing', 'final_length_m': 87.70870895224402}
+
+======================================================================
+FAIL: test_symmetric_curve_is_rejected_as_global_ambiguity (test_geometric_alignment.GeometricAlignmentTests.test_symmetric_curve_is_rejected_as_global_ambiguity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\Mess\Projects\Programming\aiformula\workspace\semantic_1117_20261117\workspace\src\aiformula\perception\semantic_planning_system\semantic_planner_core\tests\test_geometric_alignment.py", line 79, in test_symmetric_curve_is_rejected_as_global_ambiguity
+    self.assertEqual(result.status["reason"], "global_transform_ambiguous")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'branch_connections_missing' != 'global_transform_ambiguous'
+- branch_connections_missing
++ global_transform_ambiguous
+
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.143s
+
+FAILED (failures=6)

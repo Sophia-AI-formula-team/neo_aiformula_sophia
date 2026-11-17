@@ -1,0 +1,83 @@
+[
+  {
+    "case": "inner_1117_01",
+    "travelled_m": 42.1072845,
+    "laps": 0,
+    "reason": "No physical progress for 35 simulation seconds after motion control started",
+    "fusion": {
+      "available": false,
+      "reason": "waiting_for_odom"
+    },
+    "rmse": null,
+    "ambiguity_gap": null,
+    "red_observed": false,
+    "detour_entered": false,
+    "detour_completed": false,
+    "red_failure_reason": null,
+    "nearest_mapped_node_along_reference_m": null,
+    "worker_clean": true,
+    "input_hashes_unchanged": true
+  },
+  {
+    "case": "inner_1117_02",
+    "travelled_m": 322.846252,
+    "laps": 1,
+    "reason": "Matching observation completed; user requested match-only trial",
+    "fusion": {
+      "available": true,
+      "mode": "fused",
+      "metric_source": "odometry",
+      "recorded_length_m": 259.6752991797048,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "accepted",
+      "final_length_m": 259.5103298829614,
+      "node_count": 5,
+      "max_node_displacement_m": 0.08718009960523755,
+      "shape_weight": 0.25,
+      "direction": 1,
+      "node_source": "geometric_seam_v3",
+      "matching_method": "geometric_seam_v3"
+    },
+    "rmse": 0.17531315587458166,
+    "ambiguity_gap": null,
+    "red_observed": true,
+    "detour_entered": false,
+    "detour_completed": false,
+    "red_failure_reason": "Red wait persisted for 12 s: red_wait_near_junction",
+    "nearest_mapped_node_along_reference_m": 15.921919265398287,
+    "worker_clean": true,
+    "input_hashes_unchanged": true
+  },
+  {
+    "case": "outer_1117_01",
+    "travelled_m": 334.427,
+    "laps": 1,
+    "reason": "Matching observation completed; user requested match-only trial",
+    "fusion": {
+      "available": true,
+      "mode": "fused",
+      "metric_source": "odometry",
+      "recorded_length_m": 281.60129264968515,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "accepted",
+      "final_length_m": 281.51471428200335,
+      "node_count": 5,
+      "max_node_displacement_m": 0.13924889546432706,
+      "shape_weight": 0.25,
+      "direction": 1,
+      "node_source": "geometric_seam_v3",
+      "matching_method": "geometric_seam_v3"
+    },
+    "rmse": 0.2823169308317585,
+    "ambiguity_gap": 0.25014030590352626,
+    "red_observed": true,
+    "detour_entered": false,
+    "detour_completed": false,
+    "red_failure_reason": "Red wait persisted for 12 s: red_wait_near_junction",
+    "nearest_mapped_node_along_reference_m": 15.622286932091782,
+    "worker_clean": true,
+    "input_hashes_unchanged": true
+  }
+]
