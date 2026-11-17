@@ -1,6 +1,13 @@
 # Deployment
 
-## Current experiment 0.4.0 — 2026-11-16
+## Current experiment 0.4.1 — 1117 supplier package
+
+Use the [1117 deployment guide](../../../../../docs/semantic_joint_20261115/1117_部署说明.md)
+and [wiring audit](../../../../../docs/semantic_joint_20261115/1117_接线审计.md).
+The Unity shim assumes idle avoidance and no external branch event; these are
+not live ROS subscriptions. See the trial report for red-detour and test failures.
+
+## Historical experiment 0.4.0 — 2026-11-16
 
 Use the [1115 source record](../../../../../docs/semantic_joint_20261115/README.md)
 for the current package locations and compatibility boundary. This new-function

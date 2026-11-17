@@ -1,5 +1,12 @@
 # Semantic planning integration
 
+> **Current 0.4.1 experiment:** the 1117 supplier package and Unity match-only
+> results are documented in the [1117 trial report](../../../../../docs/semantic_joint_20261115/SEMANTIC_1117_本地试跑.md),
+> [wiring audit](../../../../../docs/semantic_joint_20261115/1117_接线审计.md) and
+> [deployment guide](../../../../../docs/semantic_joint_20261115/1117_部署说明.md).
+> Avoidance and external branch state are fixed in that simulation adapter; no
+> native ROS or successful red detour is claimed. The 0.4.0 material below is historical.
+
 > **Current 0.4.0 experiment, 2026-11-16:** the user-supplied 1115 source tests
 > joint topo fusion and its own traffic/detour behavior. Start with the
 > [source, compatibility and verification record](../../../../../docs/semantic_joint_20261115/README.md).

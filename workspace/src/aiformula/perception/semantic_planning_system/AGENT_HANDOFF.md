@@ -1,6 +1,17 @@
 # Agent handoff — 2026-10-12
 
-## Current task — new-function experiment 0.4.0, 2026-11-16
+## Current task — 1117 experiment 0.4.1
+
+PR #39 stacks on the still-draft PR #38. Start with the
+[1117 deployment](../../../../../docs/semantic_joint_20261115/1117_部署说明.md),
+[wiring audit](../../../../../docs/semantic_joint_20261115/1117_接线审计.md) and
+[trial results](../../../../../docs/semantic_joint_20261115/SEMANTIC_1117_本地试跑.md).
+Both final matcher runs returned accepted, but red detours did not occur; the
+simulation fixed avoidance/branch input states and used ideal odometry. Native
+ROS/DDS, physical map accuracy and hardware remain unverified. The 1115 notes
+below are historical and must not be used as the 0.4.1 handoff.
+
+## Historical task — new-function experiment 0.4.0, 2026-11-16
 
 The user clarified that 1115 is a new-function test package: increment its
 version, keep its traffic algorithm, run it in simulation, and produce
