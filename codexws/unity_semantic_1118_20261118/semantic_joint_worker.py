@@ -158,7 +158,7 @@ class SemanticTransport:
         document = yaml.safe_load(config.read_text(encoding="utf-8"))
         self.overrides = dict(document["map_assist"]["ros__parameters"])
         self.overrides.update(enable_traffic_control=True, enable_velocity_gate=True,
-                              avoidance_initially_idle=True, use_sim_time=True)
+                              avoidance_initially_idle=True, use_sim_time=True, detour_lookahead_m=2.5, detour_entry_radius_m=1.8)
         manifest = json.loads((self.vision_root / "upstream/provenance.json").read_text(encoding="utf-8"))
         self.vision_commit = manifest["commit"]
         for entry in manifest["files"]:
@@ -263,7 +263,7 @@ class SemanticTransport:
                     command_source="MapAssist_ABC_withoutkalman_0312_original_LYA_MapAssist_cmd_pub",
                     time_basis="real_monotonic_arrival", ros_time_basis="unchanged_Unity_simulation_time",
                     odom_source="caller_simulated_odometry", lya_tf="existing_local_same_frame_cancellation",
-                    semantic_revision="1118_package_0.4.2", traffic_policy="native_joint_red_detour",
+                    semantic_revision="1118_package_0.4.3", traffic_policy="native_joint_red_detour",
                     signal_approach=False, bbox_distance=False, persistence="not_implemented_in_supplied_package")
 
     def _on_lya_command(self, message):

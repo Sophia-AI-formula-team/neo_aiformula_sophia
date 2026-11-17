@@ -1,3 +1,5 @@
+> 当前迭代：1118 / 0.4.3；接线和问题分析位于仓库根目录 `codexws/unity_semantic_1118_20261118/`。下方旧版本记录保留为历史。
+
 # Agent handoff — 2026-10-12
 
 ## Current task — 1117 experiment 0.4.1

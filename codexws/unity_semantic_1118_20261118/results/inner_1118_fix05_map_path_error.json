@@ -1,0 +1,511 @@
+{
+  "available": true,
+  "metric_definition": "Euclidean distance from mapped graph node to closest segment of recorded Unity vehicle-centre trajectory up to first accepted match; NOT node-to-true-junction error",
+  "control_input": false,
+  "frame": "odom = (Unity world z, -Unity world x)",
+  "source_motion": "E:\\Mess\\Projects\\Programming\\aiformula\\workspace\\semantic_1118_trial_20261118\\runs\\inner_1118_fix05\\motion.jsonl",
+  "first_match_wall_s": 105.02997950000008,
+  "trajectory_points": 1556,
+  "fusion": {
+    "available": true,
+    "mode": "fused",
+    "metric_source": "odometry",
+    "recorded_length_m": 261.0698608886186,
+    "official_size_used": false,
+    "field_validation_required": true,
+    "reason": "accepted",
+    "final_length_m": 261.03661513983235,
+    "node_count": 5,
+    "max_node_displacement_m": 0.08839359336308128,
+    "shape_weight": 0.25,
+    "direction": 1,
+    "node_source": "geometric_seam_v3",
+    "matching_method": "geometric_seam_v3"
+  },
+  "alignment": {
+    "scale": 1.0752067545245476,
+    "rotation_rad": 1.6468109630837677,
+    "translation_x": 11.307635668345478,
+    "translation_y": -12.400122955247829,
+    "rmse_m": 0.1781397246468321,
+    "phase_fraction": 0.44950874549262,
+    "direction": 1,
+    "available": true,
+    "reason": "accepted",
+    "alternative_rmse_m": null,
+    "alternative_phase_fraction": null,
+    "alternative_direction": null,
+    "ambiguity_gap_m": null,
+    "closure_gap_m": 1.026326452170555,
+    "recorded_closed_length_m": 261.0675542735337,
+    "official_chord_length_m": 215.73047338474703,
+    "sample_count": 5,
+    "transform_direction": "recorded_odom_to_official_xy",
+    "matching_method": "geometric_seam_v3",
+    "matching_scale_map_to_odom": 0.9300536811101008,
+    "node_max_distance_m": 0.23620325074503284,
+    "edge_angle_rmse_deg": 0.33497676651607305,
+    "edge_angle_max_deg": 0.5319232253092604,
+    "edge_chord_rmse_m": 0.04709229697722425,
+    "ambiguity_margin_m": 0.3,
+    "field_validation_required": true,
+    "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+    "search_budget_exhausted": false,
+    "pair_hypotheses": 27314,
+    "triangle_verified_hypotheses": 474,
+    "seed_count": 64,
+    "coarse_spacing_m": 2.1755629522794475,
+    "seed_radius_ratio_range": [
+      0.55,
+      1.8
+    ],
+    "objective": "radial_huber_point_to_curve_rms",
+    "search_exhaustive": false,
+    "solver_elapsed_sec": 0.9529999999795109,
+    "solver_max_seconds": 12.0,
+    "best_converged": true,
+    "best_iterations": 4,
+    "best_termination": "gradient",
+    "best_last_step_m": 0.0024159754247441386,
+    "best_objective_monotone": true,
+    "unresolved_candidate_count": 0,
+    "convergence_check_scope": "selected_candidate_only",
+    "competitive_nonconverged_count": 0,
+    "branch_angle_threshold_deg": 80.0,
+    "branch_angle_max_deg": 95.0,
+    "branch_angle_exempt_edges": [
+      [
+        "10000000001",
+        "10000000005"
+      ]
+    ],
+    "branch_angle_vector": "inner_to_outer_vs_odom_tangent_along_official_way_order",
+    "branch_tangent_window_m": 2.0,
+    "branch_angles": [
+      {
+        "outer_node_id": "10000000000",
+        "inner_node_id": "10000000005",
+        "angle_deg": 88.37291801993682,
+        "tangent_source": "two_sided"
+      },
+      {
+        "outer_node_id": "10000000002",
+        "inner_node_id": "10000000006",
+        "angle_deg": 91.22918358950986,
+        "tangent_source": "two_sided"
+      },
+      {
+        "outer_node_id": "10000000003",
+        "inner_node_id": "10000000006",
+        "angle_deg": 94.02853750492906,
+        "tangent_source": "two_sided"
+      },
+      {
+        "outer_node_id": "10000000004",
+        "inner_node_id": "10000000005",
+        "angle_deg": 91.27887053955597,
+        "tangent_source": "two_sided"
+      }
+    ],
+    "branch_angle_pass_count": 26,
+    "branch_angle_unknown_count": 0,
+    "branch_angle_unknown_better_count": 0,
+    "candidate_gap_enforced": false,
+    "selection_policy": "lowest_point_curve_score_after_branch_angle_screen",
+    "branch_angle_assumption": "official junction-to-interior chord approximates local branch direction; field validation required",
+    "global_transform_available": true,
+    "node_correspondence_available": true,
+    "node_progress_spread_m": {
+      "10000000000": 0.0021031582292039275,
+      "10000000001": 0.0014597406460268303,
+      "10000000002": 0.0019469731879553365,
+      "10000000003": 0.0017922035007131853,
+      "10000000004": 0.002396369024438627
+    },
+    "uncertainty_kind": "sampled_candidate_envelope_not_probability",
+    "candidate_count": 69,
+    "comparison_point_count": 2,
+    "same_transform_alternatives_checked": true,
+    "ambiguity_position_m": 1.0,
+    "alternative_node_spread_m": null,
+    "diagnostic_candidates": [
+      {
+        "score_m": 0.1781397246468321,
+        "rmse_m": 0.1781397246468321,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536811101008,
+        "rotation_map_to_odom_rad": -1.6468109630837675,
+        "translation_map_to_odom": [
+          12.298130637626302,
+          9.610522788414105
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 4,
+        "termination": "gradient",
+        "global_disagreement_m": 0.0,
+        "node_positions_odom": {
+          "10000000000": [
+            9.035226242640618,
+            9.959098194959552
+          ],
+          "10000000001": [
+            -20.948493679683608,
+            -17.59565279549691
+          ],
+          "10000000002": [
+            9.341408148543834,
+            -66.75177820936472
+          ],
+          "10000000003": [
+            38.2640703560707,
+            -41.4396868538866
+          ],
+          "10000000004": [
+            37.96875213237796,
+            -17.56041718887321
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.71540546321108,
+          "10000000001": 189.89223995911533,
+          "10000000002": 19.464450777702407,
+          "10000000003": 69.00344903114532,
+          "10000000004": 92.95500025834917
+        }
+      },
+      {
+        "score_m": 0.1781397246468334,
+        "rmse_m": 0.1781397246468334,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536811623579,
+        "rotation_map_to_odom_rad": -1.6468109644625704,
+        "translation_map_to_odom": [
+          12.29813069723914,
+          9.610522776598646
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 3,
+        "termination": "step_and_objective",
+        "global_disagreement_m": 6.00325026483078e-08,
+        "node_positions_odom": {
+          "10000000000": [
+            9.035226302423185,
+            9.959098192592002
+          ],
+          "10000000001": [
+            -20.948493666046637,
+            -17.595652760109623
+          ],
+          "10000000002": [
+            9.341408102747906,
+            -66.7517782099593
+          ],
+          "10000000003": [
+            38.26407035894183,
+            -41.4396869037939
+          ],
+          "10000000004": [
+            37.96875213332515,
+            -17.560417238241456
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.71540540338165,
+          "10000000001": 189.8922399211914,
+          "10000000002": 19.46445073190262,
+          "10000000003": 69.0034489811555,
+          "10000000004": 92.95500020897184
+        }
+      },
+      {
+        "score_m": 0.17813972464683436,
+        "rmse_m": 0.17813972464683436,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536811638855,
+        "rotation_map_to_odom_rad": -1.6468109644601512,
+        "translation_map_to_odom": [
+          12.298130697123673,
+          9.610522776628706
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 4,
+        "termination": "step_and_objective",
+        "global_disagreement_m": 5.990956750978379e-08,
+        "node_positions_odom": {
+          "10000000000": [
+            9.035226302301373,
+            9.959098192596826
+          ],
+          "10000000001": [
+            -20.94849366609222,
+            -17.595652760227914
+          ],
+          "10000000002": [
+            9.341408102810624,
+            -66.75177820995849
+          ],
+          "10000000003": [
+            38.26407035894147,
+            -41.4396869037876
+          ],
+          "10000000004": [
+            37.96875213332422,
+            -17.56041723819346
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.71540540350355,
+          "10000000001": 189.89223992131815,
+          "10000000002": 19.464450731965343,
+          "10000000003": 69.00344898116181,
+          "10000000004": 92.95500020901984
+        }
+      },
+      {
+        "score_m": 0.17813972464683603,
+        "rmse_m": 0.17813972464683603,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536811062263,
+        "rotation_map_to_odom_rad": -1.646810964039515,
+        "translation_map_to_odom": [
+          12.298130683629044,
+          9.610522777786173
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 4,
+        "termination": "gradient",
+        "global_disagreement_m": 4.673206634006705e-08,
+        "node_positions_odom": {
+          "10000000000": [
+            9.035226288991122,
+            9.959098193123948
+          ],
+          "10000000001": [
+            -20.94849366986466,
+            -17.595652770017217
+          ],
+          "10000000002": [
+            9.341408121617919,
+            -66.7517782097143
+          ],
+          "10000000003": [
+            38.264070358086215,
+            -41.43968688892122
+          ],
+          "10000000004": [
+            37.96875213306012,
+            -17.560417224428342
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.71540541682424,
+          "10000000001": 189.89223993180917,
+          "10000000002": 19.464450750774223,
+          "10000000003": 69.00344899605277,
+          "10000000004": 92.9550002227875
+        }
+      },
+      {
+        "score_m": 0.1781397246468362,
+        "rmse_m": 0.1781397246468362,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536811632186,
+        "rotation_map_to_odom_rad": -1.6468109644575168,
+        "translation_map_to_odom": [
+          12.298130697043447,
+          9.610522776671825
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 3,
+        "termination": "step_and_objective",
+        "global_disagreement_m": 5.982778902992419e-08,
+        "node_positions_odom": {
+          "10000000000": [
+            9.03522630222195,
+            9.95909819259997
+          ],
+          "10000000001": [
+            -20.94849366609884,
+            -17.595652760245095
+          ],
+          "10000000002": [
+            9.341408102934462,
+            -66.75177820995688
+          ],
+          "10000000003": [
+            38.264070358933076,
+            -41.439686903641785
+          ],
+          "10000000004": [
+            37.96875213332171,
+            -17.560417238062385
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.71540540358305,
+          "10000000001": 189.89223992133657,
+          "10000000002": 19.464450732089194,
+          "10000000003": 69.00344898130787,
+          "10000000004": 92.95500020915095
+        }
+      },
+      {
+        "score_m": 0.17813972464683944,
+        "rmse_m": 0.17813972464683944,
+        "direction": 1,
+        "scale_map_to_odom": 0.9300536814276963,
+        "rotation_map_to_odom_rad": -1.646810959115603,
+        "translation_map_to_odom": [
+          12.298130469424656,
+          9.610522814508677
+        ],
+        "source": "geometric_basis_refined",
+        "converged": true,
+        "iterations": 4,
+        "termination": "gradient",
+        "global_disagreement_m": 1.7028320496192467e-07,
+        "node_positions_odom": {
+          "10000000000": [
+            9.035226072611794,
+            9.959098201693148
+          ],
+          "10000000001": [
+            -20.94849372790632,
+            -17.595652920632546
+          ],
+          "10000000002": [
+            9.341408281616753,
+            -66.75177820763697
+          ],
+          "10000000003": [
+            38.264070349788305,
+            -41.43968674468345
+          ],
+          "10000000004": [
+            37.968752130071884,
+            -17.560417068678838
+          ]
+        },
+        "node_progress_m": {
+          "10000000000": 143.7154056333732,
+          "10000000001": 189.89224009322112,
+          "10000000002": 19.464450910786542,
+          "10000000003": 69.00344914052904,
+          "10000000004": 92.95500037856567
+        }
+      }
+    ],
+    "node_rotation_rad": 1.6457891324313925
+  },
+  "nodes": [
+    {
+      "node_id": "00000000000",
+      "kind": "internal_estimate",
+      "mapped_odom_m": [
+        12.298130637626306,
+        9.610522788414103
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        12.29389531749431,
+        9.910696108453754
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.3002031978514671
+    },
+    {
+      "node_id": "10000000000",
+      "kind": "outer_anchor",
+      "mapped_odom_m": [
+        9.021198330550307,
+        9.880233099105856
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        9.024420495731514,
+        9.95952500986545
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.07935735290672391
+    },
+    {
+      "node_id": "10000000001",
+      "kind": "outer_anchor",
+      "mapped_odom_m": [
+        -21.035491710912915,
+        -17.593757969221333
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        -20.958850963816037,
+        -17.6227106470769
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.0819271729682886
+    },
+    {
+      "node_id": "10000000002",
+      "kind": "outer_anchor",
+      "mapped_odom_m": [
+        9.343636150581531,
+        -66.70002443020233
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        9.344367616289416,
+        -66.75163056024492
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.05161131368270058
+    },
+    {
+      "node_id": "10000000003",
+      "kind": "outer_anchor",
+      "mapped_odom_m": [
+        38.29882020537866,
+        -41.42904623460397
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        38.26332708193835,
+        -41.43118568889584
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.03555754598135445
+    },
+    {
+      "node_id": "10000000004",
+      "kind": "outer_anchor",
+      "mapped_odom_m": [
+        38.03599701073307,
+        -17.547190948311993
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        37.968409855056414,
+        -17.548496672216668
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 0.06759976721391622
+    },
+    {
+      "node_id": "10000000005",
+      "kind": "internal_estimate",
+      "mapped_odom_m": [
+        8.935884327927358,
+        -17.502711938999607
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        9.740668670578925,
+        9.93386450652346
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 27.44837709026179
+    },
+    {
+      "node_id": "10000000006",
+      "kind": "internal_estimate",
+      "mapped_odom_m": [
+        9.496665510899293,
+        -41.17538909719064
+      ],
+      "nearest_recorded_vehicle_center_odom_m": [
+        9.596978271070892,
+        -66.74887339339614
+      ],
+      "distance_to_recorded_vehicle_center_path_m": 25.57368103535591
+    }
+  ]
+}

@@ -99,6 +99,9 @@ def main():
     try:
         started = True
         print(json.dumps(call("execute_code", {"action": "execute", "code": code})), flush=True)
+        time.sleep(2)
+        render = call("execute_code", {"action": "execute", "code": 'var before = new { fps = UnityEngine.Application.targetFrameRate, vsync = UnityEngine.QualitySettings.vSyncCount }; UnityEngine.QualitySettings.vSyncCount = 0; UnityEngine.Application.targetFrameRate = 30; return new { before, after = new { fps = UnityEngine.Application.targetFrameRate, vsync = UnityEngine.QualitySettings.vSyncCount }, physics_changed = false };'})
+        (output / "render_settings_receipt.json").write_text(json.dumps(render, indent=2), encoding="utf-8")
         (output / "integration_hashes.json").write_text(json.dumps({"captured": "before_start", "sources": before}, indent=2), encoding="utf-8")
         while time.monotonic() - began < args.wall_timeout + 35:
             if (output / "result.json").exists():

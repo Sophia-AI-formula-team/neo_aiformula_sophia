@@ -749,7 +749,11 @@ class MapAssist(Node):
         self.odom, self.odom_time, self.odom_stamp = current, now, stamp
         self.odom_seq += 1
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
-        excluded = self._bypass_reason(now) is not None or not self._recording_points_valid(now)
+        # A red wait holds velocity but valid visual/odom samples remain usable.
+        # Otherwise the next lap cannot approach across its own red-stop segment.
+        excluded = (self.avoidance_active is not False or self.branch_active
+                    or (self.p["enable_traffic_control"] and self.traffic_mode in ("approach", "detour"))
+                    or not self._recording_points_valid(now))
         self.excluded_since_sample |= excluded
         if self.reference is None:
             if not self.samples:
