@@ -122,7 +122,8 @@ class TopologyGraph:
 
     def alternative_route(self, start_id: str, blocked_next_id: str,
                           require_internal: bool = True,
-                          outer_node_ids: Optional[Sequence[str]] = None) -> Optional[OpenTopoRoute]:
+                          outer_node_ids: Optional[Sequence[str]] = None,
+                          require_first_internal: bool = False) -> Optional[OpenTopoRoute]:
         """Remove the blocked edge both ways and find a short open bypass.
 
         With ``require_internal``, a bypass must visit a node outside the
@@ -130,6 +131,8 @@ class TopologyGraph:
         outer route is supplied, with any remaining bypass as fallback. The
         graph is unchanged. Positive-length Dijkstra search retains visited
         nodes in its state so a spur-and-return cannot fake an internal bypass.
+        When requested, the first edge must lead to an internal node, preventing
+        a return along the already travelled outer edge at the entry junction.
         This intentionally targets the small supplied topological graph.
         """
         if start_id not in self.nodes or blocked_next_id not in self.adjacency[start_id]:
@@ -141,6 +144,8 @@ class TopologyGraph:
             raise ValueError("Outer route contains an unknown node")
         if require_internal and not outer:
             raise ValueError("An outer route is required to identify internal nodes")
+        if require_first_internal and not outer:
+            raise ValueError("An outer route is required to identify the first internal edge")
         blocked = frozenset((start_id, blocked_next_id))
 
         def search(needs_internal: bool) -> Optional[List[str]]:
@@ -158,6 +163,8 @@ class TopologyGraph:
                         return list(path)
                     continue
                 for neighbour, distance in self.adjacency[current].items():
+                    if require_first_internal and len(path) == 1 and neighbour in outer:
+                        continue
                     if neighbour in visited or frozenset((current, neighbour)) == blocked:
                         continue
                     next_visited = visited | {neighbour}

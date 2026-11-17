@@ -165,6 +165,7 @@ class MapAssist(Node):
         self.detour_tracker = None
         self.detour_node_ids = []
         self.blocked_edge = None
+        self.detour_entry_progress = None
         self.detour_exit_progress = 0.0
         self.detour_used_odom_seq = -1
         self.detour_motion_ready = False
@@ -255,7 +256,7 @@ class MapAssist(Node):
             self._fusion_future.cancel()
         self._fusion_future = None
         self._pending_fusion = None
-        was_detouring = self.traffic_mode == "detour"
+        was_detouring = self.traffic_mode in ("approach", "detour")
         # Odom can reset the map before the next control tick. Never release a
         # committed detour using an old green from a detector that has stopped.
         self.traffic_light = self.light_filter.evaluate(time.monotonic())
@@ -269,6 +270,7 @@ class MapAssist(Node):
         self.detour_tracker = None
         self.detour_node_ids = []
         self.blocked_edge = None
+        self.detour_entry_progress = None
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
@@ -341,7 +343,7 @@ class MapAssist(Node):
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        elif self.traffic_light == "green" and self.traffic_mode == "wait":
+        elif self.traffic_light == "green" and self.traffic_mode in ("wait", "approach"):
             self._resume_vision("green_resume")
         # Unknown/missing detections never release an already confirmed red.
         # A committed detour finishes even if its light subsequently turns green.
@@ -350,6 +352,7 @@ class MapAssist(Node):
         self.traffic_mode = "normal"
         self.traffic_reason = reason
         self.detour_tracker = None
+        self.detour_entry_progress = None
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.used_seq = dict(self.point_seq)
@@ -369,9 +372,11 @@ class MapAssist(Node):
             return blocked
         if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
             return self.traffic_reason
-        if self.traffic_mode == "detour":
+        if self.traffic_mode in ("approach", "detour"):
+            if self.traffic_mode == "approach" and self.branch_active:
+                return "approach_branch_active"
             if not self.detour_motion_ready or now - self.odom_time > self.p["odom_timeout_sec"]:
-                return "detour_waiting_valid_odom_and_points"
+                return "route_waiting_valid_odom_and_points"
         elif not self.visual_motion_ready or not self._fresh_points(now):
             return "waiting_fresh_visual_triplet"
         return None
@@ -471,23 +476,34 @@ class MapAssist(Node):
             self.traffic_reason = "red_wait_untrusted_reference"
             return
         outer = self.official.node_ids[:-1]
-        locations = self.fused_node_positions
         length = self.reference.length_m
-        candidates = [key for key in outer if abs(
-            (self._node_progress(key) - self.progress + length * 0.5) % length - length * 0.5
-        ) <= self.p["detour_entry_radius_m"] + self.p["progress_tolerance_m"]]
+        # The reference progress increases in the recorded driving direction,
+        # including when the vehicle travels in reverse official-node order.
+        # Pick the next forward junction, not the geometrically closest node on
+        # another portion of the loop. A node just passed may be used only
+        # when the vehicle is physically within the small waypoint radius.
+        candidates = []
+        for key in outer:
+            forward = (self._node_progress(key) - self.progress) % length
+            if (forward > length - self.p["detour_waypoint_radius_m"]
+                    and math.dist(self.odom[:2], self.fused_node_positions[key])
+                    <= self.p["detour_waypoint_radius_m"]):
+                forward = 0.0
+            candidates.append((forward, key))
         if not candidates:
-            self.traffic_reason = "red_wait_near_junction"
+            self.traffic_reason = "red_no_outer_junction"
             return
-        start = min(candidates, key=lambda key: math.dist(self.odom[:2], locations[key]))
-        if math.dist(self.odom[:2], locations[start]) > self.p["detour_entry_radius_m"]:
-            self.traffic_reason = "red_wait_near_junction"
-            return
-        # Phase/direction identify the normal next edge; red removes that edge.
+        forward, start = min(candidates)
+        entry_progress = self.progress + forward
+        # Red is assumed to block the edge after this forward junction. The
+        # colour message itself does not identify a traffic light or stop line.
         direction = int(self.topology_alignment["direction"])
         target = outer[(outer.index(start) + direction) % len(outer)]
-        route = self.mapped_topology.alternative_route(start, target, require_internal=True, outer_node_ids=outer)
         self.blocked_edge = [start, target]
+        route = self.mapped_topology.alternative_route(
+            start, target, require_internal=True, outer_node_ids=outer,
+            require_first_internal=True,
+        )
         if route is None:
             self.traffic_reason = "red_no_alternative_route"
             return
@@ -498,25 +514,95 @@ class MapAssist(Node):
             lookahead_m=self.p["detour_lookahead_m"], spacing_m=self.p["detour_point_spacing_m"],
             entry_radius_m=self.p["detour_entry_radius_m"],
         )
-        initial = tracker.update(*self.odom)
-        if not initial.available:
-            self.traffic_reason = "red_route_unusable_" + initial.reason
-            return
         self.detour_tracker = tracker
         self.detour_node_ids = route.node_ids
+        self.detour_entry_progress = entry_progress
         target_progress = self._node_progress(target)
-        target_progress += math.floor(self.progress / self.reference.length_m) * self.reference.length_m
-        if target_progress < self.progress:
+        target_progress += math.floor(entry_progress / length) * length
+        if target_progress < entry_progress:
             target_progress += self.reference.length_m
         self.detour_exit_progress = target_progress
         self.detour_used_odom_seq = -1
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
-        self.traffic_mode = "detour"
-        self.traffic_reason = "following_alternative_route"
+        self.traffic_mode = "approach"
+        self.traffic_reason = "following_reference_to_junction"
         self.guard.reset()
         self.last_correction = 0.0
+
+    def _process_approach(self, now: float) -> None:
+        """Publish three vehicle-frame targets on the observed outer reference.
+
+        The junction is reached along the recorded curve, not by connecting
+        the current pose directly to its node. Excluded sections stay unusable.
+        """
+        if self._output_block_reason(now) or self.branch_active:
+            self.detour_motion_ready = False
+            return
+        if (self.reference is None or self.detour_tracker is None
+                or self.detour_entry_progress is None):
+            self.detour_motion_ready = False
+            self.traffic_mode = "wait"
+            self.traffic_reason = "approach_plan_unavailable"
+            return
+        if self.odom is None or now - self.odom_time > self.p["odom_timeout_sec"] or not self.matched:
+            self.detour_motion_ready = False
+            self.reason = self.traffic_reason = "approach_wait_localization"
+            return
+        if self.odom_seq == self.detour_used_odom_seq:
+            return
+        self.detour_used_odom_seq = self.odom_seq
+        remaining = self.detour_entry_progress - self.progress
+        if remaining < -self.p["detour_waypoint_radius_m"]:
+            self.detour_motion_ready = False
+            self.reason = self.traffic_reason = "approach_entry_passed"
+            return
+        entry_distance = math.dist(self.odom[:2], self.detour_tracker.points[0])
+        transition_distance = min(self.p["detour_entry_radius_m"],
+                                  max(self.p["detour_waypoint_radius_m"],
+                                      2.0 * self.p["detour_lookahead_m"]))
+        if remaining <= transition_distance and entry_distance <= self.p["detour_entry_radius_m"]:
+            initial = self.detour_tracker.update(*self.odom)
+            if not initial.available:
+                self.detour_motion_ready = False
+                self.reason = self.traffic_reason = "approach_entry_unusable_" + initial.reason
+                return
+            self.traffic_mode = "detour"
+            self.traffic_reason = "following_alternative_route"
+            self.detour_used_odom_seq = -1
+            self._process_detour(now)
+            return
+        # Never extend the approach targets beyond the junction along the
+        # red-blocked outer edge. Maintain three distinct points for the
+        # withoutkalman_0312 curvature/heading calculation.
+        maximum = min(self.p["detour_lookahead_m"] + 2.0 * self.p["detour_point_spacing_m"],
+                      max(0.0, remaining * 0.9))
+        if maximum <= 1e-4 or not self.reference._interval_trusted(self.progress, self.progress + maximum):
+            self.detour_motion_ready = False
+            self.reason = self.traffic_reason = "approach_untrusted_reference"
+            return
+        offsets = (maximum / 3.0, maximum * 2.0 / 3.0, maximum)
+        x, y, yaw = self.odom
+        c, s = math.cos(yaw), math.sin(yaw)
+        targets = []
+        for offset in offsets:
+            px, py, trusted = self.reference.point_at(self.progress + offset)
+            dx, dy = px - x, py - y
+            point = (c * dx + s * dy, -s * dx + c * dy)
+            if not trusted or not all(math.isfinite(value) for value in point) or point[0] <= 1e-6:
+                self.detour_motion_ready = False
+                self.reason = self.traffic_reason = "approach_target_unavailable"
+                return
+            targets.append(point)
+        if any(math.dist(a, b) <= 1e-6 for a, b in zip(targets, targets[1:])):
+            self.detour_motion_ready = False
+            self.reason = self.traffic_reason = "approach_points_too_close"
+            return
+        for label, (px, py) in zip("abc", targets):
+            self.point_pubs[label].publish(Pose2D(x=float(px), y=float(py), theta=0.0))
+        self.detour_motion_ready = True
+        self.reason = self.traffic_reason = "following_reference_to_junction"
 
     def _process_detour(self, now: float) -> None:
         if self._output_block_reason(now):
@@ -704,6 +790,10 @@ class MapAssist(Node):
             if result is not None:
                 self.progress = result
                 self.pending_distance = 0.0
+            elif self.traffic_mode == "approach":
+                # Do not forward an old moving command between this callback
+                # and the next control tick after association is lost.
+                self.detour_motion_ready = False
 
     def _try_complete_lap(self, current, excluded: bool, previous_odom=None) -> None:
         # The official drawing does not define odometric metres or lap length.
@@ -839,6 +929,10 @@ class MapAssist(Node):
             self.reason = self.traffic_reason
             self.guard.reset()
             self.last_correction = 0.0
+            self._publish_housekeeping(now)
+            return
+        if self.traffic_mode == "approach":
+            self._process_approach(now)
             self._publish_housekeeping(now)
             return
         if self.traffic_mode == "detour":
@@ -1004,9 +1098,13 @@ class MapAssist(Node):
             "traffic_vote": self.light_filter.snapshot(now),
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
+            "traffic_planner_version": "forward_entry_v1",
             "topology_alignment": self.topology_alignment,
             "blocked_edge": self.blocked_edge,
             "detour_node_ids": self.detour_node_ids,
+            "detour_entry_progress_m": self.detour_entry_progress,
+            "detour_approach_remaining_m": (None if self.detour_entry_progress is None
+                                             else self.detour_entry_progress - self.progress),
             "velocity_gate_reason": self.velocity_gate_reason if self.p["enable_velocity_gate"] else "disabled",
         }
         self.status_pub.publish(String(data=json.dumps(payload, ensure_ascii=False, allow_nan=False)))
