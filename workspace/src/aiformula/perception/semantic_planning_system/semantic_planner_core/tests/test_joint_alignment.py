@@ -47,7 +47,7 @@ class JointAlignmentTests(unittest.TestCase):
         result = build_fused_route(fixtures.record(outline, step=0.25), fixtures.route(outline),
                                    comparison_points=[(5.0, 8.0)])
         self.assertFalse(result.status["available"], result.status)
-        self.assertEqual(result.status["reason"], "ambiguous_correspondence")
+        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
         self.assertEqual(result.node_positions, {})
         self.assertIsNotNone(result.alignment["alternative_node_spread_m"])
 
@@ -69,7 +69,7 @@ class JointAlignmentTests(unittest.TestCase):
                    for i, (x, y) in enumerate(points)]
         result = build_fused_route(samples, official, max_rmse_m=3.2, comparison_points=inner)
         self.assertFalse(result.status["available"], result.status)
-        self.assertEqual(result.status["reason"], "ambiguous_correspondence")
+        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
         self.assertGreater(result.alignment["alternative_node_spread_m"], 10.0)
 
     def test_different_start_and_reverse_still_search_expected_direction(self):
@@ -86,7 +86,8 @@ class JointAlignmentTests(unittest.TestCase):
                 self.assertEqual(result.alignment["direction"], -1 if reverse else 1)
                 self.assertAlmostEqual(result.alignment["rotation_rad"], -angle, delta=0.03)
                 self.assertLess(result.alignment["rmse_m"], 0.5)
-                self.assertIn(result.status["reason"], ("accepted", "ambiguous_correspondence"))
+                self.assertIn(result.status["reason"],
+                              ("accepted", "global_transform_ambiguous", "node_position_uncertain"))
                 outcomes.append(result.status["reason"])
         self.assertEqual(len(set(outcomes)), 1, outcomes)
 

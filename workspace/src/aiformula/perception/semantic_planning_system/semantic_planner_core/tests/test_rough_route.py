@@ -77,11 +77,21 @@ class RouteReferenceTests(unittest.TestCase):
                                    smooth.points[-1][1] - smooth.points[0][1]), 0.15)
         self.assertEqual(smooth.point_at(0), smooth.point_at(smooth.length_m))
 
-    def test_actual_position_produces_return_bearing(self):
+    def test_adjacent_lane_keeps_recorded_direction_without_cross_lane_pull(self):
         route = RouteReference(rectangle(), smooth_window_m=0.0)
-        angles = route.direction_candidates(2.0, 0.5, 0.0, 2.0, 2.0, 0.0)
-        self.assertEqual(len(angles), 1)
-        self.assertAlmostEqual(angles[0], math.atan2(-0.5, 2.0))
+        for offset in (-1.5, 0.0, 1.5):
+            angles = route.direction_candidates(2.0, offset, 0.0, 2.0, 2.0, 0.0)
+            self.assertEqual(len(angles), 1)
+            self.assertAlmostEqual(angles[0], 0.0)
+
+    def test_heading_limit_rejects_opposing_route_direction(self):
+        route = RouteReference(rectangle(), smooth_window_m=0.0)
+        forward = route.match(2.0, 1.6, 2.0, 0.0, 1.0, 2.5,
+                              yaw=0.0, max_heading_error_rad=math.radians(75.0))
+        backward = route.match(2.0, 1.6, 2.0, 0.0, 1.0, 2.5,
+                               yaw=math.pi, max_heading_error_rad=math.radians(75.0))
+        self.assertIsNotNone(forward)
+        self.assertIsNone(backward)
 
     def test_large_smoothing_window_on_three_points_keeps_usable_loop(self):
         route = RouteReference(

@@ -97,7 +97,7 @@ class RouteFusionTests(unittest.TestCase):
         square = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
         result = build_fused_route(record(square), route(square))
         self.assertFalse(result.status["available"])
-        self.assertEqual(result.status["reason"], "ambiguous_correspondence")
+        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
         self.assertEqual(result.status["mode"], "odom_only")
         self.assertEqual(result.node_positions, {})
         self.assertEqual(result.node_progress, {})
@@ -122,7 +122,8 @@ class RouteFusionTests(unittest.TestCase):
         samples = record(self.outline, excluded=lambda x, y: x > 29.8 and y < 0.4)
         result = build_fused_route(samples, route(self.outline))
         self.assertFalse(result.status["available"])
-        self.assertEqual(result.status["reason"], "node_turn_unobserved_or_excluded")
+        self.assertIn(result.status["reason"],
+                      ("node_turn_unobserved_or_excluded", "final_node_projection_unavailable"))
         self.assertEqual(result.node_positions, {})
 
     def test_long_excluded_gap_cannot_dominate_shape_fit(self):

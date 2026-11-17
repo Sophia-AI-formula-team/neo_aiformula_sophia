@@ -70,11 +70,13 @@ class MapAssist(Node):
             "sample_spacing_m": 0.2,
             "smooth_window_m": 1.0,
             "max_detour_gap_m": 2.0,
+            "max_closure_gap_m": 4.0,
             "min_lap_distance_m": 40.0,
-            "lap_closure_radius_m": 1.5,
+            "lap_closure_radius_m": 2.5,
             "lap_closure_heading_deg": 25.0,
             "match_window_m": 3.0,
-            "max_match_distance_m": 1.5,
+            "max_match_distance_m": 2.5,
+            "match_heading_limit_deg": 75.0,
             "max_odom_speed_mps": 4.0,
             "max_odom_yaw_rate_radps": 3.0,
             "max_odom_position_std_m": 1.0,
@@ -102,6 +104,8 @@ class MapAssist(Node):
             "fusion_shape_weight": 0.25,
             "fusion_max_displacement_m": 0.75,
             "fusion_candidate_tolerance_m": 1.0,
+            "branch_angle_min_deg": 80.0,
+            "branch_angle_max_deg": 95.0,
             "detour_entry_radius_m": 3.0,
             "detour_waypoint_radius_m": 0.8,
             "detour_max_cross_track_m": 2.0,
@@ -205,6 +209,11 @@ class MapAssist(Node):
         )
 
     def _validate_parameters(self) -> None:
+        lower, upper = self.p["branch_angle_min_deg"], self.p["branch_angle_max_deg"]
+        if (isinstance(lower, bool) or isinstance(upper, bool)
+                or not math.isfinite(lower) or not math.isfinite(upper)
+                or not 0.0 <= lower <= upper <= 180.0):
+            raise ValueError("Branch-angle limits must satisfy 0 <= min <= max <= 180")
         for name in (
             "sample_spacing_m", "min_lap_distance_m",
             "lap_closure_radius_m", "match_window_m", "max_match_distance_m",
@@ -219,7 +228,7 @@ class MapAssist(Node):
         ):
             if not math.isfinite(float(self.p[name])) or self.p[name] <= 0:
                 raise ValueError(f"{name} must be finite and positive")
-        for name in ("smooth_window_m", "max_detour_gap_m", "progress_tolerance_m", "resume_delay_sec"):
+        for name in ("smooth_window_m", "max_detour_gap_m", "max_closure_gap_m", "progress_tolerance_m", "resume_delay_sec"):
             if not math.isfinite(float(self.p[name])) or self.p[name] < 0:
                 raise ValueError(f"{name} must be finite and nonnegative")
         if (not math.isfinite(self.p["alignment_ambiguity_margin_m"])
@@ -231,7 +240,7 @@ class MapAssist(Node):
             raise ValueError("Traffic waiting requires the velocity gate; zero path points cannot stop LYA")
         if self.p["input_cmd_vel_topic"] == self.p["output_cmd_vel_topic"]:
             raise ValueError("Velocity input/output must differ; feedback is not allowed")
-        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg"):
+        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg", "match_heading_limit_deg"):
             if not math.isfinite(float(self.p[name])) or not 0 < self.p[name] < 90:
                 raise ValueError(f"{name} must be between 0 and 90 degrees")
         if self.p["persistence_frames"] < 1 or self.p["max_recorded_samples"] < 30:
@@ -650,6 +659,7 @@ class MapAssist(Node):
                 self._reset_learning(reset_reason)
                 self._publish_path()
                 delta = 0.0
+        previous_odom = self.odom
         self.odom, self.odom_time, self.odom_stamp = current, now, stamp
         self.odom_seq += 1
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
@@ -657,7 +667,14 @@ class MapAssist(Node):
         self.excluded_since_sample |= excluded
         if self.reference is None:
             if not self.samples:
-                self.samples.append(RouteSample(*current, excluded=excluded))
+                # The start is an actual usable observation, not a pose seen
+                # while the camera/OA state is still unavailable. Otherwise
+                # the first lap seam would be inseparable from an exclusion.
+                if excluded:
+                    self.reason = "waiting_valid_mapping_inputs"
+                    return
+                self.samples.append(RouteSample(*current, excluded=False))
+                self.excluded_since_sample = False
             else:
                 start = self.samples[0]
                 if math.hypot(current[0] - start.x, current[1] - start.y) > max(3.0, 2.0 * self.p["lap_closure_radius_m"]):
@@ -671,7 +688,7 @@ class MapAssist(Node):
                     self.samples.append(RouteSample(*current, excluded=self.excluded_since_sample))
                     self.recorded_distance += sampled_distance
                     self.excluded_since_sample = excluded
-            self._try_complete_lap(current, excluded)
+            self._try_complete_lap(current, excluded, previous_odom)
         elif self.traffic_mode != "detour":
             # Detour distance need not equal progress along the reference.
             # Keep the local search centred near the last match; repeated local
@@ -681,13 +698,14 @@ class MapAssist(Node):
             result = self.reference.match(
                 current[0], current[1], self.progress, self.pending_distance,
                 self.p["match_window_m"], self.p["max_match_distance_m"],
+                yaw=current[2], max_heading_error_rad=math.radians(self.p["match_heading_limit_deg"]),
             )
             self.matched = result is not None
             if result is not None:
                 self.progress = result
                 self.pending_distance = 0.0
 
-    def _try_complete_lap(self, current, excluded: bool) -> None:
+    def _try_complete_lap(self, current, excluded: bool, previous_odom=None) -> None:
         # The official drawing does not define odometric metres or lap length.
         minimum = self.p["min_lap_distance_m"]
         if not self.left_start_area or excluded:
@@ -696,6 +714,15 @@ class MapAssist(Node):
         if math.hypot(current[0] - first.x, current[1] - first.y) > self.p["lap_closure_radius_m"]:
             return
         if abs(wrap_angle(current[2] - first.yaw)) > math.radians(self.p["lap_closure_heading_deg"]):
+            return
+        # Cross the start-normal plane in the original travel direction. This
+        # prevents the larger radius from closing as soon as the car enters it.
+        if previous_odom is None:
+            return
+        forward_x, forward_y = math.cos(first.yaw), math.sin(first.yaw)
+        before = (previous_odom[0] - first.x) * forward_x + (previous_odom[1] - first.y) * forward_y
+        after = (current[0] - first.x) * forward_x + (current[1] - first.y) * forward_y
+        if before > 0.0 or after < 0.0 or after <= before:
             return
         if len(self.samples) < 30 or self.recorded_distance < minimum:
             self._reset_learning("returned_before_min_lap_distance")
@@ -722,15 +749,26 @@ class MapAssist(Node):
         outer = set(official.node_ids)
         comparison_points = [tuple(point) for identifier, point in self.topology.nodes.items()
                              if identifier not in outer and self.topology.adjacency.get(identifier)]
+        branch_connections = {
+            identifier: [(neighbour, tuple(self.topology.nodes[neighbour]))
+                         for neighbour in self.topology.adjacency.get(identifier, {})
+                         if neighbour not in outer]
+            for identifier in official.node_ids[:-1]
+        }
+        branch_connections = {key: values for key, values in branch_connections.items() if values}
         try:
             self._fusion_future = self._fusion_executor.submit(
                 build_fused_route, tuple(candidate_samples), official,
                 spacing_m=self.p["sample_spacing_m"], smooth_window_m=self.p["smooth_window_m"],
                 max_detour_gap_m=self.p["max_detour_gap_m"], max_rmse_m=self.p["alignment_max_rmse_m"],
+                max_closure_gap_m=self.p["max_closure_gap_m"],
                 ambiguity_margin_m=self.p["alignment_ambiguity_margin_m"],
                 node_search_m=self.p["fusion_node_search_m"], feature_window_m=self.p["fusion_feature_window_m"],
                 shape_weight=self.p["fusion_shape_weight"], max_displacement_m=self.p["fusion_max_displacement_m"],
                 comparison_points=comparison_points, ambiguity_position_m=self.p["fusion_candidate_tolerance_m"],
+                branch_connections=branch_connections,
+                branch_angle_min_deg=self.p["branch_angle_min_deg"],
+                branch_angle_max_deg=self.p["branch_angle_max_deg"],
             )
         except RuntimeError as exc:
             self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_submit_failed"}
@@ -768,6 +806,7 @@ class MapAssist(Node):
         progress = result.reference.match(
             self.odom[0], self.odom[1], self.progress, 0.0,
             self.p["match_window_m"], self.p["max_match_distance_m"],
+            yaw=self.odom[2], max_heading_error_rad=math.radians(self.p["match_heading_limit_deg"]),
         )
         if progress is None or not result.reference.point_at(progress)[2]:
             return

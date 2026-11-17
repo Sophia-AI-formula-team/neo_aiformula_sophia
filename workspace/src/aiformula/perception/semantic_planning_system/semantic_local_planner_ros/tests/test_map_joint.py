@@ -111,6 +111,29 @@ class JointMapNodeTests(unittest.TestCase):
         self.assertFalse(node.fusion_status["available"])
         self.assertEqual(node.fusion_status["reason"], "alignment_worker_failed")
 
+    def test_geometric_rejections_preserve_odom_and_wait_on_red(self):
+        import json
+        for reason in ("global_transform_ambiguous", "node_position_uncertain",
+                       "solver_not_converged", "solver_budget_exhausted"):
+            with self.subTest(reason=reason):
+                node = self.prepare_circle_lap(traffic=True)
+                reference = node.reference
+                result = self.FusionResult(reference, {"reason": reason, "available": False},
+                                           {"available": False, "mode": "odom_only", "reason": reason}, {}, {})
+                node._fusion_executor.future.set_result(result)
+                node._tick()
+                self.assertIs(node.reference, reference)
+                self.assertEqual(node.fusion_status["reason"], reason)
+                node._publish_status()
+                status = json.loads(node.status_pub.messages[-1].data)
+                self.assertEqual(status["map_fusion"]["reason"], reason)
+                self.assertTrue(status["odom_reference_ready"])
+                self.h.confirm_light("red")
+                node._tick()
+                self.assertEqual(node.traffic_mode, "wait")
+                self.assertEqual(node.traffic_reason, "red_wait_map_fusion")
+                self.assertFalse(node.fused_node_positions)
+
     def test_untrusted_odom_reference_never_corrects_visual_points(self):
         node = self.prepare_circle_lap()
         node.reference.trusted = [False] * len(node.reference.trusted)

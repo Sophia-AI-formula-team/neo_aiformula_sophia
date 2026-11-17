@@ -31,11 +31,13 @@ map_assist:
     sample_spacing_m: 0.2
     smooth_window_m: 1.0
     max_detour_gap_m: 2.0
+    max_closure_gap_m: 4.0
     min_lap_distance_m: 40.0
-    lap_closure_radius_m: 1.5
+    lap_closure_radius_m: 2.5
     lap_closure_heading_deg: 25.0
     match_window_m: 3.0
-    max_match_distance_m: 1.5
+    max_match_distance_m: 2.5
+    match_heading_limit_deg: 75.0
     max_odom_speed_mps: 4.0
     max_odom_yaw_rate_radps: 3.0
     max_odom_position_std_m: 1.0
@@ -72,8 +74,11 @@ map_assist:
     fusion_feature_window_m: 2.0
     fusion_shape_weight: 0.25
     fusion_max_displacement_m: 0.75
-    # Distinct, similarly scored candidates must agree on mapped nodes in odom metres.
+    # Diagnostic threshold only; candidate position/score disagreement does not block selection.
     fusion_candidate_tolerance_m: 1.0
+    # Directed inner-to-outer edge against official-order Odom tangent.
+    branch_angle_min_deg: 80.0
+    branch_angle_max_deg: 95.0
 
     # Only enter a graph alternative near its junction; never connect across open ground.
     detour_entry_radius_m: 3.0
