@@ -17,3 +17,5 @@
 另外，V6.24 移动桶外圈的第 201 帧重现了此前保留的 Unity 输出：道路 83,984 像素、车线 892 像素、检测 100 项。这里验证的是与原感知模型输出一致；车机的安装、实时延迟和物理相机标定仍要在目标设备测量。
 
 独立 ROS 2 Foxy 基础容器（Linux x86_64、Ubuntu Focal、Python 3.8.10）断网完成 colcon 构建、ament 发现、三个可执行入口枚举、单独 launch 参数解析和冻结归档权重导入。该基础镜像未装 TorchVision、PyTorch、cv_bridge 和 OpenCV；上述 CUDA 推理来自 Windows 工作站。Jetson 上需另测本地 TorchVision NMS 和整条图像消息链。
+
+后续在独立的 ROS Foxy CUDA 容器中重放了 10 月 27 日实车原始 BGRA8 画面，从相机消息到 B1.4 输出收到 120/120 条，15.00 Hz，延迟中位数 33.48 ms。完整设置、对照和原始统计见[相机墙钟实测](bench/README.md)。

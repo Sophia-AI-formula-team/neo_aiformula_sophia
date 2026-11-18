@@ -1,0 +1,64 @@
+{
+  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+  "geometry": "640x360",
+  "warmup_received": 15,
+  "sent": 120,
+  "received": 86,
+  "lost": 34,
+  "input_hz": 15.0,
+  "output_hz": 10.784,
+  "acquisition_to_perception_ms": {
+    "min": 31.013,
+    "p50": 36.289,
+    "p95": 55.57,
+    "max": 66.489
+  },
+  "camera_intervals_ms": {
+    "min": 66.506,
+    "p50": 66.663,
+    "p95": 66.775,
+    "max": 66.851
+  },
+  "perception_intervals_ms": {
+    "min": 34.943,
+    "p50": 70.447,
+    "p95": 184.074,
+    "max": 410.223
+  },
+  "wire_bytes": {
+    "min": 229316.0,
+    "p50": 239400.0,
+    "p95": 251811.75,
+    "max": 252557.0
+  },
+  "device": "cuda",
+  "first_frame": "00000_rgb.png",
+  "last_frame": "00119_rgb.png",
+  "camera_callbacks": 86,
+  "sent_without_callback": 34,
+  "outputs_missing_after_callback": 0,
+  "predict_ms": {
+    "min": 18.212,
+    "p50": 22.233,
+    "p95": 37.805,
+    "max": 52.122
+  },
+  "encode_ms": {
+    "min": 11.139,
+    "p50": 12.029,
+    "p95": 15.424,
+    "max": 28.85
+  },
+  "callback_ms": {
+    "min": 29.865,
+    "p50": 34.914,
+    "p95": 54.183,
+    "max": 65.05
+  },
+  "send_to_callback_ms": {
+    "min": 0.709,
+    "p50": 0.957,
+    "p95": 1.166,
+    "max": 1.278
+  }
+}

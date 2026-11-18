@@ -1,0 +1,67 @@
+{
+  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+  "geometry": "640x360",
+  "warmup_received": 15,
+  "first_delivered_image_latency_ms": 35.687,
+  "sent": 120,
+  "received": 120,
+  "lost": 0,
+  "input_hz": 15.0,
+  "output_hz": 15.001,
+  "acquisition_to_perception_ms": {
+    "min": 29.021,
+    "p50": 33.48,
+    "p95": 66.049,
+    "max": 79.73
+  },
+  "camera_intervals_ms": {
+    "min": 66.485,
+    "p50": 66.661,
+    "p95": 66.77,
+    "max": 66.946
+  },
+  "perception_intervals_ms": {
+    "min": 32.081,
+    "p50": 66.799,
+    "p95": 94.127,
+    "max": 106.357
+  },
+  "wire_bytes": {
+    "min": 477920.0,
+    "p50": 478848.0,
+    "p95": 479299.75,
+    "max": 479510.0
+  },
+  "device": "cuda",
+  "first_frame": "00000.cdr",
+  "last_frame": "00119.cdr",
+  "source_encoding": "bgra8",
+  "camera_dds_profile": "fastdds_camera_local.xml",
+  "camera_callbacks": 120,
+  "sent_without_callback": 0,
+  "outputs_missing_after_callback": 0,
+  "predict_ms": {
+    "min": 18.518,
+    "p50": 22.42,
+    "p95": 54.536,
+    "max": 66.184
+  },
+  "encode_ms": {
+    "min": 8.368,
+    "p50": 8.77,
+    "p95": 10.872,
+    "max": 12.206
+  },
+  "callback_ms": {
+    "min": 27.617,
+    "p50": 31.711,
+    "p95": 63.804,
+    "max": 76.208
+  },
+  "send_to_callback_ms": {
+    "min": 0.767,
+    "p50": 0.964,
+    "p95": 1.821,
+    "max": 13.122
+  }
+}

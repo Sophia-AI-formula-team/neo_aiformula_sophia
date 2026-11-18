@@ -1,0 +1,37 @@
+{
+  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+  "geometry": "640x360",
+  "warmup_received": 15,
+  "sent": 180,
+  "received": 146,
+  "lost": 34,
+  "input_hz": 15.0,
+  "output_hz": 12.157,
+  "acquisition_to_perception_ms": {
+    "min": 31.15,
+    "p50": 36.694,
+    "p95": 77.307,
+    "max": 130.267
+  },
+  "camera_intervals_ms": {
+    "min": 66.38,
+    "p50": 66.67,
+    "p95": 66.835,
+    "max": 66.954
+  },
+  "perception_intervals_ms": {
+    "min": 32.462,
+    "p50": 67.324,
+    "p95": 151.114,
+    "max": 237.043
+  },
+  "wire_bytes": {
+    "min": 217027.0,
+    "p50": 241272.5,
+    "p95": 251435.0,
+    "max": 253210.0
+  },
+  "device": "cuda",
+  "first_frame": "00000_rgb.png",
+  "last_frame": "00179_rgb.png"
+}
