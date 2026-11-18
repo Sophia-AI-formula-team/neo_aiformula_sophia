@@ -83,7 +83,8 @@ def output_motion(gate):
         return '倒车', 'reverse', 180.
     if speed > 0:
         limit = (gate.get('manual_yaw_limit_rps') or 1.) if gate.get('mode') == 'manual' else AUTO_YAW_LIMIT
-        angle = -90. * max(-1., min(1., yaw / limit))
+        ratio = max(-1., min(1., yaw / limit))
+        angle = -90. * math.copysign(math.sqrt(abs(ratio)), ratio)
         return '前进', 'forward', angle
     if yaw:
         return '原地转向', 'turn', -90. if yaw > 0 else 90.

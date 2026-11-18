@@ -107,6 +107,8 @@ def test_output_arrow_uses_manual_and_automatic_commands(monkeypatch):
     w = Window()
     w.show_output(dict(mode='auto', linear_mps=1., yaw_rps=1.55), 0.)
     assert w.motion.text() == '前进' and w.arrow.degrees == -90.
+    w.show_output(dict(mode='auto', linear_mps=1., yaw_rps=.1), 0.)
+    assert -25. < w.arrow.degrees < -20.
     w.show_output(dict(mode='manual', linear_mps=1., yaw_rps=-.5, manual_yaw_limit_rps=.5), 0.)
     assert w.arrow.degrees == 90.
     reverse = dict(mode='manual', linear_mps=-.1, yaw_rps=.2)
