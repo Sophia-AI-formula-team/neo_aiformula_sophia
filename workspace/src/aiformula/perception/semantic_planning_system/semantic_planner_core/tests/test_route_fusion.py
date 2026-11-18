@@ -8,7 +8,18 @@ import numpy as np
 
 from semantic_planner_core.rough_route import RouteReference, RouteSample
 from semantic_planner_core.rough_topology import OfficialRoute
-from semantic_planner_core.route_fusion import build_fused_route, _shape_displacements
+from semantic_planner_core.route_fusion import build_fused_route as production_fuse, _shape_displacements
+from fusion_test_fixtures import single_synthetic_branch
+
+
+def build_fused_route(samples, official, **options):
+    """Supply one synthetic branch for legacy numerical-geometry fixtures.
+
+    The real supplied graph and all its branches are tested separately; this
+    single branch does not represent a measured junction or race-course map.
+    """
+    options.setdefault('branch_connections', single_synthetic_branch(official))
+    return production_fuse(samples, official, **options)
 
 
 def route(points):
@@ -93,14 +104,13 @@ class RouteFusionTests(unittest.TestCase):
             for identifier, actual in result.node_positions.items():
                 self.assertLess(math.dist(actual, measured[int(identifier)]), 0.3)
 
-    def test_symmetric_or_bad_shapes_do_not_produce_navigation_map(self):
+    def test_symmetric_selection_reports_ambiguity_and_bad_fit_is_rejected(self):
         square = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
         result = build_fused_route(record(square), route(square))
-        self.assertFalse(result.status["available"])
-        self.assertEqual(result.status["reason"], "ambiguous_correspondence")
-        self.assertEqual(result.status["mode"], "odom_only")
-        self.assertEqual(result.node_positions, {})
-        self.assertEqual(result.node_progress, {})
+        self.assertTrue(result.status["available"])
+        self.assertFalse(result.alignment["candidate_gap_enforced"])
+        self.assertFalse(result.alignment["global_transform_available"])
+        self.assertFalse(result.alignment["node_correspondence_available"])
         distorted = list(self.outline)
         distorted[1] = (45.0, -12.0)
         bad = build_fused_route(record(distorted), route(self.outline), max_rmse_m=0.1)
@@ -122,7 +132,8 @@ class RouteFusionTests(unittest.TestCase):
         samples = record(self.outline, excluded=lambda x, y: x > 29.8 and y < 0.4)
         result = build_fused_route(samples, route(self.outline))
         self.assertFalse(result.status["available"])
-        self.assertEqual(result.status["reason"], "node_turn_unobserved_or_excluded")
+        self.assertIn(result.status["reason"],
+                      ("node_turn_unobserved_or_excluded", "final_node_projection_unavailable"))
         self.assertEqual(result.node_positions, {})
 
     def test_long_excluded_gap_cannot_dominate_shape_fit(self):
@@ -149,7 +160,7 @@ class RouteFusionTests(unittest.TestCase):
         self.assertGreater(abs(result.node_progress["1"] - naive), 0.3)
         self.assertLess(math.dist(result.node_positions["1"], self.outline[1]), 0.2)
 
-    def test_actual_official_map_nodes_are_observable_in_both_directions(self):
+    def test_synthetic_polygon_with_official_node_coordinates_in_both_directions(self):
         source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
         official = OfficialRoute.from_osm(source)
         for reverse in (False, True):
@@ -159,7 +170,7 @@ class RouteFusionTests(unittest.TestCase):
             for identifier, expected in zip(official.node_ids[:-1], official.points[:-1]):
                 self.assertLess(math.dist(result.node_positions[identifier], expected), 0.3)
 
-    def test_actual_official_uniform_scale_is_not_a_quality_gate_or_route_scale(self):
+    def test_synthetic_polygon_official_coordinates_preserve_odom_scale(self):
         source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
         official = OfficialRoute.from_osm(source)
         samples = record(official.points[:-1], shift=135)

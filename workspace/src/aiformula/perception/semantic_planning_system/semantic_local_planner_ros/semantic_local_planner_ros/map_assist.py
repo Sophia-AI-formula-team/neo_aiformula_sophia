@@ -10,7 +10,7 @@ import math
 import os
 import sys
 import time
-from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 import rclpy
@@ -23,11 +23,11 @@ from std_msgs.msg import Bool, String
 
 from semantic_planner_core.rough_route import HeadingGuard, RouteSample
 from semantic_planner_core.rough_topology import OfficialRoute
-from semantic_planner_core.route_fusion import build_fused_route
+from semantic_planner_core.route_fusion import build_fused_route, build_odom_reference
 from semantic_planner_core.anchored_topology import anchored_graph
-from semantic_planner_core.traffic_route import DetourTracker, OfficialToOdom, TopologyGraph
+from semantic_planner_core.traffic_route import OfficialToOdom, TopologyGraph
 from semantic_planner_core.traffic_light_filter import TrafficLightFilter
-from semantic_planner_core.signal_approach import parse_signal_observation, stop_envelope
+from semantic_planner_core.smooth_detour import SmoothDetourTracker, build_smooth_detour
 
 
 def wrap_angle(value: float) -> float:
@@ -40,19 +40,19 @@ def installed_config(filename: str) -> str:
     return os.path.join(get_package_share_directory("semantic_local_planner_ros"), "config", filename)
 
 
-def startup_args(args=None, config_filename: str = "map_assist.yaml") -> List[str]:
-    """Bare ros2 run uses its vehicle profile; an explicit params file wins."""
+def startup_args(args=None) -> List[str]:
+    """Bare ros2 run uses the vehicle profile; bag replay selects its own file."""
     argv = list(sys.argv[1:] if args is None else args)
     if "--params-file" not in argv:
-        argv = ["--ros-args", "--params-file", installed_config(config_filename), "--"] + argv
+        argv = ["--ros-args", "--params-file", installed_config("map_assist.yaml"), "--"] + argv
     return argv
 
 
 class MapAssist(Node):
     """Learn in RAM, then gently constrain persistent visual heading outliers."""
 
-    def __init__(self, node_name: str = "map_assist") -> None:
-        super().__init__(node_name)
+    def __init__(self) -> None:
+        super().__init__("map_assist")
         defaults = {
             "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
             "avoidance_flag_topic": "/lane_stop_flag",
@@ -71,11 +71,13 @@ class MapAssist(Node):
             "sample_spacing_m": 0.2,
             "smooth_window_m": 1.0,
             "max_detour_gap_m": 2.0,
+            "max_closure_gap_m": 4.0,
             "min_lap_distance_m": 40.0,
-            "lap_closure_radius_m": 1.5,
+            "lap_closure_radius_m": 2.5,
             "lap_closure_heading_deg": 25.0,
             "match_window_m": 3.0,
-            "max_match_distance_m": 1.5,
+            "max_match_distance_m": 2.5,
+            "match_heading_limit_deg": 75.0,
             "max_odom_speed_mps": 4.0,
             "max_odom_yaw_rate_radps": 3.0,
             "max_odom_position_std_m": 1.0,
@@ -89,18 +91,11 @@ class MapAssist(Node):
             "resume_delay_sec": 0.2,
             "enable_correction": True,
             "enable_traffic_control": False,
-            "traffic_policy": "stop_wait",
             "traffic_light_topic": "/map_assist/traffic_light_input",
+            "traffic_stop_flag_topic": "/flag_stop",
             "traffic_vote_window_sec": 0.5,
             "traffic_vote_min_samples": 3,
-            "enable_signal_approach": False,
-            "signal_observation_topic": "/map_assist/signal_observation",
-            "signal_observation_timeout_sec": 0.5,
-            "target_stop_distance_m": 8.5,
-            "approach_max_speed_mps": 0.8,
-            "approach_deceleration_mps2": 1.0,
-            "approach_latency_sec": 0.2,
-            "approach_stop_tolerance_m": 0.1,
+            "traffic_red_rearm_sec": 2.0,
             "enable_velocity_gate": False,
             "input_cmd_vel_topic": "/map_assist/controller_cmd_vel",
             "output_cmd_vel_topic": "/aiformula_control/game_pad/cmd_vel",
@@ -111,11 +106,24 @@ class MapAssist(Node):
             "fusion_feature_window_m": 2.0,
             "fusion_shape_weight": 0.25,
             "fusion_max_displacement_m": 0.75,
+            "fusion_candidate_tolerance_m": 1.0,
+            "branch_angle_min_deg": 80.0,
+            "branch_angle_max_deg": 95.0,
             "detour_entry_radius_m": 3.0,
             "detour_waypoint_radius_m": 0.8,
             "detour_max_cross_track_m": 2.0,
             "detour_lookahead_m": 0.5,
             "detour_point_spacing_m": 0.5,
+            # Simulation starting value only: replace with the measured vehicle radius.
+            "detour_min_turn_radius_m": 4.0,
+            # Start before the candidate reaches the hard minimum radius. The
+            # forecast is only a short, straight-ahead pose estimate.
+            "detour_trigger_margin_m": 0.5,
+            "detour_trigger_preview_m": 1.0,
+            "detour_max_trim_m": 12.0,
+            "detour_curve_spacing_m": 0.15,
+            "detour_target_angle_deg": 65.0,
+            "detour_plan_update_distance_m": 1.5,
         }
         for label in "abc":
             defaults[f"input_point_{label}_topic"] = f"/original_processed_point_{label}"
@@ -156,28 +164,28 @@ class MapAssist(Node):
             window_sec=self.p["traffic_vote_window_sec"],
             min_samples=self.p["traffic_vote_min_samples"],
         )
-        self.light_input_is_atomic = False
         self.traffic_light_raw = "unknown"
         self.traffic_light = "unknown"
         self.traffic_mode = "normal"
         self.traffic_reason = "traffic_idle"
-        self.signal_observation = None
-        self.signal_observation_time = -math.inf
-        self.signal_observation_sequence = -1
-        self.signal_range_reason = "signal_range_missing"
-        self.signal_wait_latched = False
-        self.signal_fault_sequence = -1
-        # Only perception_suspended owns recovery eligibility. Its fresh window
-        # never borrows pre-dropout votes from the ordinary traffic filter.
-        self.signal_recovery_filter = TrafficLightFilter(
-            window_sec=self.p["traffic_vote_window_sec"],
-            min_samples=self.p["traffic_vote_min_samples"],
-        )
-        self.signal_recovery_started = -math.inf
-        self.signal_recovery_reason = "inactive"
-        self.odom_speed_mps = None
-        self.odom_speed_time = -math.inf
-        self.odom_speed_history = deque()
+        # None means no message has ever arrived: it is not the same as False.
+        self.stop_flag = None
+        self.stop_committed = False
+        self.traffic_event_consumed = False
+        self.red_preview_unconfirmed = False
+        self.red_preview_green_seen = False
+        self.red_last_confirmed_at = -math.inf
+        self.last_red_observed_at = -math.inf
+        self.detour_green_seen = False
+        self.detour_signal_rearmed = False
+        self.detour_next_red_pending = False
+        self.auto_trigger_reason = "not_evaluated"
+        self.auto_current_radius_m = None
+        self.auto_predicted_radius_m = None
+        self.auto_stop_latched = False
+        self.smooth_path = None
+        self.smooth_plan_reason = "not_planned"
+        self.smooth_plan_pose = None
         self.topology_alignment = None
         self.official_to_odom = None
         self.fusion_status = {"available": False, "reason": "not_built"}
@@ -186,15 +194,18 @@ class MapAssist(Node):
         self.mapped_topology = None
         self.topology_mapping_status = {"available": False, "reason": "not_built"}
         self.detour_tracker = None
-        self.red_detour_consumed = False
         self.detour_node_ids = []
         self.blocked_edge = None
+        self.detour_entry_progress = None
         self.detour_exit_progress = 0.0
         self.detour_used_odom_seq = -1
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
         self.velocity_gate_reason = "waiting_controller_command"
+        self._fusion_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="map_fusion")
+        self._fusion_future = None
+        self._pending_fusion = None
         self._reset_learning("waiting_for_odom")
 
         self.point_pubs = {}
@@ -210,13 +221,17 @@ class MapAssist(Node):
             Path, self.p["reference_path_topic"],
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
         )
+        self.detour_path_pub = self.create_publisher(
+            Path, "/map_assist/detour_path",
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
         self.cmd_pub = None
         if self.p["enable_velocity_gate"]:
             self.cmd_pub = self.create_publisher(Twist, self.p["output_cmd_vel_topic"], 10)
             self.create_subscription(Twist, self.p["input_cmd_vel_topic"], self._on_controller_cmd, 10)
         if self.p["enable_traffic_control"]:
             self.create_subscription(String, self.p["traffic_light_topic"], self._on_light_state, 10)
-            self.create_subscription(String, self.p["signal_observation_topic"], self._on_signal_observation, 10)
+            self.create_subscription(Bool, self.p["traffic_stop_flag_topic"], self._on_traffic_stop_flag, 10)
         self.create_timer(1.0 / self.p["publish_rate_hz"], self._tick)
         # Diagnostics must remain visible before /clock arrives and while a bag
         # is paused. Only this status timer uses steady time; control stays on
@@ -231,22 +246,29 @@ class MapAssist(Node):
         )
 
     def _validate_parameters(self) -> None:
+        lower, upper = self.p["branch_angle_min_deg"], self.p["branch_angle_max_deg"]
+        if (isinstance(lower, bool) or isinstance(upper, bool)
+                or not math.isfinite(lower) or not math.isfinite(upper)
+                or not 0.0 <= lower <= upper <= 180.0):
+            raise ValueError("Branch-angle limits must satisfy 0 <= min <= max <= 180")
         for name in (
-            "sample_spacing_m",
+            "sample_spacing_m", "min_lap_distance_m",
             "lap_closure_radius_m", "match_window_m", "max_match_distance_m",
             "max_odom_speed_mps", "max_odom_yaw_rate_radps", "max_odom_position_std_m",
             "max_odom_yaw_std_deg", "max_odom_gap_sec", "publish_rate_hz",
             "point_timeout_sec", "max_point_skew_sec", "odom_timeout_sec",
             "cmd_vel_timeout_sec", "alignment_max_rmse_m",
             "fusion_node_search_m", "fusion_feature_window_m", "fusion_shape_weight",
-            "fusion_max_displacement_m", "detour_entry_radius_m", "detour_waypoint_radius_m",
+            "fusion_max_displacement_m", "fusion_candidate_tolerance_m",
+            "detour_entry_radius_m", "detour_waypoint_radius_m",
             "detour_max_cross_track_m", "detour_lookahead_m", "detour_point_spacing_m",
-            "signal_observation_timeout_sec", "target_stop_distance_m",
-            "approach_max_speed_mps", "approach_deceleration_mps2", "approach_stop_tolerance_m",
+            "detour_min_turn_radius_m", "detour_trigger_preview_m", "detour_max_trim_m", "detour_curve_spacing_m",
+            "detour_plan_update_distance_m",
+            "traffic_red_rearm_sec",
         ):
             if not math.isfinite(float(self.p[name])) or self.p[name] <= 0:
                 raise ValueError(f"{name} must be finite and positive")
-        for name in ("min_lap_distance_m", "smooth_window_m", "max_detour_gap_m", "progress_tolerance_m", "resume_delay_sec", "approach_latency_sec"):
+        for name in ("smooth_window_m", "max_detour_gap_m", "max_closure_gap_m", "progress_tolerance_m", "resume_delay_sec", "detour_trigger_margin_m"):
             if not math.isfinite(float(self.p[name])) or self.p[name] < 0:
                 raise ValueError(f"{name} must be finite and nonnegative")
         if (not math.isfinite(self.p["alignment_ambiguity_margin_m"])
@@ -254,19 +276,14 @@ class MapAssist(Node):
             raise ValueError("Invalid topology alignment quality limits")
         if self.p["fusion_shape_weight"] >= 1.0:
             raise ValueError("fusion_shape_weight must be in (0, 1)")
-        if self.p["traffic_policy"] not in ("stop_wait", "legacy", "first_lap_wait_then_detour"):
-            raise ValueError("traffic_policy must be stop_wait, legacy, or first_lap_wait_then_detour")
-        if self.p["traffic_policy"] == "stop_wait" and self.p["enable_signal_approach"]:
-            raise ValueError("stop_wait does not use signal distance; disable enable_signal_approach")
         if self.p["enable_traffic_control"] and not self.p["enable_velocity_gate"]:
             raise ValueError("Traffic waiting requires the velocity gate; zero path points cannot stop LYA")
-        if self.p["enable_signal_approach"] and not self.p["enable_traffic_control"]:
-            raise ValueError("Signal approach requires traffic control and its velocity gate")
-        if self.p["signal_observation_topic"] == self.p["traffic_light_topic"]:
-            raise ValueError("Atomic observations and legacy color topics must differ")
         if self.p["input_cmd_vel_topic"] == self.p["output_cmd_vel_topic"]:
             raise ValueError("Velocity input/output must differ; feedback is not allowed")
-        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg"):
+        if self.p["enable_traffic_control"] and self.p["traffic_stop_flag_topic"] in (
+                self.p["avoidance_flag_topic"], self.p["branch_active_topic"]):
+            raise ValueError("Traffic stop flag must be a separate topic from OA and branch flags")
+        for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg", "match_heading_limit_deg", "detour_target_angle_deg"):
             if not math.isfinite(float(self.p[name])) or not 0 < self.p[name] < 90:
                 raise ValueError(f"{name} must be between 0 and 90 degrees")
         if self.p["persistence_frames"] < 1 or self.p["max_recorded_samples"] < 30:
@@ -277,15 +294,11 @@ class MapAssist(Node):
             raise ValueError("Input/output point topics must be distinct; feedback is not allowed")
 
     def _reset_learning(self, reason: str) -> None:
-        was_detouring = self.traffic_mode == "detour"
-        was_approaching = self.traffic_mode in ("approach", "perception_suspended")
-        self._clear_signal_recovery("reset")
-        self.signal_fault_sequence = self.signal_observation_sequence
-        self.signal_observation = None
-        self.signal_range_reason = "signal_range_reset"
-        self.odom_speed_mps = None
-        self.odom_speed_time = -math.inf
-        self.odom_speed_history.clear()
+        if self._fusion_future is not None:
+            self._fusion_future.cancel()
+        self._fusion_future = None
+        self._pending_fusion = None
+        was_detouring = self.traffic_mode in ("prepare", "detour")
         # Odom can reset the map before the next control tick. Never release a
         # committed detour using an old green from a detector that has stopped.
         self.traffic_light = self.light_filter.evaluate(time.monotonic())
@@ -297,22 +310,40 @@ class MapAssist(Node):
         self.mapped_topology = None
         self.topology_mapping_status = {"available": False, "reason": reason}
         self.detour_tracker = None
-        self.red_detour_consumed = False
         self.detour_node_ids = []
+        self.detour_graph_points = []
+        self.smooth_path = None
+        self.smooth_plan_pose = None
+        self.smooth_plan_reason = "not_planned"
+        # A completed bypass must not suppress a red event after map reset.
+        self.traffic_event_consumed = False
+        self.red_preview_unconfirmed = False
+        self.red_preview_green_seen = False
+        self.red_last_confirmed_at = -math.inf
+        self.last_red_observed_at = -math.inf
+        self.detour_green_seen = False
+        self.detour_signal_rearmed = False
+        self.detour_next_red_pending = False
+        self.auto_trigger_reason = "not_evaluated"
+        self.auto_current_radius_m = None
+        self.auto_predicted_radius_m = None
+        self.auto_stop_latched = False
+        if hasattr(self, "detour_path_pub"):
+            self._publish_detour_path()
         self.blocked_edge = None
+        self.detour_entry_progress = None
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
         if self.p["enable_traffic_control"]:
             if was_detouring and self.traffic_light == "green":
                 self._resume_vision("map_reset_resume_vision")
-            elif was_detouring or was_approaching or self.traffic_light == "red":
+            elif was_detouring or (self.traffic_light == "red" and self.stop_flag is not False):
                 self.traffic_mode = "wait"
                 self.traffic_reason = "map_reset_wait"
-                self.signal_wait_latched |= was_approaching
+                self.stop_committed = True
         self.samples = []
         self.reference = None
-        self.excluded_samples_omitted = 0
         self.recorded_distance = 0.0
         self.left_start_area = False
         self.excluded_since_sample = False
@@ -353,145 +384,120 @@ class MapAssist(Node):
         self._publish_velocity_stop_if_needed(time.monotonic())
 
     def _on_light_state(self, msg: String) -> None:
-        self.light_input_is_atomic = False
-        # A legacy color has no corresponding metric observation. Never attach
-        # it to a cached range from another detector frame.
-        self.signal_observation = None
-        self.signal_range_reason = "signal_range_missing"
-        self._receive_light_state(msg.data)
-
-    def _on_signal_observation(self, msg: String) -> None:
-        """Atomic real detector frame; duplicate frames never refresh or vote."""
-        self.light_input_is_atomic = True
-        now = time.monotonic()
-        # A new arrival cannot hide a timeout that already revoked recovery.
-        if self.traffic_mode == "perception_suspended":
-            self._update_signal_recovery(now)
-        try:
-            observation = parse_signal_observation(msg.data)
-        except (ValueError, TypeError):
-            self.signal_observation = None
-            self.signal_range_reason = "signal_observation_invalid"
-            self._update_light_vote(now)
-            self._publish_velocity_stop_if_needed(now)
-            return
-        if observation.sequence <= self.signal_observation_sequence:
-            return
-        self.signal_observation_sequence = observation.sequence
-        if observation.age_sec > self.p["signal_observation_timeout_sec"]:
-            self.signal_observation = None
-            self.signal_range_reason = "signal_observation_stale"
-            self._update_light_vote(now)
-            self._publish_velocity_stop_if_needed(now)
-            return
-        self.signal_observation = observation
-        self.signal_observation_time = now
-        self.signal_range_reason = observation.range_reason
-        self._receive_light_state(observation.state, new_signal_frame=True)
-
-    def _receive_light_state(self, data: str, new_signal_frame: bool = False) -> None:
-        state = str(data).strip().lower()
+        state = str(msg.data).strip().lower()
         self.traffic_light_raw = state if state in ("red", "green") else "unknown"
         if not self.p["enable_traffic_control"]:
             return
         now = time.monotonic()
+        if self.traffic_light_raw == "red":
+            # With no light ID, an extended period without red can re-arm a
+            # later event. A short detector flicker cannot do so.
+            rearmed = (math.isfinite(self.last_red_observed_at)
+                       and now - self.last_red_observed_at >= self.p["traffic_red_rearm_sec"])
+            if rearmed and self.traffic_mode == "detour":
+                self.detour_signal_rearmed = True
+            elif rearmed and self.traffic_mode == "normal":
+                self.traffic_event_consumed = False
+            self.last_red_observed_at = now
+        # A single red observation may start a preview after the first lap,
+        # but can never by itself commit a turn or release a stop.
+        if (self.reference is not None and self.traffic_light_raw == "red"
+                and self.traffic_mode == "normal" and not self.traffic_event_consumed):
+            self.traffic_mode = "prepare"
+            self.traffic_reason = "red_preview_unconfirmed"
+            self.red_preview_unconfirmed = True
+            self.red_preview_green_seen = False
+        elif self.red_preview_unconfirmed and self.traffic_light_raw == "green":
+            self.red_preview_green_seen = True
         self.light_filter.add(self.traffic_light_raw, now)
-        self._update_light_vote(now, new_signal_frame=new_signal_frame)
+        self._update_light_vote(now)
         self._publish_velocity_stop_if_needed(now)
 
-    def _update_light_vote(self, now: float, new_signal_frame: bool = False) -> None:
+    def _on_traffic_stop_flag(self, msg: Bool) -> None:
+        self.stop_flag = bool(msg.data)
+        # After a lap is recorded, the distance flag is only a fallback stop;
+        # it never triggers a turn or re-arms a light event.
+        if self.reference is None and not self.stop_flag:
+            self.traffic_event_consumed = False
+        now = time.monotonic()
+        self._update_light_vote(now)
+        if self.stop_flag and self.reference is not None and self.traffic_mode in ("prepare", "wait"):
+            # Apply the fallback without waiting for the next control timer.
+            # The same pose/route/light checks and OA priority still apply.
+            self._update_traffic(now)
+        self._publish_velocity_stop_if_needed(now)
+
+    def _update_light_vote(self, now: float) -> None:
         if not self.p["enable_traffic_control"]:
             return
         self.traffic_light = self.light_filter.evaluate(now)
-        if (self.p["traffic_policy"] == "first_lap_wait_then_detour"
-                and self.traffic_light == "green"):
-            self.red_detour_consumed = False
-        if self.p["traffic_policy"] == "stop_wait":
-            self._update_simple_traffic(now)
+        if self.traffic_light == "red":
+            self.red_last_confirmed_at = now
+        if self.traffic_mode == "detour":
+            if self.traffic_light == "green":
+                self.detour_green_seen = True
+                self.detour_next_red_pending = False
+            elif (self.detour_green_seen or self.detour_signal_rearmed) and self.traffic_light == "red":
+                self.detour_next_red_pending = True
+        if self.traffic_light == "green":
+            self.traffic_event_consumed = False
+        elif self.traffic_light == "red" and self.traffic_mode == "prepare":
+            self.red_preview_unconfirmed = False
+        if self.traffic_light == "red" and self.traffic_mode == "normal" and not self.traffic_event_consumed:
+            self.traffic_mode = "prepare"
+            self.traffic_reason = "red_prepare"
+        elif self.traffic_light == "green" and self.traffic_mode in ("prepare", "wait"):
+            # Do not cancel a just-received raw red using only older green
+            # votes; a green observation after that red may still cancel.
+            if not self.red_preview_unconfirmed or self.red_preview_green_seen:
+                self._resume_vision("green_resume")
+        if self.reference is not None:
             return
-        if self.traffic_mode == "approach":
-            profile = self._signal_approach_profile(now)
-            # Keep confirmed red intent when older votes expire or tie. The
-            # current real color and fresh range still guard every approach;
-            # a historical unknown vote alone is not a new sensing failure.
-            fault = self._signal_input_fault(now)
-            if fault:
-                self._wait_for_signal(fault, fault=True)
-            elif self.traffic_light_raw == "unknown":
-                self._wait_for_signal("signal_color_unknown")
-                self.traffic_mode = "perception_suspended"
-                self._clear_signal_recovery("waiting_current_red")
-            elif not profile["valid"]:
-                self._wait_for_signal(profile["reason"], fault=True)
-            elif profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
-                self._wait_for_signal("signal_target_reached")
-        if self.traffic_mode == "perception_suspended":
-            self._update_signal_recovery(now, new_signal_frame)
-        if (self.traffic_light == "red" and self.traffic_mode == "normal"
-                and not (self.p["traffic_policy"] == "first_lap_wait_then_detour"
-                         and self.red_detour_consumed)):
+        # First lap only: the distance flag controls the red-light stop.
+        if (self.traffic_mode == "wait" and self.traffic_reason == "red_wait_flag_unavailable"
+                and self.stop_flag is not None):
+            self.traffic_mode = "prepare"
+            self.traffic_reason = "red_prepare"
+        if self.traffic_mode == "prepare" and self.stop_flag is None:
             self.traffic_mode = "wait"
-            self.traffic_reason = "red_wait_first_lap" if self.reference is None else "red_planning"
-            if self.p["enable_signal_approach"]:
-                # The first complete vote window can confirm older red frames
-                # while the current frame is unknown. Classify that input just
-                # like approach color loss; never strand it in legacy wait or
-                # use historical votes/range to authorize motion.
-                fault = self._signal_input_fault(now)
-                if fault:
-                    self._wait_for_signal(fault, fault=True)
-                elif self.traffic_light_raw == "unknown":
-                    self._wait_for_signal("signal_color_unknown")
-                    self.traffic_mode = "perception_suspended"
-                    self._clear_signal_recovery("waiting_current_red")
-                elif self.traffic_light_raw == "red":
-                    profile = self._signal_approach_profile(now)
-                    if not profile["valid"]:
-                        self._wait_for_signal(profile["reason"], fault=True)
-                    elif profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
-                        self._wait_for_signal("signal_target_reached")
-                    else:
-                        self.traffic_mode = "approach"
-                        self.traffic_reason = "red_approach_signal"
-            self.guard.reset()
-            self.last_correction = 0.0
+            self.traffic_reason = "red_wait_flag_unavailable"
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        elif self.traffic_light == "green" and self.traffic_mode in (
-            "wait", "approach", "perception_suspended", "detour_approach"
-        ) and (
-            not self.p["enable_signal_approach"] or (
-                self.traffic_light_raw == "green" and self._signal_input_fault(now) is None
-                and self.signal_observation_sequence > self.signal_fault_sequence)
-        ):
-            self._resume_vision("green_resume")
+        elif self.traffic_mode == "prepare" and self.stop_flag is True:
+            self.traffic_mode = "wait"
+            self.stop_committed = True
+            self.traffic_reason = "red_wait_first_lap"
+            self.visual_motion_ready = False
+            if self.avoidance_active is not True:
+                self.last_cmd_time = -math.inf
         # Unknown/missing detections never release an already confirmed red.
         # A committed detour finishes even if its light subsequently turns green.
-
-    def _update_simple_traffic(self, now: float) -> None:
-        """Latch confirmed red until current, fresh, confirmed green; no range or detour."""
-        if self.traffic_light == "red" and self.traffic_mode != "wait":
-            self._wait_for_signal("red_wait_green")
-        elif (self.traffic_light == "green" and self.traffic_mode == "wait"
-              and self.traffic_light_raw == "green"):
-            if self.light_input_is_atomic:
-                observation = self.signal_observation
-                if observation is None:
-                    return
-                age = observation.age_sec + max(0.0, now - self.signal_observation_time)
-            else:
-                age = self.light_filter.snapshot(now)["last_message_age_sec"]
-            if age is not None and age <= self.p["signal_observation_timeout_sec"]:
-                self._resume_vision("green_resume")
 
     def _resume_vision(self, reason: str) -> None:
         self.traffic_mode = "normal"
         self.traffic_reason = reason
-        self.signal_wait_latched = False
-        self.signal_fault_sequence = -1
-        self._clear_signal_recovery(reason)
+        self.stop_committed = False
+        self.red_preview_unconfirmed = False
+        self.red_preview_green_seen = False
+        self.red_last_confirmed_at = -math.inf
+        self.detour_green_seen = False
+        self.detour_signal_rearmed = False
+        self.detour_next_red_pending = False
+        self.auto_trigger_reason = "not_evaluated"
+        self.auto_current_radius_m = None
+        self.auto_predicted_radius_m = None
+        self.auto_stop_latched = False
         self.detour_tracker = None
+        self.detour_node_ids = []
+        self.detour_graph_points = []
+        self.blocked_edge = None
+        self.detour_entry_progress = None
+        self.smooth_path = None
+        self.smooth_plan_pose = None
+        self.smooth_plan_reason = "not_planned"
+        if hasattr(self, "detour_path_pub"):
+            self._publish_detour_path()
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.used_seq = dict(self.point_seq)
@@ -501,101 +507,7 @@ class MapAssist(Node):
         self.guard.reset()
         self.last_correction = 0.0
 
-    def _wait_for_signal(self, reason: str, fault: bool = False) -> None:
-        self.traffic_mode = "wait"
-        self.traffic_reason = reason
-        self.signal_wait_latched |= fault
-        if fault:
-            self.signal_fault_sequence = self.signal_observation_sequence
-        self._clear_signal_recovery(reason)
-        self.visual_motion_ready = False
-        self.last_cmd_time = -math.inf
-        self.guard.reset()
-        self.last_correction = 0.0
-
-    def _clear_signal_recovery(self, reason: str) -> None:
-        self.signal_recovery_filter.clear()
-        self.signal_recovery_started = -math.inf
-        self.signal_recovery_reason = reason
-
-    def _signal_input_fault(self, now: float) -> Optional[str]:
-        """Validate metadata/odometry even when unknown naturally has no range."""
-        observation = self.signal_observation
-        if observation is None:
-            return self.signal_range_reason
-        if observation.range_reason == "signal_range_invalid":
-            return observation.range_reason
-        age = observation.age_sec + max(0.0, now - self.signal_observation_time)
-        if age > self.p["signal_observation_timeout_sec"]:
-            return "signal_observation_stale"
-        if (self.odom_speed_mps is None or now - self.odom_speed_time > self.p["odom_timeout_sec"]
-                or now - self.odom_time > self.p["odom_timeout_sec"]):
-            return "signal_approach_odom_stale"
-        return None
-
-    def _update_signal_recovery(self, now: float, new_frame: bool = False) -> None:
-        """Hold zero; only a fresh complete red window can re-arm approach."""
-        fault = self._signal_input_fault(now)
-        if fault:
-            self._wait_for_signal(fault, fault=True)
-            return
-        if self.traffic_light_raw != "red":
-            # Unknown cannot contribute a vote, a color or a cached distance.
-            # Confirmed green is handled by the existing green-resume rule.
-            self._clear_signal_recovery("waiting_current_red")
-            return
-        profile = self._signal_approach_profile(now)
-        if not profile["valid"]:
-            self._wait_for_signal(profile["reason"], fault=True)
-            return
-        if profile["remaining_m"] <= self.p["approach_stop_tolerance_m"]:
-            self._wait_for_signal("signal_target_reached")
-            return
-        if not new_frame:
-            return
-        if not math.isfinite(self.signal_recovery_started):
-            self.signal_recovery_started = now
-        vote = self.signal_recovery_filter.add("red", now)
-        self.signal_recovery_reason = "waiting_fresh_red_window"
-        if vote != "red":
-            return
-        if profile["braking_required"]:
-            self.signal_recovery_reason = "reacquisition_braking"
-            return
-        # Same delay and fresh whole ABC/new command requirement as green
-        # resume; never replay the visual group received while suspended.
-        self._resume_vision("signal_red_reacquired")
-        self.traffic_mode = "approach"
-
-    def _signal_approach_profile(self, now: float) -> dict:
-        observation = self.signal_observation
-        if observation is None or observation.distance_m is None:
-            return {"valid": False, "reason": self.signal_range_reason}
-        age = observation.age_sec + max(0.0, now - self.signal_observation_time)
-        if age > self.p["signal_observation_timeout_sec"]:
-            return {"valid": False, "reason": "signal_observation_stale", "age_sec": age}
-        if (self.odom_speed_mps is None or now - self.odom_speed_time > self.p["odom_timeout_sec"]
-                or now - self.odom_time > self.p["odom_timeout_sec"]):
-            return {"valid": False, "reason": "signal_approach_odom_stale"}
-        # Retain one sample preceding capture to cover its first integration interval.
-        capture_time = self.signal_observation_time - observation.age_sec
-        history = list(self.odom_speed_history)
-        before = [v for t, v in history if t <= capture_time]
-        speeds = [v for t, v in history if t >= capture_time]
-        speed_bound = max([0.0, self.odom_speed_mps] + speeds + before[-1:])
-        profile = stop_envelope(
-            observation.distance_m, observation.uncertainty_m, age,
-            speed_bound, self.odom_speed_mps, self.p["target_stop_distance_m"],
-            self.p["approach_max_speed_mps"], self.p["approach_deceleration_mps2"],
-            self.p["approach_latency_sec"],
-        )
-        profile.update(valid=True, reason="ok", age_sec=age)
-        return profile
-
     def _velocity_hold_reason(self, now: float) -> Optional[str]:
-        if (self.p["enable_traffic_control"] and self.p["traffic_policy"] == "stop_wait"
-                and self.traffic_mode == "wait"):
-            return self.traffic_reason
         # OA still owns the path and moving commands during its active phase.
         # Red waits remain latched and are reconsidered when OA releases control.
         if self.avoidance_active is True:
@@ -603,17 +515,11 @@ class MapAssist(Node):
         blocked = self._output_block_reason(now)
         if blocked:
             return blocked
-        if self.p["enable_traffic_control"] and self.traffic_mode in ("wait", "perception_suspended"):
+        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
             return self.traffic_reason
-        if self.traffic_mode == "approach":
-            profile = self._signal_approach_profile(now)
-            if not profile["valid"]:
-                return profile["reason"]
-            if profile["braking_required"]:
-                return "approach_braking"
         if self.traffic_mode == "detour":
             if not self.detour_motion_ready or now - self.odom_time > self.p["odom_timeout_sec"]:
-                return "detour_waiting_valid_odom_and_points"
+                return "route_waiting_valid_odom_and_points"
         elif not self.visual_motion_ready or not self._fresh_points(now):
             return "waiting_fresh_visual_triplet"
         return None
@@ -626,7 +532,10 @@ class MapAssist(Node):
         if not all(math.isfinite(value) for value in values):
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = "invalid_controller_command"
-            self.cmd_pub.publish(Twist())
+            # Reject invalid inputs, but do not insert commands while OA owns
+            # the manoeuvre. OA/downstream must enforce their own watchdog.
+            if self.avoidance_active is not True:
+                self.cmd_pub.publish(Twist())
             return
         held = self._velocity_hold_reason(now)
         if held:
@@ -635,23 +544,15 @@ class MapAssist(Node):
             self.cmd_pub.publish(Twist())
             return
         self.last_cmd_time = now
-        if self.traffic_mode == "approach" and self.avoidance_active is not True:
-            limit = self._signal_approach_profile(now)["speed_limit_mps"]
-            # Preserve LYA curvature while slowing; never reverse or rotate in
-            # place to approach a red light, and never mutate the upstream cmd.
-            limited = Twist()
-            if msg.linear.x > 0:
-                scale = min(1.0, limit / msg.linear.x)
-                limited.linear.x = msg.linear.x * scale
-                limited.angular.z = msg.angular.z * scale
-            self.velocity_gate_reason = "signal_approach_speed_limit"
-            self.cmd_pub.publish(limited)
-            return
         self.velocity_gate_reason = "forwarding_controller"
         self.cmd_pub.publish(msg)
 
     def _publish_velocity_stop_if_needed(self, now: float) -> None:
         if not self.p["enable_velocity_gate"] or self.cmd_pub is None:
+            return
+        # Do not inject a timeout stop over OA while it owns the manoeuvre.
+        # Fresh OA-derived controller commands still pass through the gate.
+        if self.avoidance_active is True:
             return
         held = self._velocity_hold_reason(now)
         if held or now - self.last_cmd_time > self.p["cmd_vel_timeout_sec"]:
@@ -703,101 +604,262 @@ class MapAssist(Node):
         start = before[-1] if before else ordered[-1]
         return [start, ordered[(ordered.index(start) + 1) % len(ordered)]]
 
-    def _update_traffic(self, now: float) -> None:
-        policy = self.p["traffic_policy"]
-        if policy == "stop_wait":
-            return
-        if not self.p["enable_traffic_control"]:
-            return
-        if self.traffic_mode not in ("wait", "detour_approach") or self.traffic_light != "red":
-            return
-        if policy == "first_lap_wait_then_detour" and self.red_detour_consumed:
-            if self.traffic_mode == "detour_approach":
-                self._resume_vision("red_event_already_detoured")
-            return
-        if self.signal_wait_latched:
-            return  # Observation faults cannot be released by a mapped detour.
-        if self.reference is None:
-            self.traffic_mode = "wait"
-            if self.traffic_reason != "signal_target_reached":
-                self.traffic_reason = "red_wait_first_lap"
-            return
-        if self._output_block_reason(now) or self.branch_active:
-            self.traffic_reason = "red_wait_maneuver_release"
-            return
-        if not self.fusion_status.get("available"):
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_wait_map_fusion"
-            return
-        if self.mapped_topology is None:
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_wait_mapped_topology"
-            return
-        if self.odom is None or now - self.odom_time > self.p["odom_timeout_sec"] or not self.matched:
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_wait_localization"
-            return
+    def _select_red_route(self) -> bool:
+        """Select the next forward outer junction once per red event."""
         outer = self.official.node_ids[:-1]
-        locations = self.fused_node_positions
         length = self.reference.length_m
-        candidates = [key for key in outer if abs(
-            (self._node_progress(key) - self.progress + length * 0.5) % length - length * 0.5
-        ) <= self.p["detour_entry_radius_m"] + self.p["progress_tolerance_m"]]
+        candidates = []
+        for key in outer:
+            forward = (self._node_progress(key) - self.progress) % length
+            if (forward > length - self.p["detour_waypoint_radius_m"]
+                    and math.dist(self.odom[:2], self.fused_node_positions[key])
+                    <= self.p["detour_waypoint_radius_m"]):
+                forward = 0.0
+            candidates.append((forward, key))
         if not candidates:
-            if policy == "first_lap_wait_then_detour":
-                self.traffic_mode = "detour_approach"
-                self.traffic_reason = "red_approaching_topology_junction"
-            else:
-                self.traffic_mode = "wait"
-                self.traffic_reason = "red_wait_near_junction"
-            return
-        start = min(candidates, key=lambda key: math.dist(self.odom[:2], locations[key]))
-        if math.dist(self.odom[:2], locations[start]) > self.p["detour_entry_radius_m"]:
-            if policy == "first_lap_wait_then_detour":
-                self.traffic_mode = "detour_approach"
-                self.traffic_reason = "red_approaching_topology_junction"
-            else:
-                self.traffic_mode = "wait"
-                self.traffic_reason = "red_wait_near_junction"
-            return
-        # Phase/direction identify the normal next edge; red removes that edge.
+            self.smooth_plan_reason = "red_no_outer_junction"
+            return False
+        forward, start = min(candidates)
+        entry_progress = self.progress + forward
         direction = int(self.topology_alignment["direction"])
         target = outer[(outer.index(start) + direction) % len(outer)]
-        route = self.mapped_topology.alternative_route(start, target, require_internal=True, outer_node_ids=outer)
-        self.blocked_edge = [start, target]
+        try:
+            route = self.mapped_topology.alternative_route(
+                start, target, require_internal=True, outer_node_ids=outer,
+                require_first_internal=True)
+        except (ValueError, KeyError) as exc:
+            self.smooth_plan_reason = "red_graph_error_" + str(exc)
+            return False
         if route is None:
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_no_alternative_route"
+            self.smooth_plan_reason = "red_no_alternative_route"
+            return False
+        self.blocked_edge = [start, target]
+        self.detour_node_ids = list(route.node_ids)
+        self.detour_graph_points = list(route.points)
+        self.detour_entry_progress = entry_progress
+        self.detour_exit_progress = self._node_progress(target)
+        self.detour_exit_progress += math.floor(entry_progress / length) * length
+        if self.detour_exit_progress < entry_progress:
+            self.detour_exit_progress += length
+        return True
+
+    def _make_smooth_plan(self, force: bool = False) -> bool:
+        """Recompute from a live pose, never execute an obsolete candidate."""
+        if not self.detour_graph_points and not self._select_red_route():
+            return False
+        remaining = self.detour_entry_progress - self.progress
+        if remaining < -0.5:
+            self.smooth_path = None
+            self.smooth_plan_reason = "junction_already_passed"
+            self._publish_detour_path()
+            return False
+        if remaining > 0.05 and not self.reference._interval_trusted(self.progress, self.detour_entry_progress):
+            self.smooth_path = None
+            self.smooth_plan_reason = "untrusted_entry_reference"
+            self._publish_detour_path()
+            return False
+        if self.smooth_plan_pose is not None:
+            moved = math.dist(self.odom[:2], self.smooth_plan_pose[:2])
+            turned = abs(wrap_angle(self.odom[2] - self.smooth_plan_pose[2]))
+            threshold = 0.05 if force else self.p["detour_plan_update_distance_m"]
+            if moved < threshold and turned < math.radians(3.0):
+                return self.smooth_path is not None
+        self.smooth_plan_pose = tuple(self.odom)
+        self.smooth_path = None
+        try:
+            self.smooth_path = self._smooth_plan_at(self.odom)
+        except ValueError as exc:
+            self.smooth_plan_reason = str(exc)
+            self._publish_detour_path()
+            return False
+        self.smooth_plan_reason = "ready"
+        self._publish_detour_path()
+        return True
+
+    def _smooth_plan_at(self, pose):
+        return build_smooth_detour(
+            self.reference, self.detour_graph_points, self.detour_exit_progress,
+            pose, self.p["detour_min_turn_radius_m"], self.p["detour_max_trim_m"],
+            spacing_m=self.p["detour_curve_spacing_m"],
+            post_exit_m=max(6.0, self.p["detour_lookahead_m"] +
+                            2.0 * self.p["detour_point_spacing_m"] + 3.0))
+
+    @staticmethod
+    def _path_radius(path):
+        curvature = path.max_curvature
+        return 1.0 / curvature if curvature > 1e-9 else None
+
+    def _auto_turn_due(self):
+        """Check the current plan and one short straight-ahead prediction.
+
+        The candidate is a geometric preview, not a vehicle-dynamics forecast.
+        Never replace the current plan with the predicted one for tracking.
+        """
+        limit = self.p["detour_min_turn_radius_m"] + self.p["detour_trigger_margin_m"]
+        self.auto_current_radius_m = self._path_radius(self.smooth_path)
+        self.auto_predicted_radius_m = None
+        if self.auto_current_radius_m is not None and self.auto_current_radius_m <= limit:
+            self.auto_trigger_reason = "current_radius_near_limit"
+            return True
+        distance = self.p["detour_trigger_preview_m"]
+        if self.detour_entry_progress - self.progress <= distance:
+            self.auto_trigger_reason = "entry_within_preview"
+            return True
+        x, y, yaw = self.odom
+        predicted_pose = (x + distance * math.cos(yaw), y + distance * math.sin(yaw), yaw)
+        try:
+            predicted_path = self._smooth_plan_at(predicted_pose)
+        except ValueError:
+            self.auto_trigger_reason = "predicted_plan_unavailable"
+            return True
+        self.auto_predicted_radius_m = self._path_radius(predicted_path)
+        if self.auto_predicted_radius_m is not None and self.auto_predicted_radius_m <= limit:
+            self.auto_trigger_reason = "predicted_radius_near_limit"
+            return True
+        self.auto_trigger_reason = "radius_has_margin"
+        return False
+
+    def _auto_red_hold(self, reason: str, latch: bool = True) -> None:
+        self.traffic_mode = "wait"
+        self.traffic_reason = reason
+        self.auto_stop_latched = self.auto_stop_latched or latch
+        self.stop_committed = self.auto_stop_latched
+        self.visual_motion_ready = False
+        if self.avoidance_active is not True:
+            self.last_cmd_time = -math.inf
+
+    def _clear_auto_measurements(self, reason: str) -> None:
+        self.auto_trigger_reason = reason
+        self.auto_current_radius_m = None
+        self.auto_predicted_radius_m = None
+
+    def _auto_unavailable(self, prepare_reason: str, wait_reason: str) -> None:
+        """Search while approaching; fall back to the distance stop on red."""
+        if self.red_preview_unconfirmed:
+            self.traffic_reason = prepare_reason
             return
-        tracker = DetourTracker(
-            route.points,
-            waypoint_radius_m=self.p["detour_waypoint_radius_m"],
-            max_cross_track_m=self.p["detour_max_cross_track_m"],
-            lookahead_m=self.p["detour_lookahead_m"], spacing_m=self.p["detour_point_spacing_m"],
-            entry_radius_m=self.p["detour_entry_radius_m"],
-        )
+        if self.stop_flag is None:
+            # Without a distance state the requested last stop cannot be located.
+            self._auto_red_hold("red_wait_flag_unavailable", latch=False)
+        elif self.stop_flag or self.auto_stop_latched:
+            self._auto_red_hold(wait_reason)
+        else:
+            self.traffic_mode = "prepare"
+            self.stop_committed = False
+            self.traffic_reason = prepare_reason
+
+    def _red_recently_confirmed(self, now: float) -> bool:
+        # A full majority must have confirmed red first. Between detector
+        # frames the sliding window may momentarily have fewer than three
+        # samples; tolerate only a short gap while the latest observation is
+        # still fresh and red. A green/unknown raw observation cannot start it.
+        if self.traffic_light_raw != "red":
+            return False
+        last_age = self.light_filter.snapshot(now)["last_message_age_sec"]
+        return (last_age is not None and last_age <= self.p["traffic_vote_window_sec"]
+                and now - self.red_last_confirmed_at <= self.p["traffic_vote_window_sec"])
+
+    def _update_traffic(self, now: float) -> None:
+        if not self.p["enable_traffic_control"] or self.traffic_mode not in ("prepare", "wait"):
+            return
+        if self.reference is None:
+            # During the learning lap only, preserve the existing distance stop.
+            if self.stop_flag is None:
+                self.traffic_mode = "wait"
+                self.traffic_reason = "red_wait_flag_unavailable"
+                return
+            if self.stop_committed:
+                self.traffic_mode = "wait"
+                self.traffic_reason = "red_wait_first_lap"
+            else:
+                self.traffic_mode = "prepare"
+                self.traffic_reason = "red_prepare_first_lap"
+            return
+        if self._output_block_reason(now) or self.branch_active:
+            self.smooth_plan_reason = "waiting_for_oa_or_branch_release"
+            if self.stop_committed:
+                self.traffic_reason = "red_wait_maneuver_release"
+            return
+        if not self.fusion_status.get("available") or self.mapped_topology is None:
+            self.smooth_plan_reason = "waiting_for_map_fusion"
+            self._clear_auto_measurements("waiting_for_map_fusion")
+            self._auto_unavailable("red_prepare_map_fusion", "red_wait_map_fusion")
+            return
+        if self.odom is None or now - self.odom_time > self.p["odom_timeout_sec"] or not self.matched:
+            self.smooth_plan_reason = "waiting_for_localization"
+            self._clear_auto_measurements("waiting_for_localization")
+            self._auto_unavailable("red_prepare_localization", "red_wait_localization")
+            return
+        if not self.reference.point_at(self.progress)[2]:
+            self.smooth_plan_reason = "untrusted_current_reference"
+            self._clear_auto_measurements("untrusted_current_reference")
+            self._auto_unavailable("red_prepare_untrusted_reference", "red_wait_untrusted_reference")
+            return
+        # Recheck near the current pose rather than relying on an old preview.
+        ready = self._make_smooth_plan(force=True)
+        if not ready:
+            self._clear_auto_measurements("current_plan_unavailable")
+            self._auto_unavailable("red_prepare_spline_unavailable",
+                                   "red_wait_spline_" + self.smooth_plan_reason)
+            return
+        due = self._auto_turn_due()
+        if self.red_preview_unconfirmed:
+            self.traffic_reason = "red_preview_spline_ready"
+            return
+        if not self._red_recently_confirmed(now):
+            if due or self.auto_stop_latched:
+                self._auto_unavailable("red_prepare_light_confirmation", "red_wait_light_confirmation")
+            else:
+                self.traffic_reason = "red_prepare_spline_ready"
+            return
+        if not due:
+            if self.stop_flag is True or self.auto_stop_latched:
+                # The stop point arrived before a turn was committed. Do not
+                # drive through the red while waiting for a later radius limit.
+                self._auto_red_hold("red_wait_stop_point_before_turn")
+            else:
+                self.traffic_mode = "prepare"
+                self.stop_committed = False
+                self.traffic_reason = "red_prepare_spline_ready"
+            return
+        # Only the plan recomputed from the present pose may be executed.
+        tracker = SmoothDetourTracker(
+            self.smooth_path, self.p["detour_max_cross_track_m"],
+            self.p["detour_lookahead_m"], self.p["detour_point_spacing_m"],
+            self.p["detour_target_angle_deg"])
         initial = tracker.update(*self.odom)
         if not initial.available:
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_route_unusable_" + initial.reason
+            self._auto_unavailable("red_prepare_spline_" + initial.reason,
+                                   "red_wait_spline_" + initial.reason)
             return
         self.detour_tracker = tracker
-        self.detour_node_ids = route.node_ids
-        target_progress = self._node_progress(target)
-        target_progress += math.floor(self.progress / self.reference.length_m) * self.reference.length_m
-        if target_progress < self.progress:
-            target_progress += self.reference.length_m
-        self.detour_exit_progress = target_progress
+        self.traffic_mode = "detour"
+        self.detour_green_seen = False
+        self.detour_signal_rearmed = False
+        self.detour_next_red_pending = False
+        self.traffic_reason = "detour_tracking"
         self.detour_used_odom_seq = -1
         self.detour_motion_ready = False
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
-        self.traffic_mode = "detour"
-        self.traffic_reason = "following_alternative_route"
-        if policy == "first_lap_wait_then_detour":
-            self.red_detour_consumed = True
         self.guard.reset()
         self.last_correction = 0.0
+        self._process_detour(now)
+
+    def _publish_detour_path(self) -> None:
+        if not hasattr(self, "detour_path_pub"):
+            return
+        msg = Path()
+        msg.header.frame_id = self.odom_frame
+        msg.header.stamp = self.get_clock().now().to_msg()
+        if self.smooth_path is not None:
+            for x, y in self.smooth_path.points:
+                point = PoseStamped()
+                point.header = msg.header
+                point.pose.position.x, point.pose.position.y = float(x), float(y)
+                point.pose.orientation.w = 1.0
+                msg.poses.append(point)
+        self.detour_path_pub.publish(msg)
 
     def _process_detour(self, now: float) -> None:
         if self._output_block_reason(now):
@@ -814,22 +876,23 @@ class MapAssist(Node):
         self.detour_motion_ready = result.available
         self.reason = self.traffic_reason = "detour_" + result.reason
         if result.done:
-            # Seed association near the known exit, then let fresh vision resume.
-            # Never globally jump to a nearby crossing on the recorded outer lap.
-            self.progress = self.detour_exit_progress
+            # The smooth path reconnects after the exit node and tracks the
+            # outer reference for another 2 m before handing back to vision.
+            # Seed near that actual rejoin, not at the earlier junction node.
+            self.progress = self.detour_exit_progress + self.smooth_path.trim_m + 2.0
             self.pending_distance = 0.0
             self.matched = False
-            # No lamp IDs or permanent handled-red latch: reconsider only the
-            # current fresh vote, including a red that appeared on the detour.
+            new_red_waiting = self.detour_next_red_pending
+            light_at_exit = self.traffic_light
             self._resume_vision("detour_complete_resume_vision")
-            self.traffic_light = self.light_filter.evaluate(now)
-            if self.traffic_light == "red":
-                if (self.p["traffic_policy"] != "first_lap_wait_then_detour"
-                        or not self.red_detour_consumed):
-                    self.traffic_mode = "wait"
-                    self.traffic_reason = "red_after_detour"
-                else:
-                    self.traffic_reason = "red_event_detour_complete"
+            # No second-lap distance flag is used to distinguish lights. A
+            # green or long absence followed by red can re-arm a new event.
+            if new_red_waiting and light_at_exit != "green":
+                self.traffic_mode = "prepare"
+                self.traffic_reason = "red_prepare_next_event"
+                self.traffic_event_consumed = False
+            else:
+                self.traffic_event_consumed = light_at_exit != "green"
             return
         if result.available:
             for label, (x, y) in zip("abc", result.points):
@@ -852,7 +915,7 @@ class MapAssist(Node):
             self.point_seq[label] += 1
             if not all(math.isfinite(value) for value in (msg.x, msg.y, msg.theta)):
                 self.visual_motion_ready = False
-                if self.avoidance_active is False and self.traffic_mode in ("normal", "approach"):
+                if self.avoidance_active is False and self.traffic_mode == "normal":
                     self.last_cmd_time = -math.inf
         return callback
 
@@ -871,9 +934,7 @@ class MapAssist(Node):
             return blocked
         if self.branch_active:
             return "branch_active"
-        if self.p["enable_traffic_control"] and self.traffic_mode not in (
-            "normal", "approach", "detour_approach"
-        ):
+        if self.p["enable_traffic_control"] and self.traffic_mode not in ("normal", "prepare"):
             return "traffic_" + self.traffic_mode
         return None
 
@@ -892,8 +953,6 @@ class MapAssist(Node):
 
     def _on_odom(self, msg: Odometry) -> None:
         now = time.monotonic()
-        if self.traffic_mode == "perception_suspended":
-            self._update_signal_recovery(now)
         pos, q = msg.pose.pose.position, msg.pose.pose.orientation
         values = (pos.x, pos.y, q.x, q.y, q.z, q.w)
         norm = math.hypot(*values[2:])
@@ -903,8 +962,6 @@ class MapAssist(Node):
             self.excluded_since_sample = True
             self.guard.reset()
             self.reason = "invalid_odom"
-            if self.traffic_mode == "perception_suspended":
-                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
             return
         covariance = getattr(msg.pose, "covariance", [])
         variances = [float(covariance[i]) for i in (0, 7, 35)] if len(covariance) == 36 else [0.0] * 3
@@ -917,8 +974,6 @@ class MapAssist(Node):
             self.excluded_since_sample = True
             self.guard.reset()
             self.reason = "odom_uncertainty_high"
-            if self.traffic_mode == "perception_suspended":
-                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
             return
         qx, qy, qz, qw = (v / norm for v in values[2:])
         yaw = math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
@@ -938,8 +993,6 @@ class MapAssist(Node):
                     self.matched = False
                     self.excluded_since_sample = True
                     self.guard.reset()
-                    if self.traffic_mode == "perception_suspended":
-                        self._wait_for_signal("signal_approach_odom_invalid", fault=True)
                     return
                 dt = stamp - self.odom_stamp
             if frame != self.odom_frame or msg.child_frame_id != self.child_frame:
@@ -954,26 +1007,26 @@ class MapAssist(Node):
                 self._reset_learning(reset_reason)
                 self._publish_path()
                 delta = 0.0
+        previous_odom = self.odom
         self.odom, self.odom_time, self.odom_stamp = current, now, stamp
-        twist = getattr(getattr(msg, "twist", None), "twist", None)
-        speed = getattr(getattr(twist, "linear", None), "x", None)
-        if isinstance(speed, (int, float)) and not isinstance(speed, bool) and math.isfinite(speed):
-            self.odom_speed_mps, self.odom_speed_time = float(speed), now
-            self.odom_speed_history.append((now, float(speed)))
-            oldest = now - self.p["signal_observation_timeout_sec"]
-            while len(self.odom_speed_history) > 1 and self.odom_speed_history[1][0] < oldest:
-                self.odom_speed_history.popleft()
-        else:
-            self.odom_speed_mps = None
-            if self.traffic_mode == "perception_suspended":
-                self._wait_for_signal("signal_approach_odom_invalid", fault=True)
         self.odom_seq += 1
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
-        excluded = self._bypass_reason(now) is not None or not self._recording_points_valid(now)
+        # A red wait holds velocity but valid visual/odom samples remain usable.
+        # Otherwise the next lap cannot approach across its own red-stop segment.
+        excluded = (self.avoidance_active is not False or self.branch_active
+                    or (self.p["enable_traffic_control"] and self.traffic_mode == "detour")
+                    or not self._recording_points_valid(now))
         self.excluded_since_sample |= excluded
         if self.reference is None:
             if not self.samples:
-                self.samples.append(RouteSample(*current, excluded=excluded))
+                # The start is an actual usable observation, not a pose seen
+                # while the camera/OA state is still unavailable. Otherwise
+                # the first lap seam would be inseparable from an exclusion.
+                if excluded:
+                    self.reason = "waiting_valid_mapping_inputs"
+                    return
+                self.samples.append(RouteSample(*current, excluded=False))
+                self.excluded_since_sample = False
             else:
                 start = self.samples[0]
                 if math.hypot(current[0] - start.x, current[1] - start.y) > max(3.0, 2.0 * self.p["lap_closure_radius_m"]):
@@ -987,7 +1040,7 @@ class MapAssist(Node):
                     self.samples.append(RouteSample(*current, excluded=self.excluded_since_sample))
                     self.recorded_distance += sampled_distance
                     self.excluded_since_sample = excluded
-            self._try_complete_lap(current, excluded)
+            self._try_complete_lap(current, excluded, previous_odom)
         elif self.traffic_mode != "detour":
             # Detour distance need not equal progress along the reference.
             # Keep the local search centred near the last match; repeated local
@@ -997,79 +1050,141 @@ class MapAssist(Node):
             result = self.reference.match(
                 current[0], current[1], self.progress, self.pending_distance,
                 self.p["match_window_m"], self.p["max_match_distance_m"],
+                yaw=current[2], max_heading_error_rad=math.radians(self.p["match_heading_limit_deg"]),
             )
             self.matched = result is not None
             if result is not None:
                 self.progress = result
                 self.pending_distance = 0.0
 
-    def _try_complete_lap(self, current, excluded: bool) -> None:
+    def _try_complete_lap(self, current, excluded: bool, previous_odom=None) -> None:
         # The official drawing does not define odometric metres or lap length.
         minimum = self.p["min_lap_distance_m"]
         if not self.left_start_area or excluded:
             return
         first = self.samples[0]
-        if math.hypot(current[0] - first.x, current[1] - first.y) > self.p["lap_closure_radius_m"]:
-            return
         if abs(wrap_angle(current[2] - first.yaw)) > math.radians(self.p["lap_closure_heading_deg"]):
             return
-        if len(self.samples) < 30:
-            self._reset_learning("returned_before_minimum_sample_count")
-            self.samples.append(RouteSample(*current, excluded=excluded))
+        # Cross the start-normal plane in the original travel direction. This
+        # prevents the larger radius from closing as soon as the car enters it.
+        # Check the interpolated crossing, not only the later odom sample: a
+        # low sampling rate can put that sample outside the closure radius even
+        # though the segment crossed the plane at the correct start position.
+        if previous_odom is None:
             return
-        if minimum > 0.0 and self.recorded_distance < minimum:
+        forward_x, forward_y = math.cos(first.yaw), math.sin(first.yaw)
+        before = (previous_odom[0] - first.x) * forward_x + (previous_odom[1] - first.y) * forward_y
+        after = (current[0] - first.x) * forward_x + (current[1] - first.y) * forward_y
+        epsilon = 1e-9
+        if before > epsilon or after < -epsilon or after - before <= epsilon:
+            return
+        fraction = max(0.0, min(1.0, -before / (after - before)))
+        crossing_x = previous_odom[0] + fraction * (current[0] - previous_odom[0])
+        crossing_y = previous_odom[1] + fraction * (current[1] - previous_odom[1])
+        if math.hypot(crossing_x - first.x, crossing_y - first.y) > self.p["lap_closure_radius_m"]:
+            return
+        if len(self.samples) < 30 or self.recorded_distance < minimum:
             self._reset_learning("returned_before_min_lap_distance")
             self.samples.append(RouteSample(*current, excluded=excluded))
             return
         candidate_samples = self.samples + [RouteSample(*current, excluded=excluded)]
-        if self.p["traffic_policy"] == "first_lap_wait_then_detour":
-            # OA/branch motion remains in recorded_distance and lap detection,
-            # but excluded poses are dropped from this race map's geometry.
-            # Consecutive valid poses become a straight chord across each run.
-            route_samples = [sample for sample in candidate_samples if not sample.excluded]
-            if len(route_samples) < 30:
-                self._reset_learning("insufficient_non_avoidance_samples")
-                return
-            self.excluded_samples_omitted = len(candidate_samples) - len(route_samples)
-        else:
-            route_samples = candidate_samples
-            self.excluded_samples_omitted = 0
         try:
-            fusion = build_fused_route(
-                route_samples, self.official, spacing_m=self.p["sample_spacing_m"],
-                smooth_window_m=self.p["smooth_window_m"], max_detour_gap_m=self.p["max_detour_gap_m"],
-                max_rmse_m=self.p["alignment_max_rmse_m"],
-                ambiguity_margin_m=self.p["alignment_ambiguity_margin_m"],
-                node_search_m=self.p["fusion_node_search_m"],
-                feature_window_m=self.p["fusion_feature_window_m"],
-                shape_weight=self.p["fusion_shape_weight"],
-                max_displacement_m=self.p["fusion_max_displacement_m"],
-            )
+            reference = build_odom_reference(candidate_samples, self.p["sample_spacing_m"],
+                                             self.p["smooth_window_m"])
         except ValueError as exc:
             self.reason = "reference_build_failed"
             self.get_logger().warn(str(exc))
             return
-        self.reference = fusion.reference
-        self.fusion_status = dict(fusion.status)
-        self.fused_node_positions = dict(fusion.node_positions)
-        self.fused_node_progress = dict(fusion.node_progress)
-        self.topology_alignment = fusion.alignment
-        # Retain the old diagnostic field for readers; it is not the fusion result.
+        self.reference = reference
+        self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_pending"}
         self.alignment = {"diagnostic_only": True, "superseded_by": "map_fusion"}
         self.recorded_distance += math.hypot(current[0] - self.samples[-1].x, current[1] - self.samples[-1].y)
         self.progress = 0.0
         self.pending_distance = 0.0
-        self.matched = False  # First post-closure odometry confirms association.
-        self.reason = "first_lap_complete" if self.fusion_status.get("available") else "first_lap_fusion_unavailable"
+        self.matched = False  # Fresh post-closure odometry confirms association.
+        self.reason = "first_lap_odom_ready"
+        self._publish_path()
+        official = OfficialRoute(list(self.official.node_ids), list(self.official.points))
+        outer = set(official.node_ids)
+        comparison_points = [tuple(point) for identifier, point in self.topology.nodes.items()
+                             if identifier not in outer and self.topology.adjacency.get(identifier)]
+        branch_connections = {
+            identifier: [(neighbour, tuple(self.topology.nodes[neighbour]))
+                         for neighbour in self.topology.adjacency.get(identifier, {})
+                         if neighbour not in outer]
+            for identifier in official.node_ids[:-1]
+        }
+        branch_connections = {key: values for key, values in branch_connections.items() if values}
+        try:
+            self._fusion_future = self._fusion_executor.submit(
+                build_fused_route, tuple(candidate_samples), official,
+                spacing_m=self.p["sample_spacing_m"], smooth_window_m=self.p["smooth_window_m"],
+                max_detour_gap_m=self.p["max_detour_gap_m"], max_rmse_m=self.p["alignment_max_rmse_m"],
+                max_closure_gap_m=self.p["max_closure_gap_m"],
+                ambiguity_margin_m=self.p["alignment_ambiguity_margin_m"],
+                node_search_m=self.p["fusion_node_search_m"], feature_window_m=self.p["fusion_feature_window_m"],
+                shape_weight=self.p["fusion_shape_weight"], max_displacement_m=self.p["fusion_max_displacement_m"],
+                comparison_points=comparison_points, ambiguity_position_m=self.p["fusion_candidate_tolerance_m"],
+                branch_connections=branch_connections,
+                branch_angle_min_deg=self.p["branch_angle_min_deg"],
+                branch_angle_max_deg=self.p["branch_angle_max_deg"],
+            )
+        except RuntimeError as exc:
+            self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_submit_failed"}
+            self.get_logger().warn(str(exc))
+        self.get_logger().info(
+            f"First lap complete: {self.reference.length_m:.1f} odom m; topology alignment is running."
+        )
+
+    def _poll_fusion(self, now: float) -> None:
+        """Apply a worker result on the ROS thread, never from the worker."""
+        if self._fusion_future is not None and self._fusion_future.done():
+            future, self._fusion_future = self._fusion_future, None
+            try:
+                result = future.result()
+            except Exception as exc:
+                self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_worker_failed"}
+                self.get_logger().warn("Topology alignment failed: " + str(exc))
+                return
+            self.topology_alignment = result.alignment
+            if not result.status.get("available"):
+                self.fusion_status = dict(result.status)
+                return
+            self._pending_fusion = result
+            self.fusion_status = dict(result.status)
+            self.fusion_status.update(available=False, mode="odom_only", reason="alignment_waiting_reference_match")
+        result = self._pending_fusion
+        if result is None or self.reference is None:
+            return
+        # OA retains ownership. A red wait may apply the map, because it needs
+        # the result before it can decide whether an alternative route exists.
+        if self._output_block_reason(now) or self.branch_active or self.traffic_mode == "detour":
+            return
+        if self.odom is None or now - self.odom_time > self.p["odom_timeout_sec"] or not self.matched:
+            return
+        progress = result.reference.match(
+            self.odom[0], self.odom[1], self.progress, 0.0,
+            self.p["match_window_m"], self.p["max_match_distance_m"],
+            yaw=self.odom[2], max_heading_error_rad=math.radians(self.p["match_heading_limit_deg"]),
+        )
+        if progress is None or not result.reference.point_at(progress)[2]:
+            return
+        self.reference = result.reference
+        self.progress = progress
+        self.pending_distance = 0.0
+        self.fusion_status = dict(result.status)
+        self.fused_node_positions = dict(result.node_positions)
+        self.fused_node_progress = dict(result.node_progress)
+        self._pending_fusion = None
+        self.guard.reset()
+        self.last_correction = 0.0
         self._prepare_mapped_topology()
         self._publish_path()
-        self.get_logger().info(
-            f"First lap complete: {self.reference.length_m:.1f} odom m; "
-            f"fusion={self.fusion_status.get('available')}, reason={self.fusion_status.get('reason')}."
-        )
+        self.get_logger().info("Topology alignment accepted and attached to the odometry route.")
 
     def _tick(self) -> None:
         now = time.monotonic()
+        self._poll_fusion(now)
         self._update_light_vote(now)
         self._update_traffic(now)
         blocked = self._output_block_reason(now)
@@ -1079,7 +1194,7 @@ class MapAssist(Node):
             self.reason = blocked
             self._publish_housekeeping(now)
             return
-        if self.p["enable_traffic_control"] and self.traffic_mode in ("wait", "perception_suspended"):
+        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
             self.reason = self.traffic_reason
             self.guard.reset()
             self.last_correction = 0.0
@@ -1123,9 +1238,7 @@ class MapAssist(Node):
             self.last_correction = 0.0
             self.reason = blocked
             return
-        if self.p["enable_traffic_control"] and self.traffic_mode not in (
-            "normal", "approach", "detour_approach"
-        ):
+        if self.p["enable_traffic_control"] and self.traffic_mode not in ("normal", "prepare"):
             return
         points = [self.points[k] for k in "abc"]
         correction = 0.0
@@ -1157,8 +1270,6 @@ class MapAssist(Node):
             self.reason = "visual_geometry_not_forward"
         elif self.reference is None:
             self.reason = "learning_first_lap"
-        elif not self.fusion_status.get("available"):
-            self.reason = "map_fusion_unavailable_passthrough"
         elif self.odom is None or now - self.odom_time > self.p["odom_timeout_sec"]:
             self.reason = "odom_stale_passthrough"
         elif not self.matched:
@@ -1226,6 +1337,8 @@ class MapAssist(Node):
             "lap": 2 + max(0, int(self.progress / reference.length_m)) if reference is not None else 1,
             "recorded_samples": len(self.samples), "recorded_distance_m": self.recorded_distance,
             "reference_length_m": reference.length_m if reference is not None else None,
+            "odom_reference_ready": reference is not None,
+            "fusion_pending": self._fusion_future is not None or self._pending_fusion is not None,
             "route_matched": self.matched, "progress_m": self.progress,
             "use_sim_time": bool(self.get_parameter("use_sim_time").value),
             "ros_time_sec": self.get_clock().now().nanoseconds * 1e-9,
@@ -1236,7 +1349,7 @@ class MapAssist(Node):
             "correction_deg": math.degrees(self.last_correction),
             "violation_frames": self.guard.violation_count,
             "avoidance_active": self.avoidance_active, "branch_active": self.branch_active,
-            "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode not in ("wait", "perception_suspended"),
+            "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode != "wait",
             "enable_correction": self.p["enable_correction"],
             "official_route_node_ids": self.official.node_ids,
             "approximate_official_edge": self._current_topology_edge(),
@@ -1245,47 +1358,54 @@ class MapAssist(Node):
             "official_node_positions_odom": self.fused_node_positions,
             "official_node_progress_m": self.fused_node_progress,
             "topology_mapping": self.topology_mapping_status,
+            # Lowest-score selection is intentionally retained even when
+            # alternatives exist. Expose that diagnostic separately so an
+            # accepted fit is not mistaken for a unique correspondence.
+            "fusion_ambiguity_warning": bool(self.topology_alignment and
+                self.topology_alignment.get("available") is True and
+                (self.topology_alignment.get("global_transform_available") is False or
+                 self.topology_alignment.get("node_correspondence_available") is False)),
             "traffic_light_raw": self.traffic_light_raw,
             "traffic_light": self.light_filter.evaluate(now),
             "traffic_vote": self.light_filter.snapshot(now),
-            "traffic_policy": self.p["traffic_policy"],
+            "auto_red_signal_valid": self._red_recently_confirmed(now),
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
-            "red_detour_consumed": self.red_detour_consumed,
-            "excluded_samples_omitted": self.excluded_samples_omitted,
-            # The vehicle motor consumes only this traffic latch. Topo's
-            # private point/velocity output has separate readiness conditions.
-            "traffic_stop_required": (
-                self.traffic_mode != "normal"
-                if self.p["enable_traffic_control"] and self.p["traffic_policy"] == "stop_wait"
-                else (
-                    self.traffic_mode in ("wait", "perception_suspended")
-                    and self.avoidance_active is not True
-                    if self.p["enable_traffic_control"]
-                    and self.p["traffic_policy"] == "first_lap_wait_then_detour"
-                    else None
-                )
-            ),
-            "signal_approach": {
-                "enabled": self.p["enable_signal_approach"],
-                "target_stop_distance_m": self.p["target_stop_distance_m"],
-                "observation_sequence": self.signal_observation_sequence,
-                "wait_latched": self.signal_wait_latched,
-                "fault_sequence": self.signal_fault_sequence,
-                "distance_m": self.signal_observation.distance_m if self.signal_observation else None,
-                "uncertainty_m": self.signal_observation.uncertainty_m if self.signal_observation else None,
-                "profile": self._signal_approach_profile(now),
-                "recovery_eligible": self.traffic_mode == "perception_suspended",
-                "recovery_reason": self.signal_recovery_reason,
-                "recovery_age_sec": age_seconds(self.signal_recovery_started),
-                "recovery_vote": self.signal_recovery_filter.snapshot(now),
-            },
+            "traffic_planner_version": "ubs_auto_turn_v1",
+            "traffic_stop_flag": self.stop_flag,
+            "traffic_stop_flag_role": "first_lap_stop" if self.reference is None else "red_fallback_only",
+            "auto_stop_latched": self.auto_stop_latched,
+            "traffic_stop_committed": self.stop_committed,
+            "traffic_event_consumed": self.traffic_event_consumed,
+            "detour_next_red_pending": self.detour_next_red_pending,
+            "traffic_red_rearm_sec": self.p["traffic_red_rearm_sec"],
+            "smooth_plan_reason": self.smooth_plan_reason,
+            "smooth_plan_available": self.smooth_path is not None,
+            "smooth_min_turn_radius_m": self.p["detour_min_turn_radius_m"],
+            "smooth_max_curvature_per_m": self.smooth_path.max_curvature if self.smooth_path else None,
+            "auto_trigger_reason": self.auto_trigger_reason,
+            "auto_current_radius_m": self.auto_current_radius_m,
+            "auto_predicted_radius_m": self.auto_predicted_radius_m,
+            "auto_radius_trigger_m": self.p["detour_min_turn_radius_m"] + self.p["detour_trigger_margin_m"],
+            "auto_trigger_preview_m": self.p["detour_trigger_preview_m"],
+            "smooth_turn_trim_m": self.smooth_path.trim_m if self.smooth_path else None,
+            "smooth_detour_progress_m": self.detour_tracker.progress_m if self.detour_tracker else None,
             "topology_alignment": self.topology_alignment,
             "blocked_edge": self.blocked_edge,
             "detour_node_ids": self.detour_node_ids,
+            "detour_entry_progress_m": self.detour_entry_progress,
+            "detour_approach_remaining_m": (None if self.detour_entry_progress is None
+                                             else self.detour_entry_progress - self.progress),
             "velocity_gate_reason": self.velocity_gate_reason if self.p["enable_velocity_gate"] else "disabled",
         }
         self.status_pub.publish(String(data=json.dumps(payload, ensure_ascii=False, allow_nan=False)))
+
+    def close_fusion_worker(self) -> None:
+        if self._fusion_future is not None:
+            self._fusion_future.cancel()
+        self._fusion_future = None
+        self._pending_fusion = None
+        self._fusion_executor.shutdown(wait=False)
 
 
 def main(args=None) -> None:
@@ -1294,6 +1414,7 @@ def main(args=None) -> None:
     try:
         rclpy.spin(node)
     finally:
+        node.close_fusion_worker()
         node.destroy_node()
         rclpy.shutdown()
 
