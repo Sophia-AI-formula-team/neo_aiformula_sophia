@@ -1,0 +1,41 @@
+{
+  "measured_commit": "25630d0f3bbb9b7f4c191efb36e7a250ec85397a",
+  "command": "ros2 run concept live",
+  "camera_hz": 15,
+  "target_mps": 1.0,
+  "frames": 1079,
+  "candidates": 80925,
+  "actually_simulated": 56780,
+  "runs": {
+    "inner": {
+      "sent": 900,
+      "perceptions": 900,
+      "commands": 804,
+      "commands_in_60s": 802,
+      "hz": 13.37,
+      "min_in_one_s": 10,
+      "max_gap_ms": 141.7,
+      "capture_to_cmd_p50_p95_max_ms": [
+        132.6,
+        181.6,
+        235.3
+      ],
+      "no_command_for_source": 96
+    },
+    "outer": {
+      "sent": 900,
+      "perceptions": 900,
+      "commands": 655,
+      "commands_in_60s": 653,
+      "hz": 10.88,
+      "min_in_one_s": 8,
+      "max_gap_ms": 146.2,
+      "capture_to_cmd_p50_p95_max_ms": [
+        158.3,
+        200.7,
+        234.3
+      ],
+      "no_command_for_source": 245
+    }
+  }
+}
