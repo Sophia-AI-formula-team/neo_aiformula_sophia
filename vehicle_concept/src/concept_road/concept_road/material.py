@@ -6,6 +6,32 @@ import numpy as np
 
 from concept_road.vision import FOCAL, CX, CY, HEIGHT
 
+try:
+    from ._markings import material_sections as native_sections
+except ImportError:
+    native_sections = None
+
+
+def road_sections(road, depths):
+    if native_sections is not None:
+        return native_sections(road.view(np.uint8), depths, CX, CY, HEIGHT*FOCAL, FOCAL)
+    sections = []; pixels = []; edges = []
+    for z in depths:
+        v = round(CY+HEIGHT*FOCAL/z)
+        if not 2 <= v < road.shape[0]-2: continue
+        active = np.flatnonzero(road[v-2:v+3].mean(axis=0) >= .6)
+        groups = [g for g in np.split(active, np.flatnonzero(np.diff(active)>1)+1) if len(g)>8]
+        if not groups: continue
+        g = min(groups, key=lambda g: max(g[0]-CX, CX-g[-1], 0))
+        left, right = (g[[0,-1]].astype(float)-CX)*z/FOCAL
+        if right-left < .3: continue
+        sections.append([z,left,right,.045+.004*z])
+        pixels.append([int(g[0]),int(g[-1]),v])
+        if g[0] > 3: edges.append([z,left,-1.,0.])
+        if g[-1] < road.shape[1]-4: edges.append([z,right,1.,0.])
+    return sections, pixels, edges
+
+
 def local_edge_error(points, coef, at, depth_step, fallback):
     """Weighted local residual; require distinct depth bins and current evidence."""
     local=points[np.abs(points[:,0]-at)<=5.*depth_step]
@@ -71,20 +97,7 @@ class MaterialRoad:
         counts = np.bincount(seeds.ravel(), minlength=n); counts[0] = 0
         road = (labels == int(np.argmax(counts))) if counts.max() else np.zeros_like(road, bool)
         depths = np.linspace(.95, 12., 45)
-        sections = []; pixels = []; edges = []
-        for z in depths:
-            v = round(CY+HEIGHT*FOCAL/z)
-            if not 2 <= v < image.shape[0]-2: continue
-            active = np.flatnonzero(road[v-2:v+3].mean(axis=0) >= .6)
-            groups = [g for g in np.split(active, np.flatnonzero(np.diff(active)>1)+1) if len(g)>8]
-            if not groups: continue
-            g = min(groups, key=lambda g: max(g[0]-CX, CX-g[-1], 0))
-            left, right = (g[[0,-1]].astype(float)-CX)*z/FOCAL
-            if right-left < .3: continue
-            sections.append([z,left,right,.045+.004*z])
-            pixels.append([int(g[0]),int(g[-1]),v])
-            if g[0] > 3: edges.append([z,left,-1.,0.])
-            if g[-1] < image.shape[1]-4: edges.append([z,right,1.,0.])
+        sections, pixels, edges = road_sections(road, depths)
         old=[]
         if self.temporal and 0 < dt <= .5:
             angle=yaw*dt;c,s=np.cos(angle),np.sin(angle)
@@ -106,8 +119,10 @@ class MaterialRoad:
             z,x,age=points[:,0],points[:,1],points[:,3]
             weights=np.exp(-age/.3)/(1+.02*z*z)
             coef=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
-            for _ in range(3):
+            for iteration in range(3):
                 residual=x-np.polynomial.polynomial.polyval(z,coef)
+                if iteration==0 and np.all(abs(residual)<=.12):
+                    break  # Repeating the same weighted fit gives identical coefficients.
                 robust=np.minimum(1.,.12/np.maximum(abs(residual),1e-6))
                 coef=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
             residual=x-np.polynomial.polynomial.polyval(z,coef)

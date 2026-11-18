@@ -21,8 +21,12 @@ def fit(points):
     z,x=p[:,0],p[:,1]
     weights=np.exp(-p[:,2]/.35)/(1+.04*z*z)
     coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
-    for _ in range(5):
+    for iteration in range(5):
         residual=x-np.polynomial.polynomial.polyval(z,coefficient)
+        # The initial least-squares solution is already a fixed point when
+        # every sample receives exactly unit robust weight.
+        if iteration==0 and np.all(abs(residual)<=.10):
+            break
         robust=np.minimum(1.,.10/np.maximum(abs(residual),1e-6))
         coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
     residual=abs(x-np.polynomial.polynomial.polyval(z,coefficient))
@@ -34,7 +38,9 @@ def fit(points):
                 zmax=float(z[accepted].max()),points=p[accepted].tolist(),
                 age=float(np.average(p[accepted,2],weights=weights[accepted])))
 
-def val(curve,z):return np.polynomial.polynomial.polyval(z,curve['coef'])
+def val(curve,z):
+    intercept, slope, quadratic = curve['coef']
+    return intercept + z * (slope + z * quadratic)
 
 def tangent(curve,z):return np.arctan(curve['coef'][1]+2*curve['coef'][2]*z)
 
