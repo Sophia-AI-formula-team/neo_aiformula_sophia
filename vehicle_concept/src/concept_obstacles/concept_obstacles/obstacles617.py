@@ -30,14 +30,7 @@ def instances(prediction, shape=(360, 640), image=None):
     if image is not None:
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         colored = (((hsv[:, :, 0] < 18) | (hsv[:, :, 0] > 170)) &
-                   (hsv[:, :, 1] > 90) & (hsv[:, :, 2] > 45))
-    def support(box):
-        if colored is None:
-            return None
-        x0, y0, x1, y1 = np.rint(box).astype(int)
-        result = np.zeros_like(colored)
-        result[max(0, y0):min(height, y1+1), max(0, x0):min(width, x1+1)] = colored[max(0, y0):min(height, y1+1), max(0, x0):min(width, x1+1)]
-        return result
+                   (hsv[:, :, 1] > 90) & (hsv[:, :, 2] > 45)).astype(np.uint8)
     proposals = []
     for box, score, label in zip(prediction['boxes'], prediction['scores'], prediction['labels']):
         box = np.asarray(box, float)
@@ -45,7 +38,7 @@ def instances(prediction, shape=(360, 640), image=None):
             foot_height = HEIGHT
             foot_source = 'detector_box'
             if colored is not None:
-                completed = complete_box(box, colored.astype(np.uint8), image)
+                completed = complete_box(box, colored, image)
                 if completed is None:
                     continue
                 box, shape_evidence = completed
@@ -54,21 +47,27 @@ def instances(prediction, shape=(360, 640), image=None):
                 # Pavement is at -.049m, but these cone bases are placed at y=0.
                 # Do NOT change the road projector's .655m height.
                 foot_height = .605 if foot_source == 'observed_black_base' else .605-(.06-.05*.675)
-            observed = support(box)
             # In these cone experiments, stand legs repeatedly scored as cones.
             # Requiring visible cone colour applies only to NEW measurements;
             # it never deletes an existing blind occupancy track.
-            if observed is not None and observed.sum() < 3:
-                continue
-            if observed is not None:
-                bottom = np.nonzero(observed)[0].max()
+            support = None
+            if colored is not None:
+                x0, y0, x1, y1 = np.rint(box).astype(int)
+                xa, ya = max(0, x0), max(0, y0)
+                xb, yb = min(width, x1 + 1), min(height, y1 + 1)
+                observed = colored[ya:yb, xa:xb]
+                count = np.count_nonzero(observed)
+                if count < 3:
+                    continue
+                bottom = ya + np.flatnonzero(observed.any(axis=1))[-1]
+                support = (xa, ya, xb, yb, count)
                 # A high-scoring tiny cone inside a large background proposal
                 # cannot lend that proposal an unsupported, much nearer foot.
                 if box[3]-bottom > max(3., .15*(box[3]-box[1])):
                     continue
-            proposals.append((box, float(score), foot_height, foot_source))
+            proposals.append((box, float(score), foot_height, foot_source, support))
     groups = []
-    for box, score, foot_height, foot_source in sorted(proposals, key=lambda b: -np.prod(b[0][2:]-b[0][:2])):
+    for box, score, foot_height, foot_source, support in sorted(proposals, key=lambda b: -np.prod(b[0][2:]-b[0][:2])):
         match = None
         for group in groups:
             outer = group['box']
@@ -77,13 +76,18 @@ def instances(prediction, shape=(360, 640), image=None):
             ioa, iou = overlap(outer, box)
             aligned = axis <= .25*(outer[2]-outer[0])
             vertical = abs((box[1]+box[3]-outer[1]-outer[3])*.5) <= .30*(outer[3]-outer[1])
-            a, b = support(outer), support(box)
-            same_pixels = a is not None and (a & b).sum()/max(1, min(a.sum(), b.sum())) >= .75
+            same_pixels = False
+            if support is not None:
+                ax, ay, bx, by, count = group['support']
+                sx, sy, ex, ey, size = support
+                overlap_pixels = np.count_nonzero(colored[max(ay,sy):min(by,ey), max(ax,sx):min(bx,ex)])
+                same_pixels = overlap_pixels / min(size, count) >= .75
             if same_pixels or (aligned and (ioa >= .85 or (iou >= .4 and vertical))):
                 match = group
                 break
         if match is None:
-            groups.append(dict(box=box, score=score, members=1, foot_height=foot_height, foot_source=foot_source))
+            groups.append(dict(box=box, score=score, members=1, foot_height=foot_height,
+                               foot_source=foot_source, support=support))
         else:
             match['score'] = max(score, match['score'])
             match['members'] += 1
