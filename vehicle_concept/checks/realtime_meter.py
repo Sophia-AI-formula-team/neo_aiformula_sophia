@@ -104,6 +104,7 @@ def summary(args, sent, started, out, record_dir=None):
         on_slot_deadline=deadline_count,late_slots=len(earliest)-deadline_count,
         within_200ms_capture=within200,missing_slots=expected-len(earliest),
         latency_ms=pct(latency),output_interval_ms=pct([x/1e6 for x in spacings]),
+        consecutive_intervals_over_200ms=sum(x>200_000_000 for x in spacings),
         longest_gap_including_run_edges_ms=round(max(stop_gaps)/1e6,3),
         pauses_over_200ms=int(sum(stop_gaps>200_000_000)),status_reason=dict(Counter(
             str(r['status'])+' / '+str(r['reason']) for r in diagnostics)),
