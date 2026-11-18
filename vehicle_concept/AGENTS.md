@@ -1,4 +1,4 @@
-# V6.26 驾驶策略与 V6.27.1 实时实现的部署手册
+# V6.26 驾驶策略与 V6.27.2 实时实现的部署手册
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
@@ -11,7 +11,9 @@
 | V6.26 初版从相机到车身图的接线验证 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
 | 下一位 agent 的第一项实车工作 | 查实际设备和旧启动命令，核对当前 ZED 安装与投影。确认输入、左右方向、静止轮速和驱动器断 CAN 后的表现，才进入低速自动。车载 Jetson 的推理耗时、实车制动距离、行驶方向与圈速均待测。 |
 
-**实时性能。** V6.27.1 默认相机 15 Hz，来新图时最高请求 15 Hz 规划，验收下限为每秒 5 条新指令。工作站回放内外圈各两次，另开 Qt 面板和 RViz 重跑一次外圈，每场 60 秒。实际平均 10.08–12.67 Hz，任意连续一秒最少 7 条，最长指令间隔 188 ms。部分图像采集到指令仍超过 200 ms。Jetson 要按第 4 节用车上时钟复测。[新版逐轮报告](checks/timing/v6.27.1/README.md) · [原对照版本](checks/timing/v6.27/README.md)
+V6.27.2 按横向目标和速度指令的 float64 位模式精确分组，再计算代表候选。任一项存在差异就分别计算。路界模块使用原生道路截面扫描。默认相机 15 Hz，规划最高请求 15 Hz。Jetson 需按第 4 节用车上时钟复测。[V6.27.2 工作站验收](checks/timing/v6.27.2/README.md)
+
+V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连续一秒最少 7 条新指令，最长间隔 188 ms。部分图像采集到指令超过 200 ms。[V6.27.1 历史报告](checks/timing/v6.27.1/README.md) · [V6.27 对照](checks/timing/v6.27/README.md)
 
 ## 1. 车上的接线与节点
 
@@ -31,13 +33,13 @@
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
-本次验收的运行代码基线是 `d0fd23f8b806897a2ed2b5cae3ca1423cf463cb1`。部署时取该团队分支的最新提交，记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.1**，各功能包保留各自版本。下列命令同时适用于首次克隆和更新已有的同分支检出。为 V6.27.1 单独使用一个构建目录。
+部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.2**，各功能包保留各自版本。首次安装和从 V6.27.1 升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
 
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6271"
-export WS="$HOME/concept_v6271_ws"
+export REPO="$HOME/src/neo-concept-v6272"
+export WS="$HOME/concept_v6272_ws"
 (
   set -e
   branch=feat/concept-v626-live
@@ -92,7 +94,7 @@ python3 -c 'from concept_road import _markings, _memory; from concept_candidates
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
-[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.1`，退出码为 0。它同时检查本次安装的启动文件和实际加载的六个编译模块。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
+[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.2`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
 
 B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
@@ -123,8 +125,8 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6271"
-export WS="$HOME/concept_v6271_ws"
+export REPO="$HOME/src/neo-concept-v6272"
+export WS="$HOME/concept_v6272_ws"
 source "$WS/install/local_setup.bash" &&
   python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
   ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
@@ -160,7 +162,7 @@ python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 60 --planning
 
 默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
 
-V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[最新冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [最新工作站时钟回放](checks/timing/v6.27.1/README.md)
+V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[V6.27.1 冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [V6.27.1 工作站时钟回放](checks/timing/v6.27.1/README.md)
 
 在现场负责人安排下，架空车轮确认零输出、左右转向、手柄松开保持和硬件急停；按原接线核对实际车轮方向。随后可直接进行短距离低速自动测试，记录距离、用时、最低帧率、拍摄到控制的延迟和停车距离。无需先跑一圈手操。5 m/s 属于仿真压力测试条件；目前已解码的轮速只有 0–255 rpm，轮径 0.254 m 时约到 3.39 m/s。验证方向位和高位之前，不用这路反馈做更高速度或自主倒车的实车验收。
 

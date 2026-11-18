@@ -2,6 +2,7 @@
 """Verify the active ROS and Python installation before starting any nodes."""
 import argparse
 from importlib import import_module
+from importlib.machinery import EXTENSION_SUFFIXES
 from importlib.util import find_spec
 from pathlib import Path
 import sys
@@ -39,9 +40,12 @@ def verify(workspace):
             raise ValueError(f"Python resolves {package} to {py_dir}")
         for module in NATIVE.get(package, ()):
             path = Path(import_module(f"{package}.{module}").__file__).resolve()
-            if not any(root in path.parents for root in roots):
+            if not any(root in path.parents for root in roots) or not any(
+                    path.name.endswith(suffix) for suffix in EXTENSION_SUFFIXES):
                 raise ValueError(f"{package}.{module} resolves to {path}")
-        version = ElementTree.parse(manifest).getroot().findtext("version")
+        version = ElementTree.parse(installed_manifest).getroot().findtext("version")
+        if package == "concept" and version != "6.27.2":
+            raise ValueError(f"Expected concept 6.27.2, installed manifest reports {version}")
         print(f"{package} {version}  ROS={prefix}  Python={py_dir}")
 
     prefix = Path(get_package_prefix("concept"))
@@ -49,6 +53,23 @@ def verify(workspace):
     if (prefix / "share/concept" / launch).read_text(encoding="utf8") != (
             SOURCE / "concept" / launch).read_text(encoding="utf8"):
         raise ValueError("Installed concept.launch.py differs from the checkout; rebuild concept")
+
+    from concept_candidates import curve_road617
+    from concept_candidates.candidate_merge import distinct_requests
+    from concept_road import _markings, material
+
+    if not callable(getattr(_markings, "material_sections", None)) or (
+            getattr(material, "native_sections", None) is not _markings.material_sections):
+        raise ValueError("Installed concept_road lacks the active V6.27.2 native material scanner")
+    # Test both axes independently, including a one-ULP lateral difference.
+    if getattr(curve_road617, "distinct_requests", None) is not distinct_requests:
+        raise ValueError("Installed forward planner does not use the V6.27.2 exact request grouping")
+    representatives, inverse = distinct_requests(
+        [1.0, 1.0, float.fromhex("0x1.0000000000001p+0"), 1.0],
+        [0.5, 0.5, 0.5, float.fromhex("0x1.0000000000001p-1")])
+    if list(representatives) != [0, 2, 3] or list(inverse) != [0, 0, 1, 2]:
+        raise ValueError("Installed candidate merge did not preserve distinct float64 requests")
+    print("material_sections=native candidate_merge=exact")
 
 
 if __name__ == "__main__":

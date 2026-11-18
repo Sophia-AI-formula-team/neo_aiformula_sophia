@@ -1,8 +1,8 @@
 # Sophia AI Formula ROS 2 Snapshot
 
-## Concept V6.27.1 vehicle deployment
+## Concept V6.27.2 vehicle deployment
 
-This branch, `feat/concept-v626-live`, carries the V6.27.1 runtime for the frozen V6.26 driving policy. Start with the [vehicle deployment handoff](vehicle_concept/AGENTS.md) for the checkout, build, overlay checks, B1.4 weights, startup and rollback. The [timing report](vehicle_concept/checks/timing/v6.27.1/README.md) records the workstation tests.
+This branch, `feat/concept-v626-live`, carries the V6.27.2 runtime for the frozen V6.26 driving policy. Start with the [vehicle deployment handoff](vehicle_concept/AGENTS.md) for the checkout, build, overlay checks, B1.4 weights, startup and rollback. The [timing report](vehicle_concept/checks/timing/v6.27.2/README.md) records the workstation tests.
 
 ## Selected experiment source (2026-11-04)
 
