@@ -9,7 +9,7 @@ from .qt import QtCore, QtGui, QtWidgets
 from .window import MODE, STATUS, Window, reason
 
 LABELS={'enable':'启用电机输出','disable':'禁用电机输出','pause':'暂停自动驾驶',
-        'resume':'继续自动驾驶','restart':'重启驾驶节点','target':'规划目标','limit':'自动上限'}
+        'resume':'继续自动驾驶','restart':'重启驾驶节点','target':'目标速度','limit':'自动驾驶限速'}
 
 BAG_STATES = {
     'idle': ('未录制', '开始录包', True, '#52685e'),

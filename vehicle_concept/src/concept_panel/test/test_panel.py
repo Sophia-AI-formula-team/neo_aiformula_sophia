@@ -66,6 +66,36 @@ def test_controller_restarts_only_after_successful_pause():
         assert sent==(['restart'] if outcome else [])
 
 
+def test_primary_panel_shows_plan_separately_from_motor_permission(monkeypatch):
+    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
+    from concept_panel.qt import QtWidgets
+    from concept_panel.window import Window
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    w = Window()
+    w.gate.put(dict(mode='disabled', output_enabled=False, linear_mps=0., max_auto_speed_mps=1.), 10., 20.)
+    decision = dict(status='ok', reason='feasible', selected_index=0, target_speed_mps=3.4,
+                    effective_speed_mps=1., command=dict(linear_x_mps=.8, angular_z_radps=.2))
+    w.decision.put(decision, 10., 20.)
+    w.refresh(10., 20.)
+    assert w.action.text() == '前进' and w.decision_color == 'forward'
+    assert w.mode.text() == '输出禁用' and w.metrics['cmd'].text() == '0.00'
+    assert '左转' in w.command.text() and '#0' in w.command.text()
+    assert '1.00 m/s' in w.pace.text()
+
+    w.decision.put(dict(decision, status='shadow', command=dict(linear_x_mps=-.2, angular_z_radps=0.)),
+                   10., 20.)
+    w.refresh(10., 20.)
+    assert w.action.text() == '试算：慢速倒车' and w.decision_color == 'hold'
+    w.refresh(11.1, 21.1)
+    assert w.action.text() == '决策已过期' and not w.command.text()
+    w.decision.put(dict(status='invalid', reason='missing frame stamp'), None, 21.1)
+    w.refresh(11.1, 21.1)
+    assert w.action.text() == '决策无效' and 'missing frame stamp' in w.detail.text()
+    w.close()
+    assert app is not None
+
+
 def test_controller_pause_timeout_never_restarts():
     from concept_panel.main import Controller
     controller=Controller.__new__(Controller)

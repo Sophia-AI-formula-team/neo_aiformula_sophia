@@ -22,7 +22,8 @@ bag = Path(sys.argv[sys.argv.index('-o')+1])
 bag.mkdir(parents=True)
 requested = []
 signal.signal(signal.SIGINT, lambda *_: requested.append(True))
-(bag/'starting').write_text(str(os.getpid()))
+(bag/'pending-pid').write_text(str(os.getpid()))
+(bag/'pending-pid').rename(bag/'starting')
 while not (bag/'open').exists(): time.sleep(.03)
 db = sqlite3.connect(str(bag/'bag.db3'))
 db.executescript("CREATE TABLE topics(id INTEGER, name TEXT);"
