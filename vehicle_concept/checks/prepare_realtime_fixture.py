@@ -11,8 +11,11 @@ def main():
     p.add_argument('run',type=Path,help='Private Unity run with runs/ID.json and ID/decisions.jsonl')
     p.add_argument('output',type=Path)
     p.add_argument('--frames',type=int,default=300)
+    p.add_argument('--start-frame',type=int,default=0,help='First original source frame')
+    p.add_argument('--run-id',help='Archive subdirectory name when different from the run root')
     a=p.parse_args()
-    name=a.run.name
+    if a.start_frame<0 or a.frames<1:p.error('Need a nonnegative start and positive frame count')
+    name=a.run_id or a.run.name
     raw=json.loads((a.run/'runs'/(name+'.json')).read_bytes())
     measured=raw['cameraMountCalibrationStart'][2]
     if abs(measured-.655)>.001 or abs(raw['cameraMountCalibrationEnd'][2]-measured)>.001:
@@ -24,8 +27,9 @@ def main():
         for line in f:
             rec=json.loads(line)
             i=rec['frame']
+            if i<a.start_frame:continue
             sensor=rec['decision']['sensor']
-            if i!=len(rows) or abs(sensor['t']-i*.2)>.005:
+            if i!=a.start_frame+len(rows) or abs(sensor['t']-i*.2)>.005:
                 raise ValueError('Non-contiguous 5 Hz recording')
             source=a.run/name/'frames'/f'{i:05d}_rgb.png'
             shutil.copyfile(source,dst/source.name)
