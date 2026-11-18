@@ -1,0 +1,165 @@
+{
+  "source_version": "0.4.5",
+  "source_commit": "1f099e2ddaf18ebde1cdfcac80f7d6f948719338",
+  "scenario": "warm start with accepted inner-lane map from recorded first lap",
+  "match_rmse_m": 0.212456,
+  "saturation_evidence": {
+    "case": "detour_03",
+    "raw_log": "runs/detour_03/motion.jsonl",
+    "t": 25.4055840428191,
+    "x": 42.7772,
+    "z": 10.8448935,
+    "actual_v": 1.45069361,
+    "actual_w": -0.09761231,
+    "applied_v": 1.2237637,
+    "applied_w": -2.0,
+    "stage": "detour_tracking",
+    "controller_w": -2.0
+  },
+  "runs": [
+    {
+      "case": "detour_01",
+      "settings": {
+        "detour_lookahead_m": 2.5,
+        "detour_min_turn_radius_m": 4.0,
+        "detour_trigger_margin_m": 0.85,
+        "detour_trigger_preview_m": 1.5,
+        "detour_max_trim_m": 12.0,
+        "detour_lya_v_t": 2.0
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 53.62328,
+      "detour_reference_progress_m": 35.37757631496488,
+      "terminal_unity_x_m": 45.13324,
+      "terminal_unity_z_m": 9.431869,
+      "reason": "No physical progress for 10 s: detour_target_angle_exceeded"
+    },
+    {
+      "case": "detour_02",
+      "settings": {
+        "detour_min_turn_radius_m": 4.0,
+        "detour_trigger_margin_m": 0.85,
+        "detour_max_trim_m": 12.0,
+        "detour_trigger_preview_m": 1.5,
+        "detour_lookahead_m": 1.5,
+        "detour_lya_v_t": 2.0
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 52.1288452,
+      "detour_reference_progress_m": 32.8146696099793,
+      "terminal_unity_x_m": 46.92849,
+      "terminal_unity_z_m": 9.023309,
+      "reason": "No physical progress for 10 s: detour_target_angle_exceeded"
+    },
+    {
+      "case": "detour_03",
+      "settings": {
+        "detour_lookahead_m": 4.0,
+        "detour_trigger_margin_m": 0.85,
+        "detour_trigger_preview_m": 1.5,
+        "detour_min_turn_radius_m": 4.0,
+        "detour_max_trim_m": 12.0,
+        "detour_lya_v_t": 2.0
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 56.0309029,
+      "detour_reference_progress_m": 37.01837654402951,
+      "terminal_unity_x_m": 42.2791748,
+      "terminal_unity_z_m": 10.9749451,
+      "reason": "No physical progress for 10 s: detour_cross_track_or_heading_exceeded"
+    },
+    {
+      "case": "detour_04",
+      "settings": {
+        "detour_lookahead_m": 2.5,
+        "detour_min_turn_radius_m": 4.0,
+        "detour_trigger_margin_m": 0.85,
+        "detour_lya_v_t": 1.0,
+        "detour_max_trim_m": 12.0,
+        "detour_trigger_preview_m": 1.5
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 55.7308044,
+      "detour_reference_progress_m": 37.706347986024056,
+      "terminal_unity_x_m": 42.73171,
+      "terminal_unity_z_m": 10.9034929,
+      "reason": "No physical progress for 10 s: detour_cross_track_or_heading_exceeded"
+    },
+    {
+      "case": "detour_05",
+      "settings": {
+        "detour_trigger_preview_m": 1.0,
+        "detour_min_turn_radius_m": 5.5,
+        "detour_max_trim_m": 12.0,
+        "detour_lookahead_m": 2.5,
+        "detour_lya_v_t": 0.8,
+        "detour_trigger_margin_m": 0.7
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 60.12554,
+      "detour_reference_progress_m": 39.07253790859353,
+      "terminal_unity_x_m": 39.5556641,
+      "terminal_unity_z_m": 15.3728514,
+      "reason": "No physical progress for 10 s: detour_cross_track_or_heading_exceeded"
+    },
+    {
+      "case": "detour_06",
+      "settings": {
+        "detour_trigger_preview_m": 1.0,
+        "detour_lya_v_t": 0.55,
+        "detour_min_turn_radius_m": 5.5,
+        "detour_max_trim_m": 12.0,
+        "detour_lookahead_m": 3.2,
+        "detour_trigger_margin_m": 0.7
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 61.32566,
+      "detour_reference_progress_m": 40.0454369507491,
+      "terminal_unity_x_m": 39.0698242,
+      "terminal_unity_z_m": 17.213192,
+      "reason": "No physical progress for 10 s: detour_cross_track_or_heading_exceeded"
+    },
+    {
+      "case": "detour_07",
+      "settings": {
+        "detour_max_trim_m": 12.0,
+        "detour_min_turn_radius_m": 6.0,
+        "detour_lya_v_t": 0.55,
+        "detour_trigger_margin_m": 0.7,
+        "detour_trigger_preview_m": 1.0,
+        "detour_lookahead_m": 4.0
+      },
+      "red_observed": true,
+      "detour_entered": true,
+      "physical_left_observed": true,
+      "detour_completed": false,
+      "unity_travelled_m": 62.1420975,
+      "detour_reference_progress_m": 41.05502903482671,
+      "terminal_unity_x_m": 38.9367027,
+      "terminal_unity_z_m": 18.44732,
+      "reason": "No physical progress for 10 s: detour_cross_track_or_heading_exceeded"
+    }
+  ],
+  "successful_rejoins": 0,
+  "simulator_restored": true,
+  "lossless_log_archive": "raw_records.tar.zst",
+  "no_ros_bag_recorded": true
+}
