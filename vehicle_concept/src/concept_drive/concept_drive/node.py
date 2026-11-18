@@ -19,7 +19,6 @@ from concept_yolop.frame_codec import decode_frame
 from .core import Drive
 from .transport import Feedback, native_sensor, ros_command, stamp
 
-PERIOD_NS = 200_000_000
 CAPTURE_JITTER_NS = 10_000_000
 MAX_CAPTURE_AGE = .5
 MAX_STATE_AGE = .15
@@ -30,6 +29,10 @@ class DriverNode(Node):
         super().__init__('drive', namespace='/concept')
         cv2.setNumThreads(1)
         self.target = float(self.declare_parameter('target_speed_mps', 3.4).value)
+        hz = self.declare_parameter('planning_hz', 5.0).value
+        if not math.isfinite(hz) or not 5. <= hz <= 15.:
+            raise ValueError('planning_hz must be in [5, 15]')
+        self.period_ns = round(1e9 / hz)
         self.limit = None
         self.gate_driving = False
         self.feedback = Feedback()
@@ -66,6 +69,8 @@ class DriverNode(Node):
 
     def update_parameters(self, parameters):
         for p in parameters:
+            if p.name == 'planning_hz':
+                return SetParametersResult(successful=False, reason='Set planning_hz when launching the driver')
             if p.name == 'target_speed_mps':
                 if p.type_ != p.Type.DOUBLE or not math.isfinite(p.value) or not 0. < p.value <= 6.:
                     return SetParametersResult(successful=False, reason='target_speed_mps must be a double in (0,6]')
@@ -140,8 +145,8 @@ class DriverNode(Node):
                 raise
             self.camera_key = camera_key
             self.last_ns = ns
-            periods = max(1, (ns - self.first_ns + CAPTURE_JITTER_NS)//PERIOD_NS + 1)
-            self.next_ns = self.first_ns + periods * PERIOD_NS
+            periods = (ns - self.first_ns + CAPTURE_JITTER_NS) // self.period_ns + 1
+            self.next_ns = self.first_ns + periods * self.period_ns
             cmd = ros_command(result.pop('command_native'))
             decision.update(result, command=cmd, status='ok')
             profile = f['geometry_profile']
