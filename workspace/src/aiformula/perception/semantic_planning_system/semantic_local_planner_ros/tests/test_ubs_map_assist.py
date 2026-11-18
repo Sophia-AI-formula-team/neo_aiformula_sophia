@@ -54,8 +54,9 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.red_far()
         self.assertEqual(self.node.traffic_mode, 'prepare')
         self.assertTrue(self.node.smooth_path, self.node.smooth_plan_reason)
-        self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
-        self.assertEqual(self.node.traffic_mode, 'wait')
+        # Force the trigger margin, not the distance flag, for tests which
+        # exercise an already committed detour rather than trigger timing.
+        self.node.p['detour_trigger_margin_m'] = 100.0
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
 
@@ -125,6 +126,10 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.h.assert_last_points_equal(visual)
         self.assertTrue(self.node.detour_path_pub.messages[-1].poses)
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_stop_point_before_turn')
+        self.node.p['detour_trigger_margin_m'] = 100.0
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
         self.assertTrue(self.node.detour_motion_ready)
@@ -197,6 +202,7 @@ class StopFlagAndUbsTests(unittest.TestCase):
 
     def test_same_uncleared_red_event_does_not_restart_at_exit(self):
         self.start_detour()
+        self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
         self.h.confirm_light('red', stop_flag=True)
         self.assertFalse(self.node.detour_next_red_pending)
         self.h.emit_detour_completion()
@@ -207,19 +213,18 @@ class StopFlagAndUbsTests(unittest.TestCase):
 
     def test_new_red_event_during_detour_is_not_lost(self):
         self.start_detour()
-        self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
-        self.h.confirm_light('red', stop_flag=True)
+        self.h.confirm_light('green')
+        self.h.confirm_light('red')
         self.assertTrue(self.node.detour_next_red_pending)
         self.h.emit_detour_completion()
-        self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertEqual(self.node.traffic_reason, 'red_wait_next_event')
-        self.assertTrue(self.node.stop_committed)
-        self.h.assert_stopped()
+        self.assertEqual(self.node.traffic_mode, 'prepare')
+        self.assertEqual(self.node.traffic_reason, 'red_prepare_next_event')
+        self.assertFalse(self.node.traffic_event_consumed)
 
     def test_green_clears_a_new_red_event_during_detour(self):
         self.start_detour()
-        self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
-        self.h.confirm_light('red', stop_flag=True)
+        self.h.confirm_light('green')
+        self.h.confirm_light('red')
         self.assertTrue(self.node.detour_next_red_pending)
         self.h.confirm_light('green')
         self.assertFalse(self.node.detour_next_red_pending)
@@ -230,6 +235,7 @@ class StopFlagAndUbsTests(unittest.TestCase):
     def test_distance_event_during_oa_is_deferred_until_oa_releases(self):
         self.set_fused_map()
         self.red_far()
+        self.node.p['detour_trigger_margin_m'] = 100.0
         self.node._on_avoidance(fixtures.DataMessage(True))
         points = self.h.output_count()
         commands = len(self.node.cmd_pub.messages)

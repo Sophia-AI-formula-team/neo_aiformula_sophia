@@ -1291,7 +1291,9 @@ class MapAssistTests(unittest.TestCase):
         self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
         self.node._on_traffic_stop_flag(DataMessage(False))
         self.confirm_light("red", stop_flag=True)
-        self.assertEqual(self.node.traffic_mode, "wait", "A later confirmed red must revoke motion without a green event")
+        self.assertEqual(self.node.traffic_mode, "prepare", "A red after a long gap must be recognized again")
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait", "At the fallback stop, an infeasible new turn must hold")
         self.assert_stopped()
 
     def test_expired_red_during_detour_does_not_start_another_detour_at_exit(self):
@@ -1314,16 +1316,25 @@ class MapAssistTests(unittest.TestCase):
         self.learned_official_loop()
         self.confirm_light("red", stop_flag=True)
         self.node._tick()
-        # The earlier distance event must clear before a later rising event
-        # can be distinguished without relying on lamp IDs or an old map.
-        self.node._on_traffic_stop_flag(DataMessage(False))
+        # No light ID exists. A sustained absence of red re-arms the event,
+        # while stop_flag changes alone are reserved for the fallback stop.
+        for _ in range(6):
+            self.advance(0.4)
+            self.odom(*self.node.odom)
+            self.triplet()
+            self.node._tick()
         self.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "detour", "Light changes cannot abandon a committed route")
         self.assertTrue(self.node.detour_next_red_pending)
         self.emit_detour_completion()
-        self.assertEqual(self.node.traffic_mode, "wait", "Fresh confirmed red remains effective at the exit")
-        self.assertEqual(self.node.traffic_reason, "red_wait_next_event")
+        self.assertEqual(self.node.traffic_mode, "prepare", "Fresh confirmed red remains effective at the exit")
+        self.assertEqual(self.node.traffic_reason, "red_prepare_next_event")
         self.assertIsNone(self.node.detour_tracker)
+        self.advance(0.25)
+        self.odom(*self.node.odom)
+        self.triplet()
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait")
         self.node._on_controller_cmd(self.command())
         self.assert_stopped()
 

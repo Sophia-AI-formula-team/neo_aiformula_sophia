@@ -59,6 +59,8 @@ map_assist:
     # Both red and green require a strict majority of real detector frames.
     traffic_vote_window_sec: 0.5
     traffic_vote_min_samples: 3
+    # Without signal IDs, re-arm after this long without a red observation.
+    traffic_red_rearm_sec: 2.0
     enable_velocity_gate: true
     input_cmd_vel_topic: /map_assist/controller_cmd_vel
     output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel
@@ -80,7 +82,7 @@ map_assist:
     branch_angle_min_deg: 80.0
     branch_angle_max_deg: 95.0
 
-    # Only enter a graph alternative near its junction; never connect across open ground.
+    # Preview and execute a curved alternative when the radius nears its limit.
     detour_entry_radius_m: 3.0
     detour_waypoint_radius_m: 0.8
     detour_max_cross_track_m: 2.0
@@ -88,6 +90,10 @@ map_assist:
     detour_point_spacing_m: 0.5
     # Placeholder for simulation; replace with the vehicle's measured limit.
     detour_min_turn_radius_m: 4.0
+    # Begin while the selected curve still has this radius margin; metres.
+    detour_trigger_margin_m: 0.5
+    # Predict this far straight ahead; simulation tuning is required.
+    detour_trigger_preview_m: 1.0
     detour_max_trim_m: 12.0
     detour_curve_spacing_m: 0.15
     detour_target_angle_deg: 65.0

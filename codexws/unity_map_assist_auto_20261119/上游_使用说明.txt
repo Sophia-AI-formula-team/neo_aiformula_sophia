@@ -1,0 +1,56 @@
+map_assist 自动绕行版使用说明（Python 3.8）
+
+一、复制和启动
+将 ros2_packages 里的 semantic_planner_core 和 semantic_local_planner_ros 放入车上的 ROS2 工作区 src，先备份旧的同名包，不要保留两套同名包。官方拓扑图已经包含在包内。
+
+colcon build --symlink-install --packages-select semantic_planner_core semantic_local_planner_ros
+source install/setup.bash
+ros2 run semantic_local_planner_ros map_assist
+
+本版裸命令自动加载安装后的 config/map_assist.yaml。修改参数后需要重新构建或确保安装文件同步。
+
+二、消息接线
+红绿灯检测 -> map：/map_assist/traffic_light_input，std_msgs/msg/String，data 为 red、green 或 unknown。按实际话题修改 traffic_light_topic。
+距离标志 -> map：/flag_stop，std_msgs/msg/Bool，持续发布 True/False。首圈红灯停车使用；第二圈起作为无法绕行时的停车条件。按实际话题修改 traffic_stop_flag_topic。
+OA -> map：/lane_stop_flag，Bool；True 表示 OA 接管，False 表示释放。默认等待 OA 第一条状态消息。
+lane_0927oa -> map：/original_processed_point_a、/original_processed_point_b、/original_processed_point_c。
+map 或 OA -> withoutkalman_0312：/processed_point_a、/processed_point_b、/processed_point_c。
+withoutkalman_0312 -> LYA：/filtered_lane_pose 和 /filtered_omega_t。
+LYA -> map：/map_assist/controller_cmd_vel。
+map -> 底盘：/aiformula_control/game_pad/cmd_vel。
+odom -> map：/aiformula_sensing/gyro_odometry_publisher/odom。
+
+若使用 lya_follower_connected_omegat_global，以这行命令替代原来的 LYA 启动命令：
+ros2 run trajectory_follower lya_follower_connected_omegat_global --ros-args -r /aiformula_control/game_pad/cmd_vel:=/map_assist/controller_cmd_vel
+
+三、运行逻辑
+首圈：视觉行驶并记录 odom。红灯按 0.5 秒多数确认，flag_stop=True 后停车；确认绿灯后恢复。OA=True 时避障节点优先，避障路段不作为可信轨迹，已有地图融合和闭环逻辑保留。
+
+第二圈起：第一次收到红灯结果时即开始准备拓扑替代路线和 UBS 平滑预案；只有红灯经过多数确认后才允许实际拐入。程序反复按最新车位计算路线，观察其最小转弯半径，并向当前车头方向预估短距离：当前或预测路线的半径接近设定下限、或预测路线即将不可用时，使用当前位置的合格路线自动开始绕行。
+
+在开始绕行前，确认绿灯就取消预案并恢复视觉；尚未确认绿灯时的单帧 green 也不会触发拐入。为避免检测帧间短暂不足导致反复停车，已经多数确认的红灯可在很短的帧间空隙内沿用，但最新检测必须仍为 red，且最近红灯确认和最新检测都不能超过 0.5 秒。
+
+第二圈起，若路线暂不可用则继续视觉接近并重试；如果到达 flag_stop=True 时仍没有可执行路线，就请求停车并保持，直至绿灯确认或重新具备可执行的绕行条件。若已有预案但尚未达到自动拐入条件，而 flag_stop 已到，也会停车等待，避免继续穿过红灯。若缺少 flag_stop 且此时无法规划或确认灯色，节点会等待，无法保证停在指定距离。
+
+绕行已经开始后沿当前轨迹完成入口、内部及回主线路段，再交回视觉；期间即使灯变绿也不在半路取消已执行的转弯。OA=True 始终优先：map 不发路径点，也不向速度输出注入停车命令；OA 释放后用新车位继续处理。速度门依赖正确接线，OA 或底盘仍须自行处理命令超时。
+
+没有交通灯 ID：一次绕行结束后持续看到同一红灯不会重复绕行；确认绿灯，或连续一段时间没有收到红灯之后再次确认红灯，才会将其识别为后续事件。较长的检测丢失也可能被当成事件间隔。
+
+四、可调参数（config/map_assist.yaml）
+detour_min_turn_radius_m: 4.0  最小转弯半径，单位米；暂定仿真值。
+detour_trigger_margin_m: 0.5  自动拐入的半径余量；当前或预估路线半径接近 4.0 + 0.5 米时可触发。
+detour_trigger_preview_m: 1.0  沿当前车头方向预估的距离，单位米；这只是简单几何预测。
+traffic_red_rearm_sec: 2.0  无红灯观测后可重新识别后续红灯的时长，单位秒。
+
+四米不是实车测得的能力。调小半径或余量会改变触发时机，需在仿真和实际车辆条件下核对。
+
+五、查看状态与地图
+ros2 topic echo /map_assist/status
+rviz2
+
+查看 traffic_mode、traffic_reason、traffic_light、traffic_light_raw、auto_red_signal_valid、traffic_stop_flag、traffic_stop_flag_role、auto_stop_latched、smooth_plan_reason、auto_trigger_reason、auto_current_radius_m、auto_predicted_radius_m、detour_node_ids、velocity_gate_reason。
+prepare 为预先计算，detour 为跟踪绕行，wait 为停车等待。red_wait_spline_* 表示当前位置没有可用曲线；red_wait_flag_unavailable 表示需要停车距离信息但尚未收到；fusion_ambiguity_warning=True 表示存在有竞争力的节点对应方案。
+RViz Fixed Frame 选择实际 odom frame；/map_assist/path 为首圈参考，/map_assist/detour_path 为当前绕行预览或轨迹。路径显示本身不代表真实车辆一定可行。
+
+六、进程内仿真
+simulation/semantic_joint_worker_ubs.py 是配套适配脚本。外层程序需继续提供持续更新的 flag_stop 字段，以及实际红绿灯检测结果；只替换 ROS2 包不会自动修改外层仿真。

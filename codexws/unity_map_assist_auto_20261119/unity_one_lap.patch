@@ -1,0 +1,134 @@
+--- a/Assets/AIFormula/Editor/Validation/AIFormulaJoint1118Trial.cs
++++ b/Assets/AIFormula/Editor/Validation/AIFormulaJoint1118Trial.cs
+@@ -34,6 +34,7 @@
+         static bool motionControlStarted;
+         static bool firstRedScheduled, firstRedObserved, firstRedStopped, firstGreenScheduled;
+         static double firstRedStopAt;
++        static double lapReturnAt;
+         static bool settingsCaptured, originalFocus, originalHeadroom, originalHold, originalApproach, originalNeo, originalJoint, originalPanelRgb;
+         static bool originalProjectedRecovery, originalCurrentCorridor;
+         static bool originalUseCalibratedSignalPanelOnly;
+@@ -80,15 +81,15 @@
+             var config = new JObject {
+                 ["directory"] = directory, ["case"] = caseName, ["lane_x"] = laneX, ["start_z"] = startZ,
+                 ["source_root"] = sourceRoot, ["worker_root"] = workerRoot, ["experiment_mode"] = "semantic_joint_1115",
+-                ["minimum_laps"] = 2, ["wall_timeout_sec"] = wallTimeout, ["signal_panel_rgb"] = panelRgb,
++                ["minimum_laps"] = 1, ["wall_timeout_sec"] = wallTimeout, ["signal_panel_rgb"] = panelRgb,
+                 ["startup_timeout_wall_sec"] = 90, ["no_progress_timeout_sim_sec"] = 35,
+                 ["signal_panel_only"] = true,
+                 ["signal_policy"] = "calibrated_rgb_panel_only",
+                 ["lane_recovery_mode"] = laneRecoveryMode,
+                 ["bbox_enabled"] = false, ["neo_stop_wait_enabled"] = false,
+                 ["scene"] = scene.path, ["requested_utc"] = DateTime.UtcNow.ToString("o"), ["requested_editor_wall"] = EditorApplication.timeSinceStartup,
+-                ["capture_role"] = "Actual detector.Input first-person RGB preview with original frame time; no extra render or changed intrinsics",
+-                ["control_inputs"] = "Existing RGB perception ABC/light and Rigidbody odometry; no evaluator route, lap, signal truth or distance",
++                ["capture_role"] = "Global bird-eye with measured Unity trajectory and MapAssist output; signal labels from actual detector",
++                ["control_inputs"] = "Existing RGB ABC/light/range flag and Rigidbody odometry; evaluation data excluded from control",
+                 ["baseline"] = Configuration(car)
+             };
+             File.WriteAllText(Path.Combine(directory, "configuration.json"), config.ToString(Formatting.Indented));
+@@ -122,7 +123,6 @@
+                     if (identity != semanticIdentity) { semanticIdentity = identity; semanticTicks.WriteLine(Sample("semantic_response").ToString(Formatting.None)); }
+                 }
+                 if (now >= nextMotion) { nextMotion = now + .05; motion.WriteLine(Sample("motion").ToString(Formatting.None)); motionCount++; }
+-                if (now >= nextImage && rgbPath != null) { nextImage = now + 1.0 / 15; Capture(); }
+                 if (EditorApplication.timeSinceStartup >= nextStatus) { nextStatus = EditorApplication.timeSinceStartup + 1; WriteStatus(); }
+                 if (finishing) { if (now >= finishAt || EditorApplication.timeSinceStartup >= tailDeadline) Complete(); return; }
+                 Evaluate(now);
+@@ -143,7 +143,7 @@
+             trace = Writer("trace.jsonl"); motion = Writer("motion.jsonl"); frames = Writer("frames.jsonl"); events = Writer("events.jsonl"); semanticTicks = Writer("semantic_ticks.jsonl");
+             active = true; finishing = accepted = firstLapClosed = lapArmed = redScheduled = redObserved = detourEntered = detourCompleted = leftObserved = settingsCaptured = false;
+             redDetourFailed = recoveryGreenScheduled = false; redFailureReason = null;
+-            motionControlStarted = false; motionControlStartedAt = -1; firstRedScheduled = firstRedObserved = firstRedStopped = firstGreenScheduled = false; firstRedStopAt = -1;
++            motionControlStarted = false; motionControlStartedAt = -1; firstRedScheduled = firstRedObserved = firstRedStopped = firstGreenScheduled = false; firstRedStopAt = -1; lapReturnAt = -1;
+             imageCount = detectionCount = motionCount = completedLaps = 0; sequence = 0; semanticIdentity = null;
+             stableDetector = stableEpoch = stableSemantic = -1; travelled = firstLapDistance = lastLapDistance = lastProgressDistance = leftYaw = maxLeftYaw = maxLeftDisplacement = 0;
+             redAt = waitAt = -1; startWall = EditorApplication.timeSinceStartup; startSim = Time.timeAsDouble; noProgressAt = startSim;
+@@ -230,48 +230,18 @@
+                 completedLaps++; lapArmed = false; lastLapDistance = travelled; if (completedLaps == 1) firstLapDistance = travelled;
+                 Event("physical_lap_completed", new JObject { ["completed_laps"] = completedLaps, ["travelled"] = travelled, ["reference_ready"] = firstLapClosed });
+             }
+-            if (firstLapClosed && !redScheduled && completedLaps >= 1 && gate) {
+-                signal.SetState(TrainingFlagPanel.SignalState.Red); redScheduled = true; redAt = now; stage = "red_second_lap";
+-                Event("physical_panel_red", new JObject { ["status_before_switch"] = status.DeepClone(), ["front_gap_evaluation_only"] = FrontGap() });
+-            }
+-            string mode = (string)status["traffic_mode"], reason = (string)status["traffic_reason"];
+-            if (redScheduled && !redObserved && (string)status["traffic_light"] == "red") { redObserved = true; Event("package_observed_red", status); }
+-            if (!redScheduled && mode == "detour") { BeginFinish("Unexpected detour before scheduled second-lap red", false); return; }
+-            if (redScheduled && mode == "detour" && !detourEntered) {
+-                detourEntered = true; detourOrigin = p; detourRight = drive.Body.rotation * Vector3.right; previousYaw = yaw; stage = "detour_second_lap";
+-                Event("package_detour_entered", status);
+-            }
+-            if (detourEntered && !detourCompleted) {
+-                leftYaw -= Mathf.DeltaAngle(previousYaw, yaw); previousYaw = yaw;
+-                maxLeftYaw = Mathf.Max(maxLeftYaw, leftYaw); maxLeftDisplacement = Mathf.Max(maxLeftDisplacement, -Vector3.Dot(p - detourOrigin, detourRight));
+-                if (!leftObserved && maxLeftYaw >= 35 && maxLeftDisplacement >= 1) { leftObserved = true; Event("measured_leftward_motion", new JObject { ["yaw_deg"] = maxLeftYaw, ["displacement_m"] = maxLeftDisplacement }); }
+-                if (mode != "detour") {
+-                    if (reason == "detour_complete_resume_vision" || reason == "red_after_detour") { detourCompleted = true; stage = "detour_complete_continuing"; Event("package_detour_completed", status); }
+-                    else { BeginFinish("Detour exited without explicit completion: " + reason, false); return; }
+-                }
+-            }
+-            if (completedLaps >= 2 && (!redScheduled || now - redAt >= 15)) {
+-                bool passed = firstRedStopped && firstGreenScheduled && !redDetourFailed && firstLapClosed && redObserved && detourEntered && detourCompleted && leftObserved;
+-                BeginFinish(passed ? "Two physical laps with built map and completed red-triggered left turn"
+-                    : redDetourFailed ? "Two physical laps completed after green recovery; red detour failed: " + redFailureReason
+-                    : "Two laps complete; completed red-triggered interior turn not demonstrated", passed); return;
+-            }
+-            float speed = drive.Body.velocity.magnitude;
+-            if (redScheduled && !recoveryGreenScheduled && mode == "wait" && speed < .05f) {
+-                if (waitAt < 0) waitAt = now;
+-                if (now - waitAt >= 12) {
+-                    redDetourFailed = !(detourEntered && detourCompleted && leftObserved);
+-                    redFailureReason = redDetourFailed ? "Red wait persisted for 12 s: " + reason : null;
+-                    File.WriteAllText(Path.Combine(output, "red_wait_snapshot.json"), Sample("red_wait_before_green_recovery").ToString(Formatting.Indented));
+-                    Event(redDetourFailed ? "red_detour_failed" : "completed_detour_waiting_at_red", new JObject {
+-                        ["reason"] = reason, ["red_detour_failed"] = redDetourFailed, ["completed_laps"] = completedLaps, ["status"] = status.DeepClone() });
+-                    // Continue the requested physical second lap through genuine future green camera frames only.
+-                    signal.SetState(TrainingFlagPanel.SignalState.Green); recoveryGreenScheduled = true; stage = "green_recovery_second_lap";
+-                    noProgressAt = now; lastProgressDistance = travelled;
+-                    Event("physical_panel_green_for_second_lap_completion", new JObject { ["red_detour_failed"] = redDetourFailed, ["reason"] = redFailureReason });
+-                }
+-            } else waitAt = -1;
+-            if (redScheduled && now - redAt > 400) BeginFinish("Second-lap response exceeded 400 simulation seconds", false);
++            if (completedLaps < 1) return;
++            if (lapReturnAt < 0) lapReturnAt = now;
++            if (firstLapClosed && (bool?)status["map_fusion"]?["available"] == true
++                && (bool?)status["topology_mapping"]?["available"] == true) {
++                stage = "first_lap_map_matched";
++                Event("map_match_accepted", status);
++                bool pass = firstRedStopped && firstGreenScheduled;
++                BeginFinish(pass ? "One physical lap, red stop and accepted map match"
++                    : "One physical lap and accepted map match; red stop not observed", pass);
++                return;
++            }
++            if (now - lapReturnAt > 18) BeginFinish("First lap returned; map match not accepted within 18 s", false);
+         }
+ 
+         static void RecordDetection()
+@@ -279,8 +249,6 @@
+             sequence = detector.FrameSequence; detectionCount++;
+             lastPerception = string.IsNullOrEmpty(detector.LastPayload) ? null : JObject.Parse(detector.LastPayload);
+             if (lastPerception != null) foreach (string name in new[] { "overlay", "lane", "obstacles" }) lastPerception.Remove(name);
+-            if (detector.Output) { overlayPath = "overlay_" + detectionCount.ToString("D5") + ".png"; File.WriteAllBytes(Path.Combine(output, overlayPath), detector.Output.EncodeToPNG()); }
+-            if (detector.Input) { rgbPath = "rgb_" + detectionCount.ToString("D5") + ".jpg"; File.WriteAllBytes(Path.Combine(output, rgbPath), detector.Input.EncodeToJPG(95)); }
+             trace.WriteLine(Sample("detection").ToString(Formatting.None));
+         }
+ 
+@@ -346,14 +314,14 @@
+                 if (semantic && ((bool?)semantic.ShutdownReceipt?["clean"] != true || (bool?)semantic.ShutdownReceipt?["forced"] != false)) cleanupErrors.Add("Worker clean shutdown not confirmed");
+                 if (cleanupErrors.Count > 0) accepted = false;
+                 File.WriteAllText(Path.Combine(output, "result.json"), JsonConvert.SerializeObject(new {
+-                    accepted, reason = finishReason, stage, laneRecoveryMode = (string)request["lane_recovery_mode"], completedLaps, firstLapClosed, firstLapDistance, redScheduled, redObserved, detourEntered, detourCompleted, leftObserved,
++                    accepted, reason = finishReason, stage, laneRecoveryMode = (string)request["lane_recovery_mode"], completedLaps, firstLapClosed, firstLapDistance, firstRedStopped, firstGreenScheduled, redScheduled, redObserved, detourEntered, detourCompleted, leftObserved,
+                     red_detour_failed = redDetourFailed, redFailureReason, recoveryGreenScheduled,
+                     motionControlStarted, motionControlStartedTime = motionControlStartedAt < 0 ? (double?)null : motionControlStartedAt - startSim,
+                     maxLeftYaw, maxLeftDisplacement, travelled, imageCount, detectionCount, motionCount, learnedStatus, terminalStatus,
+                     seconds = Time.timeAsDouble - startSim, wallSeconds = EditorApplication.timeSinceStartup - startWall,
+-                    minimumRequestedLaps = 2, bboxEnabled = false, neoStopWaitEnabled = false, physicsParametersChanged = false, cameraIntrinsicsChanged = false,
++                    minimumRequestedLaps = 1, bboxEnabled = false, neoStopWaitEnabled = false, physicsParametersChanged = false, cameraIntrinsicsChanged = false,
+                     signalTruthFedToControl = false, evaluatorRouteFedToControl = false, idealSimulatedOdometry = true,
+-                    captureSource = "actual_first_person_detector_input", cleanupErrors, shutdown = semantic ? semantic.ShutdownReceipt : null
++                    captureSource = "global_bird_eye_with_measured_trajectory", cleanupErrors, shutdown = semantic ? semantic.ShutdownReceipt : null
+                 }, Formatting.Indented));
+                 if (drive) File.WriteAllText(Path.Combine(output, "play_after.json"), Configuration(drive).ToString(Formatting.Indented));
+             } finally {

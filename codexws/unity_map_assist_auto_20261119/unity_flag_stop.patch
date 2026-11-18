@@ -1,0 +1,24 @@
+--- a/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
++++ b/Assets/AIFormula/Runtime/Control/AIFormulaSemanticPlanning.cs
+@@ -193,6 +193,21 @@
+                     if (NeoStopWaitMode) {
+                         request["vision"]["controller"] = new JObject { ["v"] = lane["v"]?.DeepClone(),
+                             ["w"] = lane["w"]?.DeepClone(), ["target"] = lane["target"]?.DeepClone() };
++                    } else if (JointExperimentMode && (string)ReadyReceipt?["flag_stop_input"] == "rgb_panel_range_8p5m") {
++                        var perception = string.IsNullOrEmpty(detector.LastPayload) ? null : JObject.Parse(detector.LastPayload);
++                        var range = perception?["signal_range"];
++                        double? distance = (double?)range?["distance_m"];
++                        const double stopDistance = 8.5;
++                        bool valid = (bool?)range?["valid"] == true && detector.FrameAge <= .5 && distance.HasValue
++                            && !double.IsNaN(distance.Value) && !double.IsInfinity(distance.Value) && distance.Value > 0;
++                        if (valid) request["flag_stop"] = distance.Value <= stopDistance;
++                        request["flag_stop_observation"] = new JObject {
++                            ["frame_sequence"] = visionSequence, ["valid"] = valid,
++                            ["distance_m"] = valid ? new JValue(distance.Value) : JValue.CreateNull(),
++                            ["threshold_m"] = stopDistance,
++                            ["range_reason"] = (string)range?["reason"],
++                            ["flag"] = request["flag_stop"]?.DeepClone()
++                        };
+                     } else if (!JointExperimentMode) {
+                         var perception = string.IsNullOrEmpty(detector.LastPayload) ? null : JObject.Parse(detector.LastPayload);
+                         request["vision"]["signal_range"] = perception?["signal_range"]?.DeepClone();
