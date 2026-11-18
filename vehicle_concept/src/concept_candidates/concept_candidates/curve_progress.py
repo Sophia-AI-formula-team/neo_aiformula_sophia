@@ -31,7 +31,35 @@ def build_reference(evidence):
     return dict(points=np.c_[z,x],source=source,coef=coef,sigma=sigma,support=[lo,hi],
         rule='Observed span only; no projection-clamping credit at either endpoint; not a tracking target')
 
-def project(reference,z,x):
+try:
+    from . import _progress
+except ImportError:  # Unbuilt source checkout.
+    _progress = None
+
+
+def _segments(reference):
+    segments = reference.get('_segments')
+    if segments is None:
+        points = np.asarray(reference['points'], dtype=float)
+        edges = np.diff(points, axis=0)
+        lengths = np.linalg.norm(edges, axis=1)
+        segments = points, edges, lengths, np.r_[0., np.cumsum(lengths)]
+        reference['_segments'] = segments
+    return segments
+
+
+def project(reference, z, x):
+    if _progress is None:
+        return reference_project(reference, z, x)
+    last = reference.get('_last_projection')
+    if last is not None and np.array_equal(z, last[0]) and np.array_equal(x, last[1]):
+        return last[2]
+    result = _progress.project(*_segments(reference), z, x, reference['coef'], reference['sigma'])
+    reference['_last_projection'] = (z.copy(), x.copy(), result)
+    return result
+
+
+def reference_project(reference,z,x):
     points=np.asarray(reference['points']);edge=np.diff(points,axis=0);length=np.linalg.norm(edge,axis=1)
     query=np.c_[z,x];relative=query[:,None,:]-points[:-1][None,:,:]
     fraction=np.sum(relative*edge[None,:,:],axis=2)/np.maximum(length**2,1e-12)
@@ -64,7 +92,7 @@ def increment(obs,old_z,old_x,z,x,default):
     if reference is None:return default,np.zeros_like(default,bool)
     before,a=project(reference,old_z,old_x);after,b=project(reference,z,x)
     valid=a&b
-    points=np.asarray(reference['points']);arc=np.r_[0.,np.cumsum(np.linalg.norm(np.diff(points,axis=0),axis=1))]
+    points, _, _, arc = _segments(reference)
     u0=np.interp(before,arc,points[:,0]);u1=np.interp(after,arc,points[:,0])
     constant,linear,quadratic=reference['coef']
     stationary=-linear/(2*quadratic) if quadratic!=0 else 0.

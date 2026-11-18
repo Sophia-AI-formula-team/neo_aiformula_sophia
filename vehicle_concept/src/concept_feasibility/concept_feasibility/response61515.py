@@ -12,6 +12,15 @@ PATH=Path(__file__).with_suffix('.json')
 
 MODEL=json.loads(PATH.read_bytes()) if PATH.exists() else None
 
+try:
+    from . import _motion
+except ImportError:  # Unbuilt source checkout.
+    _motion = None
+
+_SPEED = np.asarray(MODEL['speed']) if MODEL else None
+_YAW = np.asarray(MODEL['yaw']) if MODEL else None
+
+
 def can_command(speed_command,yaw_command):
     """Installed Archived1030 interface, including Unity float32 and rounding."""
     v,w=np.broadcast_arrays(np.asarray(speed_command,dtype=np.float32).astype(float),
@@ -94,6 +103,10 @@ def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt
     for speed in np.unique(flat_q[flat_q>0]):
         active=flat_q==speed;lo,hi=lower.ravel()[active],upper.ravel()[active]
         commands,reachable=reachable_response(float(np.float32(speed)),tuple(MODEL['yaw']))
+        if _motion is not None:
+            result[active] = _motion.closest(commands, reachable, flat_d[active], lo, hi,
+                                             target(speed,lo,MODEL['yaw']), target(speed,hi,MODEL['yaw']))
+            continue
         proposals=np.broadcast_to(commands[:,None],(len(commands),len(lo)))
         proposals=np.vstack([proposals,lo,hi])
         predictions=np.vstack([np.broadcast_to(reachable[:,None],(len(commands),len(lo))),
@@ -107,6 +120,11 @@ def advance(speed,yaw,speed_command,yaw_command,dt,zero_age):
     if MODEL is None:raise RuntimeError('Fit response61515.json before use')
     speed,yaw,q,u=np.broadcast_arrays(speed,yaw,speed_command,yaw_command)
     pv,pw=MODEL['speed'],MODEL['yaw'];brake=MODEL['stop']
+    if _motion is not None and speed.ndim == 1:
+        age = np.broadcast_to(zero_age, q.shape)
+        return _motion.advance(np.asarray(speed, float), np.asarray(yaw, float), np.asarray(q, float),
+                               np.asarray(u, float), dt, np.asarray(age, float), _SPEED, _YAW,
+                               brake['delay'], brake['deceleration'])
     velocity_target=np.maximum(0,target(q,u,pv))
     positive=velocity_target+(speed-velocity_target)*np.exp(-dt/pv[0])
     active=np.maximum(0,zero_age+dt-brake['delay'])-np.maximum(0,zero_age-brake['delay'])
