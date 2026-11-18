@@ -1,0 +1,176 @@
+{
+  "simulator": "Unity MotorControllerValidation via MCP",
+  "source_commit": "1f099e2ddaf18ebde1cdfcac80f7d6f948719338",
+  "runs": {
+    "outer_mapping": {
+      "accepted": true,
+      "reason": "One physical lap, red stop and accepted map match",
+      "firstLapClosed": true,
+      "completedLaps": 1,
+      "firstLapDistance": 281.278442,
+      "firstRedStopped": true,
+      "firstGreenScheduled": true,
+      "redObserved": false,
+      "detourEntered": false,
+      "leftObserved": false,
+      "detourCompleted": false,
+      "seconds": 113.55501694281702,
+      "travelled": 285.221222,
+      "input_hashes_unchanged": true,
+      "first_lap_red_stopped": {
+        "t": 12.984027842816431,
+        "x": 71.58292,
+        "z": 8.9363575,
+        "front_gap_evaluation_only": 5.826659
+      },
+      "map_match_accepted": {
+        "t": 112.5185112428153,
+        "x": 72.22527,
+        "z": -6.706379,
+        "traffic_reason": "green_resume",
+        "smooth_max_curvature_per_m": null,
+        "detour_approach_remaining_m": null
+      },
+      "trial_stop": {
+        "t": 112.5185112428153,
+        "x": 72.22527,
+        "z": -6.706379
+      },
+      "match_rmse_m": 0.2791514536707575,
+      "recorded_samples": 1040,
+      "terminal_smooth_plan_reason": "not_planned",
+      "terminal_detour_progress_m": null,
+      "terminal_detour_approach_remaining_m": null,
+      "terminal_detour_node_ids": []
+    },
+    "outer_tune_10": {
+      "accepted": false,
+      "reason": "No physical progress for 10 s: red_wait_spline_no_curvature_feasible_spline",
+      "firstLapClosed": true,
+      "completedLaps": 0,
+      "firstLapDistance": 0.0,
+      "firstRedStopped": false,
+      "firstGreenScheduled": false,
+      "redObserved": true,
+      "detourEntered": false,
+      "leftObserved": false,
+      "detourCompleted": false,
+      "seconds": 32.227991642808774,
+      "travelled": 32.96331,
+      "input_hashes_unchanged": true,
+      "package_observed_red": {
+        "t": 11.370887742814375,
+        "x": 72.17927,
+        "z": -6.88863325,
+        "traffic_reason": "red_prepare_spline_unavailable",
+        "smooth_max_curvature_per_m": null,
+        "detour_approach_remaining_m": 17.44611749839794
+      },
+      "trial_stop": {
+        "t": 31.22088654281106,
+        "x": 71.61279,
+        "z": 7.495891
+      },
+      "match_rmse_m": 0.2791514536707575,
+      "recorded_samples": 1040,
+      "terminal_smooth_plan_reason": "no_curvature_feasible_spline",
+      "terminal_detour_progress_m": null,
+      "terminal_detour_approach_remaining_m": 2.9584259972166365,
+      "terminal_detour_node_ids": [
+        "10000000002",
+        "10000000006",
+        "10000000003"
+      ]
+    },
+    "outer_r55": {
+      "accepted": true,
+      "reason": "Red detour rejoined main route and drove 5 m",
+      "firstLapClosed": true,
+      "completedLaps": 0,
+      "firstLapDistance": 0.0,
+      "firstRedStopped": false,
+      "firstGreenScheduled": false,
+      "redObserved": true,
+      "detourEntered": true,
+      "leftObserved": true,
+      "detourCompleted": true,
+      "seconds": 106.34592844280996,
+      "travelled": 99.5461655,
+      "input_hashes_unchanged": true,
+      "package_observed_red": {
+        "t": 10.259649242812884,
+        "x": 72.19697,
+        "z": -8.52759,
+        "traffic_reason": "red_prepare_spline_unavailable",
+        "smooth_max_curvature_per_m": null,
+        "detour_approach_remaining_m": 19.41697106942081
+      },
+      "package_detour_entered": {
+        "t": 13.565802042823634,
+        "x": 72.06783,
+        "z": -3.87572169,
+        "traffic_reason": "detour_tracking",
+        "smooth_max_curvature_per_m": 0.18268621189724363,
+        "detour_approach_remaining_m": 14.61235354848219
+      },
+      "measured_leftward_motion": {
+        "t": 26.14266954282357,
+        "x": 68.94099,
+        "z": 5.22017336
+      },
+      "package_detour_completed": {
+        "t": 103.13512364281632,
+        "x": 29.011507,
+        "z": 42.3874245,
+        "traffic_reason": "detour_complete_resume_vision",
+        "smooth_max_curvature_per_m": null,
+        "detour_approach_remaining_m": null
+      },
+      "main_route_followed_after_rejoin": {
+        "t": 105.32539864281716,
+        "x": 23.9880238,
+        "z": 42.7794342,
+        "distance_m": 5.03955078125
+      },
+      "trial_stop": {
+        "t": 105.32539864281716,
+        "x": 23.9880238,
+        "z": 42.7794342
+      },
+      "match_rmse_m": 0.2791514536707575,
+      "recorded_samples": 1040,
+      "terminal_smooth_plan_reason": "not_planned",
+      "terminal_detour_progress_m": null,
+      "terminal_detour_approach_remaining_m": null,
+      "terminal_detour_node_ids": []
+    }
+  },
+  "profiles": {
+    "outer_tune_10": {
+      "detour_lya_v_t": 0.55,
+      "detour_trigger_preview_m": 1.0,
+      "detour_lya_lambda_a": 2.5,
+      "detour_lookahead_m": 6.0,
+      "detour_min_turn_radius_m": 6.0,
+      "detour_max_trim_m": 12.0,
+      "detour_lya_lambda_v": 0.04,
+      "detour_trigger_margin_m": 0.7
+    },
+    "outer_r55": {
+      "detour_lya_v_t": 0.55,
+      "detour_trigger_preview_m": 1.0,
+      "detour_lya_lambda_a": 2.5,
+      "detour_lookahead_m": 6.0,
+      "detour_min_turn_radius_m": 5.5,
+      "detour_max_trim_m": 12.0,
+      "detour_lya_lambda_v": 0.04,
+      "detour_trigger_margin_m": 0.7
+    }
+  },
+  "spawn": {
+    "x": 69.86146,
+    "z": -25.1201878,
+    "yaw_deg": 25.768193941580083,
+    "progress_m": 265.73838016436827
+  }
+}
