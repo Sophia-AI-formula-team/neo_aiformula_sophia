@@ -18,8 +18,11 @@ def replay(directory, limit):
     frames = 0
     reverses = 0
     ranked = 0
+    requested = 0
+    evaluated = 0
     first_failure = None
-    maxima = dict(control=0., road=0., objects=0., path=0., score=0.)
+    maxima = dict(control=0., road=0., objects=0., path=0., score=0.,
+                  candidate_paths=0., candidate_table=0.)
     with (directory / 'decisions.jsonl').open(encoding='utf-8') as stream:
         for line in stream:
             row = json.loads(line)
@@ -35,13 +38,20 @@ def replay(directory, limit):
             with np.load(detfile) as det:
                 new = engine.step(image, det['raw'], det['lane'], det, old['sensor'])
             audit = old['audit']
+            current_audit = engine.builder.planner.last['audit']
+            evaluation = new['candidate_evaluation']
+            requested += evaluation['input_count']
+            evaluated += evaluation['evaluated_count']
             checks = dict(pick=new['selected_index'] == audit.get('selected'),
+                          exact=evaluation['mode'] == 'exact',
                           whitebox=new['whitebox_index'] == audit.get('whiteboxSelected', audit.get('selected')),
                           allowed=np.array_equal([c['allowed'] for c in new['candidates']],
                                                  [bool(c[6]) for c in audit.get('table', [])]))
             for key, current, expected in (
                 ('control', new['command_native'], row['control']), ('road', new['road_rows'], old['road']),
                 ('objects', new['objects'], old['objects']), ('path', new['selected_path'], old['path']),
+                ('candidate_paths', current_audit.get('paths', []), audit.get('paths', [])),
+                ('candidate_table', current_audit.get('table', []), audit.get('table', [])),
                 ('score', [c['score'] for c in new['candidates']],
                  old['wholeLap']['final_scores'] if old.get('wholeLap') else [c[7] for c in audit.get('table', [])])):
                 a, b = np.asarray(current), np.asarray(expected)
@@ -57,6 +67,7 @@ def replay(directory, limit):
     if not frames:
         raise ValueError(f'No comparable frames in {directory}')
     return dict(run=directory.name, frames=frames, ranks=ranked, reversing_frames=reverses,
+                candidate_requests=requested, simulated_candidates=evaluated,
                 max_abs_error=maxima, first_difference=first_failure)
 
 
