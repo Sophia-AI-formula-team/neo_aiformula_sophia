@@ -41,6 +41,10 @@ class CameraNode(Node):
                               ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
             self.declare_parameter(name, default)
         self.predictor = Predictor(self.get_parameter('weights').value or default_path(), self.get_parameter('device').value)
+        if self.predictor.device.type == 'cuda':
+            # Initialize CUDA, cuDNN and detection kernels before subscribing to the
+            # camera. predict() copies its outputs to CPU, completing the warm-up.
+            self.predictor.predict(np.zeros((360, 640, 3), dtype=np.uint8))
         self.bridge = CvBridge()
         self.last_error_at = float('-inf')
         self.frames = self.create_publisher(String, self.get_parameter('frame_topic').value, 1)
