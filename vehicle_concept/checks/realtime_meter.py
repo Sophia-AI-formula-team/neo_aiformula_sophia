@@ -120,6 +120,15 @@ def summary(args, sent, started, out):
     first=min(expected,5*args.decision_hz)
     result['cold_first_5s']=portion(rows[:first])
     result['following_slots']=portion(rows[first:])
+    # The production driver anchors its period to the first accepted camera stamp.
+    # Keep the exogenous source grid and report its phase separately.
+    camera_slots_per_decision=args.camera_hz//args.decision_hz
+    result['output_source_phase_counts']=dict(Counter(
+        by_stamp[r['stamp_ns']]['seq'] % camera_slots_per_decision for r in earliest.values()))
+    result['distinct_receive_slots']=len({
+        (r['received_ns']-started)*args.decision_hz//BILLION for r in valid
+        if started<=r['received_ns']<end_ns})
+    result['duplicate_output_stamps']=len(valid)-len({r['stamp_ns'] for r in valid})
     result['missing_slot_evidence']=dict(Counter(
         ('capture_not_sent' if not r['input_ids'] else 'no_perception_observed' if not r['perceived']
          else 'no_decision_observed' if not r['decision_count'] else 'no_twist_despite_decision')
