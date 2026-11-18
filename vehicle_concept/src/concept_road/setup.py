@@ -10,9 +10,9 @@ setup(
     packages=[name],
     cmdclass={'build_ext': build_ext},
     options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
-    ext_modules=[Extension(name + '._markings', [name + '/_markings.pyx'],
+    ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
                    extra_compile_args=['/O2', '/fp:strict'] if os.name == 'nt'
-                   else ['-O3', '-ffp-contract=off'])],
+                   else ['-O3', '-ffp-contract=off']) for module in ('_markings', '_memory')],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + name]),
         ('share/' + name, ['package.xml']),

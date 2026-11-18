@@ -6,6 +6,12 @@ import numpy as np
 
 from concept_road.vision import CX, CY, FOCAL, HEIGHT
 
+try:
+    from ._memory import project as project_mask
+except ImportError:
+    project_mask = None
+
+
 class RearSurfaceMemory:
     def __init__(self, cell=.08):
         self.cell = cell
@@ -50,28 +56,44 @@ class RearSurfaceMemory:
         errors, ages = np.full(self.zz.shape, np.inf), np.full(self.zz.shape, np.inf)
         # Reproject into the ORIGINAL saved mask each time. Repeatedly rounding
         # transported point centres created fake gaps in a continuous surface.
-        markings = {}
+        # Keep the original insertion order of each surviving paint observation.
+        # A subsequent clear cell removes a mark and a reappearance gets a new order.
+        mark_order = np.full(self.zz.shape, -1, dtype=np.int64)
+        mark_age = np.zeros(self.zz.shape)
+        next_order = 0
         for image_mask, pose, when, distance, rotation, visibility, lane in self.frames:
-            dz, dx = integrated_z-pose[0], integrated_x-pose[1]
             c, s = np.cos(pose[2]), np.sin(pose[2])
-            z, x = c*dz+s*dx, -s*dz+c*dx
-            safe_z = np.maximum(z, .01)
-            u = np.rint(CX+x*FOCAL/safe_z).astype(int)
-            v = np.rint(CY+HEIGHT*FOCAL/safe_z).astype(int)
-            valid = (z >= .95) & (z <= 4.) & (u >= 0) & (u < mask.shape[1]) & (v >= 0) & (v < mask.shape[0])
-            support = np.zeros_like(valid)
-            support[valid] = image_mask[v[valid], u[valid]]
-            error = .06+.04*(self.travel-distance)+.08*(self.turn-rotation)*np.hypot(z, x)
-            negative = np.zeros_like(valid)
-            negative[valid] = visibility[v[valid], u[valid]] & ~image_mask[v[valid], u[valid]]
-            negative &= error <= .30
+            base_error = .06+.04*(self.travel-distance)
+            turn_error = .08*(self.turn-rotation)
+            if project_mask is not None:
+                support, negative, marked, error = project_mask(
+                    integrated_z, integrated_x, image_mask.view(np.uint8), visibility.view(np.uint8),
+                    lane.view(np.uint8) if lane is not None else None, pose[0], pose[1],
+                    c, s, base_error, turn_error, CX, CY, FOCAL, HEIGHT*FOCAL)
+            else:
+                dz, dx = integrated_z-pose[0], integrated_x-pose[1]
+                z, x = c*dz+s*dx, -s*dz+c*dx
+                safe_z = np.maximum(z, .01)
+                u = np.rint(CX+x*FOCAL/safe_z).astype(int)
+                v = np.rint(CY+HEIGHT*FOCAL/safe_z).astype(int)
+                valid = (z >= .95) & (z <= 4.) & (u >= 0) & (u < mask.shape[1]) & (v >= 0) & (v < mask.shape[0])
+                support = np.zeros_like(valid)
+                support[valid] = image_mask[v[valid], u[valid]]
+                error = base_error+turn_error*np.hypot(z, x)
+                negative = np.zeros_like(valid)
+                negative[valid] = visibility[v[valid], u[valid]] & ~image_mask[v[valid], u[valid]]
+                negative &= error <= .30
+                if lane is not None:
+                    marked = np.zeros_like(valid)
+                    marked[valid] = lane[v[valid], u[valid]]
+                    marked &= error <= .30
             if lane is not None:
-                marked = np.zeros_like(valid)
-                marked[valid] = lane[v[valid], u[valid]]
-                for iz, ix in zip(*np.nonzero(marked & (error <= .30))):
-                    markings[(int(iz), int(ix))] = self.time-when
-                for iz, ix in zip(*np.nonzero(negative)):
-                    markings.pop((int(iz), int(ix)), None)
+                new = marked & (mark_order < 0)
+                count = np.count_nonzero(new)
+                mark_order[new] = np.arange(next_order, next_order+count)
+                next_order += count
+                mark_age[marked] = self.time-when
+                mark_order[negative] = -1
             errors[negative], ages[negative] = np.inf, np.inf
             # Erode each original observation by its own transport allowance BEFORE
             # union. This avoids assigning one old fringe cell's error to a
@@ -81,7 +103,10 @@ class RearSurfaceMemory:
             support &= distance_to_unknown > error+self.cell/2
             better = support & (error <= .30) & (error <= errors)
             errors[better], ages[better] = error[better], self.time-when
-        self.marking_points = [[float(self.zz[k]), float(self.xx[k]), float(age)] for k, age in markings.items()]
+        active = np.flatnonzero(mark_order >= 0)
+        active = active[np.argsort(mark_order.ravel()[active])]
+        self.marking_points = np.column_stack((self.zz.ravel()[active], self.xx.ravel()[active],
+                                               mark_age.ravel()[active])).tolist()
         valid = np.isfinite(errors)
         self.points = np.c_[self.zz[valid], self.xx[valid], ages[valid], errors[valid]]
         return self.points
