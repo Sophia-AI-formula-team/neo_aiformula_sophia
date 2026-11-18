@@ -1,5 +1,5 @@
 from setuptools import Extension, setup
-from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 import os
 
 name = 'concept_feasibility'
@@ -7,12 +7,12 @@ setup(
     name=name,
     version='6.26.0',
     packages=[name],
-    ext_modules=cythonize(
-        [Extension(name + '.' + module, [name + '/' + module + '.pyx'],
+    cmdclass={'build_ext': build_ext},
+    options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
+    ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
                    extra_compile_args=['/O2', '/fp:strict', '/openmp'] if os.name == 'nt' else ['-O3', '-ffp-contract=off', '-fopenmp'],
                    extra_link_args=[] if os.name == 'nt' else ['-fopenmp'])
-         for module in ['_motion', '_tread', '_risk']],
-        compiler_directives={'language_level': 3}, quiet=True, build_dir='build/cython'),
+        for module in ['_motion', '_tread', '_risk']],
 
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + name]),

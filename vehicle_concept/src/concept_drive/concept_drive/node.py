@@ -55,6 +55,7 @@ class DriverNode(Node):
         self.driver = Drive(self.target)
         self.session = uuid4().hex
         self.first_ns = self.last_ns = self.next_ns = None
+        self.rate_skipped_total = 0
         self.locked_reason = None
         self.camera_key = None
         with self.lock:
@@ -126,6 +127,7 @@ class DriverNode(Node):
                 if ns <= self.last_ns:
                     raise ValueError('duplicate or out-of-order image')
                 if ns < self.next_ns - CAPTURE_JITTER_NS:
+                    self.rate_skipped_total += 1
                     return
                 if ns - self.last_ns > 500_000_000:
                     self.locked_reason = 'image gap over 0.5 s; pause the gate and restart the driver'
@@ -170,7 +172,8 @@ class DriverNode(Node):
         except Exception as exc:
             decision.update(status='invalid', reason=str(exc))
         emitted = now()
-        decision.update(emitted_stamp=stamp(emitted), processing_ms=(time.monotonic()-tic)*1000.)
+        decision.update(emitted_stamp=stamp(emitted), processing_ms=(time.monotonic()-tic)*1000.,
+                        rate_skipped_total=self.rate_skipped_total, planning_hz=1e9/self.period_ns)
         if decision['stamp'] is not None:
             decision['capture_age_s'] = (emitted-ns)/1e9
         self.decisions.publish(String(data=json.dumps(decision, allow_nan=False, separators=(',', ':'))))
