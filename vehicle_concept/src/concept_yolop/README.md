@@ -35,4 +35,6 @@ ros2 launch concept_yolop concept_yolop.launch.py
 
 ## 复核
 
+现场可用 `ros2 run concept_yolop concept_yolop_calibrate --capture 新目录 --mount-id 安装编号` 取配对原图及参数。若真实镜头与冻结视角有角度或内参差异，在登记表添加另一组实测的 `fit_marks`。程序利用 CameraInfo 和这组点校正观察方向，再用独立的 `ground_marks` 核对米制误差。登记文件可用 `concept_yolop_calibrate --check camera.json` 检查。完整测量步骤见[车辆交接手册](../../AGENTS.md)。
+
 `concept_yolop_check image.png --weights model.pth --compare same_frame_perception.npz` 在本机检查道路和标线逐像素相同、检测坐标和分数绝对误差不超过 1e-5，并把规划消息编码、解码与原数组对照。没有比对文件时仍检查推理与消息回读。图像须与比对记录来自同一拍。模型与实测证据见 [来源和实测记录](SOURCES.md)。

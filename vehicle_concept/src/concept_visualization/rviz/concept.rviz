@@ -1,0 +1,56 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 28; 37; 41
+    Fixed Frame: base_footprint
+    Frame Rate: 15
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Ground metres
+      Enabled: true
+      Cell Size: 1
+      Plane: XY
+      Plane Cell Count: 44
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Local decisions
+      Enabled: true
+      Topic:
+        Value: /concept/view/local
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Depth: 2
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Observed track
+      Enabled: true
+      Topic:
+        Value: /concept/view/map
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Depth: 2
+    - Class: rviz_default_plugins/Image
+      Name: Onboard camera
+      Enabled: true
+      Topic:
+        Value: /concept/view/camera
+        Reliability Policy: Best Effort
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Depth: 2
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Vehicle
+      Angle: -1.5708
+      Scale: 30
+      X: 5
+      Y: 0
+  Tools:
+    - Class: rviz_default_plugins/Interact
+Window Geometry:
+  Width: 1280
+  Height: 760

@@ -61,9 +61,13 @@ class CameraNode(Node):
     def on_image(self, msg):
         try:
             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-            bgr, road, lane, det = self.predictor.predict(bgr)
-            stamp = msg.header.stamp
             verified = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+            if verified:
+                bgr = self.calibration.rectify(bgr)
+            bgr, road, lane, det = self.predictor.predict(bgr)
+            if verified:
+                road, lane, det = self.calibration.restrict_predictions(road, lane, det)
+            stamp = msg.header.stamp
             wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
                                 CALIBRATED if verified else UNVERIFIED)
             self.frames.publish(String(data=wire))

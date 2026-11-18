@@ -79,6 +79,7 @@ class Gate:
                 not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
             return
         self.auto, self.auto_stamp, self.auto_at = value, source, now
+        self.reason = 'auto_command_received'
 
     def demand(self, stamp, now):
         if not self.enabled or self.estop:

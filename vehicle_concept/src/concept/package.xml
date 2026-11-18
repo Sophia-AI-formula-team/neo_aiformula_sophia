@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>concept</name>
+  <version>6.26.0</version>
+  <description>Vehicle bringup</description>
+  <maintainer email="maintainers@users.noreply.github.com">Sophia AI Formula</maintainer>
+  <license>AGPL-3.0-only</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launchers</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>concept_drive</exec_depend>
+  <exec_depend>concept_vehicle_state</exec_depend>
+  <exec_depend>concept_control_gate</exec_depend>
+  <exec_depend>concept_yolop</exec_depend>
+  <exec_depend>concept_panel</exec_depend>
+  <exec_depend>concept_visualization</exec_depend>
+  <exec_depend>motor_controller</exec_depend>
+  <exec_depend>vehicle</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joy</exec_depend>
+  <exec_depend>teleop_twist_joy</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>can_msgs</exec_depend>
+  <exec_depend>ros2_socketcan</exec_depend>
+  <exec_depend>odometry_publisher</exec_depend>
+  <exec_depend>rear_potentiometer</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

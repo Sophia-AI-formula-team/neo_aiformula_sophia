@@ -38,9 +38,13 @@ class GateNode(Node):
         self.state_t = -math.inf
         self.state_at = -math.inf
         self.sender = self.declare_parameter('can_sender_node', '/aiformula_control/socket_can_sender').value
-        self.settings = dict(enable_button=6, enable_turbo_button=4, axis_linear=1, axis_angular=3,
-                             scale_linear=3.5, scale_linear_turbo=3.6, scale_angular=.7,
-                             scale_angular_turbo=1.)
+        self.settings = {}
+        for field, parameter, default in (
+                ('enable_button', 'enable_button', 6), ('enable_turbo_button', 'enable_turbo_button', 4),
+                ('axis_linear', 'axis_linear.x', 1), ('axis_angular', 'axis_angular.yaw', 3),
+                ('scale_linear', 'scale_linear.x', 3.5), ('scale_linear_turbo', 'scale_linear_turbo.x', 3.6),
+                ('scale_angular', 'scale_angular.yaw', .7), ('scale_angular_turbo', 'scale_angular_turbo.yaw', 1.)):
+            self.settings[field] = self.declare_parameter(parameter, default).value
         self.cmd = self.create_publisher(Twist, TWIST_OUT, 1)
         self.can = self.create_publisher(Frame, CAN_OUT, 1)
         self.status = self.create_publisher(String, '/concept/gate/status', 1)
@@ -56,6 +60,7 @@ class GateNode(Node):
         self.create_timer(.02, self.tick, clock=self.steady)
         self.create_timer(.1, self.report, clock=self.steady)
         self.last_clock = None
+        self.repeat_zero_until = -math.inf
 
     @staticmethod
     def valid_limit(value):
@@ -90,6 +95,8 @@ class GateNode(Node):
     def stop(self):
         self.private_cmd(ZERO)
         self.publish_frame(ZERO_FRAME)
+        if not self.gate.enabled:
+            self.repeat_zero_until = time.monotonic() + .20
 
     def graph_ok(self):
         infos = self.get_subscriptions_info_by_topic(self.can.topic_name)
@@ -163,6 +170,8 @@ class GateNode(Node):
         if self.gate.enabled:
             self.publish_frame(self.gate.motor(bytes(msg.data), seconds(msg.header.stamp),
                                                 self.now(), time.monotonic()))
+            if not self.gate.enabled:
+                self.repeat_zero_until = time.monotonic() + .20
 
     def tick(self):
         stamp = self.now()
@@ -176,7 +185,9 @@ class GateNode(Node):
         was_enabled = self.gate.enabled
         cmd = self.gate.tick(stamp, time.monotonic())
         self.private_cmd(cmd)
-        if (was_enabled or self.gate.enabled) and cmd == ZERO:
+        if was_enabled and not self.gate.enabled:
+            self.repeat_zero_until = time.monotonic() + .20
+        if cmd == ZERO and (self.gate.enabled or time.monotonic() < self.repeat_zero_until):
             self.publish_frame(ZERO_FRAME)
 
     def estop(self, msg):

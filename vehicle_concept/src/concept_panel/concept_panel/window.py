@@ -10,7 +10,7 @@ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','outp
          'joy_timeout':'手柄数据超时','graph_conflict':'控制链存在冲突','motor_timeout':'电机转换输出超时',
          'vehicle_state_timeout':'车辆状态超时','speed_limit_changed':'速度上限已更改，等待继续',
          'auto_timeout':'自动指令超时','auto_speed_limit':'自动指令超过速度上限',
-         'waiting_new_auto':'等待恢复后的新指令','feasible':'已选择可行轨迹',
+         'waiting_new_auto':'等待恢复后的新指令','auto_command_received':'已收到新的自动指令','feasible':'已选择可行轨迹',
          'no_feasible_trajectory':'当前无可行轨迹','unobserved_road':'缺少道路观测'}
 
 def reason(value):

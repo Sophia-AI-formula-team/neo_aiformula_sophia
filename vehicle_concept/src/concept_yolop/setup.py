@@ -21,5 +21,6 @@ setup(
         'concept_yolop_node = concept_yolop.node:main',
         'concept_yolop_weights = concept_yolop.weights:main',
         'concept_yolop_check = concept_yolop.check:main',
+        'concept_yolop_calibrate = concept_yolop.calibrate:main',
     ]},
 )
