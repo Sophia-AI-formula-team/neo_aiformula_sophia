@@ -5,8 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from semantic_planner_core.rough_route import RouteSample
-from semantic_planner_core.route_fusion import build_fused_route
 import test_route_fusion as fixtures
+from test_route_fusion import build_fused_route
 
 
 class FusionRegressionTests(unittest.TestCase):

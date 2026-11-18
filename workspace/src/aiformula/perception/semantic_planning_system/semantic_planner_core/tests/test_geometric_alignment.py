@@ -11,7 +11,16 @@ from semantic_planner_core.geometric_alignment import (
     CurveProblem, PointHash, geometric_seeds, refine,
 )
 from semantic_planner_core.rough_route import RouteReference
-from semantic_planner_core.route_fusion import build_fused_route
+from semantic_planner_core.route_fusion import build_fused_route as production_fuse
+
+
+def build_fused_route(samples, official, **options):
+    # Node (8, 0) lies on the synthetic horizontal segment: the supplied
+    # branch points into that synthetic loop and is perpendicular to it.
+    if official.points[0] == (8, 0):
+        options.setdefault('branch_connections', {official.node_ids[0]: [('test_inner', (8., 3.))]})
+        return production_fuse(samples, official, **options)
+    return fixtures.build_fused_route(samples, official, **options)
 
 
 class GeometricAlignmentTests(unittest.TestCase):
@@ -72,13 +81,16 @@ class GeometricAlignmentTests(unittest.TestCase):
                 for index, point in enumerate(self.nodes):
                     self.assertLess(math.dist(result.node_positions[str(index)], transform(point)), 0.2)
 
-    def test_symmetric_curve_is_rejected_as_global_ambiguity(self):
+    def test_symmetric_curve_reports_ambiguity_when_lowest_score_is_selected(self):
         square = [(0, 0), (20, 0), (20, 20), (0, 20)]
         result = build_fused_route(fixtures.record(square), fixtures.route(square))
-        self.assertFalse(result.status["available"])
-        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
+        # Current policy intentionally picks the lowest eligible score even
+        # when alternatives are equally good; ambiguity remains observable.
+        self.assertTrue(result.status["available"])
+        self.assertFalse(result.alignment["candidate_gap_enforced"])
         self.assertFalse(result.alignment["global_transform_available"])
-        self.assertEqual(result.node_positions, {})
+        self.assertFalse(result.alignment["node_correspondence_available"])
+        self.assertGreater(result.alignment["alternative_node_spread_m"], 10.0)
 
     def test_expired_search_returns_odom_reference_only(self):
         with patch("semantic_planner_core.geometric_alignment.MAX_SECONDS", 0.0):

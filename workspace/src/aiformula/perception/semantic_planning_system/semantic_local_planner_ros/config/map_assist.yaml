@@ -2,9 +2,8 @@ map_assist:
   ros__parameters:
     odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
     avoidance_flag_topic: /lane_stop_flag
-    # Normal cold start, before OA begins avoidance; later ownership follows its real flag.
-    # For a mid-run restart with unknown OA state, override this to false.
-    avoidance_initially_idle: true
+    # Wait for OA's real False/True message, including after mid-run restarts.
+    avoidance_initially_idle: false
     input_point_a_topic: /original_processed_point_a
     input_point_b_topic: /original_processed_point_b
     input_point_c_topic: /original_processed_point_c
@@ -52,14 +51,15 @@ map_assist:
     # Latch the real flag; resume only after False and a fresh complete triplet.
     resume_delay_sec: 0.2
 
-    # map_drive.launch.py enables these and remaps the existing LYA output.
-    # Standalone map_assist.launch.py retains point-only assistance by default.
-    enable_traffic_control: false
+    # Traffic operation REQUIRES the LYA cmd_vel output to be remapped to the
+    # gate input. Do not run with a second direct cmd_vel publisher.
+    enable_traffic_control: true
     traffic_light_topic: /map_assist/traffic_light_input
+    traffic_stop_flag_topic: /flag_stop
     # Both red and green require a strict majority of real detector frames.
     traffic_vote_window_sec: 0.5
     traffic_vote_min_samples: 3
-    enable_velocity_gate: false
+    enable_velocity_gate: true
     input_cmd_vel_topic: /map_assist/controller_cmd_vel
     output_cmd_vel_topic: /aiformula_control/game_pad/cmd_vel
     cmd_vel_timeout_sec: 0.5
@@ -84,5 +84,11 @@ map_assist:
     detour_entry_radius_m: 3.0
     detour_waypoint_radius_m: 0.8
     detour_max_cross_track_m: 2.0
-    detour_lookahead_m: 0.5
+    detour_lookahead_m: 1.5
     detour_point_spacing_m: 0.5
+    # Placeholder for simulation; replace with the vehicle's measured limit.
+    detour_min_turn_radius_m: 4.0
+    detour_max_trim_m: 12.0
+    detour_curve_spacing_m: 0.15
+    detour_target_angle_deg: 65.0
+    detour_plan_update_distance_m: 1.5

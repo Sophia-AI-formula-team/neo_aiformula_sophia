@@ -453,6 +453,7 @@ def match_outer_nodes(reference, official, node_search_m, feature_window_m,
         return (candidate["node_rmse_m"] <= max_rmse_m
                 and candidate["node_max_distance_m"] <= node_search_m
                 and candidate["edge_angle_max_rad"] <= math.radians(60.0))
+    quality_candidates = [item for item in refined if eligible(item)]
     angular_pass, angular_unknown = [], []
     for candidate in refined:
         if time.monotonic() > deadline:
@@ -468,13 +469,24 @@ def match_outer_nodes(reference, official, node_search_m, feature_window_m,
             if all(angle_in_range(item["angle_deg"], branch_angle_min_deg, branch_angle_max_deg) for item in angles):
                 angular_pass.append(candidate)
     if not angular_pass:
-        reason = ("solver_budget_exhausted" if diagnostics["search_budget_exhausted"] else
-                  "branch_angle_unavailable" if angular_unknown else "branch_angle_no_candidate")
+        if diagnostics["search_budget_exhausted"]:
+            reason = "solver_budget_exhausted"
+        elif angular_unknown:
+            reason = "branch_angle_unavailable"
+        elif not quality_candidates and all(item["node_rmse_m"] > max_rmse_m for item in refined):
+            # Do not report an angle rejection when no candidate even reached
+            # the angle check because all exceeded the requested fit error.
+            reason = "rmse_exceeds_limit"
+        elif not quality_candidates:
+            reason = "geometry_limits_no_candidate"
+        else:
+            reason = "branch_angle_no_candidate"
         diagnostics.update(available=False, reason=reason, matching_method=VERSION,
                            branch_angle_threshold_deg=branch_angle_min_deg,
                            branch_angle_max_deg=branch_angle_max_deg,
                            branch_angle_exempt_edges=[list(x) for x in sorted(BRANCH_ANGLE_EXEMPT_EDGES)],
-                           branch_angle_unknown_count=len(angular_unknown), search_exhaustive=False,
+                           branch_angle_unknown_count=len(angular_unknown),
+                           geometry_eligible_count=len(quality_candidates), search_exhaustive=False,
                            solver_elapsed_sec=time.monotonic()-start)
         return diagnostics, {}, reason
     # refined is already ordered by the original point-to-curve objective.

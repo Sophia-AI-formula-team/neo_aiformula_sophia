@@ -57,7 +57,7 @@ class JointMapNodeTests(unittest.TestCase):
         node.odom_stamp = self.h.now
         node.odom_frame = "odom"
         node.child_frame = "base_link"
-        node._try_complete_lap((0.0, 0.0, 0.0), False)
+        node._try_complete_lap((0.0, 0.0, 0.0), False, (-0.05, 0.0, 0.0))
         self.assertIsNotNone(node.reference)
         return node
 
@@ -128,7 +128,7 @@ class JointMapNodeTests(unittest.TestCase):
                 status = json.loads(node.status_pub.messages[-1].data)
                 self.assertEqual(status["map_fusion"]["reason"], reason)
                 self.assertTrue(status["odom_reference_ready"])
-                self.h.confirm_light("red")
+                self.h.confirm_light("red", stop_flag=True)
                 node._tick()
                 self.assertEqual(node.traffic_mode, "wait")
                 self.assertEqual(node.traffic_reason, "red_wait_map_fusion")
@@ -145,7 +145,7 @@ class JointMapNodeTests(unittest.TestCase):
 
     def test_red_waits_without_a_confirmed_topology(self):
         node = self.prepare_circle_lap(traffic=True)
-        self.h.confirm_light("red")
+        self.h.confirm_light("red", stop_flag=True)
         node._tick()
         self.assertEqual(node.traffic_mode, "wait")
         self.assertEqual(node.traffic_reason, "red_wait_map_fusion")
@@ -209,61 +209,18 @@ class JointMapNodeTests(unittest.TestCase):
             node._fusion_future.result(timeout=2.0)
 
     def test_real_fusion_attaches_graph_and_red_uses_internal_route(self):
-        self.h.node.close_fusion_worker()
-        self.h.parameter_overrides.update(enable_traffic_control=True, enable_velocity_gate=True)
-        self.h.node = self.h.module.MapAssist()
+        # This exercises the real asynchronous fusion using the actual
+        # supplied topology and a newly generated, hypothetical smooth loop.
+        # No previously recorded course or known ground-truth map is loaded.
+        self.h.learned_official_loop()
         node = self.h.node
-        self.h.start_session()
-        outline = [(0, 0), (25, -12), (80, 0), (50, 30), (20, 40)]
-        identifiers = ["n0", "n1", "n2", "n3", "n4"]
-        node.official = self.h.module.OfficialRoute(identifiers + [identifiers[0]], outline + [outline[0]])
-        nodes = dict(zip(identifiers, outline))
-        nodes.update({"i0": (20, 8), "i1": (12, 12)})
-        adjacency = {key: {} for key in nodes}
-
-        def connect(first, second):
-            distance = math.dist(nodes[first], nodes[second])
-            adjacency[first][second] = distance
-            adjacency[second][first] = distance
-
-        for first, second in zip(identifiers, identifiers[1:] + identifiers[:1]):
-            connect(first, second)
-        for first, second in (("n0", "i0"), ("n1", "i0"), ("i0", "i1"),
-                              ("i1", "n3"), ("i1", "n4")):
-            connect(first, second)
-        node.topology = self.h.module.TopologyGraph(nodes, adjacency, [identifiers + [identifiers[0]]])
-        dense = self.h.dense_loop(outline + [outline[0]], spacing=0.3)[:-1]
-        dense = dense[20:] + dense[:20]
-        node.samples = [self.h.module.RouteSample(x, y, 0.0) for x, y in dense]
-        node.recorded_distance = sum(math.dist(first, second)
-                                     for first, second in zip(dense, dense[1:] + dense[:1]))
-        node.left_start_area = True
-        node.odom = (dense[0][0], dense[0][1], 0.0)
-        node.odom_time = self.h.now
-        node.odom_stamp = self.h.now
-        node.odom_frame = "odom"
-        node.child_frame = "base_link"
-        node._try_complete_lap(node.odom, False)
-        result = node._fusion_future.result(timeout=20.0)
-        self.assertTrue(result.status["available"], result.status)
-        self.h.advance()
-        self.h.odom(*node.odom)
-        node._tick()
         self.assertTrue(node.fusion_status["available"], node.fusion_status)
         self.assertTrue(node.topology_mapping_status["available"], node.topology_mapping_status)
-        start = identifiers[0]
-        position = node.fused_node_positions[start]
-        next_position = node.mapped_topology.nodes["i0"]
-        yaw = math.atan2(next_position[1] - position[1], next_position[0] - position[0])
-        node.odom = (position[0], position[1], yaw)
-        node.odom_time = self.h.now
-        node.odom_stamp = self.h.now
-        node.progress = node.fused_node_progress[start]
-        node.matched = True
-        self.h.confirm_light("red")
+        self.h.confirm_light("red", stop_flag=True)
         node._tick()
         self.assertEqual(node.traffic_mode, "detour", node.traffic_reason)
-        self.assertIn("i0", node.detour_node_ids)
+        self.assertTrue(set(node.detour_node_ids) - set(node.official.node_ids))
+        self.assertGreater(len(node.detour_tracker.points), len(node.detour_node_ids))
         count = self.h.output_count()
         node._on_avoidance(fixtures.DataMessage(True))
         self.h.advance()

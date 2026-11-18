@@ -11,8 +11,10 @@ from semantic_planner_core.rough_topology import OfficialRoute
 from semantic_planner_core.traffic_route import TopologyGraph
 from semantic_planner_core.route_fusion import (
     _candidate_disagreement, _joint_project_nodes, _project_nodes,
-    _projection_data, build_fused_route, build_odom_reference,
+    _projection_data, build_odom_reference,
 )
+from test_route_fusion import build_fused_route
+from fusion_test_fixtures import official_graph_branches
 
 
 class JointAlignmentTests(unittest.TestCase):
@@ -42,16 +44,17 @@ class JointAlignmentTests(unittest.TestCase):
         self.assertEqual(_candidate_disagreement(first, second, []), 0.0)
         self.assertGreater(_candidate_disagreement(first, second, [(8.0, 4.0)]), 1.0)
 
-    def test_symmetric_loop_is_not_accepted_as_unique(self):
+    def test_symmetric_loop_selected_lowest_still_reports_not_unique(self):
         outline = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
         result = build_fused_route(fixtures.record(outline, step=0.25), fixtures.route(outline),
                                    comparison_points=[(5.0, 8.0)])
-        self.assertFalse(result.status["available"], result.status)
-        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
-        self.assertEqual(result.node_positions, {})
+        self.assertTrue(result.status["available"], result.status)
+        self.assertFalse(result.alignment["candidate_gap_enforced"])
+        self.assertFalse(result.alignment["global_transform_available"])
+        self.assertFalse(result.alignment["node_correspondence_available"])
         self.assertIsNotNone(result.alignment["alternative_node_spread_m"])
 
-    def test_official_nodes_and_synthetic_rounded_track_remain_ambiguous(self):
+    def test_official_nodes_and_synthetic_rounded_track_report_ambiguity(self):
         source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
         official = OfficialRoute.from_osm(source)
         graph = TopologyGraph.from_osm(source)
@@ -67,9 +70,12 @@ class JointAlignmentTests(unittest.TestCase):
         samples = [RouteSample(x, y, math.atan2(points[(i + 1) % len(points)][1] - y,
                                                  points[(i + 1) % len(points)][0] - x))
                    for i, (x, y) in enumerate(points)]
-        result = build_fused_route(samples, official, max_rmse_m=3.2, comparison_points=inner)
-        self.assertFalse(result.status["available"], result.status)
-        self.assertEqual(result.status["reason"], "global_transform_ambiguous")
+        result = build_fused_route(samples, official, max_rmse_m=3.2, comparison_points=inner,
+                                   branch_connections=official_graph_branches(official, graph))
+        self.assertTrue(result.status["available"], result.status)
+        self.assertFalse(result.alignment["candidate_gap_enforced"])
+        self.assertFalse(result.alignment["global_transform_available"])
+        self.assertFalse(result.alignment["node_correspondence_available"])
         self.assertGreater(result.alignment["alternative_node_spread_m"], 10.0)
 
     def test_different_start_and_reverse_still_search_expected_direction(self):

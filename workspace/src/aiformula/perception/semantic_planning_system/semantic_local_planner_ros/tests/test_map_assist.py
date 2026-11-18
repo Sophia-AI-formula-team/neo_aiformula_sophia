@@ -14,6 +14,11 @@ import types
 import unittest
 from unittest.mock import patch
 
+core_tests = Path(__file__).resolve().parents[2] / 'semantic_planner_core' / 'tests'
+if str(core_tests) not in sys.path:
+    sys.path.insert(0, str(core_tests))
+from fusion_test_fixtures import hypothetical_smooth_lap
+
 
 class Pose2D:
     def __init__(self, x=0.0, y=0.0, theta=0.0):
@@ -391,7 +396,13 @@ class MapAssistTests(unittest.TestCase):
         self.parameter_overrides.update(enable_traffic_control=traffic, enable_velocity_gate=traffic)
         self.node = self.module.MapAssist()
         self.start_session()
-        measured = recorded_points or self.dense_loop(self.node.official.points)
+        if recorded_points is None:
+            # A hypothetical loop follows the official graph's required branch
+            # tangents. It is generated for this test, not a stored race map.
+            measured = hypothetical_smooth_lap(self.node.official, self.node.topology)
+            measured = measured + [measured[0]]
+        else:
+            measured = list(recorded_points)
         if official_transform is not None:
             original = self.node.official
             self.node.official = self.module.OfficialRoute(
@@ -403,11 +414,26 @@ class MapAssistTests(unittest.TestCase):
             adjacency = {key: {other: math.dist(nodes[key], nodes[other]) for other in neighbours}
                          for key, neighbours in graph.adjacency.items()}
             self.node.topology = self.module.TopologyGraph(nodes, adjacency, graph.closed_ways)
-        self.node.samples = [self.module.RouteSample(x, y, 0.0) for x, y in measured[:-1]]
+        self.node.samples = [self.module.RouteSample(x, y,
+            math.atan2(measured[i + 1][1] - y, measured[i + 1][0] - x))
+            for i, (x, y) in enumerate(measured[:-1])]
         self.node.recorded_distance = sum(math.dist(a, b) for a, b in zip(measured, measured[1:]))
         self.node.left_start_area = True
-        self.node._try_complete_lap((*measured[0], 0.0), False)
+        # The production closure check requires a previous pose on the other
+        # side of the start plane; this fixture seeds that crossing explicitly.
+        yaw = self.node.samples[0].yaw
+        previous = (measured[0][0] - 0.05 * math.cos(yaw),
+                    measured[0][1] - 0.05 * math.sin(yaw), yaw)
+        self.node._try_complete_lap((*measured[0], yaw), False, previous)
         self.assertIsNotNone(self.node.reference)
+        # Fusion is asynchronous: await the real worker, then supply fresh
+        # odometry and explicitly poll on the node thread before asserting it.
+        self.assertIsNotNone(self.node._fusion_future)
+        self.node._fusion_future.result(timeout=20.0)
+        self.advance(0.1)
+        self.triplet()
+        self.odom(*measured[0], yaw=yaw)
+        self.node._poll_fusion(self.now)
         return self.node
 
     def conflicting_frame(self, points=None):
@@ -422,8 +448,10 @@ class MapAssistTests(unittest.TestCase):
         self.node = self.module.MapAssist()
         self.start_session()
 
-    def confirm_light(self, state, *, refresh_points=True, oa_command=None):
+    def confirm_light(self, state, *, refresh_points=True, oa_command=None, stop_flag=None):
         """Feed real 10 Hz observations for a full window, without control ticks."""
+        if stop_flag is not None:
+            self.node._on_traffic_stop_flag(DataMessage(stop_flag))
         start = self.now
         for index in range(7):
             self.now = start + index * 0.1
@@ -476,14 +504,19 @@ class MapAssistTests(unittest.TestCase):
         alternative = graph.alternative_route(
             start, forward, require_internal=True, outer_node_ids=self.node.official.node_ids[:-1],
         )
-        first, second = alternative.points[:2]
-        yaw = math.atan2(second[1] - first[1], second[0] - first[0])
-        if near_junction:
-            x, y = first
-            self.node.progress = self.node.fused_node_progress[start]
-        else:
-            x, y, _ = self.node.reference.point_at(10.0)
-            self.node.progress = 10.0
+        # The UBS turn starts while still facing along the outer lane, with
+        # enough room for the configured 4 m radius. The old fixture placed
+        # the car on the junction and pointed it down the internal branch.
+        distance = 12.0 if near_junction else 25.0
+        progress = (self.node.fused_node_progress[start] - distance) % self.node.reference.length_m
+        x, y, _ = self.node.reference.point_at(progress)
+        before = self.node.reference.point_at(progress - 0.25)
+        after = self.node.reference.point_at(progress + 0.25)
+        yaw = math.atan2(after[1] - before[1], after[0] - before[0])
+        self.node.progress = progress
+        self.node.odom = None
+        self.node.odom_stamp = None
+        self.advance(0.1)
         self.triplet()
         self.odom(x, y, yaw)
         self.assertTrue(self.node.matched)
@@ -527,7 +560,8 @@ class MapAssistTests(unittest.TestCase):
                              ("odom_topic", "avoidance_flag_topic", "branch_active_topic", "reset_topic"))
         self.assertEqual(set(self.node.subscriptions), subscriptions)
         publishers = {self.node.p[f"output_point_{label}_topic"] for label in "abc"}
-        publishers.update((self.node.p["status_topic"], self.node.p["reference_path_topic"]))
+        publishers.update((self.node.p["status_topic"], self.node.p["reference_path_topic"],
+                           "/map_assist/detour_path"))
         self.assertEqual(set(self.node.publishers), publishers)
         self.assertNotIn("/lane_stop_flag", self.node.publishers)
         self.assertFalse(any("semantic" in name or "heartbeat" in name for name in self.node.p))
@@ -542,14 +576,13 @@ class MapAssistTests(unittest.TestCase):
         self.odom()
         self.node._tick()
         self.assertEqual(self.output_count(), 0)
-        self.assertTrue(self.node.samples[-1].excluded)
+        self.assertEqual(self.node.samples, [], "Unknown OA state must not establish a start sample")
         self.advance(0.1)
         self.triplet()
         self.odom(x=0.3)
         self.node._tick()
         self.assertEqual(self.output_count(), 0)
-        self.assertEqual(len(self.node.samples), 2)
-        self.assertTrue(all(sample.excluded for sample in self.node.samples))
+        self.assertEqual(self.node.samples, [], "No recording starts before the first usable input")
         self.assertTrue(self.node.status_pub.messages, "Observation/status remain available")
         self.assertEqual(self.node.last_correction, 0.0)
 
@@ -852,7 +885,7 @@ class MapAssistTests(unittest.TestCase):
         self.node._on_controller_cmd(moving)
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
         count = self.output_count()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assert_stopped()
         stop_count = len(self.node.cmd_pub.messages)
@@ -947,7 +980,7 @@ class MapAssistTests(unittest.TestCase):
         for light in ("green", "red", "unknown"):
             with self.subTest(light=light):
                 self.learned_official_loop()
-                self.confirm_light("red")
+                self.confirm_light("red", stop_flag=True)
                 self.node._tick()
                 self.assertEqual(self.node.traffic_mode, "detour")
                 self.confirm_light(light)
@@ -987,7 +1020,7 @@ class MapAssistTests(unittest.TestCase):
         oa_command = self.command(0.4, -0.6)
         self.node._on_controller_cmd(oa_command)
         count = len(self.node.cmd_pub.messages)
-        self.confirm_light("red", oa_command=oa_command)
+        self.confirm_light("red", oa_command=oa_command, stop_flag=True)
         self.triplet()
         self.node._tick()
         self.assertEqual(self.output_count(), points_count)
@@ -1017,7 +1050,7 @@ class MapAssistTests(unittest.TestCase):
                     self.node._on_avoidance(DataMessage(True))
                 else:
                     self.learned_official_loop()
-                    self.confirm_light("red")
+                    self.confirm_light("red", stop_flag=True)
                     self.node._tick()
                     self.assertEqual(self.node.traffic_mode, "detour")
                 moving = self.command(0.5, -0.2)
@@ -1034,7 +1067,7 @@ class MapAssistTests(unittest.TestCase):
 
     def test_red_automatically_avoids_forward_edge_and_emits_detour_only_on_new_odom(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         route = self.node.detour_node_ids
@@ -1063,12 +1096,16 @@ class MapAssistTests(unittest.TestCase):
         self.node._on_controller_cmd(moving)
         self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
 
-    def test_red_waits_for_a_nearby_junction_and_an_unambiguous_alignment(self):
-        for options, expected in (({"near_junction": False}, "red_wait_near_junction"),
+    def test_red_waits_when_no_feasible_spline_or_no_fused_graph(self):
+        for options, expected in (({"near_junction": False}, "red_wait_spline_no_curvature_feasible_spline"),
                                   ({"available": False}, "red_wait_map_fusion")):
             with self.subTest(options=options):
                 self.learned_official_loop(**options)
-                self.confirm_light("red")
+                if options.get("near_junction") is False:
+                    # An explicitly impossible radius tests the hold behavior,
+                    # independent of the precise position of the red event.
+                    self.node.p["detour_min_turn_radius_m"] = 100.0
+                self.confirm_light("red", stop_flag=True)
                 self.node._tick()
                 self.assertEqual(self.node.traffic_mode, "wait")
                 self.assertEqual(self.node.traffic_reason, expected)
@@ -1077,12 +1114,12 @@ class MapAssistTests(unittest.TestCase):
 
     def test_detour_completion_reseeds_outer_progress_and_requires_fresh_visual_and_command(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         reference = self.node.reference
         route_points = list(self.node.detour_tracker.points)
-        expected_exit = self.node.detour_exit_progress
+        expected_exit = self.node.detour_exit_progress + self.node.smooth_path.trim_m + 2.0
         self.confirm_light("green")
         last_position = self.node.odom
         completed = False
@@ -1167,7 +1204,7 @@ class MapAssistTests(unittest.TestCase):
         for key in baseline.fused_node_positions:
             self.assertLess(math.dist(baseline.fused_node_positions[key], scaled.fused_node_positions[key]), 0.02)
 
-    def test_node_progress_and_detour_endpoints_use_final_fused_anchors(self):
+    def test_node_progress_and_detour_graph_use_final_fused_anchors(self):
         changed_id = self.node.official.node_ids[1]
         self.learned_official_loop(
             official_transform=lambda key, point: (point[0] + 1.25, point[1] - 0.75)
@@ -1189,16 +1226,18 @@ class MapAssistTests(unittest.TestCase):
         self.node.fused_node_progress[key] = progress + 1.234
         self.assertEqual(self.node._node_progress(key), progress + 1.234)
         self.node.fused_node_progress[key] = progress
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "detour")
         route = self.node.detour_node_ids
-        self.assertEqual(self.node.detour_tracker.points[0], self.node.fused_node_positions[route[0]])
-        self.assertEqual(self.node.detour_tracker.points[-1], self.node.fused_node_positions[route[-1]])
-        self.assertEqual(list(self.node.detour_tracker.points),
+        self.assertEqual(self.node.detour_graph_points[0], self.node.fused_node_positions[route[0]])
+        self.assertEqual(self.node.detour_graph_points[-1], self.node.fused_node_positions[route[-1]])
+        self.assertEqual(list(self.node.detour_graph_points),
                          [self.node.mapped_topology.nodes[key] for key in route])
+        # The UBS output begins at the actual vehicle, not at the topo node.
+        self.assertLess(math.dist(self.node.detour_tracker.points[0], self.node.odom[:2]), 0.05)
 
-    def test_rejected_map_correspondence_is_odom_only_and_cannot_correct_or_detour(self):
+    def test_odom_only_can_bound_visual_heading_but_cannot_plan_a_detour(self):
         self.traffic_node()
         self.learn_circle()
         self.assertFalse(self.node.fusion_status["available"])
@@ -1206,17 +1245,15 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(self.node.fused_node_progress, {})
         self.assertIsNone(self.node.mapped_topology)
         for _ in range(8):
-            points = self.conflicting_frame()
-            self.assert_last_points_equal(points)
-            self.assertEqual(self.node.last_correction, 0.0)
-            self.assertEqual(self.node.guard.violation_count, 0)
-            self.assertEqual(self.node.reason, "map_fusion_unavailable_passthrough")
+            self.conflicting_frame()
+        self.assertGreater(abs(self.node.last_correction), 0.0)
+        self.assertLessEqual(abs(math.degrees(self.node.last_correction)), self.node.p["max_correction_deg"])
         self.node._publish_status()
         status = json.loads(self.node.status_pub.messages[-1].data)
         self.assertEqual(status["phase"], "odom_only")
         self.assertFalse(status["map_fusion"]["available"])
         self.assertTrue(status["map_fusion"]["reason"])
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assertEqual(self.node.traffic_reason, "red_wait_map_fusion")
@@ -1225,7 +1262,7 @@ class MapAssistTests(unittest.TestCase):
 
     def test_reset_after_completed_detour_does_not_ignore_a_later_red(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.complete_active_detour()
         self.node._on_reset(DataMessage(True))
@@ -1233,7 +1270,7 @@ class MapAssistTests(unittest.TestCase):
         self.assertEqual(self.node.fused_node_positions, {})
         self.assertEqual(self.node.fused_node_progress, {})
         self.assertIsNone(self.node.mapped_topology)
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, "wait")
         self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
@@ -1241,7 +1278,7 @@ class MapAssistTests(unittest.TestCase):
 
     def test_completed_detour_needs_no_green_before_later_red_can_stop(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.complete_active_detour()
         self.assertEqual(self.node.traffic_mode, "normal")
@@ -1252,13 +1289,14 @@ class MapAssistTests(unittest.TestCase):
         self.node._tick()
         self.node._on_controller_cmd(self.command())
         self.assertGreater(self.node.cmd_pub.messages[-1].linear.x, 0.0)
-        self.confirm_light("red")
+        self.node._on_traffic_stop_flag(DataMessage(False))
+        self.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "wait", "A later confirmed red must revoke motion without a green event")
         self.assert_stopped()
 
     def test_expired_red_during_detour_does_not_start_another_detour_at_exit(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
         self.advance(0.6)
         self.emit_detour_completion()
@@ -1274,13 +1312,17 @@ class MapAssistTests(unittest.TestCase):
 
     def test_fresh_red_during_detour_is_enforced_at_completion_without_green_event(self):
         self.learned_official_loop()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._tick()
-        self.confirm_light("red")
+        # The earlier distance event must clear before a later rising event
+        # can be distinguished without relying on lamp IDs or an old map.
+        self.node._on_traffic_stop_flag(DataMessage(False))
+        self.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "detour", "Light changes cannot abandon a committed route")
+        self.assertTrue(self.node.detour_next_red_pending)
         self.emit_detour_completion()
         self.assertEqual(self.node.traffic_mode, "wait", "Fresh confirmed red remains effective at the exit")
-        self.assertEqual(self.node.traffic_reason, "red_after_detour")
+        self.assertEqual(self.node.traffic_reason, "red_wait_next_event")
         self.assertIsNone(self.node.detour_tracker)
         self.node._on_controller_cmd(self.command())
         self.assert_stopped()
@@ -1303,7 +1345,7 @@ class MapAssistTests(unittest.TestCase):
     def test_wait_survives_one_green_frame_and_detection_stream_loss(self):
         self.traffic_node()
         self.ready_visual_motion()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.node._on_light_state(DataMessage("green"))
         self.advance(0.6)
         self.odom(*self.node.odom)
@@ -1318,7 +1360,7 @@ class MapAssistTests(unittest.TestCase):
         for reset_kind in ("explicit", "odom"):
             with self.subTest(reset_kind=reset_kind):
                 self.learned_official_loop()
-                self.confirm_light("red")
+                self.confirm_light("red", stop_flag=True)
                 self.node._tick()
                 self.confirm_light("green")
                 self.assertEqual(self.node.traffic_light, "green")
@@ -1338,7 +1380,7 @@ class MapAssistTests(unittest.TestCase):
     def test_status_reports_expired_vote_without_changing_control_state(self):
         self.traffic_node()
         self.ready_visual_motion()
-        self.confirm_light("red")
+        self.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "wait")
         self.advance(0.6)
         before_points = self.output_count()

@@ -4,7 +4,7 @@ package_name = "semantic_planner_core"
 
 setup(
     name=package_name,
-    version="0.4.3",
+    version="0.4.4",
     packages=find_packages(exclude=["tests"]),
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
