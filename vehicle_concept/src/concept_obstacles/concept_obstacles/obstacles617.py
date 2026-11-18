@@ -113,6 +113,7 @@ def instances(prediction, shape=(360, 640), image=None):
             factor = 1.+.24/max(np.hypot(z, x), .1)
             z, x = z*factor, x*factor
             covariance += np.eye(2)*.05**2
+        del group['support']
         result.append(dict(**group, point=np.array([z, x]), R=covariance, clipped=clipped))
     return result
 
