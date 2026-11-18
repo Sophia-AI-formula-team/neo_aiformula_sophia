@@ -1,3 +1,4 @@
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -44,3 +45,20 @@ def test_feedback_only_consumes_causal_valid_measurements():
     feedback.add(dict(valid=False))
     with pytest.raises(ValueError):
         feedback.at(4.16,.15)
+
+def test_installed_model_files_match_freeze_bytes():
+    import concept_feasibility
+    import concept_ranker
+    import concept_road
+
+    sources = json.loads((Path(__file__).resolve().parents[1] / 'PROVENANCE.json').read_text())['sources']
+    originals = {
+        'experiments/v626_time/model-h12.json': (concept_ranker, 'model-h12.json'),
+        'experiments/v615_recovery/response61515.json': (concept_feasibility, 'response61515.json'),
+        'experiments/v616_decision/reverse_response.json': (concept_feasibility, 'reverse_response.json'),
+        'experiments/v617_regression/reverse_model617.json': (concept_feasibility, 'reverse_model617.json'),
+        'research/learned_racing/unity_laps/v3_evidence/plant_fit.json': (concept_road, 'v3_evidence/plant_fit.json'),
+    }
+    for source, (module, relpath) in originals.items():
+        path = Path(module.__file__).resolve().parent / relpath
+        assert sha256(path.read_bytes()).hexdigest() == sources[source], str(path)
