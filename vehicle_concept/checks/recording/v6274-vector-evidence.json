@@ -1,0 +1,82 @@
+{
+  "auto-left": {
+    "label": "前进",
+    "mode": "自动驾驶",
+    "color": "#185c48",
+    "angle": -51.11656508223583,
+    "actual": {
+      "output_enabled": true,
+      "paused": false,
+      "manual_held": false,
+      "estop": false,
+      "mode": "auto",
+      "reason": "auto_command_received",
+      "t": 1795043473.4216864,
+      "max_auto_speed_mps": 1.0,
+      "linear_mps": 0.4,
+      "yaw_rps": 0.5,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": true
+    }
+  },
+  "manual-reverse": {
+    "label": "倒车",
+    "mode": "手柄接管",
+    "color": "#b1282e",
+    "angle": 180.0,
+    "actual": {
+      "output_enabled": true,
+      "paused": false,
+      "manual_held": false,
+      "estop": false,
+      "mode": "auto",
+      "reason": "auto_command_received",
+      "t": 1795043473.4216864,
+      "max_auto_speed_mps": 1.0,
+      "linear_mps": 0.4,
+      "yaw_rps": 0.5,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": true
+    }
+  },
+  "manual-reverse-flash": {
+    "label": "倒车",
+    "mode": "手柄接管",
+    "color": "#741b24",
+    "angle": 180.0,
+    "actual": {
+      "output_enabled": true,
+      "paused": true,
+      "manual_held": true,
+      "estop": false,
+      "mode": "manual",
+      "reason": "manual_takeover",
+      "t": 1795043473.821693,
+      "max_auto_speed_mps": 1.0,
+      "linear_mps": -0.7000000104308128,
+      "yaw_rps": 0.0,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": false
+    }
+  },
+  "manual-release": {
+    "label": "停止",
+    "mode": "自动已暂停",
+    "color": "#882c30",
+    "angle": null,
+    "actual": {
+      "output_enabled": true,
+      "paused": true,
+      "manual_held": false,
+      "estop": false,
+      "mode": "paused",
+      "reason": "manual_released",
+      "t": 1795043473.9216778,
+      "max_auto_speed_mps": 1.0,
+      "linear_mps": 0.0,
+      "yaw_rps": 0.0,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": false
+    }
+  }
+}

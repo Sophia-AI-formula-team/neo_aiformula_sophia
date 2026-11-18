@@ -1,20 +1,20 @@
 {
   "recorded_topics": {
-    "/concept/decision": 658,
+    "/concept/decision": 665,
     "/concept/gate/status": 648,
     "/aiformula_control/joy_node/joy_l2_throttle": 0,
-    "/aiformula_sensing/vectornav/imu": 983,
-    "/aiformula_sensing/vehicle_info": 983,
+    "/aiformula_sensing/vectornav/imu": 991,
+    "/aiformula_sensing/vehicle_info": 991,
     "/concept/vehicle_state": 1296,
-    "/concept/auto_cmd": 658,
-    "/concept/internal/motor_cmd": 3241,
+    "/concept/auto_cmd": 665,
+    "/concept/internal/motor_cmd": 3239,
     "/concept/gate/estop": 0,
-    "/concept/internal/motor_can": 6463,
+    "/concept/internal/motor_can": 6455,
     "/concept/perception/overlay/compressed": 900
   },
-  "messages": 15830,
-  "db_bytes": 102273024,
-  "recorder_vm_hwm_kib": 50880,
+  "messages": 15850,
+  "db_bytes": 101552128,
+  "recorder_vm_hwm_kib": 50688,
   "camera_input_frames": 900,
   "jpeg_images": 900,
   "jpeg_dimensions": [
@@ -50,94 +50,94 @@
     "archive_hz": 5,
     "feedback": "bench",
     "publish_lag_ms": {
-      "p50": 0.382,
-      "p95": 0.446,
-      "p99": 0.504,
-      "max": 0.637
+      "p50": 0.378,
+      "p95": 0.449,
+      "p99": 0.479,
+      "max": 0.612
     },
     "perception_frames": 900,
-    "decision_frames": 658,
+    "decision_frames": 665,
     "expected_slots": 900,
-    "distinct_output_slots": 658,
-    "raw_matching_twists": 658,
-    "twists_with_matching_ok_decision": 658,
-    "zero_linear_outputs": 253,
-    "nonzero_linear_outputs": 405,
-    "zero_twists": 113,
-    "nonzero_twists": 545,
-    "yaw_only_twists": 140,
-    "forward_twists": 405,
+    "distinct_output_slots": 665,
+    "raw_matching_twists": 665,
+    "twists_with_matching_ok_decision": 665,
+    "zero_linear_outputs": 146,
+    "nonzero_linear_outputs": 519,
+    "zero_twists": 94,
+    "nonzero_twists": 571,
+    "yaw_only_twists": 52,
+    "forward_twists": 519,
     "reverse_twists": 0,
     "on_slot_deadline": 0,
-    "late_slots": 658,
-    "within_200ms_capture": 611,
-    "missing_slots": 242,
+    "late_slots": 665,
+    "within_200ms_capture": 620,
+    "missing_slots": 235,
     "latency_ms": {
-      "p50": 159.553,
-      "p95": 206.151,
-      "p99": 232.855,
-      "max": 260.662
+      "p50": 158.3,
+      "p95": 202.407,
+      "p99": 223.538,
+      "max": 252.297
     },
     "output_interval_ms": {
-      "p50": 89.48,
-      "p95": 123.112,
-      "p99": 135.341,
-      "max": 184.509
+      "p50": 87.481,
+      "p95": 121.169,
+      "p99": 141.682,
+      "max": 163.153
     },
     "consecutive_intervals_over_200ms": 0,
-    "longest_gap_including_run_edges_ms": 184.509,
+    "longest_gap_including_run_edges_ms": 163.153,
     "pauses_over_200ms": 0,
     "status_reason": {
-      "ok / feasible": 419,
-      "ok / executing_prior_contingency": 16,
-      "ok / no_feasible_trajectory": 223
+      "ok / feasible": 533,
+      "ok / executing_prior_contingency": 20,
+      "ok / no_feasible_trajectory": 112
     },
-    "first_output_ms": 100.535,
+    "first_output_ms": 90.153,
     "policy_processing_ms": {
-      "p50": 84.59,
-      "p95": 119.286,
-      "p99": 130.535,
-      "max": 180.65
+      "p50": 82.942,
+      "p95": 116.126,
+      "p99": 136.412,
+      "max": 157.618
     },
     "cold_first_5s": {
       "expected": 75,
-      "received": 70,
+      "received": 72,
       "on_deadline": 0,
-      "within_200ms": 70,
+      "within_200ms": 72,
       "latency_ms": {
-        "p50": 130.208,
-        "p95": 169.14,
-        "p99": 182.341,
-        "max": 182.423
+        "p50": 118.495,
+        "p95": 153.293,
+        "p99": 164.62,
+        "max": 170.012
       }
     },
     "following_slots": {
       "expected": 825,
-      "received": 588,
+      "received": 593,
       "on_deadline": 0,
-      "within_200ms": 541,
+      "within_200ms": 548,
       "latency_ms": {
-        "p50": 163.921,
-        "p95": 207.246,
-        "p99": 235.429,
-        "max": 260.662
+        "p50": 163.715,
+        "p95": 203.849,
+        "p99": 223.605,
+        "max": 252.297
       }
     },
     "output_source_phase_counts": {
-      "0": 658
+      "0": 665
     },
-    "distinct_receive_slots": 654,
-    "receive_slots_with_capture_age_at_most_200ms": 609,
+    "distinct_receive_slots": 660,
+    "receive_slots_with_capture_age_at_most_200ms": 615,
     "duplicate_output_stamps": 0,
     "min_twists_in_sliding_1s": 8,
     "missing_slot_evidence": {
-      "no_decision_observed": 242
+      "no_decision_observed": 235
     },
     "capture_plan_to_receive_ms": {
-      "p50": 159.937,
-      "p95": 206.522,
-      "p99": 233.244,
-      "max": 261.167
+      "p50": 158.685,
+      "p95": 202.776,
+      "p99": 223.903,
+      "max": 252.692
     }
   }
 }
