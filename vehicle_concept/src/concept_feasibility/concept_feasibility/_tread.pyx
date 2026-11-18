@@ -24,9 +24,9 @@ def clearance(const double[:,:] road,const double[:] z,const double[:] x,const d
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void point(const double[:,:] road,const double[:] z,const double[:] x,const double[:] yaw,
+cdef int point(const double[:,:] road,const double[:] z,const double[:] x,const double[:] yaw,
                 double uncertainty,const double[:] offsets,Py_ssize_t i,double[:,::1] b,
-                unsigned char[::1] known) noexcept nogil:
+                unsigned char[::1] known) nogil except -1:
     cdef Py_ssize_t m=road.shape[0],last=road.shape[1]-1,j,side,low,high,mid
     cdef double c,s,depth,lateral,left,right,sigma_l,sigma_r,dz,delta,g,r,side_gap=0.,side_lower=0.
     cdef Py_ssize_t sr=min(last,4)
@@ -63,3 +63,4 @@ cdef void point(const double[:,:] road,const double[:] z,const double[:] x,const
             b[0,i]=side_gap;b[1,i]=side_lower
         else:
             b[0,i]=min(b[0,i],side_gap);b[1,i]=min(b[1,i],side_lower)
+    return 0

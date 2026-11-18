@@ -2,7 +2,9 @@
 import numpy as np
 from libc.math cimport sqrt, pow, fabs, INFINITY
 cimport cython
-from cython.parallel cimport prange,threadid
+from cython.parallel cimport prange
+cdef extern from "omp.h" nogil:
+    int omp_get_thread_num()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -20,16 +22,16 @@ def project(const double[:, :] points, const double[:, :] edges, const double[:]
     cdef unsigned char[:] valid=valid_np
     cdef double[:,:,::1] scratch=work
     for i in prange(n,nogil=True,num_threads=workers,schedule='static'):
-        point(points,edges,length,arc,z,x,coef,sigma,i,scratch[threadid()],value,valid)
+        point(points,edges,length,arc,z,x,coef,sigma,i,scratch,omp_get_thread_num(),value,valid)
     return value_np,valid_np.view(np.bool_)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void point(const double[:,:] points,const double[:,:] edges,const double[:] length,const double[:] arc,
+cdef int point(const double[:,:] points,const double[:,:] edges,const double[:] length,const double[:] arc,
                 const double[:] z,const double[:] x,const double[:] coef,double sigma,Py_ssize_t i,
-                double[:,::1] buf,double[:] value,unsigned char[:] valid) noexcept nogil:
+                double[:,:,::1] buf,Py_ssize_t slot,double[:] value,unsigned char[:] valid) nogil except -1:
     cdef Py_ssize_t m=length.shape[0],j,best
     cdef double rz,rx,l2,t,b,dist,closest,f,zc,xc,slope,norm,curv,offset,refarc
     best=0
@@ -42,26 +44,27 @@ cdef void point(const double[:,:] points,const double[:,:] edges,const double[:]
         rz=z[i]-(points[j,0]+b*edges[j,0])
         rx=x[i]-(points[j,1]+b*edges[j,1])
         dist=rz*rz+rx*rx
-        buf[0,j]=dist;buf[1,j]=t;buf[2,j]=b
+        buf[slot,0,j]=dist;buf[slot,1,j]=t;buf[slot,2,j]=b
         if dist<closest:
             best=j;closest=dist
-    b=buf[2,best];t=buf[1,best]
+    b=buf[slot,2,best];t=buf[slot,1,best]
     refarc=arc[best]+b*length[best]
     value[i]=refarc
     valid[i]=not ((best==0 and t<=0) or (best==m-1 and t>=1))
     if not valid[i]:
-        return
+        return 0
     for j in range(m):
-        dist=buf[0,j]
-        if (j==0 or dist<=buf[0,j-1]) and (j==m-1 or dist<=buf[0,j+1]):
-            if fabs((arc[j]+buf[2,j]*length[j])-refarc)>.16 and sqrt(dist)<=sqrt(closest)+sigma:
+        dist=buf[slot,0,j]
+        if (j==0 or dist<=buf[slot,0,j-1]) and (j==m-1 or dist<=buf[slot,0,j+1]):
+            if fabs((arc[j]+buf[slot,2,j]*length[j])-refarc)>.16 and sqrt(dist)<=sqrt(closest)+sigma:
                 valid[i]=0
                 break
     if not valid[i]:
-        return
+        return 0
     zc=points[best,0]+b*edges[best,0];xc=points[best,1]+b*edges[best,1]
     slope=coef[1]+2*coef[2]*zc
     norm=sqrt(1+slope*slope)
     curv=2*coef[2]/pow(1+slope*slope,1.5)
     offset=(z[i]-zc)*(-slope/norm)+(x[i]-xc)*(1/norm)
     valid[i]=1-curv*offset>fabs(curv)*sigma
+    return 0

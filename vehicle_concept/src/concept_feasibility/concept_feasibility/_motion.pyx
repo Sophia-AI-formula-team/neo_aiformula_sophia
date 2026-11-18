@@ -3,11 +3,11 @@ import numpy as np
 from libc.math cimport log, rint, fabs, exp, sin, cos
 cimport cython
 
-cdef inline double sign(double v) noexcept nogil:
+cdef inline double sign(double v) nogil except? -1e300:
     return (v>0)-(v<0)
 
 @cython.cdivision(True)
-cdef inline void encoded(double v, double steer, double *common, double *ratio) noexcept nogil:
+cdef inline int encoded(double v, double steer, double *common, double *ratio) nogil except -1:
     cdef double w = -<double><float>steer
     cdef double limit, gain, offset, bias, bounded, ros, right, left
     v=<double><float>v
@@ -22,11 +22,12 @@ cdef inline void encoded(double v, double steer, double *common, double *ratio) 
     left=rint(sign(left)*(fabs(left)/.844+2.81)*(60/(2*3.141592653589793)*1.1))
     common[0]=(right+left)*.5
     ratio[0]=(right-left)/common[0] if fabs(common[0])>1 else 0.
+    return 0
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline double response(double common,double ratio,const double[:] p) noexcept nogil:
+cdef inline double response(double common,double ratio,const double[:] p) nogil except? -1e300:
     cdef double hinge=max(-p[5],min(p[5],ratio))-p[4]
     cdef double scale=common/100
     return scale*p[1]+(scale*min(hinge,0.))*p[2]+(scale*max(hinge,0.))*p[3]
@@ -59,7 +60,7 @@ def advance(const double[:] speed,const double[:] yaw,const double[:] drive,cons
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline Py_ssize_t search(const double[:] a,double value,bint inclusive) noexcept nogil:
+cdef inline Py_ssize_t search(const double[:] a,double value,bint inclusive) nogil except -1:
     cdef Py_ssize_t low=0,hi=a.shape[0],mid
     while low<hi:
         mid=(low+hi)//2

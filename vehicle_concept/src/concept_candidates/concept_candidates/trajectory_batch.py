@@ -56,7 +56,28 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
     return state, controls, g,margin,known,obs_margin,progress,used,heading_cost
 
 
+def distinct_histories(state,columns,enabled=None):
+    """Index bit-identical trajectories; every original slot receives its exact result."""
+    histories=np.ascontiguousarray(state[:,:,columns].transpose(1,0,2))
+    masks=None if enabled is None else np.ascontiguousarray(enabled.T)
+    registry={}; representatives=[]; inverse=[]
+    for i,history in enumerate(histories):
+        key=history.tobytes()
+        if masks is not None:
+            key=(key,masks[i].tobytes())
+        group=registry.get(key)
+        if group is None:
+            group=len(representatives)
+            registry[key]=group
+            representatives.append(i)
+        inverse.append(group)
+    return representatives,np.asarray(inverse)
+
+
 def progress_over(obs,state):
+    take,restore=distinct_histories(state,(0,1,2,3,4))
+    if len(take)<state.shape[1]:
+        state=state[:,take]
     rows, count = state.shape[:2]
     z,x,h,v,yaw=(state[:,:,i] for i in range(5))
     direction=np.interp((z[:-1]+z[1:])*.5,obs.road[:,0],obs.heading)
@@ -72,10 +93,15 @@ def progress_over(obs,state):
     mid=h[:-1]+.25*(yaw[:-1]+yaw[1:])*DT
     error=(v[:-1]+v[1:])*.5*(mid-direction)**2*DT
     # The frozen loop adds time steps in order for each candidate.
-    return np.add.accumulate(delta,axis=0)[-1],np.sum(used,axis=0),np.add.accumulate(error,axis=0)[-1]
+    return (np.add.accumulate(delta,axis=0)[-1][restore],np.sum(used,axis=0)[restore],
+            np.add.accumulate(error,axis=0)[-1][restore])
 
 
 def clearance(obs,state,times,uncertainty,enabled=None):
+    take,restore=distinct_histories(state,(0,1,2,5,6),enabled)
+    if len(take)<state.shape[1]:
+        state=state[:,take]
+        if enabled is not None:enabled=enabled[:,take]
     shape=state.shape[:2]
     z,x,heading,travel,turn=(state[:,:,i] for i in (0,1,2,5,6))
     gap,lower,known=road_clearance(obs.road,z.ravel(),x.ravel(),heading.ravel(),uncertainty)
@@ -86,7 +112,8 @@ def clearance(obs,state,times,uncertainty,enabled=None):
     if enabled is not None:
         lower=np.where(enabled,lower,100.)
         known=~enabled | known
-    return np.minimum(gap.min(axis=0),obj_gap),lower.min(axis=0),known.all(axis=0),obj_lower
+    return (np.minimum(gap.min(axis=0),obj_gap)[restore],lower.min(axis=0)[restore],
+            known.all(axis=0)[restore],obj_lower[restore])
 
 
 def braking(obs,commands,first,stop_age,uncertainty,coast_seconds,details,control_sequence,coast_sequence):
