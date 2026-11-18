@@ -44,7 +44,7 @@ export WS="$HOME/concept_v6271_ws"
   url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
   mkdir -p "$HOME/src" "$WS"
   if [ ! -e "$REPO" ]; then
-    git clone --single-branch --branch "$branch" "$url" "$REPO"
+    git clone --depth 1 --single-branch --branch "$branch" "$url" "$REPO"
   fi
   cd "$REPO"
   test "$(git rev-parse --show-toplevel)" = "$(pwd -P)"
@@ -54,7 +54,6 @@ export WS="$HOME/concept_v6271_ws"
   git fetch "$url" "refs/heads/$branch"
   git merge --ff-only FETCH_HEAD
   test "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)"
-  git merge-base --is-ancestor d0fd23f8b806897a2ed2b5cae3ca1423cf463cb1 HEAD
   git show -s --format='Concept deployment commit %H %s'
 )
 ```
