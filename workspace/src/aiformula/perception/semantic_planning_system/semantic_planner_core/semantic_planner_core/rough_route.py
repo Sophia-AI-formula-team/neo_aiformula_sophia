@@ -21,6 +21,7 @@ class RouteSample:
     y: float
     yaw: float
     excluded: bool = False
+    closure: bool = False
 
 
 class RouteReference:
@@ -52,19 +53,21 @@ class RouteReference:
             if clean and math.hypot(sample.x - clean[-1].x, sample.y - clean[-1].y) < 1e-8:
                 previous = clean[-1]
                 clean[-1] = RouteSample(previous.x, previous.y, sample.yaw,
-                                        previous.excluded or sample.excluded)
+                                        previous.excluded or sample.excluded,
+                                        previous.closure or sample.closure)
             else:
                 clean.append(sample)
         if len(clean) > 1 and math.hypot(clean[-1].x - clean[0].x, clean[-1].y - clean[0].y) < 1e-8:
             first = clean[0]
             clean[0] = RouteSample(first.x, first.y, first.yaw,
-                                   first.excluded or clean[-1].excluded)
+                                   first.excluded or clean[-1].excluded,
+                                   first.closure or clean[-1].closure)
             clean.pop()
         if len(clean) < 3:
             raise ValueError("A closed reference needs at least three distinct samples")
 
         raw = [(sample.x, sample.y) for sample in clean]
-        good = [not sample.excluded for sample in clean]
+        good = [not (sample.excluded or sample.closure) for sample in clean]
         self._straighten_short_exclusions(raw, good, max_detour_gap_m)
         raw_cumulative = self._cumulative(raw)
         raw_length = raw_cumulative[-1]
@@ -74,6 +77,8 @@ class RouteReference:
         step = raw_length / count
         points = []
         trusted = []
+        closure_mask = []
+        excluded_mask = []
         for index in range(count):
             distance = index * step
             segment = min(bisect_right(raw_cumulative, distance) - 1, len(raw) - 1)
@@ -83,6 +88,8 @@ class RouteReference:
             points.append((raw[segment][0] + fraction * (raw[following][0] - raw[segment][0]),
                            raw[segment][1] + fraction * (raw[following][1] - raw[segment][1])))
             trusted.append(good[segment] and good[following])
+            closure_mask.append(clean[segment].closure or clean[following].closure)
+            excluded_mask.append(clean[segment].excluded or clean[following].excluded)
 
         # A local circular average treats the lap seam just like any other
         # section. Keep sharp corners and all exclusion boundaries unchanged.
@@ -106,6 +113,8 @@ class RouteReference:
                 )
         self.points: List[Tuple[float, float]] = smoothed
         self.trusted: List[bool] = trusted
+        self.closure_mask: List[bool] = closure_mask
+        self.excluded_mask: List[bool] = excluded_mask
         self.cumulative_m = self._cumulative(self.points)
         self.length_m = self.cumulative_m[-1]
         # Keep modulo/projection well-defined even for a degenerate result of
@@ -163,7 +172,8 @@ class RouteReference:
                 self.trusted[index] and self.trusted[following])
 
     def match(self, x: float, y: float, previous_s: Optional[float], travel_delta: float,
-              search_window_m: float, max_distance_m: float) -> Optional[float]:
+              search_window_m: float, max_distance_m: float,
+              yaw: Optional[float] = None, max_heading_error_rad: float = math.pi) -> Optional[float]:
         """Project near predicted progress; never fall back to global nearest.
 
         Initialise ``previous_s`` to zero (or one lap length) at the confirmed
@@ -177,6 +187,10 @@ class RouteReference:
             return None
         if travel_delta < 0.0 or search_window_m < 0.0 or max_distance_m < 0.0:
             return None
+        if (yaw is not None and (not math.isfinite(yaw) or
+                not math.isfinite(max_heading_error_rad) or
+                not 0.0 <= max_heading_error_rad <= math.pi)):
+            return None
         predicted = previous_s + travel_delta
         lower, upper = predicted - search_window_m, predicted + search_window_m
         best = None
@@ -187,6 +201,13 @@ class RouteReference:
             length = finish - begin
             if length <= 1e-10:
                 continue
+            # The vehicle must travel in approximately the recorded direction
+            # on observed sections. A synthetic gap has no trustworthy heading:
+            # it may still be crossed for progress, never used for steering.
+            if yaw is not None and self.trusted[index] and self.trusted[(index + 1) % len(self.points)]:
+                heading = math.atan2(end[1] - start[1], end[0] - start[0])
+                if abs(_wrap(heading - yaw)) > max_heading_error_rad:
+                    continue
             first_lap = math.ceil((lower - finish) / self.length_m)
             last_lap = math.floor((upper - begin) / self.length_m)
             for lap in range(first_lap, last_lap + 1):
@@ -222,11 +243,12 @@ class RouteReference:
 
     def direction_candidates(self, x: float, y: float, yaw: float, s: float,
                              lookahead_m: float, progress_tolerance_m: float) -> List[float]:
-        """Vehicle-relative bearings to trusted targets in a short progress band.
+        """Relative route chord bearings in a short trusted progress band.
 
-        Bearings originate at the actual vehicle position, so a lateral offset
-        also produces a gentle return direction. Candidates behind the vehicle
-        and paths crossing an excluded section are discarded.
+        Use the matched route location as the chord origin rather than the
+        vehicle, so a neighbouring lane does not cause cross-lane pull. The
+        angle remains a preview bearing, comparable with the visual target.
+        Paths crossing an excluded section are discarded.
         """
         if not all(math.isfinite(value) for value in
                    (x, y, yaw, s, lookahead_m, progress_tolerance_m)):
@@ -237,6 +259,9 @@ class RouteReference:
         maximum = lookahead_m + progress_tolerance_m
         if minimum > maximum or maximum >= self.length_m * 0.5:
             return []
+        start_x, start_y, start_trusted = self.point_at(s)
+        if not start_trusted:
+            return []
         steps = min(30, max(1, int(math.ceil((maximum - minimum) / self.spacing_m))))
         candidates = []
         for index in range(steps + 1):
@@ -244,7 +269,7 @@ class RouteReference:
             target_x, target_y, trusted = self.point_at(target_s)
             if not trusted or not self._interval_trusted(s, target_s):
                 continue
-            dx, dy = target_x - x, target_y - y
+            dx, dy = target_x - start_x, target_y - start_y
             if math.hypot(dx, dy) < 1e-8:
                 continue
             angle = _wrap(math.atan2(dy, dx) - yaw)

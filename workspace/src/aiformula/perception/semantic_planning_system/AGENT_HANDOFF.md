@@ -1,3 +1,7 @@
+# 0.4.5 车辆部署交接
+
+**请先读取 [车端部署](DEPLOYMENT.md) 的「部署 Agent 先核对，反馈后再修改」。** `/flag_stop` 的真实发布端待查。先把车辆节点图、发布者、QoS、频率与停车距离含义回报给用户，经审核再接入。旧 motor gate 只接受 `stop_wait` 状态，0.4.5 速度和状态须另行核对后才接向原电机输入。当前原始车端功能与历史验证见下方记录。
+
 # Agent handoff — 2026-10-12
 
 ## User intent and delivered baseline
