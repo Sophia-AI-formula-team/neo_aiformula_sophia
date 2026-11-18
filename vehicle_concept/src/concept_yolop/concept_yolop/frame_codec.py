@@ -57,7 +57,8 @@ def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_p
     }, separators=(',', ':'), allow_nan=False)
 
 
-def decode_frame(payload):
+def parse_frame_header(payload):
+    """Validate identity, geometry and time before committing to pixel decoding."""
     if len(payload) > 4000000:
         raise ValueError('Oversize perception frame')
     obj = json.loads(payload)
@@ -70,6 +71,11 @@ def decode_frame(payload):
         raise ValueError('Invalid acquisition time')
     if not isinstance(obj['frame_id'], str):
         raise ValueError('Expected optical frame ID')
+    return obj, sec * 1000000000 + ns, obj['frame_id'], obj['geometry_profile']
+
+
+def decode_frame_data(obj):
+    """Unpack detections and pixels from a header-validated wire object."""
     boxes = np.asarray(obj['boxes'], dtype=np.float32)
     if boxes.shape == (0,):
         boxes = boxes.reshape(0, 4)
@@ -81,6 +87,12 @@ def decode_frame(payload):
             or np.any((scores < 0) | (scores > 1))
             or (n and (not np.issubdtype(labels.dtype, np.integer) or not np.isin(labels, [1,3,10,91]).all()))):
         raise ValueError('Invalid B1.4 detections')
-    return dict(geometry_profile=obj['geometry_profile'], stamp_ns=sec * 1000000000 + ns, frame_id=obj['frame_id'],
+    return dict(geometry_profile=obj['geometry_profile'], stamp_ns=obj['stamp']['sec'] * 1000000000 + obj['stamp']['nanosec'],
+                frame_id=obj['frame_id'],
                 bgr=_image(obj['bgr_png'], 3), road=_image(obj['road_png'], 1),
                 lane=_image(obj['lane_png'], 1), boxes=boxes, scores=scores, labels=labels.astype(np.int64))
+
+
+def decode_frame(payload):
+    obj, _, _, _ = parse_frame_header(payload)
+    return decode_frame_data(obj)
