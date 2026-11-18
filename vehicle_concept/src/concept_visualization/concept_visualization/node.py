@@ -78,6 +78,8 @@ class Visualization(Node):
         self.create_subscription(String,'/concept/decision',self.on_decision,10)
 
     def on_image(self,msg):
+        if not self.view.get_subscription_count():
+            return
         key = stamp_key(msg.header.stamp)
         remember(self.images,key,msg)
         if key in self.decisions:
@@ -101,8 +103,38 @@ class Visualization(Node):
             return
         key=d['stamp']['sec'],d['stamp']['nanosec']
         remember(self.decisions,key,d)
-        if key in self.images and key==next(reversed(self.images)):
+        if self.view.get_subscription_count() and key in self.images and key==next(reversed(self.images)):
             self.camera(self.images[key],d)
+        if self.local.get_subscription_count():
+            self.publish_local(d, key)
+        self.map.update(d)
+        now=time.monotonic()
+        data=d.get('map') or {}
+        if (now-self.last_map>=.5 and data.get('pose') is not None
+                and self.memory.get_subscription_count()):
+            s=Scene(key)
+            for color,points in self.map.points(data['pose']).items():
+                s.add('memory_'+color,Marker.CUBE_LIST,points,color,.18,z=-.025 if color!='paint' else .01)
+            pose = data['pose']
+            fixed = [memory_to_body(pose, *o['position']) for o in data.get('static', [])]
+            s.add('remembered_cones', Marker.SPHERE_LIST, fixed, 'cone', .36, z=.18)
+            for obj in data.get('now', []):
+                if obj['motion'] != 'moving':
+                    continue
+                for predicted in obj.get('ranges', []):
+                    # One standard deviation of the estimated obstacle centre.
+                    covariance = np.asarray(predicted['covariance'])
+                    values, axes = np.linalg.eigh(covariance)
+                    theta = np.linspace(0., 2.*np.pi, 25)
+                    ellipse = axes @ (np.sqrt(np.maximum(values, 0.))[:,None] *
+                                      np.array([np.cos(theta), np.sin(theta)]))
+                    points = ellipse.T + np.asarray(predicted['center'])
+                    s.add('moving_uncertainty', Marker.LINE_STRIP,
+                          [memory_to_body(pose, *p) for p in points], 'cone', .035, z=.16)
+            self.memory.publish(MarkerArray(markers=s.markers))
+            self.last_map=now
+
+    def publish_local(self, d, key):
         s=Scene(key)
         cv=lambda pts:[body_point(*p[:2]) for p in pts]
         s.add('front_axle',Marker.LINE_STRIP,[(0.,-.30),(0.,.30)],'footprint',.08)
@@ -133,32 +165,6 @@ class Visualization(Node):
             if len(obj)>=4 and math.hypot(obj[2],obj[3])>.05:
                 s.add('motion_1s',Marker.LINE_STRIP,[(x,y),(x+obj[2],y-obj[3])],'cone',.075,z=.18)
         self.local.publish(MarkerArray(markers=s.markers))
-        self.map.update(d)
-        now=time.monotonic()
-        data=d.get('map') or {}
-        if (now-self.last_map>=.5 and data.get('pose') is not None
-                and self.memory.get_subscription_count()):
-            s=Scene(key)
-            for color,points in self.map.points(data['pose']).items():
-                s.add('memory_'+color,Marker.CUBE_LIST,points,color,.18,z=-.025 if color!='paint' else .01)
-            pose = data['pose']
-            fixed = [memory_to_body(pose, *o['position']) for o in data.get('static', [])]
-            s.add('remembered_cones', Marker.SPHERE_LIST, fixed, 'cone', .36, z=.18)
-            for obj in data.get('now', []):
-                if obj['motion'] != 'moving':
-                    continue
-                for predicted in obj.get('ranges', []):
-                    # One standard deviation of the estimated obstacle centre.
-                    covariance = np.asarray(predicted['covariance'])
-                    values, axes = np.linalg.eigh(covariance)
-                    theta = np.linspace(0., 2.*np.pi, 25)
-                    ellipse = axes @ (np.sqrt(np.maximum(values, 0.))[:,None] *
-                                      np.array([np.cos(theta), np.sin(theta)]))
-                    points = ellipse.T + np.asarray(predicted['center'])
-                    s.add('moving_uncertainty', Marker.LINE_STRIP,
-                          [memory_to_body(pose, *p) for p in points], 'cone', .035, z=.16)
-            self.memory.publish(MarkerArray(markers=s.markers))
-            self.last_map=now
 
 
 def main(args=None):
