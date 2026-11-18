@@ -4,6 +4,7 @@ import runpy
 from unittest.mock import patch
 
 from launch import LaunchContext
+from launch.utilities import perform_substitutions
 from launch_ros.actions import Node
 from concept.bringup import sensor_actions, share
 
@@ -16,7 +17,8 @@ def main():
     functions['wait_for_can_interface'] = lambda _: ()
     with patch('concept.bringup.runpy.run_path', return_value=functions):
         actions = sensor_actions(context)
-    nodes = [context.perform_substitution(n.node_package[0]) for n in actions if isinstance(n, Node)]
+    nodes = [perform_substitutions(context, n.cmd[0][0].package)
+             for n in actions if isinstance(n, Node)]
     assert {'zed_wrapper', 'robot_state_publisher', 'joint_state_publisher', 'joy',
             'launchers', 'teleop_twist_joy', 'ros2_socketcan'} <= set(nodes), nodes
     assert nodes.count('ros2_socketcan') == 2
