@@ -100,12 +100,16 @@ def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt
         decay=np.exp(-dt/MODEL['yaw'][0])
         desired=(desired-decay*np.asarray(current_yaw))/(1-decay)
     flat_d,flat_q=desired.ravel(),q.ravel();result=np.clip(np.zeros(flat_d.shape),lower.ravel(),upper.ravel())
+    if _motion is not None:
+        lo_flat, hi_flat = lower.ravel(), upper.ravel()
+        endpoints = target(np.concatenate((flat_q, flat_q)), np.concatenate((lo_flat, hi_flat)), MODEL['yaw'])
+        all_lo, all_hi = np.split(endpoints, 2)
     for speed in np.unique(flat_q[flat_q>0]):
         active=flat_q==speed;lo,hi=lower.ravel()[active],upper.ravel()[active]
         commands,reachable=reachable_response(float(np.float32(speed)),tuple(MODEL['yaw']))
         if _motion is not None:
             result[active] = _motion.closest(commands, reachable, flat_d[active], lo, hi,
-                                             target(speed,lo,MODEL['yaw']), target(speed,hi,MODEL['yaw']))
+                                             all_lo[active], all_hi[active])
             continue
         proposals=np.broadcast_to(commands[:,None],(len(commands),len(lo)))
         proposals=np.vstack([proposals,lo,hi])

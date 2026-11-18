@@ -8,6 +8,11 @@ from concept_feasibility.geometry import road_clearance
 
 from concept_road.v3_model import BODY_HALF_WIDTH, BODY_FRONT, BODY_REAR
 
+try:
+    from .path_risk import path_clearance as compiled_path_clearance
+except ImportError:
+    compiled_path_clearance = None
+
 RISK_LIMIT=float(ndtr(-2.))
 
 def rectangle_upper(z,x,sz,sx,rho,r):
@@ -106,6 +111,8 @@ def path_obstacle_clearance(objects,states,active=None):
     """
     count=len(states[0][0]);times=len(states)
     if not len(objects):return np.full(count,100.),np.full(count,100.)
+    if compiled_path_clearance is not None:
+        return compiled_path_clearance(objects, states, active, RISK_LIMIT)
     active=np.ones((times,count),bool) if active is None else np.asarray(active,bool)
     at_times=[_components(objects,z,x,h,t,travel,turn) for z,x,h,t,travel,turn in states]
     parts=[]

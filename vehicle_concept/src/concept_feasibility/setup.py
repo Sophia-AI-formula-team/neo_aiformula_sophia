@@ -9,8 +9,9 @@ setup(
     packages=[name],
     ext_modules=cythonize(
         [Extension(name + '.' + module, [name + '/' + module + '.pyx'],
-                   extra_compile_args=['/O2', '/fp:strict'] if os.name == 'nt' else ['-O3', '-ffp-contract=off'])
-         for module in ['_motion', '_tread']],
+                   extra_compile_args=['/O2', '/fp:strict', '/openmp'] if os.name == 'nt' else ['-O3', '-ffp-contract=off', '-fopenmp'],
+                   extra_link_args=[] if os.name == 'nt' else ['-fopenmp'])
+         for module in ['_motion', '_tread', '_risk']],
         compiler_directives={'language_level': 3}, quiet=True, build_dir='build/cython'),
 
     data_files=[
