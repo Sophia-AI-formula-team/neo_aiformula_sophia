@@ -717,6 +717,202 @@
         "p99": 462.674,
         "max": 500.984
       }
+    },
+    "innerready5": {
+      "camera_hz": 15,
+      "decision_hz": 5,
+      "seconds": 60,
+      "planned_frames": 900,
+      "sent_frames": 900,
+      "unique_archived_images": 300,
+      "archive_hz": 5,
+      "feedback": "archive",
+      "publish_lag_ms": {
+        "p50": 0.448,
+        "p95": 0.581,
+        "p99": 1.035,
+        "max": 9.881
+      },
+      "perception_frames": 900,
+      "decision_frames": 288,
+      "expected_slots": 300,
+      "distinct_output_slots": 288,
+      "raw_matching_twists": 288,
+      "twists_with_matching_ok_decision": 288,
+      "zero_linear_outputs": 3,
+      "nonzero_linear_outputs": 285,
+      "on_slot_deadline": 201,
+      "late_slots": 87,
+      "within_200ms_capture": 205,
+      "missing_slots": 12,
+      "latency_ms": {
+        "p50": 157.142,
+        "p95": 354.737,
+        "p99": 398.231,
+        "max": 424.874
+      },
+      "output_interval_ms": {
+        "p50": 205.394,
+        "p95": 285.178,
+        "p99": 329.371,
+        "max": 371.513
+      },
+      "longest_gap_including_run_edges_ms": 371.513,
+      "pauses_over_200ms": 163,
+      "status_reason": {
+        "ok / feasible": 288
+      },
+      "first_output_ms": 122.189,
+      "policy_processing_ms": {
+        "p50": 112.847,
+        "p95": 272.721,
+        "p99": 323.7,
+        "max": 366.636
+      },
+      "cold_first_5s": {
+        "expected": 25,
+        "received": 25,
+        "on_deadline": 25,
+        "within_200ms": 25,
+        "latency_ms": {
+          "p50": 104.875,
+          "p95": 137.246,
+          "p99": 179.083,
+          "max": 191.693
+        }
+      },
+      "following_slots": {
+        "expected": 275,
+        "received": 263,
+        "on_deadline": 176,
+        "within_200ms": 180,
+        "latency_ms": {
+          "p50": 165.375,
+          "p95": 358.296,
+          "p99": 403.396,
+          "max": 424.874
+        }
+      },
+      "output_source_phase_counts": {
+        "0": 260,
+        "1": 17,
+        "2": 11
+      },
+      "distinct_receive_slots": 276,
+      "duplicate_output_stamps": 0,
+      "missing_slot_evidence": {
+        "no_decision_observed": 12
+      },
+      "capture_plan_to_receive_ms": {
+        "p50": 157.57,
+        "p95": 355.335,
+        "p99": 398.787,
+        "max": 425.32
+      }
+    },
+    "innerready15": {
+      "camera_hz": 15,
+      "decision_hz": 15,
+      "seconds": 60,
+      "planned_frames": 900,
+      "sent_frames": 900,
+      "unique_archived_images": 300,
+      "archive_hz": 5,
+      "feedback": "archive",
+      "publish_lag_ms": {
+        "p50": 0.447,
+        "p95": 0.572,
+        "p99": 0.681,
+        "max": 1.303
+      },
+      "perception_frames": 899,
+      "decision_frames": 419,
+      "expected_slots": 900,
+      "distinct_output_slots": 418,
+      "raw_matching_twists": 418,
+      "twists_with_matching_ok_decision": 418,
+      "zero_linear_outputs": 2,
+      "nonzero_linear_outputs": 416,
+      "on_slot_deadline": 0,
+      "late_slots": 418,
+      "within_200ms_capture": 216,
+      "missing_slots": 482,
+      "latency_ms": {
+        "p50": 197.869,
+        "p95": 320.381,
+        "p99": 372.94,
+        "max": 436.112
+      },
+      "output_interval_ms": {
+        "p50": 125.949,
+        "p95": 255.566,
+        "p99": 300.204,
+        "max": 373.888
+      },
+      "longest_gap_including_run_edges_ms": 373.888,
+      "pauses_over_200ms": 78,
+      "status_reason": {
+        "invalid / no recent wheel and gyro measurement at image capture": 1,
+        "ok / feasible": 418
+      },
+      "first_output_ms": 222.122,
+      "policy_processing_ms": {
+        "p50": 121.583,
+        "p95": 250.822,
+        "p99": 295.535,
+        "max": 369.78
+      },
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 56,
+        "on_deadline": 0,
+        "within_200ms": 54,
+        "latency_ms": {
+          "p50": 153.727,
+          "p95": 197.566,
+          "p99": 207.287,
+          "max": 215.632
+        }
+      },
+      "following_slots": {
+        "expected": 825,
+        "received": 362,
+        "on_deadline": 0,
+        "within_200ms": 162,
+        "latency_ms": {
+          "p50": 207.793,
+          "p95": 329.232,
+          "p99": 376.982,
+          "max": 436.112
+        }
+      },
+      "output_source_phase_counts": {
+        "0": 418
+      },
+      "distinct_receive_slots": 416,
+      "duplicate_output_stamps": 0,
+      "missing_slot_evidence": {
+        "no_twist_despite_decision": 1,
+        "no_decision_observed": 480,
+        "no_perception_observed": 1
+      },
+      "capture_plan_to_receive_ms": {
+        "p50": 198.304,
+        "p95": 320.843,
+        "p99": 373.353,
+        "max": 436.516
+      }
     }
+  },
+  "inner_workload": {
+    "source": "v619_semantic_map/inner01/inner-lap, frames 0 to 299",
+    "scene_sha256": "8749730c2423f43fd7bb9832e8d2c0a3f5cd8c3cfd579724ef16bb696d8ee790",
+    "wheel_rpm_min": 0,
+    "wheel_rpm_max": 250.61293,
+    "wheel_rpm_mean": 233.18943,
+    "gyro_min": -0.234749243,
+    "gyro_max": 0.129154474,
+    "feedback": "Archive-matched wheel RPM rounded to the nearest integer, yaw sign adapted to ROS; 300 distinct 5 Hz RGB/feedback pairs, each repeated across three 15 Hz camera acquisitions",
+    "version": "6e0a98c20c426e4c869ad5f009fe2ab9f25cdafb"
   }
 }
