@@ -11,6 +11,7 @@ from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WID
 
 from concept_feasibility.response61515 import advance, inverse_yaw
 
+from concept_candidates.candidate_merge import distinct_requests
 from concept_candidates.curve_progress import increment
 
 from concept_candidates.curve_profile import evaluate_profile
@@ -51,6 +52,10 @@ class RoadAwareCurvePlanner:
         self.reserved = None
         self.pending = None
         self.current_observation = None
+        self.reset_candidate_evaluation()
+
+    def reset_candidate_evaluation(self):
+        self.candidate_evaluation = dict(mode='exact', batches=0, input_count=0, evaluated_count=0)
 
     def no_observation(self):
         self.last = dict(reason='unobserved_road', candidates=0, feasible=0,
@@ -118,7 +123,16 @@ class RoadAwareCurvePlanner:
         speeds = np.array([0., .25, .55, .8, 1.])*p['pace']
         commands = np.tile(speeds, len(targets))
         targets = np.repeat(targets, len(speeds))
+        # The whole batch shares the same vehicle state, observations, parameters
+        # and lookahead. A request is identified by its two float64 input values.
+        full_targets, full_commands = targets, commands
+        representatives, inverse = distinct_requests(targets, commands)
+        targets, commands = targets[representatives], commands[representatives]
         count = len(commands)
+        evaluation = self.candidate_evaluation
+        evaluation['batches'] += 1
+        evaluation['input_count'] += len(full_commands)
+        evaluation['evaluated_count'] += count
         # End along the observed road direction. A near-zero lateral endpoint
         # may need an initial right bend followed by a left bend around a cone.
         slope = np.full(count,np.tan(np.interp(look,road[:,0],obs.heading)))
@@ -222,7 +236,6 @@ class RoadAwareCurvePlanner:
             original[retimed] = profile[key][retimed]
         conditional[retimed] = True
         feasible[retimed] = True
-        self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower, brake_controls=brake_controls, escape_ok=escape_ok, escape_lower=escape_lower, escape_controls=escape_controls, escape_duration=horizon,retimed=retimed,profile_controls=profile['controls'],profile_lower=np.minimum(profile['road_lower'],profile['obstacle_lower']))
         robust = np.minimum(road_lower, obstacle_lower)
         sigma = (geometric-robust)/p['uncertainty']
         progress = road_progress/horizon
@@ -234,6 +247,33 @@ class RoadAwareCurvePlanner:
         # It only ranks; a trained selector may choose ANY candidate in the mask.
         risk_cost = .35*np.clip((.5-robust)/.5, 0., 1.)**2
         scores = progress-heading_cost-smooth_cost-risk_cost
+        profile_valid = profile['valid']
+        profile_controls = profile['controls']
+        profile_lower = np.minimum(profile['road_lower'], profile['obstacle_lower'])
+        camera_updates = camera_belief.updates
+        if count < len(full_commands):
+            # Restore first-in-order ties, hard masks, fallback controls and H12
+            # features for all 75 original IDs before any selection or commit.
+            (first, geometric, sigma, robust, feasible, scores, progress,
+             heading_cost, smooth_cost, risk_cost, path_array, reference_steps,
+             terminal_heading_cost, road_lower, obstacle_lower, escape_lower,
+             brake_lower, brake_controls, escape_controls, profile_controls,
+             profile_lower, camera_updates, nominal_feasible, retimed, conditional,
+             brake_ok, escape_ok, profile_valid, evidence, dynamics) = (
+                values[inverse] for values in (
+                    first, geometric, sigma, robust, feasible, scores, progress,
+                    heading_cost, smooth_cost, risk_cost, path_array, reference_steps,
+                    terminal_heading_cost, road_lower, obstacle_lower, escape_lower,
+                    brake_lower, brake_controls, escape_controls, profile_controls,
+                    profile_lower, camera_updates, nominal_feasible, retimed, conditional,
+                    brake_ok, escape_ok, profile_valid, evidence, dynamics))
+        targets, commands = full_targets, full_commands
+        count = len(commands)
+        self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower,
+                            brake_controls=brake_controls, escape_ok=escape_ok,
+                            escape_lower=escape_lower, escape_controls=escape_controls,
+                            escape_duration=horizon, retimed=retimed,
+                            profile_controls=profile_controls, profile_lower=profile_lower)
         pick = int(np.argmax(np.where(feasible, scores, -np.inf))) if feasible.any() else None
         table = np.c_[commands, first, targets, geometric, sigma, robust, feasible, scores,
                       progress, heading_cost, smooth_cost, risk_cost]
@@ -249,7 +289,7 @@ class RoadAwareCurvePlanner:
                          recovery=('not_needed' if pick is not None and commands[pick] > 0 else
                                    'selected_deceleration' if np.any(feasible & (commands > 0)) else
                                    'no_forward_candidate_reverse_unavailable_unknown_rear_and_unvalidated_response'),
-                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile['valid'].tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Only infeasible constant-drive schedules may use the existing two-second drive then complete stop; checked through original horizon and complete stop, including wait; same75 slots',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
+                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile_valid.tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Only infeasible constant-drive schedules may use the existing two-second drive then complete stop; checked through original horizon and complete stop, including wait; same75 slots',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
                                     constraint_interval=substep, horizon=horizon, threshold=0.,
                                     uncertainty_scale=p['uncertainty'], previous_command=previous.tolist(),
                                     columns=['speed', 'yaw', 'target_x', 'geometric_clearance', 'sigma', 'robust_clearance',
@@ -260,7 +300,7 @@ class RoadAwareCurvePlanner:
                                     no_observation_pass_then_stop_feasible=escape_ok.tolist(),
                                     pass_then_stop_lower=escape_lower.round(6).tolist(),
                                     brake_lower=brake_lower.round(6).tolist(),
-                                    expected_camera_updates=camera_belief.updates.tolist(),
+                                    expected_camera_updates=camera_updates.tolist(),
                                     road_lower=road_lower.round(6).tolist(), obstacle_lower=obstacle_lower.round(6).tolist(),
                                     evidence_ok=evidence.tolist(), dynamics_ok=dynamics.tolist(),
                                     rejected=dict(road=int((road_lower < 0).sum()), obstacle=int((obstacle_lower <= 0).sum()),

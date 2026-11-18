@@ -10,7 +10,11 @@ class RankedBuilder:
         self.network_allowed=False;self.features=None
 
     def prepare(self,obs):
+        self.planner.base.reset_candidate_evaluation()
         self.fallback=self.planner.step(obs).copy();last=self.planner.last;audit=last['audit']
+        # Recovery can replace the forward audit after trying one or more forward
+        # batches. Report the work performed in this decision in either case.
+        audit['candidate_evaluation'] = self.planner.base.candidate_evaluation.copy()
         table=np.asarray(audit.get('table',[]),float);self.baseline=audit.get('selected')
         self.table=table if len(table) else None;self.features=None
         if self.table is None:

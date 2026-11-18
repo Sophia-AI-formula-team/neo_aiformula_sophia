@@ -94,6 +94,7 @@ class Drive:
         return dict(selected_index=None if pick is None else int(pick),
                     whitebox_index=None if baseline is None else int(baseline), command_native=control.tolist(),
                     selected_path=paths[pick] if pick is not None and len(paths) else detail.get('path', []),
+                    candidate_evaluation=audit['candidate_evaluation'],
                     candidates=candidates, feasible_count=sum(c['allowed'] for c in candidates),
                     reason=detail.get('reason', ''), recovery=detail.get('recovery', ''),
                     ranking_active=ranking is not None, road_rows=road.tolist(), heading=heading.tolist(),
