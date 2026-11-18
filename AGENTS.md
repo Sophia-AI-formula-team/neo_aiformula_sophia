@@ -1,3 +1,7 @@
+# Concept 车端部署
+
+本分支 `feat/concept-v626-live` 上的 Concept 部署以 [vehicle_concept/AGENTS.md](vehicle_concept/AGENTS.md) 为入口。当前整机运行版本为 V6.27.1，驾驶策略为冻结的 V6.26。现场 agent 从手册第 2 节同步和构建，在启动前运行安装路径检查。
+
 # User-authorized experiment import (2026-11-04)
 
 The user explicitly authorized merging the latest 1027simtest experimental source before fixing its known issues, with rollback if needed. Read the [selection and rollback receipt](docs/agent-context/receipts/2026-11-04-experimental-import-036.md); preserve the source snapshot and its known-failure evidence. Do not silently revert it or weaken tests. Existing motor backups, launchers and PR18 archive remain protected; this authorization does not start or deploy hardware.

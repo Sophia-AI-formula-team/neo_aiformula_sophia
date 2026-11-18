@@ -75,7 +75,7 @@ class Window(W.QWidget):
         root.setSpacing(10)
         title = W.QHBoxLayout()
         title.addWidget(label('驾驶控制台','title'))
-        title.addWidget(label('Concept  /  V6.26','muted'))
+        title.addWidget(label('驾驶策略  /  V6.26','muted'))
         title.addStretch()
         self.connection = label('等待门控','badge')
         title.addWidget(self.connection)

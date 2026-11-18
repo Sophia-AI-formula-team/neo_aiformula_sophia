@@ -31,19 +31,41 @@
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
+本次验收的运行代码基线是 `d0fd23f8b806897a2ed2b5cae3ca1423cf463cb1`。部署时取该团队分支的最新提交，记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.1**，各功能包保留各自版本。下列命令同时适用于首次克隆和更新已有的同分支检出。为 V6.27.1 单独使用一个构建目录。
+
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v626"
-export WS="$HOME/concept_v626_ws"
-mkdir -p "$HOME/src" "$WS"
-git clone --single-branch --branch feat/concept-v626-live \
-  https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git "$REPO"
-git -C "$REPO" rev-parse HEAD
+export REPO="$HOME/src/neo-concept-v6271"
+export WS="$HOME/concept_v6271_ws"
+(
+  set -e
+  branch=feat/concept-v626-live
+  url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
+  mkdir -p "$HOME/src" "$WS"
+  if [ ! -e "$REPO" ]; then
+    git clone --single-branch --branch "$branch" "$url" "$REPO"
+  fi
+  cd "$REPO"
+  test "$(git rev-parse --show-toplevel)" = "$(pwd -P)"
+  test "$(git branch --show-current)" = "$branch"
+  git diff --exit-code --quiet
+  git diff --cached --exit-code --quiet
+  git fetch "$url" "refs/heads/$branch"
+  git merge --ff-only FETCH_HEAD
+  test "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)"
+  git merge-base --is-ancestor d0fd23f8b806897a2ed2b5cae3ca1423cf463cb1 HEAD
+  git show -s --format='Concept deployment commit %H %s'
+)
+```
+
+看到最后的 `Concept deployment commit` 再继续。遇到本地改动或分叉时，在新的空目录检出并保留原目录。用下面的命令核对原车底层。
+
+```bash
 python3 "$REPO/vehicle_concept/checks/check_underlay.py"
 ```
 
-已有同名检出时，在该目录用 `git status -sb` 查看分支和改动，用 `git fetch origin` 对照远端。核对脚本逐项比较当前安装的手柄映射、电机换算源码及接线配置。出现 `DIFF/MISSING`，先看具体差异。若车机仍安装较早的 neo 电机或启动器，可在新工作区覆盖安装本分支对应的底层包，保留原安装目录供回退。下面仅在需要覆盖时执行。
+核对脚本逐项比较当前安装的手柄映射、电机换算源码及接线配置。出现 `DIFF/MISSING`，先看具体差异。若车机仍安装较早的 neo 电机或启动器，可在新工作区覆盖安装本分支对应的底层包，保留原安装目录供回退。下面仅在需要覆盖时执行。
 
 ```bash
 cd "$WS"
@@ -62,13 +84,16 @@ cd "$WS"
 # 这三个包编译 C 扩展。需要 C 编译器（含 OpenMP）、Python 开发头文件和 Cython。
 # 已验证 Cython 3.0.12、SciPy 1.10.1（Python 3.8）。在当前 ROS Python 环境核对。
 python3 -c 'import Cython,scipy; print(Cython.__version__, scipy.__version__)'
-colcon build --base-paths "$REPO/vehicle_concept/src" --symlink-install
-source install/local_setup.bash
+colcon build --base-paths "$REPO/vehicle_concept/src" --symlink-install &&
+  source install/local_setup.bash &&
+  python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS"
 ros2 pkg executables concept
 ros2 run concept live --show-args
 python3 -c 'from concept_road import _markings, _memory; from concept_candidates import _progress; from concept_feasibility import _motion, _risk, _tread; from concept_drive.core import Drive; Drive(); print("V6.26 H12 and native kernels loaded")'
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
+
+[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.1`，退出码为 0。它同时检查本次安装的启动文件和实际加载的六个编译模块。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
 
 B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
@@ -99,8 +124,11 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-source "$HOME/concept_v626_ws/install/local_setup.bash"
-ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
+export REPO="$HOME/src/neo-concept-v6271"
+export WS="$HOME/concept_v6271_ws"
+source "$WS/install/local_setup.bash" &&
+  python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
+  ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
 # 等价长命令是 ros2 launch concept concept.launch.py calibration:=...
 ```
 
@@ -128,7 +156,7 @@ ros2 topic hz /aiformula_sensing/zed_node/left_image/undistorted
 ros2 topic hz /aiformula_control/joy_node/joy_l2_throttle
 ros2 topic echo /concept/vehicle_state
 ros2 topic echo /concept/gate/status
-python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 30
+python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 60 --planning-hz 5
 ```
 
 默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
@@ -139,7 +167,7 @@ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条�
 
 ## 5. 从图像到轮速，修改时找哪个包
 
-线上交付含 12 个 ROS 包。部署目录约 1.4 MB（含 5 张 Unity 回归图、预期结果和面板示例），另加约 15.3 MB 的 B1.4 私有权重。ROS、CUDA、Torch、ZED SDK 和原 neo 底层依赖没有计入。
+线上交付含 12 个 ROS 包。Git 中的 `vehicle_concept/` 文件合计约 2.3 MB（含 Unity 回归样本、计时记录和面板示例），另加约 15.3 MB 的 B1.4 私有权重。ROS、CUDA、Torch、ZED SDK 和原 neo 底层依赖没有计入。
 
 | 功能 | 包和接口 |
 |---|---|
@@ -149,7 +177,7 @@ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条�
 | 道路及记忆、桶 | `concept_road` 结合路面与标线，靠轮速和陀螺更新车身附近的地图；`concept_obstacles` 合并重复检测，区分静止和可能运动的桶。 |
 | 预测与筛选 | `concept_candidates` 生成动作；`concept_feasibility` 根据车辆响应预测占地、边界与避障风险。车道之间允许跨线，支路不可驶入，路界按一侧轮胎完全越出判断。具体不确定度仍会影响可选方案。 |
 | 模型选择 | `concept_ranker` 的 4 个宽度为 12 的网络对允许的前进候选给分数修正。正常驾驶按最终得分选择，特定恢复阶段走冻结的白盒逻辑。 |
-| 控制 | `concept_drive` 按 5 Hz 的冻结节奏推进，选中的速度、转向直接形成 `TwistStamped`。车上复用 neo 电机换算和补偿。此链路没有 LYA 或独立 P follower 节点。[同一张图的真实评分例子](src/concept_drive/README.md) |
+| 控制 | `concept_drive` 收到新感知时按配置节奏推进，默认最高请求 15 Hz，最低服务目标为 5 Hz，选中的速度、转向直接形成 `TwistStamped`。车上复用 neo 电机换算和补偿。此链路没有 LYA 或独立 P follower 节点。[同一张图的真实评分例子](src/concept_drive/README.md) |
 | 输出与显示 | `concept_control_gate` 仲裁唯一最终输出，`concept_visualization` 发布路径和地图，`concept_panel` 负责 GUI。ROS 中左转为正，冻结规划内部向右为正，边界只转换一次。 |
 
 ## 6. 复验、排错和回退
