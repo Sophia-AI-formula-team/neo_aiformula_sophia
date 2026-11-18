@@ -44,7 +44,9 @@ def collect(kind, out, node):
         elif kind == 'decision':
             value = json.loads(msg.data)
             source = ns(value['stamp']) if value.get('stamp') else None
-            record = {k:value.get(k) for k in ('status','reason','processing_ms','capture_age_s','selected_index','feasible_count','geometry_profile')}
+            record = {k:value.get(k) for k in ('status','reason','processing_ms','capture_age_s','selected_index',
+                                               'feasible_count','geometry_profile','session','planning_hz',
+                                               'rate_skipped_total')}
         else:
             value = json.loads(msg.data)
             source = ns(value['stamp'])
