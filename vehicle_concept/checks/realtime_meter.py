@@ -1,5 +1,6 @@
 """Measure the deployed graph against wall time in an isolated replay domain."""
 import argparse
+from bisect import bisect_right
 from collections import Counter
 import hashlib
 import json
@@ -135,6 +136,12 @@ def summary(args, sent, started, out, record_dir=None):
         if started<=r['received_ns']<end_ns
         and r['received_ns']-by_stamp[r['stamp_ns']]['capture_mono_ns']<=200_000_000})
     result['duplicate_output_stamps']=len(valid)-len({r['stamp_ns'] for r in valid})
+    # Exact minimum over all one-second (left, right] windows fully inside the run.
+    # The count can decrease only when a reception crosses the left edge.
+    receipts=sorted(r['received_ns'] for r in valid if started<=r['received_ns']<=end_ns)
+    edges=[started,end_ns-BILLION]+[t for t in receipts if t<=end_ns-BILLION]
+    result['min_twists_in_sliding_1s']=min(
+        bisect_right(receipts,t+BILLION)-bisect_right(receipts,t) for t in edges)
     result['missing_slot_evidence']=dict(Counter(
         ('capture_not_sent' if not r['input_ids'] else 'no_perception_observed' if not r['perceived']
          else 'no_decision_observed' if not r['decision_count'] else 'no_twist_despite_decision')
