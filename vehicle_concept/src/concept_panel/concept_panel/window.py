@@ -62,6 +62,7 @@ class Window(W.QWidget):
         super().__init__()
         self.offline = offline
         self.dispatch = None
+        self.bag_action = None
         self.busy = False
         self.pending_text = ''
         self.gate, self.decision, self.image_feed = Feed(), Feed(), Feed()
@@ -99,6 +100,27 @@ class Window(W.QWidget):
         self.detail = label('决策状态未知','muted')
         self.detail.setWordWrap(True)
         cam.addWidget(self.detail)
+        recording = W.QHBoxLayout()
+        recording.addWidget(label('ROS 数据包','heading'))
+        self.bag_status = label('未录制')
+        self.bag_status.setObjectName('bag_status')
+        recording.addWidget(self.bag_status)
+        recording.addStretch()
+        self.bag_toggle = W.QPushButton('开始录包')
+        self.bag_toggle.setObjectName('bag_toggle')
+        self.bag_toggle.setEnabled(False)
+        self.bag_toggle.clicked.connect(self.request_bag)
+        recording.addWidget(self.bag_toggle)
+        cam.addLayout(recording)
+        path_line = W.QHBoxLayout()
+        path_line.addWidget(label('保存位置','muted'))
+        self.bag_path = W.QLineEdit()
+        self.bag_path.setObjectName('bag_path')
+        self.bag_path.setReadOnly(True)
+        self.bag_path.setPlaceholderText('等待录制目录')
+        self.bag_path.setAccessibleName('录包保存位置')
+        path_line.addWidget(self.bag_path, 1)
+        cam.addLayout(path_line)
 
         controls, stack = card()
         controls.setMinimumWidth(330)
@@ -178,6 +200,21 @@ class Window(W.QWidget):
     def request(self, key):
         if self.dispatch is not None:
             self.dispatch(key,self.spins[key].value() if key in self.spins else None)
+
+    def request_bag(self):
+        if self.bag_action and not self.offline:
+            self.bag_action()
+
+    def show_bag(self, status, path, button, enabled, color):
+        self.bag_status.setText(status)
+        self.bag_status.setStyleSheet('color:'+color+';font-weight:600;')
+        self.bag_status.setToolTip(status)
+        if self.bag_path.text() != path:
+            self.bag_path.setText(path)
+            self.bag_path.setCursorPosition(len(path))
+            self.bag_path.setToolTip(path)
+        self.bag_toggle.setText(button)
+        self.bag_toggle.setEnabled(enabled and not self.offline)
 
     def log_event(self, channel, text):
         self.journal.add(channel,text,datetime.now().strftime('%H:%M:%S'))

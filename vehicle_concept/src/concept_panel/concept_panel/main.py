@@ -1,5 +1,6 @@
 """ROS 2 Foxy panel. ROS callbacks and widgets share the Qt thread."""
 import json
+import signal
 import sys
 import time
 
@@ -9,6 +10,48 @@ from .window import MODE, STATUS, Window, reason
 
 LABELS={'enable':'启用电机输出','disable':'禁用电机输出','pause':'暂停自动驾驶',
         'resume':'继续自动驾驶','restart':'重启驾驶节点','target':'规划目标','limit':'自动上限'}
+
+BAG_STATES = {
+    'idle': ('未录制', '开始录包', True, '#52685e'),
+    'starting': ('正在启动', '停止录包', True, '#8b630d'),
+    'recording': ('录制中', '停止录包', True, '#9f342e'),
+    'stopping': ('正在保存', '正在保存', False, '#8b630d'),
+    'saved': ('已保存', '开始录包', True, '#205944'),
+    'error': ('录制失败', '重新录包', True, '#9f342e'),
+}
+
+
+class RecordingControls:
+    def __init__(self, recorder, window):
+        self.recorder = recorder
+        self.window = window
+        self.last = None
+        window.bag_action = self.toggle
+        self.refresh()
+
+    def toggle(self):
+        state = self.recorder.status().state
+        if state in ('starting', 'recording'):
+            self.render(self.recorder.stop())
+        elif state in ('idle', 'saved', 'error'):
+            self.render(self.recorder.start())
+
+    def refresh(self):
+        self.render(self.recorder.status())
+
+    def render(self, snapshot):
+        if snapshot == self.last:
+            return
+        title, button, enabled, color = BAG_STATES[snapshot.state]
+        path = str(snapshot.path or self.recorder.root)
+        message = title
+        if snapshot.state == 'saved' and snapshot.messages is not None:
+            message += ' · {} 条消息'.format(snapshot.messages)
+        self.window.show_bag(message, path, button, enabled, color)
+        self.window.bag_status.setToolTip(snapshot.error or message)
+        if (self.last is None or self.last.state != snapshot.state) and snapshot.state != 'idle':
+            self.window.log_event('录包', message + ' · ' + (snapshot.error or path))
+        self.last = snapshot
 
 
 def image_from_ros(msg):
@@ -31,8 +74,10 @@ class Controller:
         from sensor_msgs.msg import Image
         from std_msgs.msg import String
         from std_srvs.srv import SetBool,Trigger
+        from .recorder import BagRecorder
 
         self.node,self.window=node,window
+        self.recording = RecordingControls(BagRecorder(), window)
         self.pending=self.future=None
         self.clients={}
         for key,path,kind in [
@@ -141,6 +186,7 @@ class Controller:
             self.finish('响应无效 · '+str(exc))
 
     def update(self):
+        self.recording.refresh()
         self.poll()
         now=self.ros()
         steady=time.monotonic()
@@ -160,9 +206,18 @@ def main(args=None):
     node=Node('concept_panel')
     window=Window()
     controller=Controller(node,window)
+    shutting_down = False
+
+    def request_exit(signum, frame):
+        nonlocal shutting_down
+        shutting_down = True
+
+    previous_signals = {sig: signal.signal(sig, request_exit) for sig in (signal.SIGINT, signal.SIGTERM)}
 
     def spin():
-        if rclpy.ok():
+        if shutting_down or not rclpy.ok():
+            app.quit()
+        else:
             # Bounded work keeps buttons and service timeouts responsive under camera load.
             for _ in range(4):
                 rclpy.spin_once(node,timeout_sec=0.)
@@ -179,6 +234,9 @@ def main(args=None):
     finally:
         io.stop()
         refresh.stop()
+        controller.recording.recorder.close()
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+        for sig, handler in previous_signals.items():
+            signal.signal(sig, handler)

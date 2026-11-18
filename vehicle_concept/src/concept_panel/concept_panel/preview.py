@@ -18,6 +18,7 @@ def main():
         for font in ('msyh.ttc','msyhbd.ttc'):
             QtGui.QFontDatabase.addApplicationFont(str(Path('C:/Windows/Fonts')/font))
     window=Window(offline=True)
+    window.show_bag('离线预览', '~/rosbags/concept', '开始录包', False, '#52685e')
     window.show()
     app.processEvents()
     img=QtGui.QImage(args.image)
