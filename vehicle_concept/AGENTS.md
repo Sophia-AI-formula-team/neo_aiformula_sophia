@@ -1,4 +1,4 @@
-# Concept V6.27.3 部署手册（V6.26 驾驶策略）
+# Concept V6.27.4 部署手册（V6.26 驾驶策略）
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
@@ -7,8 +7,8 @@
 | 版本起点 | 团队 neo main `d8277bd2b4ce95bcab2883e9b68b011749c0d9ad`。本分支单独安装。 |
 | 冻结策略是否接对 | 五场历史 Unity 记录共 1,079 帧。重放时路径、路界、桶、候选选择、分数和控制均与冻结版一致。含内、外圈整圈及三种局部障碍，倒车样本为零。[逐场记录](src/concept_drive/REPLAY.json) |
 | 相机识别是否接对 | B1.4 在工作站 GPU 上复核 12 张实车录像图，5,529,600 个道路与标线像素判断、1,200 个检测结果与原模型一致。[对照记录](src/concept_yolop/SOURCES.md) |
-| 手柄与面板 | Foxy 软件 CAN 端点实测手柄优先、松手停车、恢复只收新指令和各输入失联。Qt5 和 RViz 的话题连接已核对。[试验脚本和实测数据](checks/foxy_gate_dds.md) · [面板外观示例，使用 Unity 画面和示例数值](src/concept_panel/evidence/panel-windows.png) |
-| V6.27.3 面板录包 | 在摄像头画面下方点「开始录包」或「停止录包」。10 个话题保留驾驶决策、反馈和控制，图像不入袋。[实际录制截图和 Foxy 验收](checks/recording/README.md) |
+| 手柄与面板 | Foxy 软件 CAN 端点实测手柄优先、松手停车、恢复只收新指令和各输入失联。面板用大色块显示当前规划，电机状态在色块右上方。[手柄试验](checks/foxy_gate_dds.md) · [新版面板截图](checks/recording/panel-v6.27.4.png) |
+| V6.27.4 面板录包 | 在摄像头画面下方点「开始录包」或「停止录包」。11 个话题保留 640×360 的 JPEG 识别叠图、驾驶决策、反馈和控制。叠图按 B1.4 的输出频率录制。[图像和 Foxy 验收](checks/recording/overlay-v6.27.4.md) |
 | V6.26 初版从相机到车身图的接线验证 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
 | 下一位 agent 的第一项实车工作 | 查实际设备和旧启动命令，核对当前 ZED 安装与投影。确认输入、左右方向、静止轮速和驱动器断 CAN 后的表现，才进入低速自动。车载 Jetson 的推理耗时、实车制动距离、行驶方向与圈速均待测。 |
 
@@ -34,13 +34,13 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连�
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
-部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.3**，各功能包保留各自版本。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
+部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.4**，各功能包保留各自版本。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
 
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6273"
-export WS="$HOME/concept_v6273_ws"
+export REPO="$HOME/src/neo-concept-v6274"
+export WS="$HOME/concept_v6274_ws"
 (
   set -e
   branch=feat/concept-v626-live
@@ -97,7 +97,7 @@ python3 -c 'from concept_road import _markings, _memory; from concept_candidates
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
-[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.3`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
+[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.4`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
 
 B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
@@ -128,8 +128,8 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6273"
-export WS="$HOME/concept_v6273_ws"
+export REPO="$HOME/src/neo-concept-v6274"
+export WS="$HOME/concept_v6274_ws"
 source "$WS/install/local_setup.bash" &&
   python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
   ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
@@ -142,26 +142,31 @@ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640
 
 | 观察项 | 读数和图怎样理解 |
 |---|---|
-| 面板 | 显示自动/手柄/暂停、当前输出、决策、可行数、选中的轨迹和相机叠图。相同事件按来源合并成一行，记录首次、最近时间和次数。若门控消息过期，面板显示失联。 |
+| 面板 | 左侧大色块显示当前规划决策、原因、请求速度与转向。绿色表示计划前进、紫色表示计划倒车、琥珀色表示等待、仅转向或试算、红色表示决策失效或过期。色块右上方显示实际的电机门控状态。右侧是相机叠图、录包和控制。相同事件按来源合并，保留首次、最近时间和次数。 |
 | RViz 相机 | `/concept/view/camera`。蓝色为当前车道，橙色为标线或边缘，粉色为这张图对应的已选轨迹。尚未得到同时间戳决策的画面可以先显示识别。 |
 | RViz 车前与记忆 | 固定帧 `base_footprint`。局部图 `/concept/view/local` 用浅绿色显示通过筛查的候选、灰色显示淘汰的候选、粉色标出最终一条。记忆图 `/concept/view/map` 分色表示本车道与邻道，实虚线均为橙色；已确认静止桶标点，移动桶显示未来中心位置的不确定范围。图随车身坐标更新。 |
-| 调速 | 面板把「规划目标」发给 `/concept/drive`，把「自动上限」发给 `/concept/gate`，有效目标取较小值。改动上限会暂停自动，确认后点「继续」。目标值是驾驶请求，实际速度看轮速。 |
+| 调速 | 「目标速度」是希望规划参考的速度。「自动驾驶限速」是门控允许发送的自动速度指令上限。比如目标设 3 m/s、限速设 1 m/s，规划就按 1 m/s 计算，遇到弯道或障碍还能主动降速。修改限速会暂停自动驾驶，确认后点「继续自动驾驶」。手柄控制使用自己的设置，实际车速看轮速。 |
 | 动作 | 开启输出后仍处于暂停。手柄居中、有心跳、状态有效时点击「继续运行」。手柄一旦接管，自动命令被切断；视觉和选路继续。松手立即要求零轮速，保持到下一次点击「继续」，恢复前产生的指令全部作废。禁用输出覆盖手动和自动。 |
 | 停滞重启 | 先读原因。在面板点重启，面板先等门控确认暂停，再请求驾驶节点清空路界、桶和时序历史，重新接收传感器。等待新输入后手动继续。若驾驶进程退出，launch 尝试重启进程；门控超时后仍需手动恢复。服务未应答时按第 6 节处理。 |
 
 ### 用驾驶面板记录一次实验
 
-在弹窗的「ROS 数据包」一栏点 **开始录包**。显示「录制中」后开始实验。点 **停止录包**，等到显示 **已保存 · N 条消息**，旁边的路径就是这一袋。再次开始会新建一袋。录制中正常关闭面板也会收尾。电机禁用、暂停自动或手柄接管时都可以录。若显示「录制失败」，将鼠标停在状态上查看原因；保留对应目录用于排查。
+在弹窗右侧的「ROS 数据包」一栏点 **开始录包**。显示「录制中」后开始实验。点 **停止录包**，等到显示 **已保存 · N 条消息**，旁边的路径就是这一袋。再次开始会新建一袋。录制中正常关闭面板也会收尾。电机禁用、暂停自动或手柄接管时都可以录。若显示「录制失败」，将鼠标停在状态上查看原因。保留对应目录用于排查。
 
 默认写入运行面板那台机器的 `~/rosbags/concept/`。若面板单独开在笔记本上，文件就保存在笔记本。需要换盘时，在**启动面板的终端**先设置 `export CONCEPT_BAG_DIR=/实际挂载点/rosbags`。检查该路径可写并有足够磁盘空间。复制面板显示的完整目录，可用 `ros2 bag info "完整目录"` 查看时长、话题及条数。录包用到 Foxy 的 `ros2bag`、`rosbag2_storage_default_plugins` 和 `python3-yaml`。缺前两项时，Foxy 的 apt 包名分别为 `ros-foxy-ros2bag` 和 `ros-foxy-rosbag2-storage-default-plugins`。
 
 | 现场想复查什么 | 录下的话题 |
 |---|---|
+| 相机当时看到什么，B1.4 怎样识别 | `/concept/perception/overlay/compressed`。640×360 的 JPEG 识别叠图包含道路、标线和障碍物。它沿用相机的采集时间戳和 B1.4 的输出频率，可以与决策按时间戳配对。 |
 | 为什么选这条路，规划器给了什么速度 | 完整的 `/concept/decision`，以及 `/concept/auto_cmd`。可查候选评分、选中轨迹、不可行原因和每帧耗时。 |
 | 车当时怎样运动，手柄有没有输入 | `/concept/vehicle_state`、`/aiformula_sensing/vehicle_info`、`/aiformula_sensing/vectornav/imu`、`/aiformula_control/joy_node/joy_l2_throttle`。 |
 | 为什么停车，软件把什么交给了电机控制器 | `/concept/gate/status`、`/concept/gate/estop`、`/concept/internal/motor_cmd`、`/concept/internal/motor_can`。后两项分别是仲裁后的速度请求和最终门控复核前的 CAN 帧。实际轮速看反馈。 |
 
-录包器只订阅表内 10 个话题。原相机、含图像和掩码的感知消息、显示叠图与 RViz 图层均排除，两条最终 CAN 输出也排除。窗口仍可实时看画面。这份 bag 可用于复盘决策和控制；从原图重新运行识别需要另有图像来源。每个订阅只排队一条，SQLite 直接写盘，慢盘或传输拥堵可能漏掉样本。「已保存」表示 SQLite 实际条数与元数据逐话题一致。各话题条数取决于现场发布情况。复盘请在隔离 ROS 域内做，袋内含控制指令。
+录包器只订阅表内 11 个话题。原尺寸相机、携带未压缩画面和掩码的感知结果、RViz 图层及两条最终 CAN 输出均排除。录包订阅使用深度 1，SQLite 直接写盘。慢盘或传输拥堵可能漏掉样本。「已保存」表示 SQLite 实际条数与元数据逐话题一致。收工时用 `ros2 bag info` 查看 `/concept/perception/overlay/compressed` 的条数。只回放画面时，在隔离 ROS 域运行下面的命令，在支持 `CompressedImage` 的查看器里打开该话题。
+
+```bash
+ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=82 ros2 bag play "完整目录" --topics /concept/perception/overlay/compressed
+```
 
 静止检查时可运行下列只读命令。控制门物理所有权检查针对发布者、订阅者和节点名，重复的电机节点会阻止启动或启用。
 
