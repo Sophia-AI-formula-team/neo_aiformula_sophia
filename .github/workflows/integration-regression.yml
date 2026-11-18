@@ -21,7 +21,8 @@ permissions:
 
 jobs:
   linux-offline-contracts:
-    runs-on: ubuntu-latest
+    # Keep the Foxy-era Python 3.8 test interpreter available.
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     env:
       OMP_NUM_THREADS: '1'
