@@ -65,8 +65,8 @@ def pct(values):
     return dict(zip(('p50','p95','p99','max'),np.percentile(values,[50,95,99,100]).round(3).tolist()))
 
 
-def summary(args, sent, started, out):
-    data={k:json.loads((out/(k+'.json')).read_text()) for k in STREAMS}
+def summary(args, sent, started, out, record_dir=None):
+    data={k:json.loads(((record_dir or out)/(k+'.json')).read_text()) for k in STREAMS}
     by_stamp={r['stamp_ns']:r for r in sent}
     def slot(record):
         return by_stamp[record['stamp_ns']]['seq']*args.decision_hz//args.camera_hz
@@ -248,12 +248,22 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--watch',choices=list(STREAMS))
     parser.add_argument('--out',type=Path,required=True)
+    parser.add_argument('--rescore-from',type=Path,help='Score recorded receptions against another fixed slot grid')
     parser.add_argument('--data',type=Path)
     parser.add_argument('--seconds',type=int,default=60)
     parser.add_argument('--decision-hz',type=int,choices=(5,15),default=5)
     parser.add_argument('--camera-hz',type=int,choices=(15,),default=15)
     parser.add_argument('--feedback',choices=('bench','archive'),default='bench')
     args=parser.parse_args()
+    if args.rescore_from:
+        recorded=json.loads((args.rescore_from/'summary.json').read_text())
+        args.seconds,args.camera_hz,args.feedback=(recorded[k] for k in ('seconds','camera_hz','feedback'))
+        sent=json.loads((args.rescore_from/'sent.json').read_text())
+        if not sent:raise ValueError('Cannot reconstruct the acquisition grid without any sent images')
+        started=sent[0]['planned_ns']-sent[0]['seq']*BILLION//args.camera_hz
+        args.out.mkdir(parents=True,exist_ok=False)
+        summary(args,sent,started,args.out,args.rescore_from)
+        return
     if os.environ.get('ROS_DOMAIN_ID') not in ('77','78') or os.environ.get('ROS_LOCALHOST_ONLY')!='1':
         raise RuntimeError('Requires isolated, localhost-only domain 77 or 78')
     rclpy.init()
