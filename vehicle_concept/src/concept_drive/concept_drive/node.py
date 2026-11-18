@@ -33,7 +33,7 @@ class DriverNode(Node):
         # accepting images, without creating road observations or a command.
         cv2.cvtColor(np.zeros((1, 1, 3), np.uint8), cv2.COLOR_BGR2LAB)
         self.target = float(self.declare_parameter('target_speed_mps', 3.4).value)
-        hz = self.declare_parameter('planning_hz', 5.0).value
+        hz = self.declare_parameter('planning_hz', 15.0).value
         if not math.isfinite(hz) or not 5. <= hz <= 15.:
             raise ValueError('planning_hz must be in [5, 15]')
         self.period_ns = round(1e9 / hz)

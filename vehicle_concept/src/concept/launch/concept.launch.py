@@ -8,7 +8,7 @@ from concept.bringup import build, share
 def generate_launch_description():
     defaults = {
         'mode': 'vehicle', 'panel': 'true', 'rviz': 'true',
-        'target_speed_mps': '1.0', 'max_auto_speed_mps': '1.0', 'planning_hz': '5.0',
+        'target_speed_mps': '1.0', 'max_auto_speed_mps': '1.0', 'planning_hz': '15.0',
         'weights': '', 'calibration': '', 'device': 'cuda',
         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
