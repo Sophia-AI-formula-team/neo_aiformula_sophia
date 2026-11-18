@@ -186,6 +186,10 @@ class Fixture:
         window = self.frames[offset if wholly_zero else match:]
         require(len(window) >= 3 and all(value == expected for _, value in window),
                 '{}: inconsistent CAN values {}'.format(label, sorted(set(v for _, v in window))))
+        if expected != (0, 0) and not self.manual:
+            require(self.status.get('mode') == 'auto' and self.status.get('auto_fresh')
+                    and self.status.get('reason') == 'auto_command_received',
+                    label + ': moving with a missing or stale command status ' + str(self.status))
         video = self.vision_receipts[vision:]
         require(len(video) >= 3, label + ': perception stream stalled')
         row = dict(stage=label, mode=self.status.get('mode'), reason=self.status.get('reason'),
@@ -273,12 +277,15 @@ class Fixture:
             start, offset, vision = self.transition_start
             remaining = self.frames[offset:]
             i = next(i for i, (_, words) in enumerate(remaining) if words == (0, 0))
-            require(all(words == (0, 0) for _, words in remaining[i:]), 'motion after motor timeout')
+            zeros = remaining[i:]
+            require(len(zeros) >= 3, 'expected repeated final zero frames after motor timeout')
+            require(all(words == (0, 0) for _, words in zeros), 'motion after motor timeout')
             self.service(self.resume, Trigger.Request(), False)
             camera_messages = len(self.vision_receipts) - vision
             require(camera_messages >= 3, 'perception stalled after motor timeout')
             row = dict(stage='motor converter suspended', mode=self.status['mode'],
-                       reason=self.status['reason'], frames=len(remaining[i:]), rpm=(0, 0),
+                       reason=self.status['reason'], frames=len(zeros), rpm=(0, 0),
+                       zero_span_ms=round(1000*(zeros[-1][0]-zeros[0][0]), 1),
                        camera_messages=camera_messages,
                        transition_to_first_matching_can_ms=round(1000*(remaining[i][0]-start), 1))
             self.samples.append(row)
