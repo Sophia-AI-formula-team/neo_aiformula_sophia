@@ -92,6 +92,16 @@ def reachable_response(speed,parameters):
     commands=reachable_commands(speed)
     return commands,target(speed,commands,parameters)
 
+@lru_cache(maxsize=32)
+def response_intervals(speed,parameters):
+    commands,values=reachable_response(speed,parameters)
+    order=np.argsort(commands)
+    commands,values=commands[order],values[order]
+    starts=np.r_[0,np.flatnonzero(values[1:]!=values[:-1])+1,len(values)].astype(np.int64)
+    groups=np.repeat(np.arange(len(starts)-1,dtype=np.int64),np.diff(starts))
+    return commands,values[starts[:-1]],order.astype(np.int64),groups,starts,int(np.searchsorted(commands,0.))
+
+
 def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt=.2):
     if MODEL is None:raise RuntimeError('Fit response61515.json before use')
     desired,q,lower,upper=np.broadcast_arrays(desired,speed_command,lower,upper)
@@ -108,7 +118,8 @@ def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt
         active=flat_q==speed;lo,hi=lower.ravel()[active],upper.ravel()[active]
         commands,reachable=reachable_response(float(np.float32(speed)),tuple(MODEL['yaw']))
         if _motion is not None:
-            result[active] = _motion.closest(commands, reachable, flat_d[active], lo, hi,
+            intervals=response_intervals(float(np.float32(speed)),tuple(MODEL['yaw']))
+            result[active] = _motion.closest(*intervals, flat_d[active], lo, hi,
                                              all_lo[active], all_hi[active])
             continue
         proposals=np.broadcast_to(commands[:,None],(len(commands),len(lo)))

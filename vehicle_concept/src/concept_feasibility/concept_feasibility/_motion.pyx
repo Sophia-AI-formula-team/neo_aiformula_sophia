@@ -59,27 +59,50 @@ def advance(const double[:] speed,const double[:] yaw,const double[:] drive,cons
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def closest(const double[:] commands,const double[:] predicted,const double[:] desired,
-            const double[:] lower,const double[:] upper,const double[:] at_lo,const double[:] at_hi):
-    cdef Py_ssize_t n=desired.shape[0],k=commands.shape[0],i,j
-    if predicted.shape[0]!=k or lower.shape[0]!=n or upper.shape[0]!=n or at_lo.shape[0]!=n or at_hi.shape[0]!=n:
-        raise ValueError("invalid reachable steering table")
+cdef inline Py_ssize_t search(const double[:] a,double value,bint inclusive) noexcept nogil:
+    cdef Py_ssize_t low=0,hi=a.shape[0],mid
+    while low<hi:
+        mid=(low+hi)//2
+        if a[mid]<value or (inclusive and a[mid]==value):low=mid+1
+        else:hi=mid
+    return low
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def closest(const double[:] commands,const double[:] predicted,const long long[:] original,
+            const long long[:] group_of,const long long[:] starts,Py_ssize_t zero,
+            const double[:] desired,const double[:] lower,const double[:] upper,
+            const double[:] at_lo,const double[:] at_hi):
+    """Search every constant-response interval that intersects the steering bounds.
+
+    A plateau contributes its first legal command in the original abs/yaw order.
+    Explicitly retain that original index to reproduce np.argmin on exact ties.
+    """
+    cdef Py_ssize_t n=desired.shape[0],k=commands.shape[0],i,j,first,end,g,start,stop,best_index,p
+    if not k or original.shape[0]!=k or group_of.shape[0]!=k or starts.shape[0]!=predicted.shape[0]+1 or lower.shape[0]!=n or upper.shape[0]!=n or at_lo.shape[0]!=n or at_hi.shape[0]!=n:
+        raise ValueError("invalid steering intervals")
     result=np.empty(n)
     cdef double[:] output=result
     cdef double best,choice,error,l,h,d
     with nogil:
         for i in range(n):
-            d=desired[i];l=lower[i];h=upper[i];best=1e300;choice=l
-            for j in range(k):
-                if l<=commands[j]<=h:
-                    error=fabs(predicted[j]-d)
-                    if error<best:
-                        best=error;choice=commands[j]
+            d=desired[i];l=lower[i];h=upper[i];best=1e300;choice=l;best_index=k
+            first=search(commands,l,False);end=search(commands,h,True)
+            if first<end:
+                for g in range(group_of[first],group_of[end-1]+1):
+                    error=fabs(predicted[g]-d)
+                    if error>best:continue
+                    start=max(first,starts[g]);stop=min(end,starts[g+1])
+                    if zero<=start:p=start
+                    elif zero>=stop:p=stop-1
+                    elif original[zero-1]<original[zero]:p=zero-1
+                    else:p=zero
+                    if error<best or original[p]<best_index:
+                        best=error;choice=commands[p];best_index=original[p]
             error=fabs(at_lo[i]-d)
-            if error<best:
-                best=error;choice=l
-            if fabs(at_hi[i]-d)<best:
-                choice=h
+            if error<best:best=error;choice=l
+            if fabs(at_hi[i]-d)<best:choice=h
             output[i]=choice
     return result
 

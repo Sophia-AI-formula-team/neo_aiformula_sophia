@@ -5,12 +5,18 @@ from concept_feasibility import _motion
 from concept_feasibility.geometry import road_clearance
 from concept_feasibility.geometry61514 import RISK_LIMIT
 from concept_feasibility.path_risk import array_clearance
-from concept_feasibility.response61515 import MODEL, inverse_yaw
+from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals
 from .curve_progress import project, supported_increment
 
 DT = .05
 MOTOR = (np.asarray(MODEL['speed']), np.asarray(MODEL['yaw']), MODEL['stop']['delay'],
          MODEL['stop']['deceleration'])
+
+
+def warm_pace(pace):
+    parameters=tuple(MODEL['yaw'])
+    for speed in np.asarray([.25,.55,.8,1.])*pace:
+        response_intervals(float(np.float32(speed)),parameters)
 
 
 def initial_state(obs, commands, stop_age, *, forward=False):

@@ -42,6 +42,8 @@ def preview_reason(row, road):
 class RoadAwareCurvePlanner:
     def __init__(self, parameters=None):
         self.p = {**DEFAULT_PARAMETERS, **(parameters or {})}
+        if batch is not None:
+            batch.warm_pace(self.p['pace'])
         self.command = np.zeros(2)
         self.stop_age = 0.
         self.last = {}

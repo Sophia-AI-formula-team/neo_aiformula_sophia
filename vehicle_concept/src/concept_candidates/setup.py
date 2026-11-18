@@ -10,7 +10,8 @@ setup(
     cmdclass={'build_ext': build_ext},
     options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
     ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
-                   extra_compile_args=['/O2', '/fp:strict'] if os.name == 'nt' else ['-O3', '-ffp-contract=off'])
+                   extra_compile_args=['/O2', '/fp:strict', '/openmp'] if os.name == 'nt' else ['-O3', '-ffp-contract=off', '-fopenmp'],
+                   extra_link_args=[] if os.name == 'nt' else ['-fopenmp'])
         for module in ['_progress']],
 
     data_files=[
