@@ -1,0 +1,537 @@
+{
+  "versions": {
+    "fast": "07cfa83c9072b1fa465393d98563e974a46844ab",
+    "final": "a8d7663b0237f11e468820e9aa1d530224567170"
+  },
+  "duration_s": 60,
+  "camera_input_hz": 15,
+  "planning_request_hz": 15,
+  "absolute_acceptance_grid_hz": 5,
+  "input": "300 original 640x360 RGB frames per run from 5 Hz Unity archives, repeated three times with distinct wall-clock acquisition stamps; independent 15 Hz input imagery was not tested here.",
+  "outer_stress": "v6251_junction/outer-lap/outer-lap; constant synthetic 65 rpm and zero yaw. The bench vehicle feedback does not reconstruct the archived motion.",
+  "inner_archive": "v619_semantic_map/inner01/inner-lap; matching archived wheel RPM rounded to uint8 without clipping; gyro sign adapted from Unity to ROS.",
+  "environment": "Foxy in isolated Docker domain 77, replay sink, 2 MiB SHM, RTX 4070 Ti, AMD Ryzen 9 7900X with 24 logical CPUs and no cgroup CPU quota; driver OPENBLAS_NUM_THREADS=1, MKL_NUM_THREADS=1, OMP_NUM_THREADS=2, OMP_WAIT_POLICY unset.",
+  "timing": "Elapsed monotonic wall time; valid Twist.header stamp must exactly match an actual acquisition from this run. Distinct fixed receiving windows, interval supremum including start and end, and source-to-receipt age have separate denominators.",
+  "runs": [
+    {
+      "run": "fast15-1",
+      "workload": "outer_stress",
+      "sent": 900,
+      "perception": 894,
+      "decision": 554,
+      "raw_twists": 553,
+      "matching_ok": 553,
+      "duplicate_stamps": 0,
+      "zero_twists": 103,
+      "nonzero_twists": 450,
+      "yaw_only": 38,
+      "forward": 412,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 553,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 254,
+      "capture_slots_of_300_with_same_slot_delivery": 157,
+      "output_intervals_ms": {
+        "p50": 107.49,
+        "p95": 152.099,
+        "p99": 183.477,
+        "max": 203.906
+      },
+      "max_gap_including_run_edges_ms": 203.906,
+      "consecutive_gaps_over_200ms": 2,
+      "gaps_over_200ms_including_edges": 2,
+      "sliding_one_second_min_count": 6,
+      "source_age_ms": {
+        "p50": 171.913,
+        "p95": 238.981,
+        "p99": 266.087,
+        "max": 305.996
+      },
+      "source_age_over_200ms": 116,
+      "slowest_source_sequence": 640,
+      "first_output_ms": 170.981,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 63,
+        "on_deadline": 0,
+        "within_200ms": 62,
+        "latency_ms": {
+          "p50": 131.565,
+          "p95": 174.95,
+          "p99": 196.38,
+          "max": 202.935
+        }
+      },
+      "status_reason": {
+        "invalid / no recent wheel and gyro measurement at image capture": 1,
+        "ok / feasible": 436,
+        "ok / executing_prior_contingency": 17,
+        "ok / no_feasible_trajectory": 100
+      }
+    },
+    {
+      "run": "innerfast15-1",
+      "workload": "inner_archive",
+      "sent": 900,
+      "perception": 899,
+      "decision": 707,
+      "raw_twists": 707,
+      "matching_ok": 707,
+      "duplicate_stamps": 0,
+      "zero_twists": 0,
+      "nonzero_twists": 707,
+      "yaw_only": 26,
+      "forward": 681,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 707,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 296,
+      "capture_slots_of_300_with_same_slot_delivery": 263,
+      "output_intervals_ms": {
+        "p50": 81.348,
+        "p95": 118.451,
+        "p99": 138.03,
+        "max": 181.767
+      },
+      "max_gap_including_run_edges_ms": 181.767,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 8,
+      "source_age_ms": {
+        "p50": 143.844,
+        "p95": 196.297,
+        "p99": 230.287,
+        "max": 301.206
+      },
+      "source_age_over_200ms": 31,
+      "slowest_source_sequence": 729,
+      "first_output_ms": 88.099,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 68,
+        "on_deadline": 0,
+        "within_200ms": 68,
+        "latency_ms": {
+          "p50": 124.4,
+          "p95": 171.72,
+          "p99": 176.0,
+          "max": 179.643
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 680,
+        "ok / executing_prior_contingency": 5,
+        "ok / no_feasible_trajectory": 22
+      }
+    },
+    {
+      "run": "fast15-2",
+      "workload": "outer_stress",
+      "sent": 900,
+      "perception": 899,
+      "decision": 546,
+      "raw_twists": 545,
+      "matching_ok": 545,
+      "duplicate_stamps": 0,
+      "zero_twists": 76,
+      "nonzero_twists": 469,
+      "yaw_only": 147,
+      "forward": 322,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 545,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 265,
+      "capture_slots_of_300_with_same_slot_delivery": 168,
+      "output_intervals_ms": {
+        "p50": 109.976,
+        "p95": 157.021,
+        "p99": 181.37,
+        "max": 201.465
+      },
+      "max_gap_including_run_edges_ms": 201.465,
+      "consecutive_gaps_over_200ms": 2,
+      "gaps_over_200ms_including_edges": 2,
+      "sliding_one_second_min_count": 6,
+      "source_age_ms": {
+        "p50": 174.512,
+        "p95": 234.787,
+        "p99": 256.019,
+        "max": 311.819
+      },
+      "source_age_over_200ms": 98,
+      "slowest_source_sequence": 824,
+      "first_output_ms": 155.572,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 63,
+        "on_deadline": 0,
+        "within_200ms": 63,
+        "latency_ms": {
+          "p50": 132.197,
+          "p95": 174.804,
+          "p99": 190.428,
+          "max": 196.877
+        }
+      },
+      "status_reason": {
+        "invalid / no recent wheel and gyro measurement at image capture": 1,
+        "ok / feasible": 332,
+        "ok / executing_prior_contingency": 21,
+        "ok / no_feasible_trajectory": 192
+      }
+    },
+    {
+      "run": "innerfast15-2",
+      "workload": "inner_archive",
+      "sent": 900,
+      "perception": 900,
+      "decision": 706,
+      "raw_twists": 706,
+      "matching_ok": 706,
+      "duplicate_stamps": 0,
+      "zero_twists": 0,
+      "nonzero_twists": 706,
+      "yaw_only": 0,
+      "forward": 706,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 706,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 300,
+      "capture_slots_of_300_with_same_slot_delivery": 275,
+      "output_intervals_ms": {
+        "p50": 81.64,
+        "p95": 121.991,
+        "p99": 141.27,
+        "max": 165.712
+      },
+      "max_gap_including_run_edges_ms": 165.712,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 8,
+      "source_age_ms": {
+        "p50": 144.237,
+        "p95": 189.475,
+        "p99": 206.994,
+        "max": 228.779
+      },
+      "source_age_over_200ms": 13,
+      "slowest_source_sequence": 522,
+      "first_output_ms": 101.258,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 67,
+        "on_deadline": 0,
+        "within_200ms": 67,
+        "latency_ms": {
+          "p50": 128.024,
+          "p95": 168.219,
+          "p99": 179.948,
+          "max": 190.731
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 706
+      }
+    },
+    {
+      "run": "final15-1",
+      "workload": "outer_stress",
+      "sent": 900,
+      "perception": 897,
+      "decision": 614,
+      "raw_twists": 614,
+      "matching_ok": 614,
+      "duplicate_stamps": 0,
+      "zero_twists": 202,
+      "nonzero_twists": 412,
+      "yaw_only": 58,
+      "forward": 354,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 614,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 291,
+      "capture_slots_of_300_with_same_slot_delivery": 203,
+      "output_intervals_ms": {
+        "p50": 95.646,
+        "p95": 133.395,
+        "p99": 145.315,
+        "max": 181.865
+      },
+      "max_gap_including_run_edges_ms": 181.865,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 8,
+      "source_age_ms": {
+        "p50": 161.242,
+        "p95": 210.178,
+        "p99": 240.044,
+        "max": 260.902
+      },
+      "source_age_over_200ms": 56,
+      "slowest_source_sequence": 269,
+      "first_output_ms": 103.576,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 66,
+        "on_deadline": 0,
+        "within_200ms": 66,
+        "latency_ms": {
+          "p50": 129.382,
+          "p95": 163.233,
+          "p99": 175.895,
+          "max": 184.977
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 381,
+        "ok / no_feasible_trajectory": 208,
+        "ok / executing_prior_contingency": 25
+      }
+    },
+    {
+      "run": "innerfinal15-1",
+      "workload": "inner_archive",
+      "sent": 900,
+      "perception": 898,
+      "decision": 757,
+      "raw_twists": 757,
+      "matching_ok": 757,
+      "duplicate_stamps": 0,
+      "zero_twists": 0,
+      "nonzero_twists": 757,
+      "yaw_only": 32,
+      "forward": 725,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 757,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 299,
+      "capture_slots_of_300_with_same_slot_delivery": 283,
+      "output_intervals_ms": {
+        "p50": 76.165,
+        "p95": 106.196,
+        "p99": 128.401,
+        "max": 163.657
+      },
+      "max_gap_including_run_edges_ms": 163.657,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 10,
+      "source_age_ms": {
+        "p50": 137.147,
+        "p95": 188.827,
+        "p99": 212.841,
+        "max": 240.959
+      },
+      "source_age_over_200ms": 20,
+      "slowest_source_sequence": 829,
+      "first_output_ms": 113.658,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 69,
+        "on_deadline": 0,
+        "within_200ms": 69,
+        "latency_ms": {
+          "p50": 120.681,
+          "p95": 163.92,
+          "p99": 170.334,
+          "max": 174.208
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 724,
+        "ok / executing_prior_contingency": 1,
+        "ok / no_feasible_trajectory": 32
+      }
+    },
+    {
+      "run": "final15-2",
+      "workload": "outer_stress",
+      "sent": 900,
+      "perception": 900,
+      "decision": 624,
+      "raw_twists": 623,
+      "matching_ok": 623,
+      "duplicate_stamps": 0,
+      "zero_twists": 165,
+      "nonzero_twists": 458,
+      "yaw_only": 14,
+      "forward": 444,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 623,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 291,
+      "capture_slots_of_300_with_same_slot_delivery": 202,
+      "output_intervals_ms": {
+        "p50": 93.418,
+        "p95": 130.197,
+        "p99": 151.523,
+        "max": 187.802
+      },
+      "max_gap_including_run_edges_ms": 187.802,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 7,
+      "source_age_ms": {
+        "p50": 161.958,
+        "p95": 208.249,
+        "p99": 233.323,
+        "max": 250.604
+      },
+      "source_age_over_200ms": 61,
+      "slowest_source_sequence": 738,
+      "first_output_ms": 154.143,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 67,
+        "on_deadline": 0,
+        "within_200ms": 67,
+        "latency_ms": {
+          "p50": 126.304,
+          "p95": 168.791,
+          "p99": 184.381,
+          "max": 191.026
+        }
+      },
+      "status_reason": {
+        "invalid / no recent wheel and gyro measurement at image capture": 1,
+        "ok / feasible": 481,
+        "ok / executing_prior_contingency": 25,
+        "ok / no_feasible_trajectory": 117
+      }
+    },
+    {
+      "run": "innerfinal15-2",
+      "workload": "inner_archive",
+      "sent": 900,
+      "perception": 899,
+      "decision": 761,
+      "raw_twists": 761,
+      "matching_ok": 761,
+      "duplicate_stamps": 0,
+      "zero_twists": 0,
+      "nonzero_twists": 761,
+      "yaw_only": 0,
+      "forward": 761,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 761,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 300,
+      "capture_slots_of_300_with_same_slot_delivery": 284,
+      "output_intervals_ms": {
+        "p50": 74.953,
+        "p95": 109.037,
+        "p99": 126.986,
+        "max": 153.839
+      },
+      "max_gap_including_run_edges_ms": 153.839,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 10,
+      "source_age_ms": {
+        "p50": 140.095,
+        "p95": 188.928,
+        "p99": 216.19,
+        "max": 245.492
+      },
+      "source_age_over_200ms": 19,
+      "slowest_source_sequence": 787,
+      "first_output_ms": 103.916,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 70,
+        "on_deadline": 0,
+        "within_200ms": 70,
+        "latency_ms": {
+          "p50": 122.008,
+          "p95": 162.844,
+          "p99": 178.828,
+          "max": 183.105
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 761
+      }
+    },
+    {
+      "run": "visualfinal15",
+      "workload": "outer_stress",
+      "sent": 900,
+      "perception": 900,
+      "decision": 607,
+      "raw_twists": 607,
+      "matching_ok": 607,
+      "duplicate_stamps": 0,
+      "zero_twists": 116,
+      "nonzero_twists": 491,
+      "yaw_only": 33,
+      "forward": 458,
+      "reverse": 0,
+      "capture_slots_with_output_of_900": 607,
+      "within_66_7ms_slot": 0,
+      "missing_200ms_receive_slots": 0,
+      "receive_slots_of_300_having_at_least_one_command_aged_at_most_200ms": 287,
+      "capture_slots_of_300_with_same_slot_delivery": 198,
+      "output_intervals_ms": {
+        "p50": 96.299,
+        "p95": 134.653,
+        "p99": 166.119,
+        "max": 181.421
+      },
+      "max_gap_including_run_edges_ms": 181.421,
+      "consecutive_gaps_over_200ms": 0,
+      "gaps_over_200ms_including_edges": 0,
+      "sliding_one_second_min_count": 7,
+      "source_age_ms": {
+        "p50": 161.815,
+        "p95": 212.574,
+        "p99": 238.928,
+        "max": 261.396
+      },
+      "source_age_over_200ms": 60,
+      "slowest_source_sequence": 775,
+      "first_output_ms": 98.5,
+      "cold_first_5s": {
+        "expected": 75,
+        "received": 68,
+        "on_deadline": 0,
+        "within_200ms": 68,
+        "latency_ms": {
+          "p50": 132.666,
+          "p95": 168.098,
+          "p99": 181.859,
+          "max": 187.159
+        }
+      },
+      "status_reason": {
+        "ok / feasible": 479,
+        "ok / executing_prior_contingency": 21,
+        "ok / no_feasible_trajectory": 107
+      }
+    }
+  ],
+  "gui_run": {
+    "id": "visualfinal15",
+    "version": "a8d7663b0237f11e468820e9aa1d530224567170",
+    "software": "Qt5 panel and RViz2 on Xvfb 1600x1000; RViz OpenGL 3.1, stereo unsupported",
+    "panel_subscribed": [
+      "/concept/decision",
+      "/concept/gate/status",
+      "/concept/view/camera"
+    ],
+    "rviz_subscribed": [
+      "/concept/view/camera",
+      "/concept/view/local",
+      "/concept/view/map",
+      "/parameter_events"
+    ],
+    "exit": "Both measured GUI processes remained alive at 52 seconds and terminated via SIGTERM from the replay process-group cleanup after the 60-second window."
+  }
+}
