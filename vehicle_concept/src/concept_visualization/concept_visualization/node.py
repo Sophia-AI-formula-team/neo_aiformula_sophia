@@ -97,6 +97,8 @@ class Visualization(Node):
         self.images, self.decisions = OrderedDict(), OrderedDict()
         self.map = ObservedMap()
         self.last_map = -math.inf
+        self.last_annotated = -math.inf
+        self.last_annotated_key = None
         self.view = self.create_publisher(Image,'/concept/view/camera',qos_profile_sensor_data)
         self.local = self.create_publisher(MarkerArray,'/concept/view/local',2)
         self.memory = self.create_publisher(MarkerArray,'/concept/view/map',2)
@@ -110,10 +112,16 @@ class Visualization(Node):
         remember(self.images,key,msg)
         if key in self.decisions:
             self.camera(msg,self.decisions[key])
-        else:
+        elif time.monotonic() - self.last_annotated >= .35:
+            # While planning is producing matches, keep the latest matched image
+            # on screen instead of alternating it with newer unannotated frames.
             self.view.publish(msg)
 
     def camera(self,msg,d):
+        key = stamp_key(msg.header.stamp)
+        now = time.monotonic()
+        if now - self.last_annotated < .35 and key <= self.last_annotated_key:
+            return
         image=self.bridge.imgmsg_to_cv2(msg,'bgr8').copy()
         if image.shape[:2] == (360,640):
             for points in (d.get('edges') or {}).values():
@@ -123,6 +131,7 @@ class Visualization(Node):
         out=self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image),'bgr8')
         out.header=msg.header
         self.view.publish(out)
+        self.last_annotated, self.last_annotated_key = now, key
 
     def on_decision(self,msg):
         d=json.loads(msg.data)
@@ -130,7 +139,7 @@ class Visualization(Node):
             return
         key=d['stamp']['sec'],d['stamp']['nanosec']
         remember(self.decisions,key,d)
-        if self.view.get_subscription_count() and key in self.images and key==next(reversed(self.images)):
+        if self.view.get_subscription_count() and key in self.images:
             self.camera(self.images[key],d)
         if self.local.get_subscription_count():
             self.publish_local(d, key)
