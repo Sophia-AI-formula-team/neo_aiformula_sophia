@@ -1,7 +1,7 @@
 from setuptools import setup
 
 PACKAGE = 'concept_control_gate'
-setup(name=PACKAGE, version='0.1.0', packages=[PACKAGE],
+setup(name=PACKAGE, version='6.27.4', packages=[PACKAGE],
       data_files=[('share/ament_index/resource_index/packages', ['resource/' + PACKAGE]),
                   ('share/' + PACKAGE, ['package.xml'])],
       install_requires=['setuptools'], zip_safe=True,

@@ -220,6 +220,7 @@ class GateNode(Node):
         self.status.publish(String(data=json.dumps(dict(output_enabled=g.enabled, paused=g.paused,
             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
             t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
+            manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
             auto_fresh=not g.paused and time.monotonic()-g.auto_at <= COMMAND_TIMEOUT))))
 
 

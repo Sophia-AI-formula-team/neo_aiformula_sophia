@@ -43,6 +43,32 @@ def draw_path(image, path, color, width):
             if ok:cv2.line(image,p,q,color,width,cv2.LINE_AA)
 
 
+def draw_candidates(image, decision):
+    paths = {False: [], True: []}
+    selected = decision.get('selected_index')
+    for candidate in decision.get('candidates', []):
+        if selected is not None and candidate['index'] == selected:
+            continue
+        group = paths[candidate['allowed']]
+        points = []
+        for point in candidate['path']:
+            uv = pixel(point)
+            if uv is None:
+                if len(points) > 1:
+                    group.append(np.asarray(points, dtype=np.int32))
+                points = []
+            else:
+                points.append(uv)
+        if len(points) > 1:
+            group.append(np.asarray(points, dtype=np.int32))
+    if paths[False] or paths[True]:
+        layer = image.copy()
+        for allowed, color in ((False, (166, 155, 148)), (True, (191, 240, 153))):
+            if paths[allowed]:
+                cv2.polylines(layer, paths[allowed], False, color, 1, cv2.LINE_AA)
+        cv2.addWeighted(layer, .65, image, .35, 0, dst=image)
+
+
 class Scene:
     def __init__(self, stamp):
         self.stamp = stamp
@@ -92,6 +118,7 @@ class Visualization(Node):
         if image.shape[:2] == (360,640):
             for points in (d.get('edges') or {}).values():
                 draw_path(image,points,(37,157,248),2)
+            draw_candidates(image, d)
             draw_path(image,d.get('selected_path',[]),(170,72,250),4)
         out=self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image),'bgr8')
         out.header=msg.header

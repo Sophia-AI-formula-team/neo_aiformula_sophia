@@ -25,7 +25,7 @@ def main():
     if img.isNull():
         raise ValueError('摄像头文件无法读取')
     window.image(img,100.,100.)
-    window.gate.put(dict(mode='paused',reason='operator_pause',linear_mps=0.,max_auto_speed_mps=1.,
+    window.gate.put(dict(mode='paused',reason='operator_pause',linear_mps=0.,yaw_rps=0.,max_auto_speed_mps=1.,
                          output_enabled=False,paused=True),100.,100.)
     window.decision.put(dict(status='shadow',reason='离线示例 · 已选择可行轨迹',feasible_count=34,
                              candidates=[None]*75,speed_estimate_mps=.82,target_speed_mps=1.,

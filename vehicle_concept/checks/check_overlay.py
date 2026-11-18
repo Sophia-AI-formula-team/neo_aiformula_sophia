@@ -44,7 +44,8 @@ def verify(workspace):
                     path.name.endswith(suffix) for suffix in EXTENSION_SUFFIXES):
                 raise ValueError(f"{package}.{module} resolves to {path}")
         version = ElementTree.parse(installed_manifest).getroot().findtext("version")
-        if package in ("concept", "concept_panel", "concept_yolop") and version != "6.27.4":
+        if package in ("concept", "concept_control_gate", "concept_panel",
+                       "concept_visualization", "concept_yolop") and version != "6.27.4":
             raise ValueError(f"Expected {package} 6.27.4, installed manifest reports {version}")
         print(f"{package} {version}  ROS={prefix}  Python={py_dir}")
 
