@@ -18,6 +18,7 @@ from std_srvs.srv import Trigger
 
 from concept_yolop.frame_codec import parse_frame_header, decode_frame_data
 from .core import Drive
+from .lap_map import encode_map
 from .transport import Feedback, native_sensor, ros_command, stamp
 
 CAPTURE_JITTER_NS = 10_000_000
@@ -50,6 +51,9 @@ class DriverNode(Node):
         self.create_subscription(String, '/concept/gate/status', self.gate, 1, callback_group=self.telemetry)
         self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
         self.create_service(Trigger, '~/restart', self.restart)
+        # The default mutually exclusive group keeps the snapshot consistent
+        # with one completed frame, while feedback still uses its own group.
+        self.create_service(Trigger, '~/lap_map', self.lap_map)
 
     def reset_driver(self):
         self.driver = Drive(self.target)
@@ -58,6 +62,7 @@ class DriverNode(Node):
         self.rate_skipped_total = 0
         self.locked_reason = None
         self.camera_key = None
+        self.cached_lap_map = None
         with self.lock:
             self.feedback.samples.clear()
 
@@ -70,6 +75,19 @@ class DriverNode(Node):
         self.reset_driver()
         response.success = True
         response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
+        return response
+
+    def lap_map(self, _, response):
+        if self.last_ns is None:
+            response.message = '等待第一帧有效地图'
+            return response
+        if self.driver.mapper.t != self.driver.previous_time:
+            response.message = '最新规划未完成，保留上次地图'
+            return response
+        if self.cached_lap_map is None or self.cached_lap_map[0] != self.last_ns:
+            self.cached_lap_map = (self.last_ns, encode_map(self.driver, self.session, stamp(self.last_ns)))
+        response.success = True
+        response.message = self.cached_lap_map[1]
         return response
 
     def update_parameters(self, parameters):

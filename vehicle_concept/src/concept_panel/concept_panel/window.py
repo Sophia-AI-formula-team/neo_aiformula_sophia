@@ -1,6 +1,8 @@
 from datetime import datetime
 import math
 
+from .lap_map import LapMapDialog
+
 from .model import Feed, Journal
 from .qt import QtCore, QtGui, QtWidgets as W
 
@@ -141,7 +143,7 @@ class Window(W.QWidget):
         root.setSpacing(8)
         title = W.QHBoxLayout()
         title.addWidget(label('驾驶控制台','title'))
-        title.addWidget(label('V6.27.4 · 驾驶策略 V6.26','muted'))
+        title.addWidget(label('V6.27.5 · 驾驶策略 V6.26','muted'))
         title.addStretch()
         self.connection = label('等待门控','badge')
         title.addWidget(self.connection)
@@ -245,6 +247,12 @@ class Window(W.QWidget):
             self.buttons[key]=button
             toolbar.addWidget(button)
         toolbar.addStretch()
+
+        self.lap_map = LapMapDialog(self)
+        self.map_button = W.QPushButton('累计赛道地图…')
+        self.map_button.setEnabled(not self.offline)
+        self.map_button.clicked.connect(self.lap_map.show)
+        toolbar.addWidget(self.map_button)
 
         self.settings_dialog = W.QDialog(self)
         self.settings_dialog.setWindowTitle('Concept · 速度设置')

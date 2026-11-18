@@ -6,7 +6,7 @@ from setuptools import Extension, setup
 name = 'concept_road'
 setup(
     name=name,
-    version='6.26.0',
+    version='6.27.5',
     packages=[name],
     cmdclass={'build_ext': build_ext},
     options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},

@@ -54,6 +54,42 @@ class RecordingControls:
         self.last = snapshot
 
 
+class LapMapUpdates:
+    def __init__(self, node, dialog):
+        from std_srvs.srv import Trigger
+
+        self.dialog = dialog
+        self.client = node.create_client(Trigger, '/concept/drive/lap_map')
+        self.request = Trigger.Request
+        self.pending = None
+        self.sent_at = float('-inf')
+
+    def refresh(self, steady):
+        if self.pending is not None:
+            if self.pending.done():
+                try:
+                    response = self.pending.result()
+                    if self.dialog.isVisible():
+                        if response.success:
+                            self.dialog.show_map(response.message)
+                        else:
+                            self.dialog.connection.setText(response.message)
+                except (TypeError, ValueError, KeyError, RuntimeError):
+                    self.dialog.connection.setText('地图读取失败 · 保留上次地图')
+                self.pending = None
+            elif steady-self.sent_at > 3.:
+                self.pending.cancel()
+                self.pending = None
+                self.dialog.connection.setText('地图服务超时 · 保留上次地图')
+        if self.pending is not None or not self.dialog.isVisible() or steady-self.sent_at < 1.:
+            return
+        self.sent_at = steady
+        if not self.client.service_is_ready():
+            self.dialog.connection.setText('未连接地图服务 · 保留上次地图')
+            return
+        self.pending = self.client.call_async(self.request())
+
+
 def image_from_ros(msg):
     encoding=msg.encoding.lower()
     formats={'rgb8':(3,QtGui.QImage.Format_RGB888),'bgr8':(3,QtGui.QImage.Format_RGB888),
@@ -78,6 +114,7 @@ class Controller:
 
         self.node,self.window=node,window
         self.recording = RecordingControls(BagRecorder(), window)
+        self.lap_map = LapMapUpdates(node, window.lap_map)
         self.pending=self.future=None
         self.clients={}
         for key,path,kind in [
@@ -190,6 +227,7 @@ class Controller:
         self.poll()
         now=self.ros()
         steady=time.monotonic()
+        self.lap_map.refresh(steady)
         age=self.window.gate.age(now,steady)
         live=age is not None and age<=.5
         if self.previous_live is not None and self.previous_live!=live:

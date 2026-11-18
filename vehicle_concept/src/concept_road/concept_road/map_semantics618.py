@@ -177,6 +177,13 @@ def inside_openings(evidence, asphalt, valid):
                                rows=np.round(rows,3).tolist()))
     return candidates
 
+def marking_kind(votes):
+    solid, dashed = votes['solid'], votes['dashed']
+    if max(solid, dashed) < 2 or solid == dashed:
+        return 'unclassified'
+    return 'solid' if solid > dashed else 'dashed'
+
+
 class SemanticMap:
     def __init__(self, projection):
         self.projection=projection
@@ -218,9 +225,7 @@ class SemanticMap:
         for k,kinds in votes.items():
             vote=self.markings.setdefault(k,Counter())
             vote.update(kinds)
-            best=max(('solid','dashed'),key=lambda label:vote[label])
-            name=best if vote[best]>=2 and vote[best]>vote['dashed' if best=='solid' else 'solid'] else 'unclassified'
-            changed_markings.append([*k,name])
+            changed_markings.append([*k,marking_kind(vote)])
         openings=inside_openings(evidence,asphalt,valid)
         for opening in openings:
             anchor=transform(opening['mouth'],pose)

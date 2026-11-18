@@ -35,6 +35,7 @@ class Drive:
         self.set_pace(pace)
         self.previous_time = None
         self.previous_motion = None
+        self.observed_openings = []
 
     def set_pace(self, pace):
         if not np.isfinite(pace) or not 0. < pace <= 6.:
@@ -81,6 +82,7 @@ class Drive:
         control = self.builder.command(pick)
         self.previous_time = sensor['t']
         self.previous_motion = (speed, yaw)
+        self.observed_openings = [item['position'] for item in semantic['junctions']]
         detail = self.builder.planner.last
         audit = detail['audit']
         table = audit.get('table', [])
