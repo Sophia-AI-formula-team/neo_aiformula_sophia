@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>concept_drive</name>
+  <version>6.26.0</version>
+  <description>Synchronized sensor-only ROS adapter for V6.26 decisions.</description>
+  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
+  <license>AGPL-3.0-only</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>concept_candidates</exec_depend>
+  <exec_depend>concept_obstacles</exec_depend>
+  <exec_depend>concept_ranker</exec_depend>
+  <exec_depend>concept_road</exec_depend>
+  <exec_depend>concept_yolop</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>rosgraph_msgs</test_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

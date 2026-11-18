@@ -1,0 +1,241 @@
+{
+  "speed": [
+    0.29999971945510495,
+    1.024018104446096,
+    -0.10536643593356589,
+    0.014197785966249713,
+    -0.2920397878130866,
+    1.4999963321308156
+  ],
+  "yaw": [
+    0.10301512022063196,
+    0.004368888664795847,
+    -0.07998168318363277,
+    -0.05839305445248353,
+    -0.42307737346798074,
+    1.513938470705889
+  ],
+  "stop": {
+    "deceleration": 2.0232268547975254,
+    "delay": 0.03444060660279021
+  },
+  "version": "V6.15.15",
+  "parameter_order": [
+    "tau_s",
+    "common_gain_per_100_CAN",
+    "negative_hinge_gain",
+    "positive_hinge_gain",
+    "ratio_hinge",
+    "ratio_saturation"
+  ],
+  "training": "Command + wheel RPM proxy + gyro only. Known Archived1030 CAN conversion; response coefficients and saturation fitted from recordings.",
+  "physical_scope": "Installed Unity simulator only; no hardware validation",
+  "sources": [
+    {
+      "path": ".runtime\\v615_recovery\\develop04\\201_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "8d22897e3bb898ce8103bc2cefa7426ae3867c222952c5b60f7f297faa5aebaf",
+      "duplicate": false,
+      "frames": 42
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop04\\208_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "a837a7d54af11525d58ad6fd29cb806c9d137001bb0812ed4996c11b68b8e46f",
+      "duplicate": false,
+      "frames": 76
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop04\\210_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "31fbd624faa2fb7675f7404b28e62d01d5de0e188c662eecff99966bb7bee937",
+      "duplicate": false,
+      "frames": 82
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop04\\s2026112588_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "50df644c57c2896757286c223377899098fa0ff7a951177810280765329b611d",
+      "duplicate": false,
+      "frames": 343
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop04\\s2026112607_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "efb89b52e7e5abaeb99b1dd8262be73a5a45d895574b1f3b8643a47213ac51bf",
+      "duplicate": false,
+      "frames": 343
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop05\\201_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "3407bb3d5b4af5e300835839c7d8a76ec947040c19d5b5dfa662502dee5ecad2",
+      "duplicate": false,
+      "frames": 43
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop05\\208_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "b0c0566d05bcf939bb491e29897aface35ef7e9f2882a3c1064faf05b2890752",
+      "duplicate": false,
+      "frames": 76
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop05\\210_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "4371c6622c04a1141f77e4d31d4162dece7a259aefd2c75a04c24448b6a69fd3",
+      "duplicate": false,
+      "frames": 47
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop06\\201_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "3407bb3d5b4af5e300835839c7d8a76ec947040c19d5b5dfa662502dee5ecad2",
+      "duplicate": true,
+      "frames": 43
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop06\\208_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "2d7daea8a61964120ec4f67b6534aa15037407a558bfe14add848d930ba944f5",
+      "duplicate": false,
+      "frames": 68
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop06\\210_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "4371c6622c04a1141f77e4d31d4162dece7a259aefd2c75a04c24448b6a69fd3",
+      "duplicate": true,
+      "frames": 47
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss04\\continuous_clear\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "c53dc48ba3806509924d193cb79f269e1ce7569e9eec9f86ddd54383c6527377",
+      "duplicate": false,
+      "frames": 80
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss04\\continuous_one\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "fc3e3ddbd1e606beff18cda6e100c1d6a6bd5332bf4d7288bc8ade73d2cb2c87",
+      "duplicate": false,
+      "frames": 86
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss04\\continuous_ten\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "7ee6231b38673395d8fe5a3d1f396e5718bdeafeff4d669891666de483e4606c",
+      "duplicate": false,
+      "frames": 94
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss04\\continuous_three\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "6cb0f75975b6065c72273dade81ccd0f9588e40548ccd8f69b2050bc326fd86d",
+      "duplicate": false,
+      "frames": 85
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss04\\moving_ten\\210_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "f63b5be9f2f9afd4eb9115f3a48b58b88067d8d0b379bf0c6eccb9380ee7d9c4",
+      "duplicate": false,
+      "frames": 72
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss05\\continuous_clear\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "ea680cb524c875bed7a1633a172c392d8e84973f5ac9e86ac180e138d8a029b5",
+      "duplicate": false,
+      "frames": 85
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss05\\continuous_one\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "ea680cb524c875bed7a1633a172c392d8e84973f5ac9e86ac180e138d8a029b5",
+      "duplicate": true,
+      "frames": 85
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss05\\continuous_ten\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "214498f0aad7bb780098e99421e9663ef6410228aff479d83b548771f9ea607d",
+      "duplicate": false,
+      "frames": 90
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss05\\continuous_three\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "dacd622d8a73df98752da09c023ce343a272f7df7e681d6653758cb9c2e1f42f",
+      "duplicate": false,
+      "frames": 85
+    },
+    {
+      "path": ".runtime\\v615_recovery\\loss05\\moving_ten\\210_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "e77ff7e11de5e791fcf984dc5132d2e64ba536d5fa55d6f76151815ea4393103",
+      "duplicate": false,
+      "frames": 69
+    }
+  ],
+  "heldout_sources": [
+    {
+      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211108_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "a92cf4d57b887769d9040195b4421a3024d93a5922a735b5d363c849a848d460",
+      "duplicate": false,
+      "frames": 347
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211824_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "f3411f18b23581bd5ef9df568f16ace8fbefb54518edcbcdd81bf3fc0b5fab57",
+      "duplicate": false,
+      "frames": 347
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211932_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "4ffdf234876f3aff9a7103b8bfee039cb6d9b51dddc7a20d60ce7097df795a8d",
+      "duplicate": false,
+      "frames": 346
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611212988_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "46582edb9ef80bf0383b766ab4c6dc06b3b829af82f3f8880d8f14a784cb068e",
+      "duplicate": false,
+      "frames": 350
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611213833_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "3a8cd0dbb818f0ed9b32f5749603f72fa0027503eaacd67419d8e5882fa95061",
+      "duplicate": false,
+      "frames": 351
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_obstacles\\201_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "1220a1feb0db75132423a6cc24d629e558d5e4c78cc7ed3620def23df52cfa9d",
+      "duplicate": false,
+      "frames": 43
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_obstacles\\208_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "541740c39875435097e327ab7d47e335fa302e4605d84194e07de1c650985749",
+      "duplicate": false,
+      "frames": 92
+    },
+    {
+      "path": ".runtime\\v615_recovery\\develop11_obstacles\\210_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
+      "sensor_command_sha256": "ed2b1286ec7cd0a06592037982946956d9bedb1fd3309b9f7c13a7c6f5b3764b",
+      "duplicate": false,
+      "frames": 70
+    }
+  ],
+  "train_transitions": 1848,
+  "heldout_runs": 8,
+  "fits": [
+    {
+      "name": "speed",
+      "cost": 4.58033803307778e-10,
+      "success": true,
+      "parameters": [
+        0.29999971945510495,
+        1.024018104446096,
+        -0.10536643593356589,
+        0.014197785966249713,
+        -0.2920397878130866,
+        1.4999963321308156
+      ]
+    },
+    {
+      "name": "yaw",
+      "cost": 0.0707027717548791,
+      "success": true,
+      "parameters": [
+        0.10301512022063196,
+        0.004368888664795847,
+        -0.07998168318363277,
+        -0.05839305445248353,
+        -0.42307737346798074,
+        1.513938470705889
+      ]
+    }
+  ]
+}

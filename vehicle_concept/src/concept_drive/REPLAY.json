@@ -1,0 +1,99 @@
+{
+  "protocol": "stream every archived onboard frame in chronological order",
+  "numeric_atol": 1e-05,
+  "software": {
+    "python": "3.13.13",
+    "numpy": "2.4.4",
+    "opencv": "4.13.0",
+    "scipy": "1.17.1"
+  },
+  "archives": [
+    {
+      "run": "eval-inner-check",
+      "frames": 339,
+      "ranks": 339,
+      "reversing_frames": 0,
+      "max_abs_error": {
+        "control": 0.0,
+        "road": 0.0,
+        "objects": 0.0,
+        "path": 0.0,
+        "score": 0.0
+      },
+      "first_difference": null
+    },
+    {
+      "run": "eval-mixed",
+      "frames": 233,
+      "ranks": 233,
+      "reversing_frames": 0,
+      "max_abs_error": {
+        "control": 0.0,
+        "road": 0.0,
+        "objects": 0.0,
+        "path": 0.0,
+        "score": 0.0
+      },
+      "first_difference": null
+    },
+    {
+      "run": "eval-moving-lap",
+      "frames": 363,
+      "ranks": 362,
+      "reversing_frames": 0,
+      "max_abs_error": {
+        "control": 0.0,
+        "road": 0.0,
+        "objects": 0.0,
+        "path": 0.0,
+        "score": 0.0
+      },
+      "first_difference": null
+    },
+    {
+      "run": "eval-parallel",
+      "frames": 48,
+      "ranks": 48,
+      "reversing_frames": 0,
+      "max_abs_error": {
+        "control": 0.0,
+        "road": 0.0,
+        "objects": 0.0,
+        "path": 0.0,
+        "score": 0.0
+      },
+      "first_difference": null
+    },
+    {
+      "run": "eval-sequence",
+      "frames": 96,
+      "ranks": 96,
+      "reversing_frames": 0,
+      "max_abs_error": {
+        "control": 0.0,
+        "road": 0.0,
+        "objects": 0.0,
+        "path": 0.0,
+        "score": 0.0
+      },
+      "first_difference": null
+    }
+  ],
+  "foxy": {
+    "os": "Ubuntu 20.04 x86_64",
+    "python": "3.8.10",
+    "numpy": "1.24.4",
+    "opencv": "4.12.0",
+    "scipy": "1.10.1",
+    "fixture_frames": 5,
+    "dds": [
+      "stamped signed Twist",
+      "matched frozen index",
+      "restart while engaged rejected",
+      "paused gate restart",
+      "gate maximum honored",
+      "unverified camera shadow"
+    ]
+  },
+  "reverse_frames": 0
+}

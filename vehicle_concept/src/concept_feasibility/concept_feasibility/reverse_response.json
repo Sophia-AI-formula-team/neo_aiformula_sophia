@@ -1,0 +1,21 @@
+{
+  "speed_tau": 0.2999998747272463,
+  "speed_target": -0.20464492207958027,
+  "yaw_tau": 0.005050612305862482,
+  "yaw_target": 0.02243159422926764,
+  "action": [
+    -0.2,
+    0.0
+  ],
+  "scope": "Installed Unity plant; fixed low-speed straight-command reverse only; no hardware claim",
+  "source": ".runtime\\v616_decision\\reverse_probe01",
+  "sensor_sha256": "c441128677b78ce06c41fb60fbd807b7ad39b35de0af041724df6ee686f2451c",
+  "transition_samples": 8,
+  "training_rmse": {
+    "speed": 1.337133274680456e-08,
+    "yaw": 0.0005576871775629641
+  },
+  "steady_body_speed_mean": -0.19699815442857144,
+  "independent_heldout": false,
+  "allowed_body_speed_mps": 0.3
+}

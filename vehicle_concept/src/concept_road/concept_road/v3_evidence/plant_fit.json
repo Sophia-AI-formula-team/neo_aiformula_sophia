@@ -1,0 +1,280 @@
+{
+  "speed": {
+    "tau": 0.3454057715990708,
+    "gain": 0.9707349192285606,
+    "bias": 0.3847019678708669,
+    "delay": 0.0,
+    "fit_acceleration_rmse": 0.4975385070050104,
+    "heldout_step_rmse": 0.05327518394804686
+  },
+  "yaw": {
+    "tau": 0.8406318072434432,
+    "gain": 0.11765680433909902,
+    "bias": -0.056533536181424475,
+    "delay": 0.0,
+    "fit_acceleration_rmse": 0.31920569923172515,
+    "heldout_step_rmse": 0.037232316520586006
+  },
+  "yaw_gain_by_speed": {
+    "speed": [
+      1.5,
+      2.5,
+      3.5,
+      4.5
+    ],
+    "gain": [
+      0.1156982163266071,
+      0.13917828239448293,
+      0.17210156507157082,
+      0.010746244039846626
+    ],
+    "method": "median observed yaw / command per speed band; descriptive fit"
+  },
+  "source": "archived Unity training traces",
+  "fit_runs": 45,
+  "validation_runs": 15,
+  "sources": [
+    {
+      "file": "smooth_revision\\runs\\b01_base.json",
+      "sha256": "ed733ed1a618e3ecc9f503db4ba6b8b990450f26ccfd31d9b67aeb5fb0f55ebe"
+    },
+    {
+      "file": "smooth_revision\\runs\\b01_learned.json",
+      "sha256": "84f235c52f4559e0e07b72a1ac04e7dd80fccb42c00bfecdf42d08e31e8f95b8"
+    },
+    {
+      "file": "smooth_revision\\runs\\b02_base.json",
+      "sha256": "992a52570cb375dd0b189f7a46aeb1163f39f1ebff6174793766d9888d17a61d"
+    },
+    {
+      "file": "smooth_revision\\runs\\b02_learned.json",
+      "sha256": "d075452db296a5b929b9d7e73e2ecc96c2a070bc26792a7706fee50afaca3b1c"
+    },
+    {
+      "file": "smooth_revision\\runs\\b03_base.json",
+      "sha256": "57322de177d1e9ed9c247cc4c4a7bfe0c8890292bdd1072953ed5db2f6d55a4f"
+    },
+    {
+      "file": "smooth_revision\\runs\\b03_learned.json",
+      "sha256": "40c6ae16a8873450a795481910072237cc63337fdeba5f59920763d348e2342c"
+    },
+    {
+      "file": "smooth_revision\\runs\\b04_base.json",
+      "sha256": "8aab7984b0a9f37f2dae4757ad59cdffb3b1dff60eb5d099811909db3a6ae52a"
+    },
+    {
+      "file": "smooth_revision\\runs\\b04_learned.json",
+      "sha256": "c844664a6a647f055b248aae8f20a87abf1133625829fb273d3b2ee27276eb10"
+    },
+    {
+      "file": "smooth_revision\\runs\\b05_base.json",
+      "sha256": "612ea5c47004bfa1f3b83f7f8deb584f37fa06b63c421fd4da1391a19acfc266"
+    },
+    {
+      "file": "smooth_revision\\runs\\b05_learned.json",
+      "sha256": "adf76a744dd0d6af78f2e606bf6bac4942346c6cfc92ce35bddfd9e93e7604be"
+    },
+    {
+      "file": "smooth_revision\\runs\\b06_base.json",
+      "sha256": "2a377aececc8ded1d14b608a46907f302de0dbd4ce10b81634cd9cc8a4ddc64b"
+    },
+    {
+      "file": "smooth_revision\\runs\\b06_learned.json",
+      "sha256": "fb24f2ecfd21972b7d2cf07a080011f86b05c80f595befa9561d7d5f42936cac"
+    },
+    {
+      "file": "smooth_revision\\runs\\b07_base.json",
+      "sha256": "96c071f6e99092bbbe978f332b8a15f974d9c768a9078c2dc8f758985bf217dd"
+    },
+    {
+      "file": "smooth_revision\\runs\\b07_learned.json",
+      "sha256": "f37f394cb95b8aca057e118c3e2e9e3f7e46ce1c98278af102c1d30a04327c8f"
+    },
+    {
+      "file": "smooth_revision\\runs\\b08_base.json",
+      "sha256": "c3969008e4a86abcd16b84e8add6a643a73a250606fd78dc262d2c88c14bc7f2"
+    },
+    {
+      "file": "smooth_revision\\runs\\b08_learned.json",
+      "sha256": "b2b05b673732438690d68ff607fad37b8b1d7c5b7abdd4b0a3210e327b0e8a43"
+    },
+    {
+      "file": "smooth_revision\\runs\\b09_base.json",
+      "sha256": "37c8ef51cf1d184bee2059dd530d88edcb8ab63c08a924286edf8f1597ec9195"
+    },
+    {
+      "file": "smooth_revision\\runs\\b09_learned.json",
+      "sha256": "eefe6cc33b2579db539665ab260fc44500d2950eb72179795bf713ecbf582544"
+    },
+    {
+      "file": "smooth_revision\\runs\\b10_base.json",
+      "sha256": "40690ebec0185af79cb0d185c0477a0274ca636acb817f6ce64639abe73b9d1b"
+    },
+    {
+      "file": "smooth_revision\\runs\\b10_learned.json",
+      "sha256": "6fcd451aa925d6a6cccfde4629d2dc2b9ef5f56726ddd3e8c4e77aead218cee9"
+    },
+    {
+      "file": "smooth_revision\\runs\\b11_base.json",
+      "sha256": "9e4bbe3086db2a1db596e5a92be5bc74e2e4b5b5ed1a486816f5ff1f389dcf06"
+    },
+    {
+      "file": "smooth_revision\\runs\\b11_learned.json",
+      "sha256": "dc403e050716fa8d32780e771774520c85486643ac03318ad81924c8f05c59e1"
+    },
+    {
+      "file": "smooth_revision\\runs\\b12_base.json",
+      "sha256": "e79e534b9b8a93f798237d2f118a013de68c0e46097b9fdbe99c2ece9d914f92"
+    },
+    {
+      "file": "smooth_revision\\runs\\b12_learned.json",
+      "sha256": "7f3ba3f8b59aacf8633ee8ab4b6895544b3bbc994f016c6a0672aba1382b1832"
+    },
+    {
+      "file": "smooth_revision\\runs\\b13_base.json",
+      "sha256": "639ae5a1acb94f3f1402b7dc85fc1b6d920f55e8790660f052bbae1afeff6342"
+    },
+    {
+      "file": "smooth_revision\\runs\\b13_learned.json",
+      "sha256": "d7334151ed3d0b5801429ba8edb924702b063c3d580b809729e0afa79058bc70"
+    },
+    {
+      "file": "smooth_revision\\runs\\b14_base.json",
+      "sha256": "f6f0c0cefed3c822c3a3dca46effa19d80f4def144df0f9ae6fe240ddcb929f7"
+    },
+    {
+      "file": "smooth_revision\\runs\\b14_learned.json",
+      "sha256": "4849b06bfb6c4ffe68a345b5950b016f8e114548c5396f76a91da939667108d1"
+    },
+    {
+      "file": "smooth_revision\\runs\\b15_base.json",
+      "sha256": "60058deb610097626d812185f9500962dcd42334366f695b816194cf8a56c096"
+    },
+    {
+      "file": "smooth_revision\\runs\\b15_learned.json",
+      "sha256": "28004d359ce6b3d11ca84fa3a60e346092ad877b01dd27aaeefde580176102c2"
+    },
+    {
+      "file": "smooth_revision\\runs\\b16_base.json",
+      "sha256": "df0af0b0e74b11cac09599fd8ed177cdfa4cd661273906e1873e19c6a495d629"
+    },
+    {
+      "file": "smooth_revision\\runs\\b16_learned.json",
+      "sha256": "eb8b923c5a409fcb369beafb34b0aa096f9d45e9850e15d1eb49a3146f3c9275"
+    },
+    {
+      "file": "smooth_revision\\runs\\b17_base.json",
+      "sha256": "637b0377f5fb9c01ab9c27165eaf98c2ec1b3cacb02f4ed7fab7edf3eb28564f"
+    },
+    {
+      "file": "smooth_revision\\runs\\b17_learned.json",
+      "sha256": "711e2903f4d83437d0abe432bd58caee3b957023b36df11978401e7115a78b9f"
+    },
+    {
+      "file": "smooth_revision\\runs\\b18_base.json",
+      "sha256": "3256aac3e38bdc628983ff6db63173344ce3c15ac1076e24cf121542b5bb1167"
+    },
+    {
+      "file": "smooth_revision\\runs\\b18_learned.json",
+      "sha256": "7e6b0941f3d70d64cbc246a9f5bfef5590f85368e3840af5f715767ce31d67fa"
+    },
+    {
+      "file": "smooth_revision\\runs\\b19_base.json",
+      "sha256": "69429bec7a7f427e4a3b42e8065c0d5727942f7dab5c37fef01e28b8ec02ddd1"
+    },
+    {
+      "file": "smooth_revision\\runs\\b19_learned.json",
+      "sha256": "9b48a302bbb08b04793308302f0cfd447f0ac243fffab094bc8e922aeade1bce"
+    },
+    {
+      "file": "smooth_revision\\runs\\b20_base.json",
+      "sha256": "ae9900ab80647b3bebcc3c5a3c438b5714c0ec72f6e3fd43f61f98752815f1ae"
+    },
+    {
+      "file": "smooth_revision\\runs\\b20_learned.json",
+      "sha256": "e7b2ce24a2b00524eec71ac58c469d4543a78622e8d8e3a2f22964efcdd257f2"
+    },
+    {
+      "file": "smooth_revision\\runs\\b21_base.json",
+      "sha256": "06c5090b1bbd50b11b7ac37c9edd04541f72a3a44a80f9ea65d003e17b63f003"
+    },
+    {
+      "file": "smooth_revision\\runs\\b21_learned.json",
+      "sha256": "597ec3af504044908dafac13b8879720081a1bd62c6ba0118c0e95ed2f75fc8f"
+    },
+    {
+      "file": "smooth_revision\\runs\\b22_base.json",
+      "sha256": "a09f2805355fde267c2e85ad7d879b288a10115a16fed3c7404fe387f59aac31"
+    },
+    {
+      "file": "smooth_revision\\runs\\b22_learned.json",
+      "sha256": "222f81efc0c738f0cb27cc3b90cfc57d4193e91a94fa2069af62b354cb35dfb6"
+    },
+    {
+      "file": "smooth_revision\\runs\\b23_base.json",
+      "sha256": "9bdb68e3a2f83f5556e6080aa4051bf5c03dcbfdad759ff4cfb20e69040c1c82"
+    },
+    {
+      "file": "smooth_revision\\runs\\b23_learned.json",
+      "sha256": "e7094ebd87aaa28de459bc4603aedc264e184254e6f88e9fd9252fd5d8aa328a"
+    },
+    {
+      "file": "smooth_revision\\runs\\b24_base.json",
+      "sha256": "db8e46949d4c85fe382366042906fe4a6f2eca28c2e97169ec5ed4b66f3c282a"
+    },
+    {
+      "file": "smooth_revision\\runs\\b24_learned.json",
+      "sha256": "479f61fbfa015eb74a852d00781cb111294f66fd28a57022454f5f8c036a7a89"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d001_learned.json",
+      "sha256": "b36f34a56e4d0f4b2536b712a460faf91b85950a350b1e9fcb8a7804297bf5f4"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d002_learned.json",
+      "sha256": "4c151ec4d28742ddd72bf1e7e1aaa0abbaffdda2a480eff936f499cd8dff21ed"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d003_learned.json",
+      "sha256": "95eb9740bd2a35f3288c0f174e76181846f979d0f64ae2d4845dd0cab16c0a10"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d004_learned.json",
+      "sha256": "50b14eebece8c8ddb26b821f3fc71ddde5e8a8365a3a7cb320fa0ab5dc7736ab"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d005_learned.json",
+      "sha256": "6ea2c019c03919943052122dbdd67fa72ba9dbc016d24c0a6ab0446663103ff0"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d006_learned.json",
+      "sha256": "f8392d8f0a2b0bfd7f8ee6e3382bf9cb156487b31aec75d8b605f28329187340"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d007_learned.json",
+      "sha256": "eeebd65a2a56edaab677255d1fccb7d25963b4ba37134ca2b7dd845ef277d39d"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d008_learned.json",
+      "sha256": "6fe50f1a438a726639fed87debc2b7d1fcb0da326b0501cbeb432bcd49ecee05"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d009_learned.json",
+      "sha256": "e379b9a9d1fd50e7fde906647e56dbc7252786e510c8bad89440e761bf9cbfc0"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d010_learned.json",
+      "sha256": "e8e25342138c249816d8b575e1283525e77f3f86a9df345d515084816b9e93ec"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d011_learned.json",
+      "sha256": "7ec12c32e3d65e067b1cd8382f0169a8a6246299559e157d34fb87683c900fe4"
+    },
+    {
+      "file": "smooth_revision\\runs\\ck32_d012_learned.json",
+      "sha256": "cb16fcc478704626100e1817eb13959a67f373c80f12da04731e537d32425573"
+    }
+  ],
+  "limitation": "One-step linear lag fit only, not long-rollout equivalence or real-car calibration",
+  "body_speed_cap": 4.5
+}

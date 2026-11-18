@@ -1,0 +1,229 @@
+"""Runtime source extracted from the accepted V6.26 freeze: experiments/v67_road/road.py. """
+
+import cv2
+
+import numpy as np
+
+from concept_road.vision import FOCAL, CX, CY, HEIGHT
+
+from concept_road.material import MaterialRoad
+
+DEPTHS=np.linspace(.95,12.,45)
+
+def fit(points):
+    p=np.asarray(points,float)
+    if len(p)<5 or np.ptp(p[:,0])<1.:return None
+    z,x=p[:,0],p[:,1]
+    weights=np.exp(-p[:,2]/.35)/(1+.04*z*z)
+    coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
+    for _ in range(5):
+        residual=x-np.polynomial.polynomial.polyval(z,coefficient)
+        robust=np.minimum(1.,.10/np.maximum(abs(residual),1e-6))
+        coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
+    residual=abs(x-np.polynomial.polynomial.polyval(z,coefficient))
+    accepted=residual<.25
+    if accepted.sum()<5 or np.ptp(z[accepted])<1.:return None
+    error=float(np.quantile(residual[accepted],.8))
+    if error>.20:return None
+    return dict(coef=coefficient.tolist(),error=error,zmin=float(z[accepted].min()),
+                zmax=float(z[accepted].max()),points=p[accepted].tolist(),
+                age=float(np.average(p[accepted,2],weights=weights[accepted])))
+
+def val(curve,z):return np.polynomial.polynomial.polyval(z,curve['coef'])
+
+def tangent(curve,z):return np.arctan(curve['coef'][1]+2*curve['coef'][2]*z)
+
+class RoadMap:
+    def __init__(self,mode):
+        assert mode in ('current','lanes','fused','guided')
+        self.mode=mode;self.tracks=[];self.serial=0;self.last={};self.material=None
+        self.material_road=MaterialRoad() if mode in ('fused','guided') else None
+
+    def transport(self,speed,yaw,dt):
+        if not 0<dt<=.5:return []
+        a=yaw*dt;c,s=np.cos(a),np.sin(a)
+        dz=speed*dt*np.sinc(a/np.pi)
+        dx=speed*dt*(1-np.cos(a))/a if abs(a)>1e-5 else 0.
+        old=[]
+        for track in self.tracks:
+            points=[]
+            for z,x,age in track['points']:
+                z-=dz;x-=dx;zz=c*z+s*x;xx=-s*z+c*x
+                if age+dt<=.8 and .2<zz<14:points.append([zz,xx,age+dt])
+            curve=fit(points)
+            if curve is not None:curve['id']=track['id'];old.append(curve)
+        return old
+
+    def markings(self,lane):
+        tracks=[]
+        # Scan actual pixel rows once; duplicate distant pixel rows must not
+        # masquerade as many independent measurements.
+        for v in range(lane.shape[0]-4,int(CY+HEIGHT*FOCAL/12),-1):
+            z=HEIGHT*FOCAL/(v-CY)
+            active=np.flatnonzero(lane[v])
+            groups=[g for g in np.split(active,np.flatnonzero(np.diff(active)>2)+1)
+                    if len(g)>1 and g[0]>2 and g[-1]<lane.shape[1]-3 and len(g)*z/FOCAL<.45]
+            xs=[(float(np.mean(g))-CX)*z/FOCAL for g in groups]
+            used=set()
+            for x in xs:
+                choices=[]
+                for i,points in enumerate(tracks):
+                    if i in used or z-points[-1][0]>4.:continue
+                    recent=np.array(points[-8:]);prediction=recent[-1,1]
+                    if len(recent)>2 and np.ptp(recent[:,0])>.15:
+                        slope=np.clip(np.polyfit(recent[:,0],recent[:,1],1)[0],-2.,2.)
+                        prediction+=slope*(z-recent[-1,0])
+                    gap=abs(x-prediction)
+                    if gap<.20+.10*(z-points[-1][0])+.012*z:choices.append((gap,i))
+                if choices:
+                    _,i=min(choices);tracks[i].append([z,x,0.]);used.add(i)
+                else:tracks.append([[z,x,0.]]);used.add(len(tracks)-1)
+        return [curve for points in tracks if (curve:=fit(points)) is not None]
+
+    @staticmethod
+    def road_rows(raw):
+        n,labels,stats,_=cv2.connectedComponentsWithStats(raw.astype(np.uint8),8)
+        seed=labels[260:350,200:460];counts=np.bincount(seed.ravel(),minlength=n);counts[0]=0
+        component=labels==int(counts.argmax()) if counts.max() else np.zeros_like(raw,bool)
+        rows=[]
+        for z in DEPTHS:
+            v=int(round(CY+HEIGHT*FOCAL/z))
+            if not 2<=v<raw.shape[0]-2:continue
+            active=np.flatnonzero(component[v-2:v+3].mean(0)>=.4)
+            if len(active)<12:continue
+            left,right=active[[0,-1]]
+            # Only the exterior envelope contributes boundary evidence.
+            # Interior holes remain recorded separately and are not new edges.
+            rows.append([z,(left-CX)*z/FOCAL,(right-CX)*z/FOCAL,left,right])
+        return np.asarray(rows,float).reshape(-1,5),component
+
+    def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
+        previous=self.transport(speed,yaw,dt)
+        fresh=self.markings(lane)
+        matched=set();tracks=[]
+        for curve in sorted(fresh,key=lambda c:c['zmax']-c['zmin'],reverse=True):
+            choices=[]
+            for i,old in enumerate(previous):
+                if i in matched:continue
+                lo=max(curve['zmin'],old['zmin']);hi=min(curve['zmax'],old['zmax'])
+                if hi-lo<.7:continue
+                z=np.linspace(lo,hi,12);error=float(np.median(abs(val(curve,z)-val(old,z))))
+                angle=float(np.median(abs(tangent(curve,z)-tangent(old,z))))
+                if error<.55 and angle<.35:choices.append((error,i))
+            if choices:
+                _,i=min(choices);matched.add(i);old=previous[i]
+                joined=fit(curve['points']+old['points'])
+                if joined is not None:curve=joined
+                curve['id']=old['id']
+            else:self.serial+=1;curve['id']=self.serial
+            tracks.append(curve)
+        tracks.extend(old for i,old in enumerate(previous) if i not in matched)
+        # Same marking can be split into fragments; keep the stronger fit when
+        # two fits agree over a substantial common span.
+        unique=[]
+        for curve in sorted(tracks,key=lambda c:(c['zmax']-c['zmin'])/(.05+c['error']),reverse=True):
+            duplicate=False
+            for old in unique:
+                lo=max(curve['zmin'],old['zmin']);hi=min(curve['zmax'],old['zmax'])
+                if hi-lo>1.:
+                    z=np.linspace(lo,hi,8)
+                    if np.median(abs(val(curve,z)-val(old,z)))<.23:duplicate=True;break
+            if not duplicate:unique.append(curve)
+        self.tracks=unique
+        anchors,component=self.road_rows(raw)
+        pairs=[]
+        for i,left in enumerate(unique):
+            for j,right in enumerate(unique):
+                if i==j:continue
+                lo=max(1.7,left['zmin'],right['zmin']);hi=min(9.,left['zmax'],right['zmax'])
+                if hi-lo<1.5:continue
+                z=np.linspace(lo,hi,20);l=val(left,z);r=val(right,z);width=r-l
+                if width.min()<1.2 or width.max()>6.5:continue
+                # A lane is between adjacent, noncrossing observed markings.
+                if any(k not in (i,j) and other['zmin']<=lo+.5 and other['zmax']>=hi-.5 and
+                       np.mean((val(other,z)>l+.2)&(val(other,z)<r-.2))>.7 for k,other in enumerate(unique)):continue
+                if np.median(abs(tangent(left,z)-tangent(right,z)))>.45:continue
+                supported=anchors[(anchors[:,0]>=lo)&(anchors[:,0]<=hi)]
+                score=0.
+                for a,bl,br,*_ in supported:
+                    ll,rr=val(left,a),val(right,a)
+                    score+=max(0.,min(br,rr)-max(bl,ll))/max(.1,br-bl)
+                if len(supported):score/=len(supported)
+                pairs.append(dict(left=i,right=j,score=score,width=float(np.median(width)),zmin=lo,zmax=hi))
+        current=max(pairs,key=lambda p:p['score'],default=None)
+        selected=[]
+        if current and current['score']>.45:
+            selected=[current]
+            if self.mode!='current':
+                changed=True
+                while changed:
+                    changed=False
+                    for pair in pairs:
+                        if pair in selected:continue
+                        adjacent=any(pair['left']==p['right'] or pair['right']==p['left'] for p in selected)
+                        if adjacent and .55< pair['width']/current['width'] <1.6:
+                            selected.append(pair);changed=True
+        leftcurve=rightcurve=None
+        current_curves=None
+        if selected:
+            current_curves=(unique[current['left']],unique[current['right']])
+            leftcurve=unique[min(selected,key=lambda p:val(unique[p['left']],4.))['left']]
+            rightcurve=unique[max(selected,key=lambda p:val(unique[p['right']],4.))['right']]
+        # When paint is absent, fit only B's exterior envelope. Missing interior
+        # pixels never become extra road edges or inflate edge-fit uncertainty.
+        if leftcurve is None and len(anchors):
+            leftcurve=fit([[z,l,0.] for z,l,r,u,v in anchors if u>3])
+            rightcurve=fit([[z,r,0.] for z,l,r,u,v in anchors if v<636])
+        material_rows=None
+        rows=[];pixels=[];head=[];row_sources=[]
+        for z in DEPTHS:
+            if leftcurve is None or rightcurve is None:continue
+            lc,rc=leftcurve,rightcurve
+            if current_curves:
+                lc,rc=current_curves
+                # Preserve the current lane at short range. An outer marking
+                # observed only farther away must not delete all near rows.
+                usable=[p for p in selected if all(c['zmin']-2.<=z<=c['zmax']+.6 for c in [unique[p['left']],unique[p['right']]])]
+                if usable:
+                    connected=[current] if current in usable else []
+                    changed=True
+                    while changed:
+                        changed=False
+                        for p in usable:
+                            if p not in connected and any(p['left']==q['right'] or p['right']==q['left'] for q in connected):
+                                connected.append(p);changed=True
+                    if connected:
+                        lc=unique[min(connected,key=lambda p:val(unique[p['left']],z))['left']]
+                        rc=unique[max(connected,key=lambda p:val(unique[p['right']],z))['right']]
+            if any(z>c['zmax']+.6 or z<c['zmin']-2. for c in [lc,rc]):continue
+            l,r=val(lc,z),val(rc,z)
+            if not .8<r-l<12:continue
+            sigma=max(.045+c['error']+.04*c['age']+.05*max(c['zmin']-z,z-c['zmax'],0) for c in [lc,rc])
+            rows.append([z,float(l),float(r),sigma]);head.append(float((tangent(lc,z)+tangent(rc,z))/2))
+            row_sources.append([z,lc.get('id'),rc.get('id')])
+            v=int(round(CY+HEIGHT*FOCAL/z))
+            pixels.append([int(np.clip(CX+l*FOCAL/z,0,639)),int(np.clip(CX+r*FOCAL/z,0,639)),v])
+        envelope_negative=0
+        for row in component:
+            where=np.flatnonzero(row)
+            if len(where):envelope_negative+=int((~row[where[0]:where[-1]+1]).sum())
+        self.last=dict(version={'current':'V6.7.1','lanes':'V6.8.1','fused':'V6.9.2','guided':'V6.13.1'}[self.mode],
+                       tracks=unique,lane_bands=pairs,current_lane=current,allowed_bands=selected,
+                       adjacent_direction='unknown; lane-changing permitted by experiment rule',
+                       left_curve=leftcurve,right_curve=rightcurve,road_rows=len(rows),
+                       memory_max_age=.8,history_points=sum(p[2]>0 for c in unique for p in c['points']),
+                       envelope_negative_pixels=envelope_negative,row_sources=row_sources,
+                       source='B ego lane anchor + observed marking curves + causal wheel/gyro history',
+                       lane_count_prior=None,material_support=material_rows is not None)
+        if self.mode in ('fused','guided'):
+            material_rows,pixels,material_head=self.material_road.read(image,raw,lane,speed,yaw,dt,boxes)
+            if self.mode=='guided' and len(rows)>=3:
+                guidance=np.asarray(rows)
+                supported=(material_rows[:,0]>=guidance[0,0])&(material_rows[:,0]<=guidance[-1,0])
+                material_head[supported]=np.interp(material_rows[supported,0],guidance[:,0],head)
+            self.last.update(material_support=True,material_evidence=self.material_road.last,
+                             lane_geometry_rows=rows,road_rows=len(material_rows),
+                             guidance_used=self.mode=='guided' and len(rows)>=3,
+                             source='B ego lane identifies material/component; RGB + lane restore free surface; causal boundary history')
+            return material_rows,pixels,material_head
+        return np.asarray(rows).reshape(-1,4),pixels,np.asarray(head)
