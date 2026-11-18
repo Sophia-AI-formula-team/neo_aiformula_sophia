@@ -69,7 +69,7 @@ def trace_paint(const unsigned char[:, ::1] pixels, int first, int last,
                     best_gap = gap
             if best < 0:
                 tracks.append([[z, x, 0.]])
-                used.append(False)
+                used.append(True)
             else:
                 tracks[best].append([z, x, 0.])
                 used[best] = True

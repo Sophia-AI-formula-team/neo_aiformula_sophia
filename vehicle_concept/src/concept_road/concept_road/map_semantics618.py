@@ -1,6 +1,7 @@
 """Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/map_semantics618.py. """
 
 from collections import Counter
+from functools import lru_cache
 
 import cv2
 
@@ -19,15 +20,20 @@ GRID_Z, GRID_X = np.meshgrid(FORWARD, RIGHT, indexing='ij')
 def runs(indices):
     return [g for g in np.split(indices, np.flatnonzero(np.diff(indices)>1)+1) if len(g)]
 
-def pavement_grid(image, raw, lane, boxes, projection):
+@lru_cache(maxsize=4)
+def pavement_projection(rows, columns, projection):
     focal,cx,cy,height=projection
     u=np.rint(cx+focal*GRID_X/GRID_Z).astype(int)
     v=np.rint(cy+height*focal/GRID_Z).astype(int)
-    valid=(u>=3)&(u<image.shape[1]-3)&(v>=int(cy)+4)&(v<image.shape[0]-3)
-    u=np.clip(u,0,image.shape[1]-1);v=np.clip(v,0,image.shape[0]-1)
+    valid=(u>=3)&(u<columns-3)&(v>=int(cy)+4)&(v<rows-3)
+    return np.clip(u,0,columns-1),np.clip(v,0,rows-1),valid
+
+def pavement_grid(image, raw, lane, boxes, projection):
+    u,v,visible=pavement_projection(*image.shape[:2],tuple(projection))
+    valid=visible.copy()
     for l,t,r,b in boxes:
         valid &= ~((u>=l-2)&(u<=r+2)&(v>=t-2)&(v<=b+2))
-    lab=cv2.cvtColor(image,cv2.COLOR_BGR2LAB)[v,u].astype(np.float32)
+    lab=cv2.cvtColor(image[v,u],cv2.COLOR_BGR2LAB).astype(np.float32)
     b_support=raw[v,u]&valid
     seed=lab[b_support & ~lane[v,u] & (GRID_Z<5.0)]
     road=np.zeros_like(valid);paint=np.zeros_like(valid);pale=np.zeros_like(valid)
