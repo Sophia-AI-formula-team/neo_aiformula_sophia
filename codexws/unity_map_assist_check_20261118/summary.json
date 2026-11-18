@@ -1,0 +1,127 @@
+[
+  {
+    "case": "inner_check",
+    "observed_range_frames": 132,
+    "first_flag_true": {
+      "time_s": 10.616314042825252,
+      "distance_m": 8.367525241012098,
+      "mapped_entry_remaining_m": null,
+      "smooth_plan_reason": "not_planned"
+    },
+    "second_flag_true": {
+      "time_s": 114.03713444282039,
+      "distance_m": 8.367525241012098,
+      "mapped_entry_remaining_m": 2.438919769847839,
+      "smooth_plan_reason": "no_curvature_feasible_spline"
+    },
+    "first_red_stopped": true,
+    "first_red_stop_gap_m": 6.985177,
+    "physical_laps": 2,
+    "reference_closed": true,
+    "fusion": {
+      "available": true,
+      "mode": "fused",
+      "metric_source": "odometry",
+      "recorded_length_m": 260.3819805786579,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "accepted",
+      "final_length_m": 260.2364775234175,
+      "node_count": 5,
+      "max_node_displacement_m": 0.1381505019711005,
+      "shape_weight": 0.25,
+      "direction": 1,
+      "node_source": "geometric_seam_v3",
+      "matching_method": "geometric_seam_v3"
+    },
+    "fit_rmse_m": 0.27670888709761565,
+    "fusion_ambiguity_warning": true,
+    "second_red_observed": true,
+    "detour_entered": false,
+    "detour_completed": false,
+    "physical_left_observed": false,
+    "left_yaw_deg": 0.0,
+    "left_displacement_m": 0.0,
+    "second_red_states": {
+      "green_resume": 1846,
+      "red_prepare_spline_ready": 68,
+      "red_prepare_spline_unavailable": 39,
+      "red_wait_spline_no_curvature_feasible_spline": 258
+    },
+    "spline_preview": {
+      "smooth_plan_reason": "ready",
+      "smooth_max_curvature_per_m": 0.1976805807500969,
+      "detour_node_ids": [
+        "10000000002",
+        "10000000006",
+        "10000000003"
+      ],
+      "detour_approach_remaining_m": 16.876541623682613
+    },
+    "failure": "Red wait persisted for 12 s: red_wait_spline_no_curvature_feasible_spline",
+    "unchanged_inputs": true
+  },
+  {
+    "case": "outer_check",
+    "observed_range_frames": 141,
+    "first_flag_true": {
+      "time_s": 10.053304742825276,
+      "distance_m": 7.871347234531824,
+      "mapped_entry_remaining_m": null,
+      "smooth_plan_reason": "not_planned"
+    },
+    "second_flag_true": {
+      "time_s": 117.96916914282338,
+      "distance_m": 8.367525241012098,
+      "mapped_entry_remaining_m": 3.2569732210187716,
+      "smooth_plan_reason": "no_curvature_feasible_spline"
+    },
+    "first_red_stopped": true,
+    "first_red_stop_gap_m": 6.10045528,
+    "physical_laps": 2,
+    "reference_closed": true,
+    "fusion": {
+      "available": true,
+      "mode": "fused",
+      "metric_source": "odometry",
+      "recorded_length_m": 281.3454760375814,
+      "official_size_used": false,
+      "field_validation_required": true,
+      "reason": "accepted",
+      "final_length_m": 281.14601887692,
+      "node_count": 5,
+      "max_node_displacement_m": 0.17959829154634832,
+      "shape_weight": 0.25,
+      "direction": 1,
+      "node_source": "geometric_seam_v3",
+      "matching_method": "geometric_seam_v3"
+    },
+    "fit_rmse_m": 0.36642454818270365,
+    "fusion_ambiguity_warning": true,
+    "second_red_observed": true,
+    "detour_entered": false,
+    "detour_completed": false,
+    "physical_left_observed": false,
+    "left_yaw_deg": 0.0,
+    "left_displacement_m": 0.0,
+    "second_red_states": {
+      "green_resume": 2004,
+      "red_prepare": 1,
+      "red_prepare_spline_ready": 84,
+      "red_prepare_spline_unavailable": 24,
+      "red_wait_spline_no_curvature_feasible_spline": 260
+    },
+    "spline_preview": {
+      "smooth_plan_reason": "ready",
+      "smooth_max_curvature_per_m": 0.20500413269249002,
+      "detour_node_ids": [
+        "10000000002",
+        "10000000006",
+        "10000000003"
+      ],
+      "detour_approach_remaining_m": 17.67856417142804
+    },
+    "failure": "Red wait persisted for 12 s: red_wait_spline_no_curvature_feasible_spline",
+    "unchanged_inputs": true
+  }
+]
