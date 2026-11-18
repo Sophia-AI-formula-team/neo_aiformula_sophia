@@ -11,6 +11,10 @@ from concept_road.road import RoadMap
 from concept_road.material import MaterialRoad
 
 class RawMaterialRoad(MaterialRoad):
+    # This observer uses the actual pixel endpoints below. Only its heading
+    # consumes the polynomial fit, not its smoothed boundary positions.
+    fit_boundaries = False
+
     def read(self, image, raw, lane_mask, speed=0., yaw=0., dt=.2, object_boxes=()):
         road, pixels, heading = super().read(image, raw, lane_mask, speed, yaw, dt, object_boxes)
         if len(road) != len(pixels):
@@ -139,14 +143,13 @@ class RememberedRoad615(RoadMap):
         if pavement is None or len(road) < 3:
             self.surface_memory.update(np.zeros(image.shape[:2], bool), speed, yaw, dt)
             return road, pixels, heading
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype(float)
         # Match measured material support, without the base observer's occlusion
         # bridge/morphological fill. All object boxes remove current samples.
-        chroma = np.linalg.norm(lab[:, :, 1:]-pavement[1:], axis=2)
-        support = chroma < 12
+        chroma_squared = self.material_road.chroma_squared
+        support = chroma_squared < 12**2
         # Ambiguous colour and detected occlusion are unknown, not a negative
         # road measurement. A clear current green verge does invalidate history.
-        visible = support | (chroma > 18)
+        visible = support | (chroma_squared > 18**2)
         support[:int(CY)+2] = False
         visible[:int(CY)+2] = False
         for x0, y0, x1, y1 in boxes:

@@ -31,6 +31,5 @@ class RememberedRoad61524(RememberedRoad6157):
         # Keep the blackout transport consistent with the actually issued view.
         # Cached road geometry and cached source evidence remain unchanged.
         if self.cached is not None:
-            cached_road,_,cached_evidence=self.cached
-            self.cached=(cached_road,heading.copy(),cached_evidence)
+            self.cached=(self.cached[0], heading.copy())
         return road,pixels,heading

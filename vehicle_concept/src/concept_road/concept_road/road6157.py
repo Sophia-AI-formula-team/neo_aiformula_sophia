@@ -1,7 +1,5 @@
 """Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/road6157.py. """
 
-import copy
-
 import numpy as np
 
 from concept_road.road615 import RememberedRoad615
@@ -17,7 +15,7 @@ class RememberedRoad6157(RememberedRoad615):
         if image.max() >= 3:
             result = super().read(image, raw, lane, boxes, speed, yaw, dt)
             if len(result[0]) >= 3:
-                self.cached = (result[0].copy(), result[2].copy(), copy.deepcopy(self.last))
+                self.cached = (result[0].copy(), result[2].copy())
                 self.blind_travel = self.blind_turn = 0.
             else:
                 # An untransported cache cannot survive an invalid visible frame.
@@ -34,7 +32,7 @@ class RememberedRoad6157(RememberedRoad615):
                          nearfield_markings=self.surface_memory.marking_points)
         if self.cached is None or self.blind_travel > 5.5 or self.blind_turn > 1.2:
             return np.empty((0,5)), [], np.empty(0)
-        road, heading, evidence = self.cached
+        road, heading = self.cached
         angle = yaw*dt; c, s = np.cos(angle), np.sin(angle)
         dz = speed*dt*np.sinc(angle/np.pi)
         dx = speed*dt*(1-c)/angle if abs(angle)>1e-5 else 0.
@@ -56,5 +54,5 @@ class RememberedRoad6157(RememberedRoad615):
         newer_heading = np.interp(zz+dz,road[:,0],heading)-angle
         self.last.update(camera_valid=False, road_source='last_actual_view_transported_during_blackout',
                          blind_travel_m=self.blind_travel, blind_turn_rad=self.blind_turn)
-        self.cached = (newer,newer_heading,self.last.copy())
+        self.cached = (newer, newer_heading)
         return newer,[],newer_heading

@@ -37,6 +37,5 @@ class RememberedRoad61527(RememberedRoad61524):
                 rule='Direction only: material base plus current lane pair in actual support; geometry and candidate-width guidance unchanged')
             self.last['heading_guidance61527']=audit
             if self.cached is not None:
-                cached_road,_,cached_evidence=self.cached
-                self.cached=(cached_road,heading.copy(),cached_evidence)
+                self.cached=(self.cached[0], heading.copy())
         return road,pixels,heading

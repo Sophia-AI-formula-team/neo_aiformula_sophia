@@ -15,7 +15,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
-from concept_yolop.frame_codec import decode_frame
+from concept_yolop.frame_codec import parse_frame_header, decode_frame_data
 from .core import Drive
 from .transport import Feedback, native_sensor, ros_command, stamp
 
@@ -106,16 +106,15 @@ class DriverNode(Node):
                         whitebox_index=None, command=None, feasible_count=0, candidates=[], selected_path=[],
                         road_rows=[], objects=[], tracks=[], lines=[], edges={}, map=None, map_semantics=None)
         try:
-            f = decode_frame(message.data)
-            ns = f['stamp_ns']
+            packet, ns, optical_frame, profile = parse_frame_header(message.data)
             capture = ns / 1e9
-            decision.update(stamp=stamp(ns), geometry_profile=f['geometry_profile'])
+            decision.update(stamp=stamp(ns), geometry_profile=profile)
             age = (now() - ns) / 1e9
             if not 0 <= age <= MAX_CAPTURE_AGE:
                 raise ValueError('image is stale or its stamp is in the future')
             if self.locked_reason:
                 raise ValueError(self.locked_reason)
-            camera_key = (f['frame_id'], f['geometry_profile'])
+            camera_key = (optical_frame, profile)
             if self.camera_key is not None and camera_key != self.camera_key:
                 self.locked_reason = 'camera or projection changed; pause and restart before reusing road memory'
                 raise ValueError(self.locked_reason)
@@ -131,6 +130,7 @@ class DriverNode(Node):
                 sample = self.feedback.at(capture, MAX_STATE_AGE)
                 limit = self.limit
             pace = min(self.target, limit) if limit is not None else self.target
+            f = decode_frame_data(packet)
             self.driver.set_pace(pace)
             decision.update(effective_speed_mps=pace, sensor_age_s=capture-sample['t'])
             if self.first_ns is None:
@@ -149,7 +149,6 @@ class DriverNode(Node):
             self.next_ns = self.first_ns + periods * self.period_ns
             cmd = ros_command(result.pop('command_native'))
             decision.update(result, command=cmd, status='ok')
-            profile = f['geometry_profile']
             if profile != 'calibrated-v626' and not (
                     profile == 'frozen-unity-v626' and self.get_parameter('use_sim_time').value):
                 decision.update(status='shadow', reason='camera geometry has no validated driving profile')

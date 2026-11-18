@@ -8,6 +8,11 @@ from concept_road.vision import FOCAL, CX, CY, HEIGHT
 
 from concept_road.material import MaterialRoad
 
+try:
+    from ._markings import trace_paint
+except ImportError:  # Direct Python source checkout, without colcon build.
+    trace_paint = None
+
 DEPTHS=np.linspace(.95,12.,45)
 
 def fit(points):
@@ -55,6 +60,11 @@ class RoadMap:
         return old
 
     def markings(self,lane):
+        if trace_paint is not None:
+            tracks = trace_paint(np.ascontiguousarray(lane, dtype=np.uint8),
+                                 lane.shape[0]-4, int(CY+HEIGHT*FOCAL/12),
+                                 CY, CX, HEIGHT*FOCAL, FOCAL)
+            return [curve for points in tracks if (curve := fit(points)) is not None]
         tracks=[]
         # Scan actual pixel rows once; duplicate distant pixel rows must not
         # masquerade as many independent measurements.
@@ -203,10 +213,10 @@ class RoadMap:
             row_sources.append([z,lc.get('id'),rc.get('id')])
             v=int(round(CY+HEIGHT*FOCAL/z))
             pixels.append([int(np.clip(CX+l*FOCAL/z,0,639)),int(np.clip(CX+r*FOCAL/z,0,639)),v])
-        envelope_negative=0
-        for row in component:
-            where=np.flatnonzero(row)
-            if len(where):envelope_negative+=int((~row[where[0]:where[-1]+1]).sum())
+        occupied_rows = component[component.any(axis=1)]
+        widths = (component.shape[1] - occupied_rows.argmax(axis=1) -
+                  occupied_rows[:, ::-1].argmax(axis=1))
+        envelope_negative = int(widths.sum() - occupied_rows.sum())
         self.last=dict(version={'current':'V6.7.1','lanes':'V6.8.1','fused':'V6.9.2','guided':'V6.13.1'}[self.mode],
                        tracks=unique,lane_bands=pairs,current_lane=current,allowed_bands=selected,
                        adjacent_direction='unknown; lane-changing permitted by experiment rule',

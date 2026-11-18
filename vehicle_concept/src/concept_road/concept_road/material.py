@@ -18,6 +18,8 @@ def local_edge_error(points, coef, at, depth_step, fallback):
     return float(errors[order[np.searchsorted(cumulative,.8*cumulative[-1])]])
 
 class MaterialRoad:
+    fit_boundaries = True
+
     def __init__(self, temporal=True):
         self.temporal = temporal
         self.pavement = None
@@ -25,9 +27,11 @@ class MaterialRoad:
         self.last = {}
         self.lane_width = None
         self.lane_width_samples = 0
+        self.chroma_squared = None
 
     def read(self, image, raw, lane_mask, speed=0., yaw=0., dt=.2, object_boxes=()):
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB).astype(float)
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        self.chroma_squared = None
         if self.pavement is None:
             seeds=raw.astype(bool)&~lane_mask.astype(bool)
             seeds[:235]=False
@@ -36,15 +40,19 @@ class MaterialRoad:
             if seeds.sum()<200:
                 return np.zeros((0,4)),[],np.zeros(0)
             self.pavement = np.median(lab[seeds], axis=0)
-        delta = lab-self.pavement
-        chroma = np.linalg.norm(delta[:, :, 1:], axis=2)
+        # Lab pixels are bytes; even half-integer median seeds and the sum of
+        # these two squared differences are represented exactly in float32.
+        delta_a = lab[:, :, 1].astype(np.float32) - np.float32(self.pavement[1])
+        delta_b = lab[:, :, 2].astype(np.float32) - np.float32(self.pavement[2])
+        chroma_squared = delta_a * delta_a + delta_b * delta_b
+        self.chroma_squared = chroma_squared
         # Achromatic paint, cracks and shadows share pavement chroma.
         # Luminance cuts incorrectly made zebra stripes and seams impassable.
-        pavement = (chroma < 12)
+        pavement = (chroma_squared < 12**2)
         # Paint is traversable material, not a hole. Keep detected markings
         # only beside pavement; do not let false line pixels open distant road.
         near = cv2.dilate(pavement.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
-        paint = (lane_mask > 0) | ((chroma < 10) & (lab[:, :, 0] > self.pavement[0]))
+        paint = (lane_mask > 0) | ((chroma_squared < 10**2) & (lab[:, :, 0] > self.pavement[0]))
         road = (pavement | (paint & near)).astype(np.uint8)
         road[:int(CY)+2] = 0
         # A cone silhouette is occupied pavement, not a physical road verge.
@@ -120,6 +128,7 @@ class MaterialRoad:
             all_heading=[np.arctan(f['coef'][1]+2*f['coef'][2]*rows[:,0]) for f in fits]
             weights=np.array([(f['zmax']-f['zmin'])/(.04+f['residual'])**2 for f in fits])
             heading=np.average(all_heading,axis=0,weights=weights)
+        if fits and len(rows) and self.fit_boundaries:
             for i,row in enumerate(rows):
                 for f in fits:
                     col=1 if f['side']==-1 else 2
