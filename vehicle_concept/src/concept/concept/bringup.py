@@ -134,7 +134,10 @@ def build(context):
         Node(package='concept_visualization', executable='visualization', output='screen'),
     ])
     if LC('panel').perform(context).lower() in ('true', '1'):
-        actions.append(Node(package='concept_panel', executable='panel', output='screen'))
+        # The panel alone owns a bag process. Allow startup (15 s), graceful
+        # finalization (15 s), group cleanup and readback of a long recording.
+        actions.append(Node(package='concept_panel', executable='panel', output='screen',
+                            sigterm_timeout='45', sigkill_timeout='75'))
     if LC('rviz').perform(context).lower() in ('true', '1'):
         actions.append(Node(package='rviz2', executable='rviz2', name='concept_rviz',
                             arguments=['-d', share('concept_visualization', 'rviz', 'concept.rviz')]))

@@ -234,7 +234,15 @@ def main(args=None):
     finally:
         io.stop()
         refresh.stop()
-        controller.recording.recorder.close()
+        recorder = controller.recording.recorder
+        result = recorder.close()
+        # Qt has exited. Keep our SIGINT/SIGTERM handlers installed until the
+        # independent recorder process group is reaped and SQLite is verified.
+        while result.state in ('starting', 'recording', 'stopping'):
+            time.sleep(.05)
+            result = recorder.status()
+        if result.state == 'error':
+            print('录包收尾失败 · {} · {}'.format(result.path, result.error), file=sys.stderr, flush=True)
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
