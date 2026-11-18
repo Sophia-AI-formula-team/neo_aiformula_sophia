@@ -108,7 +108,7 @@ class Window(W.QWidget):
         recording.addStretch()
         self.bag_toggle = W.QPushButton('开始录包')
         self.bag_toggle.setObjectName('bag_toggle')
-        self.bag_toggle.setToolTip('保存原生决策和车况。motor_can 是电机换算后的内部 CAN；录包排除原始相机图像和门控后的物理 CAN 指令。')
+        self.bag_toggle.setToolTip('保存决策、车况和 640×360 JPEG 识别画面。画面跟随识别帧率。')
         self.bag_toggle.setEnabled(False)
         self.bag_toggle.clicked.connect(self.request_bag)
         recording.addWidget(self.bag_toggle)

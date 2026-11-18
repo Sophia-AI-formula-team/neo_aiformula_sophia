@@ -27,6 +27,7 @@ STATE = '/concept/vehicle_state'
 AUTO = '/concept/auto_cmd'
 GATE = '/concept/gate/status'
 CAMERA = '/concept/view/camera'
+JPEG = '/concept/perception/overlay/compressed'
 FRAME = '/concept/perception/frame'
 LIVE_CAN = '/aiformula_control/motor_controller/reference_signal'
 REPLAY_CAN = '/concept/replay/reference_signal'
@@ -34,6 +35,7 @@ CAN = 'can_msgs/msg/Frame'
 STRING = 'std_msgs/msg/String'
 IMAGE = 'sensor_msgs/msg/Image'
 EXPECTED = {
+    JPEG: 'sensor_msgs/msg/CompressedImage',
     DECISION: STRING, STATE: STRING, AUTO: 'geometry_msgs/msg/TwistStamped', GATE: STRING,
     '/concept/gate/estop': 'std_msgs/msg/Bool', '/concept/internal/motor_cmd': 'geometry_msgs/msg/Twist',
     '/concept/internal/motor_can': CAN, '/aiformula_sensing/vehicle_info': CAN,
@@ -78,6 +80,8 @@ def recorders(root):
 
 class Sources:
     def __init__(self):
+        import cv2
+        import numpy as np
         from rclpy.node import Node
         from rclpy.qos import qos_profile_sensor_data
         from rosidl_runtime_py.utilities import get_message
@@ -87,13 +91,17 @@ class Sources:
         self.messages = {}
         for topic, msg_type in {**EXPECTED, **EXCLUDED}.items():
             cls = get_message(msg_type)
-            qos = qos_profile_sensor_data if msg_type == IMAGE or topic in SENSOR_INPUTS else 10
+            qos = qos_profile_sensor_data if msg_type == IMAGE or topic == JPEG or topic in SENSOR_INPUTS else 10
             self.pubs[topic] = self.node.create_publisher(cls, topic, qos)
             self.messages[topic] = cls()
             msg = self.messages[topic]
             if msg_type == IMAGE:
                 msg.encoding, msg.height, msg.width, msg.step = 'rgb8', 8, 8, 24
                 msg.data = (PIXEL_SECRET.encode() + bytes(192))[:192]
+            elif topic == JPEG:
+                ok, encoded = cv2.imencode('.jpg', np.full((360, 640, 3), (30, 143, 255), dtype=np.uint8))
+                require(ok, 'Could not encode fixture JPEG')
+                msg.format, msg.data = 'bgr8; jpeg compressed bgr8', encoded.tobytes()
             elif topic == FRAME:
                 # A String with actual encoded image bytes; no planner is run in this test.
                 msg.data = json.dumps({'schema': 'concept.perception.v1', 'bgr_png': PNG,
@@ -224,8 +232,11 @@ def drive_panel(run):
 
 
 def verify_bag(session, root):
+    import cv2
+    import numpy as np
     import yaml
     from rclpy.serialization import deserialize_message
+    from sensor_msgs.msg import CompressedImage
     from std_msgs.msg import String
 
     bag = Path(session['path'])
@@ -249,6 +260,12 @@ def verify_bag(session, root):
             for name, data in db.execute('SELECT t.name, m.data FROM messages m JOIN topics t ON m.topic_id=t.id ORDER BY m.id'):
                 require(PIXEL_SECRET.encode() not in data and PNG.encode() not in data, 'Image payload in ' + name)
                 counts[name] += 1
+                if name == JPEG:
+                    msg = deserialize_message(data, CompressedImage)
+                    frame = cv2.imdecode(np.frombuffer(msg.data, np.uint8), cv2.IMREAD_COLOR)
+                    require(frame is not None and frame.shape == (360, 640, 3), 'Invalid recorded JPEG')
+                    require(msg.format == 'bgr8; jpeg compressed bgr8' and msg.header.stamp.sec > 0,
+                            'Missing JPEG format or camera timestamp')
                 if name in (DECISION, STATE):
                     fields = json.loads(deserialize_message(data, String).data)
                     require(fields['qa_session'] == session['batch'], 'Mixed recording sessions')
@@ -337,7 +354,7 @@ def main():
     except Exception:
         traceback.print_exc()
         return 1
-    print('PASS: two separate SQLite bags, ten selected topics, no remaining recorder')
+    print('PASS: two separate SQLite bags, eleven selected topics including decodable JPEG, no remaining recorder')
     return 0
 
 

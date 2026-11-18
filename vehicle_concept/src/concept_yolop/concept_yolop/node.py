@@ -7,7 +7,7 @@ import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from std_msgs.msg import String
 
 from .geometry import CALIBRATED, UNVERIFIED, CalibrationReceipt
@@ -48,8 +48,11 @@ class CameraNode(Node):
         self.bridge = CvBridge()
         self.last_error_at = float('-inf')
         self.frames = self.create_publisher(String, self.get_parameter('frame_topic').value, 1)
-        self.overlay = self.create_publisher(Image, self.get_parameter('overlay_topic').value, 1)
+        overlay_topic = self.get_parameter('overlay_topic').value
+        self.overlay = self.create_publisher(Image, overlay_topic, 1)
         qos = QoSProfile(depth=1, reliability=QoSReliabilityPolicy.BEST_EFFORT)
+        self.compressed_overlay = self.create_publisher(CompressedImage, overlay_topic + '/compressed', qos)
+        self.last_bag_error_at = float('-inf')
         self.calibration = None
         self.info = None
         path = self.get_parameter('calibration').value
@@ -75,15 +78,33 @@ class CameraNode(Node):
             wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
                                 CALIBRATED if verified else UNVERIFIED)
             self.frames.publish(String(data=wire))
-            if self.overlay.get_subscription_count():
-                preview = self.bridge.cv2_to_imgmsg(draw_overlay(bgr, road, lane, det), encoding='bgr8')
-                preview.header = msg.header
-                self.overlay.publish(preview)
+            display = self.overlay.get_subscription_count()
+            record = self.compressed_overlay.get_subscription_count()
+            if display or record:
+                overlay = draw_overlay(bgr, road, lane, det)
+                if display:
+                    preview = self.bridge.cv2_to_imgmsg(overlay, encoding='bgr8')
+                    preview.header = msg.header
+                    self.overlay.publish(preview)
+                if record:
+                    self.publish_compressed(overlay, msg.header)
         except Exception as exc:
             # rclpy Foxy has no portable throttle_duration_sec keyword.
             if time.monotonic() - self.last_error_at >= 2.0:
                 self.get_logger().error('Camera frame dropped: %s' % exc)
                 self.last_error_at = time.monotonic()
+
+    def publish_compressed(self, overlay, header):
+        try:
+            ok, jpeg = cv2.imencode('.jpg', overlay, [cv2.IMWRITE_JPEG_QUALITY, 75])
+            if not ok:
+                raise ValueError('JPEG encoder returned no image')
+            self.compressed_overlay.publish(CompressedImage(
+                header=header, format='bgr8; jpeg compressed bgr8', data=jpeg.tobytes()))
+        except (cv2.error, ValueError, RuntimeError) as exc:
+            if time.monotonic() - self.last_bag_error_at >= 2.0:
+                self.get_logger().warning('Bag camera frame dropped: %s' % exc)
+                self.last_bag_error_at = time.monotonic()
 
 
 def main(args=None):

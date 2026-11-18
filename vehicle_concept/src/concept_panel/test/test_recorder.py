@@ -21,9 +21,10 @@ def test_registration_and_topic_selection(tmp_path, monkeypatch):
     assert bag.stop() == bag.close() == bag.start() == recorder.RecorderStatus()
     assert recorder.DECISION_TOPIC == '/concept/decision'
     assert recorder.DECISION_TOPIC in recorder.TOPICS
+    assert '/concept/perception/overlay/compressed' in recorder.TOPICS
     assert {'/concept/internal/motor_cmd', '/concept/internal/motor_can'} <= set(recorder.TOPICS)
     assert not EXCLUDED.intersection(recorder.TOPICS)
-    assert len(recorder.TOPICS) == len(set(recorder.TOPICS)) == 10
+    assert len(recorder.TOPICS) == len(set(recorder.TOPICS)) == 11
 
 
 @pytest.fixture
