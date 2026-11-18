@@ -85,9 +85,10 @@ class RuntimeMap:
             canvas = np.zeros((size[1],size[0]), np.uint8)
             cv2.fillPoly(canvas, [grid-low], 1)
             kind = {'ego': 0, 'adjacent': 1, 'ego_mask': 2}[part['kind']]
-            for iz, ix in zip(*np.nonzero(canvas)):
-                k = (int(iz+low[1]),int(ix+low[0]))
-                updates[k] = updates.get(k, 0) | (1<<kind)
+            iz, ix = np.nonzero(canvas)
+            bit = 1 << kind
+            for key in zip((iz+low[1]).tolist(), (ix+low[0]).tolist()):
+                updates[key] = updates.get(key, 0) | bit
         # At most one vote of each class per cell and frame. Keep per-class
         # counts so repeated observation and colour conflicts remain auditable.
         for key, bit in updates.items():

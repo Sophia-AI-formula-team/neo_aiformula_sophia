@@ -51,11 +51,13 @@ class RoadMap:
         dx=speed*dt*(1-np.cos(a))/a if abs(a)>1e-5 else 0.
         old=[]
         for track in self.tracks:
-            points=[]
-            for z,x,age in track['points']:
-                z-=dz;x-=dx;zz=c*z+s*x;xx=-s*z+c*x
-                if age+dt<=.8 and .2<zz<14:points.append([zz,xx,age+dt])
-            curve=fit(points)
+            source=np.asarray(track['points'], dtype=float)
+            z=source[:,0]-dz
+            x=source[:,1]-dx
+            zz=c*z+s*x
+            age=source[:,2]+dt
+            retained=(age<=.8)&(zz>.2)&(zz<14.)
+            curve=fit(np.column_stack((zz[retained],(-s*z+c*x)[retained],age[retained])))
             if curve is not None:curve['id']=track['id'];old.append(curve)
         return old
 
