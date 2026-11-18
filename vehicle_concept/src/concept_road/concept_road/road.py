@@ -39,7 +39,10 @@ def fit(points):
                 age=float(np.average(p[accepted,2],weights=weights[accepted])))
 
 def val(curve,z):
-    intercept, slope, quadratic = curve['coef']
+    coefficients = curve['coef']
+    if len(coefficients) != 3 or isinstance(z, (tuple, list)):
+        return np.polynomial.polynomial.polyval(z, coefficients)
+    intercept, slope, quadratic = coefficients
     return intercept + z * (slope + z * quadratic)
 
 def tangent(curve,z):return np.arctan(curve['coef'][1]+2*curve['coef'][2]*z)

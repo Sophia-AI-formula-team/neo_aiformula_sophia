@@ -118,4 +118,3 @@ def material_sections(const unsigned char[:, ::1] mask, const double[::1] depths
         if right < width-4:
             edges.append([z,x_right,1.,0.])
     return sections, pixels, edges
-
