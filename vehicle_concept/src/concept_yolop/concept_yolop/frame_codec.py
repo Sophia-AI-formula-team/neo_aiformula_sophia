@@ -13,8 +13,19 @@ SCHEMA = 'concept.perception.v1'
 W, H = 640, 360
 
 
+# A fixed scanline filter avoids trying five filters on every row. The PNG
+# decoder reconstructs the same pixels for either filter, including on Foxy.
+_PNG_COLOR = [cv2.IMWRITE_PNG_COMPRESSION, 1]
+_PNG_MASK = _PNG_COLOR
+if hasattr(cv2, 'IMWRITE_PNG_FILTER'):
+    _common = _PNG_COLOR + [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE,
+                            cv2.IMWRITE_PNG_FILTER]
+    _PNG_COLOR = _common + [cv2.IMWRITE_PNG_FILTER_SUB]
+    _PNG_MASK = _common + [cv2.IMWRITE_PNG_FILTER_NONE]
+
+
 def _png(image):
-    ok, buf = cv2.imencode('.png', image, [cv2.IMWRITE_PNG_COMPRESSION, 1])
+    ok, buf = cv2.imencode('.png', image, _PNG_COLOR if image.ndim == 3 else _PNG_MASK)
     if not ok:
         raise ValueError('Failed to encode a camera frame')
     return base64.b64encode(buf).decode('ascii')
