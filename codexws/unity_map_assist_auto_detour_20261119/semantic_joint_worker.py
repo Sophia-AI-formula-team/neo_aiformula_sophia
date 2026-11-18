@@ -165,6 +165,10 @@ class SemanticTransport:
         self.detour_target_speed = float(profile.pop("detour_lya_v_t", 2.0))
         if not 0.5 <= self.detour_target_speed <= 2.0:
             raise ValueError("Detour LYA v_t must be between 0.5 and 2 m/s")
+        self.detour_lambda_v = float(profile.pop("detour_lya_lambda_v", 0.15))
+        self.detour_lambda_a = float(profile.pop("detour_lya_lambda_a", 2.5))
+        if not 0.0 <= self.detour_lambda_v <= 0.15 or not 0.5 <= self.detour_lambda_a <= 5.0:
+            raise ValueError("Invalid detour LYA gain")
         if not profile.keys() <= allowed:
             raise ValueError("Unexpected tuning key")
         self.overrides.update(profile)
@@ -198,6 +202,8 @@ class SemanticTransport:
                 self.map.point_pubs[label].callback = getattr(self.target, "observation_callback_" + label)
             self.target.publisher_omega_t.callback = self.lya.omega_t_callback
             self.original_lya_target_speed = self.lya.lya.v_t
+            self.original_lya_lambda_v = self.lya.lya.lambda_v
+            self.original_lya_lambda_a = self.lya.lya.lambda_a
             self.target.publisher_point.callback = self._on_target
             self.lya.velocity_publisher.callback = self._on_lya_command
             self.map.cmd_pub.publish(Twist())
@@ -316,6 +322,8 @@ class SemanticTransport:
         # Use LYA's own parameter only while MapAssist owns the detour.
         detouring = self.map.traffic_mode == "detour"
         self.lya.lya.v_t = self.detour_target_speed if detouring else self.original_lya_target_speed
+        self.lya.lya.lambda_v = self.detour_lambda_v if detouring else self.original_lya_lambda_v
+        self.lya.lya.lambda_a = self.detour_lambda_a if detouring else self.original_lya_lambda_a
         self.lya.trajectory_callback(message)
 
     def _on_lya_command(self, message):
@@ -515,6 +523,7 @@ class SemanticTransport:
                       sequence=tick_sequence, sim_time=sim_time, valid=True, epoch=self.epoch,
                       v=v, w=w, semantic_v=float(cmd.linear.x), semantic_w=float(cmd.angular.z),
                       status=status, odom=values, map_data=self._map_data(), lya_target_speed=self.lya.lya.v_t,
+                      lya_lambda_v=self.lya.lya.lambda_v, lya_lambda_a=self.lya.lya.lambda_a,
                       flag_stop_observation=request.get("flag_stop_observation"),
                       transport_gate_reason=transport_reason, corridor_guard=corridor,
                       command_gate=dict(reason=transport_reason if transport_reason != "forwarding_native_cmd_pub"

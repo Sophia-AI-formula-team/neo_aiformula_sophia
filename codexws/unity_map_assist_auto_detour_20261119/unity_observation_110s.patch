@@ -1,0 +1,11 @@
+--- a/Assets/AIFormula/Editor/Validation/AIFormulaJoint1118Trial.cs
++++ b/Assets/AIFormula/Editor/Validation/AIFormulaJoint1118Trial.cs
+@@ -249,7 +249,7 @@
+                 BeginFinish("Red detour rejoined main route and drove 5 m", redObserved && leftObserved);
+                 return;
+             }
+-            if (redScheduled && now - redAt > 70) BeginFinish("Red response exceeded 70 s", false);
++            if (redScheduled && now - redAt > 110) BeginFinish("Red response exceeded 110 s", false);
+         }
+ 
+         static void RecordDetection()

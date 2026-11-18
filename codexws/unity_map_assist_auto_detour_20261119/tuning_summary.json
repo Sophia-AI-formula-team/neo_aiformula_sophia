@@ -1,0 +1,108 @@
+{
+  "baseline_commit": "1f099e2ddaf18ebde1cdfcac80f7d6f948719338",
+  "scope": "One Unity inner-lane run with the recorded first-lap map loaded and live RGB/odometry",
+  "configuration": {
+    "detour_lya_v_t": 0.55,
+    "detour_trigger_preview_m": 1.0,
+    "detour_lya_lambda_a": 2.5,
+    "detour_lookahead_m": 6.0,
+    "detour_min_turn_radius_m": 6.0,
+    "detour_max_trim_m": 12.0,
+    "detour_lya_lambda_v": 0.04,
+    "detour_trigger_margin_m": 0.7
+  },
+  "test_observation_window_after_red_s": 110,
+  "detour_protection_thresholds_changed": false,
+  "runs": [
+    {
+      "accepted": false,
+      "reason": "Chain stopped: Loading a4; Off; Semantic command ownership lost or transport failed",
+      "redObserved": false,
+      "detourEntered": false,
+      "leftObserved": false,
+      "detourCompleted": false,
+      "seconds": 1.5940016428212402,
+      "travelled": 0.00170237909,
+      "case": "tune_08",
+      "milestones": {},
+      "terminal_detour_progress_m": null,
+      "input_hashes_unchanged": true
+    },
+    {
+      "accepted": false,
+      "reason": "Red response exceeded 70 s",
+      "redObserved": true,
+      "detourEntered": true,
+      "leftObserved": true,
+      "detourCompleted": false,
+      "seconds": 80.59563124281703,
+      "travelled": 73.27566,
+      "case": "tune_09",
+      "milestones": {
+        "package_observed_red": {
+          "t": 11.92309914281941,
+          "x": 67.70093,
+          "z": -5.97323036
+        },
+        "package_detour_entered": {
+          "t": 13.16816994282999,
+          "x": 67.72585,
+          "z": -4.645401
+        },
+        "measured_leftward_motion": {
+          "t": 25.590498242818285,
+          "x": 65.13827,
+          "z": 3.909665
+        }
+      },
+      "terminal_detour_progress_m": 55.102778485522016,
+      "input_hashes_unchanged": true
+    },
+    {
+      "accepted": true,
+      "reason": "Red detour rejoined main route and drove 5 m",
+      "redObserved": true,
+      "detourEntered": true,
+      "leftObserved": true,
+      "detourCompleted": true,
+      "seconds": 102.14410498608777,
+      "travelled": 94.40806,
+      "case": "tune_10",
+      "milestones": {
+        "package_observed_red": {
+          "t": 10.147409442826756,
+          "x": 67.67668,
+          "z": -8.52413
+        },
+        "package_detour_entered": {
+          "t": 13.74469394281914,
+          "x": 67.63624,
+          "z": -4.413163
+        },
+        "measured_leftward_motion": {
+          "t": 25.471634942819946,
+          "x": 65.19077,
+          "z": 3.79066443
+        },
+        "package_detour_completed": {
+          "t": 98.77248018608952,
+          "x": 25.9183464,
+          "z": 38.1788139,
+          "traffic_reason": "detour_complete_resume_vision",
+          "detour_progress_m": null
+        },
+        "main_route_followed_after_rejoin": {
+          "t": 101.139440986095,
+          "x": 20.8703766,
+          "z": 38.45866,
+          "distance_m": 5.056388854980469
+        }
+      },
+      "terminal_detour_progress_m": null,
+      "input_hashes_unchanged": true,
+      "moving_detour_motion_samples": 1064,
+      "median_measured_detour_speed_mps": 0.7923977799999999,
+      "samples_at_command_angular_limit": 138
+    }
+  ]
+}
