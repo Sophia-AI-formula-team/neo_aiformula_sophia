@@ -1,0 +1,296 @@
+[
+  {
+    "run": "ready15-1",
+    "label": "V6.27 \u5916\u5708 \u2460",
+    "seconds": 60,
+    "new_commands": 311,
+    "commands_received_during_window": 309,
+    "linear_nonzero": 310,
+    "full_twist_nonzero": 311,
+    "pictures_sent": 900,
+    "perceptions": 900,
+    "frames_without_new_command": 589,
+    "empty_200ms_receive_windows": 54,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 224,
+    "gaps_over_200ms_including_edges": 130,
+    "longest_gap_including_edges_ms": 764.64501,
+    "minimum_new_commands_in_any_full_second": 1,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      239.774,
+      424.019,
+      469.73,
+      485.163
+    ],
+    "capture_to_twist_over_200ms": 195,
+    "interarrival_ms_p50_p95_p99_max": [
+      168.523,
+      366.661,
+      402.53,
+      764.645
+    ],
+    "source_status": {
+      "ok / feasible": 310,
+      "late / decision exceeded 0.5 s from acquisition": 1,
+      "ok / no_feasible_trajectory": 1
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "ready15-2",
+    "label": "V6.27 \u5916\u5708 \u2461",
+    "seconds": 60,
+    "new_commands": 194,
+    "commands_received_during_window": 194,
+    "linear_nonzero": 194,
+    "full_twist_nonzero": 194,
+    "pictures_sent": 900,
+    "perceptions": 900,
+    "frames_without_new_command": 706,
+    "empty_200ms_receive_windows": 154,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 237,
+    "gaps_over_200ms_including_edges": 37,
+    "longest_gap_including_edges_ms": 28858.902494,
+    "minimum_new_commands_in_any_full_second": 0,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      211.527,
+      318.054,
+      462.135,
+      500.573
+    ],
+    "capture_to_twist_over_200ms": 110,
+    "interarrival_ms_p50_p95_p99_max": [
+      145.806,
+      245.083,
+      390.066,
+      440.113
+    ],
+    "source_status": {
+      "ok / feasible": 194,
+      "late / decision exceeded 0.5 s from acquisition": 2,
+      "invalid / image gap over 0.5 s; pause the gate and restart the driver": 419
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "innerready15",
+    "label": "V6.27 \u5185\u5708",
+    "seconds": 60,
+    "new_commands": 418,
+    "commands_received_during_window": 416,
+    "linear_nonzero": 416,
+    "full_twist_nonzero": 417,
+    "pictures_sent": 900,
+    "perceptions": 899,
+    "frames_without_new_command": 482,
+    "empty_200ms_receive_windows": 12,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 176,
+    "gaps_over_200ms_including_edges": 78,
+    "longest_gap_including_edges_ms": 373.88815,
+    "minimum_new_commands_in_any_full_second": 3,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      197.869,
+      320.381,
+      372.94,
+      436.112
+    ],
+    "capture_to_twist_over_200ms": 202,
+    "interarrival_ms_p50_p95_p99_max": [
+      125.949,
+      255.566,
+      300.204,
+      373.888
+    ],
+    "source_status": {
+      "invalid / no recent wheel and gyro measurement at image capture": 1,
+      "ok / feasible": 418
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "final15-1",
+    "label": "V6.27.1 \u5916\u5708 \u2460",
+    "seconds": 60,
+    "new_commands": 614,
+    "commands_received_during_window": 612,
+    "linear_nonzero": 354,
+    "full_twist_nonzero": 412,
+    "pictures_sent": 900,
+    "perceptions": 897,
+    "frames_without_new_command": 286,
+    "empty_200ms_receive_windows": 0,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 9,
+    "gaps_over_200ms_including_edges": 0,
+    "longest_gap_including_edges_ms": 181.865027,
+    "minimum_new_commands_in_any_full_second": 8,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      161.242,
+      210.178,
+      240.044,
+      260.902
+    ],
+    "capture_to_twist_over_200ms": 56,
+    "interarrival_ms_p50_p95_p99_max": [
+      95.646,
+      133.395,
+      145.315,
+      181.865
+    ],
+    "source_status": {
+      "ok / feasible": 381,
+      "ok / no_feasible_trajectory": 208,
+      "ok / executing_prior_contingency": 25
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "final15-2",
+    "label": "V6.27.1 \u5916\u5708 \u2461",
+    "seconds": 60,
+    "new_commands": 623,
+    "commands_received_during_window": 621,
+    "linear_nonzero": 444,
+    "full_twist_nonzero": 458,
+    "pictures_sent": 900,
+    "perceptions": 900,
+    "frames_without_new_command": 277,
+    "empty_200ms_receive_windows": 0,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 9,
+    "gaps_over_200ms_including_edges": 0,
+    "longest_gap_including_edges_ms": 187.801705,
+    "minimum_new_commands_in_any_full_second": 7,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      161.958,
+      208.249,
+      233.323,
+      250.604
+    ],
+    "capture_to_twist_over_200ms": 61,
+    "interarrival_ms_p50_p95_p99_max": [
+      93.418,
+      130.197,
+      151.523,
+      187.802
+    ],
+    "source_status": {
+      "invalid / no recent wheel and gyro measurement at image capture": 1,
+      "ok / feasible": 481,
+      "ok / executing_prior_contingency": 25,
+      "ok / no_feasible_trajectory": 117
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "innerfinal15-1",
+    "label": "V6.27.1 \u5185\u5708 \u2460",
+    "seconds": 60,
+    "new_commands": 757,
+    "commands_received_during_window": 755,
+    "linear_nonzero": 725,
+    "full_twist_nonzero": 757,
+    "pictures_sent": 900,
+    "perceptions": 898,
+    "frames_without_new_command": 143,
+    "empty_200ms_receive_windows": 0,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 1,
+    "gaps_over_200ms_including_edges": 0,
+    "longest_gap_including_edges_ms": 163.656574,
+    "minimum_new_commands_in_any_full_second": 10,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      137.147,
+      188.827,
+      212.841,
+      240.959
+    ],
+    "capture_to_twist_over_200ms": 20,
+    "interarrival_ms_p50_p95_p99_max": [
+      76.165,
+      106.196,
+      128.401,
+      163.657
+    ],
+    "source_status": {
+      "ok / feasible": 724,
+      "ok / executing_prior_contingency": 1,
+      "ok / no_feasible_trajectory": 32
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "innerfinal15-2",
+    "label": "V6.27.1 \u5185\u5708 \u2461",
+    "seconds": 60,
+    "new_commands": 761,
+    "commands_received_during_window": 760,
+    "linear_nonzero": 761,
+    "full_twist_nonzero": 761,
+    "pictures_sent": 900,
+    "perceptions": 899,
+    "frames_without_new_command": 139,
+    "empty_200ms_receive_windows": 0,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 0,
+    "gaps_over_200ms_including_edges": 0,
+    "longest_gap_including_edges_ms": 153.839175,
+    "minimum_new_commands_in_any_full_second": 10,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      140.095,
+      188.928,
+      216.19,
+      245.492
+    ],
+    "capture_to_twist_over_200ms": 19,
+    "interarrival_ms_p50_p95_p99_max": [
+      74.953,
+      109.037,
+      126.986,
+      153.839
+    ],
+    "source_status": {
+      "ok / feasible": 761
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  },
+  {
+    "run": "visualfinal15",
+    "label": "V6.27.1 \u5916\u5708\uff08\u53cc\u7a97\u53e3\uff09",
+    "seconds": 60,
+    "new_commands": 607,
+    "commands_received_during_window": 605,
+    "linear_nonzero": 458,
+    "full_twist_nonzero": 491,
+    "pictures_sent": 900,
+    "perceptions": 900,
+    "frames_without_new_command": 293,
+    "empty_200ms_receive_windows": 0,
+    "empty_200ms_receive_windows_with_source_age_at_most_200ms": 13,
+    "gaps_over_200ms_including_edges": 0,
+    "longest_gap_including_edges_ms": 181.420965,
+    "minimum_new_commands_in_any_full_second": 7,
+    "camera_to_twist_ms_p50_p95_p99_max": [
+      161.815,
+      212.574,
+      238.928,
+      261.396
+    ],
+    "capture_to_twist_over_200ms": 60,
+    "interarrival_ms_p50_p95_p99_max": [
+      96.299,
+      134.653,
+      166.119,
+      181.421
+    ],
+    "source_status": {
+      "ok / feasible": 479,
+      "ok / executing_prior_contingency": 21,
+      "ok / no_feasible_trajectory": 107
+    },
+    "expected_deadlines": 900,
+    "source_slot_deadlines_met": 0
+  }
+]

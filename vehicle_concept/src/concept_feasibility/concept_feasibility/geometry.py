@@ -15,4 +15,3 @@ def road_clearance(road, z, x, heading, uncertainty_scale=1.):
     if _tread is None or np.ndim(z) != 1 or np.shape(z) != np.shape(x) or np.shape(x) != np.shape(heading):
         return tread_clearance(road, z, x, heading, uncertainty_scale)
     return _tread.clearance(road, z, x, heading, uncertainty_scale, _OFFSETS)
-

@@ -1,4 +1,4 @@
-# V6.26 驾驶策略与 V6.27 实时实现的部署手册
+# V6.26 驾驶策略与 V6.27.1 实时实现的部署手册
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
@@ -8,10 +8,10 @@
 | 冻结策略是否接对 | 五场历史 Unity 记录共 1,079 帧。重放时路径、路界、桶、候选选择、分数和控制均与冻结版一致。含内、外圈整圈及三种局部障碍，倒车样本为零。[逐场记录](src/concept_drive/REPLAY.json) |
 | 相机识别是否接对 | B1.4 在工作站 GPU 上复核 12 张实车录像图，5,529,600 个道路与标线像素判断、1,200 个检测结果与原模型一致。[对照记录](src/concept_yolop/SOURCES.md) |
 | 手柄与面板 | Foxy 软件 CAN 端点实测手柄优先、松手停车、恢复只收新指令和各输入失联。Qt5 和 RViz 的话题连接已核对。[试验脚本和实测数据](checks/foxy_gate_dds.md) · [面板外观示例，使用 Unity 画面和示例数值](src/concept_panel/evidence/panel-windows.png) |
-| 从相机到车身图能否打通 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
+| V6.26 初版从相机到车身图的接线验证 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
 | 下一位 agent 的第一项实车工作 | 查实际设备和旧启动命令，核对当前 ZED 安装与投影。确认输入、左右方向、静止轮速和驱动器断 CAN 后的表现，才进入低速自动。车载 Jetson 的推理耗时、实车制动距离、行驶方向与圈速均待测。 |
 
-**实时性能。** 工作站上 15 Hz 相机、请求 15 Hz 规划的两次 60 秒压力测试，平均各收到 5.18、3.23 条新指令/秒。默认请求 5 Hz 的两次运行分别收到 150/300、200/300 个周期的指令。车载持续 5 Hz 尚待验证。[实测曲线与逐轮数据](checks/timing/v6.27/README.md)
+**实时性能。** V6.27.1 默认相机 15 Hz，来新图时最高请求 15 Hz 规划，验收下限为每秒 5 条新指令。工作站回放内外圈各两次，另开 Qt 面板和 RViz 重跑一次外圈，每场 60 秒。实际平均 10.08–12.67 Hz，任意连续一秒最少 7 条，最长指令间隔 188 ms。部分图像采集到指令仍超过 200 ms。Jetson 要按第 4 节用车上时钟复测。[新版逐轮报告](checks/timing/v6.27.1/README.md) · [原对照版本](checks/timing/v6.27/README.md)
 
 ## 1. 车上的接线与节点
 
@@ -66,7 +66,7 @@ colcon build --base-paths "$REPO/vehicle_concept/src" --symlink-install
 source install/local_setup.bash
 ros2 pkg executables concept
 ros2 run concept live --show-args
-python3 -c 'from concept_road import _markings; from concept_candidates import _progress; from concept_feasibility import _motion, _risk, _tread; from concept_drive.core import Drive; Drive(); print("V6.26 H12 and native kernels loaded")'
+python3 -c 'from concept_road import _markings, _memory; from concept_candidates import _progress; from concept_feasibility import _motion, _risk, _tread; from concept_drive.core import Drive; Drive(); print("V6.26 H12 and native kernels loaded")'
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
@@ -131,9 +131,9 @@ ros2 topic echo /concept/gate/status
 python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 30
 ```
 
-默认 ZED 采集 15 Hz，规划请求 5 Hz。可在启动时试 `planning_hz:=15.0`。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
+默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
 
-V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。RTX 4070 Ti 的实时时钟回放出现了 5.18 Hz 的整场平均和过载锁停，两次重复没有同时通过稳定 5 Hz。车端先做观测、标定与台架验收。[冻结回归](checks/timing/v6.27/frozen-regression.json) · [工作站时钟回放](checks/timing/v6.27/README.md)
+V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[最新冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [最新工作站时钟回放](checks/timing/v6.27.1/README.md)
 
 在现场负责人安排下，架空车轮确认零输出、左右转向、手柄松开保持和硬件急停；按原接线核对实际车轮方向。随后可直接进行短距离低速自动测试，记录距离、用时、最低帧率、拍摄到控制的延迟和停车距离。无需先跑一圈手操。5 m/s 属于仿真压力测试条件；目前已解码的轮速只有 0–255 rpm，轮径 0.254 m 时约到 3.39 m/s。验证方向位和高位之前，不用这路反馈做更高速度或自主倒车的实车验收。
 
