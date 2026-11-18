@@ -6,6 +6,7 @@ from threading import Lock
 from uuid import uuid4
 
 import cv2
+import numpy as np
 from geometry_msgs.msg import TwistStamped
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
@@ -28,6 +29,9 @@ class DriverNode(Node):
     def __init__(self):
         super().__init__('drive', namespace='/concept')
         cv2.setNumThreads(1)
+        # OpenCV builds the Lab conversion tables on first use. Do this before
+        # accepting images, without creating road observations or a command.
+        cv2.cvtColor(np.zeros((1, 1, 3), np.uint8), cv2.COLOR_BGR2LAB)
         self.target = float(self.declare_parameter('target_speed_mps', 3.4).value)
         hz = self.declare_parameter('planning_hz', 5.0).value
         if not math.isfinite(hz) or not 5. <= hz <= 15.:

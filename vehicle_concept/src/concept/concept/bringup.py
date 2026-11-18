@@ -128,6 +128,7 @@ def build(context):
                 calibration=LC('calibration'), device=LC('device'),
                 camera_info_topic=LC('camera_info_topic')),
         Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
+             additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
              parameters=[{'target_speed_mps': float(LC('target_speed_mps').perform(context)),
                           'planning_hz': float(LC('planning_hz').perform(context))}]),
         Node(package='concept_visualization', executable='visualization', output='screen'),
