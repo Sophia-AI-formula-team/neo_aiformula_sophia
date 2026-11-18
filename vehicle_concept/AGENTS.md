@@ -1,4 +1,4 @@
-# V6.26 驾驶策略与 V6.27.2 实时实现的部署手册
+# Concept V6.27.3 部署手册（V6.26 驾驶策略）
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
@@ -33,13 +33,13 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连�
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
-部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.2**，各功能包保留各自版本。首次安装和从 V6.27.1 升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
+部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.3**，各功能包保留各自版本。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
 
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6272"
-export WS="$HOME/concept_v6272_ws"
+export REPO="$HOME/src/neo-concept-v6273"
+export WS="$HOME/concept_v6273_ws"
 (
   set -e
   branch=feat/concept-v626-live
@@ -94,7 +94,7 @@ python3 -c 'from concept_road import _markings, _memory; from concept_candidates
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
-[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.2`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
+[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.3`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
 
 B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
@@ -125,8 +125,8 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6272"
-export WS="$HOME/concept_v6272_ws"
+export REPO="$HOME/src/neo-concept-v6273"
+export WS="$HOME/concept_v6273_ws"
 source "$WS/install/local_setup.bash" &&
   python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
   ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"

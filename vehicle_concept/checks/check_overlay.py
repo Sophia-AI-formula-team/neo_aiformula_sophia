@@ -44,8 +44,8 @@ def verify(workspace):
                     path.name.endswith(suffix) for suffix in EXTENSION_SUFFIXES):
                 raise ValueError(f"{package}.{module} resolves to {path}")
         version = ElementTree.parse(installed_manifest).getroot().findtext("version")
-        if package == "concept" and version != "6.27.2":
-            raise ValueError(f"Expected concept 6.27.2, installed manifest reports {version}")
+        if package in ("concept", "concept_panel") and version != "6.27.3":
+            raise ValueError(f"Expected {package} 6.27.3, installed manifest reports {version}")
         print(f"{package} {version}  ROS={prefix}  Python={py_dir}")
 
     prefix = Path(get_package_prefix("concept"))
