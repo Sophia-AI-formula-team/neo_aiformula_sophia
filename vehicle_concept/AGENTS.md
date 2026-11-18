@@ -8,6 +8,7 @@
 | 冻结策略是否接对 | 五场历史 Unity 记录共 1,079 帧。重放时路径、路界、桶、候选选择、分数和控制均与冻结版一致。含内、外圈整圈及三种局部障碍，倒车样本为零。[逐场记录](src/concept_drive/REPLAY.json) |
 | 相机识别是否接对 | B1.4 在工作站 GPU 上复核 12 张实车录像图，5,529,600 个道路与标线像素判断、1,200 个检测结果与原模型一致。[对照记录](src/concept_yolop/SOURCES.md) |
 | 手柄与面板 | Foxy 软件 CAN 端点实测手柄优先、松手停车、恢复只收新指令和各输入失联。Qt5 和 RViz 的话题连接已核对。[试验脚本和实测数据](checks/foxy_gate_dds.md) · [面板外观示例，使用 Unity 画面和示例数值](src/concept_panel/evidence/panel-windows.png) |
+| V6.27.3 面板录包 | 在摄像头画面下方点「开始录包」或「停止录包」。10 个话题保留驾驶决策、反馈和控制，图像不入袋。[实际录制截图和 Foxy 验收](checks/recording/README.md) |
 | V6.26 初版从相机到车身图的接线验证 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
 | 下一位 agent 的第一项实车工作 | 查实际设备和旧启动命令，核对当前 ZED 安装与投影。确认输入、左右方向、静止轮速和驱动器断 CAN 后的表现，才进入低速自动。车载 Jetson 的推理耗时、实车制动距离、行驶方向与圈速均待测。 |
 
@@ -89,6 +90,8 @@ colcon build --base-paths "$REPO/vehicle_concept/src" --symlink-install &&
   source install/local_setup.bash &&
   python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS"
 ros2 pkg executables concept
+ros2 bag record --help
+ros2 pkg prefix rosbag2_storage_default_plugins
 ros2 run concept live --show-args
 python3 -c 'from concept_road import _markings, _memory; from concept_candidates import _progress; from concept_feasibility import _motion, _risk, _tread; from concept_drive.core import Drive; Drive(); print("V6.26 H12 and native kernels loaded")'
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
@@ -146,6 +149,20 @@ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640
 | 动作 | 开启输出后仍处于暂停。手柄居中、有心跳、状态有效时点击「继续运行」。手柄一旦接管，自动命令被切断；视觉和选路继续。松手立即要求零轮速，保持到下一次点击「继续」，恢复前产生的指令全部作废。禁用输出覆盖手动和自动。 |
 | 停滞重启 | 先读原因。在面板点重启，面板先等门控确认暂停，再请求驾驶节点清空路界、桶和时序历史，重新接收传感器。等待新输入后手动继续。若驾驶进程退出，launch 尝试重启进程；门控超时后仍需手动恢复。服务未应答时按第 6 节处理。 |
 
+### 用驾驶面板记录一次实验
+
+在弹窗的「ROS 数据包」一栏点 **开始录包**。显示「录制中」后开始实验。点 **停止录包**，等到显示 **已保存 · N 条消息**，旁边的路径就是这一袋。再次开始会新建一袋。录制中正常关闭面板也会收尾。电机禁用、暂停自动或手柄接管时都可以录。若显示「录制失败」，将鼠标停在状态上查看原因；保留对应目录用于排查。
+
+默认写入运行面板那台机器的 `~/rosbags/concept/`。若面板单独开在笔记本上，文件就保存在笔记本。需要换盘时，在**启动面板的终端**先设置 `export CONCEPT_BAG_DIR=/实际挂载点/rosbags`。检查该路径可写并有足够磁盘空间。复制面板显示的完整目录，可用 `ros2 bag info "完整目录"` 查看时长、话题及条数。录包用到 Foxy 的 `ros2bag`、`rosbag2_storage_default_plugins` 和 `python3-yaml`。缺前两项时，Foxy 的 apt 包名分别为 `ros-foxy-ros2bag` 和 `ros-foxy-rosbag2-storage-default-plugins`。
+
+| 现场想复查什么 | 录下的话题 |
+|---|---|
+| 为什么选这条路，规划器给了什么速度 | 完整的 `/concept/decision`，以及 `/concept/auto_cmd`。可查候选评分、选中轨迹、不可行原因和每帧耗时。 |
+| 车当时怎样运动，手柄有没有输入 | `/concept/vehicle_state`、`/aiformula_sensing/vehicle_info`、`/aiformula_sensing/vectornav/imu`、`/aiformula_control/joy_node/joy_l2_throttle`。 |
+| 为什么停车，软件把什么交给了电机控制器 | `/concept/gate/status`、`/concept/gate/estop`、`/concept/internal/motor_cmd`、`/concept/internal/motor_can`。后两项分别是仲裁后的速度请求和最终门控复核前的 CAN 帧。实际轮速看反馈。 |
+
+录包器只订阅表内 10 个话题。原相机、含图像和掩码的感知消息、显示叠图与 RViz 图层均排除，两条最终 CAN 输出也排除。窗口仍可实时看画面。这份 bag 可用于复盘决策和控制；从原图重新运行识别需要另有图像来源。每个订阅只排队一条，SQLite 直接写盘，慢盘或传输拥堵可能漏掉样本。「已保存」表示 SQLite 实际条数与元数据逐话题一致。各话题条数取决于现场发布情况。复盘请在隔离 ROS 域内做，袋内含控制指令。
+
 静止检查时可运行下列只读命令。控制门物理所有权检查针对发布者、订阅者和节点名，重复的电机节点会阻止启动或启用。
 
 ```bash
@@ -168,7 +185,7 @@ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条�
 
 ## 5. 从图像到轮速，修改时找哪个包
 
-线上交付含 12 个 ROS 包。Git 中的 `vehicle_concept/` 文件合计约 2.3 MB（含 Unity 回归样本、计时记录和面板示例），另加约 15.3 MB 的 B1.4 私有权重。ROS、CUDA、Torch、ZED SDK 和原 neo 底层依赖没有计入。
+线上交付含 12 个 ROS 包。`vehicle_concept/` 中的源码、Unity 回归样本、计时记录和面板截图合计约 2.7 MB，另加约 15.3 MB 的 B1.4 私有权重。ROS、CUDA、Torch、ZED SDK 和原 neo 底层依赖另计。
 
 | 功能 | 包和接口 |
 |---|---|

@@ -1,0 +1,158 @@
+{
+  "domain": 89,
+  "passed": true,
+  "panel": {
+    "events": [
+      {
+        "seconds": 0.194,
+        "status": "未录制",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags"
+      },
+      {
+        "seconds": 1.513,
+        "status": "正在启动",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f"
+      },
+      {
+        "seconds": 1.814,
+        "status": "录制中",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f"
+      },
+      {
+        "seconds": 3.313,
+        "status": "正在保存",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f"
+      },
+      {
+        "seconds": 3.414,
+        "status": "已保存 · 150 条消息",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f"
+      },
+      {
+        "seconds": 3.614,
+        "status": "正在启动",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224341_e9a71e778c434d42be60512d5dcaa85e"
+      },
+      {
+        "seconds": 3.913,
+        "status": "录制中",
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224341_e9a71e778c434d42be60512d5dcaa85e"
+      }
+    ],
+    "sessions": [
+      {
+        "batch": 1,
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f",
+        "active_pids": [
+          13158
+        ],
+        "excluded_subscribers": {
+          "/concept/perception/frame": 0,
+          "/concept/perception/overlay": 0,
+          "/concept/view/camera": 1,
+          "/aiformula_sensing/zed_node/left_image/undistorted": 0,
+          "/concept/view/local": 0,
+          "/concept/view/map": 0,
+          "/aiformula_control/motor_controller/reference_signal": 0,
+          "/concept/replay/reference_signal": 0,
+          "/qa/unlisted": 0
+        },
+        "publish_ticks": 15,
+        "panel_saved_count": 150
+      },
+      {
+        "batch": 2,
+        "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224341_e9a71e778c434d42be60512d5dcaa85e",
+        "active_pids": [
+          13180
+        ],
+        "excluded_subscribers": {
+          "/concept/perception/frame": 0,
+          "/concept/perception/overlay": 0,
+          "/concept/view/camera": 1,
+          "/aiformula_sensing/zed_node/left_image/undistorted": 0,
+          "/concept/view/local": 0,
+          "/concept/view/map": 0,
+          "/aiformula_control/motor_controller/reference_signal": 0,
+          "/concept/replay/reference_signal": 0,
+          "/qa/unlisted": 0
+        },
+        "publish_ticks": 15
+      }
+    ],
+    "error": null
+  },
+  "leftover_recorders": [],
+  "bags": [
+    {
+      "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224339_911d2404a4e44353bcb067e1692c5a7f",
+      "messages": 150,
+      "topics": {
+        "/concept/vehicle_state": 15,
+        "/concept/decision": 15,
+        "/aiformula_sensing/vehicle_info": 15,
+        "/concept/auto_cmd": 15,
+        "/concept/internal/motor_cmd": 15,
+        "/concept/gate/estop": 15,
+        "/concept/gate/status": 15,
+        "/concept/internal/motor_can": 15,
+        "/aiformula_control/joy_node/joy_l2_throttle": 15,
+        "/aiformula_sensing/vectornav/imu": 15
+      },
+      "decision_sequences": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "selected_index": 17,
+      "db_bytes": 36864
+    },
+    {
+      "path": "/tmp/panelbag-qa/1962a91/panel_smoke/panel-k1rjqkhy/bags/concept_20261118_224341_e9a71e778c434d42be60512d5dcaa85e",
+      "messages": 150,
+      "topics": {
+        "/concept/vehicle_state": 15,
+        "/concept/auto_cmd": 15,
+        "/concept/decision": 15,
+        "/aiformula_control/joy_node/joy_l2_throttle": 15,
+        "/aiformula_sensing/vectornav/imu": 15,
+        "/aiformula_sensing/vehicle_info": 15,
+        "/concept/internal/motor_cmd": 15,
+        "/concept/gate/estop": 15,
+        "/concept/gate/status": 15,
+        "/concept/internal/motor_can": 15
+      },
+      "decision_sequences": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "selected_index": 49,
+      "db_bytes": 36864
+    }
+  ]
+}

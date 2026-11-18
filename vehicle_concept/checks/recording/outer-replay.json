@@ -1,0 +1,56 @@
+{
+  "fixture": "UnityLab/v6251_junction/outer-lap",
+  "seconds": 64.701329857,
+  "db_bytes": 87994368,
+  "hwm_kib": 51228,
+  "messages": 14922,
+  "counts": {
+    "/concept/gate/estop": 0,
+    "/concept/auto_cmd": 663,
+    "/concept/vehicle_state": 1294,
+    "/aiformula_sensing/vehicle_info": 982,
+    "/aiformula_sensing/vectornav/imu": 982,
+    "/aiformula_control/joy_node/joy_l2_throttle": 0,
+    "/concept/internal/motor_can": 6455,
+    "/concept/gate/status": 647,
+    "/concept/internal/motor_cmd": 3236,
+    "/concept/decision": 663
+  },
+  "missing_vs_observer": {
+    "decision": 0,
+    "twist": 0
+  },
+  "extra_vs_observer": {
+    "decision": 0,
+    "twist": 0
+  },
+  "count_options": [
+    75
+  ],
+  "decision_payload_byte_range": [
+    83619,
+    161795
+  ],
+  "timing": {
+    "seconds": 60,
+    "sent_frames": 900,
+    "unique_archived_images": 300,
+    "perception_frames": 900,
+    "decision_frames": 663,
+    "raw_matching_twists": 663,
+    "latency_ms": {
+      "p50": 159.471,
+      "p95": 210.201,
+      "p99": 229.625,
+      "max": 267.49
+    },
+    "min_twists_in_sliding_1s": 8,
+    "output_interval_ms": {
+      "p50": 87.693,
+      "p95": 124.136,
+      "p99": 144.207,
+      "max": 199.921
+    },
+    "pauses_over_200ms": 0
+  }
+}
