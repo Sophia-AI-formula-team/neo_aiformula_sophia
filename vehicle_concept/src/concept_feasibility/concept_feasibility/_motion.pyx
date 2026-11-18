@@ -82,3 +82,46 @@ def closest(const double[:] commands,const double[:] predicted,const double[:] d
                 choice=h
             output[i]=choice
     return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def integrate(const double[:,::1] initial, const double[:,:,:] controls, double dt,
+              const double[:] pv, const double[:] pw, double delay, double braking):
+    """Integrate the full checked action sequence without crossing the Python boundary per 50 ms step.
+
+    State columns are forward, right, heading, speed, gyro, distance, turn and brake age.
+    """
+    cdef Py_ssize_t steps=controls.shape[0], n=controls.shape[1], t,i,j
+    if initial.shape[0]!=n or initial.shape[1]!=8 or controls.shape[2]!=2 or pv.shape[0]!=6 or pw.shape[0]!=6:
+        raise ValueError('invalid controls or state')
+    data=np.empty((steps+1,n,8))
+    data[0]=initial
+    cdef double[:,:,::1] out=data
+    cdef double decay_v=exp(-dt/pv[0]),decay_w=exp(-dt/pw[0]),common,ratio,velocity,angular,vg,wg
+    cdef double speed,yaw,age,elapsed,mid,travel,rotation
+    with nogil:
+        for t in range(steps):
+            for i in range(n):
+                speed=out[t,i,3];yaw=out[t,i,4];age=out[t,i,7]
+                if controls[t,i,0]>0:
+                    encoded(controls[t,i,0],controls[t,i,1],&common,&ratio)
+                    vg=max(0.,response(common,ratio,pv));wg=response(common,ratio,pw)
+                    velocity=vg+(speed-vg)*decay_v;angular=wg+(yaw-wg)*decay_w
+                    elapsed=0.
+                else:
+                    elapsed=age+dt
+                    velocity=max(0.,speed-braking*(max(0.,elapsed-delay)-max(0.,age-delay)))
+                    angular=yaw*max(0.,min(1.,velocity/max(speed,1e-8))) if speed>1e-8 else 0.
+                mid=out[t,i,2]+.25*(yaw+angular)*dt
+                travel=(speed+velocity)*.5
+                rotation=(yaw+angular)*.5
+                out[t+1,i,0]=out[t,i,0]+travel*cos(mid)*dt
+                out[t+1,i,1]=out[t,i,1]+travel*sin(mid)*dt
+                out[t+1,i,2]=out[t,i,2]+rotation*dt
+                out[t+1,i,3]=velocity;out[t+1,i,4]=angular
+                out[t+1,i,5]=out[t,i,5]+(fabs(speed)+fabs(velocity))*.5*dt
+                out[t+1,i,6]=out[t,i,6]+(fabs(yaw)+fabs(angular))*.5*dt
+                out[t+1,i,7]=elapsed
+    return data

@@ -2,6 +2,11 @@
 
 import numpy as np
 
+try:
+    from . import trajectory_batch as batch
+except ImportError:
+    batch = None
+
 from concept_road.vision import FOCAL, CX, CY, HEIGHT
 
 from concept_feasibility.response61515 import advance
@@ -72,6 +77,8 @@ def braking_branch(obs, commands, first_yaw, stop_age, uncertainty=1., coast_sec
     No hypothetical future measurement may shrink this branch's obstacles.
     It is a model-based contingency, not a physical safety certificate.
     """
+    if batch is not None:
+        return batch.braking(obs,commands,first_yaw,stop_age,uncertainty,coast_seconds,details,control_sequence,coast_sequence)
     n = len(commands)
     z, x, angle, travel, turn = [np.zeros(n) for _ in range(5)]
     speed, yaw = np.full(n, obs.speed), np.full(n, obs.yaw)

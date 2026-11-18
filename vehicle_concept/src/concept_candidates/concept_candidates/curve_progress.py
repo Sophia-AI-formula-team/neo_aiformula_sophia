@@ -91,6 +91,10 @@ def increment(obs,old_z,old_x,z,x,default):
     reference=getattr(obs,'reference',None)
     if reference is None:return default,np.zeros_like(default,bool)
     before,a=project(reference,old_z,old_x);after,b=project(reference,z,x)
+    return supported_increment(reference,before,after,a,b,old_x,x,default)
+
+
+def supported_increment(reference,before,after,a,b,old_x,x,default):
     valid=a&b
     points, _, _, arc = _segments(reference)
     u0=np.interp(before,arc,points[:,0]);u1=np.interp(after,arc,points[:,0])

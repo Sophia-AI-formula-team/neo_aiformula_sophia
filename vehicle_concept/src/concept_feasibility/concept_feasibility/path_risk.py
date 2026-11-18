@@ -6,12 +6,18 @@ from . import _risk
 
 
 def path_clearance(objects, states, active, limit):
-    nt, count = len(states), len(states[0][0])
+    arrays = [np.stack([row[i] for row in states]) for i in (0, 1, 2, 4, 5)]
+    t = np.array([row[3] for row in states])
+    return array_clearance(objects, *arrays, t, active, limit)
+
+
+def array_clearance(objects, z, x, heading, travel, turn, t, active, limit):
+    nt, count = z.shape
+    if not len(objects):
+        return np.full(count, 100.), np.full(count, 100.)
     enabled = np.ones((nt, count), dtype=bool) if active is None else np.asarray(active, dtype=bool)
     if enabled.shape != (nt,count):
         raise ValueError('invalid active trajectory mask')
-    z, x, heading, travel, turn = (np.stack([s[i] for s in states]) for i in (0, 1, 2, 4, 5))
-    t = np.array([s[3] for s in states])
     c, s = np.cos(heading), np.sin(heading)
     tf = np.zeros((nt,2,4))
     tf[:,0,0] = tf[:,1,1] = 1.

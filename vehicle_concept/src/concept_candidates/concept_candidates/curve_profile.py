@@ -2,6 +2,11 @@
 
 import numpy as np
 
+try:
+    from . import trajectory_batch as batch
+except ImportError:
+    batch = None
+
 from concept_feasibility.response61515 import advance
 
 from concept_candidates.curve_progress import increment
@@ -9,6 +14,8 @@ from concept_candidates.curve_progress import increment
 from concept_feasibility.geometry61514 import road_clearance, obstacle_clearance, path_obstacle_clearance
 
 def evaluate_profile(obs,sequence,horizon,stop_age,uncertainty=1.):
+    if batch is not None:
+        return batch.profile(obs,np.asarray(sequence),horizon,stop_age,uncertainty)
     sequence=np.asarray(sequence);n=sequence.shape[0];dt=.05
     nominal_steps=int(round(horizon/dt));steps=max(nominal_steps,sequence.shape[1])
     z,x,heading,travel,turn,progress=[np.zeros(n) for _ in range(6)]

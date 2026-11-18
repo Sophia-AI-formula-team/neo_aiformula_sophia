@@ -2,6 +2,11 @@
 
 import numpy as np
 
+try:
+    from . import trajectory_batch as batch
+except ImportError:
+    batch = None
+
 from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
 
 from concept_feasibility.response61515 import advance, inverse_yaw
@@ -126,65 +131,72 @@ class RoadAwareCurvePlanner:
         previous = self.command.copy()
         last_yaw = np.full(count, previous[1])
         zero_age = np.where(commands == 0, self.stop_age, 0.)
-        road_gap, road_lower, evidence = road_clearance(road, z, x, heading, p['uncertainty'])
-        object_gap, obstacle_lower = obstacle_clearance(obs.objects, z, x, heading, 0., p['uncertainty'])
-        geometric = np.minimum(road_gap, object_gap)
-        paths, first, nominal_controls = [], None, []
-        obstacle_states=[(z.copy(),x.copy(),heading.copy(),0.,travel.copy(),turn.copy())]
-        # Replan short manoeuvres; the independent loss-of-observation branch
-        # still checks all the way to a stop, using the actual covariance.
         horizon = float(np.clip((look+2.)/max(obs.speed, 1.2), 2., 5.))
         interval, substep = .2, .05
         steps = int(np.ceil(horizon/interval))
         horizon = steps*interval
         yaw_limit = p.get('yaw_limit', 1.55)
-        for step in range(steps):
-            pursuit = z+np.clip(1.+.7*speed, 1.2, 3.)
-            q = np.minimum(pursuit, look)
-            reference = aa*q**3+bb*q**2+np.maximum(pursuit-look, 0)*slope
-            dz, dx = pursuit-z, reference-x
-            lateral = dx*np.cos(heading)-dz*np.sin(heading)
-            desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
-            command_dt = obs.dt if step == 0 else interval
-            command_yaw = inverse_yaw(desired, commands,
-                lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
-                upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
-                current_yaw=yaw,dt=command_dt)
-            last_yaw = command_yaw
-            if first is None:
-                first = command_yaw.copy()
-            for sub in range(4):
-                nominal_controls.append(np.c_[commands,command_yaw])
-                old_speed, old_yaw = speed.copy(), yaw.copy()
-                old_z, old_x = z.copy(), x.copy()
-                speed, yaw, zero_age = advance(speed, yaw, commands, command_yaw, substep, zero_age)
-                mid_heading = heading+.25*(old_yaw+yaw)*substep
-                x += (old_speed+speed)*.5*np.sin(mid_heading)*substep
-                z += (old_speed+speed)*.5*np.cos(mid_heading)*substep
-                heading += (old_yaw+yaw)*.5*substep
-                # Reward travel along locally observed road direction, not the
-                # vehicle-forward axis. No map, GT station or new weight.
-                local_direction = np.interp((old_z+z)*.5, road[:,0], obs.heading)
-                delta=(z-old_z)*np.cos(local_direction)+(x-old_x)*np.sin(local_direction)
-                delta,used=increment(obs,old_z,old_x,z,x,delta)
-                road_progress += delta;reference_steps += used
-                heading_integral += (old_speed+speed)*.5*(mid_heading-local_direction)**2*substep
-                travel += (abs(old_speed)+abs(speed))*.5*substep
-                turn += (abs(old_yaw)+abs(yaw))*.5*substep
-                road_gap, road_bound, known = road_clearance(road, z, x, heading, p['uncertainty'])
-                # Today's road evidence must survive its future transport into
-                # the blind near field. Same odometry budget as surface memory;
-                # this is extra FUTURE travel/turn, not a second current erosion.
-                future_transport = .04*travel+.08*turn*1.16
-                road_bound -= p['uncertainty']*future_transport
-                future = step*interval+(sub+1)*substep
-                obstacle_states.append((z.copy(),x.copy(),heading.copy(),future,travel.copy(),turn.copy()))
-                geometric = np.minimum(geometric, road_gap)
-                road_lower = np.minimum(road_lower, road_bound)
-                evidence &= known
-            paths.append(np.c_[z.copy(), x.copy()])
-        object_gap,obstacle_lower=path_obstacle_clearance(obs.objects,obstacle_states)
-        geometric=np.minimum(geometric,object_gap)
+        if batch is not None:
+            state, nominal_controls, geometric, road_lower, evidence, obstacle_lower, road_progress, reference_steps, heading_integral = batch.driven_path(
+                obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p)
+            first=nominal_controls[0,:,1].copy()
+            paths=state[4::4,:,:2]
+            z,x,heading,speed,yaw=state[-1,:,:5].T.copy()
+        else:
+            road_gap, road_lower, evidence = road_clearance(road, z, x, heading, p['uncertainty'])
+            object_gap, obstacle_lower = obstacle_clearance(obs.objects, z, x, heading, 0., p['uncertainty'])
+            geometric = np.minimum(road_gap, object_gap)
+            paths, first, nominal_controls = [], None, []
+            obstacle_states=[(z.copy(),x.copy(),heading.copy(),0.,travel.copy(),turn.copy())]
+            # Replan short manoeuvres; the independent loss-of-observation branch
+            # still checks all the way to a stop, using the actual covariance.
+            for step in range(steps):
+                pursuit = z+np.clip(1.+.7*speed, 1.2, 3.)
+                q = np.minimum(pursuit, look)
+                reference = aa*q**3+bb*q**2+np.maximum(pursuit-look, 0)*slope
+                dz, dx = pursuit-z, reference-x
+                lateral = dx*np.cos(heading)-dz*np.sin(heading)
+                desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
+                command_dt = obs.dt if step == 0 else interval
+                command_yaw = inverse_yaw(desired, commands,
+                    lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
+                    upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
+                    current_yaw=yaw,dt=command_dt)
+                last_yaw = command_yaw
+                if first is None:
+                    first = command_yaw.copy()
+                for sub in range(4):
+                    nominal_controls.append(np.c_[commands,command_yaw])
+                    old_speed, old_yaw = speed.copy(), yaw.copy()
+                    old_z, old_x = z.copy(), x.copy()
+                    speed, yaw, zero_age = advance(speed, yaw, commands, command_yaw, substep, zero_age)
+                    mid_heading = heading+.25*(old_yaw+yaw)*substep
+                    x += (old_speed+speed)*.5*np.sin(mid_heading)*substep
+                    z += (old_speed+speed)*.5*np.cos(mid_heading)*substep
+                    heading += (old_yaw+yaw)*.5*substep
+                    # Reward travel along locally observed road direction, not the
+                    # vehicle-forward axis. No map, GT station or new weight.
+                    local_direction = np.interp((old_z+z)*.5, road[:,0], obs.heading)
+                    delta=(z-old_z)*np.cos(local_direction)+(x-old_x)*np.sin(local_direction)
+                    delta,used=increment(obs,old_z,old_x,z,x,delta)
+                    road_progress += delta;reference_steps += used
+                    heading_integral += (old_speed+speed)*.5*(mid_heading-local_direction)**2*substep
+                    travel += (abs(old_speed)+abs(speed))*.5*substep
+                    turn += (abs(old_yaw)+abs(yaw))*.5*substep
+                    road_gap, road_bound, known = road_clearance(road, z, x, heading, p['uncertainty'])
+                    # Today's road evidence must survive its future transport into
+                    # the blind near field. Same odometry budget as surface memory;
+                    # this is extra FUTURE travel/turn, not a second current erosion.
+                    future_transport = .04*travel+.08*turn*1.16
+                    road_bound -= p['uncertainty']*future_transport
+                    future = step*interval+(sub+1)*substep
+                    obstacle_states.append((z.copy(),x.copy(),heading.copy(),future,travel.copy(),turn.copy()))
+                    geometric = np.minimum(geometric, road_gap)
+                    road_lower = np.minimum(road_lower, road_bound)
+                    evidence &= known
+                paths.append(np.c_[z.copy(), x.copy()])
+            object_gap,obstacle_lower=path_obstacle_clearance(obs.objects,obstacle_states)
+            geometric=np.minimum(geometric,object_gap)
         dynamics = np.isfinite(speed) & np.isfinite(yaw) & (abs(first) <= yaw_limit+1e-9)
         # Single mask consumed by whitebox selection AND the learned interface.
         conditional = (road_lower >= 0.) & (obstacle_lower > 0.) & evidence & dynamics
@@ -235,7 +247,7 @@ class RoadAwareCurvePlanner:
                          recovery=('not_needed' if pick is not None and commands[pick] > 0 else
                                    'selected_deceleration' if np.any(feasible & (commands > 0)) else
                                    'no_forward_candidate_reverse_unavailable_unknown_rear_and_unvalidated_response'),
-                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items()},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile['valid'].tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Only infeasible constant-drive schedules may use the existing two-second drive then complete stop; checked through original horizon and complete stop, including wait; same75 slots',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
+                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile['valid'].tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Only infeasible constant-drive schedules may use the existing two-second drive then complete stop; checked through original horizon and complete stop, including wait; same75 slots',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
                                     constraint_interval=substep, horizon=horizon, threshold=0.,
                                     uncertainty_scale=p['uncertainty'], previous_command=previous.tolist(),
                                     columns=['speed', 'yaw', 'target_x', 'geometric_clearance', 'sigma', 'robust_clearance',
