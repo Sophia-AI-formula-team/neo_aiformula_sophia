@@ -130,6 +130,10 @@ def summary(args, sent, started, out):
     result['distinct_receive_slots']=len({
         (r['received_ns']-started)*args.decision_hz//BILLION for r in valid
         if started<=r['received_ns']<end_ns})
+    result['receive_slots_with_capture_age_at_most_200ms']=len({
+        (r['received_ns']-started)*args.decision_hz//BILLION for r in valid
+        if started<=r['received_ns']<end_ns
+        and r['received_ns']-by_stamp[r['stamp_ns']]['capture_mono_ns']<=200_000_000})
     result['duplicate_output_stamps']=len(valid)-len({r['stamp_ns'] for r in valid})
     result['missing_slot_evidence']=dict(Counter(
         ('capture_not_sent' if not r['input_ids'] else 'no_perception_observed' if not r['perceived']
