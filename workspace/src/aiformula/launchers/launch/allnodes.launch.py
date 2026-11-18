@@ -274,7 +274,9 @@ def generate_launch_description():
 
     launch_args = (
         DeclareLaunchArgument("launch_yolop_a3", default_value="true",
-                              description="Start A3 V14 on the existing lane/object topics."),
+                              description="Start one YOLOP profile on the existing lane/object topics."),
+        DeclareLaunchArgument("yolop_profile", default_value="V14", choices=["V14", "A4", "A4_lite"]),
+        DeclareLaunchArgument("a4_bundle_parent", default_value="/home/control/aiformula_runtime"),
         DeclareLaunchArgument(
             "launch_legacy_road_detector",
             default_value="false",
@@ -479,7 +481,9 @@ def generate_launch_description():
             OpaqueFunction(function=create_road_detector_node),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(osp.join(launchers_dir, "launch", "yolop_a3.launch.py")),
-                launch_arguments={"start_camera": "false", "start_lane_publisher": "false", "shadow": "false"}.items(),
+                launch_arguments={"start_camera": "false", "start_lane_publisher": "false", "shadow": "false",
+                                  "yolop_profile": LaunchConfiguration("yolop_profile"),
+                                  "a4_bundle_parent": LaunchConfiguration("a4_bundle_parent")}.items(),
                 condition=IfCondition(LaunchConfiguration("launch_yolop_a3")),
             ),
             OpaqueFunction(function=create_lane_line_publisher_node),

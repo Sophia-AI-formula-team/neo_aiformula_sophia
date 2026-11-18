@@ -6,19 +6,20 @@ import sys
 from types import ModuleType, SimpleNamespace
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from yolop_a3_runtime import PerceptionOutput
 
 
-def load_node(monkeypatch, result):
+def load_node(monkeypatch, result, lean=False):
     class Node:
         def __init__(self, name):
             self.publishers, self.errors, self.infos = {}, [], []
 
         def declare_parameter(self, name, default):
-            return SimpleNamespace(value=default)
+            return SimpleNamespace(value=lean if name == "lean_runtime" else default)
 
         def create_publisher(self, kind, topic, depth):
             messages = []
@@ -63,18 +64,22 @@ def load_node(monkeypatch, result):
 
     def factory(weights, **options):
         requested.append((weights, options))
-        return SimpleNamespace(predict=lambda image: result)
+        def predict(image, **kwargs):
+            assert kwargs == ({"combined_overlay": False} if lean else {})
+            return result
+        return SimpleNamespace(predict=predict)
 
     monkeypatch.setattr(module, "PerceptionModel", factory)
     return module.YolopA3Node(), requested
 
 
-def test_callback_preserves_headers_encodings_and_all_seven_outputs(monkeypatch):
+@pytest.mark.parametrize("lean", [False, True])
+def test_callback_preserves_headers_encodings_and_all_seven_outputs(monkeypatch, lean):
     image = np.zeros((20, 30, 3), np.uint8)
     mask = np.zeros((20, 30), np.uint8)
     output = PerceptionOutput(mask, image, mask, image, image, (), "unknown", 0, {"total": 1.})
-    node, requested = load_node(monkeypatch, output)
-    assert requested == [(Path("weights/shared_best.pth"), dict(device="auto", score_threshold=.5))]
+    node, requested = load_node(monkeypatch, output, lean)
+    assert requested == [(Path("weights/shared_best.pth"), dict(device="auto", score_threshold=.5, lean_runtime=lean))]
     assert node.subscription.topic == "/aiformula_sensing/zed_node/left_image/undistorted"
     assert node.subscription.qos.depth == 1
     assert any("A4 single-frame mode" in text for text in node.infos)

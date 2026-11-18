@@ -3,11 +3,13 @@ on:
   pull_request:
     paths:
       - 'workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/**'
+      - 'workspace/src/aiformula/launchers/launch/**'
       - '.github/workflows/yolop-a3-runtime.yml'
   push:
     branches: [main]
     paths:
       - 'workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/**'
+      - 'workspace/src/aiformula/launchers/launch/**'
       - '.github/workflows/yolop-a3-runtime.yml'
   workflow_dispatch:
 permissions:
@@ -36,3 +38,15 @@ jobs:
           python -B -m pytest workspace/src/aiformula/perception/road_detector/test/test_output_contract.py -q
       - name: Build runtime wheel
         run: python -m pip wheel "$A3" --no-deps --no-build-isolation --wheel-dir work/a3-wheels
+      - name: Assemble and inspect both vehicle bundles
+        run: |
+          python "$A3/tools/package_vehicle.py" --out work/vehicle-bundles
+          for profile in A4 A4_lite; do
+            python -m zipfile -e "work/vehicle-bundles/${profile}-neo-vehicle.zip" work/check-vehicle
+            python "work/check-vehicle/$profile/run_vehicle.py" --profile "$profile" --identity
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: A4-and-A4_lite-vehicle-bundles
+          path: work/vehicle-bundles/*.zip
+          if-no-files-found: error

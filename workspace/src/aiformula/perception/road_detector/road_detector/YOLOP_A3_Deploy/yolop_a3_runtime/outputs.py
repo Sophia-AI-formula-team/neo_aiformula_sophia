@@ -25,7 +25,7 @@ class PerceptionOutput:
     lane_overlay: np.ndarray
     obstacle_mask: np.ndarray
     object_overlay: np.ndarray
-    combined_overlay: np.ndarray
+    combined_overlay: np.ndarray | None
     detections: tuple
     traffic_light_state: str
     red_pixels_count: int

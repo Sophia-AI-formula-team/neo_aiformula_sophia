@@ -23,7 +23,7 @@ This package manages launch files each node\
 - `zedx_camera.launch.py`
   - Output: `Image (raw / undostorted), Imu`
 
-### Deployed A3 V14 vehicle launch
+### Vehicle perception profiles
 
 `allnodes.launch.py` starts A3 V14 by default through `yolop_a3.launch.py`,
 reusing its existing camera and lane publisher. The default camera is
@@ -35,6 +35,15 @@ The A3 launcher expects the separately deployed runtime at
 the Python environment, ROS adapter and V14 checkpoint. Its standalone
 `deployment_root` argument can select another prepared runtime. The startup
 guard rejects duplicate publishers on the perception output topics.
+
+The default is still `yolop_profile:=V14` so an existing installation does
+not change on checkout. With a prepared bundle and matching Python/ROS
+environment, explicitly select `yolop_profile:=A4` or
+`yolop_profile:=A4_lite`. Both use the existing camera/calibration and
+remaps; no motor or control settings change. The launcher selects
+`<a4_bundle_parent>/<profile>/venv/bin/python3` and that bundle's
+`run_vehicle.py`. See the perception package deployment guide for shadow
+validation, dependency requirements and rollback.
 
 The archived detector is opt-in with
 `launch_yolop_a3:=false launch_legacy_road_detector:=true`; it requires the

@@ -8,25 +8,30 @@ import torch
 from .color_semantics import classify_traffic_cone, classify_traffic_light
 from .lane_processing import LaneRuntimeConfig, overlay_lane_mask, postprocess_lane_probability
 from .outputs import Detection, PerceptionOutput, render
+from .lean import cache_encoder_norms
 from .temporal import load_model
 
 CATEGORIES = {1: "person", 3: "car", 10: "traffic light", 91: "traffic cone"}
 
 
 class TemporalPerceptionModel:
-    def __init__(self, weights, *, device="auto", score_threshold=.5, lane_config=None):
+    def __init__(self, weights, *, device="auto", score_threshold=.5, lane_config=None,
+                 lean_runtime=False):
         if not 0 <= score_threshold <= 1:
             raise ValueError("score_threshold must be between 0 and 1")
         if device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(device)
         self.model = load_model(weights, self.device)
+        self.lean_runtime = lean_runtime
+        if lean_runtime:
+            cache_encoder_norms(self.model.base.encoder)
         self.score_threshold = score_threshold
         self.lane_config = lane_config or LaneRuntimeConfig()
 
     @torch.inference_mode()
-    def predict(self, image):
-        return self._predict(image)
+    def predict(self, image, *, combined_overlay=True):
+        return self._predict(image, combined_overlay=combined_overlay)
 
     @torch.inference_mode()
     def predict_frame(self, image, *, sequence, timestamp, plane_to_image):
@@ -37,7 +42,7 @@ class TemporalPerceptionModel:
     def reset(self):
         self.model.reset()
 
-    def _predict(self, image, geometry=None):
+    def _predict(self, image, geometry=None, *, combined_overlay=True):
         if not isinstance(image, np.ndarray) or image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3 or min(image.shape[:2]) < 1:
             raise ValueError("image must be nonempty uint8 H x W x 3 BGR")
         began = time.perf_counter()
@@ -46,8 +51,11 @@ class TemporalPerceptionModel:
             lanes, results = self.model([inputs])
         else:
             lanes, results = self.model.forward_frame(inputs, **geometry)
-        probability = lanes[0].softmax(0)[1].cpu().numpy()
-        lane = postprocess_lane_probability(probability, self.lane_config)
+        probability = lanes[0].softmax(0)[1]
+        if self.lean_runtime and not self.lane_config.postprocess_enabled and self.lane_config.prediction_threshold == .5:
+            lane = (probability >= .5).to(torch.uint8).cpu().numpy()
+        else:
+            lane = postprocess_lane_probability(probability.cpu().numpy(), self.lane_config)
         detections, red_pixels = [], 0
         result = results[0]
         for box, label, score in zip(result["boxes"].cpu().tolist(), result["labels"].cpu().tolist(), result["scores"].cpu().tolist()):
@@ -70,7 +78,7 @@ class TemporalPerceptionModel:
         state = "red" if "red" in states else "green" if "green" in states else "unknown"
         lane_overlay = overlay_lane_mask(image, lane)
         object_overlay, obstacle = render(image, detections)
-        combined, _ = render(lane_overlay, detections)
+        combined = render(lane_overlay, detections)[0] if combined_overlay else None
         return PerceptionOutput(lane * 255, lane_overlay, obstacle, object_overlay, combined,
                                 detections, state, red_pixels, {"total": (time.perf_counter()-began)*1000},
                                 temporal_status=self.model.status)
