@@ -1,0 +1,1173 @@
+time	conversation	kind	commands	objects	exit_code	status	duration_s	diagnostic
+2026-11-19T09:52:24.673+09:00	initial	CommandExecution	ssh		0	completed	0.0	
+2026-11-19T09:52:24.678+09:00	initial	CommandExecution	git status		128	failed	0.0	工作目录不是 Git 仓库
+2026-11-19T09:52:26.449+09:00	initial	CommandExecution	ssh		0	completed	0.0	
+2026-11-19T09:52:26.658+09:00	initial	CommandExecution	ssh		0	completed	0.132	
+2026-11-19T09:52:26.890+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.364	
+2026-11-19T09:52:28.681+09:00	initial	CommandExecution	git status / git ls-tree		0	completed	0.0	
+2026-11-19T09:52:29.107+09:00	initial	CommandExecution	ssh		0	completed	0.385	
+2026-11-19T09:52:31.428+09:00	initial	CommandExecution	ssh	yolop	0	completed	0.151	
+2026-11-19T09:52:32.682+09:00	initial	CommandExecution	gh repo / git ls-remote		0	completed	1.404	
+2026-11-19T09:52:35.790+09:00	initial	CommandExecution	ssh	yolop	0	completed	0.133	
+2026-11-19T09:52:36.778+09:00	initial	CommandExecution	gh api / git ls-remote	allnodes, yolop	0	completed	1.121	
+2026-11-19T09:52:40.545+09:00	initial	CommandExecution	ssh / readlink / sha256sum	allnodes, yolop, A4_lite, A3	0	completed	0.146	
+2026-11-19T09:52:42.099+09:00	initial	CommandExecution	gh api / git cat-file	allnodes	128	failed	1.7	
+2026-11-19T09:52:46.537+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop	0	completed	0.0	
+2026-11-19T09:52:46.870+09:00	initial	CommandExecution	ssh / tar	yolop, A3	0	completed	0.157	
+2026-11-19T09:52:49.087+09:00	initial	CommandExecution	git clone	yolop	0	completed	2.371	
+2026-11-19T09:52:51.603+09:00	initial	CommandExecution	gh api		0	completed	4.893	
+2026-11-19T09:52:55.357+09:00	initial	CommandExecution	git rev-parse / git status / git ls-tree		1	failed	0.0	
+2026-11-19T09:52:58.133+09:00	initial	CommandExecution	ssh / desktop-file-validate	yolop	0	completed	0.127	
+2026-11-19T09:52:58.907+09:00	initial	CommandExecution	gh api / git apply	yolop	0	completed	0.9	
+2026-11-19T09:53:03.732+09:00	initial	CommandExecution	git add / git diff	yolop, A4Light, A3	0	completed	0.0	
+2026-11-19T09:53:06.411+09:00	initial	CommandExecution	git add / git diff / git apply	yolop, A3	2	failed	0.0	
+2026-11-19T09:53:08.687+09:00	initial	CommandExecution	git diff / git apply	yolop, A3	0	completed	0.017	
+2026-11-19T09:53:14.880+09:00	initial	CommandExecution	gh api / git diff	yolop	0	completed	3.676	
+2026-11-19T09:53:19.035+09:00	initial	CommandExecution	git rev-parse / gh api / git status	yolop	0	completed	1.876	
+2026-11-19T09:54:14.666+09:00	initial	CommandExecution	ros2 launch / ssh / readlink / pgrep	allnodes, yolop, A3, zed	0	completed	0.157	
+2026-11-19T09:55:28.383+09:00	initial	CommandExecution	ssh	yolop	0	completed	0.13	
+2026-11-19T09:55:28.843+09:00	initial	CommandExecution	git status / git log / gh api	yolop	0	completed	0.59	
+2026-11-19T09:55:34.095+09:00	initial	CommandExecution	ssh / readlink	yolop	0	completed	0.174	
+2026-11-19T09:55:54.095+09:00	initial	CommandExecution	ssh / readlink	yolop, A4Light, A3	0	completed	0.221	
+2026-11-19T09:56:03.431+09:00	initial	CommandExecution	git add / git diff / gh api / git rev-parse / ssh	yolop	0	completed	5.096	
+2026-11-19T09:56:05.852+09:00	initial	CommandExecution	ssh	yolop	0	completed	0.135	
+2026-11-19T09:58:11.675+09:00	initial	CommandExecution	ssh	allnodes, yolop, A4_lite	0	completed	0.353	
+2026-11-19T09:58:29.636+09:00	initial	CommandExecution	git status		0	completed	0.0	
+2026-11-19T09:58:29.808+09:00	initial	CommandExecution	ssh / readlink	yolop, A4Light, A4_lite, A3	0	completed	0.125	
+2026-11-19T09:59:07.041+09:00	initial	CommandExecution	ssh / sha256sum / readlink	allnodes, yolop, A4Light, A4_lite, A3	0	completed	1.898	
+2026-11-19T09:59:13.143+09:00	initial	CommandExecution	readlink		2	failed	0.0	
+2026-11-19T09:59:18.172+09:00	initial	CommandExecution	ssh		0	completed	0.128	
+2026-11-19T09:59:18.363+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.318	
+2026-11-19T09:59:25.398+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T09:59:27.552+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	2.116	
+2026-11-19T09:59:32.654+09:00	initial	CommandExecution	ssh	yolop, A4_lite, A3	0	completed	0.127	
+2026-11-19T09:59:58.513+09:00	initial	CommandExecution	ssh / tar / timeout	yolop, A4Light, A4_lite, A3	0	completed	5.321	
+2026-11-19T10:00:28.846+09:00	initial	CommandExecution	git add / git diff / ssh / tar	yolop, A4Light, A3	0	completed	0.633	
+2026-11-19T10:00:53.913+09:00	initial	CommandExecution	git add / git diff / gh api / git rev-parse / sha256sum / ssh	yolop, A4Light	0	completed	5.001	
+2026-11-19T10:00:59.885+09:00	initial	CommandExecution	ssh	yolop, A4Light	0	completed	0.134	
+2026-11-19T10:02:53.096+09:00	initial	CommandExecution	git status / zip		0	completed	0.011	
+2026-11-19T10:02:53.241+09:00	initial	CommandExecution	ssh / tegrastats	yolop, A3	0	completed	0.157	
+2026-11-19T10:03:11.531+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.007	
+2026-11-19T10:03:23.294+09:00	initial	CommandExecution	ssh / tegrastats / pgrep / timeout	allnodes, yolop	0	completed	11.77	
+2026-11-19T10:04:29.673+09:00	initial	CommandExecution	timeout / tegrastats / tar / ssh	allnodes, yolop, A4Light, A3, zed	0	completed	0.195	
+2026-11-19T10:04:46.963+09:00	initial	CommandExecution	shell / 文件或脚本操作		1	failed	1.669	Python 模块缺失 / Python 异常
+2026-11-19T10:05:47.186+09:00	initial	CommandExecution	zip / tegrastats	allnodes, yolop, A4Light, A3, zed	0	completed	0.0	
+2026-11-19T10:06:13.721+09:00	initial	CommandExecution	ros2 launch / ssh / pgrep / nvpmodel / timeout	allnodes, yolop, zed	0	completed	88.427	
+2026-11-19T10:06:16.759+09:00	initial	CommandExecution	ssh	yolop, A3	0	completed	0.157	
+2026-11-19T10:07:10.648+09:00	initial	CommandExecution	ssh	yolop	255	failed	2.998	SSH 无路由
+2026-11-19T10:07:14.488+09:00	initial	CommandExecution	ping		1	failed	1.652	
+2026-11-19T10:07:17.563+09:00	initial	CommandExecution	ssh / tar	yolop	255	failed	25.626	SSH 无路由
+2026-11-19T10:07:31.620+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T10:07:31.998+09:00	initial	CommandExecution	ssh		0	completed	0.318	
+2026-11-19T10:07:50.758+09:00	initial	CommandExecution	ssh / tar	yolop, A4Light, A3	0	completed	0.225	
+2026-11-19T10:08:06.555+09:00	initial	CommandExecution	git status	yolop	0	completed	0.0	
+2026-11-19T10:08:06.680+09:00	initial	CommandExecution	ssh		0	completed	0.111	
+2026-11-19T10:09:12.048+09:00	initial	CommandExecution	zip	yolop, A4Light, A3, zed	0	completed	0.0	
+2026-11-19T10:09:19.752+09:00	initial	CommandExecution	ros2 launch / tar / ssh / timeout	yolop	0	completed	89.217	
+2026-11-19T10:09:38.517+09:00	initial	CommandExecution	ros2 launch / ssh / tegrastats / tar	yolop, A4Light, A3, zed	0	completed	2.069	
+2026-11-19T10:10:01.017+09:00	initial	CommandExecution	zip	yolop	0	completed	0.0	
+2026-11-19T10:10:48.630+09:00	initial	CommandExecution	git add / git diff / gh api / git rev-parse / zip	allnodes, yolop, A4Light, A3, zed	0	completed	7.24	
+2026-11-19T10:10:55.283+09:00	initial	CommandExecution	ssh	yolop	0	completed	0.137	
+2026-11-19T10:13:18.068+09:00	initial	CommandExecution	ros2 launch / git status / ssh		0	completed	0.198	
+2026-11-19T10:13:18.873+09:00	initial	CommandExecution	gh api / git status	Concept	0	completed	1.002	
+2026-11-19T10:13:22.059+09:00	initial	CommandExecution	git fetch	Concept	0	completed	1.196	
+2026-11-19T10:13:22.512+09:00	initial	CommandExecution	gh api	Concept	0	completed	1.648	
+2026-11-19T10:13:25.409+09:00	initial	CommandExecution	gh api	Concept	0	completed	0.96	
+2026-11-19T10:13:31.570+09:00	initial	CommandExecution	ssh / zip	yolop, A3, Concept, zed, can0	0	completed	1.484	
+2026-11-19T10:13:32.994+09:00	initial	CommandExecution	zip	Concept	0	completed	2.909	
+2026-11-19T10:13:36.319+09:00	initial	CommandExecution	git clone / git branch / git status / git rev-parse / ssh	yolop, Concept, zed, motor_controller	1	failed	0.152	路径不存在
+2026-11-19T10:13:39.918+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.174	
+2026-11-19T10:13:50.399+09:00	initial	CommandExecution	git ls-tree / zip	Concept	0	completed	0.0	
+2026-11-19T10:13:50.604+09:00	initial	CommandExecution	git fetch / git rev-parse / git checkout / git status / ssh	yolop, Concept, zed, motor_controller	128	failed	0.153	
+2026-11-19T10:13:50.668+09:00	initial	CommandExecution	ssh	yolop, Concept	1	failed	0.222	
+2026-11-19T10:13:50.758+09:00	initial	CommandExecution	zip	Concept	0	completed	0.305	
+2026-11-19T10:13:50.800+09:00	initial	CommandExecution	git rev-parse / git log / git ls-tree / zip	yolop, Concept	0	completed	20.714	
+2026-11-19T10:13:57.719+09:00	initial	CommandExecution	gh api / gh release	yolop, Concept	0	completed	1.859	
+2026-11-19T10:14:04.004+09:00	initial	CommandExecution	ssh / sha256sum	Concept	0	completed	0.745	
+2026-11-19T10:14:10.216+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T10:14:12.793+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	16.931	
+2026-11-19T10:14:23.918+09:00	initial	CommandExecution	git status / ssh	Concept	0	completed	0.181	
+2026-11-19T10:14:24.267+09:00	initial	CommandExecution	git ls-tree / gh api	Concept	0	completed	0.517	
+2026-11-19T10:14:26.002+09:00	initial	CommandExecution	ssh	Concept	1	failed	2.259	Python 模块缺失 / Python 异常
+2026-11-19T10:14:27.452+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.147	
+2026-11-19T10:14:37.138+09:00	initial	CommandExecution	gh api	yolop, Concept	0	completed	1.161	
+2026-11-19T10:14:38.833+09:00	initial	CommandExecution	ssh	yolop, Concept	1	failed	2.856	Python 异常
+2026-11-19T10:14:39.767+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	0.19	
+2026-11-19T10:14:50.671+09:00	initial	CommandExecution	gh api	Concept, motor_controller	0	completed	1.517	
+2026-11-19T10:14:53.193+09:00	initial	CommandExecution	ssh	yolop, Concept	1	failed	4.036	Python 异常
+2026-11-19T10:14:53.884+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.106	
+2026-11-19T10:15:03.007+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.371	
+2026-11-19T10:15:04.209+09:00	initial	CommandExecution	git fetch / git rev-parse / git checkout / git status / ssh	yolop, Concept, zed, motor_controller	1	failed	68.347	
+2026-11-19T10:15:04.626+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	5.923	
+2026-11-19T10:15:06.937+09:00	initial	CommandExecution	ssh	allnodes, Concept	0	completed	0.136	
+2026-11-19T10:15:16.664+09:00	initial	CommandExecution	gh api	Concept	0	completed	1.042	
+2026-11-19T10:15:19.144+09:00	initial	CommandExecution	ssh	yolop, Concept, can0	0	completed	0.119	
+2026-11-19T10:15:26.462+09:00	initial	CommandExecution	git status / zip		0	completed	10.841	
+2026-11-19T10:15:27.229+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.114	
+2026-11-19T10:15:30.950+09:00	initial	CommandExecution	gh api	yolop, Concept	0	completed	0.739	
+2026-11-19T10:15:34.348+09:00	initial	CommandExecution	ros2 launch / ssh	yolop, Concept	0	completed	0.129	
+2026-11-19T10:15:41.155+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.116	
+2026-11-19T10:15:45.806+09:00	initial	CommandExecution	ros2 run / ssh / timeout	yolop, Concept	0	completed	7.983	
+2026-11-19T10:15:51.016+09:00	initial	CommandExecution	ssh / pytest	yolop, Concept	0	completed	1.821	
+2026-11-19T10:15:56.133+09:00	initial	CommandExecution	ros2 run / git status / zip	allnodes, yolop, A3, Concept	0	completed	0.0	
+2026-11-19T10:16:04.953+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.135	
+2026-11-19T10:16:07.098+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.118	
+2026-11-19T10:16:25.892+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.133	
+2026-11-19T10:16:48.721+09:00	initial	CommandExecution	ros2 pkg executables / ros2 bag record / ros2 pkg prefix / ros2 run / ssh	yolop, A3, Concept, rosbag	0	completed	97.129	
+2026-11-19T10:16:56.607+09:00	initial	CommandExecution	git status / ssh / pytest / sha256sum	allnodes, yolop, Concept, zed	0	completed	4.587	
+2026-11-19T10:17:01.182+09:00	initial	CommandExecution	git status / ssh / tar	allnodes, yolop, Concept	0	completed	0.198	
+2026-11-19T10:18:38.507+09:00	initial	CommandExecution	zip		0	completed	0.0	
+2026-11-19T10:18:38.735+09:00	initial	CommandExecution	ssh / zip		0	completed	0.146	
+2026-11-19T10:18:48.818+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.179	
+2026-11-19T10:18:57.292+09:00	initial	CommandExecution	ros2 run / git status / git rev-parse / sha256sum / ssh / timeout	yolop, Concept, zed	0	completed	13.404	
+2026-11-19T10:18:59.157+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.117	
+2026-11-19T10:19:10.308+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	1.107	
+2026-11-19T10:19:14.056+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	1.004	
+2026-11-19T10:19:23.145+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept, zed, CameraInfo	0	completed	0.0	
+2026-11-19T10:19:30.142+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 run / ssh / timeout	yolop, Concept	1	failed	25.474	
+2026-11-19T10:19:32.714+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.134	
+2026-11-19T10:19:37.464+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.149	
+2026-11-19T10:20:00.024+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.116	
+2026-11-19T10:20:15.541+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ssh / timeout	yolop, Concept, zed	0	completed	33.719	
+2026-11-19T10:20:20.716+09:00	initial	CommandExecution	git status / ssh / tar	yolop, Concept, zed, CameraInfo	0	completed	0.277	
+2026-11-19T10:20:49.080+09:00	initial	CommandExecution	git ls-tree / git status	Concept, zed	0	completed	0.0	
+2026-11-19T10:20:49.795+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.673	
+2026-11-19T10:20:54.117+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.174	
+2026-11-19T10:20:54.970+09:00	initial	CommandExecution	git ls-tree / gh api	semantic, Concept, zed	0	completed	1.026	
+2026-11-19T10:20:59.500+09:00	initial	CommandExecution	ssh / sha256sum	yolop, A3, Concept, zed	0	completed	0.189	
+2026-11-19T10:21:02.205+09:00	initial	CommandExecution	ssh / readlink	semantic, yolop, A3, Concept, zed	0	completed	0.171	
+2026-11-19T10:21:25.659+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ros2 run / ssh / timeout	yolop, Concept, zed, CameraInfo	1	failed	17.791	
+2026-11-19T10:21:29.431+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.57	
+2026-11-19T10:21:35.989+09:00	initial	CommandExecution	git status / ssh / tar	yolop, A3, Concept, zed, CameraInfo	0	completed	0.577	
+2026-11-19T10:22:38.549+09:00	initial	CommandExecution	git status		0	completed	0.0	
+2026-11-19T10:22:38.728+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.157	
+2026-11-19T10:22:42.427+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.225	
+2026-11-19T10:39:34.368+09:00	initial	CommandExecution	ros2 run / ssh	yolop, Concept	0	completed	2.374	
+2026-11-19T10:39:39.306+09:00	initial	CommandExecution	git status / ssh / tar	yolop, Concept	0	completed	1.859	
+2026-11-19T10:40:30.761+09:00	initial	CommandExecution	ssh / desktop-file-validate	yolop, Concept	0	completed	0.207	
+2026-11-19T10:40:34.235+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.49	
+2026-11-19T10:49:25.050+09:00	initial	CommandExecution	gh api		0	completed	1.11	
+2026-11-19T10:49:28.835+09:00	initial	CommandExecution	ros2 launch / ssh	semantic, Concept	255	failed	4.897	连接超时
+2026-11-19T10:49:33.956+09:00	initial	CommandExecution	gh api		0	completed	2.262	
+2026-11-19T10:49:35.674+09:00	initial	CommandExecution	ssh		255	failed	3.983	SSH 无路由
+2026-11-19T10:49:39.660+09:00	initial	CommandExecution	gh api	semantic	0	completed	2.576	
+2026-11-19T10:49:40.004+09:00	initial	CommandExecution	ping		0	completed	2.92	
+2026-11-19T10:49:47.930+09:00	initial	CommandExecution	pytest		0	completed	0.282	
+2026-11-19T10:49:48.625+09:00	initial	CommandExecution	git worktree / git status / git log	semantic, yolop	0	completed	0.979	
+2026-11-19T10:49:50.649+09:00	initial	CommandExecution	ssh		255	failed	3.004	SSH 无路由
+2026-11-19T10:49:51.776+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, flag_stop	0	completed	0.0	
+2026-11-19T10:49:53.197+09:00	initial	CommandExecution	pytest		0	completed	1.354	
+2026-11-19T10:49:57.962+09:00	initial	CommandExecution	git ls-tree	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T10:50:00.984+09:00	initial	CommandExecution	colcon build	semantic, yolop	0	completed	2.938	
+2026-11-19T10:50:01.016+09:00	initial	CommandExecution	ssh	semantic	255	failed	2.97	SSH 无路由
+2026-11-19T10:50:03.725+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, flag_stop	0	completed	0.0	
+2026-11-19T10:50:19.971+09:00	initial	CommandExecution	git fetch / git log / git show	semantic, yolop	0	completed	2.786	
+2026-11-19T10:50:20.152+09:00	initial	CommandExecution	ssh	semantic	255	failed	2.966	SSH 无路由
+2026-11-19T10:50:34.444+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	1	failed	0.546	Python 异常
+2026-11-19T10:50:36.857+09:00	initial	CommandExecution	ssh		255	failed	2.961	SSH 无路由
+2026-11-19T10:50:41.509+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	0	completed	1.636	
+2026-11-19T10:50:47.772+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T10:50:53.384+09:00	initial	CommandExecution	ros2 launch / timeout	mapassist, map_assist, semantic, yolop, A3, motor_controller, odom	1	failed	41.983	Python 异常
+2026-11-19T10:50:53.387+09:00	initial	CommandExecution	ros2 launch / timeout	semantic, yolop	0	completed	36.199	
+2026-11-19T10:50:53.479+09:00	initial	CommandExecution	git ls-tree / tar / sha256sum	semantic, yolop	0	completed	0.152	
+2026-11-19T10:50:56.313+09:00	initial	CommandExecution	ssh		255	failed	2.993	SSH 无路由
+2026-11-19T10:50:59.406+09:00	initial	CommandExecution	ros2 launch	map_assist, semantic, yolop, flag_stop	0	completed	0.0	
+2026-11-19T10:50:59.438+09:00	initial	CommandExecution	ros2 launch / timeout	semantic, yolop	0	completed	6.115	
+2026-11-19T10:51:07.143+09:00	initial	CommandExecution	git status / pytest	mapassist, map_assist, semantic, yolop, A4Light, A3, lya, stop_wait, flag_stop, odom	0	completed	0.0	
+2026-11-19T10:51:10.919+09:00	initial	CommandExecution	git status / tar	semantic, yolop	0	completed	0.0	
+2026-11-19T10:51:13.976+09:00	initial	CommandExecution	ssh		255	failed	2.996	SSH 无路由
+2026-11-19T10:51:17.612+09:00	initial	CommandExecution	git archive / tar / sha256sum	semantic, yolop	143	failed	43.724	
+2026-11-19T10:51:17.674+09:00	initial	CommandExecution	git diff / tar	semantic, yolop	0	completed	0.0	
+2026-11-19T11:04:48.600+09:00	initial	CommandExecution	ssh		0	completed	0.372	
+2026-11-19T11:05:06.106+09:00	initial	CommandExecution	ssh / readlink	map_assist, semantic	0	completed	0.945	
+2026-11-19T11:05:10.766+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 node list / ros2 topic list / ros2 topic info / ssh / timeout	map_assist, semantic, yolop, A3, Concept, motor_controller, flag_stop	0	completed	17.136	
+2026-11-19T11:05:17.182+09:00	initial	CommandExecution	tar / ssh / sha256sum	semantic, yolop, A3	0	completed	0.176	
+2026-11-19T11:05:17.204+09:00	initial	CommandExecution	ssh	map_assist, semantic, flag_stop	0	completed	0.194	
+2026-11-19T11:05:33.722+09:00	initial	CommandExecution	gh api	semantic	0	completed	2.868	
+2026-11-19T11:05:36.085+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 pkg executables / ros2 launch / ssh / tar / sha256sum / colcon build	mapassist, map_assist, semantic, yolop, A3, Concept	0	completed	11.484	
+2026-11-19T11:05:55.116+09:00	initial	CommandExecution	gh api / ssh	semantic, yolop	0	completed	1.222	
+2026-11-19T11:05:57.097+09:00	initial	CommandExecution	ros2 launch / ssh / timeout / pgrep	mapassist, semantic, yolop, Concept	1	failed	17.487	
+2026-11-19T11:06:00.206+09:00	initial	CommandExecution	ssh	map_assist, semantic, yolop	0	completed	0.149	
+2026-11-19T11:06:21.754+09:00	initial	CommandExecution	ssh	semantic, yolop, Concept	0	completed	3.138	
+2026-11-19T11:06:22.035+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T11:06:28.163+09:00	initial	CommandExecution	ssh	map_assist, semantic, yolop	0	completed	0.155	
+2026-11-19T11:06:31.002+09:00	initial	CommandExecution	ros2 launch / ssh / timeout / pgrep	semantic, yolop, Concept	1	failed	25.178	Python 异常
+2026-11-19T11:06:35.763+09:00	initial	CommandExecution	ssh / sha256sum	semantic, A3	0	completed	0.131	
+2026-11-19T11:06:38.693+09:00	initial	CommandExecution	ssh		0	completed	0.132	
+2026-11-19T11:06:45.306+09:00	initial	CommandExecution	ssh / sha256sum	map_assist, semantic, yolop, lya	0	completed	0.283	
+2026-11-19T11:06:58.273+09:00	initial	CommandExecution	ros2 launch / ssh / timeout / pgrep	semantic, yolop, Concept	0	completed	7.994	
+2026-11-19T11:07:06.027+09:00	initial	CommandExecution	git status / ssh / tar	mapassist, map_assist, semantic, yolop, Concept, lya, stop_wait, flag_stop	0	completed	0.289	
+2026-11-19T11:09:05.904+09:00	initial	CommandExecution	gh api	map_assist, semantic, yolop, motor_controller, flag_stop	0	completed	0.621	
+2026-11-19T11:09:10.183+09:00	initial	CommandExecution	ssh / sha256sum	yolop, A4_lite, A3, Concept, motor_controller, stop_wait, flag_stop	255	failed	4.896	连接超时
+2026-11-19T11:09:15.687+09:00	initial	CommandExecution	gh api	yolop, A3, motor_controller, stop_wait, flag_stop	0	completed	1.432	
+2026-11-19T11:09:17.241+09:00	initial	CommandExecution	ssh / sha256sum	yolop, A4_lite, A3, Concept, motor_controller, flag_stop	255	failed	2.991	SSH 无路由
+2026-11-19T11:09:19.108+09:00	initial	CommandExecution	gh api	yolop, A3, Concept, motor_controller	0	completed	0.468	
+2026-11-19T11:09:23.340+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, A4Light, motor_controller, stop_wait, flag_stop	0	completed	0.0	
+2026-11-19T11:17:06.771+09:00	initial	CommandExecution	gh api	map_assist, semantic, yolop, motor_controller	0	completed	0.833	
+2026-11-19T11:17:08.921+09:00	initial	CommandExecution	ssh / readlink	yolop, A3, flag_stop	255	failed	2.982	SSH 无路由
+2026-11-19T11:17:12.191+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, flag_stop	0	completed	0.0	
+2026-11-19T11:17:15.879+09:00	initial	CommandExecution	git log	semantic, yolop, A3, flag_stop	0	completed	0.61	
+2026-11-19T11:17:25.080+09:00	initial	CommandExecution	git ls-remote	map_assist, semantic, yolop, A3	0	completed	0.386	
+2026-11-19T11:17:27.673+09:00	initial	CommandExecution	ssh	yolop, A3, flag_stop	255	failed	2.981	SSH 无路由
+2026-11-19T11:17:34.039+09:00	initial	CommandExecution	gh api	yolop, A3	0	completed	0.589	
+2026-11-19T11:17:38.833+09:00	initial	CommandExecution	gh api	semantic, yolop, A3, flag_stop	0	completed	0.435	
+2026-11-19T11:17:44.345+09:00	initial	CommandExecution	git status	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:17:50.920+09:00	initial	CommandExecution	timeout	semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:17:53.913+09:00	initial	CommandExecution	ssh	yolop, A3	255	failed	2.996	SSH 无路由
+2026-11-19T11:18:00.003+09:00	initial	CommandExecution	ros2 launch / pgrep / timeout	semantic, yolop, stop_wait	1	failed	2.659	Python 异常
+2026-11-19T11:18:05.306+09:00	initial	CommandExecution	ssh		255	failed	2.978	SSH 无路由
+2026-11-19T11:18:06.318+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:18:13.153+09:00	initial	CommandExecution	ros2 launch / pgrep / timeout	semantic, yolop, stop_wait	0	completed	2.943	
+2026-11-19T11:18:20.638+09:00	initial	CommandExecution	git status	mapassist, map_assist, semantic, yolop, A3, stop_wait, flag_stop	0	completed	0.0	
+2026-11-19T11:20:34.126+09:00	initial	CommandExecution	git status	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:20:42.986+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, lya, stop_wait	0	completed	0.0	
+2026-11-19T11:22:29.368+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, A3	0	completed	0.0	
+2026-11-19T11:22:34.425+09:00	initial	CommandExecution	gh api / ssh	semantic, yolop, A3	255	failed	4.985	SSH 无路由
+2026-11-19T11:22:39.899+09:00	initial	CommandExecution	gh api	map_assist, semantic, yolop, A3	0	completed	0.856	
+2026-11-19T11:22:47.411+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T11:22:53.233+09:00	initial	CommandExecution	git diff	map_assist, semantic, yolop, flag_stop	0	completed	0.0	
+2026-11-19T11:22:59.859+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	1	failed	1.806	
+2026-11-19T11:23:08.404+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop, stop_wait	0	completed	1.613	
+2026-11-19T11:23:19.678+09:00	initial	CommandExecution	gh api	semantic, yolop, A3	0	completed	1.235	
+2026-11-19T11:23:30.316+09:00	initial	CommandExecution	gh api	yolop, A3	1	failed	2.035	
+2026-11-19T11:23:39.034+09:00	initial	CommandExecution	git diff	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:23:47.114+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	1	failed	1.79	
+2026-11-19T11:23:48.280+09:00	initial	CommandExecution	ssh		255	failed	2.956	SSH 无路由
+2026-11-19T11:23:57.173+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	0	completed	2.006	
+2026-11-19T11:24:07.813+09:00	initial	CommandExecution	ros2 launch / pgrep / timeout	semantic, yolop, stop_wait	1	failed	6.892	Python 异常
+2026-11-19T11:24:24.425+09:00	initial	CommandExecution	ros2 launch / pgrep / timeout	semantic, yolop, stop_wait	0	completed	7.034	
+2026-11-19T11:24:28.920+09:00	initial	CommandExecution	ssh		255	failed	2.949	SSH 无路由
+2026-11-19T11:24:32.592+09:00	initial	CommandExecution	git diff / git status	semantic, yolop, A3	0	completed	0.012	
+2026-11-19T11:24:59.980+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:25:03.033+09:00	initial	CommandExecution	ssh		255	failed	2.949	SSH 无路由
+2026-11-19T11:25:10.054+09:00	initial	CommandExecution	git diff	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:25:19.247+09:00	initial	CommandExecution	pytest	map_assist, semantic, yolop	0	completed	1.775	
+2026-11-19T11:25:30.564+09:00	initial	CommandExecution	ros2 launch / pgrep / timeout	semantic, yolop, stop_wait	0	completed	6.161	
+2026-11-19T11:25:35.388+09:00	initial	CommandExecution	git diff / git apply	mapassist, semantic, yolop	0	completed	0.013	
+2026-11-19T11:25:46.639+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T11:25:49.625+09:00	initial	CommandExecution	ssh	map_assist, semantic	255	failed	2.986	SSH 无路由
+2026-11-19T11:27:39.662+09:00	initial	CommandExecution	git status	allnodes, semantic, yolop, motor_controller, odom	0	completed	0.0	
+2026-11-19T11:27:46.119+09:00	initial	CommandExecution	gh api	semantic, yolop, A3, flag_stop	0	completed	1.057	
+2026-11-19T11:27:46.811+09:00	initial	CommandExecution	ssh	semantic	255	failed	7.082	SSH 无路由
+2026-11-19T11:27:50.340+09:00	initial	CommandExecution	git ls-tree	allnodes, semantic, yolop	0	completed	0.0	
+2026-11-19T11:27:55.423+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, lya, lane_0215	0	completed	0.975	
+2026-11-19T11:28:05.453+09:00	initial	CommandExecution	colcon build	semantic, yolop	0	completed	1.398	
+2026-11-19T11:28:08.360+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, lya	0	completed	0.0	
+2026-11-19T11:28:15.833+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.182	
+2026-11-19T11:28:16.142+09:00	initial	CommandExecution	ssh	semantic	0	completed	0.492	
+2026-11-19T11:28:31.235+09:00	initial	CommandExecution	git apply / sha256sum / ssh / pgrep / tar / colcon build	mapassist, map_assist, semantic, yolop	0	completed	9.347	
+2026-11-19T11:28:35.487+09:00	initial	CommandExecution	ros2 pkg prefix / ssh / sha256sum	map_assist, semantic, yolop, A3, lya, motor_controller, flag_stop	0	completed	5.872	
+2026-11-19T11:28:53.469+09:00	initial	CommandExecution	ssh	lya	0	completed	2.728	
+2026-11-19T11:29:10.884+09:00	initial	CommandExecution	shell / 文件或脚本操作	mapassist, map_assist, semantic, yolop, lya, stop_wait	0	completed	0.0	
+2026-11-19T11:29:19.076+09:00	initial	CommandExecution	tar / sha256sum / ssh	semantic, yolop, Concept, stop_wait	0	completed	1.024	
+2026-11-19T11:29:40.123+09:00	initial	CommandExecution	ssh	semantic, yolop	0	completed	1.407	
+2026-11-19T11:29:45.981+09:00	initial	CommandExecution	ros2 launch / timeout / ssh / pgrep	mapassist, map_assist, semantic, yolop, A3, Concept, lya, motor_controller, stop_wait, odom	0	completed	14.414	
+2026-11-19T11:29:50.396+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T11:29:58.311+09:00	initial	CommandExecution	ssh / sha256sum	semantic, yolop, motor_controller, flag_stop	0	completed	0.127	
+2026-11-19T11:30:05.510+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.163	
+2026-11-19T11:30:25.186+09:00	initial	CommandExecution	ssh	flag_stop	0	completed	0.144	
+2026-11-19T11:30:26.642+09:00	initial	CommandExecution	ros2 service call / ssh / timeout / pgrep	yolop, Concept	0	completed	15.356	
+2026-11-19T11:30:34.716+09:00	initial	CommandExecution	ssh / pgrep	yolop, Concept	0	completed	0.595	
+2026-11-19T11:30:44.156+09:00	initial	CommandExecution	git status / ssh / tar	mapassist, map_assist, semantic, yolop, A3, Concept, lya, stop_wait, flag_stop	0	completed	0.372	
+2026-11-19T11:31:46.599+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T11:31:46.833+09:00	initial	CommandExecution	ssh	map_assist, semantic	0	completed	0.143	
+2026-11-19T11:32:47.006+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T11:33:35.343+09:00	initial	CommandExecution	git diff / timeout	map_assist, semantic, yolop, A3, zed, flag_stop	0	completed	0.0	
+2026-11-19T11:34:06.852+09:00	initial	CommandExecution	git apply / git diff / pytest	map_assist, semantic, yolop	0	completed	1.505	
+2026-11-19T11:34:45.049+09:00	initial	CommandExecution	git apply / tar / sha256sum / ssh / pgrep / timeout / colcon build	map_assist, semantic, yolop	0	completed	6.998	
+2026-11-19T11:35:47.671+09:00	initial	CommandExecution	ros2 launch / ssh / pytest / pgrep / timeout / sha256sum	map_assist, semantic, yolop, A3, Concept, zed, lya, motor_controller, flag_stop, odom	0	completed	21.154	
+2026-11-19T11:36:13.229+09:00	initial	CommandExecution	git status / ssh / tar	mapassist, semantic, yolop, A3, lya, flag_stop	0	completed	0.18	
+2026-11-19T11:36:35.916+09:00	initial	CommandExecution	zip		0	completed	0.0	
+2026-11-19T11:36:36.950+09:00	initial	CommandExecution	git status / git log / gh api	yolop	0	completed	0.921	
+2026-11-19T11:37:07.958+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, Concept	0	completed	0.0	
+2026-11-19T11:37:08.169+09:00	initial	CommandExecution	ssh / sha256sum	map_assist, semantic, motor_controller	0	completed	0.135	
+2026-11-19T11:37:54.366+09:00	initial	CommandExecution	git status / zip / sha256sum	mapassist, semantic, yolop, A4Light, A3, Concept, zed, lya, stop_wait, flag_stop, CameraInfo	1	failed	0.0	
+2026-11-19T11:38:02.346+09:00	initial	CommandExecution	git status	semantic, yolop	0	completed	0.0	
+2026-11-19T11:38:30.996+09:00	initial	FileChange	编辑工程文件	TEST_INDEX.md		completed		
+2026-11-19T11:38:47.454+09:00	initial	CommandExecution	git status / zip / sha256sum	semantic, yolop, A3, Concept, stop_wait, flag_stop	0	completed	0.0	
+2026-11-19T11:39:23.512+09:00	initial	CommandExecution	git apply / tar / sha256sum / zip	map_assist, semantic, yolop, Concept	0	completed	0.046	
+2026-11-19T11:39:47.563+09:00	initial	CommandExecution	gh api / git rev-parse / git add / git diff / git status / zip	semantic, yolop, Concept, zed	2	failed	2.238	
+2026-11-19T11:40:22.476+09:00	initial	CommandExecution	gh api / git rev-parse / git add / git diff / git status / zip	semantic, yolop, Concept, zed	0	completed	8.11	
+2026-11-19T12:37:38.360+09:00	initial	CommandExecution	ssh	Concept	255	failed	2.976	SSH 无路由
+2026-11-19T12:37:38.362+09:00	initial	CommandExecution	ros2 bag record / ssh	yolop, Concept, rosbag	255	failed	2.975	SSH 无路由
+2026-11-19T12:38:01.668+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, Concept	0	completed	0.0	
+2026-11-19T12:38:04.105+09:00	initial	CommandExecution	gh api	yolop, Concept	0	completed	2.349	
+2026-11-19T12:38:22.065+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	0.326	
+2026-11-19T12:39:01.469+09:00	initial	CommandExecution	ssh		0	completed	0.205	
+2026-11-19T12:39:05.098+09:00	initial	CommandExecution	ssh / sqlite3	Concept, rosbag	0	completed	3.831	
+2026-11-19T12:40:00.020+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T12:40:00.272+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	0.129	
+2026-11-19T12:40:17.557+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T12:40:19.658+09:00	initial	CommandExecution	ssh / sqlite3	Concept, rosbag	1	failed	1.997	Python 异常
+2026-11-19T12:40:23.007+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T12:40:41.470+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T12:40:46.396+09:00	initial	CommandExecution	ssh / sqlite3	Concept, rosbag	0	completed	4.835	
+2026-11-19T12:41:13.795+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T12:41:15.960+09:00	initial	CommandExecution	ssh / sqlite3 / zip	Concept, rosbag, motor_controller	0	completed	2.082	
+2026-11-19T12:41:22.749+09:00	initial	CommandExecution	shell / 文件或脚本操作	rosbag	0	completed	0.0	
+2026-11-19T12:41:45.760+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-no-auto-output.md		completed		
+2026-11-19T12:41:49.675+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T12:42:27.548+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T12:42:27.558+09:00	initial	CommandExecution	git status / git log / git worktree		0	completed	0.0	
+2026-11-19T12:42:27.560+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T12:42:33.141+09:00	initial	CommandExecution	shell / 文件或脚本操作		1	failed	0.0	
+2026-11-19T12:42:33.850+09:00	initial	CommandExecution	git ls-remote	yolop, Concept	0	completed	0.618	
+2026-11-19T12:42:40.696+09:00	initial	CommandExecution	unzip / zip		0	completed	0.0	
+2026-11-19T12:42:41.378+09:00	initial	CommandExecution	gh api		0	completed	0.597	
+2026-11-19T12:42:47.316+09:00	initial	CommandExecution	zip		0	completed	0.0	
+2026-11-19T12:42:52.316+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T12:43:03.694+09:00	initial	FileChange	编辑工程文件	README.md, TEST_INDEX.md		completed		
+2026-11-19T12:43:11.190+09:00	initial	CommandExecution	git add / git diff / git commit / zip / unzip	Concept	1	failed	0.0	
+2026-11-19T12:43:16.379+09:00	initial	CommandExecution	git add / git diff / git commit / git push / zip	yolop, Concept	128	failed	0.0	
+2026-11-19T12:43:20.203+09:00	initial	CommandExecution	git log / gh api / git status		0	completed	0.33	
+2026-11-19T12:43:27.674+09:00	initial	CommandExecution	git push / git rev-parse / git ls-remote	yolop, Concept	0	completed	2.392	
+2026-11-19T13:10:33.698+09:00	initial	CommandExecution	git status		0	completed	0.0	
+2026-11-19T13:10:33.707+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, zed	0	completed	0.0	
+2026-11-19T13:10:34.037+09:00	initial	CommandExecution	ssh	yolop, Concept, zed, motor_controller	0	completed	0.247	
+2026-11-19T13:10:44.746+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, zed	0	completed	0.0	
+2026-11-19T13:10:45.002+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.164	
+2026-11-19T13:10:45.344+09:00	initial	CommandExecution	git ls-tree / git show	yolop, Concept	0	completed	0.504	
+2026-11-19T13:10:56.947+09:00	initial	CommandExecution	git show	yolop, Concept	0	completed	0.0	
+2026-11-19T13:10:56.949+09:00	initial	CommandExecution	git show	yolop, Concept	0	completed	0.0	
+2026-11-19T13:10:57.373+09:00	initial	CommandExecution	git status / git rev-parse / ssh / tegrastats / nvpmodel	yolop, Concept	0	completed	0.335	
+2026-11-19T13:10:57.555+09:00	initial	CommandExecution	git show	yolop, Concept, zed	0	completed	0.518	
+2026-11-19T13:11:05.783+09:00	initial	CommandExecution	git show	yolop, Concept	0	completed	0.0	
+2026-11-19T13:11:06.017+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.146	
+2026-11-19T13:11:11.952+09:00	initial	CommandExecution	git ls-tree / git show / git ls-remote	allnodes, Concept	0	completed	0.527	
+2026-11-19T13:11:21.446+09:00	initial	CommandExecution	git show	Concept	0	completed	0.666	
+2026-11-19T13:11:25.608+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:12:19.744+09:00	initial	FileChange	编辑工程文件	latency_camera.launch.py, run_probe.bash, latency_probe.py		completed		
+2026-11-19T13:12:40.484+09:00	initial	CommandExecution	git ls-tree	Concept	0	completed	0.0	
+2026-11-19T13:12:40.680+09:00	initial	CommandExecution	ssh / tegrastats	Concept, zed	0	completed	0.112	
+2026-11-19T13:13:03.139+09:00	initial	CommandExecution	ssh / scp	Concept	0	completed	35.411	
+2026-11-19T13:13:10.455+09:00	initial	FileChange	编辑工程文件	compare_predictor.py		completed		
+2026-11-19T13:13:31.864+09:00	initial	CommandExecution	ssh / tegrastats	Concept	0	completed	0.22	
+2026-11-19T13:13:47.171+09:00	initial	CommandExecution	scp / ssh / timeout	Concept	0	completed	25.007	
+2026-11-19T13:13:57.870+09:00	initial	FileChange	编辑工程文件	compare_predictor.py		completed		
+2026-11-19T13:14:25.613+09:00	initial	CommandExecution	scp / ssh / timeout	Concept	0	completed	19.745	
+2026-11-19T13:14:27.985+09:00	initial	FileChange	编辑工程文件	decoder_profile.py		completed		
+2026-11-19T13:14:52.387+09:00	initial	CommandExecution	scp / ssh / timeout	Concept	0	completed	9.998	
+2026-11-19T13:14:53.569+09:00	initial	FileChange	编辑工程文件	compare_predictor.py		completed		
+2026-11-19T13:15:03.606+09:00	initial	FileChange	编辑工程文件	compare_predictor.py		completed		
+2026-11-19T13:15:26.253+09:00	initial	CommandExecution	scp / ssh / timeout	Concept	0	completed	14.592	
+2026-11-19T13:15:36.854+09:00	initial	FileChange	编辑工程文件	png_probe.py		completed		
+2026-11-19T13:16:05.626+09:00	initial	CommandExecution	scp / ssh / timeout	Concept	1	failed	1.424	
+2026-11-19T13:16:08.870+09:00	initial	CommandExecution	git worktree / git status	Concept	0	completed	4.668	
+2026-11-19T13:16:22.115+09:00	initial	CommandExecution	py_compile		1	failed	0.0	
+2026-11-19T13:16:37.523+09:00	initial	FileChange	编辑工程文件	png_probe.py, inference.py, model.py		completed		
+2026-11-19T13:16:48.876+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T13:17:02.826+09:00	initial	CommandExecution	py_compile / scp / ssh / timeout	Concept	0	completed	13.871	
+2026-11-19T13:17:04.687+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T13:17:22.003+09:00	initial	FileChange	编辑工程文件	run_probe.bash, latency_probe.py		completed		
+2026-11-19T13:17:44.374+09:00	initial	FileChange	编辑工程文件	frame_codec.py		completed		
+2026-11-19T13:17:54.923+09:00	initial	CommandExecution	py_compile		0	completed	0.0	
+2026-11-19T13:17:54.979+09:00	initial	CommandExecution	git diff / git add / git bundle / git show / py_compile	yolop, Concept	0	completed	0.0	
+2026-11-19T13:18:41.116+09:00	initial	FileChange	编辑工程文件	real_parity.py		completed		
+2026-11-19T13:18:49.304+09:00	initial	CommandExecution	py_compile / scp	Concept	0	completed	0.215	
+2026-11-19T13:18:53.833+09:00	initial	CommandExecution	git rev-parse / git diff / git bundle / git fetch / scp / ssh / pgrep	yolop, A3, Concept, zed, motor_controller	0	completed	41.285	
+2026-11-19T13:19:26.056+09:00	initial	CommandExecution	git show / git status	yolop, Concept	0	completed	0.0	
+2026-11-19T13:19:26.244+09:00	initial	CommandExecution	ssh	Concept, zed	0	completed	0.11	
+2026-11-19T13:19:37.090+09:00	initial	CommandExecution	scp	Concept	127	failed	0.0	
+2026-11-19T13:19:49.566+09:00	initial	CommandExecution	scp	Concept	255	failed	4.9	
+2026-11-19T13:20:27.841+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-latency-fix.md		completed		
+2026-11-19T13:20:47.450+09:00	initial	CommandExecution	ssh	Concept	255	failed	4.874	连接超时
+2026-11-19T13:20:53.458+09:00	initial	CommandExecution	shell / 文件或脚本操作		1	failed	0.0	路径不存在
+2026-11-19T13:21:08.700+09:00	initial	CommandExecution	pytest	Concept	1	failed	0.0	
+2026-11-19T13:21:09.678+09:00	initial	CommandExecution	ping		0	completed	0.895	
+2026-11-19T13:21:19.818+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T13:21:19.901+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T13:21:22.872+09:00	initial	CommandExecution	ssh	Concept	255	failed	2.97	SSH 无路由
+2026-11-19T13:21:41.198+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	4.906	
+2026-11-19T13:21:47.076+09:00	initial	CommandExecution	pytest	yolop, Concept	0	completed	10.784	
+2026-11-19T13:21:53.288+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T13:21:56.280+09:00	initial	CommandExecution	ssh	Concept	255	failed	2.942	SSH 无路由
+2026-11-19T13:22:15.283+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-latency-fix.md		completed		
+2026-11-19T13:22:28.534+09:00	initial	CommandExecution	git status / git diff / git bundle	Concept	0	completed	0.0	
+2026-11-19T13:22:31.544+09:00	initial	CommandExecution	git rev-parse / ssh	Concept	255	failed	2.931	SSH 无路由
+2026-11-19T13:40:05.371+09:00	initial	CommandExecution	git rev-parse / ssh	Concept, zed, motor_controller	255	failed	2.949	SSH 无路由
+2026-11-19T13:40:13.344+09:00	initial	CommandExecution	ping		1	failed	1.953	
+2026-11-19T13:40:14.394+09:00	initial	CommandExecution	ssh	Concept	255	failed	3.003	SSH 无路由
+2026-11-19T13:40:20.824+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-latency-fix.md		completed		
+2026-11-19T13:41:44.209+09:00	initial	CommandExecution	git rev-parse / ssh	Concept, zed, motor_controller	0	completed	0.317	
+2026-11-19T13:41:54.815+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:41:57.758+09:00	initial	CommandExecution	scp	Concept	0	completed	2.895	
+2026-11-19T13:42:08.883+09:00	initial	CommandExecution	zip		0	completed	0.157	
+2026-11-19T13:42:27.068+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-latency-fix.md		completed		
+2026-11-19T13:55:55.918+09:00	initial	CommandExecution	git status / git log	Concept	0	completed	0.0	
+2026-11-19T13:55:56.685+09:00	initial	CommandExecution	git status / ssh	Concept, zed, rosbag, motor_controller	0	completed	0.733	
+2026-11-19T13:56:04.722+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:56:04.730+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:56:04.907+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.125	
+2026-11-19T13:56:14.657+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T13:56:14.665+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T13:57:01.313+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T13:57:02.281+09:00	initial	CommandExecution	ssh		0	completed	0.921	
+2026-11-19T13:57:42.226+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:57:42.496+09:00	initial	CommandExecution	ssh		0	completed	0.22	
+2026-11-19T13:58:03.336+09:00	initial	CommandExecution	ros2 launch / ros2 service call / ssh / pgrep / timeout	Concept	0	completed	2.603	
+2026-11-19T13:58:20.196+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:58:58.651+09:00	initial	FileChange	编辑工程文件	window.py, node.py, test_candidate_overlay.py, bringup.py, node.py, concept.launch.py		completed		
+2026-11-19T13:59:30.176+09:00	initial	CommandExecution	git status / git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T13:59:30.716+09:00	initial	CommandExecution	ssh / readlink	yolop, Concept	0	completed	0.522	
+2026-11-19T13:59:36.795+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T13:59:42.350+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T13:59:55.116+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T14:00:10.826+09:00	initial	CommandExecution	ros2 run / git diff / git status	yolop, Concept	0	completed	0.0	
+2026-11-19T14:00:17.950+09:00	initial	CommandExecution	git add / git diff / git bundle / git show	A3, Concept	0	completed	0.028	
+2026-11-19T14:00:42.740+09:00	initial	CommandExecution	ssh	Concept	2	failed	0.165	路径不存在
+2026-11-19T14:00:58.279+09:00	initial	CommandExecution	git worktree / git fetch / ssh	Concept	0	completed	0.138	
+2026-11-19T14:01:03.876+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.135	
+2026-11-19T14:01:18.169+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / git bundle / git fetch / git worktree / ssh / scp / pytest	yolop, Concept	128	failed	43.454	
+2026-11-19T14:01:41.645+09:00	initial	CommandExecution	ssh	Concept	0	completed	2.288	
+2026-11-19T14:01:47.576+09:00	initial	CommandExecution	git status / ssh	Concept	0	completed	0.225	
+2026-11-19T14:02:06.180+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / git archive / ssh / tar / pytest	yolop, Concept	2	failed	48.187	
+2026-11-19T14:02:26.684+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.875	
+2026-11-19T14:02:41.365+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / tar / scp / ssh / pytest	yolop, Concept	0	completed	35.927	
+2026-11-19T14:03:03.514+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	5.591	
+2026-11-19T14:03:21.889+09:00	initial	CommandExecution	ssh / timeout / scp	Concept	0	completed	4.409	
+2026-11-19T14:03:59.921+09:00	initial	FileChange	编辑工程文件	2026-11-19-concept-field-followup.md		completed		
+2026-11-19T14:10:48.891+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 run / ssh / timeout	yolop, Concept	0	completed	6.322	
+2026-11-19T14:11:26.829+09:00	initial	CommandExecution	scp	Concept	0	completed	25.73	
+2026-11-19T14:11:59.963+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, CameraInfo	0	completed	0.0	
+2026-11-19T14:13:27.631+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:13:43.427+09:00	initial	CommandExecution	gh api		0	completed	2.957	
+2026-11-19T14:13:50.943+09:00	initial	CommandExecution	gh api		0	completed	1.31	
+2026-11-19T14:13:51.087+09:00	initial	CommandExecution	gh api		0	completed	1.457	
+2026-11-19T14:13:58.356+09:00	initial	CommandExecution	gh api	zed	0	completed	2.722	
+2026-11-19T14:13:58.391+09:00	initial	CommandExecution	gh api	zed	0	completed	2.758	
+2026-11-19T14:13:58.719+09:00	initial	CommandExecution	gh api	zed	0	completed	3.08	
+2026-11-19T14:13:58.899+09:00	initial	CommandExecution	gh api	zed	0	completed	3.261	
+2026-11-19T14:14:06.182+09:00	initial	CommandExecution	gh api		0	completed	0.559	
+2026-11-19T14:14:06.597+09:00	initial	CommandExecution	shell / 文件或脚本操作	zed	0	completed	0.24	
+2026-11-19T14:14:06.602+09:00	initial	CommandExecution	shell / 文件或脚本操作	zed	0	completed	0.236	
+2026-11-19T14:14:06.605+09:00	initial	CommandExecution	shell / 文件或脚本操作	zed	0	completed	0.244	
+2026-11-19T14:14:06.609+09:00	initial	CommandExecution	shell / 文件或脚本操作	zed	0	completed	0.234	
+2026-11-19T14:14:14.360+09:00	initial	CommandExecution	gh api	zed	0	completed	1.027	
+2026-11-19T14:14:32.523+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:14:46.481+09:00	initial	CommandExecution	gh api	zed	0	completed	0.864	
+2026-11-19T14:15:02.758+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept, zed, CameraInfo	0	completed	0.128	
+2026-11-19T14:15:33.402+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ssh / zip / pgrep / timeout / pytest	yolop, Concept, zed, motor_controller	255	failed	3381.196	
+2026-11-19T14:16:11.617+09:00	initial	CommandExecution	ros2 pkg prefix / ssh / timeout	Concept	0	completed	5.038	
+2026-11-19T14:16:18.945+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T14:18:33.001+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T14:18:33.013+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T14:18:33.220+09:00	initial	CommandExecution	ros2 launch / ssh	yolop, Concept	2	failed	0.159	
+2026-11-19T14:18:50.802+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T14:19:22.282+09:00	initial	CommandExecution	git diff	yolop, Concept, CameraInfo	0	completed	0.0	
+2026-11-19T14:19:37.516+09:00	initial	FileChange	编辑工程文件	node.py, window.py, test_camera_registration.py		completed		
+2026-11-19T14:19:45.205+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T14:20:11.445+09:00	initial	CommandExecution	git diff / git add / git apply / pytest / scp / ssh	yolop, Concept, zed	255	failed	4.646	
+2026-11-19T14:20:34.395+09:00	initial	CommandExecution	git apply / tar / ssh / pytest	yolop, Concept	1	failed	2.799	
+2026-11-19T14:20:44.354+09:00	initial	CommandExecution	ros2 launch / ros2 bag record / ssh	Concept, zed, motor_controller	0	completed	0.173	
+2026-11-19T14:21:08.869+09:00	initial	FileChange	编辑工程文件	verify_honda_live.py		completed		
+2026-11-19T14:21:38.944+09:00	initial	CommandExecution	ssh	Concept, zed	0	completed	2.236	
+2026-11-19T14:22:02.137+09:00	initial	CommandExecution	ssh	Concept, zed	0	completed	0.143	
+2026-11-19T14:22:11.175+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / tar / ssh / pgrep / timeout	yolop, Concept, zed, motor_controller	1	failed	45.374	Python 异常
+2026-11-19T14:22:25.282+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	4.403	
+2026-11-19T14:22:40.667+09:00	initial	FileChange	编辑工程文件	geometry.py		completed		
+2026-11-19T14:22:52.867+09:00	initial	FileChange	编辑工程文件	verify_honda_live.py		completed		
+2026-11-19T14:23:15.421+09:00	initial	FileChange	编辑工程文件	node.py		completed		
+2026-11-19T14:23:27.600+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.354	
+2026-11-19T14:23:32.462+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / git diff / git add / git apply / tar / ssh / pytest / pgrep	yolop, Concept, zed, motor_controller, CameraInfo	0	completed	16.866	
+2026-11-19T14:23:49.573+09:00	initial	CommandExecution	ssh	yolop, Concept, zed, motor_controller, CameraInfo	0	completed	0.412	
+2026-11-19T14:33:58.802+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T14:33:59.031+09:00	initial	CommandExecution	ssh	Concept, zed, motor_controller	0	completed	0.214	
+2026-11-19T14:34:08.128+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:35:05.756+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T14:35:13.485+09:00	initial	CommandExecution	ssh / pgrep	yolop, Concept	0	completed	0.203	
+2026-11-19T14:35:20.582+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:35:36.107+09:00	initial	CommandExecution	git diff / git apply / ssh	yolop, Concept	0	completed	0.209	
+2026-11-19T14:35:47.735+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	4.216	
+2026-11-19T14:35:48.870+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.143	
+2026-11-19T14:36:27.647+09:00	initial	CommandExecution	git diff / git log / ssh	yolop, Concept, zed	0	completed	0.154	
+2026-11-19T14:36:35.057+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:36:36.369+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 run / ros2 launch / ssh / pgrep	yolop, Concept, zed, motor_controller	0	completed	15.013	
+2026-11-19T14:36:42.683+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.149	
+2026-11-19T14:36:52.535+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:36:57.649+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:37:19.288+09:00	initial	CommandExecution	git diff / git apply / git add / git rev-parse / ssh / pgrep / readlink	yolop, Concept, zed, motor_controller, CameraInfo	0	completed	0.803	
+2026-11-19T14:37:37.468+09:00	initial	CommandExecution	git status / ssh / sha256sum	yolop, Concept, zed, CameraInfo	0	completed	0.176	
+2026-11-19T14:38:54.650+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:38:54.922+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.187	
+2026-11-19T14:39:01.138+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.163	
+2026-11-19T14:39:08.923+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	allnodes, A3, Concept, VectorNav	0	completed	1.427	
+2026-11-19T14:39:17.112+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	allnodes, A3, Concept	0	completed	1.414	
+2026-11-19T14:39:58.806+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.16	
+2026-11-19T14:40:03.611+09:00	initial	CommandExecution	ssh	Concept, VectorNav	0	completed	0.136	
+2026-11-19T14:40:10.082+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / tar / ssh / pgrep	allnodes, yolop, Concept, zed, VectorNav, motor_controller, can0	1	failed	16.995	Python 异常
+2026-11-19T14:40:32.301+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, zed, VectorNav, can0	0	completed	0.0	
+2026-11-19T14:40:40.318+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ssh / pgrep	Concept, zed, VectorNav, motor_controller	0	completed	17.019	
+2026-11-19T14:40:52.062+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.197	
+2026-11-19T14:41:13.181+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept, odom	0	completed	0.0	
+2026-11-19T14:41:18.924+09:00	initial	CommandExecution	ros2 pkg prefix / ssh / readlink	allnodes, Concept, VectorNav, odom	0	completed	5.69	
+2026-11-19T14:41:30.262+09:00	initial	CommandExecution	ssh	yolop, Concept, VectorNav, odom	0	completed	1.132	
+2026-11-19T14:41:35.383+09:00	initial	CommandExecution	ssh	odom	0	completed	0.151	
+2026-11-19T14:41:45.372+09:00	initial	CommandExecution	ssh	Concept, VectorNav, odom	0	completed	0.191	
+2026-11-19T14:47:28.710+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T14:47:29.160+09:00	initial	CommandExecution	ssh	Concept, motor_controller	0	completed	0.363	
+2026-11-19T14:47:36.727+09:00	initial	CommandExecution	ssh	yolop, Concept, rosbag	0	completed	0.168	
+2026-11-19T14:47:42.721+09:00	initial	CommandExecution	ssh / timeout	Concept, rosbag	0	completed	0.159	
+2026-11-19T14:48:10.884+09:00	initial	CommandExecution	sqlite3 / zip / ssh	Concept, zed, rosbag	0	completed	3.469	
+2026-11-19T14:48:14.752+09:00	initial	CommandExecution	timeout	yolop, Concept, auto_timeout	0	completed	0.0	
+2026-11-19T14:48:22.302+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:48:45.124+09:00	initial	CommandExecution	zip / ssh	Concept, rosbag, motor_controller, auto_timeout	0	completed	3.489	
+2026-11-19T14:48:52.288+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.162	
+2026-11-19T14:49:05.963+09:00	initial	CommandExecution	zip / timeout	Concept	0	completed	0.0	
+2026-11-19T14:49:10.555+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:49:14.165+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T14:49:36.692+09:00	initial	CommandExecution	timeout	Concept, auto_timeout	0	completed	0.337	
+2026-11-19T14:51:01.551+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:51:01.831+09:00	initial	CommandExecution	ssh	yolop, Concept, zed, motor_controller	0	completed	0.19	
+2026-11-19T14:51:10.590+09:00	initial	CommandExecution	ssh	yolop, Concept, zed	0	completed	0.175	
+2026-11-19T14:51:31.792+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	allnodes, yolop, Concept, zed	0	completed	1.437	
+2026-11-19T14:52:33.679+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.158	
+2026-11-19T14:52:40.616+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.163	
+2026-11-19T14:53:05.073+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept, zed	0	completed	0.309	
+2026-11-19T14:53:05.255+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / timeout / pgrep / ssh / tar	allnodes, yolop, Concept, zed, VectorNav, motor_controller, can0	1	failed	39.397	Python 异常
+2026-11-19T14:53:31.613+09:00	initial	CommandExecution	timeout / zip / ssh	yolop, Concept	0	completed	0.204	
+2026-11-19T14:53:35.564+09:00	initial	CommandExecution	ros2 launch / timeout / ssh / pgrep	Concept	0	completed	46.207	
+2026-11-19T14:53:53.189+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept	0	completed	0.258	
+2026-11-19T14:54:08.924+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept	0	completed	0.788	
+2026-11-19T14:54:15.587+09:00	initial	CommandExecution	ssh / timeout	allnodes, Concept, zed	1	failed	0.163	
+2026-11-19T14:54:20.795+09:00	initial	CommandExecution	timeout / tar / ssh	Concept	0	completed	37.876	
+2026-11-19T14:54:27.232+09:00	initial	CommandExecution	timeout / ssh	Concept	0	completed	4.793	
+2026-11-19T14:54:45.455+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept, zed	0	completed	1.708	
+2026-11-19T14:55:26.404+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept, zed	0	completed	5.018	
+2026-11-19T14:55:37.017+09:00	initial	CommandExecution	timeout / ssh	Concept, zed	255	failed	42.159	SSH 无路由
+2026-11-19T14:55:48.571+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:56:00.068+09:00	initial	CommandExecution	ping	zed, odom	0	completed	1.06	
+2026-11-19T14:56:21.928+09:00	initial	CommandExecution	ssh / timeout	Concept, zed	0	completed	0.208	
+2026-11-19T14:56:28.519+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.342	
+2026-11-19T14:56:37.229+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T14:56:41.972+09:00	initial	CommandExecution	timeout / ssh	Concept	0	completed	36.326	
+2026-11-19T14:57:27.132+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept	0	completed	11.821	
+2026-11-19T14:57:29.584+09:00	initial	CommandExecution	timeout / ssh	Concept	0	completed	38.139	
+2026-11-19T14:57:52.766+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept	0	completed	0.509	
+2026-11-19T14:58:02.708+09:00	initial	CommandExecution	ssh	yolop, Concept, zed, motor_controller	0	completed	0.265	
+2026-11-19T14:58:11.022+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.264	
+2026-11-19T14:58:23.657+09:00	initial	CommandExecution	git status	yolop, Concept, zed	0	completed	0.0	
+2026-11-19T14:58:57.897+09:00	initial	CommandExecution	ros2 launch / git diff / git apply / timeout / ssh	yolop, Concept, zed	0	completed	4.733	
+2026-11-19T14:59:20.713+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.219	
+2026-11-19T14:59:33.390+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	2.336	
+2026-11-19T14:59:41.799+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:00:27.449+09:00	initial	CommandExecution	git diff / timeout / ssh	yolop, Concept, motor_controller	0	completed	0.849	
+2026-11-19T15:00:38.343+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.19	
+2026-11-19T15:01:07.407+09:00	initial	CommandExecution	git diff / compileall / timeout / ssh	yolop, Concept, motor_controller	0	completed	0.483	
+2026-11-19T15:01:16.180+09:00	initial	CommandExecution	git status / ssh / timeout	yolop, Concept	0	completed	0.351	
+2026-11-19T15:02:10.277+09:00	initial	CommandExecution	timeout / ssh	Concept, zed, VectorNav, auto_timeout	2	failed	0.335	
+2026-11-19T15:02:25.104+09:00	initial	CommandExecution	git diff / timeout / zip / ssh	yolop, Concept	0	completed	0.741	
+2026-11-19T15:02:30.578+09:00	initial	CommandExecution	timeout / ssh	Concept, zed	0	completed	202.453	
+2026-11-19T15:02:43.067+09:00	initial	CommandExecution	timeout / ssh	Concept	0	completed	0.994	
+2026-11-19T15:02:48.864+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.176	
+2026-11-19T15:03:07.276+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.197	
+2026-11-19T15:03:12.731+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	14.159	
+2026-11-19T15:03:39.030+09:00	initial	CommandExecution	git diff / timeout / ssh	yolop, Concept	0	completed	0.242	
+2026-11-19T15:03:57.534+09:00	initial	CommandExecution	git diff / git apply / timeout / ssh / pytest	yolop, Concept, zed	130	failed	140.088	Python 异常
+2026-11-19T15:03:59.306+09:00	initial	CommandExecution	timeout / ssh	Concept	0	completed	0.195	
+2026-11-19T15:04:06.691+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	0	completed	0.14	
+2026-11-19T15:04:33.465+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.16	
+2026-11-19T15:04:36.916+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	10.362	
+2026-11-19T15:04:49.942+09:00	initial	CommandExecution	ssh / nvpmodel / tegrastats		0	completed	1.393	
+2026-11-19T15:05:31.741+09:00	initial	CommandExecution	timeout / ssh	yolop, Concept, auto_timeout	0	completed	1.158	
+2026-11-19T15:05:43.161+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept, motor_controller	0	completed	0.166	
+2026-11-19T15:06:09.942+09:00	initial	CommandExecution	ssh	Concept	0	completed	1.488	
+2026-11-19T15:06:55.567+09:00	initial	CommandExecution	git diff	yolop, Concept, auto_timeout	0	completed	0.0	
+2026-11-19T15:07:12.808+09:00	initial	CommandExecution	ssh / timeout / readlink	yolop, Concept	0	completed	0.17	
+2026-11-19T15:07:25.167+09:00	initial	CommandExecution	git apply / ssh / timeout	Concept, zed	0	completed	211.983	
+2026-11-19T15:07:34.906+09:00	initial	CommandExecution	git diff / timeout / tar / ssh	yolop, Concept	0	completed	1.192	
+2026-11-19T15:08:13.445+09:00	initial	CommandExecution	git diff / ssh / timeout	yolop, Concept, auto_timeout	0	completed	0.163	
+2026-11-19T15:08:17.660+09:00	initial	CommandExecution	git apply / timeout / tar / ssh / pgrep / pytest	yolop, Concept, zed, VectorNav, motor_controller	1	failed	11.42	Python 异常
+2026-11-19T15:08:58.429+09:00	initial	CommandExecution	git diff / timeout / ssh	yolop, Concept	0	completed	3.014	
+2026-11-19T15:09:03.712+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T15:09:10.073+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept	255	failed	38.806	SSH 无路由
+2026-11-19T15:09:47.520+09:00	initial	CommandExecution	git status	yolop, Concept, auto_timeout	0	completed	0.0	
+2026-11-19T15:10:01.704+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:10:15.402+09:00	initial	CommandExecution	timeout		0	completed	4.917	
+2026-11-19T15:10:38.685+09:00	initial	CommandExecution	git diff / timeout	yolop, Concept, zed, auto_timeout	0	completed	0.286	
+2026-11-19T15:11:05.402+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T15:11:07.362+09:00	initial	CommandExecution	ping		0	completed	1.897	
+2026-11-19T15:11:15.207+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.02	
+2026-11-19T15:11:22.900+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.243	
+2026-11-19T15:11:33.471+09:00	initial	CommandExecution	ssh / timeout	yolop, Concept, zed	1	failed	124.238	SSH 无路由 / 连接超时
+2026-11-19T15:11:37.529+09:00	initial	CommandExecution	git diff / git add / git rev-parse / pytest / timeout	yolop, Concept	0	completed	0.62	
+2026-11-19T15:12:01.873+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, A3, Concept	0	completed	2.214	
+2026-11-19T15:12:21.437+09:00	initial	CommandExecution	ssh		0	completed	2.974	
+2026-11-19T15:12:32.093+09:00	initial	CommandExecution	timeout	Concept	0	completed	0.0	
+2026-11-19T15:12:34.086+09:00	initial	CommandExecution	ping	A3	0	completed	1.9	
+2026-11-19T15:12:56.703+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, Concept	0	completed	0.0	
+2026-11-19T15:13:02.153+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:13:08.666+09:00	initial	CommandExecution	ros2 launch	allnodes, semantic, yolop	0	completed	0.0	
+2026-11-19T15:13:17.892+09:00	initial	CommandExecution	shell / 文件或脚本操作	allnodes, semantic, yolop, A3	0	completed	0.0	
+2026-11-19T15:13:24.173+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:13:48.224+09:00	initial	CommandExecution	ssh / sha256sum	semantic, Concept	0	completed	2.999	
+2026-11-19T15:13:54.340+09:00	initial	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, stop_wait	0	completed	0.0	
+2026-11-19T15:14:10.072+09:00	initial	CommandExecution	git status / timeout	mapassist, semantic, yolop, Concept	0	completed	0.0	
+2026-11-19T15:14:59.668+09:00	initial	CommandExecution	ssh	semantic	0	completed	0.353	
+2026-11-19T15:15:09.326+09:00	initial	CommandExecution	ros2 launch / ssh / desktop-file-validate	mapassist, semantic	0	completed	4.223	
+2026-11-19T15:15:13.722+09:00	initial	CommandExecution	ssh	mapassist, semantic, Concept	0	completed	0.709	
+2026-11-19T15:17:30.862+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:17:32.841+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:18:37.640+09:00	initial	CommandExecution	git log / timeout	yolop, Concept	0	completed	0.0	
+2026-11-19T15:18:37.882+09:00	initial	CommandExecution	ssh	semantic, Concept, zed, motor_controller	0	completed	0.154	
+2026-11-19T15:18:54.011+09:00	initial	CommandExecution	git diff / sha256sum / ssh	semantic, yolop, Concept	0	completed	0.37	
+2026-11-19T15:18:56.780+09:00	initial	CommandExecution	ros2 launch / git show / ssh / py_compile / sha256sum / pytest / timeout	semantic, yolop, Concept	0	completed	13.704	
+2026-11-19T15:18:59.146+09:00	initial	CommandExecution	timeout	allnodes, Concept	0	completed	0.0	
+2026-11-19T15:33:28.713+09:00	initial	CommandExecution	ros2 launch / ros2 bag / ssh	map_assist, semantic, yolop, motor_controller	0	completed	0.248	
+2026-11-19T15:33:44.486+09:00	initial	CommandExecution	ros2 launch / ssh / timeout	allnodes, mapassist, map_assist, semantic, yolop, A3, lya, stop_wait, flag_stop	0	completed	7.275	
+2026-11-19T15:33:47.257+09:00	initial	CommandExecution	ssh / tar	allnodes, semantic, Concept	0	completed	0.358	
+2026-11-19T15:33:50.965+09:00	initial	CommandExecution	ros2 bag / ssh	semantic, Concept, rosbag	0	completed	0.214	
+2026-11-19T15:33:56.495+09:00	initial	CommandExecution	ssh / readlink	semantic, A3, rosbag, motor_controller	0	completed	1.286	
+2026-11-19T15:34:00.218+09:00	initial	CommandExecution	ros2 launch / ssh	semantic, Concept, motor_controller, stop_wait	0	completed	0.214	
+2026-11-19T15:34:02.974+09:00	initial	CommandExecution	ssh	semantic, yolop, A3	0	completed	0.142	
+2026-11-19T15:34:05.728+09:00	initial	CommandExecution	ssh	yolop, A3	0	completed	0.187	
+2026-11-19T15:34:10.720+09:00	initial	CommandExecution	ssh	allnodes, mapassist, map_assist, semantic, A3, Concept, stop_wait, flag_stop	0	completed	0.152	
+2026-11-19T15:34:48.070+09:00	initial	CommandExecution	ssh	semantic, motor_controller, stop_wait	0	completed	0.162	
+2026-11-19T15:34:50.780+09:00	initial	CommandExecution	ssh	semantic, motor_controller	0	completed	0.174	
+2026-11-19T15:34:55.074+09:00	initial	CommandExecution	ssh	semantic, yolop, A3	0	completed	0.206	
+2026-11-19T15:34:57.850+09:00	initial	CommandExecution	ssh	allnodes, semantic, motor_controller	0	completed	0.181	
+2026-11-19T15:35:06.521+09:00	initial	CommandExecution	ssh	allnodes, semantic, A3	0	completed	0.136	
+2026-11-19T15:35:19.744+09:00	initial	CommandExecution	ssh	semantic, A3	0	completed	0.133	
+2026-11-19T15:35:28.801+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ssh	semantic, yolop, A3, Concept, zed	0	completed	26.201	
+2026-11-19T15:35:33.727+09:00	initial	CommandExecution	ssh / readlink	allnodes, map_assist, semantic, A3, zed	0	completed	0.142	
+2026-11-19T15:35:36.216+09:00	initial	CommandExecution	ssh	map_assist, semantic, A3	2	failed	0.139	路径不存在
+2026-11-19T15:35:44.226+09:00	initial	CommandExecution	ssh / tar / compileall	map_assist, semantic, A3, Concept, stop_wait	0	completed	0.306	
+2026-11-19T15:35:56.793+09:00	initial	CommandExecution	ssh	semantic	0	completed	1.314	
+2026-11-19T15:36:00.817+09:00	initial	CommandExecution	ssh	map_assist, semantic	0	completed	1.678	
+2026-11-19T15:36:10.636+09:00	initial	CommandExecution	ros2 launch / ros2 run / ssh / tar / sha256sum / timeout	allnodes, map_assist, semantic, Concept, motor_controller, stop_wait, can0	0	completed	18.498	
+2026-11-19T15:36:15.034+09:00	initial	CommandExecution	ssh	map_assist, semantic, zed, motor_controller	0	completed	0.205	
+2026-11-19T15:36:39.210+09:00	initial	CommandExecution	ssh	semantic	0	completed	0.508	
+2026-11-19T15:36:39.387+09:00	initial	CommandExecution	ros2 launch / ssh	allnodes, semantic, A3	0	completed	3.446	
+2026-11-19T15:36:40.409+09:00	initial	CommandExecution	ros2 launch / ros2 run / ssh / tar / timeout / sha256sum	map_assist, semantic, Concept, motor_controller	0	completed	20.075	
+2026-11-19T15:36:54.657+09:00	initial	CommandExecution	ros2 launch	allnodes, mapassist, map_assist, semantic, yolop, A3, Concept, zed, lya, stop_wait	0	completed	0.0	
+2026-11-19T15:36:58.233+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 launch / ssh / pgrep	semantic, yolop, A3, Concept, zed	0	completed	33.43	
+2026-11-19T15:37:01.654+09:00	initial	CommandExecution	ssh / tar	map_assist, semantic, A3, Concept, zed, motor_controller	0	completed	0.415	
+2026-11-19T15:37:41.616+09:00	initial	CommandExecution	ros2 pkg executables / ssh	lya, oa_2	0	completed	1.706	
+2026-11-19T15:37:46.614+09:00	initial	CommandExecution	ros2 pkg prefix / ros2 run / ssh / readlink	lya, oa_2	0	completed	1.508	
+2026-11-19T15:37:48.867+09:00	initial	CommandExecution	ros2 run	semantic, Concept, lya, oa_2	0	completed	0.0	
+2026-11-19T15:38:24.581+09:00	initial	CommandExecution	ssh	Concept, zed, rosbag, motor_controller	255	failed	4.896	连接超时
+2026-11-19T15:38:32.027+09:00	initial	CommandExecution	timeout / ssh	Concept, rosbag	255	failed	4.927	连接超时
+2026-11-19T15:38:38.131+09:00	initial	CommandExecution	ping	yolop, Concept	0	completed	1.968	
+2026-11-19T15:38:43.780+09:00	initial	CommandExecution	py_compile	Concept	0	completed	0.052	
+2026-11-19T15:38:48.943+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T15:38:52.739+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept, auto_timeout	0	completed	0.101	
+2026-11-19T15:38:58.615+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, rosbag	0	completed	0.0	
+2026-11-19T15:39:09.043+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:39:19.689+09:00	initial	CommandExecution	git status / git log	yolop, Concept	0	completed	0.0	
+2026-11-19T15:39:24.658+09:00	initial	CommandExecution	timeout		0	completed	4.894	
+2026-11-19T15:39:29.530+09:00	initial	CommandExecution	ssh	Concept, zed, rosbag, motor_controller	0	completed	49.517	
+2026-11-19T15:39:38.988+09:00	initial	CommandExecution	tar / ssh	Concept	0	completed	6.437	
+2026-11-19T15:39:43.938+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:39:50.382+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:39:53.831+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:40:02.223+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T15:40:30.083+09:00	initial	CommandExecution	git diff / ssh	yolop, Concept	0	completed	6.034	
+2026-11-19T15:40:30.086+09:00	initial	CommandExecution	git diff / git apply / ssh / pytest	yolop, Concept, zed, motor_controller, can0	0	completed	22.239	
+2026-11-19T15:40:35.195+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, rosbag, auto_timeout	0	completed	0.0	
+2026-11-19T15:40:38.980+09:00	initial	CommandExecution	git diff / git add / ssh / timeout	yolop, Concept	0	completed	0.262	
+2026-11-19T15:40:48.099+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.285	
+2026-11-19T15:41:01.904+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.121	
+2026-11-19T15:41:05.190+09:00	initial	CommandExecution	git diff / sha256sum / ssh	yolop, Concept	0	completed	0.204	
+2026-11-19T15:41:16.126+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.17	
+2026-11-19T15:41:24.222+09:00	initial	CommandExecution	ssh / timeout	Concept, zed	0	completed	64.502	
+2026-11-19T15:41:25.811+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.197	
+2026-11-19T15:41:31.662+09:00	initial	CommandExecution	ssh	Concept, zed, VectorNav, motor_controller, auto_timeout	0	completed	0.145	
+2026-11-19T15:45:58.214+09:00	initial	CommandExecution	git log	yolop, Concept	0	completed	0.0	
+2026-11-19T15:45:58.695+09:00	initial	CommandExecution	ssh	Concept, zed, rosbag, motor_controller	0	completed	0.394	
+2026-11-19T15:46:06.406+09:00	initial	CommandExecution	ssh / wmctrl / xdotool / timeout	Concept	0	completed	3.626	
+2026-11-19T15:46:16.011+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:46:16.204+09:00	initial	CommandExecution	ssh / timeout	Concept	1	failed	3.721	Python 异常
+2026-11-19T15:46:21.579+09:00	initial	CommandExecution	ssh		0	completed	0.25	
+2026-11-19T15:46:31.273+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	0.166	
+2026-11-19T15:46:50.852+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	23.706	
+2026-11-19T15:46:58.063+09:00	initial	CommandExecution	git diff / git apply / ssh	yolop, Concept, zed	0	completed	0.405	
+2026-11-19T15:47:16.406+09:00	initial	CommandExecution	git diff / ssh	yolop, Concept	0	completed	0.229	
+2026-11-19T15:47:22.514+09:00	initial	CommandExecution	git diff / ssh / py_compile	yolop, Concept	0	completed	0.362	
+2026-11-19T15:47:38.477+09:00	initial	CommandExecution	ssh / pytest	Concept	0	completed	25.735	
+2026-11-19T15:47:39.219+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T15:47:45.539+09:00	initial	CommandExecution	ssh / pytest	yolop, Concept	0	completed	3.133	
+2026-11-19T15:47:52.762+09:00	initial	CommandExecution	ros2 launch / ssh / py_compile	yolop, Concept	0	completed	2.529	
+2026-11-19T15:48:00.577+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	24.36	
+2026-11-19T15:48:01.906+09:00	initial	CommandExecution	git diff / git add / git rev-parse	yolop, Concept	0	completed	0.0	
+2026-11-19T15:48:11.191+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:48:29.299+09:00	initial	CommandExecution	git log	yolop, Concept, zed	0	completed	0.0	
+2026-11-19T15:48:30.593+09:00	initial	CommandExecution	git status / git log	yolop, Concept	0	completed	1.212	
+2026-11-19T15:48:34.909+09:00	initial	CommandExecution	git log	yolop, Concept	0	completed	0.0	
+2026-11-19T15:48:36.474+09:00	initial	CommandExecution	gh api / git log	yolop	0	completed	1.483	
+2026-11-19T15:48:40.291+09:00	initial	CommandExecution	unzip / zip	yolop, Concept	0	completed	0.0	
+2026-11-19T15:48:40.533+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	0.161	
+2026-11-19T15:48:47.970+09:00	initial	CommandExecution	git diff / timeout	allnodes, semantic, yolop, A3, Concept, stop_wait	0	completed	0.024	
+2026-11-19T15:48:58.108+09:00	initial	CommandExecution	git add / git diff / zip / timeout	allnodes, mapassist, semantic, yolop, Concept, zed, VectorNav, stop_wait	1	failed	0.093	
+2026-11-19T15:49:01.710+09:00	initial	CommandExecution	git add / git diff / git status / zip	semantic, yolop, Concept	2	failed	0.0	
+2026-11-19T15:49:09.967+09:00	initial	CommandExecution	git add / git diff / git rev-parse / gh api / zip	mapassist, semantic, yolop, Concept	0	completed	4.57	
+2026-11-19T15:53:52.257+09:00	initial	CommandExecution	git status / git ls-tree / gh api	allnodes, semantic, yolop	0	completed	0.966	
+2026-11-19T15:53:56.186+09:00	initial	CommandExecution	ssh / sha256sum	allnodes, semantic, motor_controller, stop_wait	255	failed	4.896	连接超时
+2026-11-19T15:53:59.740+09:00	initial	CommandExecution	git show	semantic, yolop	0	completed	0.0	
+2026-11-19T15:54:02.854+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:54:08.889+09:00	initial	CommandExecution	ssh	semantic, yolop	255	failed	2.996	SSH 无路由
+2026-11-19T15:54:11.383+09:00	initial	CommandExecution	git checkout / git apply / git status	allnodes, mapassist, semantic, yolop, stop_wait, can0	0	completed	0.009	
+2026-11-19T15:54:15.097+09:00	initial	CommandExecution	pytest		0	completed	0.0	
+2026-11-19T15:54:18.041+09:00	initial	CommandExecution	ssh / sha256sum	map_assist, semantic, stop_wait	255	failed	2.964	SSH 无路由
+2026-11-19T15:54:21.474+09:00	initial	CommandExecution	pytest	allnodes, mapassist, semantic, yolop	0	completed	0.363	
+2026-11-19T15:54:24.163+09:00	initial	CommandExecution	pytest	semantic, yolop	0	completed	0.108	
+2026-11-19T15:54:26.896+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop	0	completed	0.0	
+2026-11-19T15:54:36.754+09:00	initial	CommandExecution	ros2 launch / pytest	mapassist, map_assist, semantic, yolop	1	failed	4.576	Python 异常
+2026-11-19T15:54:38.657+09:00	initial	CommandExecution	ros2 launch / git diff	allnodes, mapassist, semantic, yolop	0	completed	0.0	
+2026-11-19T15:54:47.125+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.201	
+2026-11-19T15:54:48.915+09:00	initial	CommandExecution	pytest	mapassist, map_assist, semantic, yolop	0	completed	1.991	
+2026-11-19T15:54:49.913+09:00	initial	CommandExecution	ssh / sha256sum	map_assist, semantic, stop_wait	255	failed	2.99	SSH 无路由
+2026-11-19T15:54:59.172+09:00	initial	CommandExecution	git add / git diff / gh api / git rev-parse / git status	allnodes, mapassist, semantic, yolop, stop_wait	0	completed	3.459	
+2026-11-19T15:56:35.365+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept, motor_controller	0	completed	0.0	
+2026-11-19T15:56:38.393+09:00	initial	CommandExecution	ssh	Concept, rosbag, motor_controller	255	failed	2.984	SSH 无路由
+2026-11-19T15:56:45.456+09:00	initial	CommandExecution	git log	yolop, Concept, motor_controller	0	completed	0.0	
+2026-11-19T15:56:49.560+09:00	initial	CommandExecution	sha256sum	semantic, yolop, Concept, motor_controller	0	completed	0.0	
+2026-11-19T15:56:52.084+09:00	initial	CommandExecution	shell / 文件或脚本操作	motor_controller, odom	0	completed	0.0	
+2026-11-19T15:56:55.739+09:00	initial	CommandExecution	shell / 文件或脚本操作	motor_controller, odom	0	completed	0.0	
+2026-11-19T15:57:03.325+09:00	initial	CommandExecution	sqlite3 / py_compile	Concept	0	completed	0.0	
+2026-11-19T15:57:07.198+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, motor_controller, odom	0	completed	0.123	
+2026-11-19T15:57:20.745+09:00	initial	CommandExecution	ping	Concept	0	completed	1.928	
+2026-11-19T15:57:27.142+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:57:42.197+09:00	initial	CommandExecution	ssh	Concept, rosbag, motor_controller, odom	1	failed	60.312	SSH 无路由 / 路径不存在
+2026-11-19T15:57:48.161+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:57:59.444+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T15:58:10.335+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:58:27.257+09:00	initial	CommandExecution	ssh / tar	Concept, rosbag	0	completed	63.229	
+2026-11-19T15:58:32.580+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T15:58:41.502+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	3.434	
+2026-11-19T15:58:46.090+09:00	initial	CommandExecution	ssh / tar	Concept, auto_timeout	0	completed	0.336	
+2026-11-19T15:59:00.571+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T15:59:00.814+09:00	initial	CommandExecution	ssh	Concept, rosbag, motor_controller	0	completed	0.145	
+2026-11-19T15:59:06.518+09:00	initial	CommandExecution	ssh	Concept	0	completed	1.065	
+2026-11-19T15:59:24.077+09:00	initial	CommandExecution	sqlite3 / tar / ssh	Concept, rosbag	0	completed	6.631	
+2026-11-19T15:59:30.410+09:00	initial	CommandExecution	ssh	yolop, Concept	0	completed	1.199	
+2026-11-19T15:59:35.289+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T15:59:43.969+09:00	initial	CommandExecution	git diff	yolop, Concept, VectorNav	0	completed	0.0	
+2026-11-19T15:59:54.520+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, motor_controller	0	completed	0.0	
+2026-11-19T16:00:11.483+09:00	initial	CommandExecution	sqlite3 / ssh	Concept, rosbag	0	completed	2.004	
+2026-11-19T16:00:16.381+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept, VectorNav, can0	0	completed	2.488	
+2026-11-19T16:00:17.954+09:00	initial	CommandExecution	git diff / git apply / ssh / pytest	yolop, Concept	0	completed	28.002	
+2026-11-19T16:00:27.085+09:00	initial	CommandExecution	git diff / git add / git rev-parse / ssh / tar	yolop, Concept	0	completed	0.314	
+2026-11-19T16:03:27.586+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:03:27.592+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:03:28.023+09:00	initial	CommandExecution	ssh		0	completed	0.348	
+2026-11-19T16:03:53.979+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:03:54.040+09:00	initial	CommandExecution	git status / git log		0	completed	0.0	
+2026-11-19T16:03:54.454+09:00	initial	CommandExecution	ssh	Concept, zed	0	completed	0.381	
+2026-11-19T16:04:02.346+09:00	initial	CommandExecution	timeout	Concept	0	completed	0.0	
+2026-11-19T16:04:02.397+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:04:02.707+09:00	initial	CommandExecution	ssh / timeout	Concept	0	completed	0.266	
+2026-11-19T16:04:13.802+09:00	initial	CommandExecution	timeout	Concept	0	completed	0.0	
+2026-11-19T16:04:13.820+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:04:13.846+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:04:20.915+09:00	initial	CommandExecution	shell / 文件或脚本操作	semantic, yolop, Concept, motor_controller	0	completed	0.0	
+2026-11-19T16:04:20.947+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:04:20.953+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:04:31.625+09:00	initial	CommandExecution	timeout	Concept	0	completed	0.0	
+2026-11-19T16:04:32.429+09:00	initial	CommandExecution	ssh / timeout	Concept, rosbag	0	completed	0.712	
+2026-11-19T16:04:43.845+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	4.93	
+2026-11-19T16:05:11.258+09:00	initial	CommandExecution	ros2 launch / ssh / pgrep	Concept, zed, VectorNav, motor_controller	0	completed	18.234	
+2026-11-19T16:05:15.413+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:05:15.436+09:00	initial	CommandExecution	shell / 文件或脚本操作	motor_controller	0	completed	0.0	
+2026-11-19T16:05:15.629+09:00	initial	CommandExecution	ssh / timeout	Concept, rosbag	0	completed	0.134	
+2026-11-19T16:05:39.657+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:05:39.689+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:05:39.922+09:00	initial	CommandExecution	ros2 bag / ssh / timeout / pgrep	Concept, rosbag	0	completed	0.154	
+2026-11-19T16:06:08.894+09:00	initial	CommandExecution	sqlite3 / ssh	Concept, rosbag	0	completed	10.054	
+2026-11-19T16:06:14.395+09:00	initial	CommandExecution	ssh / timeout	Concept, zed	0	completed	43.267	
+2026-11-19T16:06:17.449+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T16:06:17.483+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:06:25.137+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:06:25.169+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:06:25.176+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:02.293+09:00	initial	CommandExecution	sqlite3 / ssh	Concept, rosbag	0	completed	14.29	
+2026-11-19T16:07:12.439+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:12.465+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:12.678+09:00	initial	CommandExecution	ros2 launch / ssh / timeout / pgrep	Concept	0	completed	0.126	
+2026-11-19T16:07:19.372+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	1	failed	0.0	
+2026-11-19T16:07:19.405+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:38.373+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:38.564+09:00	initial	CommandExecution	ssh	Concept, zed, VectorNav	0	completed	0.154	
+2026-11-19T16:07:46.070+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:07:46.073+09:00	initial	CommandExecution	git show	Concept	0	completed	0.0	
+2026-11-19T16:08:21.341+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:08:23.828+09:00	initial	CommandExecution	ssh	Concept	0	completed	2.446	
+2026-11-19T16:09:22.986+09:00	initial	CommandExecution	pytest	Concept	0	completed	0.0	
+2026-11-19T16:09:35.412+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:09:35.464+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:09:36.611+09:00	initial	CommandExecution	ssh	Concept	0	completed	1.113	
+2026-11-19T16:10:15.366+09:00	initial	CommandExecution	pytest / tar / ssh	yolop, Concept, zed	0	completed	3.062	
+2026-11-19T16:10:29.649+09:00	initial	CommandExecution	timeout	Concept	0	completed	0.0	
+2026-11-19T16:10:29.688+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:10:44.988+09:00	initial	CommandExecution	timeout / scp	Concept, motor_controller	0	completed	0.674	
+2026-11-19T16:10:59.027+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:10:59.099+09:00	initial	CommandExecution	git diff	Concept	1	failed	0.0	
+2026-11-19T16:11:23.015+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:11:23.056+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:11:23.303+09:00	initial	CommandExecution	ssh / pgrep	Concept	0	completed	0.2	
+2026-11-19T16:11:30.085+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:11:36.175+09:00	initial	CommandExecution	ssh / colcon build	yolop, Concept	0	completed	72.978	
+2026-11-19T16:11:38.147+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:11:38.161+09:00	initial	CommandExecution	git status / pytest	yolop, Concept	0	completed	0.0	
+2026-11-19T16:11:48.901+09:00	initial	CommandExecution	ssh / pytest	yolop, Concept	0	completed	4.642	
+2026-11-19T16:11:51.101+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:11:51.180+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:11:58.263+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T16:11:58.274+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:12:21.122+09:00	initial	CommandExecution	ssh / colcon build	Concept	0	completed	13.062	
+2026-11-19T16:12:22.456+09:00	initial	CommandExecution	sqlite3 / ssh	Concept, rosbag	0	completed	2.861	
+2026-11-19T16:12:27.496+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:12:27.501+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T16:12:49.597+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.337	
+2026-11-19T16:13:01.494+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:13:01.545+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:13:35.297+09:00	initial	CommandExecution	ssh	yolop, Concept, motor_controller	0	completed	1.37	
+2026-11-19T16:13:52.192+09:00	initial	CommandExecution	ssh	Concept, zed	2	failed	1.756	
+2026-11-19T16:13:58.645+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:13:58.687+09:00	initial	CommandExecution	git diff / git status	Concept	0	completed	0.0	
+2026-11-19T16:13:58.833+09:00	initial	CommandExecution	ssh / pgrep	Concept	0	completed	0.148	
+2026-11-19T16:14:21.824+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T16:14:22.081+09:00	initial	CommandExecution	ssh	semantic, Concept, lya	0	completed	0.174	
+2026-11-19T16:14:48.244+09:00	initial	CommandExecution	ssh / sha256sum / pgrep	Concept	0	completed	0.187	
+2026-11-19T16:14:57.676+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:15:04.572+09:00	initial	CommandExecution	ssh / pytest	yolop, Concept	1	failed	23.75	Python 异常
+2026-11-19T16:15:09.858+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:15:09.910+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:15:15.396+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:15:25.505+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:15:45.901+09:00	initial	CommandExecution	scp / ssh / colcon build	yolop, Concept	0	completed	9.102	
+2026-11-19T16:15:54.356+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:16:06.061+09:00	initial	CommandExecution	ssh / sha256sum	Concept	0	completed	4.963	
+2026-11-19T16:16:11.419+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:16:11.465+09:00	initial	CommandExecution	git status	yolop	0	completed	0.0	
+2026-11-19T16:16:11.485+09:00	initial	CommandExecution	git status / git diff	Concept	0	completed	0.0	
+2026-11-19T16:16:19.490+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:16:41.148+09:00	initial	CommandExecution	git diff / git add / git commit / git status / git log	yolop, Concept	128	failed	0.0	
+2026-11-19T16:16:45.937+09:00	initial	CommandExecution	git log	yolop, Concept	0	completed	0.0	
+2026-11-19T16:16:52.126+09:00	initial	CommandExecution	git status / git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T16:17:40.664+09:00	initial	CommandExecution	ssh	Concept, motor_controller	0	completed	14.131	
+2026-11-19T16:17:48.968+09:00	initial	CommandExecution	ros2 topic list / ssh	Concept, zed, motor_controller	0	completed	3.431	
+2026-11-19T16:18:25.940+09:00	initial	CommandExecution	ssh	allnodes, Concept, lya, oa_2	0	completed	5.265	
+2026-11-19T16:18:27.306+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.167	
+2026-11-19T16:18:33.666+09:00	initial	CommandExecution	ros2 launch / scp / ssh	Concept, motor_controller	0	completed	119.43	
+2026-11-19T16:18:33.675+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.147	
+2026-11-19T16:18:59.857+09:00	initial	CommandExecution	ssh / pgrep	allnodes, Concept, zed, lya	0	completed	0.182	
+2026-11-19T16:19:24.548+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:19:29.537+09:00	initial	CommandExecution	ssh	Concept	255	failed	4.896	连接超时
+2026-11-19T16:19:40.373+09:00	initial	CommandExecution	zip	yolop, Concept	0	completed	0.0	
+2026-11-19T16:19:47.286+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:19:50.266+09:00	initial	CommandExecution	ssh	Concept	255	failed	2.894	连接超时
+2026-11-19T16:19:52.737+09:00	initial	CommandExecution	git rev-parse	yolop, Concept	0	completed	0.0	
+2026-11-19T16:20:16.959+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.0	
+2026-11-19T16:20:31.231+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:20:31.257+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.0	
+2026-11-19T16:20:33.300+09:00	followup	CommandExecution	git log / git status	semantic, yolop, Concept	0	completed	0.0	
+2026-11-19T16:20:36.344+09:00	followup	CommandExecution	ros2 launch / ros2 bag / ssh / tmux	map_assist, A3, rosbag, oa_2, stop_wait	255	failed	2.944	SSH 无路由
+2026-11-19T16:20:37.616+09:00	initial	CommandExecution	git status / ssh	yolop, Concept	0	completed	0.0	
+2026-11-19T16:20:50.598+09:00	followup	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T16:20:50.633+09:00	followup	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:20:56.532+09:00	followup	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, motor_controller	0	completed	0.0	
+2026-11-19T16:20:56.539+09:00	followup	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:20:59.818+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.0	
+2026-11-19T16:21:02.370+09:00	followup	CommandExecution	ssh	allnodes, mapassist, map_assist, Concept	0	completed	0.0	
+2026-11-19T16:21:04.827+09:00	initial	CommandExecution	ssh		2	failed	4.921	
+2026-11-19T16:21:15.899+09:00	followup	CommandExecution	sqlite3 / py_compile	mapassist, map_assist, semantic, yolop, A3, Concept, zed, lya, motor_controller, stop_wait, flag_stop, odom	0	completed	0.0	
+2026-11-19T16:21:22.803+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.0	
+2026-11-19T16:21:22.946+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:21:26.945+09:00	followup	CommandExecution	timeout		0	completed	3.918	
+2026-11-19T16:21:33.157+09:00	followup	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T16:21:33.456+09:00	initial	CommandExecution	ssh / pgrep	Concept	1	failed	88.87	
+2026-11-19T16:21:42.579+09:00	followup	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop	0	completed	0.0	
+2026-11-19T16:21:49.724+09:00	followup	CommandExecution	ssh / tmux	map_assist, semantic, A3, Concept, rosbag, oa_2, stop_wait	1	failed	66.416	SSH 无路由
+2026-11-19T16:21:53.509+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.013	
+2026-11-19T16:22:14.925+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:22:14.981+09:00	followup	CommandExecution	ssh / pgrep	semantic, Concept	0	completed	0.0	
+2026-11-19T16:22:21.818+09:00	initial	CommandExecution	git status / ssh	yolop, Concept	0	completed	0.0	
+2026-11-19T16:22:30.356+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, mapassist, semantic, A3, Concept, oa_2, flag_stop, odom	0	completed	0.0	
+2026-11-19T16:22:40.176+09:00	initial	CommandExecution	ssh / pgrep	Concept	0	completed	55.934	
+2026-11-19T16:22:48.783+09:00	followup	CommandExecution	tmux / timeout / tar / ssh	allnodes, map_assist, semantic, yolop, A3, Concept, rosbag, oa_2, motor_controller, stop_wait, flag_stop	0	completed	56.048	
+2026-11-19T16:22:49.142+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.0	
+2026-11-19T16:22:50.295+09:00	followup	CommandExecution	ssh	semantic, yolop, A3, Concept, motor_controller	0	completed	0.0	
+2026-11-19T16:22:55.285+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.21	
+2026-11-19T16:22:58.478+09:00	initial	CommandExecution	ssh / pgrep	Concept, zed, VectorNav, motor_controller	0	completed	256.402	
+2026-11-19T16:22:59.175+09:00	followup	CommandExecution	ros2 launch / ros2 bag / ssh / tmux	map_assist, semantic, A3, Concept, rosbag, oa_2, stop_wait	0	completed	0.181	
+2026-11-19T16:23:01.893+09:00	initial	CommandExecution	ssh	Concept, zed, motor_controller	0	completed	0.194	
+2026-11-19T16:23:04.562+09:00	followup	CommandExecution	ssh / readlink		0	completed	0.275	
+2026-11-19T16:23:12.099+09:00	followup	CommandExecution	tar / ssh	map_assist, semantic, Concept, stop_wait	0	completed	7.809	
+2026-11-19T16:23:12.450+09:00	followup	CommandExecution	ssh / pgrep / timeout	allnodes, semantic, Concept, oa_2, flag_stop	0	completed	0.282	
+2026-11-19T16:23:24.017+09:00	followup	CommandExecution	ssh / pgrep / timeout	allnodes, semantic, Concept, lya, oa_2, flag_stop	0	completed	0.273	
+2026-11-19T16:23:24.963+09:00	followup	CommandExecution	ros2 pkg prefix / ssh / readlink	semantic, Concept, lya, oa_2	0	completed	1.221	
+2026-11-19T16:23:26.348+09:00	initial	CommandExecution	timeout / unzip / zip	allnodes, yolop, Concept, zed, VectorNav, lya, auto_timeout	0	completed	0.0	
+2026-11-19T16:23:35.793+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.186	
+2026-11-19T16:23:38.009+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:23:38.276+09:00	followup	CommandExecution	ssh / sha256sum	oa_2	0	completed	0.186	
+2026-11-19T16:23:53.878+09:00	followup	CommandExecution	shell / 文件或脚本操作	map_assist, semantic, yolop, Concept, motor_controller	0	completed	0.0	
+2026-11-19T16:23:54.204+09:00	followup	CommandExecution	ssh / readlink	yolop, A4_lite, oa_2	0	completed	0.285	
+2026-11-19T16:24:02.685+09:00	followup	CommandExecution	ssh	yolop, A4_lite, oa_2	0	completed	0.199	
+2026-11-19T16:24:09.642+09:00	followup	CommandExecution	ssh	oa_2	0	completed	0.148	
+2026-11-19T16:24:35.859+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:24:36.222+09:00	followup	CommandExecution	ssh / timeout		0	completed	0.273	
+2026-11-19T16:24:42.040+09:00	followup	CommandExecution	ssh / timeout	allnodes, semantic, yolop, Concept, lya, oa_2, flag_stop	0	completed	0.311	
+2026-11-19T16:24:45.758+09:00	followup	CommandExecution	ros2 launch / timeout / ssh	mapassist, map_assist, semantic, Concept, oa_2, motor_controller, odom	0	completed	20.488	
+2026-11-19T16:25:08.249+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:25:09.833+09:00	followup	CommandExecution	ssh	mapassist, semantic, Concept, oa_2	0	completed	1.489	
+2026-11-19T16:25:21.719+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, mapassist, map_assist, semantic, yolop, A4Light, Concept, lya, oa_2	0	completed	0.0	
+2026-11-19T16:25:45.029+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:25:46.951+09:00	followup	CommandExecution	ros2 pkg prefix / ssh / desktop-file-validate	allnodes, lya, oa_2	0	completed	1.85	
+2026-11-19T16:26:05.529+09:00	followup	CommandExecution	ros2 launch / ros2 pkg prefix / ssh / desktop-file-validate	allnodes, lya, oa_2	1	failed	2.081	
+2026-11-19T16:26:21.480+09:00	followup	CommandExecution	ros2 pkg prefix / ssh / desktop-file-validate / tar	allnodes, semantic, Concept, lya	0	completed	3.789	
+2026-11-19T16:26:32.371+09:00	followup	CommandExecution	desktop-file-validate	allnodes, semantic, Concept, lya, oa_2	0	completed	0.0	
+2026-11-19T16:26:42.431+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:26:42.742+09:00	followup	CommandExecution	ssh	map_assist, stop_wait	0	completed	0.234	
+2026-11-19T16:26:58.374+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:31:10.231+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:31:12.426+09:00	followup	CommandExecution	ros2 launch / ssh	allnodes, mapassist, map_assist, semantic, yolop, A3, Concept, zed, lya, motor_controller	0	completed	2.105	
+2026-11-19T16:31:32.607+09:00	followup	CommandExecution	ros2 launch / ssh / py_compile / desktop-file-validate	allnodes, mapassist, map_assist, semantic, yolop, A3, Concept, zed, lya, motor_controller	0	completed	0.315	
+2026-11-19T16:31:47.941+09:00	followup	CommandExecution	ros2 launch / tar / ssh / sha256sum / desktop-file-validate / timeout	mapassist, map_assist, semantic, yolop, A3, Concept, lya, motor_controller, stop_wait, odom	0	completed	1.834	
+2026-11-19T16:32:18.044+09:00	followup	CommandExecution	ros2 launch / ssh / timeout / sha256sum	mapassist, semantic, Concept, lya, motor_controller	0	completed	13.319	
+2026-11-19T16:32:27.744+09:00	followup	CommandExecution	ssh / desktop-file-validate / pgrep / tar	mapassist, map_assist, semantic, Concept, lya	0	completed	2.401	
+2026-11-19T16:32:42.134+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, mapassist, map_assist, semantic, yolop, Concept, lya, oa_2, stop_wait	0	completed	0.0	
+2026-11-19T16:32:55.026+09:00	followup	CommandExecution	git status	mapassist, semantic, Concept	128	failed	0.0	工作目录不是 Git 仓库
+2026-11-19T16:40:00.709+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:40:00.876+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.108	
+2026-11-19T16:40:00.937+09:00	followup	CommandExecution	ssh		0	completed	0.172	
+2026-11-19T16:40:04.472+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:40:05.451+09:00	followup	CommandExecution	ssh		0	completed	0.923	
+2026-11-19T16:40:10.471+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:40:10.910+09:00	followup	CommandExecution	ssh / readlink	allnodes, mapassist, map_assist, semantic, lane_0927oa, lane_0215	0	completed	0.354	
+2026-11-19T16:40:10.952+09:00	followup	CommandExecution	ssh	allnodes, mapassist, map_assist, semantic, lane_0927oa, lane_0215	0	completed	0.397	
+2026-11-19T16:40:17.532+09:00	followup	CommandExecution	ssh	allnodes, mapassist, semantic, yolop, A3, oa_2, lane_0215	0	completed	0.194	
+2026-11-19T16:40:17.626+09:00	followup	CommandExecution	git rev-parse / git status / ssh	allnodes, mapassist, map_assist, semantic, lane_0927oa	0	completed	0.286	
+2026-11-19T16:40:21.569+09:00	followup	CommandExecution	ssh	allnodes, semantic	0	completed	0.205	
+2026-11-19T16:40:21.623+09:00	followup	CommandExecution	ssh	map_assist, semantic, oa_2	0	completed	0.261	
+2026-11-19T16:40:33.899+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:40:34.136+09:00	followup	CommandExecution	ssh / sha256sum	allnodes, lane_0927oa, motor_controller	0	completed	0.168	
+2026-11-19T16:40:43.408+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:40:43.668+09:00	followup	CommandExecution	ssh	allnodes, lane_0927oa	1	failed	0.169	
+2026-11-19T16:40:51.699+09:00	initial	CommandExecution	git status / git log	yolop, Concept	0	completed	0.0	
+2026-11-19T16:40:52.202+09:00	followup	CommandExecution	ssh	semantic, lane_0927oa	0	completed	2.53	
+2026-11-19T16:40:52.298+09:00	initial	CommandExecution	ssh	Concept, zed, rosbag, motor_controller	0	completed	0.536	
+2026-11-19T16:40:58.847+09:00	followup	CommandExecution	ssh / readlink / sha256sum	allnodes, semantic, Concept, lane_0927oa, lane_0215	0	completed	0.228	
+2026-11-19T16:41:04.070+09:00	followup	CommandExecution	ssh		0	completed	0.154	
+2026-11-19T16:41:07.056+09:00	followup	CommandExecution	ssh / sha256sum	allnodes, mapassist, semantic, yolop, A3, Concept, lya	1	failed	3.14	
+2026-11-19T16:41:24.725+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:41:24.733+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:41:26.325+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	1.545	
+2026-11-19T16:41:30.364+09:00	followup	CommandExecution	ssh / sha256sum	allnodes, mapassist, semantic, yolop, A3, Concept	0	completed	11.766	
+2026-11-19T16:41:38.724+09:00	initial	CommandExecution	ssh	Concept, rosbag	0	completed	5.024	
+2026-11-19T16:41:49.866+09:00	followup	CommandExecution	ssh	allnodes, lane_0927oa	0	completed	0.195	
+2026-11-19T16:41:52.085+09:00	followup	CommandExecution	ssh	allnodes	0	completed	0.168	
+2026-11-19T16:41:52.089+09:00	followup	CommandExecution	ros2 launch / ssh / timeout	allnodes, semantic, Concept, lane_0927oa, motor_controller	0	completed	33.489	
+2026-11-19T16:41:59.205+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:41:59.677+09:00	initial	CommandExecution	ssh / nvpmodel	Concept	0	completed	0.425	
+2026-11-19T16:42:00.358+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept	0	completed	0.0	
+2026-11-19T16:42:00.631+09:00	followup	CommandExecution	ssh	allnodes, lane_0927oa	0	completed	0.181	
+2026-11-19T16:42:03.194+09:00	followup	FileChange	编辑工程文件	README.md		completed		
+2026-11-19T16:42:09.578+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, semantic, Concept, lane_0927oa	0	completed	0.0	
+2026-11-19T16:42:12.789+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.181	
+2026-11-19T16:42:32.674+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, map_assist, semantic, yolop, Concept, lya	0	completed	0.0	
+2026-11-19T16:42:32.957+09:00	followup	CommandExecution	ssh	allnodes, mapassist, map_assist, semantic, lya, oa_2, lane_0927oa, lane_0215	0	completed	0.199	
+2026-11-19T16:42:42.936+09:00	initial	CommandExecution	sqlite3 / ssh	Concept, VectorNav, rosbag	0	completed	6.088	
+2026-11-19T16:42:47.319+09:00	followup	CommandExecution	ssh	map_assist, semantic, odom	0	completed	0.165	
+2026-11-19T16:42:54.839+09:00	followup	CommandExecution	ssh / sha256sum	allnodes, mapassist, map_assist, semantic, yolop, A3, Concept, lya	0	completed	0.248	
+2026-11-19T16:43:00.743+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:43:00.759+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:43:00.783+09:00	initial	CommandExecution	shell / 文件或脚本操作	motor_controller	0	completed	0.0	
+2026-11-19T16:43:10.860+09:00	followup	CommandExecution	ssh	map_assist, semantic	0	completed	0.168	
+2026-11-19T16:43:13.433+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:43:13.518+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:43:20.160+09:00	initial	CommandExecution	shell / 文件或脚本操作	motor_controller	0	completed	0.0	
+2026-11-19T16:43:37.547+09:00	followup	CommandExecution	ros2 launch / ssh / timeout	allnodes, mapassist, map_assist, semantic, yolop, A3, Concept, lya, lane_0927oa, motor_controller, odom	1	failed	15.268	Python 异常
+2026-11-19T16:43:39.145+09:00	followup	CommandExecution	ssh / sha256sum	allnodes, mapassist, semantic, Concept	0	completed	16.867	
+2026-11-19T16:43:40.444+09:00	followup	CommandExecution	ssh	mapassist	0	completed	0.112	
+2026-11-19T16:43:48.143+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:43:48.443+09:00	followup	CommandExecution	ssh	mapassist, map_assist, semantic, lane_0927oa	0	completed	0.206	
+2026-11-19T16:43:55.913+09:00	followup	CommandExecution	ssh	mapassist	0	completed	0.19	
+2026-11-19T16:44:03.903+09:00	followup	CommandExecution	ssh	map_assist, semantic	0	completed	0.163	
+2026-11-19T16:44:15.845+09:00	followup	CommandExecution	ros2 launch / ssh / timeout	mapassist, map_assist, semantic, yolop, A3, Concept, lya, lane_0927oa, motor_controller, odom	0	completed	4.654	
+2026-11-19T16:44:26.577+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:44:30.174+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:44:30.467+09:00	followup	CommandExecution	ssh		0	completed	0.202	
+2026-11-19T16:44:35.165+09:00	followup	FileChange	编辑工程文件	README.md, README.md		completed		
+2026-11-19T16:44:40.446+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:44:54.055+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	6.04	
+2026-11-19T16:45:40.632+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	5.382	
+2026-11-19T16:45:46.351+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:45:57.231+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:46:17.230+09:00	initial	CommandExecution	ros2 pkg prefix / zip / ssh	yolop, Concept	0	completed	6.169	
+2026-11-19T16:46:27.264+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:46:43.853+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:46:43.911+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:47:12.105+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T16:47:12.402+09:00	initial	CommandExecution	ssh	yolop, A4_lite, Concept	0	completed	0.19	
+2026-11-19T16:47:32.504+09:00	initial	CommandExecution	ros2 pkg prefix / scp / ssh	yolop, A4_lite, Concept	0	completed	29.511	
+2026-11-19T16:47:34.474+09:00	initial	CommandExecution	zip / scp	Concept	0	completed	1.426	
+2026-11-19T16:47:41.747+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:47:41.803+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:47:42.101+09:00	initial	CommandExecution	ssh / colcon build	Concept	0	completed	66.184	
+2026-11-19T16:48:06.804+09:00	initial	CommandExecution	ros2 pkg prefix / ssh	Concept	0	completed	5.396	
+2026-11-19T16:48:11.385+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, Concept	0	completed	0.0	
+2026-11-19T16:48:11.703+09:00	followup	CommandExecution	ssh	mapassist, map_assist, semantic, Concept, zed, lya, oa_2, lane_0927oa	0	completed	0.236	
+2026-11-19T16:48:20.587+09:00	initial	CommandExecution	git status	yolop, Concept	0	completed	0.0	
+2026-11-19T16:48:20.623+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:48:28.395+09:00	initial	CommandExecution	git diff	yolop, Concept	0	completed	0.0	
+2026-11-19T16:48:29.410+09:00	followup	CommandExecution	ssh	mapassist, yolop, Concept	0	completed	0.213	
+2026-11-19T16:48:32.536+09:00	followup	CommandExecution	ssh / timeout	mapassist, semantic, Concept	0	completed	3.339	
+2026-11-19T16:48:51.040+09:00	followup	CommandExecution	ssh	semantic, Concept	0	completed	0.204	
+2026-11-19T16:48:51.041+09:00	initial	CommandExecution	ssh / pgrep	Concept	0	completed	0.201	
+2026-11-19T16:48:51.117+09:00	followup	CommandExecution	ssh / pgrep	mapassist, can0	0	completed	0.28	
+2026-11-19T16:48:52.406+09:00	initial	CommandExecution	ssh / colcon build	Concept	0	completed	11.123	
+2026-11-19T16:48:58.460+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.0	
+2026-11-19T16:48:59.054+09:00	followup	CommandExecution	ssh	yolop	0	completed	0.268	
+2026-11-19T16:48:59.072+09:00	followup	CommandExecution	ssh	mapassist, map_assist, semantic, Concept, zed, lane_0927oa	0	completed	0.286	
+2026-11-19T16:49:20.883+09:00	followup	CommandExecution	ssh / pgrep	mapassist, semantic, Concept, zed, motor_controller, can0	0	completed	0.227	
+2026-11-19T16:49:22.374+09:00	followup	CommandExecution	ssh / timeout	mapassist, semantic, Concept, motor_controller	0	completed	1.718	
+2026-11-19T16:49:26.377+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:49:31.252+09:00	followup	CommandExecution	ros2 launch / ssh	allnodes, mapassist, map_assist, yolop, A3, Concept, zed, motor_controller	0	completed	0.237	
+2026-11-19T16:49:37.310+09:00	followup	FileChange	编辑工程文件	README.md		completed		
+2026-11-19T16:49:44.976+09:00	initial	CommandExecution	git status / scp	yolop, Concept	0	completed	0.283	
+2026-11-19T16:50:10.640+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:50:10.704+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:50:26.259+09:00	initial	CommandExecution	scp / ssh	Concept, zed	0	completed	4.478	
+2026-11-19T16:50:38.406+09:00	initial	CommandExecution	git diff	Concept	0	completed	0.0	
+2026-11-19T16:50:38.600+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.163	
+2026-11-19T16:50:41.750+09:00	initial	CommandExecution	ssh / colcon build / pytest	yolop, Concept	0	completed	46.012	
+2026-11-19T16:50:55.880+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:50:56.477+09:00	initial	CommandExecution	ssh	Concept, zed, rosbag	0	completed	0.504	
+2026-11-19T16:51:40.917+09:00	initial	CommandExecution	git diff / git status	Concept	0	completed	0.0	
+2026-11-19T16:51:41.060+09:00	initial	CommandExecution	ssh / sha256sum	Concept	0	completed	0.136	
+2026-11-19T16:52:08.497+09:00	initial	CommandExecution	scp / ssh	yolop, Concept, motor_controller	0	completed	4.29	
+2026-11-19T16:52:20.096+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:52:37.210+09:00	initial	CommandExecution	git diff / git add / git rev-parse	yolop, A4_lite, Concept, zed	0	completed	0.025	
+2026-11-19T16:53:58.254+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:53:58.265+09:00	initial	CommandExecution	git status / git log		0	completed	0.0	
+2026-11-19T16:53:58.295+09:00	initial	CommandExecution	git status	yolop	0	completed	0.0	
+2026-11-19T16:54:04.355+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:54:04.361+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:54:04.365+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:54:11.199+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:54:11.205+09:00	initial	CommandExecution	git show	Concept	1	failed	0.0	
+2026-11-19T16:54:11.432+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.176	
+2026-11-19T16:54:19.879+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:54:19.883+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept, auto_timeout	0	completed	0.0	
+2026-11-19T16:54:27.158+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:54:27.167+09:00	initial	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.0	
+2026-11-19T16:54:33.648+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:54:33.657+09:00	initial	CommandExecution	git diff		0	completed	0.0	
+2026-11-19T16:55:19.539+09:00	initial	CommandExecution	shell / 文件或脚本操作	mapassist, A4_lite, Concept, zed, VectorNav	0	completed	0.0	
+2026-11-19T16:55:24.637+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:55:24.645+09:00	initial	CommandExecution	git status		0	completed	0.0	
+2026-11-19T16:55:30.228+09:00	initial	CommandExecution	ssh	Concept	0	completed	0.178	
+2026-11-19T16:55:43.004+09:00	initial	CommandExecution	scp	Concept	0	completed	1.403	
+2026-11-19T16:55:46.945+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:55:51.332+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:56:11.074+09:00	initial	CommandExecution	shell / 文件或脚本操作	auto_timeout	0	completed	0.0	
+2026-11-19T16:56:17.072+09:00	initial	CommandExecution	git log		128	failed	0.0	工作目录不是 Git 仓库
+2026-11-19T16:56:17.313+09:00	initial	CommandExecution	ssh	mapassist, Concept	0	completed	0.193	
+2026-11-19T16:56:26.385+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:56:33.749+09:00	initial	CommandExecution	shell / 文件或脚本操作	yolop	0	completed	0.0	
+2026-11-19T16:56:47.524+09:00	initial	CommandExecution	shell / 文件或脚本操作	mapassist, A4_lite, Concept	0	completed	0.0	
+2026-11-19T16:56:55.075+09:00	initial	CommandExecution	shell / 文件或脚本操作	auto_timeout	1	failed	0.047	Python 模块缺失 / Python 异常
+2026-11-19T16:57:05.356+09:00	initial	CommandExecution	shell / 文件或脚本操作	auto_timeout	0	completed	0.03	
+2026-11-19T16:57:12.173+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:57:18.072+09:00	initial	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T16:57:35.637+09:00	initial	CommandExecution	zip / unzip	mapassist, yolop, A4_lite, Concept	9	failed	0.336	Python 异常
+2026-11-19T16:57:40.995+09:00	initial	CommandExecution	zip / unzip	yolop, Concept	0	completed	0.157	
+2026-11-19T16:57:53.034+09:00	initial	CommandExecution	git diff / git add / git status / zip	yolop, A4_lite, Concept	0	completed	0.01	
+2026-11-19T16:57:58.940+09:00	initial	CommandExecution	git add / git status / zip	yolop, Concept	0	completed	0.056	
+2026-11-19T16:58:06.000+09:00	initial	CommandExecution	zip	yolop, Concept	1	failed	0.07	Python 异常
+2026-11-19T16:58:16.994+09:00	initial	CommandExecution	git add / zip	yolop, Concept	0	completed	0.337	
+2026-11-19T17:13:05.807+09:00	followup	CommandExecution	findmnt		0	completed	0.0	
+2026-11-19T17:13:06.163+09:00	followup	CommandExecution	ssh / rsync		0	completed	0.288	
+2026-11-19T17:13:14.182+09:00	followup	CommandExecution	udisksctl / findmnt		0	completed	0.012	
+2026-11-19T17:13:14.482+09:00	followup	CommandExecution	ssh	rosbag	0	completed	0.312	
+2026-11-19T17:13:24.217+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.024	
+2026-11-19T17:13:27.090+09:00	followup	CommandExecution	ssh / rsync	semantic, Concept, zed, rosbag	255	failed	2.894	连接超时
+2026-11-19T17:13:27.098+09:00	followup	CommandExecution	ssh / rsync	rosbag	255	failed	2.901	连接超时
+2026-11-19T17:13:33.962+09:00	followup	CommandExecution	ssh / rsync	rosbag	255	failed	19.79	
+2026-11-19T17:13:36.423+09:00	followup	CommandExecution	shell / 文件或脚本操作	yolop, Concept	0	completed	0.221	
+2026-11-19T17:13:39.094+09:00	followup	CommandExecution	ssh / findmnt	rosbag	255	failed	2.893	连接超时
+2026-11-19T17:13:48.328+09:00	followup	CommandExecution	timeout / ping / ssh		0	completed	1.162	
+2026-11-19T17:13:49.347+09:00	followup	CommandExecution	rsync / tar	yolop, Concept	0	completed	2.18	
+2026-11-19T17:14:01.898+09:00	followup	CommandExecution	ping / timeout		0	completed	0.989	
+2026-11-19T17:14:22.601+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, semantic, yolop, Concept	0	completed	0.106	
+2026-11-19T17:14:28.895+09:00	followup	CommandExecution	ssh / findmnt	rosbag	0	completed	14.606	
+2026-11-19T17:14:34.075+09:00	followup	CommandExecution	shell / 文件或脚本操作	mapassist, Concept, rosbag	0	completed	0.018	
+2026-11-19T17:14:47.039+09:00	followup	CommandExecution	tar	mapassist, Concept	0	completed	1.997	
+2026-11-19T17:14:56.507+09:00	followup	CommandExecution	ssh		0	completed	11.465	
+2026-11-19T17:14:58.037+09:00	followup	CommandExecution	shell / 文件或脚本操作	rosbag	0	completed	0.217	
+2026-11-19T17:15:20.026+09:00	followup	CommandExecution	rsync		0	completed	0.326	
+2026-11-19T17:15:21.420+09:00	followup	CommandExecution	ssh / rsync	rosbag	255	failed	15.887	连接超时
+2026-11-19T17:15:33.930+09:00	followup	CommandExecution	shell / 文件或脚本操作	Concept	0	completed	0.001	
+2026-11-19T17:15:51.888+09:00	followup	CommandExecution	rsync		0	completed	0.0	
+2026-11-19T17:16:00.210+09:00	followup	CommandExecution	ssh / rsync	rosbag	1	failed	119.302	
+2026-11-19T17:16:09.680+09:00	followup	CommandExecution	rsync		0	completed	0.39	
+2026-11-19T17:16:35.609+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.39	
+2026-11-19T17:16:39.978+09:00	followup	CommandExecution	git rev-parse / git status / ssh / readlink	allnodes, map_assist, semantic, yolop, Concept	0	completed	12.294	
+2026-11-19T17:16:46.327+09:00	followup	CommandExecution	ssh / pytest / rsync	rosbag	0	completed	100.796	
+2026-11-19T17:16:46.467+09:00	followup	CommandExecution	sha256sum / tar		0	completed	0.01	
+2026-11-19T17:17:17.219+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.362	
+2026-11-19T17:17:39.126+09:00	followup	CommandExecution	ssh		0	completed	14.185	
+2026-11-19T17:17:50.061+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.75	
+2026-11-19T17:18:04.967+09:00	followup	CommandExecution	ssh / rsync	semantic, Concept, zed, rosbag	255	failed	230.676	
+2026-11-19T17:18:52.741+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.385	
+2026-11-19T17:19:10.779+09:00	followup	CommandExecution	rsync / ssh		0	completed	216.848	
+2026-11-19T17:19:46.852+09:00	followup	CommandExecution	sqlite3		0	completed	4.49	
+2026-11-19T17:19:53.752+09:00	followup	CommandExecution	rsync / ssh		0	completed	259.82	
+2026-11-19T17:20:16.983+09:00	followup	CommandExecution	shell / 文件或脚本操作	rosbag	0	completed	0.468	
+2026-11-19T17:20:44.036+09:00	followup	CommandExecution	zip / tar / rsync / ssh / timeout		0	completed	122.693	
+2026-11-19T17:21:20.195+09:00	followup	CommandExecution	zip		0	completed	0.913	
+2026-11-19T17:22:06.035+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.751	
+2026-11-19T17:22:12.354+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.397	
+2026-11-19T17:22:13.469+09:00	followup	CommandExecution	ssh / rsync	Concept, rosbag	0	completed	54.185	
+2026-11-19T17:22:43.929+09:00	followup	CommandExecution	rsync	rosbag	0	completed	0.464	
+2026-11-19T17:22:53.908+09:00	followup	CommandExecution	ssh / zip / sha256sum	yolop	0	completed	10.445	
+2026-11-19T17:23:25.437+09:00	followup	CommandExecution	zip		0	completed	0.557	
+2026-11-19T17:24:03.677+09:00	followup	CommandExecution	rsync / ssh		0	completed	486.76	
+2026-11-19T17:24:05.796+09:00	followup	CommandExecution	sqlite3 / zip	rosbag	0	completed	0.543	
+2026-11-19T17:24:09.900+09:00	followup	CommandExecution	rsync / ssh		0	completed	216.649	
+2026-11-19T17:24:11.630+09:00	followup	CommandExecution	sha256sum		0	completed	1.489	
+2026-11-19T17:24:31.447+09:00	followup	CommandExecution	findmnt	Concept, rosbag	0	completed	1.038	
+2026-11-19T17:24:41.483+09:00	followup	CommandExecution	git status / git branch / findmnt	yolop	0	completed	0.0	
+2026-11-19T17:24:41.645+09:00	followup	CommandExecution	ssh / findmnt	semantic, Concept	0	completed	0.156	
+2026-11-19T17:24:48.292+09:00	followup	CommandExecution	git ls-remote / git log	yolop, Concept	0	completed	0.52	
+2026-11-19T17:24:49.200+09:00	followup	CommandExecution	ssh	semantic, yolop, A3, Concept	0	completed	1.427	
+2026-11-19T17:25:13.975+09:00	followup	CommandExecution	git fetch	yolop	2	failed	0.0	路径不存在
+2026-11-19T17:25:35.040+09:00	followup	CommandExecution	git fetch / git ls-tree	yolop	0	completed	0.945	
+2026-11-19T17:25:38.134+09:00	followup	CommandExecution	ssh	allnodes, mapassist, semantic, Concept	0	completed	4.04	
+2026-11-19T17:25:45.392+09:00	followup	CommandExecution	ssh / tar / readlink / sha256sum	allnodes, mapassist, semantic, yolop, A3, Concept, lya, oa_2	0	completed	31.325	
+2026-11-19T17:26:18.557+09:00	followup	CommandExecution	ssh / readlink	yolop, A3, Concept	0	completed	11.339	
+2026-11-19T17:26:26.410+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T17:26:49.797+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T17:27:04.448+09:00	followup	CommandExecution	ssh	yolop, A3, Concept, zed, VectorNav	0	completed	14.571	
+2026-11-19T17:27:47.937+09:00	followup	CommandExecution	ssh / tar / pytest	yolop, A3, Concept, zed, VectorNav	0	completed	20.873	
+2026-11-19T17:27:56.026+09:00	followup	CommandExecution	rsync / tar		0	completed	0.0	
+2026-11-19T17:28:20.095+09:00	followup	CommandExecution	git ls-tree / git rev-parse	yolop, Concept	0	completed	0.0	
+2026-11-19T17:28:20.160+09:00	followup	CommandExecution	tar / rsync / ssh / sha256sum		143	failed	153.878	
+2026-11-19T17:28:40.779+09:00	followup	CommandExecution	readlink / py_compile	semantic, yolop, Concept, zed	0	completed	0.0	
+2026-11-19T17:29:00.210+09:00	followup	CommandExecution	git rev-parse / git cat-file	allnodes, yolop	0	completed	0.0	
+2026-11-19T17:29:22.977+09:00	followup	CommandExecution	ssh / tar	Concept	0	completed	22.685	
+2026-11-19T17:29:23.893+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T17:29:34.849+09:00	followup	CommandExecution	git cat-file / git fetch	yolop	0	completed	10.864	
+2026-11-19T17:29:51.084+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T17:30:05.294+09:00	followup	CommandExecution	ssh	map_assist, semantic, Concept, lya, oa_2, lane_0927oa	0	completed	14.124	
+2026-11-19T17:30:13.370+09:00	followup	CommandExecution	ssh / tar	allnodes, mapassist, semantic, yolop, Concept, lya, oa_2	0	completed	30.751	
+2026-11-19T17:30:23.030+09:00	followup	CommandExecution	tar		0	completed	0.0	
+2026-11-19T17:30:29.814+09:00	followup	CommandExecution	shell / 文件或脚本操作	semantic, Concept, lya, lane_0927oa	0	completed	0.0	
+2026-11-19T17:30:47.789+09:00	followup	CommandExecution	ssh	allnodes, mapassist, semantic, Concept	0	completed	5.56	
+2026-11-19T17:30:48.769+09:00	followup	CommandExecution	git ls-tree / git show / py_compile	mapassist, semantic, yolop, Concept	0	completed	0.04	
+2026-11-19T17:31:06.387+09:00	followup	CommandExecution	shell / 文件或脚本操作	lya	0	completed	0.0	
+2026-11-19T17:31:23.504+09:00	followup	CommandExecution	readlink / py_compile	allnodes, mapassist, semantic, yolop, A3, Concept, lya, oa_2	0	completed	0.0	
+2026-11-19T17:31:32.282+09:00	followup	CommandExecution	tar		0	completed	0.0	
+2026-11-19T17:31:46.584+09:00	followup	CommandExecution	shell / 文件或脚本操作	yolop	0	completed	0.0	
+2026-11-19T17:31:53.348+09:00	followup	CommandExecution	tar	yolop	0	completed	0.109	
+2026-11-19T17:32:07.417+09:00	followup	CommandExecution	rsync / tar / ssh / sha256sum		0	completed	227.259	
+2026-11-19T17:32:13.157+09:00	followup	CommandExecution	tar / sha256sum	yolop	0	completed	66.689	
+2026-11-19T17:32:20.761+09:00	followup	CommandExecution	findmnt		0	completed	0.0	
+2026-11-19T17:32:21.027+09:00	followup	CommandExecution	shell / 文件或脚本操作	allnodes, mapassist, semantic, yolop, A3, Concept, lya, motor_controller	0	completed	0.171	
+2026-11-19T17:32:32.033+09:00	followup	CommandExecution	git apply	allnodes, semantic, yolop, Concept, lane_0927oa	0	completed	0.0	
+2026-11-19T17:32:38.329+09:00	followup	CommandExecution	readlink	semantic, Concept	0	completed	0.0	
+2026-11-19T17:32:55.999+09:00	followup	CommandExecution	readlink	zed	0	completed	0.761	
+2026-11-19T17:33:14.557+09:00	followup	CommandExecution	tar / ssh / readlink / sha256sum / rsync	yolop	1	failed	2.698	Python 异常
+2026-11-19T17:33:20.403+09:00	followup	CommandExecution	shell / 文件或脚本操作		0	completed	0.0	
+2026-11-19T17:33:59.095+09:00	followup	CommandExecution	ssh / tar / readlink / sha256sum / rsync	yolop	0	completed	21.478	
+2026-11-19T17:34:14.901+09:00	followup	CommandExecution	tar / readlink / sha256sum	allnodes, mapassist, semantic, yolop, A4Light, A3, Concept, zed, lya, lane_0927oa	0	completed	2.331	
+2026-11-19T17:35:38.730+09:00	followup	CommandExecution	git ls-tree / git archive / git cat-file / git log / tar	yolop, Concept	-1	failed	571.512	

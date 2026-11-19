@@ -1,6 +1,6 @@
 # 2026-11-19 实验时间线
 
-时间均为日本标准时间（UTC+9）。逐条索引收录每段对话的提问、答复和现场进度、当日部署时间日志、带时刻的报告条目、ROS 启动事件和录包起止。多处重复记录的事件保留其来源。原始消息时间和本机事后分析时间分别注明。[可检索的逐事件时间线](records/events.jsonl) · [完整对话](conversations/) · [105 个启动会话](logs/launch-sessions.tsv)
+时间均为日本标准时间（UTC+9）。逐条索引收录每段对话的提问、答复和现场进度、当日部署时间日志、带时刻的报告条目、ROS 启动事件和录包起止。多处重复记录的事件保留其来源。原始消息时间和本机事后分析时间分别注明。[逐小时逐条浏览](records/timeline/) · [全部事件 JSONL](records/events.jsonl) · [命令及文件更改明细](records/operations.tsv) · [完整对话](conversations/) · [105 个启动会话](logs/launch-sessions.tsv)
 
 | JST | 做了什么、遇到什么、结果如何 |
 | --- | --- |
@@ -19,6 +19,6 @@
 | 16:50–17:02 | 正式 MapAssist 开始写入旧状态及电机会话。三份包累计 780,265 条消息。16:57:34–16:58:22 收录到 5 条 `red_wait_first_lap`、15 条旧 motor 对应门控记录。同期 Concept 修复 `5314396` 在隔离回放中验证了 0.20 → 0.40 → 0.50 m/s 的起步请求。[Semantic 三场](bag/semantic/) · [回放记录](records/workstation/concept-followup-20261119/concept-1635/trace/) |
 | 17:03–17:09 | 一份辅助包收录底盘与传感器。随后三份 Concept 专用包分别发出 371、504、106 条自动指令。最后一包仍有 54 条 `invalid_vehicle_state`。录包的首末消息、逐话题数量及实际门控状态可逐场复核。[底盘辅助包](bag/other/) · [Concept 录包](bag/concept/) |
 | 17:13–17:34 | 车辆电量将尽，优先保存记录和图片，SSH 中断后续传至 Extreme SSD。核对 7,222 个车端文件和 17 个数据库。另将最后生效的软件包、节点和启动代码归档，对比 Neo 四个基线；OrinSSD、工作站和 Extreme SSD 三份活动代码压缩包哈希一致。[文件核验](records/collection/) · [软件包 diff](active-code/) |
-| 19:47 起 | 按当天两段对话补全公开归档。逐包核对 SQL 消息、分类、图片和清单，建立 GitHub 当日目录与 Release 下载索引。[归档操作](records/publication.tsv) · [远端核验回执](../../agent-context/receipts/2026-11-19-experiment-field-archive.md) |
+| 19:47 起 | 按当天两段对话补全公开归档。逐包核对 SQL 消息、分类、图片和清单，建立 GitHub 当日目录与 Release 下载索引。[归档操作](records/publication.tsv) · [远端核验回执](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/agent-context/receipts/2026-11-19-experiment-field-archive.md) |
 
 具体验收结果和仍缺乏的证据可按现场问题查阅。[问题与修复](ISSUES.md)
