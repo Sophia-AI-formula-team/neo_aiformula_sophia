@@ -118,6 +118,55 @@ class VehicleConceptShortcuts(unittest.TestCase):
         self.cli("--rollback")
         self.assertEqual(self.command.read_bytes(), OLD_COMMAND)
 
+    def test_renamed_terminal_and_desktop_entries_and_symlink_are_restored(self):
+        alias = self.command.with_name("concept-live-old")
+        old_link = self.command.with_name("use-concept")
+        copied = self.desktop/"Concept copy.desktop"
+        foreign = self.desktop/"custom.desktop"
+        put(alias, OLD_COMMAND, 0o741)
+        old_link.symlink_to("concept-live")
+        put(copied, OLD_ICON, 0o641)
+        put(foreign, b'[Desktop Entry]\nExec=different-app\n')
+        self.cli("--apply")
+        for path in (alias, old_link):
+            self.assertEqual(path.read_bytes(), self.command.read_bytes())
+        self.assertEqual(copied.read_bytes(), self.menu.read_bytes())
+        self.assertEqual(foreign.read_bytes(), b'[Desktop Entry]\nExec=different-app\n')
+        self.cli("--apply")
+        self.cli("--check")
+        self.cli("--rollback")
+        self.assertEqual(shortcuts.snapshot(alias), [shortcuts.LEGACY["concept-live"], 0o741])
+        self.assertEqual(shortcuts.snapshot(copied), [shortcuts.LEGACY["Concept.desktop"], 0o641])
+        self.assertTrue(old_link.is_symlink())
+        self.assertEqual(os.readlink(old_link), "concept-live")
+
+    def test_xdg_desktop_disabled_does_not_create_an_icon_in_home(self):
+        put(self.tools/"xdg-user-dir", '#!/bin/sh\necho "$HOME"\n')
+        self.cli("--apply")
+        self.cli("--check")
+        self.assertTrue(self.hidden.is_file() and self.menu.is_file())
+        self.assertFalse((self.home/"Concept.desktop").exists())
+        self.cli("--rollback")
+        self.assertEqual(self.hidden.read_bytes(), OLD_ICON)
+        self.assertFalse(self.menu.exists())
+
+    def test_missing_xdg_utility_selects_existing_standard_desktop_and_rollback_needs_no_xdg(self):
+        fallback = self.home/"Desktop"
+        with mock.patch.object(subprocess,"check_output",side_effect=FileNotFoundError):
+            self.assertIsNone(shortcuts.xdg_desktop(self.home))
+            fallback.mkdir()
+            self.assertEqual(shortcuts.xdg_desktop(self.home), fallback)
+        # Equivalent to a missing/failed helper in the CLI's reduced PATH.
+        put(self.tools/"xdg-user-dir", '#!/bin/sh\nexit 127\n')
+        self.cli("--apply")
+        self.assertTrue((fallback/"Concept.desktop").is_file())
+        self.assertTrue(self.menu.is_file() and self.hidden.is_file())
+        put(self.tools/"xdg-user-dir", '#!/bin/sh\ntouch "$HOME/xdg-was-run"\nexit 3\n')
+        self.cli("--rollback")
+        self.assertFalse((self.home/"xdg-was-run").exists())
+        self.assertEqual(self.hidden.read_bytes(), OLD_ICON)
+        self.assertFalse((fallback/"Concept.desktop").exists())
+
     def test_finds_archived_hidden_icon_after_an_older_mapassist_migration(self):
         self.hidden.unlink()
         archive = self.home / "aiformula_runtime/2026-11-20-mapassist-av314/shortcut-backup-test"

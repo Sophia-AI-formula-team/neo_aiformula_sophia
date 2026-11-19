@@ -39,8 +39,10 @@ def snapshot(path):
     if not os.path.lexists(path):
         return None
     mode = path.lstat().st_mode
+    if stat.S_ISLNK(mode):
+        return ["symlink", os.readlink(path)]
     if not stat.S_ISREG(mode):
-        raise ValueError(f"Unexpected symlink or non-file: {path}")
+        raise ValueError(f"Unexpected non-file: {path}")
     return [digest(path.read_bytes()), stat.S_IMODE(mode)]
 
 
@@ -50,6 +52,43 @@ def home_path(home, relative):
         raise ValueError(f"Invalid home-relative path: {relative}")
     path.parent.resolve().relative_to(home)
     return path
+
+
+def replace_link(path, target):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=str(path.parent), prefix=".concept-") as directory:
+        link = Path(directory) / "link"
+        link.symlink_to(target)
+        os.replace(str(link), str(path))
+
+
+def old_link(path, command):
+    if path.parent != command.parent or not path.is_symlink():
+        return False
+    # Match the link identity, not the bytes of an unrelated external target.
+    target = Path(os.path.abspath(str(path.parent / os.readlink(path))))
+    if target == command:
+        return path != command
+    # A site may have moved the known wrapper to a second name in ~/.local/bin.
+    return (target.parent == command.parent and not target.is_symlink() and target.is_file()
+            and target.stat().st_size < 65536 and digest(target.read_bytes()) == LEGACY["concept-live"])
+
+
+def legacy_file(path, name):
+    return (not path.is_symlink() and path.is_file() and path.stat().st_size < 65536
+            and digest(path.read_bytes()) == LEGACY[name])
+
+
+def xdg_desktop(home):
+    try:
+        raw = subprocess.check_output(["xdg-user-dir", "DESKTOP"], text=True).strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        standard = home / "Desktop"
+        return standard if standard.is_dir() else None
+    if not raw:
+        return None
+    value = Path(raw).resolve()
+    return value if value != home else None
 
 
 def targets(home, desktop, menu):
@@ -64,7 +103,9 @@ def targets(home, desktop, menu):
              'Comment=Start Concept V6.27.8 and choose a tracking controller\n'
              f'Exec="{executable}"\nIcon=applications-engineering\nTerminal=true\n'
              'Categories=Science;\n').encode("utf-8")
-    dirs = {desktop, menu}
+    dirs = {menu}
+    if desktop is not None and desktop != home:
+        dirs.add(desktop)
     known_dirs = (home / "Desktop", home / ".xdg-hidden/Desktop", home / ".local/share/applications")
     old_runtime = home / "aiformula_runtime/2026-11-20-mapassist-av314"
     # Older MapAssist migrations moved the original desktop item out of view.
@@ -73,15 +114,21 @@ def targets(home, desktop, menu):
     for directory in known_dirs:
         rel = (directory / "Concept.desktop").relative_to(home)
         archived = old_runtime.glob("shortcut-backup-*/" + str(rel))
-        if os.path.lexists(home/rel) or any(p.is_file() and not p.is_symlink()
-                                           and p.stat().st_size < 65536
-                                           and digest(p.read_bytes()) == LEGACY['Concept.desktop'] for p in archived):
+        if os.path.lexists(home/rel) or any(legacy_file(p, "Concept.desktop") for p in archived):
             dirs.add(directory)
-    wanted = {command: (HERE / "concept-live").read_bytes()}
-    for directory in dirs:
-        if directory == home:
-            raise ValueError("XDG desktop is disabled; choose a desktop directory.")
-        wanted[directory / "Concept.desktop"] = entry
+    driver = (HERE / "concept-live").read_bytes()
+    wanted = {command: driver, **{folder/"Concept.desktop": entry for folder in dirs}}
+    reserved = {"allnodes", "yolop", "mapassist", "lya"}
+    if command.parent.is_dir():
+        for path in command.parent.iterdir():
+            if path.name not in reserved and (old_link(path, command) or legacy_file(path, "concept-live")):
+                wanted[path] = driver
+    protected_icons = {"1120-"+name+".desktop" for name in reserved}
+    for directory in dirs | set(known_dirs):
+        if directory.is_dir():
+            for path in directory.glob("*.desktop"):
+                if path.name not in protected_icons and legacy_file(path, "Concept.desktop"):
+                    wanted[path] = entry
     return {str(p.relative_to(home)): data for p, data in wanted.items()}
 
 
@@ -90,27 +137,32 @@ def validate_runtime():
 
 
 def migrate(home, desktop, menu, action):
-    wanted = targets(home, desktop, menu)
     state = home_path(home, ".local/state/aiformula/concept-shortcuts-v6278/current.json")
     receipt = json.loads(state.read_text(encoding="utf-8")) if state.exists() else None
     if action == "rollback" and receipt is None:
         print("No active Concept migration to roll back.")
         return
     entries = receipt["entries"] if receipt else {}
+    wanted = {} if action == "rollback" else targets(home, desktop, menu)
     if receipt:
         backup = home_path(home, receipt["backup"])
         # A changed XDG location must not orphan an earlier launch entry.
-        for key in entries.keys() - wanted.keys():
-            if Path(key).name != "Concept.desktop":
-                raise ValueError(f"Unrecognized path in Concept receipt: {key}")
-            wanted[key] = next(v for k, v in wanted.items() if k.endswith("Concept.desktop"))
+        if action != "rollback":
+            for key in entries.keys() - wanted.keys():
+                relpath = Path(key)
+                if relpath.parent == Path(".local/bin"):
+                    wanted[key] = wanted[".local/bin/concept-live"]
+                elif relpath.suffix == ".desktop":
+                    wanted[key] = next(v for k, v in wanted.items() if k.endswith("/Concept.desktop"))
+                else:
+                    raise ValueError(f"Unrecognized path in Concept receipt: {key}")
 
     changes, additions = [], {}
     keys = sorted(entries if action == "rollback" else wanted)
     for rel in keys:
         path = home_path(home, rel)
         current = snapshot(path)
-        desired = [digest(wanted[rel]), MODE]
+        desired = entries[rel]["installed"] if action == "rollback" else [digest(wanted[rel]), MODE]
         if rel in entries:
             old = entries[rel]["original"]
             if entries[rel]["installed"] != desired:
@@ -119,7 +171,8 @@ def migrate(home, desktop, menu, action):
                 raise ValueError(f"Shortcut changed after backup: {path}; preserve and inspect it.")
         else:
             old = current
-            if current and current[0] not in (desired[0], LEGACY.get(path.name)):
+            known = LEGACY["concept-live" if path.parent == home/".local/bin" else "Concept.desktop"]
+            if current and current[0] not in (desired[0], known) and not old_link(path, home/".local/bin/concept-live"):
                 raise ValueError(f"Unrecognized content at {path}; inspect before replacing.")
             additions[rel] = {"original": current, "installed": desired}
         if current != (old if action == "rollback" else desired):
@@ -149,10 +202,16 @@ def migrate(home, desktop, menu, action):
         for rel, metadata in additions.items():
             if metadata["original"] is not None:
                 path = home_path(home, rel)
-                original = path.read_bytes()
-                if snapshot(path) != metadata["original"] or digest(original) != metadata["original"][0]:
+                original = metadata["original"]
+                if snapshot(path) != original:
                     raise ValueError(f"Shortcut changed before backup: {path}")
-                replace_file(backup / rel, original, metadata["original"][1])
+                if original[0] == "symlink":
+                    replace_link(backup/rel, original[1])
+                else:
+                    data = path.read_bytes()
+                    if digest(data) != original[0]:
+                        raise ValueError(f"Shortcut changed before backup: {path}")
+                    replace_file(backup/rel, data, original[1])
         entries.update(additions)
         if additions:
             raw = (json.dumps(receipt, ensure_ascii=False, indent=2) + "\n").encode()
@@ -177,6 +236,8 @@ def migrate(home, desktop, menu, action):
             replace_file(path, wanted[rel], MODE)
         elif original is None:
             path.unlink()
+        elif original[0] == "symlink":
+            replace_link(path, original[1])
         else:
             replace_file(path, (backup / rel).read_bytes(), original[1])
         print(action, path)
@@ -192,7 +253,7 @@ def main():
         group.add_argument("--" + mode, dest="action", action="store_const", const=mode)
     args = parser.parse_args()
     home = Path.home().resolve()
-    desktop = Path(subprocess.check_output(["xdg-user-dir", "DESKTOP"], text=True).strip()).resolve()
+    desktop = None if args.action == "rollback" else xdg_desktop(home)
     menu = Path(os.environ.get("XDG_DATA_HOME") or home / ".local/share") / "applications"
     lockpath = home_path(home, ".cache/aiformula-1120-shortcuts.lock")
     lockpath.parent.mkdir(parents=True, exist_ok=True)
