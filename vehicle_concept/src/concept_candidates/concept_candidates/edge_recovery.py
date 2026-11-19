@@ -104,6 +104,36 @@ def fit_edge(road, observed_bounds, *, include_extent=False):
     return min(fits, key=lambda edge: abs(edge[2])) if fits else None
 
 
+def corroborated_previous_edge(edge, road, observed_bounds, speed, yaw, dt):
+    """Reuse one previous fit only where this photo shows the same material edge."""
+    if edge is None or not 0. < dt <= .4 or len(road) < 3:
+        return None
+    side, old_angle, old_distance, old_end = edge
+    col = 1 if side < 0 else 2
+    turn = yaw*dt
+    dz = speed*dt*np.sinc(turn/np.pi)
+    dx = .5*speed*dt*turn*np.sinc(turn/(2*np.pi))**2
+    angle = old_angle - turn
+    # n = (-sin(angle), cos(angle)) in (forward, right) coordinates.
+    distance = old_distance + np.sin(old_angle)*dz - np.cos(old_angle)*dx
+    end_x = (old_distance + old_end*np.sin(old_angle))/np.cos(old_angle)
+    end = (old_end-dz)*np.cos(turn) + (end_x-dx)*np.sin(turn)
+    if side*distance <= 0.:
+        return None
+    depths = np.array([row[0] for row in observed_bounds if row[col] in EDGE_SOURCES
+                       and road[0, 0] <= row[0] <= min(end, road[-1, 0])])
+    if len(depths) < 5:
+        return None
+    x = np.interp(depths, road[:, 0], road[:, col])
+    error = abs(np.cos(angle)*x - np.sin(angle)*depths - distance)
+    supported = depths[error <= EDGE_RESIDUAL_M]
+    runs = np.split(supported, np.flatnonzero(np.diff(supported) > .52)+1)
+    ends = [group[-1] for group in runs if len(group) >= 5 and group[-1]-group[0] >= 1.]
+    if not ends:
+        return None
+    return side, angle, distance, max(ends)
+
+
 def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, dt):
     """Turn back while the currently observed verge is still reachable.
 

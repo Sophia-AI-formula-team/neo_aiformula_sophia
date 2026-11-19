@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from concept_candidates.edge_recovery import edge_control, fit_edge, preview_steering
+from concept_candidates.edge_recovery import corroborated_previous_edge, edge_control, fit_edge, preview_steering
 from concept_candidates.field_controls import DIFFERENTIAL_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION, forward_steering
 from concept_feasibility.response61515 import motor_steering, motor_profile
 
@@ -103,7 +103,7 @@ def test_vectorized_rollout_matches_individual_shapes():
 
 @pytest.mark.parametrize('side', [-1, 1])
 def test_diverging_camera_edge_releases_outward_differential_before_full_tyre_exit(side):
-    # Same relative geometry on either side, 1.5 m now but converging at 18¡ã.
+    # Same relative geometry on either side, 1.5 m now but converging at 18Â°.
     road, observed = observations(-.31*side, side)
     edge = fit_edge(road, observed, include_extent=True)
     assert edge[-1] == pytest.approx(6.)
@@ -126,3 +126,19 @@ def test_near_internal_lane_line_cannot_trigger_preview_guard():
     road, observed = observations(.3, -1)
     observed = [[z, 'paint_connected_asphalt', 'road_head'] for z, *_ in observed]
     assert fit_edge(road, observed, include_extent=True) is None
+
+def test_transported_tangent_needs_this_photos_independent_matching_material_rows():
+    road, observed = observations(.3, -1)
+    edge = fit_edge(road, observed, include_extent=True)
+    road = road.copy()
+    # Advance 0.2 m in the previous camera frame. The old line has moved
+    # closer by sin(angle)*0.2 m. Only its far strip is visible in this photo.
+    road[:, 1] += .2*np.tan(.3)
+    far = [row for row in observed if 3.5 <= row[0] <= 5.5]
+    assert fit_edge(road, far, include_extent=True) is None
+    confirmed = corroborated_previous_edge(edge, road, far, 1., 0., .2)
+    np.testing.assert_allclose(confirmed, [-1, .3, edge[2]+.2*np.sin(.3), 5.5])
+    assert corroborated_previous_edge(edge, road, [], 1., 0., .2) is None
+    assert corroborated_previous_edge(edge, road, far, 1., 0., .8) is None
+    road[:, 1] -= .5
+    assert corroborated_previous_edge(edge, road, far, 1., 0., .2) is None

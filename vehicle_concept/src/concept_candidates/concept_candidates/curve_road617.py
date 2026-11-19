@@ -179,7 +179,7 @@ class RoadAwareCurvePlanner:
         if batch is not None:
             state, nominal_controls, geometric, road_lower, evidence, obstacle_lower, road_progress, reference_steps, heading_integral = batch.driven_path(
                 obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p,
-                edge=edge if edge_slot is not None else None)
+                edge=edge, edge_slot=edge_slot is not None)
             first=nominal_controls[0,:,1].copy()
             paths=state[4::4,:,:2]
             z,x,heading,speed,yaw=state[-1,:,:5].T.copy()

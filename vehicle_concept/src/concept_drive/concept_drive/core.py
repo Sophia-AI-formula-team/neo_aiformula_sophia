@@ -10,7 +10,7 @@ import numpy as np
 
 from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
-from concept_candidates.edge_recovery import fit_edge
+from concept_candidates.edge_recovery import corroborated_previous_edge, fit_edge
 from concept_candidates.launch_clearance import launch_clearance
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
@@ -42,6 +42,7 @@ class Drive:
         self.set_pace(pace)
         self.previous_time = None
         self.previous_motion = None
+        self.previous_field_edge = None
         self.observed_openings = []
 
     def set_pace(self, pace):
@@ -89,10 +90,16 @@ class Drive:
             # A contradictory physical limit invalidates this depth and everything
             # beyond it. Do not interpolate the planner through the missing road.
             heading = heading[:len(road)]
+            previous_edge, self.previous_field_edge = self.previous_field_edge, None
+            edge = None
             if len(road):
                 guidance = guidance[(guidance[:, 0] >= road[0, 0]) & (guidance[:, 0] <= road[-1, 0])]
                 if reference is not None:
-                    reference['_field_edge'] = fit_edge(road, scene.audit['observed_bounds'], include_extent=True)
+                    observed = scene.audit['observed_bounds']
+                    self.previous_field_edge = fit_edge(road, observed, include_extent=True)
+                    edge = self.previous_field_edge or corroborated_previous_edge(
+                        previous_edge, road, observed, motion_speed, motion_yaw, dt)
+                    reference['_field_edge'] = edge
             else:
                 guidance, reference = np.empty((0, 4)), None
             near_visibility = [row['z'] for row in near_rows
@@ -102,6 +109,7 @@ class Drive:
                                    observed_near_z=near_visibility, visible_z=scene.audit.get('visible_z'),
                                    obstacle_clear=provisional is not None)
         else:
+            self.previous_field_edge = None
             if set(edges['edges']) == {'left', 'right'}:
                 guidance = np.empty((0, 4))
             if reference is None:

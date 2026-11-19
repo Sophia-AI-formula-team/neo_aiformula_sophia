@@ -30,7 +30,7 @@ def initial_state(obs, commands, stop_age, *, forward=False):
     return state
 
 
-def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters, *, edge=None):
+def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters, *, edge=None, edge_slot=False):
     n=len(commands)
     state=np.empty((steps*4+1,n,8))
     controls=np.empty((steps*4,n,2))
@@ -51,7 +51,7 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
         if physical_motor_enabled():
             steering = preview_steering(edge, desired, z, x, heading, speed, yaw, last, commands, dt)
-            if edge is not None:
+            if edge_slot:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
                     previous[0] if k == 0 else drive[-1], last[-1], dt, parameters['pace'])
