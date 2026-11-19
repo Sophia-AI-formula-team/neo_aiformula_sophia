@@ -2,6 +2,10 @@
 
 ## 当日全部实验资料
 
+[下载整日报告 ZIP](2026-11-19-field-report.zip) · [ZIP 校验值](records/report-zip.sha256)
+
+压缩包收录发布快照中的 1,778 个文件，含完整时间线、两段对话、图文报告、ROS 日志和每场录包的下载入口。解压后打开顶层 README.md。
+
 [完整时间线](TIMELINE.md) · [现场问题与修复](ISSUES.md) · [两段对话全文](conversations/) · [原始 ROS 日志](logs/) · [照片与图表](images/) · [车上活动代码和 Neo 差异](active-code/) · [所有文件与 SHA-256](records/)
 
 17 份录包共有 1,993,511 条消息。逐场可下载原始数据库、元数据及 SQLite 辅助文件。[Semantic / MapAssist（3 份）](bag/semantic/) · [Concept（12 份）](bag/concept/) · [其他（2 份）](bag/other/) · [Release 完整附件](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/tag/field-archive-2026-11-19)
