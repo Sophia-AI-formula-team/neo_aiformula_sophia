@@ -7,7 +7,7 @@ if [[ $# -gt 1 ]]; then
 fi
 choice="${1:-}"
 if [[ -z "$choice" ]]; then
-    printf 'Choose YOLOP: [1] A3 V14  [2] A4 (vehicle topics)  [3] A4Light (shadow)\n> '
+    printf 'Choose YOLOP: [1] A3 V14  [2] A4 (vehicle topics)  [3] A4Light (vehicle topics)\n> '
     read -r choice || exit 2
 fi
 case "${choice,,}" in
@@ -39,8 +39,4 @@ fi
 export PYTHONNOUSERSITE=1
 export YOLOP_FOXY_EXPERIMENT=1
 export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
-args=(--profile "$profile")
-if [[ "$profile" == A4 ]]; then
-    args+=(--live)
-fi
-exec "$experiment/foxy-env/bin/python3" "$bundle/run_vehicle.py" "${args[@]}"
+exec "$experiment/foxy-env/bin/python3" "$bundle/run_vehicle.py" --profile "$profile" --live

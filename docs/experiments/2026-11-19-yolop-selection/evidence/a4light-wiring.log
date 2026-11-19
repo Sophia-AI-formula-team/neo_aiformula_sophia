@@ -1,0 +1,10 @@
+2026-11-19T09:59:05+09:00 09:58:11–09:58:29 JST inspection: the selector passed --live for A4 only; A4Light published under /a3_shadow/. Both profiles have the same seven-output ROS interface. allnodes and A4 were running, and A4 owned the domain 0 selector lock.
+2026-11-19T09:59:05+09:00 Saved the prior selector; SHA-256 950b19ec0cf1e75af788ce5afc2482c5be5fd6dd528bfdb1edf6c6d1339d80a2.
+2026-11-19T09:59:05+09:00 Updated the menu label and made both A4 profiles pass --live after the existing A3 branch. Shell syntax passed.
+2026-11-19T09:59:06+09:00 Verified menu option 3, all existing A4Light CLI aliases, and A4 against a stub runner. All selected the expected profile with --live.
+2026-11-19T09:59:06+09:00 Both real bundles passed checkpoint identity and reported identical camera input and seven vehicle output routes. A4Light retained lean_runtime=true.
+2026-11-19T09:59:06+09:00 Installed the verified selector by atomic rename and checked the terminal menu resolves to it; SHA-256 95d86ec1885751c47165db38ed8abaa4fe83e33f6ee68ec6d1d7bae1942a14a4.
+2026-11-19T09:59:06+09:00 Confirmed the existing A4 process was still running. No additional detector was launched on the vehicle.
+2026-11-19T09:59:58+09:00 Isolated desktop ROS Jazzy DDS probe (09:59:53–09:59:58 JST) confirmed all seven vehicle routes, single publishers, image headers/dimensions/encodings and absence of shadow routes using the real ROS node and a stub inference model. Jetson A4 inference was left running.
+2026-11-19T10:00:28+09:00 Matched the prior Jetson selector to the previous GitHub snapshot, archived the deployed selector and evidence, and checked the staged changes.
+2026-11-19T10:00:49+09:00 Updated the Jetson experiment README with terminal selector usage, A4Light vehicle routing and rollback.
