@@ -12,6 +12,7 @@ from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
 from concept_candidates.edge_recovery import corroborated_previous_edge, fit_edge, preview_audit
 from concept_candidates.launch_clearance import launch_clearance
+from concept_candidates.tracking import controller_record, first_lya_depth, validate_mode
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
 from concept_candidates.rear_reference617 import RecoveryReference
@@ -28,14 +29,16 @@ from concept_road.vision import CX, CY, FOCAL, HEIGHT
 
 
 class Drive:
-    def __init__(self, pace=3.4):
+    def __init__(self, pace=3.4, tracking_controller='pure_pursuit'):
+        self.tracking_controller = validate_mode(tracking_controller)
         self.observer = RearRoad()
         self.tracker = Occupancy617()
         self.mapper = RuntimeMap()
         self.semantics = SemanticMap((FOCAL, CX, CY, HEIGHT))
         self.limits = JunctionLimits()
         self.field_road = FieldRoad()
-        self.planner = MarkedPlanner(dict(pace=pace, uncertainty=1., yaw_limit=1.55))
+        self.planner = MarkedPlanner(dict(pace=pace, uncertainty=1., yaw_limit=1.55,
+                                          tracking_controller=self.tracking_controller))
         self.builder = RankedBuilder(BacktrackSteer(self.planner))
         weights = Path(trajectory624.__file__).with_name('model-h12.json')
         self.ranker = trajectory624.TrajectorySelector(weights, pace)
@@ -117,6 +120,17 @@ class Drive:
                 guidance = np.empty((0, 4))
             if reference is None:
                 reference = build_reference(evidence)
+        if self.tracking_controller == 'lya':
+            if field_ground:
+                # Visible_z ends at the first missing direct ground section.
+                span = scene.audit.get('visible_z')
+            else:
+                # Frozen simulator camera uses the canonical mounting height.
+                # Exclude blind footprint/motion-memory samples under the lens.
+                nearest = HEIGHT*FOCAL/(image.shape[0]-1-CY)
+                span = [max(nearest, road[0,0]), road[-1,0]] if len(road) else None
+            start = first_lya_depth(span[0], min(span[1], road[-1,0])) if span and len(road) else None
+            self.planner.p.update(lya_first_depth=start, lya_odom_heading_right_rad=float(snapshot['pose'][2]))
         obs = RecoveryReference(road, objects, speed, yaw, dt, heading, guidance,
                                 evidence['rear_history']['observed_limit_m'],
                                 reference=reference)
@@ -143,7 +157,18 @@ class Drive:
                  speed_mps=row[0], yaw_right_radps=row[1], clearance_m=row[5], score=scores[i])
             for i, row in enumerate(table)
         ]
-        return dict(selected_index=None if pick is None else int(pick),
+        if control[0] == 0:
+            owner = 'stop'
+        elif control[0] < 0:
+            owner = 'reverse'
+        elif detail.get('contingency_execution') or pick is None or detail is not self.planner.last:
+            owner = 'contingency'
+        elif pick == audit.get('edge_candidate_index'):
+            owner = 'edge_recovery'
+        else:
+            owner = 'candidate'
+        tracking = controller_record(self.tracking_controller, control, owner, self.planner.tracking_frame, pick)
+        return dict(tracking_controller=tracking, selected_index=None if pick is None else int(pick),
                     whitebox_index=None if baseline is None else int(baseline), command_native=control.tolist(),
                     selected_path=paths[pick] if pick is not None and len(paths) else detail.get('path', []),
                     candidate_evaluation=audit['candidate_evaluation'],

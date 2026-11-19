@@ -6,6 +6,7 @@ from concept_feasibility.geometry import road_clearance
 from concept_feasibility.geometry61514 import RISK_LIMIT
 from concept_feasibility.path_risk import array_clearance
 from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
+from .tracking import tracking_request
 from .curve_progress import project, supported_increment
 from .edge_recovery import edge_control, preview_control
 from .field_controls import TRACKING_HEADROOM
@@ -31,7 +32,7 @@ def initial_state(obs, commands, stop_age, *, forward=False):
     return state
 
 
-def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters, *, edge=None, edge_slot=False):
+def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters, *, edge=None, edge_slot=False, tracking_first=None):
     n=len(commands)
     state=np.empty((steps*4+1,n,8))
     controls=np.empty((steps*4,n,2))
@@ -42,25 +43,23 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
     for k in range(steps):
         t=4*k
         z,x,heading,speed,yaw=state[t,:,:5].T
-        pursuit=z+np.clip(1.+.7*speed,1.2,3.)
-        q=np.minimum(pursuit,look)
-        reference=aa*q**3+bb*q**2+np.maximum(pursuit-look,0)*slope
-        dz,dx=pursuit-z,reference-x
-        lateral=dx*np.cos(heading)-dz*np.sin(heading)
-        desired=parameters['steer_gain']*np.maximum(speed,.5)*2*lateral/(dz*dz+dx*dx+.01)-parameters['yaw_damping']*yaw
+        requested_drive, desired = tracking_request(z, x, heading, speed, yaw, commands, slope, aa, bb,
+                                                    look, parameters, parameters.get('lya_first_depth'),
+                                                    tracking_first if k == 0 else None)
         dt=obs.dt if k==0 else .2
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
         if physical_motor_enabled():
             prior_drive = previous[0] if k == 0 else drive
             ceiling = np.minimum(prior_drive, np.minimum(parameters['pace'], np.maximum(speed, 0.) + TRACKING_HEADROOM))
-            drive, steering = preview_control(edge, desired, z, x, heading, speed, yaw, last, commands, dt, ceiling)
+            drive, steering = preview_control(edge, desired, z, x, heading, speed, yaw, last, requested_drive, dt, ceiling)
             if edge_slot:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
                     previous[0] if k == 0 else prior_drive[-1], last[-1], dt, parameters['pace'])
             last = steering
         else:
-            last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
+            drive = requested_drive
+            last=inverse_yaw(desired,drive,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
         controls[t:t+4,:,0]=drive;controls[t:t+4,:,1]=last
         state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*motor_parameters(),physical_motor_enabled())[1:]
     # The frozen simulator's nominal horizon uses this particular evaluation order.

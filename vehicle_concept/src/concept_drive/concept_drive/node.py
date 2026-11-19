@@ -17,6 +17,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 
+from concept_candidates.tracking import controller_record, validate_mode
 from concept_feasibility.response61515 import motor_profile
 from concept_control_gate.speed_setting import SpeedSetting
 from concept_yolop.frame_codec import decode_frame_data, parse_frame_header, validate_pixels, validated_detections
@@ -39,6 +40,7 @@ class DriverNode(Node):
         cv2.cvtColor(np.zeros((1, 1, 3), np.uint8), cv2.COLOR_BGR2LAB)
         self.speed_setting = SpeedSetting(self, 'target_speed_mps', 6.)
         self.target = self.speed_setting.initial
+        self.tracking_controller = validate_mode(self.declare_parameter('tracking_controller', 'pure_pursuit').value)
         hz = self.declare_parameter('planning_hz', 15.0).value
         if not math.isfinite(hz) or not 5. <= hz <= 15.:
             raise ValueError('planning_hz must be in [5, 15]')
@@ -69,7 +71,7 @@ class DriverNode(Node):
         self.create_service(Trigger, '~/lap_map', self.lap_map, callback_group=self.planning_callbacks)
 
     def reset_driver(self):
-        self.driver = Drive(self.target)
+        self.driver = Drive(self.target, self.tracking_controller)
         self.session = uuid4().hex
         self.first_ns = self.last_ns = self.next_ns = None
         self.last_input_ns = None
@@ -124,7 +126,7 @@ class DriverNode(Node):
 
     def update_parameters(self, parameters):
         for p in parameters:
-            if p.name in ('planning_hz','onboard_camera','speed_settings_directory'):
+            if p.name in ('planning_hz','onboard_camera','speed_settings_directory','tracking_controller'):
                 return SetParametersResult(successful=False, reason='Set %s when launching the driver' % p.name)
         for p in parameters:
             if p.name == 'target_speed_mps':
@@ -188,6 +190,7 @@ class DriverNode(Node):
                         status='waiting', reason='', stamp=None, capture_age_s=None, sensor_age_s=None,
                         target_speed_mps=self.target, effective_speed_mps=None, selected_index=None,
                         whitebox_index=None, command=None, feasible_count=0, candidates=[], selected_path=[],
+                        tracking_controller=controller_record(self.tracking_controller),
                         road_rows=[], objects=[], tracks=[], lines=[], edges={}, map=None, map_semantics=None)
         try:
             if local is None:

@@ -11,6 +11,7 @@ from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WID
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
 from .field_controls import TRACKING_HEADROOM, forward_ceiling, forward_steering
+from .tracking import tracking_request
 from .edge_recovery import edge_control, preview_control
 
 from concept_candidates.candidate_merge import distinct_requests
@@ -53,6 +54,7 @@ class RoadAwareCurvePlanner:
         self.time = 0.
         self.reserved = None
         self.pending = None
+        self.tracking_frame = None
         self.current_observation = None
         self.reset_candidate_evaluation()
 
@@ -108,6 +110,7 @@ class RoadAwareCurvePlanner:
         self.time += obs.dt
         self.current_observation = obs
         self.pending = None
+        self.tracking_frame = None
         road, p = np.asarray(obs.road), self.p
         self.stop_age = self.stop_age+obs.dt if self.command[0] == 0 else 0.
         if len(road) < 3:
@@ -176,10 +179,11 @@ class RoadAwareCurvePlanner:
         steps = int(np.ceil(horizon/interval))
         horizon = steps*interval
         yaw_limit = p.get('yaw_limit', 1.55)
+        tracking_first = {}
         if batch is not None:
             state, nominal_controls, geometric, road_lower, evidence, obstacle_lower, road_progress, reference_steps, heading_integral = batch.driven_path(
                 obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p,
-                edge=edge, edge_slot=edge_slot is not None)
+                edge=edge, edge_slot=edge_slot is not None, tracking_first=tracking_first)
             first=nominal_controls[0,:,1].copy()
             paths=state[4::4,:,:2]
             z,x,heading,speed,yaw=state[-1,:,:5].T.copy()
@@ -193,24 +197,22 @@ class RoadAwareCurvePlanner:
             # Replan short manoeuvres; the independent loss-of-observation branch
             # still checks all the way to a stop, using the actual covariance.
             for step in range(steps):
-                pursuit = z+np.clip(1.+.7*speed, 1.2, 3.)
-                q = np.minimum(pursuit, look)
-                reference = aa*q**3+bb*q**2+np.maximum(pursuit-look, 0)*slope
-                dz, dx = pursuit-z, reference-x
-                lateral = dx*np.cos(heading)-dz*np.sin(heading)
-                desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
+                requested_drive, desired = tracking_request(z, x, heading, speed, yaw, commands, slope, aa, bb,
+                                                            look, p, p.get('lya_first_depth'),
+                                                            tracking_first if step == 0 else None)
                 command_dt = obs.dt if step == 0 else interval
                 if physical:
                     prior_drive = previous[0] if step == 0 else drive
                     drive_ceiling = np.minimum(prior_drive, np.minimum(p['pace'], np.maximum(speed, 0.) + TRACKING_HEADROOM))
                     drive, command_yaw = preview_control(edge, desired, z, x, heading, speed, yaw, last_yaw,
-                                                         commands, command_dt, drive_ceiling)
+                                                         requested_drive, command_dt, drive_ceiling)
                     if edge_slot is not None:
                         drive[-1], command_yaw[-1] = edge_control(
                             edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
                             previous[0] if step == 0 else prior_drive[-1], last_yaw[-1], command_dt, p['pace'])
                 else:
-                    command_yaw = inverse_yaw(desired, commands,
+                    drive = requested_drive
+                    command_yaw = inverse_yaw(desired, drive,
                         lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
                         upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
                         current_yaw=yaw,dt=command_dt)
@@ -249,7 +251,7 @@ class RoadAwareCurvePlanner:
                 paths.append(np.c_[z.copy(), x.copy()])
             object_gap,obstacle_lower=path_obstacle_clearance(obs.objects,obstacle_states)
             geometric=np.minimum(geometric,object_gap)
-        if physical:
+        if physical or p.get('tracking_controller') == 'lya':
             # Recover the actual first pair from the integrated signal. Brake
             # branches, H12 candidate features and the emitted control share it.
             commands = np.asarray(nominal_controls[0])[:, 0].copy()
@@ -313,6 +315,7 @@ class RoadAwareCurvePlanner:
                     brake_ok, escape_ok, profile_valid, evidence, dynamics))
         targets, commands = full_targets, full_commands
         count = len(commands)
+        self.tracking_frame = (tracking_first, inverse)
         self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower,
                             brake_controls=brake_controls, escape_ok=escape_ok,
                             escape_lower=escape_lower, escape_controls=escape_controls,
