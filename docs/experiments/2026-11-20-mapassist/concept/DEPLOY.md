@@ -12,6 +12,8 @@
 
 ## 在车机安装或升级
 
+交接时从本文所在的准备分支开始。固定源码检出附带了当时的实验文档，快捷方式升级和回退以本目录的脚本与清单为准。
+
 在车机的 **`control` 用户、干净的 Bash** 中操作。第一次取准备工具时用新的检出目录。下列命令带有错误检查，某一步失败会结束这个子 shell。
 
 ```bash
@@ -21,7 +23,7 @@
   branch=experiment/vehicle-prep-20261120
   url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
   if [[ ! -e "$prep_repo" ]]; then
-    git clone --filter=blob:none --sparse --single-branch --branch "$branch" "$url" "$prep_repo"
+    git clone --depth 1 --filter=blob:none --sparse --single-branch --branch "$branch" "$url" "$prep_repo"
     git -C "$prep_repo" sparse-checkout set docs/experiments/2026-11-20-mapassist
   else
     test "$(git -C "$prep_repo" remote get-url origin)" = "$url"
@@ -42,9 +44,9 @@
 
 ## 确认旧入口已经换成新版
 
-安装器按归档指纹识别旧命令和图标。它先备份，再在同一位置写入新入口。命令仍叫 `concept-live`，桌面和应用菜单仍叫 **Concept**。现场隐藏桌面上的旧入口也在迁移范围内。新的桌面项使用 `Terminal=true`，选择控制器时可以直接输入数字。MapAssist 的 `allnodes`、`yolop`、`mapassist`、`lya` 保留原来的用途。单独执行的 `lya` 是 MapAssist 的 LYA 命令。
+安装器按归档指纹识别旧命令和图标。它先备份，再在同一位置写入新入口。按指纹认出的改名副本也随之更新。命令仍叫 `concept-live`，桌面和应用菜单仍叫 **Concept**。现场隐藏桌面上的旧入口也在迁移范围内。若系统关闭了 XDG 桌面，仍可用应用菜单和终端命令。新的桌面项使用 `Terminal=true`，选择控制器时可以直接输入数字。MapAssist 的 `allnodes`、`yolop`、`mapassist`、`lya` 保留原来的用途。单独执行的 `lya` 是 MapAssist 的 LYA 命令。
 
-在操作员新开的交互式 Bash 中运行：
+在操作员新开的交互式 Bash 中核对入口。
 
 ```bash
 prep="$HOME/neo-1120-concept-prep/docs/experiments/2026-11-20-mapassist/concept"
@@ -74,5 +76,7 @@ ros2 param get /concept/gate max_auto_speed_mps
 * **需要退回原入口**，先禁用输出、待车停稳并退出本次 launch。在上述 `prep` 目录运行 `python3 shortcuts.py --rollback`。它依据 `~/.local/state/aiformula/concept-shortcuts-v6278/` 的清单恢复原内容、权限和原先没有入口的位置。若早期 MapAssist 安装已取走了旧图标，它原本的备份保存在 `~/aiformula_runtime/2026-11-20-mapassist-av314/shortcut-backup-*`。在当时就没有旧入口的机器上，可按 11/19 冻结手册从旧工作区启动。[V6.27.5 手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/a9d7d7a94d062ad5ff61fedfe21d3dbe94fa1bd1/vehicle_concept/AGENTS.md)
 
 ## 目前验证到哪里
+
+在隔离的 Foxy 工作站中，按车端方式构建专用 `launchers` 和 12 个 Concept 包，12 项底层比对通过，B1.4 完成单图 CUDA 推理。使用已迁移的 `concept-live` 通过真实终端分别选择两种控制器并启动回放，两个选项都收到了图像、产生了候选轨迹，软件回放中自动输出为零。Linux 快捷方式的 13 个测试覆盖原版文件、重复安装、旧隐藏桌面、回滚、同名命令遮蔽以及与 MapAssist 同机。GIO 解析新桌面与菜单两个文件时都得到同一条 `concept-live` 路径和 `Terminal=true`。这是部署包的软件验证，目标 Jetson 的安装记录由现场执行本文时产生。[Foxy 部署与两种控制器的回放记录](prepare-validation.json)
 
 V6.27.8 的四次短程 Unity 对照都通过越线检查。长弯 Pure Pursuit 走了 **51.05 m**，LYA 走了 **46.57 m**，两者都出了弯，LYA 末段停稳。默认保留 Pure Pursuit。实车转向、Jetson 拍照到发令的延迟和实车整圈需要现场复测。[同帧面板、驾驶对比视频和逐帧数据](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/f305d5f7acea5c87af0e2003bec13bdc06199d8f/vehicle_concept/checks/tracking_v6278)

@@ -115,6 +115,27 @@ class VehicleConceptShortcuts(unittest.TestCase):
             self.assertEqual(self.command.with_name(name).read_text(), "unchanged " + name)
             self.assertEqual((self.desktop/("1120-"+name+".desktop")).read_text(), "unchanged desktop " + name)
 
+    def test_both_installers_in_either_order_keep_the_other_entry(self):
+        for name in ("allnodes", "yolop", "mapassist", "lya"):
+            self.command.with_name(name).unlink()
+            (self.desktop / ("1120-"+name+".desktop")).unlink()
+        runtime = self.home / "aiformula_runtime"
+        put(runtime/"2026-11-19-yolop-selection/yolop.launch", "#!/bin/sh\n")
+        put(runtime/"2026-11-20-mapassist-av314/install/local_setup.bash", "# test underlay\n")
+        def mapassist(action):
+            subprocess.run([sys.executable, str(shortcuts.HERE.parent/"shortcuts.py"), action],
+                           env=self.env, capture_output=True, check=True)
+        mapassist("--apply")
+        self.assertEqual(self.command.read_bytes(), OLD_COMMAND)
+        self.assertEqual(self.hidden.read_bytes(), OLD_ICON)
+        self.cli("--apply")
+        mapassist("--apply")
+        self.cli("--check")
+        self.cli("--rollback")
+        mapassist("--check")
+        self.assertEqual(self.command.read_bytes(), OLD_COMMAND)
+        self.assertEqual(self.hidden.read_bytes(), OLD_ICON)
+
     def test_refuses_unrecognized_shortcut_stale_pin_and_modified_rollback(self):
         put(self.menu, "other application")
         self.cli("--apply", ok=False)
