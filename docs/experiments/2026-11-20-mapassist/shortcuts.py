@@ -10,13 +10,15 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# SHA256 of the four identical launchers installed by the original 1120 prepare.sh.
+PREVIOUS_1120_DRIVER = "b8ad579bc753094cc28f9b08d157810f90426e4244fc6a5d75b2e7286eda30b9"
 COMMANDS = ("allnodes", "yolop", "mapassist", "lya")
 
 
 def migrate(home, desktop, apply):
     bin_dir = home / ".local/bin"
     old = json.loads((HERE / "legacy-sha256.json").read_text())
-    runtime = home / "aiformula_runtime/2026-11-20-mapassist"
+    runtime = home / "aiformula_runtime/2026-11-20-mapassist-av314"
     selector = home / "aiformula_runtime/2026-11-19-yolop-selection/yolop.launch"
     driver = (HERE / "vehicle-command").read_bytes()
     wanted = {bin_dir / name: driver for name in COMMANDS}
@@ -40,7 +42,10 @@ def migrate(home, desktop, apply):
             if path.read_bytes() == wanted[path] and os.access(path, os.X_OK):
                 continue
         known = False
-        if path.name in ("yolop", "yolop-launch") and path.is_symlink():
+        if path.parent == bin_dir and path.name in COMMANDS and path.is_file() and not path.is_symlink():
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            known = digest in (old.get(path.name), PREVIOUS_1120_DRIVER)
+        elif path.name in ("yolop", "yolop-launch") and path.is_symlink():
             known = (path.resolve() == selector.resolve() or
                      (path.name == "yolop" and os.readlink(path) == "yolop-launch"))
         elif path.is_file() and (path.suffix == ".desktop" or path.name in old):

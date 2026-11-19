@@ -1,0 +1,961 @@
+{
+  "av314_oa_inner": {
+    "scenario": "oa",
+    "profile": "A3",
+    "accepted": true,
+    "reason": "Normal lane motion after OA exit",
+    "distance": 6.6091,
+    "events": [
+      {
+        "event": "oa_enter",
+        "sec": 2.475,
+        "distance": 0.025,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:semantic_045_route_or_command_unready",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": null
+      },
+      {
+        "event": "oa_motion",
+        "sec": 2.825,
+        "distance": 0.025,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 1.5254453091633327,
+        "w": 0.45,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "oa_exit",
+        "sec": 5.875,
+        "distance": 5.602,
+        "body_speed": 2.309,
+        "lamp": "Green",
+        "v": 1.9185584738835955,
+        "w": -0.45,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "vision_recovered",
+        "sec": 6.66,
+        "distance": 6.609,
+        "body_speed": 1.247,
+        "lamp": "Green",
+        "v": 1.85147619255994,
+        "w": -0.08824775860644274,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      }
+    ],
+    "confirmed_green": false,
+    "early_release": false,
+    "light_after_green": {},
+    "max_pixels": 0,
+    "max_cone_pixels": 7201,
+    "group_count": 34,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 33,
+    "after_exit_counts": {
+      "lane_a": 12,
+      "lane_b": 12,
+      "lane_c": 12,
+      "filtered": 9,
+      "lya": 9,
+      "motor": 7
+    },
+    "recovery_distance": 1.0067573899999998,
+    "overlap_before_green": false,
+    "overlap_motor_samples": 0,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": false,
+      "oa_command_ready": false,
+      "traffic_mode": "normal",
+      "traffic_reason": "traffic_idle",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": false,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 6.0,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "forwarding_controller",
+      "recorded_samples": 5,
+      "recorded_distance_m": 0.8172343103388089,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_go",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        1.85147619255994,
+        -0.08824775860644274
+      ],
+      "can_data": [
+        148,
+        0,
+        0,
+        0,
+        19,
+        1,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "motor": 53,
+      "guarded": 92,
+      "oa": 30,
+      "state": 18,
+      "light": 63,
+      "detector_frame": 63,
+      "pixels": 63,
+      "cone_pixels": 141,
+      "oa_point_a": 34,
+      "oa_point_b": 34,
+      "oa_point_c": 34,
+      "group": 34,
+      "stop": 62,
+      "oa_ready": 35,
+      "lane_a": 60,
+      "lane_b": 60,
+      "lane_c": 60,
+      "filtered": 42,
+      "lya": 42
+    },
+    "restored": true
+  },
+  "av314_oa_outer": {
+    "scenario": "oa",
+    "profile": "A3",
+    "accepted": true,
+    "reason": "Normal lane motion after OA exit",
+    "distance": 6.160301,
+    "events": [
+      {
+        "event": "oa_enter",
+        "sec": 2.343,
+        "distance": 0.025,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:semantic_045_route_or_command_unready",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": null
+      },
+      {
+        "event": "oa_motion",
+        "sec": 2.933,
+        "distance": 0.025,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 1.5254453091630606,
+        "w": 0.45,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "oa_exit",
+        "sec": 6.005,
+        "distance": 5.145,
+        "body_speed": 1.762,
+        "lamp": "Green",
+        "v": 1.2876912277174668,
+        "w": -0.45,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "vision_recovered",
+        "sec": 7.059,
+        "distance": 6.16,
+        "body_speed": 1.779,
+        "lamp": "Green",
+        "v": 1.7646325752124616,
+        "w": -0.20186873795886903,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      }
+    ],
+    "confirmed_green": false,
+    "early_release": false,
+    "light_after_green": {},
+    "max_pixels": 0,
+    "max_cone_pixels": 7609,
+    "group_count": 36,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 35,
+    "after_exit_counts": {
+      "lane_a": 16,
+      "lane_b": 16,
+      "lane_c": 16,
+      "filtered": 14,
+      "lya": 14,
+      "motor": 10
+    },
+    "recovery_distance": 1.0148155999999995,
+    "overlap_before_green": false,
+    "overlap_motor_samples": 0,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": false,
+      "oa_command_ready": false,
+      "traffic_mode": "normal",
+      "traffic_reason": "traffic_idle",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": false,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 5.5,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "forwarding_controller",
+      "recorded_samples": 5,
+      "recorded_distance_m": 0.8329195957827368,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_go",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        1.7646325752124616,
+        -0.20186873795886903
+      ],
+      "can_data": [
+        129,
+        0,
+        0,
+        0,
+        20,
+        1,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "guarded": 92,
+      "state": 20,
+      "motor": 56,
+      "oa": 31,
+      "light": 73,
+      "detector_frame": 73,
+      "pixels": 73,
+      "cone_pixels": 159,
+      "oa_point_a": 36,
+      "oa_point_b": 36,
+      "oa_point_c": 36,
+      "group": 36,
+      "stop": 72,
+      "oa_ready": 37,
+      "lane_a": 68,
+      "lane_b": 68,
+      "lane_c": 68,
+      "filtered": 49,
+      "lya": 49
+    },
+    "restored": true
+  },
+  "av314_overlap_inner": {
+    "scenario": "signal_oa",
+    "profile": "A3",
+    "accepted": false,
+    "reason": "No verified green restart",
+    "distance": 12.7742453,
+    "events": [
+      {
+        "event": "first_red",
+        "sec": 4.779,
+        "distance": 3.002,
+        "body_speed": 1.793,
+        "lamp": "Red",
+        "v": 1.9160425889688035,
+        "w": 0.055360322301716246,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "first_stop",
+        "sec": 9.878,
+        "distance": 12.772,
+        "body_speed": 0.048,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "cone_added_after_stop",
+        "sec": 9.893,
+        "distance": 12.772,
+        "body_speed": 0.048,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "oa_enter",
+        "sec": 10.045,
+        "distance": 12.774,
+        "body_speed": 0.002,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "green_after_stop",
+        "sec": 13.88,
+        "distance": 12.774,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      }
+    ],
+    "confirmed_green": false,
+    "early_release": false,
+    "light_after_green": {
+      "unknown": 211
+    },
+    "max_pixels": 48,
+    "max_cone_pixels": 3366,
+    "group_count": 189,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 188,
+    "after_exit_counts": {},
+    "recovery_distance": null,
+    "overlap_before_green": true,
+    "overlap_motor_samples": 36,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": true,
+      "oa_command_ready": true,
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_signal_lost",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": true,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 6.0,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "red_wait_signal_lost",
+      "recorded_samples": 61,
+      "recorded_distance_m": 12.590747350121397,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_hold:red_wait_signal_lost",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "motor": 268,
+      "guarded": 1379,
+      "state": 96,
+      "oa": 141,
+      "light": 389,
+      "detector_frame": 389,
+      "pixels": 389,
+      "cone_pixels": 888,
+      "lane_a": 379,
+      "lane_b": 379,
+      "lane_c": 379,
+      "stop": 388,
+      "filtered": 276,
+      "lya": 276,
+      "oa_ready": 189,
+      "group": 189,
+      "oa_point_a": 189,
+      "oa_point_b": 189,
+      "oa_point_c": 189
+    },
+    "restored": true
+  },
+  "av314_overlap_outer": {
+    "scenario": "signal_oa",
+    "profile": "A3",
+    "accepted": false,
+    "reason": "No verified green restart",
+    "distance": 12.2746105,
+    "events": [
+      {
+        "event": "first_red",
+        "sec": 4.166,
+        "distance": 3.006,
+        "body_speed": 1.762,
+        "lamp": "Red",
+        "v": 0.8,
+        "w": -0.45,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "first_stop",
+        "sec": 8.651,
+        "distance": 12.272,
+        "body_speed": 0.049,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "cone_added_after_stop",
+        "sec": 8.666,
+        "distance": 12.272,
+        "body_speed": 0.049,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "oa_enter",
+        "sec": 8.819,
+        "distance": 12.275,
+        "body_speed": 0.002,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "unknown",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "green_after_stop",
+        "sec": 12.642,
+        "distance": 12.275,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "unknown",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      }
+    ],
+    "confirmed_green": false,
+    "early_release": false,
+    "light_after_green": {
+      "unknown": 215
+    },
+    "max_pixels": 50,
+    "max_cone_pixels": 3350,
+    "group_count": 189,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 188,
+    "after_exit_counts": {},
+    "recovery_distance": null,
+    "overlap_before_green": true,
+    "overlap_motor_samples": 36,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": true,
+      "oa_command_ready": true,
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_signal_lost",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": true,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 5.5,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "red_wait_signal_lost",
+      "recorded_samples": 59,
+      "recorded_distance_m": 12.136301165926502,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_hold:red_wait_signal_lost",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "motor": 256,
+      "guarded": 1371,
+      "oa": 135,
+      "state": 93,
+      "detector_frame": 373,
+      "pixels": 373,
+      "light": 373,
+      "stop": 372,
+      "cone_pixels": 850,
+      "lane_a": 369,
+      "lane_b": 369,
+      "lane_c": 369,
+      "filtered": 263,
+      "lya": 263,
+      "oa_point_a": 189,
+      "group": 189,
+      "oa_point_b": 189,
+      "oa_point_c": 189,
+      "oa_ready": 189
+    },
+    "restored": true
+  },
+  "av314_signal_inner": {
+    "scenario": "signal",
+    "profile": "A3",
+    "accepted": false,
+    "reason": "No verified green restart",
+    "distance": 14.9329863,
+    "events": [
+      {
+        "event": "first_red",
+        "sec": 4.892,
+        "distance": 3.009,
+        "body_speed": 1.779,
+        "lamp": "Red",
+        "v": 1.8813433229790404,
+        "w": 0.07228474556020795,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "first_stop",
+        "sec": 11.126,
+        "distance": 14.93,
+        "body_speed": 0.046,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "unknown",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "green_after_stop",
+        "sec": 13.126,
+        "distance": 14.932,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "unknown",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      }
+    ],
+    "confirmed_green": false,
+    "early_release": false,
+    "light_after_green": {
+      "unknown": 214
+    },
+    "max_pixels": 80,
+    "max_cone_pixels": 0,
+    "group_count": 0,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 0,
+    "after_exit_counts": {},
+    "recovery_distance": null,
+    "overlap_before_green": false,
+    "overlap_motor_samples": 0,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": true,
+      "oa_command_ready": false,
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_signal_lost",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": false,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 6.0,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "red_wait_signal_lost",
+      "recorded_samples": 72,
+      "recorded_distance_m": 14.850027802553994,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_hold:red_wait_signal_lost",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "motor": 262,
+      "guarded": 1116,
+      "state": 95,
+      "oa": 137,
+      "light": 385,
+      "detector_frame": 385,
+      "pixels": 385,
+      "stop": 384,
+      "cone_pixels": 863,
+      "lane_a": 377,
+      "lane_b": 377,
+      "lane_c": 377,
+      "filtered": 114,
+      "lya": 114,
+      "group": 0,
+      "oa_ready": 0
+    },
+    "restored": true
+  },
+  "av314_signal_outer": {
+    "scenario": "signal",
+    "profile": "A3",
+    "accepted": true,
+    "reason": "Stopped on red and resumed on confirmed green",
+    "distance": 14.6787958,
+    "events": [
+      {
+        "event": "first_red",
+        "sec": 4.844,
+        "distance": 3.001,
+        "body_speed": 2.24,
+        "lamp": "Red",
+        "v": 1.8920742797626808,
+        "w": 0.02845664159530261,
+        "motor": "semantic_go",
+        "raw": "unknown",
+        "traffic": "traffic_idle",
+        "stop": false
+      },
+      {
+        "event": "first_stop",
+        "sec": 9.8,
+        "distance": 13.658,
+        "body_speed": 0.044,
+        "lamp": "Red",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "green_after_stop",
+        "sec": 11.802,
+        "distance": 13.66,
+        "body_speed": 0.0,
+        "lamp": "Green",
+        "v": 0.0,
+        "w": 0.0,
+        "motor": "semantic_hold:red_wait_signal_lost",
+        "raw": "red",
+        "traffic": "red_wait_signal_lost",
+        "stop": false
+      },
+      {
+        "event": "motion_after_physical_green",
+        "sec": 13.451,
+        "distance": 14.679,
+        "body_speed": 1.999,
+        "lamp": "Green",
+        "v": 1.8278201939910734,
+        "w": 0.05220558797024811,
+        "motor": "semantic_go",
+        "raw": "green",
+        "traffic": "green_resume",
+        "stop": false
+      }
+    ],
+    "confirmed_green": true,
+    "early_release": false,
+    "light_after_green": {
+      "green": 17
+    },
+    "max_pixels": 100,
+    "max_cone_pixels": 483,
+    "group_count": 0,
+    "grouped_samples_valid": true,
+    "stamps_strictly_increasing": true,
+    "group_owners": {
+      "publishers": [
+        [
+          "/cone_mask_avoider",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ],
+      "subscribers": [
+        [
+          "/data_processing_node",
+          "geometry_msgs/msg/PoseArray"
+        ],
+        [
+          "/unity_camera_odometry",
+          "geometry_msgs/msg/PoseArray"
+        ]
+      ]
+    },
+    "ready_true": 0,
+    "after_exit_counts": {},
+    "recovery_distance": null,
+    "overlap_before_green": false,
+    "overlap_motor_samples": 0,
+    "overlap_motor_positive": 0,
+    "last_state": {
+      "red_stop_required": false,
+      "oa_command_ready": false,
+      "traffic_mode": "normal",
+      "traffic_reason": "green_resume",
+      "traffic_light": "green",
+      "traffic_stop_flag": false,
+      "avoidance_active": false,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 5.5,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "forwarding_controller",
+      "recorded_samples": 67,
+      "recorded_distance_m": 13.83238818605491,
+      "progress_m": 0.0
+    },
+    "last_motor": {
+      "reason": "semantic_go",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        1.8278201939910734,
+        0.05220558797024811
+      ],
+      "can_data": [
+        176,
+        0,
+        0,
+        0,
+        242,
+        0,
+        0,
+        0
+      ]
+    },
+    "message_counts": {
+      "oa": 61,
+      "guarded": 323,
+      "motor": 115,
+      "state": 38,
+      "light": 160,
+      "detector_frame": 160,
+      "pixels": 160,
+      "cone_pixels": 358,
+      "stop": 159,
+      "lane_a": 155,
+      "lane_b": 155,
+      "lane_c": 155,
+      "filtered": 106,
+      "lya": 106,
+      "group": 0,
+      "oa_ready": 0
+    },
+    "restored": true
+  }
+}

@@ -1,0 +1,77 @@
+Starting >>> semantic_planner_core
+Starting >>> obsticle_avoidence
+Starting >>> semantic_vehicle_wiring
+Finished <<< semantic_vehicle_wiring [0.92s]
+Finished <<< semantic_planner_core [0.96s]
+Finished <<< obsticle_avoidence [0.95s]
+Starting >>> semantic_local_planner_ros
+Finished <<< semantic_local_planner_ros [0.63s]
+Starting >>> launchers
+Finished <<< launchers [0.92s]
+
+Summary: 5 packages finished [2.62s]
+obsticle_avoidence oa_2
+trajectory_follower lya_follower_connected_omegat_global
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'start_lya':
+        One of: ['true', 'false']
+        (default: 'true')
+
+    'start_oa2':
+        One of: ['true', 'false']
+        (default: 'false')
+
+    'lane_point_topic_prefix':
+        One of: ['/processed_point_', '/original_processed_point_']
+        (default: '/processed_point_')
+
+    'vehicle_output':
+        Connect legacy stop_wait and activate the motor session Valid choices are: ['true', 'false']
+        (default: 'false')
+
+    'oa_initially_idle':
+        Start on the normal lane when standalone OA is off Valid choices are: ['true', 'false']
+        (default: 'true')
+
+    'lane':
+        One of: ['inner', 'outer']
+
+    'traffic_stop_flag_topic':
+        no description given
+        (default: '/flag_stop')
+
+    'red_pixel_stop_threshold':
+        no description given
+        (default: '600')
+Deployment receipt: /root/aiformula_runtime/2026-11-20-mapassist-av314/deployment-20261119T175101746539Z.json
+AV314 reference differs or file unavailable: v14_weight
+AV314 reference differs or file unavailable: allnodes
+archive /root/.local/bin/allnodes
+archive /root/.local/bin/lya
+archive /root/.local/bin/mapassist
+archive /root/.local/bin/yolop
+install /root/.local/bin/allnodes
+install /root/.local/bin/lya
+install /root/.local/bin/mapassist
+install /root/.local/bin/yolop
+install /root/Desktop/1120-allnodes.desktop
+install /root/Desktop/1120-lya.desktop
+install /root/Desktop/1120-mapassist.desktop
+install /root/Desktop/1120-yolop.desktop
+Backup: /root/aiformula_runtime/2026-11-20-mapassist-av314/shortcut-backup-1xzxquk7
+Verified deployment receipt and six installed hashes
+[INFO] [1795110662.714960114] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795110662.716353086] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795110662.994548942] [data_processing_node]: Filtered => A(10.00,0.00), B(11.00,1.00), C(12.00,4.00); theta1=0.785, theta2=1.249, omega_t=4.636
+[INFO] [1795110663.027038985] [data_processing_node]: Filtered => A(20.00,0.00), B(21.00,1.00), C(22.00,4.00); theta1=0.785, theta2=1.249, omega_t=4.636
+[INFO] [1795110663.127296378] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795110663.128506267] [data_processing_node]: Switched to /processed_point_* topics.
+[INFO] [1795110663.271323045] [data_processing_node]: Filtered => A(50.00,0.00), B(51.00,0.00), C(52.00,0.00); theta1=0.000, theta2=0.000, omega_t=0.000
+{"passed": true, "poses": [[10.0, 0.0, 0.7853981633974483], [20.0, 0.0, 0.7853981633974483], [50.0, 0.0, 0.0]], "omega": [4.6364760900080615, 4.6364760900080615, 0.0], "ready": [false, false, false, true, true, false, false], "source": "/root/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py", "cases": ["legacy callbacks reordered", "two complete atomic groups", "late and duplicate groups", "incomplete group", "expired and future groups", "OA exit to fresh vision"]}
+Wrong ROS overlay for launchers. Open a fresh vehicle terminal and check ros2 pkg prefix launchers.
+[python3-1] [WARN] [1795110666.373158303] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 450, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-1] [WARN] [1795110674.543926708] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-1] [WARN] [1795110682.692383611] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+Usage: mapassist [inner|outer] [positive-red-pixel-count]
+PASS: 1120 upgrade, grouped DDS, actual default and explicit thresholds
