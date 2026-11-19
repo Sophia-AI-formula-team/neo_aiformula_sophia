@@ -1,5 +1,7 @@
 # 11 月 20 日实车实验准备
 
+Concept V6.27.6 在独立工作区构建，使用 B1.4、白盒与 H12。负责 Concept 的同学请从[部署说明](concept/DEPLOY.md)开始。下方的四终端流程用于 MapAssist。
+
 部署 Agent 在车机 `control` 账号操作。采用 11 月 19 日收车时已安装的 Allnodes、`lane_0927oa`、YOLOP 选择器、`oa_2` 和 LYA。MapAssist 使用本分支包含的绿灯放行修复 `43f3df8`。实验分支为 `experiment/vehicle-prep-20261120`。
 
 ## 整理旧快捷方式并安装
@@ -19,6 +21,25 @@ bash prepare.sh
 迁移清单包含旧的 `allnodes`、`lya`、`oa_2`、`oa-avoidance`、`semantic`、`mapassist-live`、`concept-live` 和两层 YOLOP 命令链接；也检查当前 XDG 桌面、旧隐藏桌面和应用菜单的桌面文件。只归档内容或链接目标与 19 日归档一致的入口，同名但内容不同先报告给负责人核对。模型、包源码、YOLOP 运行目录及 Concept 程序保留。旧入口备份在安装器打印的 `shortcut-backup-*` 目录，保留相对 HOME 的原路径。
 
 ## 四个终端依次启动
+
+### 1120 的 A4 / A4Light 更新
+
+在四个终端启动前，退出所有旧 YOLOP 进程。在可访问新 A4 提交的 neo
+检出中获取 `main`，再从本目录运行预览。更新器读取固定提交的三份
+runtime 源码，核对两套车端已安装文件和权重的 SHA256；不符合 1119 归档
+基线时停止，不能用它覆盖未知本地修改。
+
+```bash
+git -C ~/neo-1120 fetch origin main
+python3 update_yolop_1120.py --checkout ~/neo-1120
+python3 update_yolop_1120.py --checkout ~/neo-1120 --apply
+```
+
+只覆盖 1119 选择器下的 A4 / A4_lite runtime 文件，保留 V14、权重、Foxy
+适配、选择器、ROS 话题及控制。重复运行应报告 0 项；备份目录由脚本打印，
+保留相对于选择器根目录的路径。回退时先退出 YOLOP，再以备份恢复这三份
+源码。安装器不启动 ROS。实际停车验收前，必须用失败灯帧复跑，并确认
+当前门控不会因 unknown、漏检或旧数据解除红灯等待。
 
 每一步使用独立终端，前面的进程保持运行。桌面四个 `1120` 编号图标调用相同命令。
 

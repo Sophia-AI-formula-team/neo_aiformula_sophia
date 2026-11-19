@@ -1,0 +1,1581 @@
+{
+  "stage": "11/19 deployed online output, not a policy replay",
+  "five_m_manual_reading_uncertainty_px": 7,
+  "first_outer_visible_image": "17:08:20.915",
+  "first_clear_5m_planned_crossing_frame": 27,
+  "archived_decisions_with_path": 104,
+  "horizon_to_right_command": {
+    "between_photo_s": 1.850032,
+    "wheel_integral_between_photos_m": 4.214710084543778,
+    "wheel_integral_during_processing_and_gate_m": 0.6394127626098427,
+    "wheel_integral_while_right_gate_m": 0.4363181140230704,
+    "measured_imu_net_while_right_gate_rad": 0.003148922809218372,
+    "gate_right_duration_ms": 198.696715
+  },
+  "raw_imu_near_right": [
+    {
+      "source_jst": "17:08:28.641",
+      "receipt_jst": "17:08:28.642",
+      "yaw_ros_rad_s": 0.0073377955704927444
+    },
+    {
+      "source_jst": "17:08:28.691",
+      "receipt_jst": "17:08:28.692",
+      "yaw_ros_rad_s": 0.019131159409880638
+    },
+    {
+      "source_jst": "17:08:28.741",
+      "receipt_jst": "17:08:28.742",
+      "yaw_ros_rad_s": 0.025711851194500923
+    },
+    {
+      "source_jst": "17:08:28.791",
+      "receipt_jst": "17:08:28.792",
+      "yaw_ros_rad_s": 0.009560851380228996
+    },
+    {
+      "source_jst": "17:08:28.841",
+      "receipt_jst": "17:08:28.841",
+      "yaw_ros_rad_s": -0.0004789535887539387
+    },
+    {
+      "source_jst": "17:08:28.891",
+      "receipt_jst": "17:08:28.891",
+      "yaw_ros_rad_s": 0.03358950465917587
+    },
+    {
+      "source_jst": "17:08:28.941",
+      "receipt_jst": "17:08:28.942",
+      "yaw_ros_rad_s": 0.021710315719246864
+    }
+  ],
+  "wheel_first_below_left": [
+    "17:08:28.794",
+    164,
+    165
+  ],
+  "wheel_first_both_zero_after_stop": "17:08:29.776",
+  "internal_can_before": [
+    "17:08:28.698",
+    228,
+    225
+  ],
+  "internal_can_changed": [
+    "17:08:28.707",
+    219,
+    234
+  ],
+  "final_can_topic_recorded": false,
+  "gate_modes": [
+    "auto"
+  ],
+  "sample_window": [
+    "17:08:25.701",
+    "17:08:29.801"
+  ],
+  "sample_gaps": {
+    "camera": {
+      "median_ms": 216.604,
+      "max_ms": 234.06,
+      "longest_interval": [
+        "17:08:29.482",
+        "17:08:29.716"
+      ],
+      "samples_straddling_gate": [
+        "17:08:28.632",
+        "17:08:28.815"
+      ]
+    },
+    "wheel": {
+      "median_ms": 4.28717,
+      "max_ms": 66.031648,
+      "longest_interval": [
+        "17:08:28.983",
+        "17:08:29.049"
+      ],
+      "samples_straddling_gate": [
+        "17:08:28.689",
+        "17:08:28.713"
+      ]
+    },
+    "raw_imu": {
+      "median_ms": 49.926199,
+      "max_ms": 99.850862,
+      "longest_interval": [
+        "17:08:28.941",
+        "17:08:29.041"
+      ],
+      "samples_straddling_gate": [
+        "17:08:28.691",
+        "17:08:28.741"
+      ]
+    },
+    "gate_motor_cmd": {
+      "median_ms": 19.935862,
+      "max_ms": 64.535946,
+      "longest_interval": [
+        "17:08:28.980",
+        "17:08:29.044"
+      ],
+      "samples_straddling_gate": [
+        "17:08:28.680",
+        "17:08:28.701"
+      ]
+    }
+  },
+  "imu_source_matched_vehicle_state_samples": 81,
+  "frames": [
+    {
+      "frame": 0,
+      "photo_ns": 1795075700915952000,
+      "photo_jst": "17:08:20.915",
+      "auto_ns": 1795075701169428728,
+      "auto_jst": "17:08:21.169",
+      "gate_ns": 1795075702239799900,
+      "gate_jst": "17:08:22.239",
+      "emitted_ns": 1795075701169241941,
+      "decision_bag_ns": 1795075701173656250,
+      "linear": 0.2,
+      "yaw_ros": 0.062208589357279895,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0008113235883854796
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": 259,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 46.707119,
+        "decode_and_projection": 8.352002,
+        "inference": 92.265336,
+        "restrict_predictions": 1.059888,
+        "driver_callback": 104.85135500130127,
+        "capture_to_auto_packet": 253.476728,
+        "capture_to_driver_emit": 253.289941
+      }
+    },
+    {
+      "frame": 1,
+      "photo_ns": 1795075701132624000,
+      "photo_jst": "17:08:21.132",
+      "auto_ns": 1795075701394135031,
+      "auto_jst": "17:08:21.394",
+      "gate_ns": 1795075702239799900,
+      "gate_jst": "17:08:22.239",
+      "emitted_ns": 1795075701393923700,
+      "decision_bag_ns": 1795075701398274136,
+      "linear": 0.2,
+      "yaw_ros": 0.062208589357279895,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0010312512274675534
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 47.221274,
+        "decode_and_projection": 7.85881,
+        "inference": 94.094932,
+        "restrict_predictions": 1.155634,
+        "driver_callback": 110.90812099791947,
+        "capture_to_auto_packet": 261.511031,
+        "capture_to_driver_emit": 261.2997
+      }
+    },
+    {
+      "frame": 2,
+      "photo_ns": 1795075701349290000,
+      "photo_jst": "17:08:21.349",
+      "auto_ns": 1795075701602343159,
+      "auto_jst": "17:08:21.602",
+      "gate_ns": 1795075702239799900,
+      "gate_jst": "17:08:22.239",
+      "emitted_ns": 1795075701602110451,
+      "decision_bag_ns": 1795075701606427414,
+      "linear": 0.2,
+      "yaw_ros": 0.062208589357279895,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.001307715213788906
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 57.448939,
+        "decode_and_projection": 7.307986,
+        "inference": 80.949576,
+        "restrict_predictions": 0.949103,
+        "driver_callback": 106.10609400100657,
+        "capture_to_auto_packet": 253.053159,
+        "capture_to_driver_emit": 252.820451
+      }
+    },
+    {
+      "frame": 3,
+      "photo_ns": 1795075701549282000,
+      "photo_jst": "17:08:21.549",
+      "auto_ns": 1795075701809076671,
+      "auto_jst": "17:08:21.809",
+      "gate_ns": null,
+      "gate_jst": null,
+      "emitted_ns": 1795075701808889308,
+      "decision_bag_ns": 1795075701813002108,
+      "linear": 0.19999199999999995,
+      "yaw_ros": 0.062208585696963664,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.00162883338188217
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 63.366727,
+        "decode_and_projection": 7.464628,
+        "inference": 79.451089,
+        "restrict_predictions": 0.944175,
+        "driver_callback": 108.32581000067876,
+        "capture_to_auto_packet": 259.794671,
+        "capture_to_driver_emit": 259.607308
+      }
+    },
+    {
+      "frame": 4,
+      "photo_ns": 1795075701765811000,
+      "photo_jst": "17:08:21.765",
+      "auto_ns": 1795075702012200944,
+      "auto_jst": "17:08:22.012",
+      "gate_ns": 1795075702239799900,
+      "gate_jst": "17:08:22.239",
+      "emitted_ns": 1795075702011923787,
+      "decision_bag_ns": 1795075702016559763,
+      "linear": 0.2,
+      "yaw_ros": 0.062208589357279895,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0018718587107399943
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 53.061695,
+        "decode_and_projection": 7.035341,
+        "inference": 79.458129,
+        "restrict_predictions": 0.90427,
+        "driver_callback": 105.60247100147535,
+        "capture_to_auto_packet": 246.389944,
+        "capture_to_driver_emit": 246.112787
+      }
+    },
+    {
+      "frame": 5,
+      "photo_ns": 1795075701965934000,
+      "photo_jst": "17:08:21.965",
+      "auto_ns": 1795075702221315005,
+      "auto_jst": "17:08:22.221",
+      "gate_ns": 1795075702239799900,
+      "gate_jst": "17:08:22.239",
+      "emitted_ns": 1795075702221122266,
+      "decision_bag_ns": 1795075702225281915,
+      "linear": 0.2,
+      "yaw_ros": 0.062208589357279895,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0019082150697247123
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 56.447806,
+        "decode_and_projection": 7.258417,
+        "inference": 78.215294,
+        "restrict_predictions": 0.915054,
+        "driver_callback": 112.29575800098246,
+        "capture_to_auto_packet": 255.381005,
+        "capture_to_driver_emit": 255.188266
+      }
+    },
+    {
+      "frame": 6,
+      "photo_ns": 1795075702165964000,
+      "photo_jst": "17:08:22.165",
+      "auto_ns": 1795075702431980035,
+      "auto_jst": "17:08:22.431",
+      "gate_ns": 1795075702440856012,
+      "gate_jst": "17:08:22.440",
+      "emitted_ns": 1795075702431601021,
+      "decision_bag_ns": 1795075702435959168,
+      "linear": 0.4,
+      "yaw_ros": 0.06236100961547988,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0018792886485559865
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 66.893136,
+        "decode_and_projection": 8.365954,
+        "inference": 81.935351,
+        "restrict_predictions": 1.051953,
+        "driver_callback": 107.33030600022175,
+        "capture_to_auto_packet": 266.016035,
+        "capture_to_driver_emit": 265.637021
+      }
+    },
+    {
+      "frame": 7,
+      "photo_ns": 1795075702382538000,
+      "photo_jst": "17:08:22.382",
+      "auto_ns": 1795075702651781942,
+      "auto_jst": "17:08:22.651",
+      "gate_ns": 1795075702661136967,
+      "gate_jst": "17:08:22.661",
+      "emitted_ns": 1795075702651508818,
+      "decision_bag_ns": 1795075702655795444,
+      "linear": 0.5,
+      "yaw_ros": 0.06263192394382386,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0015862277836163991
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 61.874324,
+        "decode_and_projection": 7.128719,
+        "inference": 88.005941,
+        "restrict_predictions": 0.936623,
+        "driver_callback": 110.97317799794837,
+        "capture_to_auto_packet": 269.243942,
+        "capture_to_driver_emit": 268.970818
+      }
+    },
+    {
+      "frame": 8,
+      "photo_ns": 1795075702615933000,
+      "photo_jst": "17:08:22.615",
+      "auto_ns": 1795075702855672210,
+      "auto_jst": "17:08:22.855",
+      "gate_ns": 1795075702860395292,
+      "gate_jst": "17:08:22.860",
+      "emitted_ns": 1795075702855443439,
+      "decision_bag_ns": 1795075702859937556,
+      "linear": 0.5,
+      "yaw_ros": 0.06263192394382386,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0011126281455558485
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 45.894858,
+        "decode_and_projection": 7.21224,
+        "inference": 83.207243,
+        "restrict_predictions": 0.956335,
+        "driver_callback": 102.1804659976624,
+        "capture_to_auto_packet": 239.73921,
+        "capture_to_driver_emit": 239.510439
+      }
+    },
+    {
+      "frame": 9,
+      "photo_ns": 1795075702815945000,
+      "photo_jst": "17:08:22.815",
+      "auto_ns": 1795075703064037108,
+      "auto_jst": "17:08:23.064",
+      "gate_ns": 1795075703079949323,
+      "gate_jst": "17:08:23.079",
+      "emitted_ns": 1795075703063888466,
+      "decision_bag_ns": 1795075703068597179,
+      "linear": 0.5,
+      "yaw_ros": 0.06263192394382386,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0008728868143184801
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 49.560035,
+        "decode_and_projection": 7.465204,
+        "inference": 82.950376,
+        "restrict_predictions": 0.962479,
+        "driver_callback": 106.93775600157096,
+        "capture_to_auto_packet": 248.092108,
+        "capture_to_driver_emit": 247.943466
+      }
+    },
+    {
+      "frame": 10,
+      "photo_ns": 1795075703015958000,
+      "photo_jst": "17:08:23.015",
+      "auto_ns": 1795075703260190776,
+      "auto_jst": "17:08:23.260",
+      "gate_ns": 1795075703260228537,
+      "gate_jst": "17:08:23.260",
+      "emitted_ns": 1795075703259705265,
+      "decision_bag_ns": 1795075703264670974,
+      "linear": 0.5,
+      "yaw_ros": 0.06263192394382386,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        -0.0008598505243345854
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 60.555622,
+        "decode_and_projection": 7.206992,
+        "inference": 73.174704,
+        "restrict_predictions": 0.918606,
+        "driver_callback": 101.84465299971635,
+        "capture_to_auto_packet": 244.232776,
+        "capture_to_driver_emit": 243.747265
+      }
+    },
+    {
+      "frame": 11,
+      "photo_ns": 1795075703215984000,
+      "photo_jst": "17:08:23.215",
+      "auto_ns": 1795075703467111012,
+      "auto_jst": "17:08:23.467",
+      "gate_ns": 1795075703484079211,
+      "gate_jst": "17:08:23.484",
+      "emitted_ns": 1795075703466738878,
+      "decision_bag_ns": 1795075703471122594,
+      "linear": 0.5,
+      "yaw_ros": 0.06263192394382386,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.0,
+        0.0,
+        0.003012675104128319
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 54.400951,
+        "decode_and_projection": 8.045309,
+        "inference": 78.701349,
+        "restrict_predictions": 0.941135,
+        "driver_callback": 108.615381999698,
+        "capture_to_auto_packet": 251.127012,
+        "capture_to_driver_emit": 250.754878
+      }
+    },
+    {
+      "frame": 12,
+      "photo_ns": 1795075703415935000,
+      "photo_jst": "17:08:23.415",
+      "auto_ns": 1795075703669930287,
+      "auto_jst": "17:08:23.669",
+      "gate_ns": 1795075703680705495,
+      "gate_jst": "17:08:23.680",
+      "emitted_ns": 1795075703669672939,
+      "decision_bag_ns": 1795075703674102320,
+      "linear": 0.6999509999999995,
+      "yaw_ros": 0.06345079419646178,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.037228725730160714,
+        0.0001871883036936787,
+        0.007043362140518494
+      ],
+      "measured_body_speed_mps": 0.37238344920551014,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 63.823408,
+        "decode_and_projection": 7.231921,
+        "inference": 76.931017,
+        "restrict_predictions": 0.905006,
+        "driver_callback": 104.79183500137879,
+        "capture_to_auto_packet": 253.995287,
+        "capture_to_driver_emit": 253.737939
+      }
+    },
+    {
+      "frame": 13,
+      "photo_ns": 1795075703582491000,
+      "photo_jst": "17:08:23.582",
+      "auto_ns": 1795075703874037327,
+      "auto_jst": "17:08:23.874",
+      "gate_ns": 1795075703880438738,
+      "gate_jst": "17:08:23.880",
+      "emitted_ns": 1795075703873051936,
+      "decision_bag_ns": 1795075703877421411,
+      "linear": 0.8665069999999995,
+      "yaw_ros": 0.06505368936454842,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.10534141026933269,
+        0.0006432507877877239,
+        0.00634784896478045
+      ],
+      "measured_body_speed_mps": 0.44553019815659245,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 97.828601,
+        "decode_and_projection": 7.237712,
+        "inference": 77.362801,
+        "restrict_predictions": 0.949519,
+        "driver_callback": 107.12217500258703,
+        "capture_to_auto_packet": 291.546327,
+        "capture_to_driver_emit": 290.560936
+      }
+    },
+    {
+      "frame": 14,
+      "photo_ns": 1795075703832574000,
+      "photo_jst": "17:08:23.832",
+      "auto_ns": 1795075704080986811,
+      "auto_jst": "17:08:24.080",
+      "gate_ns": 1795075704127884435,
+      "gate_jst": "17:08:24.127",
+      "emitted_ns": 1795075704080797624,
+      "decision_bag_ns": 1795075704085784965,
+      "linear": 1.0319763560078716,
+      "yaw_ros": 0.06966907701771366,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.22756944007560165,
+        0.0010471352565338701,
+        0.00026083153878140274
+      ],
+      "measured_body_speed_mps": 0.5319763560078716,
+      "five_m_photo_edge_px": 264,
+      "five_m_planned_center_px": 300.23664874509075,
+      "phase_ms": {
+        "capture_to_image_callback": 52.313735,
+        "decode_and_projection": 7.271857,
+        "inference": 79.244877,
+        "restrict_predictions": 0.910927,
+        "driver_callback": 108.42446699825814,
+        "capture_to_auto_packet": 248.412811,
+        "capture_to_driver_emit": 248.223624
+      }
+    },
+    {
+      "frame": 15,
+      "photo_ns": 1795075704032574000,
+      "photo_jst": "17:08:24.032",
+      "auto_ns": 1795075704268404695,
+      "auto_jst": "17:08:24.268",
+      "gate_ns": 1795075704286030889,
+      "gate_jst": "17:08:24.286",
+      "emitted_ns": 1795075704268064946,
+      "decision_bag_ns": 1795075704273604488,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.35058703997092444,
+        0.0004581703077663743,
+        -0.009836054097667466
+      ],
+      "measured_body_speed_mps": 0.6982189672603315,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 59.088912,
+        "decode_and_projection": 7.320369,
+        "inference": 69.118385,
+        "restrict_predictions": 0.909294,
+        "driver_callback": 99.00416000164114,
+        "capture_to_auto_packet": 235.830695,
+        "capture_to_driver_emit": 235.490946
+      }
+    },
+    {
+      "frame": 16,
+      "photo_ns": 1795075704215819000,
+      "photo_jst": "17:08:24.215",
+      "auto_ns": 1795075704466923584,
+      "auto_jst": "17:08:24.466",
+      "gate_ns": 1795075704481547939,
+      "gate_jst": "17:08:24.481",
+      "emitted_ns": 1795075704466582779,
+      "decision_bag_ns": 1795075704470799676,
+      "linear": 0.18324500000000032,
+      "yaw_ros": 0.06220121916092885,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.49070339591785195,
+        -0.0014965635047940761,
+        -0.018063715363295894
+      ],
+      "measured_body_speed_mps": 0.8312130562622994,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 62.17954,
+        "decode_and_projection": 7.288721,
+        "inference": 77.036811,
+        "restrict_predictions": 0.916559,
+        "driver_callback": 103.28873900289182,
+        "capture_to_auto_packet": 251.104584,
+        "capture_to_driver_emit": 250.763779
+      }
+    },
+    {
+      "frame": 17,
+      "photo_ns": 1795075704432563000,
+      "photo_jst": "17:08:24.432",
+      "auto_ns": 1795075704680838968,
+      "auto_jst": "17:08:24.680",
+      "gate_ns": 1795075704700595435,
+      "gate_jst": "17:08:24.700",
+      "emitted_ns": 1795075704680170702,
+      "decision_bag_ns": 1795075704686565041,
+      "linear": 0.38324500000000034,
+      "yaw_ros": 0.062342022843247434,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.6809152094783788,
+        -0.005274363030440862,
+        -0.021653091309726372
+      ],
+      "measured_body_speed_mps": 0.9243089185636769,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 47.410835,
+        "decode_and_projection": 7.206224,
+        "inference": 77.95641,
+        "restrict_predictions": 0.92491,
+        "driver_callback": 114.05194599865354,
+        "capture_to_auto_packet": 248.275968,
+        "capture_to_driver_emit": 247.607702
+      }
+    },
+    {
+      "frame": 18,
+      "photo_ns": 1795075704632473000,
+      "photo_jst": "17:08:24.632",
+      "auto_ns": 1795075704900107939,
+      "auto_jst": "17:08:24.900",
+      "gate_ns": 1795075704920575137,
+      "gate_jst": "17:08:24.920",
+      "emitted_ns": 1795075704899937216,
+      "decision_bag_ns": 1795075704904886573,
+      "linear": 0.5831550000000003,
+      "yaw_ros": 0.0627044531241719,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        0.8483810249304573,
+        -0.00850577181277972,
+        -0.016933981638529005
+      ],
+      "measured_body_speed_mps": 0.7514166028611187,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 59.359163,
+        "decode_and_projection": 8.037693,
+        "inference": 81.642515,
+        "restrict_predictions": 0.974927,
+        "driver_callback": 117.17765899811639,
+        "capture_to_auto_packet": 267.634939,
+        "capture_to_driver_emit": 267.464216
+      }
+    },
+    {
+      "frame": 19,
+      "photo_ns": 1795075704849237000,
+      "photo_jst": "17:08:24.849",
+      "auto_ns": 1795075705128538748,
+      "auto_jst": "17:08:25.128",
+      "gate_ns": 1795075705142279889,
+      "gate_jst": "17:08:25.142",
+      "emitted_ns": 1795075705128174263,
+      "decision_bag_ns": 1795075705132728509,
+      "linear": 0.7831550000000003,
+      "yaw_ros": 0.06363777368124812,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.0069182478280427,
+        -0.010929386383660521,
+        -0.013638343912706371
+      ],
+      "measured_body_speed_mps": 0.7115183761605283,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 61.75834,
+        "decode_and_projection": 7.256977,
+        "inference": 88.002262,
+        "restrict_predictions": 0.94459,
+        "driver_callback": 120.92194100114284,
+        "capture_to_auto_packet": 279.301748,
+        "capture_to_driver_emit": 278.937263
+      }
+    },
+    {
+      "frame": 20,
+      "photo_ns": 1795075705082570000,
+      "photo_jst": "17:08:25.082",
+      "auto_ns": 1795075705343232160,
+      "auto_jst": "17:08:25.343",
+      "gate_ns": 1795075705359796321,
+      "gate_jst": "17:08:25.359",
+      "emitted_ns": 1795075705343034077,
+      "decision_bag_ns": 1795075705347793735,
+      "linear": 0.9831550000000002,
+      "yaw_ros": 0.0660374010276134,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.170586692652279,
+        -0.013762115330130005,
+        -0.020973656528995036
+      ],
+      "measured_body_speed_mps": 0.6915692628102332,
+      "five_m_photo_edge_px": 275,
+      "five_m_planned_center_px": 301.73510762399235,
+      "phase_ms": {
+        "capture_to_image_callback": 56.260972,
+        "decode_and_projection": 7.862266,
+        "inference": 80.318655,
+        "restrict_predictions": 0.953903,
+        "driver_callback": 115.01807300010114,
+        "capture_to_auto_packet": 260.66216,
+        "capture_to_driver_emit": 260.464077
+      }
+    },
+    {
+      "frame": 21,
+      "photo_ns": 1795075705299131000,
+      "photo_jst": "17:08:25.299",
+      "auto_ns": 1795075705568894414,
+      "auto_jst": "17:08:25.568",
+      "gate_ns": 1795075705569013840,
+      "gate_jst": "17:08:25.569",
+      "emitted_ns": 1795075705556006470,
+      "decision_bag_ns": 1795075705569188723,
+      "linear": 1.1831550000000002,
+      "yaw_ros": 0.07218601734971006,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.3310989535034778,
+        -0.017944516919323653,
+        -0.031127727019407428
+      ],
+      "measured_body_speed_mps": 0.7913148295617091,
+      "five_m_photo_edge_px": 277,
+      "five_m_planned_center_px": 301.51384907918873,
+      "phase_ms": {
+        "capture_to_image_callback": 54.979697,
+        "decode_and_projection": 7.247153,
+        "inference": 81.661299,
+        "restrict_predictions": 0.936751,
+        "driver_callback": 112.00273000213201,
+        "capture_to_auto_packet": 269.763414,
+        "capture_to_driver_emit": 256.87547
+      }
+    },
+    {
+      "frame": 22,
+      "photo_ns": 1795075705515883000,
+      "photo_jst": "17:08:25.515",
+      "auto_ns": 1795075705774425124,
+      "auto_jst": "17:08:25.774",
+      "gate_ns": 1795075705780247070,
+      "gate_jst": "17:08:25.780",
+      "emitted_ns": 1795075705774266017,
+      "decision_bag_ns": 1795075705778783912,
+      "linear": 1.3644615785127914,
+      "yaw_ros": 0.08780419569328762,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.5104256646808998,
+        -0.02447530000286484,
+        -0.041676799255766575
+      ],
+      "measured_body_speed_mps": 0.8644615785127914,
+      "five_m_photo_edge_px": 280,
+      "five_m_planned_center_px": 294.20156343624507,
+      "phase_ms": {
+        "capture_to_image_callback": 53.623296,
+        "decode_and_projection": 7.308658,
+        "inference": 80.877959,
+        "restrict_predictions": 0.929198,
+        "driver_callback": 115.58800200145924,
+        "capture_to_auto_packet": 258.542124,
+        "capture_to_driver_emit": 258.383017
+      }
+    },
+    {
+      "frame": 23,
+      "photo_ns": 1795075705715885000,
+      "photo_jst": "17:08:25.715",
+      "auto_ns": 1795075705983604306,
+      "auto_jst": "17:08:25.983",
+      "gate_ns": 1795075706000273237,
+      "gate_jst": "17:08:26.000",
+      "emitted_ns": 1795075705983412463,
+      "decision_bag_ns": 1795075705988976870,
+      "linear": 1.5373538942153497,
+      "yaw_ros": 0.1266142112035945,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.7003970382382867,
+        -0.033434300296788004,
+        -0.052572847386472506
+      ],
+      "measured_body_speed_mps": 1.0373538942153497,
+      "five_m_photo_edge_px": 284,
+      "five_m_planned_center_px": 293.95421481607787,
+      "phase_ms": {
+        "capture_to_image_callback": 69.828811,
+        "decode_and_projection": 7.179152,
+        "inference": 72.740649,
+        "restrict_predictions": 0.942702,
+        "driver_callback": 116.77435599995079,
+        "capture_to_auto_packet": 267.719306,
+        "capture_to_driver_emit": 267.527463
+      }
+    },
+    {
+      "frame": 24,
+      "photo_ns": 1795075705949128000,
+      "photo_jst": "17:08:25.949",
+      "auto_ns": 1795075706194965346,
+      "auto_jst": "17:08:26.194",
+      "gate_ns": 1795075706200858270,
+      "gate_jst": "17:08:26.200",
+      "emitted_ns": 1795075706194753183,
+      "decision_bag_ns": 1795075706199000417,
+      "linear": 1.7373538942153497,
+      "yaw_ros": 0.21801036078703687,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        1.972863365926838,
+        -0.050047215858147864,
+        -0.06922109769307885
+      ],
+      "measured_body_speed_mps": 1.3033420722192852,
+      "five_m_photo_edge_px": 286,
+      "five_m_planned_center_px": 291.9935303944711,
+      "phase_ms": {
+        "capture_to_image_callback": 46.334698,
+        "decode_and_projection": 8.744999,
+        "inference": 79.049483,
+        "restrict_predictions": 0.950191,
+        "driver_callback": 110.4807539995818,
+        "capture_to_auto_packet": 245.837346,
+        "capture_to_driver_emit": 245.625183
+      }
+    },
+    {
+      "frame": 25,
+      "photo_ns": 1795075706149221000,
+      "photo_jst": "17:08:26.149",
+      "auto_ns": 1795075706396294359,
+      "auto_jst": "17:08:26.396",
+      "gate_ns": 1795075706402002895,
+      "gate_jst": "17:08:26.402",
+      "emitted_ns": 1795075706396088052,
+      "decision_bag_ns": 1795075706400322229,
+      "linear": 1.9373538942153496,
+      "yaw_ros": 0.1266142112035945,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        2.253440484839736,
+        -0.07168825047609378,
+        -0.08473495059356528
+      ],
+      "measured_body_speed_mps": 1.5094829101723357,
+      "five_m_photo_edge_px": 290,
+      "five_m_planned_center_px": 306.5359199951703,
+      "phase_ms": {
+        "capture_to_image_callback": 55.792342,
+        "decode_and_projection": 7.213168,
+        "inference": 73.575349,
+        "restrict_predictions": 0.914479,
+        "driver_callback": 109.3157129980682,
+        "capture_to_auto_packet": 247.073359,
+        "capture_to_driver_emit": 246.867052
+      }
+    },
+    {
+      "frame": 26,
+      "photo_ns": 1795075706349203000,
+      "photo_jst": "17:08:26.349",
+      "auto_ns": 1795075706602929438,
+      "auto_jst": "17:08:26.602",
+      "gate_ns": 1795075706620888884,
+      "gate_jst": "17:08:26.620",
+      "emitted_ns": 1795075706602738715,
+      "decision_bag_ns": 1795075706607254209,
+      "linear": 2.0,
+      "yaw_ros": 0.08780634781982107,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        2.577176625822291,
+        -0.10184491461024973,
+        -0.10103293627549394
+      ],
+      "measured_body_speed_mps": 1.7422225659257797,
+      "five_m_photo_edge_px": 296,
+      "five_m_planned_center_px": 309.0158368822932,
+      "phase_ms": {
+        "capture_to_image_callback": 57.307517,
+        "decode_and_projection": 6.769545,
+        "inference": 82.031161,
+        "restrict_predictions": 0.893678,
+        "driver_callback": 106.47714100196026,
+        "capture_to_auto_packet": 253.726438,
+        "capture_to_driver_emit": 253.535715
+      }
+    },
+    {
+      "frame": 27,
+      "photo_ns": 1795075706565807000,
+      "photo_jst": "17:08:26.565",
+      "auto_ns": 1795075706820824243,
+      "auto_jst": "17:08:26.820",
+      "gate_ns": 1795075706843370641,
+      "gate_jst": "17:08:26.843",
+      "emitted_ns": 1795075706820668529,
+      "decision_bag_ns": 1795075706824898674,
+      "linear": 2.0,
+      "yaw_ros": 0.12661947569918192,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        2.97728422606525,
+        -0.14632338001699385,
+        -0.12039045755327926
+      ],
+      "measured_body_speed_mps": 1.9749622216792235,
+      "five_m_photo_edge_px": 306,
+      "five_m_planned_center_px": 296.3988566735753,
+      "phase_ms": {
+        "capture_to_image_callback": 50.201969,
+        "decode_and_projection": 10.94241,
+        "inference": 83.484527,
+        "restrict_predictions": 0.949327,
+        "driver_callback": 109.22889499852317,
+        "capture_to_auto_packet": 255.017243,
+        "capture_to_driver_emit": 254.861529
+      }
+    },
+    {
+      "frame": 28,
+      "photo_ns": 1795075706782544000,
+      "photo_jst": "17:08:26.782",
+      "auto_ns": 1795075707044676293,
+      "auto_jst": "17:08:27.044",
+      "gate_ns": 1795075707061359816,
+      "gate_jst": "17:08:27.061",
+      "emitted_ns": 1795075707044500770,
+      "decision_bag_ns": 1795075707058591325,
+      "linear": 2.0,
+      "yaw_ros": 0.0878063478198211,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        3.4218685310802957,
+        -0.2033042869909564,
+        -0.1345530614286984
+      ],
+      "measured_body_speed_mps": 2.161153946281978,
+      "five_m_photo_edge_px": 314,
+      "five_m_planned_center_px": 314.64161002896554,
+      "phase_ms": {
+        "capture_to_image_callback": 52.324429,
+        "decode_and_projection": 7.964316,
+        "inference": 88.208281,
+        "restrict_predictions": 0.936751,
+        "driver_callback": 112.46622600083356,
+        "capture_to_auto_packet": 262.132293,
+        "capture_to_driver_emit": 261.95677
+      }
+    },
+    {
+      "frame": 29,
+      "photo_ns": 1795075706999103000,
+      "photo_jst": "17:08:26.999",
+      "auto_ns": 1795075707259857681,
+      "auto_jst": "17:08:27.259",
+      "gate_ns": 1795075707308248992,
+      "gate_jst": "17:08:27.308",
+      "emitted_ns": 1795075707259679086,
+      "decision_bag_ns": 1795075707263247557,
+      "linear": 2.0,
+      "yaw_ros": 0.07218686992196847,
+      "left_at_1m": -1.2803428530878354,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        3.8959599658128323,
+        -0.2703935071018435,
+        -0.14660238944798026
+      ],
+      "measured_body_speed_mps": 2.2608995130334546,
+      "five_m_photo_edge_px": 324,
+      "five_m_planned_center_px": 312.95503658463224,
+      "phase_ms": {
+        "capture_to_image_callback": 60.672951,
+        "decode_and_projection": 7.33381,
+        "inference": 82.470304,
+        "restrict_predictions": 0.953166,
+        "driver_callback": 109.0785570013395,
+        "capture_to_auto_packet": 260.754681,
+        "capture_to_driver_emit": 260.576086
+      }
+    },
+    {
+      "frame": 30,
+      "photo_ns": 1795075707199104000,
+      "photo_jst": "17:08:27.199",
+      "auto_ns": 1795075707466047024,
+      "auto_jst": "17:08:27.466",
+      "gate_ns": 1795075707479842086,
+      "gate_jst": "17:08:27.479",
+      "emitted_ns": 1795075707465856749,
+      "decision_bag_ns": 1795075707469335619,
+      "linear": 2.0,
+      "yaw_ros": 0.06603773457869783,
+      "left_at_1m": -1.273336518023953,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        4.346690097541708,
+        -0.34061363709237935,
+        -0.16249678133108897
+      ],
+      "measured_body_speed_mps": 2.300797739734045,
+      "five_m_photo_edge_px": 332,
+      "five_m_planned_center_px": 312.9965942244398,
+      "phase_ms": {
+        "capture_to_image_callback": 70.589385,
+        "decode_and_projection": 7.016332,
+        "inference": 79.489234,
+        "restrict_predictions": 0.939759,
+        "driver_callback": 108.65608699896256,
+        "capture_to_auto_packet": 266.943024,
+        "capture_to_driver_emit": 266.752749
+      }
+    },
+    {
+      "frame": 31,
+      "photo_ns": 1795075707416717000,
+      "photo_jst": "17:08:27.416",
+      "auto_ns": 1795075707681360350,
+      "auto_jst": "17:08:27.681",
+      "gate_ns": 1795075707701609176,
+      "gate_jst": "17:08:27.701",
+      "emitted_ns": 1795075707681180155,
+      "decision_bag_ns": 1795075707684891669,
+      "linear": 2.0,
+      "yaw_ros": 0.0636379035379058,
+      "left_at_1m": -1.240778137679492,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        4.842140803992365,
+        -0.4265418359936267,
+        -0.18095560093810467
+      ],
+      "measured_body_speed_mps": 2.32074685308434,
+      "five_m_photo_edge_px": 339,
+      "five_m_planned_center_px": 314.8974606047148,
+      "phase_ms": {
+        "capture_to_image_callback": 59.364964,
+        "decode_and_projection": 8.946698,
+        "inference": 85.717075,
+        "restrict_predictions": 0.94939,
+        "driver_callback": 109.43011400013347,
+        "capture_to_auto_packet": 264.64335,
+        "capture_to_driver_emit": 264.463155
+      }
+    },
+    {
+      "frame": 32,
+      "photo_ns": 1795075707649093000,
+      "photo_jst": "17:08:27.649",
+      "auto_ns": 1795075707878784598,
+      "auto_jst": "17:08:27.878",
+      "gate_ns": 1795075707901511702,
+      "gate_jst": "17:08:27.901",
+      "emitted_ns": 1795075707877231966,
+      "decision_bag_ns": 1795075707880906327,
+      "linear": 2.0,
+      "yaw_ros": 0.06270450358292277,
+      "left_at_1m": -1.252741734947751,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        5.375006698556404,
+        -0.5276448496226318,
+        -0.19405565806172848
+      ],
+      "measured_body_speed_mps": 2.347345670884734,
+      "five_m_photo_edge_px": 349,
+      "five_m_planned_center_px": 322.2218569193624,
+      "phase_ms": {
+        "capture_to_image_callback": 46.84956,
+        "decode_and_projection": 7.548341,
+        "inference": 72.699272,
+        "restrict_predictions": 0.893038,
+        "driver_callback": 100.09492999961367,
+        "capture_to_auto_packet": 229.691598,
+        "capture_to_driver_emit": 228.138966
+      }
+    },
+    {
+      "frame": 33,
+      "photo_ns": 1795075707815865000,
+      "photo_jst": "17:08:27.815",
+      "auto_ns": 1795075708068237458,
+      "auto_jst": "17:08:28.068",
+      "gate_ns": 1795075708080673939,
+      "gate_jst": "17:08:28.080",
+      "emitted_ns": 1795075708067984078,
+      "decision_bag_ns": 1795075708071476068,
+      "linear": 2.0,
+      "yaw_ros": 0.062381111352366514,
+      "left_at_1m": -0.8399976291928192,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        5.757903743686297,
+        -0.6036224891298221,
+        -0.19771219970751427
+      ],
+      "measured_body_speed_mps": 2.334046261984537,
+      "five_m_photo_edge_px": 357,
+      "five_m_planned_center_px": 323.95998898992804,
+      "phase_ms": {
+        "capture_to_image_callback": 72.816551,
+        "decode_and_projection": 7.306705,
+        "inference": 70.301955,
+        "restrict_predictions": 0.929358,
+        "driver_callback": 100.71340300055454,
+        "capture_to_auto_packet": 252.372458,
+        "capture_to_driver_emit": 252.119078
+      }
+    },
+    {
+      "frame": 34,
+      "photo_ns": 1795075708015837000,
+      "photo_jst": "17:08:28.015",
+      "auto_ns": 1795075708267723914,
+      "auto_jst": "17:08:28.267",
+      "gate_ns": 1795075708280431983,
+      "gate_jst": "17:08:28.280",
+      "emitted_ns": 1795075708267539655,
+      "decision_bag_ns": 1795075708271115198,
+      "linear": 2.0,
+      "yaw_ros": 0.06221640632277599,
+      "left_at_1m": -0.48304362306880827,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        6.212081580664906,
+        -0.6957080404779169,
+        -0.20236878203933747
+      ],
+      "measured_body_speed_mps": 2.300797739734045,
+      "five_m_photo_edge_px": 365,
+      "five_m_planned_center_px": 324.6494189302507,
+      "phase_ms": {
+        "capture_to_image_callback": 61.251571,
+        "decode_and_projection": 6.817706,
+        "inference": 78.885672,
+        "restrict_predictions": 0.931631,
+        "driver_callback": 103.75338599988027,
+        "capture_to_auto_packet": 251.886914,
+        "capture_to_driver_emit": 251.702655
+      }
+    },
+    {
+      "frame": 35,
+      "photo_ns": 1795075708215780000,
+      "photo_jst": "17:08:28.215",
+      "auto_ns": 1795075708473870921,
+      "auto_jst": "17:08:28.473",
+      "gate_ns": 1795075708480769332,
+      "gate_jst": "17:08:28.480",
+      "emitted_ns": 1795075708472876249,
+      "decision_bag_ns": 1795075708476365775,
+      "linear": 2.0,
+      "yaw_ros": 0.06215247167396041,
+      "left_at_1m": -0.5179098784438321,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        6.662503387280736,
+        -0.7892277592209533,
+        -0.20706786079553297
+      ],
+      "measured_body_speed_mps": 2.300797739734045,
+      "five_m_photo_edge_px": 372,
+      "five_m_planned_center_px": 329.82662118948053,
+      "phase_ms": {
+        "capture_to_image_callback": 61.311611,
+        "decode_and_projection": 7.229552,
+        "inference": 82.008185,
+        "restrict_predictions": 0.985839,
+        "driver_callback": 105.50746099761454,
+        "capture_to_auto_packet": 258.090921,
+        "capture_to_driver_emit": 257.096249
+      }
+    },
+    {
+      "frame": 36,
+      "photo_ns": 1795075708415839000,
+      "photo_jst": "17:08:28.415",
+      "auto_ns": 1795075708680932342,
+      "auto_jst": "17:08:28.680",
+      "gate_ns": 1795075708701804986,
+      "gate_jst": "17:08:28.701",
+      "emitted_ns": 1795075708680771988,
+      "decision_bag_ns": 1795075708685692736,
+      "linear": 2.0,
+      "yaw_ros": -0.012958168482378962,
+      "left_at_1m": -1.2888032828241531,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        7.10953682101245,
+        -0.8840009711234271,
+        -0.2107551268801211
+      ],
+      "measured_body_speed_mps": 2.2675492174835528,
+      "five_m_photo_edge_px": 382,
+      "five_m_planned_center_px": 333.7585087548863,
+      "phase_ms": {
+        "capture_to_image_callback": 67.927562,
+        "decode_and_projection": 6.679271,
+        "inference": 77.318704,
+        "restrict_predictions": 0.902606,
+        "driver_callback": 112.05201100165141,
+        "capture_to_auto_packet": 265.093342,
+        "capture_to_driver_emit": 264.932988
+      }
+    },
+    {
+      "frame": 37,
+      "photo_ns": 1795075708632511000,
+      "photo_jst": "17:08:28.632",
+      "auto_ns": 1795075708881319484,
+      "auto_jst": "17:08:28.881",
+      "gate_ns": 1795075708900501701,
+      "gate_jst": "17:08:28.900",
+      "emitted_ns": 1795075708881138393,
+      "decision_bag_ns": 1795075708885589950,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -0.24214682695956932,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        7.5854306532868625,
+        -0.9873716657540677,
+        -0.21702718684167852
+      ],
+      "measured_body_speed_mps": 2.2276509907829625,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 60.24767,
+        "decode_and_projection": 9.241743,
+        "inference": 74.258145,
+        "restrict_predictions": 0.91163,
+        "driver_callback": 103.91505200095708,
+        "capture_to_auto_packet": 248.808484,
+        "capture_to_driver_emit": 248.627393
+      }
+    },
+    {
+      "frame": 38,
+      "photo_ns": 1795075708815748000,
+      "photo_jst": "17:08:28.815",
+      "auto_ns": 1795075709084205640,
+      "auto_jst": "17:08:29.084",
+      "gate_ns": 1795075709100769577,
+      "gate_jst": "17:08:29.100",
+      "emitted_ns": 1795075709083556894,
+      "decision_bag_ns": 1795075709088597549,
+      "linear": 0.10078035000000006,
+      "yaw_ros": -0.012874217847949954,
+      "left_at_1m": -0.5256116887577724,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        7.982010024044229,
+        -1.0759895070217589,
+        -0.22266057096403996
+      ],
+      "measured_body_speed_mps": 2.2077018774326675,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 76.007934,
+        "decode_and_projection": 9.380274,
+        "inference": 76.213726,
+        "restrict_predictions": 0.915119,
+        "driver_callback": 105.2446419998887,
+        "capture_to_auto_packet": 268.45764,
+        "capture_to_driver_emit": 267.808894
+      }
+    },
+    {
+      "frame": 39,
+      "photo_ns": 1795075709032515000,
+      "photo_jst": "17:08:29.032",
+      "auto_ns": 1795075709291899007,
+      "auto_jst": "17:08:29.291",
+      "gate_ns": 1795075709300807370,
+      "gate_jst": "17:08:29.300",
+      "emitted_ns": 1795075709291751805,
+      "decision_bag_ns": 1795075709295433814,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -0.486729997635931,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        8.442149329279232,
+        -1.1814495026079903,
+        -0.22794008485478412
+      ],
+      "measured_body_speed_mps": 2.147854537381782,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 61.382183,
+        "decode_and_projection": 9.92137,
+        "inference": 86.689409,
+        "restrict_predictions": 0.917871,
+        "driver_callback": 100.27838799942401,
+        "capture_to_auto_packet": 259.384007,
+        "capture_to_driver_emit": 259.236805
+      }
+    },
+    {
+      "frame": 40,
+      "photo_ns": 1795075709249164000,
+      "photo_jst": "17:08:29.249",
+      "auto_ns": 1795075709519615629,
+      "auto_jst": "17:08:29.519",
+      "gate_ns": 1795075709521659405,
+      "gate_jst": "17:08:29.521",
+      "emitted_ns": 1795075709519359017,
+      "decision_bag_ns": 1795075709524661020,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        8.856689952094507,
+        -1.278336726022926,
+        -0.23126073218801727
+      ],
+      "measured_body_speed_mps": 1.7821207926263698,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 52.949022,
+        "decode_and_projection": 6.719689,
+        "inference": 85.060328,
+        "restrict_predictions": 0.89163,
+        "driver_callback": 124.524653001572,
+        "capture_to_auto_packet": 270.451629,
+        "capture_to_driver_emit": 270.195017
+      }
+    },
+    {
+      "frame": 41,
+      "photo_ns": 1795075709482494000,
+      "photo_jst": "17:08:29.482",
+      "auto_ns": 1795075709751888482,
+      "auto_jst": "17:08:29.751",
+      "gate_ns": 1795075709761001807,
+      "gate_jst": "17:08:29.761",
+      "emitted_ns": 1795075709751706719,
+      "decision_bag_ns": 1795075709758279781,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        9.168610397894787,
+        -1.3515624270998579,
+        -0.22990377116708285
+      ],
+      "measured_body_speed_mps": 0.9642071452642674,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 49.095447,
+        "decode_and_projection": 8.320386,
+        "inference": 74.064957,
+        "restrict_predictions": 0.943759,
+        "driver_callback": 136.73338599983254,
+        "capture_to_auto_packet": 269.394482,
+        "capture_to_driver_emit": 269.212719
+      }
+    },
+    {
+      "frame": 42,
+      "photo_ns": 1795075709716554000,
+      "photo_jst": "17:08:29.716",
+      "auto_ns": 1795075710003298783,
+      "auto_jst": "17:08:30.003",
+      "gate_ns": 1795075710019774367,
+      "gate_jst": "17:08:30.019",
+      "emitted_ns": 1795075710003117309,
+      "decision_bag_ns": 1795075710010052808,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        9.31717428428996,
+        -1.3861195631449243,
+        -0.22718395189479196
+      ],
+      "measured_body_speed_mps": 0.3391349269550182,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 51.689296,
+        "decode_and_projection": 8.894058,
+        "inference": 77.711286,
+        "restrict_predictions": 0.957167,
+        "driver_callback": 147.25066899700323,
+        "capture_to_auto_packet": 286.744783,
+        "capture_to_driver_emit": 286.563309
+      }
+    },
+    {
+      "frame": 43,
+      "photo_ns": 1795075709965751000,
+      "photo_jst": "17:08:29.965",
+      "auto_ns": 1795075710235864632,
+      "auto_jst": "17:08:30.235",
+      "gate_ns": 1795075710240244604,
+      "gate_jst": "17:08:30.240",
+      "emitted_ns": 1795075710235642613,
+      "decision_bag_ns": 1795075710241684403,
+      "linear": 0.0,
+      "yaw_ros": 0.0,
+      "left_at_1m": -1.297263712560471,
+      "left_at_3m": -3.891791137681413,
+      "confirmed_edge": {},
+      "pose_forward_right_heading": [
+        9.35834672876514,
+        -1.3956260991441825,
+        -0.2266536846068694
+      ],
+      "measured_body_speed_mps": 0.0,
+      "five_m_photo_edge_px": null,
+      "five_m_planned_center_px": null,
+      "phase_ms": {
+        "capture_to_image_callback": 50.749684,
+        "decode_and_projection": 7.713527,
+        "inference": 74.471396,
+        "restrict_predictions": 0.961039,
+        "driver_callback": 135.93478100301581,
+        "capture_to_auto_packet": 270.113632,
+        "capture_to_driver_emit": 269.891613
+      }
+    }
+  ]
+}
