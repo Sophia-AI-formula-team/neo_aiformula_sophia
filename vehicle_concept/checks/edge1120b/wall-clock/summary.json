@@ -82,5 +82,145 @@
       "max": 169.85
     },
     "over_200_ms": 0
+  },
+  "production-material-a": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.96,
+    "max_cmd_gap_ms": 277.8,
+    "age_ms": {
+      "min": 70.6,
+      "p50": 125.78,
+      "p95": 186.9,
+      "max": 234.17
+    },
+    "over_200_ms": 3
+  },
+  "production-material-b": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.99,
+    "max_cmd_gap_ms": 300.1,
+    "age_ms": {
+      "min": 72.01,
+      "p50": 118.77,
+      "p95": 225.49,
+      "max": 231.96
+    },
+    "over_200_ms": 4
+  },
+  "production-material-15hz": {
+    "input_hz": 15.0,
+    "delivered": 39,
+    "no_command": 21,
+    "delivered_hz": 9.34,
+    "max_cmd_gap_ms": 154.1,
+    "age_ms": {
+      "min": 82.87,
+      "p50": 141.97,
+      "p95": 198.78,
+      "max": 217.51
+    },
+    "over_200_ms": 2
+  },
+  "production-new-sampled": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.96,
+    "max_cmd_gap_ms": 260.4,
+    "age_ms": {
+      "min": 73.12,
+      "p50": 124.72,
+      "p95": 182.54,
+      "max": 193.64
+    },
+    "over_200_ms": 0
+  },
+  "production-old-sampled": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.99,
+    "max_cmd_gap_ms": 264.9,
+    "age_ms": {
+      "min": 109.81,
+      "p50": 128.28,
+      "p95": 167.42,
+      "max": 179.79
+    },
+    "over_200_ms": 0
+  },
+  "fusion-112low": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.98,
+    "max_cmd_gap_ms": 264.6,
+    "age_ms": {
+      "min": 73.29,
+      "p50": 123.46,
+      "p95": 167.36,
+      "max": 198.74
+    },
+    "over_200_ms": 0
+  },
+  "fusion-112low-b": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.98,
+    "max_cmd_gap_ms": 263.0,
+    "age_ms": {
+      "min": 70.44,
+      "p50": 123.48,
+      "p95": 189.33,
+      "max": 225.51
+    },
+    "over_200_ms": 2
+  },
+  "fusion-112high": {
+    "input_hz": 15.0,
+    "delivered": 43,
+    "no_command": 17,
+    "delivered_hz": 10.58,
+    "max_cmd_gap_ms": 133.5,
+    "age_ms": {
+      "min": 91.59,
+      "p50": 133.52,
+      "p95": 164.82,
+      "max": 192.78
+    },
+    "over_200_ms": 0
+  },
+  "fusion-112high-b": {
+    "input_hz": 15.0,
+    "delivered": 43,
+    "no_command": 17,
+    "delivered_hz": 10.41,
+    "max_cmd_gap_ms": 139.2,
+    "age_ms": {
+      "min": 81.65,
+      "p50": 133.25,
+      "p95": 196.1,
+      "max": 203.33
+    },
+    "over_200_ms": 1
+  },
+  "fusion-stocklow": {
+    "input_hz": 5.0,
+    "delivered": 60,
+    "no_command": 0,
+    "delivered_hz": 4.99,
+    "max_cmd_gap_ms": 252.5,
+    "age_ms": {
+      "min": 107.79,
+      "p50": 132.11,
+      "p95": 183.18,
+      "max": 199.22
+    },
+    "over_200_ms": 0
   }
 }

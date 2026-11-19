@@ -1,0 +1,6 @@
+# Use after ../unity1120/foxy/compose.yaml so volumes and network are shared.
+services:
+  driver:
+    image: aiformula-concept:foxy-gpu-v6277
+  ingress:
+    image: aiformula-concept:foxy-gpu-v6277
