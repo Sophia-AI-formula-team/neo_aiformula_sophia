@@ -1,0 +1,38 @@
+name: concept-unity1120
+services:
+  driver:
+    image: aiformula-concept:foxy-gpu-1120
+    build:
+      context: ../../..
+      dockerfile: checks/unity1120/foxy/Dockerfile
+      network: none
+      args:
+        BASE_IMAGE: ${CONCEPT_BASE_IMAGE:-vehicle-semantic:1120}
+    environment:
+      CONCEPT_TARGET_MPS: ${CONCEPT_TARGET_MPS:-2.0}
+    volumes:
+      - type: bind
+        source: ${CONCEPT_WEIGHTS_FILE:?Set the absolute path to B1.4-road-aligned-research.pth}
+        target: /weights/B1.4.pth
+        read_only: true
+      - type: bind
+        source: ${CONCEPT_EVIDENCE_DIR:?Set an existing evidence directory}
+        target: /evidence
+    networks: [simulation]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  ingress:
+    image: aiformula-concept:foxy-gpu-1120
+    entrypoint: ["python3", "/opt/concept/unity/ingress.py"]
+    ports:
+      - "127.0.0.1:16826:16826"
+    networks: [loopback, simulation]
+networks:
+  simulation:
+    internal: true
+  loopback: {}
