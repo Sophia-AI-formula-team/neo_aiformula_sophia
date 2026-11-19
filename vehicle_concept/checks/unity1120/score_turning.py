@@ -81,6 +81,12 @@ def summarize(folder, geometry):
     w = np.array([row["command"]["angular_z_radps"] for row in events])
     v = np.array([row["command"]["linear_mps"] for row in events])
     t = np.array([row["frame"]["simulation_time_s"] for row in events])
+    difference = np.array([row["set_right_can"]-row["set_left_can"] for row in events],dtype=int)
+    prior = np.array([row["previous_right_can"]-row["previous_left_can"] for row in events],dtype=int)
+    delta = difference-prior
+    peak = int(np.argmax(abs(delta)))
+    event = events[peak]
+    gyro = [row["frame"]["gyro_ros_radps"] for row in events]
     # Count a hold for as long as that command was actually held by Unity.
     duration = np.diff(np.r_[t, output["seconds"]])
     significant = np.sign(w[np.abs(w) >= .05])
@@ -113,6 +119,13 @@ def summarize(folder, geometry):
                 painted_wheel_center_m=dict(start=wheel[0], minimum=wheel.min(), final=wheel[-1]),
                 cmd_left_positive_radps=dict(min=w.min(), max=w.max(), peak_abs=max(abs(w))),
                 actual_left_positive_gyro_peak_radps=float(max(abs(actual[:, 14]))),
+                largest_delta_right_minus_left_rpm=dict(seq=peak, signed_rpm=int(delta[peak]),
+                    previous_rpm=int(prior[peak]), applied_rpm=int(difference[peak]),
+                    capture_s=float(t[peak]), apply_s=event.get("can_set_sim_s",float(t[peak])),
+                    body_at_capture_mps=event["body_forward_mps"], cmd_v_mps=float(v[peak]),
+                    cmd_omega_radps=float(w[peak]), gyro_next_frame_radps=gyro[peak+1] if peak+1<len(gyro) else None,
+                    selected=event["command"].get("selected_index"), feasible=event["command"].get("feasible_count")),
+                rolling_peak_delta_rpm=int(np.max(abs(delta[np.array([abs(row["body_forward_mps"]) for row in events])>.1]),initial=0)),
                 measured_peak_abs_speed_times_yaw_mps2=float(max(abs(actual[:, 4]*actual[:, 14]))),
                 cmd_total_variation_radps=float(sum(abs(np.diff(w)))),
                 largest_cmd_step_radps=float(max(abs(np.diff(w)), default=0)),
@@ -121,7 +134,7 @@ def summarize(folder, geometry):
                                                largest_abs=float(max(abs(relative_heading)))),
                 wheel_time_series=clearance,
                 timeseries=dict(s=t.tolist(), cmd_ros_w=w.tolist(), cmd_v=v.tolist(),
-                                measured_ros_gyro=[row["frame"]["gyro_ros_radps"] for row in events]))
+                                diff_can_rpm=difference.tolist(), delta_diff_can_rpm=delta.tolist(), measured_ros_gyro=gyro))
 
 
 def main():
