@@ -159,7 +159,7 @@ def tracking_figure(runs, seq, calibration, out, identical, font):
         top.set_xlim(-1.3*xmax,1.3*xmax);top.set_ylim(-.2,zmax*1.12)
         v=host["command"]["linear_mps"];w=host["command"]["angular_z_radps"];gyro=host["frame"]["gyro_ros_radps"]
         owner=ctrl.get("owner","unavailable")
-        notes.text(0,.95,label,weight="bold",fontsize=17,color=COLORS[mode],va="top")
+        notes.text(0,.95,f"{label}　／　轨迹 {d['selected_index']}",weight="bold",fontsize=15,color=COLORS[mode],va="top")
         words=("追向一个前方点 P。" if mode=="pure_pursuit" else "A 是目标，A 到 B 给参考方向。\n再比较 AB 与 BC 的方向变化。")
         notes.text(0,.80,words if active(ctrl) else "本帧由 "+owner+" 分支决定。",fontsize=11,va="top")
         notes.text(0,.59,"\n".join(desc),fontsize=10,va="top")
@@ -205,10 +205,14 @@ def main():
         score=summarize(run["folder"],rings)
         counts=Counter((s["decision"].get("tracking_controller") or {}).get("owner","unavailable") for s in run["ros"])
         physical=np.asarray(read(run["folder"]/"result.json")["rows"])
-        crossed=[] if a.exit_progress is None else physical[physical[:,7]>=a.exit_progress,0].tolist()
+        exit_time=None
+        crossings=[] if a.exit_progress is None else np.flatnonzero(physical[:,7]>=a.exit_progress)
+        if len(crossings):
+            i=int(crossings[0])
+            exit_time=float(np.interp(a.exit_progress,physical[max(0,i-1):i+1,7],physical[max(0,i-1):i+1,0]))
         evidence.append(dict(mode=run["mode"],session=run["session"].parent.name,score=score,source_frame_counts=dict(counts),
                              tracking_active_frames=sum(active(d["decision"].get("tracking_controller") or {}) for d in run["ros"]),
-                             exit_progress_m=a.exit_progress,exit_sim_s=crossed[0] if crossed else None,timing=timing(run)))
+                             exit_progress_m=a.exit_progress,exit_sim_s=exit_time,timing=timing(run)))
         with (a.out/(run["mode"]+"-frames.csv")).open("w",encoding="utf8",newline="") as file:
             writer=csv.writer(file)
             writer.writerow(["seq","sim_s","status","owner","selected","feasible","actual_points_zx_m","target_zx_m",
