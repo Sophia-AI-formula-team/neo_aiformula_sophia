@@ -79,6 +79,31 @@ def read_run(folder, ros_roots, mode):
     return dict(mode=mode,folder=folder,host=host,ros=rows,session=session)
 
 
+def timing(run):
+    fields={}
+    for h,r in zip(run["host"],run["ros"]):
+        d=r["decision"]
+        cameras=d.get("camera_timing_ms",{})
+        measures={
+            "unity_capture_to_CAN_ms":(h["can_set_utc_us"]-h["capture_start_utc_us"])/1000,
+            "unity_encoded_to_reply_ms":(h["reply_received_utc_us"]-h["capture_encoded_utc_us"])/1000,
+            "bridge_processing_ms":r["reply"]["wall_ms"],
+            "ros_driver_processing_ms":d.get("processing_ms"),
+        }
+        for key in ("decode_and_projection","inference","restrict_predictions"):
+            measures[key+"_ms"]=cameras.get(key)
+        for key,value in measures.items():
+            if value is not None:
+                fields.setdefault(key,[]).append(float(value))
+    result={}
+    for key,values in fields.items():
+        steady=values[1:]
+        result[key]=dict(first=values[0],steady_count=len(steady),
+                         p50=float(np.percentile(steady,50)) if steady else None,
+                         p95=float(np.percentile(steady,95)) if steady else None)
+    return result
+
+
 def annotate(ax,x,y,label,color,photo):
     if not np.isfinite(x+y):return
     if photo and not (0<=x<640 and 0<=y<360):return
@@ -103,6 +128,10 @@ def tracking_figure(runs, seq, calibration, out, identical, font):
         label=NAMES[mode]; dest=out/mode;dest.mkdir()
         shutil.copy2(folder/shot,dest/"raw.jpg")
         if not cv2.imwrite(str(dest/"canonical.png"),calibration.rectify(img)):raise IOError(dest)
+        stamp=d["stamp"]
+        overlay=run["session"].parents[1]/"overlays"/f"{stamp['sec']}-{stamp['nanosec']:09d}.png"
+        if overlay.exists():
+            shutil.copy2(overlay,dest/"perception-overlay.png")
         (dest/"decision.json").write_text(json.dumps(d,ensure_ascii=False),encoding="utf8")
         (dest/"command.json").write_text(json.dumps(host,ensure_ascii=False),encoding="utf8")
         ax=fig.add_subplot(grid[row,0]);top=fig.add_subplot(grid[row,1]);notes=fig.add_subplot(grid[row,2]);notes.axis("off")
@@ -166,6 +195,7 @@ def main():
     parser.add_argument("--pure-pursuit",type=Path,required=True);parser.add_argument("--lya",type=Path,required=True)
     parser.add_argument("--ros",type=Path,action="append",required=True);parser.add_argument("--rings",type=Path,required=True)
     parser.add_argument("--out",type=Path,required=True);parser.add_argument("--font",type=Path,required=True)
+    parser.add_argument("--exit-progress",type=float,help="Optional known scoring-only exit distance from this start (m)")
     a=parser.parse_args();a.out.mkdir(parents=True,exist_ok=False)
     runs=[read_run(path,a.ros,mode) for path,mode in [(a.pure_pursuit,"pure_pursuit"),(a.lya,"lya")]]
     calibration=load_projection(HERE.parent/"foxy/honda.json")
@@ -174,7 +204,11 @@ def main():
     for run in runs:
         score=summarize(run["folder"],rings)
         counts=Counter((s["decision"].get("tracking_controller") or {}).get("owner","unavailable") for s in run["ros"])
-        evidence.append(dict(mode=run["mode"],session=run["session"].parent.name,score=score,source_frame_counts=dict(counts)))
+        physical=np.asarray(read(run["folder"]/"result.json")["rows"])
+        crossed=[] if a.exit_progress is None else physical[physical[:,7]>=a.exit_progress,0].tolist()
+        evidence.append(dict(mode=run["mode"],session=run["session"].parent.name,score=score,source_frame_counts=dict(counts),
+                             tracking_active_frames=sum(active(d["decision"].get("tracking_controller") or {}) for d in run["ros"]),
+                             exit_progress_m=a.exit_progress,exit_sim_s=crossed[0] if crossed else None,timing=timing(run)))
         with (a.out/(run["mode"]+"-frames.csv")).open("w",encoding="utf8",newline="") as file:
             writer=csv.writer(file)
             writer.writerow(["seq","sim_s","status","owner","selected","feasible","actual_points_zx_m","target_zx_m",
