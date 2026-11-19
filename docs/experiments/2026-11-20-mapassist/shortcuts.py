@@ -18,6 +18,10 @@ COMMANDS = ("allnodes", "yolop", "mapassist", "lya")
 def migrate(home, desktop, apply, check=False):
     bin_dir = home / ".local/bin"
     old = json.loads((HERE / "legacy-sha256.json").read_text())
+    # Concept owns its terminal command, desktop and menu copies. Its installer also
+    # recognizes the original 11/19 hashes when MapAssist is prepared first.
+    old.pop("concept-live")
+    old.pop("Concept.desktop")
     runtime = home / "aiformula_runtime/2026-11-20-mapassist-av314"
     selector = home / "aiformula_runtime/2026-11-19-yolop-selection/yolop.launch"
     driver = (HERE / "vehicle-command").read_bytes()

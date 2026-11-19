@@ -1,54 +1,78 @@
-# 11 月 20 日 · Concept V6.27.6 实验准备
+# 1120 车机部署 · Concept V6.27.8
 
-后续的 **V6.27.7** 在独立试验分支。现场若要对照“看见外缘仍往外打”，可先看录像、左右轮指令和同一台 Foxy 工作站的计时。下方安装命令取回已备车的 V6.27.6。V6.27.7 的车载 Jetson 延迟和实际贴边回正待测。[V6.27.7 对照报告与视频](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/concept-edge-latency-1120b/vehicle_concept/checks/edge1120b/README.md)
+**现场入口沿用原名。** 安装完成后，双击 **Concept** 或运行 `concept-live`。在弹出的终端输入 **1** 使用 Pure Pursuit，**2** 使用 LYA，回车使用 Pure Pursuit。LYA 的 A、B、C 叠在同一拍的摄像头画面上。操作员使用 Concept 时，先停稳并退出另一套驾驶方案。Concept 自己启动相机、识别、手柄、门控、面板和 RViz。
 
-车端源码、独立 Unity/Foxy 仿真入口和复核脚本都在团队 neo。V6.27.6 完成了 11/19 原车录包重放和四场 Unity 短闭环。朝外偏 23° 的场次停在道内。实车整圈、边缘恢复、Jetson 实际发令频率尚待验收。[四场实测与实车回正图](README.md) · [车端源码](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept) · [路界修复记录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept/checks/field_20261119.md)
+| 用途 | 来源 |
+|---|---|
+| 安装器、快捷方式、本文 | 团队 neo 的 `experiment/vehicle-prep-20261120` 分支，本目录 |
+| 正式部署分支 | `feat/concept-v626-live` |
+| 此次固定运行源码 | [f305d5f7acea5c87af0e2003bec13bdc06199d8f](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/f305d5f7acea5c87af0e2003bec13bdc06199d8f/vehicle_concept) |
+| 新源码与独立工作区 | `~/src/neo-concept-1120-v6278`、`~/concept_1120_v6278_ws` |
+| 现场已知旧入口 | `~/.local/bin/concept-live` 以前加载 `~/concept_v6275_ws/activate_concept.bash`。原 `Concept.desktop` 调用同名命令。 |
 
-## 车机上建立独立工作区
+## 在车机安装或升级
 
-在原车的 Ubuntu 20.04 / ROS 2 Foxy 环境中打开新终端。以下命令用于新目录。先加载现场既有的 ROS 底层，保留旧工作区、init 和快捷方式。核对脚本会比较手柄、电机换算和底层接线的实际安装文件；遇到差异请先记下包路径和文件，再与 11/19 车机安装记录核对。
-
-```bash
-set -e
-source /opt/ros/foxy/setup.bash
-source /home/workspace/install/setup.bash
-concept_repo="$HOME/src/neo-concept-1120"
-concept_ws="$HOME/concept_1120_ws"
-git clone --filter=blob:none --sparse --single-branch -b experiment/concept-foxy-unity-20261120 \
-  https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git "$concept_repo"
-git -C "$concept_repo" sparse-checkout set vehicle_concept workspace/src/aiformula
-git -C "$concept_repo" checkout --detach 5511be2fc48299180a4c8287c179588f81730449
-python3 "$concept_repo/vehicle_concept/checks/check_underlay.py"
-mkdir -p "$concept_ws"
-cd "$concept_ws"
-python3 -c 'import Cython, scipy; print(Cython.__version__, scipy.__version__)'
-colcon build --base-paths "$concept_repo/vehicle_concept/src"
-source install/local_setup.bash
-python3 "$concept_repo/vehicle_concept/checks/check_overlay.py" "$concept_ws"
-```
-
-核对输出应列出 12 个包。启动、驾驶、路界、候选、障碍、排序、面板七个包显示 `6.27.6`，六个原生扩展从当前工作区加载。Cython 3.0.12、SciPy 1.10.1 是此次 Foxy 工作站使用的版本。Jetson 使用本机兼容的 Torch 和 TorchVision；桌面 CUDA 11.8 的 x86 wheel 只用于仿真。
-
-## 核对 B1.4、GPU 和传感器
-
-若车上已有 B1.4，可复用同一文件。默认路径为 `${XDG_DATA_HOME:-$HOME/.local/share}/concept_yolop/B1.4-road-aligned-research.pth`。若目录中没有它，先从团队模型归档或实车备份取回。权重大小 **15,293,077 字节**，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。H12 随源码安装。
+在车机的 **`control` 用户、干净的 Bash** 中操作。第一次取准备工具时用新的检出目录。下列命令带有错误检查，某一步失败会结束这个子 shell。
 
 ```bash
-# 首次导入时，将路径改成已有的 B1.4 权重或 V6.26.zip
-ros2 run concept_yolop concept_yolop_weights /path/to/B1.4-road-aligned-research.pth
-ros2 run concept_yolop concept_yolop_check \
-  "$concept_repo/vehicle_concept/src/concept_drive/test/data/moving-lap-start/00000_rgb.png" --device cuda
-ros2 run concept live --show-args
+(
+  set -e
+  prep_repo="$HOME/neo-1120-concept-prep"
+  branch=experiment/vehicle-prep-20261120
+  url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
+  if [[ ! -e "$prep_repo" ]]; then
+    git clone --filter=blob:none --sparse --single-branch --branch "$branch" "$url" "$prep_repo"
+    git -C "$prep_repo" sparse-checkout set docs/experiments/2026-11-20-mapassist
+  else
+    test "$(git -C "$prep_repo" remote get-url origin)" = "$url"
+    test "$(git -C "$prep_repo" branch --show-current)" = "$branch"
+    test -z "$(git -C "$prep_repo" status --porcelain)"
+    git -C "$prep_repo" pull --ff-only origin "$branch"
+  fi
+  cd "$prep_repo/docs/experiments/2026-11-20-mapassist/concept"
+  git rev-parse HEAD
+  python3 shortcuts.py
+  bash prepare-concept.sh
+)
 ```
 
-现场软件启动入口是 `ros2 run concept live`。在车静止、旧控制进程已退出时检查相机图像与 CameraInfo、双轮转速、陀螺和手柄心跳。启动后电机输出默认禁用。沿用现场匹配的相机配置。光心距路面约 0.54–0.55 m；还需匹配图像尺寸、内参、光轴方向及帧名。手柄有操作即接管，松开停住，面板点“继续”才恢复自动。结束时先禁用输出、退出本次 launch，再用干净终端启动原方案。[传感器接线、话题和故障处理](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept/AGENTS.md)
+安装器先在独立工作区构建 12 个 Concept 包和专用的 `launchers`，验证依赖、识别、启动菜单，再替换快捷方式。重复执行使用同一份固定代码。车上已装的 B1.4 默认位于 `${XDG_DATA_HOME:-$HOME/.local/share}/concept_yolop/B1.4-road-aligned-research.pth`。缺少文件时，在上面命令最后一行使用 `bash prepare-concept.sh --weights /实际路径/B1.4-road-aligned-research.pth`；导入器也支持团队的 `V6.26.zip`。[安装脚本](prepare-concept.sh) · [旧车安装记录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/b866165366d53875402d61f2d8bab258ea0f1c4e/docs/experiments/2026-11-19-yolop-selection/concept-v6275)
 
-## Unity 对照环境
+**为什么单独编译 launchers。** 核对了 11/19 终场的车载安装归档。只加载 `/home/workspace/install` 时 12 个被检查的文件中有 11 个吻合，差异是 `allnodes.launch.py`。当天实际运行的 Concept 用了独立的 `launchers`，按此顺序逐项核对是 12/12。新的工作区复用这一接线方式，以及已有的车辆 Python 依赖和 Jetson 的 Qt/Torch 预加载库。原车的 init、已装软件和独立急停继续使用现场接线。[归档来源](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/tag/field-archive-2026-11-19) · [新版接线与话题](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
-桌面选 Concept 自己的 UnityLab 实例。四场闭环以 semantic 共用的 `vehicle-semantic:1120` 为基础镜像（ID `sha256:3fb88ac063248c0c78f21f115544d86994b754c5a286ca954bb1c872ebca8997`）。其上使用 `/vision` 中的 Torch 2.0.0+cu118、TorchVision 0.15.1+cu118、NumPy 1.24.4，另加 SciPy 1.10.1，构建镜像内 Cython 为 0.29.14。用同一基础上的 `vehicle-semantic:pr47-grouped`（ID `sha256:1a9afe0c25145f43291f25ffaa3395bfb24e61de0b069b2051847724bddd950d`）核对了 100 条指令经过真实 ROS 门控后的软件 CAN 输出。Jetson 的 Torch 为 2.0.0+nv23.05。桌面 B1.4 在冻结样本上的路面及车线掩膜差异均为零。
+## 确认旧入口已经换成新版
 
-新工作站需从已有团队开发机取两个本地镜像或等价的已核实环境、B1.4 权重，以及私有仿真工程和 V6.26 裁判源码快照。车机部署上述 ROS 包时不需要 Unity 或桌面镜像。[仿真容器准备及镜像迁移](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/experiment/concept-foxy-unity-20261120/vehicle_concept/checks/unity1120/foxy) · [Unity 工程和裁判源码哈希](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/experiment/concept-foxy-unity-20261120/vehicle_concept/checks/unity1120/host)
+安装器按归档指纹识别旧命令和图标。它先备份，再在同一位置写入新入口。命令仍叫 `concept-live`，桌面和应用菜单仍叫 **Concept**。现场隐藏桌面上的旧入口也在迁移范围内。新的桌面项使用 `Terminal=true`，选择控制器时可以直接输入数字。MapAssist 的 `allnodes`、`yolop`、`mapassist`、`lya` 保留原来的用途。单独执行的 `lya` 是 MapAssist 的 LYA 命令。
 
-## 怎么核对“打方向晚”
+在操作员新开的交互式 Bash 中运行：
 
-用同一图像时间戳串起拍摄、选中路线、自动速度、门控后指令及随后轮速/陀螺。分别记下首次能看清外缘、所选路线首次指向外缘、减小向外转向、首次向内发令和车身实际向内转的时间。判罚按一侧轮胎完全出界；压线允许。看不到实际轮胎过线时，将该时刻记为未知。出界后停车要保留；成功恢复另需观察到车身重新沿路前进。
+```bash
+prep="$HOME/neo-1120-concept-prep/docs/experiments/2026-11-20-mapassist/concept"
+source "$prep/verify-shortcuts.bash"
+concept-live --show-args
+```
+
+第一项检查磁盘上的入口和当前 shell 的命令解析。若 `type -a concept-live` 显示旧 alias、函数或其它 PATH 副本，按输出定位它的定义，再打开新终端复查。第二项列出的 `tracking_controller` 默认值为 `auto`。另可运行 `concept-live --verify-install` 核对已安装的包和原生模块。输出应指向 `~/concept_1120_v6278_ws/install`；`concept`、`concept_candidates`、`concept_drive`、`concept_panel` 都是 6.27.8。
+
+## 打开面板
+
+直接运行 `concept-live` 后在菜单选择；脚本也可显式运行 `concept-live tracking_controller:=lya`。车静止、电机输出禁用时，在已加载新工作区的另一个终端执行：
+
+```bash
+source "$HOME/concept_1120_v6278_ws/activate_concept.bash"
+ros2 param get /concept/drive tracking_controller
+ros2 param get /concept/drive target_speed_mps
+ros2 param get /concept/gate max_auto_speed_mps
+```
+
+核对摄像头和同戳 CameraInfo、左右轮速、陀螺以及手柄心跳。11/19 固定安装使用 `~/.config/concept/honda-ground.json` 和 0.55 m 的实测高度。启动会先查同目录的 `camera.json`，若有两份文件，核对现场实际生效的投影。面板可见本车实际目标速度和上限；没有保存值时两项缺省为 **4.0 m/s**，Unity 短测使用 **2.0 m/s**。手柄操作立即接管，松手后停车，手动点「继续」才恢复自动。[现场相机登记](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/b866165366d53875402d61f2d8bab258ea0f1c4e/docs/experiments/2026-11-19-yolop-selection/concept-v6275/field-followup/calibration/2026-11-19-calibration.md)
+
+## 遇到问题与回退
+
+* **模型缺失或校验失败**，B1.4 应为 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。H12 随代码安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
+* **同名快捷方式被人改过**，安装器会打印具体路径。用 `type -a concept-live`、`readlink -f 路径` 和 `sha256sum 路径` 核实来源，保留现场改动。旧工作区及其私有 venv 仍可能提供依赖。
+* **需要退回原入口**，先禁用输出、待车停稳并退出本次 launch。在上述 `prep` 目录运行 `python3 shortcuts.py --rollback`。它依据 `~/.local/state/aiformula/concept-shortcuts-v6278/` 的清单恢复原内容、权限和原先没有入口的位置。若早期 MapAssist 安装已取走了旧图标，它原本的备份保存在 `~/aiformula_runtime/2026-11-20-mapassist-av314/shortcut-backup-*`。在当时就没有旧入口的机器上，可按 11/19 冻结手册从旧工作区启动。[V6.27.5 手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/a9d7d7a94d062ad5ff61fedfe21d3dbe94fa1bd1/vehicle_concept/AGENTS.md)
+
+## 目前验证到哪里
+
+V6.27.8 的四次短程 Unity 对照都通过越线检查。长弯 Pure Pursuit 走了 **51.05 m**，LYA 走了 **46.57 m**，两者都出了弯，LYA 末段停稳。默认保留 Pure Pursuit。实车转向、Jetson 拍照到发令的延迟和实车整圈需要现场复测。[同帧面板、驾驶对比视频和逐帧数据](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/f305d5f7acea5c87af0e2003bec13bdc06199d8f/vehicle_concept/checks/tracking_v6278)

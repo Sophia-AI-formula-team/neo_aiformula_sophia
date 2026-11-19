@@ -1,8 +1,8 @@
 # 11 月 20 日实车实验准备
 
-Concept V6.27.6 在独立工作区构建，使用 B1.4、白盒与 H12。负责 Concept 的同学请从[部署说明](concept/DEPLOY.md)开始。下方的四终端流程用于 MapAssist。
+**Concept V6.27.8 已合入正式部署分支。** 车机用同名 `concept-live`、原 Concept 桌面图标或应用菜单启动，在终端选 Pure Pursuit 或 LYA。首次安装、覆盖旧快捷方式以及回退请按 [Concept 1120 部署说明](concept/DEPLOY.md)。下方四终端是单独的 MapAssist 方案。
 
-部署 Agent 在车机 `control` 账号操作。采用 11 月 19 日收车时已安装的 Allnodes、`lane_0927oa`、YOLOP 选择器和 LYA。`oa_2` 由本次 overlay 提供。MapAssist 使用本分支包含的绿灯放行修复 `43f3df8`。本轮待审实验分支为 `experiment/1120-av314-oa2-grouped`。
+部署 Agent 在车机 `control` 账号操作。采用 11 月 19 日收车时已安装的 Allnodes、`lane_0927oa`、YOLOP 选择器和 LYA。`oa_2` 由本次 overlay 提供。MapAssist 使用本分支包含的绿灯放行修复 `43f3df8`。AV314 分组试验已经合入本准备分支。
 
 本轮 AV314 内圈 450 px 的部署入口、OA2 分组接线、实测日志和回退步骤见 [AV314 部署与验证](AV314_DEPLOY.md)。
 
@@ -11,16 +11,16 @@ Concept V6.27.6 在独立工作区构建，使用 B1.4、白盒与 H12。负责 
 车辆静止且上次实验进程已退出时，在新 Bash 终端运行。选择新的检出目录，保留原车工作区。
 
 ```bash
-git clone --filter=blob:none --sparse --single-branch -b experiment/1120-av314-oa2-grouped https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120
+git clone --filter=blob:none --sparse --single-branch -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120
 git -C ~/neo-1120 sparse-checkout set docs/experiments/2026-11-20-mapassist workspace/src/aiformula/launchers workspace/src/aiformula/perception/semantic_planning_system workspace/src/aiformula/control/semantic_vehicle_wiring workspace/src/aiformula/perception/obsticle_avoidence
 cd ~/neo-1120/docs/experiments/2026-11-20-mapassist
 python3 shortcuts.py
 bash prepare.sh
 ```
 
-第一条 Python 命令列出迁移清单。`prepare.sh` 在 `~/aiformula_runtime/2026-11-20-mapassist-av314` 构建独立 Foxy overlay，核实车上基本包和原生 ABC 参数后，先移走 19 日的入口，再安装新入口。全程不会启动识别、控制或 CAN 节点。车端已有 `~/.local/bin` 应在 PATH 中。完成后在新的交互终端用 `type -a allnodes yolop mapassist lya` 确认四条命令首先解析至该目录。随后在新交互 Bash 中 source 本目录的 `verify-shortcuts.bash`，检查旧命令、桌面入口与同名别名。当前 Concept 快捷方式由 Concept 部署人员维护。
+第一条 Python 命令列出迁移清单。`prepare.sh` 在 `~/aiformula_runtime/2026-11-20-mapassist-av314` 构建独立 Foxy overlay，核实车上基本包和原生 ABC 参数后，先移走 19 日的入口，再安装新入口。全程不会启动识别、控制或 CAN 节点。车端已有 `~/.local/bin` 应在 PATH 中。完成后在新的交互终端用 `type -a allnodes yolop mapassist lya` 确认四条命令首先解析至该目录。随后在新交互 Bash 中 source 本目录的 `verify-shortcuts.bash`，检查旧命令、桌面入口与同名别名。Concept 的旧命令与图标由 [Concept 安装器](concept/DEPLOY.md)单独更新。
 
-迁移清单包含旧的 `allnodes`、`lya`、`oa_2`、`oa-avoidance`、`semantic`、`mapassist-live`、`concept-live` 和两层 YOLOP 命令链接；也检查当前 XDG 桌面、旧隐藏桌面和应用菜单的桌面文件。只归档内容或链接目标与 19 日归档一致的入口，同名但内容不同先报告给负责人核对。模型、包源码、YOLOP 运行目录及 Concept 程序保留。旧入口备份在安装器打印的 `shortcut-backup-*` 目录，保留相对 HOME 的原路径。
+迁移清单包含旧的 `allnodes`、`lya`、`oa_2`、`oa-avoidance`、`semantic`、`mapassist-live`和两层 YOLOP 命令链接；也检查当前 XDG 桌面、旧隐藏桌面和应用菜单的桌面文件。只归档内容或链接目标与 19 日归档一致的入口，同名但内容不同先报告给负责人核对。模型、包源码、YOLOP 运行目录及 Concept 程序保留。旧入口备份在安装器打印的 `shortcut-backup-*` 目录，保留相对 HOME 的原路径。
 
 ## 四个终端依次启动
 

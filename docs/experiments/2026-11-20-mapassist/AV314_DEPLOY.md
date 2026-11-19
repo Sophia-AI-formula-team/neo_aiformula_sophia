@@ -7,7 +7,7 @@
 本分支整合 1120 准备分支、PR47 的红灯停车优先级，以及 AV314 实跑所用的 OA2 发布端和选择器。已有准备目录的车机请另开干净 Bash 终端，在新的检出目录执行以下命令。安装前车辆停稳，退出原来的四个终端，保留原来的 overlay 和现场改动。
 
 ```bash
-git clone --filter=blob:none --sparse -b experiment/1120-av314-oa2-grouped https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120-av314
+git clone --filter=blob:none --sparse -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120-av314
 cd ~/neo-1120-av314
 git sparse-checkout set docs/experiments/2026-11-20-mapassist workspace/src/aiformula/launchers workspace/src/aiformula/control/semantic_vehicle_wiring workspace/src/aiformula/perception/semantic_planning_system workspace/src/aiformula/perception/obsticle_avoidence
 git rev-parse HEAD
@@ -26,9 +26,9 @@ bash prepare.sh
 
 ## 四终端启动与接线核对
 
-桌面依次打开 **1120 1 allnodes → 1120 2 yolop → 1120 3 mapassist → 1120 4 lya**。四个图标各自开终端。用命令行时也按同一顺序开四个新终端，依次保留运行。默认打开 MapAssist 使用外圈 600。内圈 450 可在同一个图标的右键菜单选 **AV314 inner (450 px)**；若桌面环境不显示启动动作，在第三个终端运行下表命令。当前 Concept 图标和命令另由 Concept 部署人员维护。
+桌面依次打开 **1120 1 allnodes → 1120 2 yolop → 1120 3 mapassist → 1120 4 lya**。四个图标各自开终端。用命令行时也按同一顺序开四个新终端，依次保留运行。默认打开 MapAssist 使用外圈 600。内圈 450 可在同一个图标的右键菜单选 **AV314 inner (450 px)**；若桌面环境不显示启动动作，在第三个终端运行下表命令。现场 Concept 使用另一套[快捷方式更新和回退步骤](concept/DEPLOY.md)。
 
-安装后在操作员的新交互式 Bash 运行 `source ~/neo-1120-av314/docs/experiments/2026-11-20-mapassist/verify-shortcuts.bash`。该检查验证两套入口、显示四个名字的实际解析，并查找遮住新命令的 alias、function 和仍能调用的旧命令。1119 受管入口（含已知旧 Concept）、早期 1120 四命令、用户 bin 里的同内容副本以及桌面和应用菜单里的旧图标由安装器归档到不在 PATH 的备份目录。若检查发现现场另设的旧别名或函数，用 `type -a 名称` 核实后删除其用户启动文件中的对应定义，再开终端复查。现场私有的定义不在 1119 归档里，不能从仓库推断其内容。
+安装后在操作员的新交互式 Bash 运行 `source ~/neo-1120-av314/docs/experiments/2026-11-20-mapassist/verify-shortcuts.bash`。该检查验证两套入口、显示四个名字的实际解析，并查找遮住新命令的 alias、function 和仍能调用的旧命令。1119 的 MapAssist、Allnodes、LYA 和识别入口、早期 1120 四命令、用户 bin 里的同内容副本以及桌面和应用菜单里的旧图标由安装器归档到不在 PATH 的备份目录。若检查发现现场另设的旧别名或函数，用 `type -a 名称` 核实后删除其用户启动文件中的对应定义，再开终端复查。现场私有的定义不在 1119 归档里，不能从仓库推断其内容。
 
 | 顺序 | 内圈本次试验 | 核对项 |
 | --- | --- | --- |

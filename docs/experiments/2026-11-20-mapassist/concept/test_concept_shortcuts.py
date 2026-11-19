@@ -64,6 +64,19 @@ class VehicleConceptShortcuts(unittest.TestCase):
     def args(self, *args):
         return [sys.executable, str(shortcuts.HERE / "shortcuts.py"), *args]
 
+    def test_operator_shell_reports_shadowing_alias_function_and_path(self):
+        self.cli("--apply")
+        env = dict(self.env, PATH=str(self.command.parent) + os.pathsep + self.env["PATH"])
+        script = str(shortcuts.HERE / "verify-shortcuts.bash")
+        def check(prefix=""):
+            return subprocess.run(["bash", "--norc", "--noprofile", "-ic", prefix + 'source "$1"', "bash", script],
+                                  env=env, capture_output=True)
+        self.assertEqual(check().returncode, 0)
+        self.assertNotEqual(check("alias concept-live='old-concept'; ").returncode, 0)
+        self.assertNotEqual(check("concept-live() { true; }; ").returncode, 0)
+        put(self.tools / "concept-live", "#!/bin/sh\nexit 0\n")
+        self.assertNotEqual(check().returncode, 0)
+
     def cli(self, *args, ok=True, env=None):
         result = subprocess.run(self.args(*args), env=dict(self.env, **(env or {})),
                                 text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

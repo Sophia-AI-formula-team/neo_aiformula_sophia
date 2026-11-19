@@ -1,5 +1,7 @@
 """Linux regression for migrating the vehicle user's active shortcuts."""
 import os
+import hashlib
+import json
 import shutil
 import subprocess
 import tempfile
@@ -11,6 +13,32 @@ import shortcuts
 
 
 class ShortcutUpgrade(unittest.TestCase):
+    def test_original_concept_entries_remain_available_until_concept_upgrade(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            commands, desktop = home / ".local/bin", home / "Desktop"
+            commands.mkdir(parents=True)
+            desktop.mkdir()
+            wrapper = b'#!/usr/bin/env bash\nset -e\nsource "$HOME/concept_v6275_ws/activate_concept.bash"\nexec ros2 run concept live "$@"\n'
+            entry = (b'[Desktop Entry]\nVersion=1.0\nType=Application\nName=Concept\n'
+                     b'Comment=Launch the Concept panel and RViz\nExec="/home/control/.local/bin/concept-live"\n'
+                     b'Icon=applications-engineering\nTerminal=true\n')
+            old = json.loads((shortcuts.HERE / "legacy-sha256.json").read_text())
+            for path, content in ((commands / "concept-live", wrapper), (desktop / "Concept.desktop", entry)):
+                self.assertEqual(hashlib.sha256(content).hexdigest(), old[path.name])
+                path.write_bytes(content)
+            selector = home / "aiformula_runtime/2026-11-19-yolop-selection/yolop.launch"
+            selector.parent.mkdir(parents=True)
+            selector.touch()
+            setup = home / "aiformula_runtime/2026-11-20-mapassist-av314/install/local_setup.bash"
+            setup.parent.mkdir(parents=True)
+            setup.touch()
+            with patch.dict(os.environ, {"XDG_DATA_HOME": str(home / ".local/share")}):
+                shortcuts.migrate(home, desktop, True)
+                shortcuts.migrate(home, desktop, False, check=True)
+            self.assertEqual((commands / "concept-live").read_bytes(), wrapper)
+            self.assertEqual((desktop / "Concept.desktop").read_bytes(), entry)
+
     def test_retire_duplicates_and_preserve_current_concept(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

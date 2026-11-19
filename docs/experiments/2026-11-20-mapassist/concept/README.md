@@ -1,4 +1,8 @@
-# Concept V6.27.6 · 仿真闭环和实车回正
+# 11/20 Concept 备车入口
+
+**当前版本为 V6.27.8。** 运行 [车机安装与快捷方式升级](DEPLOY.md)，用原 Concept 图标在终端选 Pure Pursuit 或 LYA。最近一轮普通弯 24 秒内分别行驶 51.05 m 和 46.57 m，LYA 出弯后停稳。界面中 A、B、C 是该拍 LYA 使用的三个点。[V6.27.8 图像、选点和完整对照视频](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/f305d5f7acea5c87af0e2003bec13bdc06199d8f/vehicle_concept/checks/tracking_v6278)
+
+## 历史记录 · V6.27.6 仿真闭环和实车回正
 
 Concept 自己的 Unity 已能用和车上同一套 B1.4、白盒规划器、H12 和 Foxy 驾驶节点开车。车头朝外偏 12° 的短测拉回了，偏 23° 的短测停在道内。四场都是同一路段、从静止起步、无新增障碍物、目标 2 m/s，每场 5 个模拟秒。整圈、Jetson 的实时控制和实车边缘恢复仍待验证。[部署步骤](DEPLOY.md) · [原车逐帧实测](field-timing/实车回正时序.md)
 
