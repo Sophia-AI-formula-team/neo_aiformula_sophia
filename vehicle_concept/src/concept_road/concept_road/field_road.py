@@ -98,6 +98,40 @@ def _connect_edge_samples(current, edges, labels, seed, green):
             edges[i, side] = True
 
 
+def ordered_marking_rows(depths, order, lines, openings=()):
+    """Measured left/divider/right positions; never extrapolate beyond each visible segment."""
+    if order is None or len(order) != 3:
+        return None
+    out = np.full((len(depths),3), np.nan)
+    far = np.full(3, -np.inf)
+    for line in lines:
+        if line['track'] not in order or line['kind'] not in ('solid','dashed','unclassified'):
+            continue
+        p = np.asarray(line['points'])
+        if len(p) < 3:
+            continue
+        column = order.index(line['track'])
+        far[column] = max(far[column], float(p[-1,0]))
+        active = (depths >= p[0,0]) & (depths <= p[-1,0])
+        out[active,column] = np.interp(depths[active],p[:,0],p[:,1])
+    # A side stripe that ends while the main corridor continues can enclose
+    # a paved turnout. A same-colour surface and three lines at just one
+    # depth cannot distinguish that turnout from an adjacent circuit lane.
+    for exterior in (0, 2):
+        if far[exterior] + 1. < far[1]:
+            out[:, exterior] = np.nan
+    # The current semantics identifies entrances on the inner (left) side.
+    # Require that the adjacent edge is still seen beyond a bounded opening
+    # when the main divider continues. An opening label alone is ambiguous.
+    for opening in openings:
+        rows = np.asarray(opening['rows'])
+        if len(rows) and far[1] > rows[-1,0]+.6 and far[0] < rows[-1,0]+.45:
+            depth = (depths >= rows[0,0]-.15) & (depths <= rows[-1,0]+.15)
+            mouth_x = np.interp(depths, rows[:,0], rows[:,2])
+            out[depth & (abs(out[:,1]-mouth_x) < .4),0] = np.nan
+    return out
+
+
 class FieldRoad:
     """A fresh observer is needed for each run. Inputs contain no map or world pose."""
 
@@ -106,7 +140,7 @@ class FieldRoad:
     def __init__(self):
         self._history = []
 
-    def update(self, image, raw, lane, road, heading, motion_speed, motion_yaw, dt, *, nearfield_rows=()):
+    def update(self, image, raw, lane, road, heading, motion_speed, motion_yaw, dt, *, nearfield_rows=(), marking_order=None, visible_lines=(), openings=()):
         old = np.asarray(road, dtype=float)
         if old.size == 0:
             old = np.empty((0, 5))
@@ -166,7 +200,10 @@ class FieldRoad:
         measured, target, edges, explanations = [], [], [], []
         previous_u = CX
         depths = np.linspace(.95, 12., 45)
-        for z in depths:
+        ordered = ordered_marking_rows(depths, marking_order, visible_lines, openings)
+        partial = np.full((len(depths),2), np.nan)
+        observed_indices = []
+        for i, z in enumerate(depths):
             v = round(CY + HEIGHT * FOCAL / z)
             if not 0 <= v < len(raw_u8):
                 continue
@@ -185,10 +222,12 @@ class FieldRoad:
                              borderType=cv2.BORDER_CONSTANT, borderValue=0)[0]
                 row_seed = row_seed | ((across != 0) & seed_rows[next_v, next_u] &
                                        (light[v] > 10) & (light[v] < 245))
-            result = _section(z, row_seed, paint_rows[v], green[v], blue[v], light[v], previous_u)
+            result = _section(z, row_seed, paint_rows[v], green[v], blue[v], light[v], previous_u,
+                              None if ordered is None else ordered[i], partial[i] if ordered is not None else None)
             if result is None:
                 continue
             bounds, sides, middle, sources = result
+            observed_indices.append(i)
             measured.append((z, *bounds))
             target.append(middle)
             edges.append(sides)
@@ -197,6 +236,17 @@ class FieldRoad:
         current = np.array(measured, dtype=float).reshape(-1, 3)
         edges = np.array(edges, dtype=bool).reshape(-1, 2)
         if len(current):
+            if ordered is not None:
+                # Require current outer paint at this scan and two independently
+                # measured material edges near it; never renew this support
+                # from transported rows. A partial B patch is not an outer edge.
+                for i, side in zip(*np.nonzero(np.isfinite(partial[observed_indices]))):
+                    index = observed_indices[i]
+                    side_x = ordered[index,2*side]
+                    direct = edges[:,side] & (abs(current[:,0]-current[i,0]) < .56)
+                    if np.count_nonzero(direct & (abs(current[:,1+side]-side_x) < .35)) >= 2:
+                        current[i,1+side] = partial[index,side]
+                        explanations[i][side] = 'two_lane_observed_asphalt'
             _connect_edge_samples(current, edges, explanations, seed_rows, green)
             valid = np.all(np.isfinite(current), axis=1)
             current, edges = current[valid], edges[valid]

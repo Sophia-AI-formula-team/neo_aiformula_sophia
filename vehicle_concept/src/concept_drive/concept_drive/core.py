@@ -84,7 +84,8 @@ class Drive:
         if field_ground:
             near_rows = evidence.get('nearfield_rows', [])
             scene = self.field_road.update(image, raw, lane, road, heading, motion_speed, motion_yaw, dt,
-                                           nearfield_rows=near_rows)
+                                           nearfield_rows=near_rows, marking_order=edges.get('ordered_paint'),
+                                           visible_lines=semantic['lines'], openings=semantic['openings'])
             road = intersect_confirmed_edges(scene.road, road, edges['edges'])
             heading, guidance, reference = scene.heading, scene.guidance, scene.reference
             # A contradictory physical limit invalidates this depth and everything

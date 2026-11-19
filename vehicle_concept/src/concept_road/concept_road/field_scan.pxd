@@ -7,3 +7,9 @@ cdef int _asphalt_end(int first, int direction, int step,
                       const unsigned char[::1] paint, const unsigned char[::1] brightness,
                       const double[::1] green_sum, const double[::1] blue_sum,
                       double inside_green, double inside_blue, double base_light) except -2
+
+
+@cython.locals(count=int,end=int,n=int,total=int,j=int)
+cdef bint _pavement_strip(int lo, int hi, int step, const unsigned char[::1] paint,
+                         const unsigned char[::1] brightness, const double[::1] green_sum,
+                         const double[::1] blue_sum, double base_g, double base_b, double light) except -1

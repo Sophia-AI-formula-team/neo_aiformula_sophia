@@ -58,7 +58,73 @@ def _asphalt_end(first, direction, step, paint, brightness, green_sum, blue_sum,
     return last
 
 
-def _section(z, seed, paint, green, blue, brightness, expected_u):
+def _pavement_strip(lo, hi, step, paint, brightness, green_sum, blue_sum, base_g, base_b, light):
+    """Check every short block between two observed stripes, including the last one."""
+    count = hi - lo
+    while lo < hi:
+        end = min(hi, lo + step)
+        n = end-lo
+        if (abs((green_sum[end]-green_sum[lo])/n-base_g) > .036 or
+                abs((blue_sum[end]-blue_sum[lo])/n-base_b) > .045):
+            return False
+        total = 0
+        for j in range(lo, end):
+            if paint[j] or brightness[j] < 9:
+                return False
+            total += int(brightness[j])
+        if not max(14., .52*light) < total/n < min(240., 1.8*light+10):
+            return False
+        lo = end
+    return count > 0
+
+
+def _two_lane_span(z, side, near, u, last, ordered_x, markings, seed, paint, brightness, g, b):
+    """Verify a tracked divider and far verge against the current image."""
+    if ordered_x is None:
+        return False
+    scale = FOCAL/z
+    exterior = ordered_x[2*side]
+    divider = ordered_x[1]
+    if not (math.isfinite(exterior) and math.isfinite(divider)):
+        return False
+    direction = 2*side-1
+    if abs(u-(CX+scale*exterior)) > .20*scale:
+        return False
+    lo, hi = sorted((near,u))
+    separating = [(a,h) for a,h in markings if lo < (a+h)*.5 < hi and abs((a+h)*.5-u) > .15*scale]
+    if len(separating) != 1:
+        return False
+    a,h = separating[0]
+    if h-a > .30*scale or abs((a+h)*.5-(CX+scale*divider)) > .20*scale:
+        return False
+    step, pad = max(3,round(.14*scale)), max(2,round(.055*scale))
+    # Check the two material strips independently, from the seed to the
+    # divider and from the divider to the outer paint. Only recognized paint
+    # may interrupt the pavement. Require B support beyond the divider.
+    interior = int(near)-direction*step
+    if not (0 <= interior < len(seed) and 0 <= last < len(seed)):
+        return False
+    first_strip, second_strip = ((interior,a-pad),(h+pad+1,last)) if side else (
+                                (h+pad+1,interior+1),(last,a-pad))
+    if min(first_strip[1]-first_strip[0], second_strip[1]-second_strip[0]) < step:
+        return False
+    if np.count_nonzero(seed[second_strip[0]:second_strip[1]]) < .28*scale:
+        return False
+    low, high = sorted((int(near)-direction*step,int(near)))
+    light = float(np.mean(brightness[low:high]))
+    # Dilation can absorb black image padding or shadow along a strip just beside
+    # the divider. The excluded stripe itself still needs valid RGB.
+    guard_lo, guard_hi = max(0,a-pad), min(len(seed),h+pad+1)
+    if np.min(brightness[guard_lo:guard_hi]) < 9:
+        return False
+    if not 17. < light < 237.:
+        return False
+    base_g, base_b = _mean_range(g,low,high), _mean_range(b,low,high)
+    return (_pavement_strip(first_strip[0],first_strip[1],step,paint.view(np.uint8),brightness,g,b,base_g,base_b,light) and
+            _pavement_strip(second_strip[0],second_strip[1],step,paint.view(np.uint8),brightness,g,b,base_g,base_b,light))
+
+
+def _section(z, seed, paint, green, blue, brightness, expected_u, ordered_x=None, partial_bounds=None):
     scale = FOCAL / z
     # Join small segmentation holes and paint interruptions, but never whole lanes.
     gap = max(3, round(.18 * scale)) | 1
@@ -85,6 +151,7 @@ def _section(z, seed, paint, green, blue, brightness, expected_u):
     for side in (0, 1):
         direction = -1 if side == 0 else 1
         boundary = None
+        across_divider = False
         extension = None
         for start, end in markings:
             u = .5 * (start + end)
@@ -128,27 +195,57 @@ def _section(z, seed, paint, green, blue, brightness, expected_u):
                 continue
             # The asphalt immediately behind the paint must actually connect to
             # the predicted lane. A remote painted island is not an extension.
+            across = False
             if u < a or u > b:
                 near = min(max(u, a), b)
                 lo, hi = sorted((int(u) + direction * -margin, int(near)))
                 gap_green = _mean_range(prefix, lo, hi)
-                if abs(u-near) > 4.5*scale or (np.isfinite(gap_green) and
-                                                gap_green > inside_green + .033):
+                if np.isfinite(gap_green) and gap_green > inside_green + .033:
                     continue
+                if abs(u-near) > 4.5*scale:
+                    last = (start-margin) if side else (end+margin+1)
+                    if not green_transition or not _two_lane_span(z, side, near, u, last, ordered_x, markings, seed,
+                                                                  paint, brightness, prefix, blue_prefix):
+                        continue
+                    across = True
             # When B itself spans a marking, require visible material change.
             # When B ends before the marking, the connected asphalt check above applies.
             if inside_b < .12 and (a <= u <= b):
                 continue
-            if boundary is None or direction * (u - boundary) > 0:
-                boundary = u
+            if boundary is not None and across and direction*(u-boundary) > 0:
+                continue
+            if boundary is None or direction * (u - boundary) > 0 or across_divider and not across:
+                boundary, across_divider = u, across
         if boundary is not None:
             # Legal contact with the outer edge of the paint is included.
             bounds[side] = boundary + direction * .055 * scale
             exterior[side] = True
-            sources[side] = 'paint_material_edge'
+            sources[side] = 'two_lane_material_edge' if across_divider else 'paint_material_edge'
         elif extension is not None and direction*(extension-bounds[side]) > 0:
             bounds[side] = extension
             sources[side] = 'paint_connected_asphalt'
+        # A cropped verge can prevent a colour comparison. Propose only the
+        # farthest *observed B pixel* in a connected patch past the divider.
+        # The caller still requires two true material edges in nearby scans.
+        if not exterior[side] and partial_bounds is not None and ordered_x is not None:
+            outer_u = CX + scale*ordered_x[side*2]
+            divider_u = CX + scale*ordered_x[1]
+            if not (math.isfinite(outer_u) and math.isfinite(divider_u)):
+                continue
+            for start, end in markings:
+                u = .5*(start+end)
+                if abs(u-outer_u) > .20*scale or direction*(u-divider_u) <= 0:
+                    continue
+                for first, last in spans:
+                    near_patch, far_patch = (first,last) if side else (last,first)
+                    if (abs(near_patch-divider_u) > .25*scale or
+                            direction*(far_patch-bounds[side]) <= 0 or
+                            direction*(u-far_patch) < .12*scale):
+                        continue
+                    if _two_lane_span(z, side, (b if side else a), u, far_patch, ordered_x,
+                                      markings, seed, paint, brightness, prefix, blue_prefix):
+                        partial_bounds[side] = (far_patch-CX)/scale
+                        break
     if bounds[1] - bounds[0] < .28 * scale:
         return None
     x = (np.asarray(bounds) - CX) / scale

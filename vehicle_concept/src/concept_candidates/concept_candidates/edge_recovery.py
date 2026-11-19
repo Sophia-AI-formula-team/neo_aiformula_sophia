@@ -9,7 +9,7 @@ from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering
 from concept_road.onboard625 import HALF_TRACK
 
 MARGIN_M = .5  # Desired turn-away space, in addition to wheel-centre offset.
-EDGE_SOURCES = ('paint_material_edge', 'connected_material_edge')
+EDGE_SOURCES = ('paint_material_edge', 'connected_material_edge', 'two_lane_material_edge')
 EDGE_RESIDUAL_M = .15
 
 
