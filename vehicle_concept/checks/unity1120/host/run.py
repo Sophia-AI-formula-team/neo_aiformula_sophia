@@ -19,7 +19,31 @@ def replace_once(text, old, new):
     return text.replace(old, new)
 
 
-def build(lab_root, out, source_dir):
+def add_latency_experiment(solver, delay_ms):
+    """A separate assembly holds the actual CAN latch across physics ticks."""
+    path=solver / "UnityRace.cs"
+    text=path.read_text(encoding="utf8")
+    path.write_text(replace_once(text,"foxy.Apply(d);d.StepDrive(dt);",
+                                "foxy.DelayedStep(d,k);d.StepDrive(dt);"),encoding="utf8")
+    path=solver / "FoxyExchange.cs"
+    text=path.read_text(encoding="utf8")
+    text=replace_once(text,"sealed class FoxyExchange","sealed partial class FoxyExchange")
+    text=replace_once(text,"        rightCan=(int)canR;",
+                      "        var speedAtCapture=Vector3.Dot(drive.Body.velocity,drive.Body.rotation*Vector3.forward);\n"
+                      "        Arm(sequence,ts,()=>{rightCan=(int)canR;")
+    text=replace_once(text,"body_forward_mps=Vector3.Dot(drive.Body.velocity,drive.Body.rotation*Vector3.forward)",
+                      "body_forward_mps=speedAtCapture, can_set_sim_s=dueTick*.01, delay_ms="+str(delay_ms))
+    text=replace_once(text,"        sequence++;lastV=v;lastW=w;",
+                      "        },"+str(delay_ms//10)+");\n        sequence++;lastV=v;lastW=w;")
+    text=replace_once(text,'(string)reply["mode"],rightCan,leftCan',
+                      '(string)reply["mode"],requestedRightCan=(int)canR,requestedLeftCan=(int)canL')
+    text=replace_once(text,"rightCan=0; leftCan=0; Apply(drive);",
+                      "rightCan=0; leftCan=0; Apply(drive); EndDelayedRun();")
+    path.write_text(text,encoding="utf8")
+    shutil.copy2(HERE/"DelayedApply.cs",solver)
+
+
+def build(lab_root, out, source_dir, delay_ms=0, rolling_start=False):
     harness = lab_root / "research/learned_racing/unity_laps/run.py"
     module = importlib.util.spec_from_file_location("concept_lap_host", harness)
     runtime = importlib.util.module_from_spec(module)
@@ -60,8 +84,14 @@ def build(lab_root, out, source_dir):
     src = replace_once(src, "net.ReceiveTimeout=20000;", "net.ReceiveTimeout=120000;")
     src = replace_once(src,"if(net!=null)net.Close();",
                        "try{if(d && foxy!=null)foxy.Release(d);}finally{if(net!=null)net.Close();}")
+    if rolling_start:
+        src=replace_once(src,"public sealed class UnityRace","public sealed partial class UnityRace")
+        src=replace_once(src,"job.Open();EditorApplication.update", "job.Open();job.RollingStart();EditorApplication.update")
+        shutil.copy2(HERE/"RollingStart.cs",solver)
     path.write_text(src,encoding="utf8")
     shutil.copy2(HERE / "FoxyExchange.cs", solver)
+    if delay_ms:
+        add_latency_experiment(solver,delay_ms)
     runtime.HERE = solver
     return runtime
 
@@ -95,10 +125,13 @@ def main():
     parser.add_argument("--offset", type=float, default=0., help="Right of outer lane centre (m)")
     parser.add_argument("--heading", type=float, default=0., help="Yaw right from track tangent (deg)")
     parser.add_argument("--seconds", type=float, default=5.)
+    parser.add_argument("--actuation-delay-ms", type=int, default=0,
+                        help="Hold last CAN for this many simulation ms after capture (0..190 in steps of 10)")
+    parser.add_argument("--rolling-start", action="store_true", help="1 s of straight-wheel physics before camera/score time zero")
     parser.add_argument("--port", type=int, default=16826)
     parser.add_argument("--compile-only", action="store_true")
     args=parser.parse_args()
-    if not 0<=args.start<1 or not 0<args.seconds<=60 or not 0<args.port<65536:
+    if not 0<=args.start<1 or not 0<args.seconds<=60 or not 0<args.port<65536 or args.actuation_delay_ms not in range(0,200,10):
         parser.error("Invalid spawn fraction, run duration or port")
     lab_root=args.concept.resolve()
     host=lab_root / ".runtime/UnityLab-v623-02"
@@ -108,9 +141,9 @@ def main():
         os.environ["AIFORMULA_LAP_COPY"]=str(host)
         os.environ["AIFORMULA_SIM_ROOT"]=str(Path(owner["source"]).resolve().parent)
         source = args.referee_source or lab_root/".runtime/v626_time/eval-inner-check/solver"
-        runtime=build(lab_root,out,source.resolve())
+        runtime=build(lab_root,out,source.resolve(),args.actuation_delay_ms,args.rolling_start)
         lab=runtime.Lab(runtime.SIM,out)
-        provenance={"host":owner,"solver_hash":lab.build,
+        provenance={"host":owner,"solver_hash":lab.build,"actuation_delay_ms":args.actuation_delay_ms,"rolling_start":args.rolling_start,
                     "unity_scene_sha256":runtime.sha(host/"Assets/Scenes/MotorControllerValidation.unity"),
                     "drive_assembly_sha256":runtime.sha(host/"Library/ScriptAssemblies/Assembly-CSharp.dll"),
                     "bridge_source_sha256":hashlib.sha256((HERE/"FoxyExchange.cs").read_bytes()).hexdigest()}

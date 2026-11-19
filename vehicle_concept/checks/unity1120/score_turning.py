@@ -12,12 +12,30 @@ def read(path):
     return json.loads(path.read_bytes())
 
 
+def check_application_ticks(folder, events):
+    delay_ms=read(folder/"host.json").get("actuation_delay_ms",0)
+    if not delay_ms:
+        return
+    with (folder/"actuation.jsonl").open(encoding="utf8") as stream:
+        for tick,line in enumerate(stream):
+            state=json.loads(line)
+            index=(tick-delay_ms//10)//20
+            if index < 0:
+                expected={"left_can_rpm":0,"right_can_rpm":0}
+            else:
+                expected=events[index]["command"]
+            if (state["tick"]!=tick or state["applied_seq"]!=index
+                    or any(state[k]!=expected[k] for k in ("left_can_rpm","right_can_rpm"))):
+                raise ValueError("Wrong actual CAN at physics tick " + str(tick))
+
+
 def summarize(folder, geometry):
     output = read(folder / "result.json")
     request = read(folder / "request.json")
     events = [json.loads(row) for row in (folder / "exchange.jsonl").read_bytes().splitlines()]
     if not events:
         raise ValueError("No actual camera exchange in " + str(folder))
+    check_application_ticks(folder,events)
     for i, row in enumerate(events):
         previous = events[i-1]["command"] if i else {"right_can_rpm":0, "left_can_rpm":0}
         frame, command = row["frame"], row["command"]
@@ -53,6 +71,10 @@ def summarize(folder, geometry):
         raise ValueError("Wrong referee transform")
     tangents = np.unwrap(np.arctan2(directions[:, 0], directions[:, 1]))
     station0 = stations[np.searchsorted(stations, request["start"] * stations[-1])]
+    if (folder/"pre_roll.json").exists():
+        start_xy=actual[0,1:3]
+        nearest=int(np.argmin(np.linalg.norm(lane-start_xy,axis=1)))
+        station0=stations[nearest]+np.dot(start_xy-lane[nearest],directions[nearest])
     route = np.interp((station0 + actual[:, 7]) % stations[-1], stations[:-1], tangents)
     body = np.unwrap(actual[:, 3])
     relative_heading = np.rad2deg((body - route + np.pi) % (2*np.pi) - np.pi)
@@ -63,9 +85,29 @@ def summarize(folder, geometry):
     duration = np.diff(np.r_[t, output["seconds"]])
     significant = np.sign(w[np.abs(w) >= .05])
     wheel = np.min(np.array(clearance)[:, 1:], axis=1)
+    # Interpolate the speed threshold on the referee's 0.1 s samples. Separate
+    # actual standstill from an issued zero and from an actuator latching zero.
+    still = 0.
+    last_motion_end = actual[0, 0]
+    for (t0, v0), (t1, v1) in zip(actual[:-1, [0,4]], actual[1:, [0,4]]):
+        cuts=[0.,1.]
+        if v1 != v0:
+            cuts.extend(x for x in ((-.05-v0)/(v1-v0),(.05-v0)/(v1-v0)) if 0.<x<1.)
+        cuts=sorted(cuts)
+        for a,b in zip(cuts,cuts[1:]):
+            if abs(v0+(a+b)*.5*(v1-v0))<.05:
+                still+=(t1-t0)*(b-a)
+            else:
+                last_motion_end=t0+(t1-t0)*b
+    actual_latch_delay = np.array([row.get("can_set_sim_s", row["frame"]["simulation_time_s"])
+                                   for row in events])
+    latch_durations = np.diff(np.r_[actual_latch_delay,output["seconds"]])
     return dict(run=folder.name, status=output["status"], seconds=output["seconds"], frames=len(events),
                 first_jpeg_sha256=hashlib.sha256((folder/events[0]["camera_file"]).read_bytes()).hexdigest(),
                 progress_m=output["progress"], stopped_command_s=float(duration[np.abs(v)<.01].sum()),
+                zero_latched_from_command_s=float(latch_durations[np.abs(v)<.01].sum()),
+                physical_below_005_s=float(still),
+                terminal_physical_below_005_s=float(max(0.,actual[-1,0]-last_motion_end)),
                 final_actual_forward_mps=float(actual[-1, 4]),
                 first_complete_tread_off_s=output["firstCompletelyOut"],
                 painted_wheel_center_m=dict(start=wheel[0], minimum=wheel.min(), final=wheel[-1]),
