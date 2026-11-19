@@ -1,6 +1,6 @@
 # 文件清单与下载
 
-[整日报告 ZIP](../2026-11-19-field-report.zip)包含日期目录归档提交的全部 1,778 个文件，可离线浏览。原始大文件按场次和类别单独下载。[ZIP 校验值](report-zip.sha256)
+[整日报告 ZIP](https://raw.githubusercontent.com/Sophia-AI-formula-team/neo_aiformula_sophia/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/2026-11-19-field-report.zip)包含日期目录的图文总评、原始日志、两段对话和数据索引，可离线浏览。原始大文件按场次和类别单独下载。[ZIP 校验值](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/records/report-zip.sha256)
 
 日期归档中的 **7,802 个数据文件**均有来源路径、字节数、发布位置和 SHA-256，共 1,222,059,293 字节。其中车端 7,222 个。这个计数按 SSD 上的文件路径计算，包含历史备份、空文件和压缩包中再次出现的内容。[完整文件清单](files.tsv)
 
@@ -10,6 +10,7 @@
 | 车端其余 6,228 个文件 | [运行目录、安装源、启动器、备份、终端记录及更改](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/vehicle-records-and-changes.tar.gz) |
 | 工作站 453 个文件 | [当天下午的现场分析](workstation/concept-followup-20261119/) · [感知延迟分析](workstation/concept-latency-20261119-1310/) · [完整压缩包，含两份本地工作归档](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/workstation-records.tar.gz) |
 | SSD 转存和活动包审计 | [原始核验](collection/) · [代码差异](../active-code/) · [来源清单与转存原日志](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/collection-and-code-audit.tar.gz) |
+| 车端冻结运行包 ZIP | [下载](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-frozen-runtime.zip) · [依赖、文件范围和校验](../active-code/) |
 | 车上活动代码快照 | [完整 tar.gz](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-active-code.tar.gz) · [60 个包版本和 152 个可执行项的对比](../active-code/) |
 | 各场录包 | [按类别和场次下载](../bag/) |
 | 保存图片 | [图片索引和整包下载](../images/) |

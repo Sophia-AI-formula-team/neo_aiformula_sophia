@@ -22,3 +22,5 @@
 | 19:47 起 | 按当天两段对话补全公开归档。逐包核对 SQL 消息、分类、图片和清单，建立 GitHub 当日目录与 Release 下载索引。[归档操作](records/publication.tsv) · [远端核验回执](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/agent-context/receipts/2026-11-19-experiment-field-archive.md) |
 
 具体验收结果和仍缺乏的证据可按现场问题查阅。[问题与修复](ISSUES.md)
+
+20:26 JST 起补充发布冻结运行包 ZIP，逐项对照车端原包，并用四份原始录包复核首圈停车、低速倒车与最后一次车况暂停。[整体评估](ASSESSMENT.md) · [运行包校验](active-code/frozen-runtime-zip.json) · [逐项发布时间](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/records/frozen-runtime-publication.tsv)

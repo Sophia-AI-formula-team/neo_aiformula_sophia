@@ -1,0 +1,43 @@
+{
+  "source_asset": "2026-11-19-vehicle-active-code.tar.gz",
+  "source_bytes": 143445917,
+  "source_sha256": "3ee71ae49b45ea78d676c5ada5b2bc66111051112e32025234d5360fca3a182e",
+  "asset": "2026-11-19-vehicle-frozen-runtime.zip",
+  "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-frozen-runtime.zip",
+  "bytes": 259393710,
+  "sha256": "93fb34a5f07eecbbd53a1f90d6ace9e399210ae591edb943f77c2c501c8bfc9e",
+  "verified_jst": "2026-11-19T20:30:24+09:00",
+  "member_count": 8486,
+  "counts": {
+    "regular_files": 5321,
+    "symbolic_links": 1194,
+    "directories": 1964,
+    "hard_links_stored_as_regular_files": 7
+  },
+  "regular_payload_bytes_in_zip": 472931801,
+  "executable_regular_file_entries": 264,
+  "underlay_workspace_variants": 60,
+  "installed_executable_targets": 152,
+  "verification": "Every path, type, Unix mode, link target and regular-file SHA-256 compared to the frozen tar. Original binary hard-link aliases have equivalent regular payloads. ZIP extra fields contain UID/GID and whole-second Unix mtime.",
+  "models_in_snapshot": {
+    "home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4/weights/shared_best.pth": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/weights/shared_best.pth": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+    "home/control/aiformula_runtime/concept-drive-fix-20261119-1603/srcstage/vehicle_concept/src/concept_ranker/concept_ranker/model-h12.json": "e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6",
+    "home/control/aiformula_runtime/concept-field-1635/srcstage/vehicle_concept/src/concept_ranker/concept_ranker/model-h12.json": "e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6",
+    "home/control/aiformula_runtime/yolop_a3_v14_20261012/platform/weights/shared_best.pth": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+    "home/control/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/weights/shared_best.pth": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+    "home/control/src/neo-concept-v6275/vehicle_concept/src/concept_ranker/concept_ranker/model-h12.json": "e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6"
+  },
+  "separately_provisioned": {
+    "B1.4-road-aligned-research.pth": {
+      "sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+      "bytes": 15293077
+    },
+    "system": [
+      "ROS 2 Foxy",
+      "ZED SDK",
+      "Jetson CUDA",
+      "vehicle Python environments"
+    ]
+  }
+}

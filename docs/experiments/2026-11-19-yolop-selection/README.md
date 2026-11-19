@@ -2,9 +2,11 @@
 
 ## 当日全部实验资料
 
-[下载整日报告 ZIP](2026-11-19-field-report.zip) · [ZIP 校验值](records/report-zip.sha256) · [GitHub 回读核验](records/remote-verification.json)
+[实验总评与两段实车曲线](ASSESSMENT.md) · [完整车端冻结运行包 ZIP](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-frozen-runtime.zip) · [运行包依赖与校验](active-code/README.md)
 
-压缩包收录发布快照中的 1,778 个文件，含完整时间线、两段对话、图文报告、ROS 日志和每场录包的下载入口。解压后打开顶层 README.md。
+[下载整日报告 ZIP](https://raw.githubusercontent.com/Sophia-AI-formula-team/neo_aiformula_sophia/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/2026-11-19-field-report.zip) · [ZIP 校验值](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/records/report-zip.sha256) · [原始附件回读核验](records/remote-verification.json) · [冻结运行包和新报告回读核验](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/yolop-selection-20261119/docs/experiments/2026-11-19-yolop-selection/records/frozen-runtime-verification.json)
+
+整日报告 ZIP 收录完整时间线、两段对话、图文总评、实车曲线、ROS 日志和每场录包的下载入口。解压后打开顶层 README.md。
 
 [完整时间线](TIMELINE.md) · [现场问题与修复](ISSUES.md) · [两段对话全文](conversations/) · [原始 ROS 日志](logs/) · [照片与图表](images/) · [车上活动代码和 Neo 差异](active-code/) · [所有文件与 SHA-256](records/)
 
@@ -77,3 +79,7 @@ The archive is on branch `experiment/yolop-selection-20261119` in Neo. The vehic
 ## 10-second Jetson benchmark and daily report
 
 The 2026-11-19 [illustrated report](gpu-load-10s/README.md) compares A3 V14, A4 and A4Light using the live ZED camera. It includes GPU and CPU load, memory and thermals, object outputs and frame timing. The [ZIP package](2026-11-19-yolop-report.zip) contains the report, charts, timestamped samples and scripts.
+
+## 当天实验总评
+
+MapAssist 首圈红灯有两轮实际归零后恢复转动的记录。Concept 的末场暂停已定位到车况报告的陀螺超时，整圈匹配绕行和低速起动仍待验证。[试验评价、证据与后续验收项目](ASSESSMENT.md)
