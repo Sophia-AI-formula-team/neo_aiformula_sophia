@@ -1,6 +1,6 @@
 # Concept 车端部署
 
-这里是 11 月 19 日实车驾驶修复分支 `fix/concept-field-driving-20261120`，软件包版本 V6.27.6。先看[复现实验与验收范围](vehicle_concept/checks/field_20261119.md)。冻结部署分支 `feat/concept-v626-live` 在此次修复开始时为 `a9d7d7a`、V6.27.5。两者的代码和版本不同。[车端接线、面板和冻结版安装手册](vehicle_concept/AGENTS.md)
+11 月 20 日实验源码在团队分支 `experiment/concept-foxy-unity-20261120`，车端软件版本 V6.27.6。部署先看[1120 车机手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)。实车修复的本地基线为 `70209be`，冻结部署分支 `feat/concept-v626-live` 在此次修复开始时为 V6.27.5（`a9d7d7a`）。[11/19 录包结果](vehicle_concept/checks/field_20261119.md) · [Unity 独立实例复现](vehicle_concept/checks/unity1120/) · [传感器接线和面板](vehicle_concept/AGENTS.md)
 
 # User-authorized experiment import (2026-11-04)
 
