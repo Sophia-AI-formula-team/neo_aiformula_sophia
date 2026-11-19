@@ -24,3 +24,17 @@ semantic 5.5 vehicle_output:=true
 
 
 复现时以当天 Semantic 0.4.5 安装为基础。将本目录的 `pixel_stop_flag.py`、`guarded_stop_wait.py` 和 `semantic_045_commissioning.launch.py` 放入 `~/semantic_045_ws/commissioning`。沿用同档案中的 [OA 选择器](../../commissioning/fresh_oa_switch.py) 和 [旧状态转换](../../stop_wait_preview.py)。`semantic_vehicle_045.launch.py` 为该工作区 `source/workspace/src/aiformula/launchers/launch/` 下的最终版本。将 `motor-input-launch.patch` 应用到原车 `allnodes.launch.py` 时显式指定目标文件。motor 的原文件校验值见 [motor.sha256](motor.sha256)。
+
+## Neo ROS 源码入口
+
+构建实验分支的 `launchers`、`semantic_local_planner_ros` 和 `semantic_planner_core`，然后加载工作区安装环境。使用 ROS 包内入口启动本次接线：
+
+```bash
+ros2 launch launchers semantic_045_commissioning.launch.py lane:=outer
+```
+
+保留 5.5 m 的 `outer` 和 6.0 m 的 `inner`。默认发布诊断速度及状态。上述已装车的正式接线对应 `vehicle_output:=true` 和 `allnodes` 的 `motor_cmd_topic` 参数。
+
+[整套 ROS 启动](../../../../../../workspace/src/aiformula/launchers/launch/semantic_045_commissioning.launch.py) · [MapAssist 参数](../../../../../../workspace/src/aiformula/launchers/launch/semantic_vehicle_045.launch.py) · [车端接线脚本](../../../../../../workspace/src/aiformula/launchers/shellscript/mapassist_045)
+
+2026-11-19 15:54 JST，基于实验分支 `0528b19` 将车端归档版本移入 ROS 源码树。上层入口改用 ament 查找已安装的脚本；下层 MapAssist 启动和四个接线脚本与先前车端归档一致。应用当天记录的非红恢复和像素到点绕行两个规划差异。工作站 ROS Jazzy 构建线下通过，两个启动入口均可从安装目录解析。46 项回归和 44 个子测试通过。本次提交期间车端 SSH 不可达，源码归档以 15:36 车端静态联测的版本为准。

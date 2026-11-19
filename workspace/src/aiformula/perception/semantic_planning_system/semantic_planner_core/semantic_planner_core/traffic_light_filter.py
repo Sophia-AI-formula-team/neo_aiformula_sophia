@@ -5,17 +5,21 @@ import math
 from typing import Deque, Dict, Optional, Tuple
 
 
+NON_RED_STATES = ("green", "yellow", "off")
+
+
 class TrafficLightFilter:
     """Require a strict majority of real messages in a sliding time window.
 
     The caller supplies monotonic arrival times, not image/ROS timestamps.  The
     first decision waits for a complete observation window.  A message gap
-    longer than the window starts that observation period again.  ``unknown``
-    results count in the denominator but never release a stop by themselves;
-    retaining a red-light stop belongs to the calling state machine.
+    longer than the window starts that observation period again. Callers
+    can count explicit detector ``unknown`` frames as non-red. Silence and
+    invalid observations never provide non-red votes.
     """
 
-    def __init__(self, window_sec: float = 0.5, min_samples: int = 3):
+    def __init__(self, window_sec: float = 0.5, min_samples: int = 3,
+                 *, unknown_is_non_red: bool = False):
         try:
             window_sec = float(window_sec)
         except (TypeError, ValueError, OverflowError):
@@ -26,6 +30,7 @@ class TrafficLightFilter:
             raise ValueError("min_samples must be an integer of at least 2")
         self.window_sec = window_sec
         self.min_samples = min_samples
+        self.unknown_is_non_red = unknown_is_non_red
         self._samples: Deque[Tuple[float, str]] = deque()
         self._started_at: Optional[float] = None
         self._last_message_at: Optional[float] = None
@@ -43,9 +48,9 @@ class TrafficLightFilter:
         now = self._advance(now)
         if self._started_at is None:
             self._started_at = now
-        state = state.strip().lower() if isinstance(state, str) else "unknown"
-        if state not in ("red", "green"):
-            state = "unknown"
+        state = state.strip().lower() if isinstance(state, str) else ""
+        if state not in ("red", "unknown", *NON_RED_STATES):
+            state = "invalid"
         self._samples.append((now, state))
         self._last_message_at = now
         return self._decision(self._snapshot(now))
@@ -79,7 +84,10 @@ class TrafficLightFilter:
 
     def _snapshot(self, now: float) -> Dict[str, object]:
         red_count = sum(state == "red" for _, state in self._samples)
-        green_count = sum(state == "green" for _, state in self._samples)
+        non_red = {
+            state: sum(sample == state for _, sample in self._samples)
+            for state in NON_RED_STATES
+        }
         count = len(self._samples)
         ready = (self._started_at is not None
                  and now - self._started_at >= self.window_sec
@@ -90,19 +98,25 @@ class TrafficLightFilter:
             "ready": ready,
             "sample_count": count,
             "red_count": red_count,
-            "green_count": green_count,
-            "unknown_count": count - red_count - green_count,
+            **{state + "_count": votes for state, votes in non_red.items()},
+            "unknown_count": count - red_count - sum(non_red.values()),
+            "reported_unknown_count": sum(state == "unknown" for _, state in self._samples),
             "last_message_age_sec": (None if self._last_message_at is None
                                      else now - self._last_message_at),
         }
 
-    @staticmethod
-    def _decision(snapshot: Dict[str, object]) -> str:
+    def _decision(self, snapshot: Dict[str, object]) -> str:
         if not snapshot["ready"]:
             return "unknown"
         count = snapshot["sample_count"]
         if 2 * snapshot["red_count"] > count:
             return "red"
-        if 2 * snapshot["green_count"] > count:
-            return "green"
-        return "unknown"
+        non_red_votes = 0
+        for state in NON_RED_STATES:
+            votes = snapshot[state + "_count"]
+            if 2 * votes > count:
+                return state
+            non_red_votes += votes
+        if self.unknown_is_non_red:
+            non_red_votes += snapshot["reported_unknown_count"]
+        return "not_red" if 2 * non_red_votes > count else "unknown"

@@ -43,6 +43,50 @@ class AutoTurnTests(unittest.TestCase):
         self.assertEqual(self.node.traffic_mode, 'normal')
         self.assertIsNone(self.node.smooth_path)
 
+    def test_confirmed_off_releases_first_lap_wait(self):
+        self.node.reference = None
+        self.h.confirm_light("red", stop_flag=True)
+        self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
+        self.node._on_light_state(fixtures.DataMessage("off"))
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.h.confirm_light("off", refresh_points=False)
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertEqual(self.node.traffic_reason, "red_off_resume")
+        self.node._on_controller_cmd(self.h.command())
+        self.h.assert_stopped()
+
+    def test_confirmed_yellow_releases_red_wait(self):
+        self.node.reference = None
+        self.h.confirm_light("red", stop_flag=True)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.h.confirm_light("yellow")
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertEqual(self.node.traffic_reason, "non_red_resume")
+
+    def test_off_does_not_cancel_a_committed_detour(self):
+        self.node.p["detour_trigger_margin_m"] = 100.0
+        self.h.confirm_light("red")
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "detour")
+        self.h.confirm_light("off")
+        self.assertEqual(self.node.traffic_mode, "detour")
+
+    def test_silence_and_one_unknown_frame_hold_but_fresh_unknown_votes_release(self):
+        self.node.reference = None
+        self.h.confirm_light("red", stop_flag=True)
+        self.h.advance(0.6)
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_light_state(fixtures.DataMessage("unknown"))
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.h.advance(0.11)
+        for _ in range(6):
+            self.node._on_light_state(fixtures.DataMessage("unknown"))
+            self.h.advance(0.11)
+        self.assertEqual(self.node.traffic_light, "not_red")
+        self.assertEqual(self.node.traffic_mode, "normal")
+        self.assertEqual(self.node.traffic_reason, "non_red_resume")
+
     def test_margin_triggers_turn_without_flag_stop(self):
         self.case.red_far()
         self.assertEqual(self.node.traffic_mode, 'prepare')

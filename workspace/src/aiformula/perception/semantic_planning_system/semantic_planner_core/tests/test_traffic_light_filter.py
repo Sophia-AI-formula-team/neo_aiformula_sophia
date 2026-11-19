@@ -56,6 +56,25 @@ class TrafficLightFilterTests(unittest.TestCase):
                     vote.add(state, index * 0.1)
                 self.assertEqual(vote.evaluate(0.5), expected)
 
+    def test_observed_non_red_states_vote_together_but_unknown_does_not(self):
+        vote = TrafficLightFilter()
+        for index, state in enumerate(("green", "off", "yellow", "red", "unknown")):
+            vote.add(state, index * 0.1)
+        self.assertEqual(vote.evaluate(0.5), "not_red")
+        counts = vote.snapshot(0.5)
+        self.assertEqual(counts["unknown_count"], 1)
+        self.assertEqual(counts["yellow_count"], 1)
+        self.assertEqual(counts["off_count"], 1)
+
+    def test_only_explicit_unknown_observations_can_vote_to_resume(self):
+        for state, expected in (("unknown", "not_red"), ("invalid", "unknown")):
+            vote = TrafficLightFilter(unknown_is_non_red=True)
+            self.assertEqual(vote.evaluate(0.0), "unknown")
+            for index in range(7):
+                vote.add(state, index * 0.1)
+            self.assertEqual(vote.evaluate(0.6 + 1e-6), expected)
+            self.assertEqual(vote.evaluate(1.2), "unknown")
+
     def test_sliding_window_changes_red_to_green(self):
         vote = TrafficLightFilter()
         for now in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5):
@@ -114,7 +133,7 @@ class TrafficLightFilterTests(unittest.TestCase):
     def test_invalid_colors_become_unknown_and_strings_are_normalized(self):
         vote = TrafficLightFilter()
         for state, now in ((" RED ", 0.0), ("Red", 0.1), (None, 0.2),
-                           ("yellow", 0.3), ("", 0.4)):
+                           ("blue", 0.3), ("", 0.4)):
             vote.add(state, now)
         status = vote.snapshot(0.5)
         self.assertEqual(status["red_count"], 2)

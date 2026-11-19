@@ -315,6 +315,11 @@ def generate_launch_description():
                 ".yaml",
             ],
         ),
+        DeclareLaunchArgument(
+            "motor_cmd_topic",
+            default_value="/aiformula_control/game_pad/cmd_vel",
+            description="Twist input for the original motor controller.",
+        ),
         DeclareLaunchArgument("can_interface", default_value="can0"),
         DeclareLaunchArgument("can_ready_timeout_sec", default_value="120.0"),
         DeclareLaunchArgument("receiver_interval_sec", default_value="0.1"),
@@ -459,7 +464,7 @@ def generate_launch_description():
                 LaunchConfiguration("button_layout_config"),
         ],
         remappings=[
-            ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),
+            ("sub_speed_command", LaunchConfiguration("motor_cmd_topic")),
             ("pub_can", "/aiformula_control/motor_controller/reference_signal"),
         ],
     )

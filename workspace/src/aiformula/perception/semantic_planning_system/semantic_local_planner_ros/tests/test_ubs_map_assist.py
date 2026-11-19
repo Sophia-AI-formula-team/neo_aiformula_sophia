@@ -127,16 +127,24 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.assertTrue(self.node.detour_path_pub.messages[-1].poses)
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
         self.node._tick()
-        self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertEqual(self.node.traffic_reason, 'red_wait_stop_point_before_turn')
-        self.node.p['detour_trigger_margin_m'] = 100.0
+        self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
+        self.assertEqual(self.node.auto_trigger_reason, 'stop_point_with_feasible_detour')
+        self.assertFalse(self.node.stop_committed)
+        self.assertTrue(self.node.detour_motion_ready)
+        self.h.confirm_light('red', stop_flag=True)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
-        self.assertTrue(self.node.detour_motion_ready)
         for label in 'abc':
             point = self.node.point_pubs[label].messages[-1]
             self.assertGreater(point.x, 0.0)
             self.assertLess(abs(math.degrees(math.atan2(point.y, point.x))), 65.0)
+
+    def test_expired_pixel_flag_is_unknown_and_cannot_reopen_red_hold(self):
+        self.node.p['traffic_stop_flag_timeout_sec'] = .5
+        self.h.confirm_light('red', stop_flag=True)
+        self.assertIsNone(self.node.stop_flag)
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.h.assert_stopped()
 
     def test_no_distance_topic_and_infeasible_radius_hold_safely(self):
         self.h.confirm_light('red')
