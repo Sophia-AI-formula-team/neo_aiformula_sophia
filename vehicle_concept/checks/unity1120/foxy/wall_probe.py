@@ -1,6 +1,7 @@
 """Replay recorded Unity samples at wall-clock cadence through the production ROS nodes."""
 import argparse
 import collections
+import gc
 import json
 import threading
 import time
@@ -55,6 +56,9 @@ def run(folder, hz, feedback_encoding):
     executor = MultiThreadedExecutor(num_threads=4)
     for node in (sim, camera, driver, observer):
         executor.add_node(node)
+    # Match concept_drive.node.main after camera and ROS graph initialization.
+    gc.collect()
+    gc.freeze()
     thread = threading.Thread(target=executor.spin, daemon=True)
     thread.start()
     stamps = []
@@ -102,6 +106,7 @@ def run(folder, hz, feedback_encoding):
                     capture_to_twist_ms=percentiles(ages), frames=records)
     finally:
         executor.shutdown()
+        gc.unfreeze()
         for node in (observer, sim, camera, driver):
             node.destroy_node()
         rclpy.shutdown()

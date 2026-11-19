@@ -1,4 +1,5 @@
 """Only simulated sensors enter ROS. Every command is correlated to its source image."""
+import gc
 import json
 import math
 import os
@@ -228,6 +229,9 @@ def main():
     executor = MultiThreadedExecutor(num_threads=4)
     for node in (sim, driver, camera):
         executor.add_node(node)
+    # Match concept_drive.node.main after camera and ROS graph initialization.
+    gc.collect()
+    gc.freeze()
     runner = threading.Thread(target=executor.spin, daemon=True)
     runner.start()
     try:
@@ -254,6 +258,7 @@ def main():
                             pass
     finally:
         executor.shutdown()
+        gc.unfreeze()
         for node in (sim, camera, driver):
             node.destroy_node()
         rclpy.shutdown()
