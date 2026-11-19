@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# On-car terminal and desktop entry. Keep this shell attached for controller selection.
+set -e
+repo="$HOME/src/neo-concept-1120-v6278"
+ws="$HOME/concept_1120_v6278_ws"
+pinned=f305d5f7acea5c87af0e2003bec13bdc06199d8f
+if [[ ! -f "$repo/vehicle_concept/src/concept/package.xml" ||
+      "$(git -C "$repo" rev-parse --verify HEAD)" != "$pinned" ]]; then
+    echo "Concept V6.27.8 needs checkout $pinned in $repo (see DEPLOY.md)." >&2
+    exit 1
+fi
+if ! git -C "$repo" diff --quiet HEAD -- vehicle_concept/src vehicle_concept/checks/check_overlay.py; then
+    echo "Tracked Concept sources differ from $pinned. Inspect the checkout before starting." >&2
+    exit 1
+fi
+source "$ws/activate_concept.bash"
+python3 "$repo/vehicle_concept/checks/check_overlay.py" "$ws"
+if [[ $# == 1 && $1 == --verify-install ]]; then
+    exit 0
+fi
+exec ros2 run concept live "$@"
