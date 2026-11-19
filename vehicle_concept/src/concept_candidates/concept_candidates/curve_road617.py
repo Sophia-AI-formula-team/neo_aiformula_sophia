@@ -10,7 +10,7 @@ except ImportError:
 from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
-from .field_controls import forward_ceiling
+from .field_controls import forward_ceiling, forward_steering
 from .edge_recovery import edge_control, preview_steering
 
 from concept_candidates.candidate_merge import distinct_requests
