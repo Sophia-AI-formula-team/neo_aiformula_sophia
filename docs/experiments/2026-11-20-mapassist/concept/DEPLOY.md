@@ -1,5 +1,7 @@
 # 11 月 20 日 · Concept V6.27.6 实验准备
 
+后续的 **V6.27.7** 在独立试验分支。现场若要对照“看见外缘仍往外打”，可先看录像、左右轮指令和同一台 Foxy 工作站的计时。下方安装命令取回已备车的 V6.27.6。V6.27.7 的车载 Jetson 延迟和实际贴边回正待测。[V6.27.7 对照报告与视频](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/concept-edge-latency-1120b/vehicle_concept/checks/edge1120b/README.md)
+
 车端源码、独立 Unity/Foxy 仿真入口和复核脚本都在团队 neo。V6.27.6 完成了 11/19 原车录包重放和四场 Unity 短闭环。朝外偏 23° 的场次停在道内。实车整圈、边缘恢复、Jetson 实际发令频率尚待验收。[四场实测与实车回正图](README.md) · [车端源码](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept) · [路界修复记录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept/checks/field_20261119.md)
 
 ## 车机上建立独立工作区
