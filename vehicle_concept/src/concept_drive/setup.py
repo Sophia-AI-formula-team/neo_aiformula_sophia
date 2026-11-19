@@ -3,7 +3,7 @@ from setuptools import setup
 name = 'concept_drive'
 setup(
     name=name,
-    version='6.27.6',
+    version='6.27.7',
     packages=[name],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + name]),

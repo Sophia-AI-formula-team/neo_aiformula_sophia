@@ -139,7 +139,7 @@ def build(context):
     if direct not in ('auto', 'true', 'false'):
         raise ValueError('onboard_camera must be auto, true or false')
     direct = vehicle if direct == 'auto' else direct == 'true'
-    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
+    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'), cuda_fusion=LC('cuda_fusion'),
                   camera_info_topic=LC('camera_info_topic'))
     driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)))
     gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')

@@ -8,7 +8,7 @@ native_sources = {'_markings': '_markings.pyx', '_memory': '_memory.pyx', 'field
 compiler_flags = ['/O2', '/fp:strict'] if os.name == 'nt' else ['-O3', '-ffp-contract=off']
 setup(
     name=name,
-    version='6.27.6',
+    version='6.27.7',
     packages=[name],
     cmdclass={'build_ext': build_ext},
     options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},

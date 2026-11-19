@@ -9,7 +9,7 @@ def generate_launch_description():
     defaults = {
         'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
         'target_speed_mps': '', 'max_auto_speed_mps': '', 'planning_hz': '15.0',
-        'weights': '', 'calibration': 'auto', 'device': 'cuda',
+        'weights': '', 'calibration': 'auto', 'device': 'cuda', 'cuda_fusion': 'auto',
         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
         'receiver_interval_sec': '0.1', 'sender_timeout_sec': '0.01',
