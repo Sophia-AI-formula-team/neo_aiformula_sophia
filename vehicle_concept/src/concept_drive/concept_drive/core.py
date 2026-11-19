@@ -103,7 +103,7 @@ class Drive:
             else:
                 guidance, reference = np.empty((0, 4)), None
             source = 'camera' if self.previous_field_edge is not None else 'previous_fit_confirmed_in_camera'
-            scene.audit['edge_preview'] = preview_audit(edge, source, yaw)
+            scene.audit['edge_preview'] = preview_audit(edge, source, yaw, physical_applied_command()[1])
             near_visibility = [row['z'] for row in near_rows
                                if row['source'] == 'historical_material_observation']
             provisional = launch_objects(det, objects, measurements)

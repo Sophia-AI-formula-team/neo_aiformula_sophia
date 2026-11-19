@@ -1,7 +1,7 @@
 """Field candidate limits, applied before any path or braking branch is evaluated."""
 import numpy as np
 
-from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering, physical_applied_command
+from concept_feasibility.response61515 import motor_steering, physical_applied_command
 
 # Initial commissioning limits. The turn ceiling is below the ±0.7 rad/s
 # manual plateaus recorded by VectorNav on 2026-11-19.
@@ -9,6 +9,11 @@ FORWARD_ACCEL = 1.0             # m/s², command ramp
 TRACKING_HEADROOM = .5          # m/s ahead of measured wheel speed
 MAX_YAW = .65                   # body rad/s
 LATERAL_ACCEL = 1.0             # m/s²
+# 16:35 Nov 19, forward/manual and valid 0x711 wheel feedback. Among
+# 2,406 overlapping 0.20�C0.24 s intervals the 95th percentile change
+# in right-minus-left speed was 30 RPM. The stock converter gives about
+# 59 RPM of wheel differential per unit here (0.5 per 0.2 s).
+OUTWARD_RELEASE_SLEW = 2.5
 DIFFERENTIAL_SLEW = 1.5         # rad/s² at the legacy differential input
 HALF_TREAD = .30                # metres
 WHEEL_SPEED_FRACTION = .5       # |turn wheel speed| / straight wheel speed
@@ -20,7 +25,7 @@ def forward_ceiling(measured, dt, pace):
                max(0., measured) + TRACKING_HEADROOM)
 
 
-def forward_steering(desired, drive, measured, previous, dt, *, edge_urgency=None):
+def forward_steering(desired, drive, measured, previous, dt, *, release_outward=None):
     """Choose a real motor input whose actual wheel differential rises smoothly.
 
     The stock inverse sigmoid has disjoint fitted branches at zero. Project
@@ -36,11 +41,12 @@ def forward_steering(desired, drive, measured, previous, dt, *, edge_urgency=Non
     requested = np.where(requested * ros > 0., requested, 0.)
     last = motor_steering(-np.asarray(previous, dtype=float), physical=True)
     delta = DIFFERENTIAL_SLEW * min(dt, .2)
-    if edge_urgency is not None:
-        # On the approach to a measured verge the differential should respond
-        # within the observed vehicle yaw time constant. The wheel-speed and
-        # lateral-acceleration bounds below still apply on each step.
-        delta = np.maximum(delta, edge_urgency * abs(requested-last) * min(dt, .2) / FIELD_YAW_TAU_S)
+    if release_outward is not None:
+        # Only move faster while withdrawing a previous outward differential.
+        # After zero the ordinary inward build-up limit applies.
+        relaxed = OUTWARD_RELEASE_SLEW * min(dt, .2)
+        release = np.minimum(relaxed, abs(last)) + np.maximum(0., delta*(1.-abs(last)/relaxed))
+        delta = np.where(release_outward, release, delta)
     wheel_limit = drive * WHEEL_SPEED_FRACTION / HALF_TREAD
     raw = np.clip(np.clip(requested, last-delta, last+delta), -wheel_limit, wheel_limit)
     # Additionally respect the body-yaw ceiling when speed changes.

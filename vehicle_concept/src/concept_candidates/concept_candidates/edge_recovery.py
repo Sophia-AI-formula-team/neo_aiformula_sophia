@@ -2,7 +2,7 @@
 import numpy as np
 
 from concept_candidates.field_controls import (
-    DIFFERENTIAL_SLEW, FORWARD_ACCEL, HALF_TREAD, TRACKING_HEADROOM,
+    DIFFERENTIAL_SLEW, OUTWARD_RELEASE_SLEW, FORWARD_ACCEL, HALF_TREAD, TRACKING_HEADROOM,
     WHEEL_SPEED_FRACTION, forward_steering,
 )
 from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering
@@ -134,12 +134,17 @@ def corroborated_previous_edge(edge, road, observed_bounds, speed, yaw, dt):
     return side, angle, distance, max(ends)
 
 
-def edge_preview(edge, z, x, heading, yaw):
+def edge_preview(edge, z, x, heading, yaw, previous):
     """Compute the same measured-edge test used by the rollout and the ROS trace."""
     side, angle, normal_distance, end = edge
     z, x, heading, yaw = map(np.asarray, (z, x, heading, yaw))
     distance = side*(normal_distance + np.sin(angle)*z - np.cos(angle)*x)
-    predicted_heading = heading + FIELD_YAW_TAU_S*yaw - angle
+    # A previously applied outward differential takes finite time to unwind.
+    # Include its triangular heading sweep as well as the measured gyro tail.
+    previous = np.asarray(previous)
+    outward_steer = np.where(side*previous > 0., previous, 0.)
+    release_time = abs(motor_steering(-outward_steer, physical=True))/OUTWARD_RELEASE_SLEW
+    predicted_heading = heading + FIELD_YAW_TAU_S*yaw + .5*outward_steer*release_time - angle
     outward = side*np.sin(predicted_heading)
     reach = np.maximum(0., end-z)
     reserve = HALF_TRACK + MARGIN_M
@@ -149,17 +154,29 @@ def edge_preview(edge, z, x, heading, yaw):
     return predicted_heading, distance, reach, predicted_margin, conflict, urgency
 
 
-def preview_audit(edge, source, yaw):
+def preview_audit(edge, source, yaw, previous=0.):
     if edge is None:
         return dict(source='no_supported_exterior', side=None, triggered=False)
-    angle_error, distance, reach, margin, conflict, urgency = edge_preview(edge, 0., 0., 0., yaw)
+    angle_error, distance, reach, margin, conflict, urgency = edge_preview(edge, 0., 0., 0., yaw, previous)
     side, angle, normal_distance, end = edge
     return dict(source=source, side='left' if side < 0 else 'right', triggered=bool(conflict),
                 normal_distance_m=float(normal_distance), tangent_right_rad=float(angle),
-                end_forward_m=float(end), gyro_right_radps=float(yaw),
+                end_forward_m=float(end), gyro_right_radps=float(yaw), previous_yaw_right_radps=float(previous),
                 predicted_relative_heading_rad=float(angle_error),
                 projected_center_clearance_m=float(margin), desired_center_clearance_m=HALF_TRACK+MARGIN_M,
                 urgency=float(urgency))
+
+
+def coordinating_drive_floor(edge, yaw, previous, dt):
+    """Keep enough common wheel speed to withdraw the applied differential gradually."""
+    if edge is None or len(edge) < 4 or edge[0]*previous <= 0.:
+        return 0.
+    *_, conflict, _ = edge_preview(edge, 0., 0., 0., yaw, previous)
+    if not conflict:
+        return 0.
+    difference = abs(motor_steering(-previous, physical=True))
+    remaining = max(0., difference - OUTWARD_RELEASE_SLEW*min(dt,.2))
+    return remaining * HALF_TREAD / WHEEL_SPEED_FRACTION
 
 
 def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, dt):
@@ -167,21 +184,21 @@ def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, 
 
     The measured gyro continues rotating the body while the motor changes
     response. Project that heading only as far as this camera's edge support.
-    If continuing on this heading consumes the turn-away space, release the
-    outward wheel differential and request an inward turn. The ordinary grip
+    If continuing on this heading consumes the turn-away space, unwind the
+    actual outward differential before building the inward turn. The grip
     and wheel-speed limits apply during both the response and the rollout.
     """
     if edge is None or len(edge) < 4:
         return forward_steering(desired, drive, speed, previous, dt)
     side = edge[0]
-    predicted_heading, distance, _, _, conflict, urgency = edge_preview(edge, z, x, heading, yaw)
+    predicted_heading, distance, _, _, conflict, _ = edge_preview(edge, z, x, heading, yaw, previous)
     reserve = HALF_TRACK + MARGIN_M
     # Turning parallel removes the closing velocity. A near wheel also needs
     # inward displacement to recover the available turn-away margin.
     inside = np.maximum(0., 2.*side*predicted_heading + .35*np.maximum(0., reserve-distance))
     desired = np.where(conflict, -side*np.maximum(-side*desired, inside), desired)
-    previous = np.where(conflict & (side*np.asarray(previous) > 0.), 0., previous)
-    return forward_steering(desired, drive, speed, previous, dt, edge_urgency=urgency)
+    release = conflict & (side*np.asarray(previous) > 0.)
+    return forward_steering(desired, drive, speed, previous, dt, release_outward=release)
 
 
 def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace):

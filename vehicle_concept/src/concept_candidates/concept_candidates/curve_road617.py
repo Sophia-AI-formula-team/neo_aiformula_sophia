@@ -11,7 +11,7 @@ from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WID
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
 from .field_controls import forward_ceiling, forward_steering
-from .edge_recovery import edge_control, preview_steering
+from .edge_recovery import coordinating_drive_floor, edge_control, preview_steering
 
 from concept_candidates.candidate_merge import distinct_requests
 from concept_candidates.curve_progress import increment
@@ -134,6 +134,13 @@ class RoadAwareCurvePlanner:
         edge = reference.get('_field_edge') if physical and reference is not None else None
         edge_slot = None
         previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
+        if edge is not None and previous[0] > 0.:
+            floor = min(previous[0], ceiling, coordinating_drive_floor(edge, obs.yaw, previous[1], obs.dt))
+            # A low-speed forward slot must not accidentally erase the wheel
+            # differential by clipping it to the new common wheel speed.
+            # Full brake remains a distinct, individually checked action.
+            if floor > 0.:
+                full_commands[full_commands > 0.] = np.maximum(full_commands[full_commands > 0.], floor)
         if edge is not None and previous[0] >= 0. and obs.speed >= 0.:
             # Reuse one duplicate forward request. The original unique curves,
             # all five speed options, and the existing checked stop remain available.

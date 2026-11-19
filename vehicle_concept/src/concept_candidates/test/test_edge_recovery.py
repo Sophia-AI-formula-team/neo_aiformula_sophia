@@ -3,8 +3,8 @@ import math
 import numpy as np
 import pytest
 
-from concept_candidates.edge_recovery import corroborated_previous_edge, edge_control, fit_edge, preview_audit, preview_steering
-from concept_candidates.field_controls import DIFFERENTIAL_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION, forward_steering
+from concept_candidates.edge_recovery import corroborated_previous_edge, coordinating_drive_floor, edge_control, fit_edge, preview_audit, preview_steering
+from concept_candidates.field_controls import DIFFERENTIAL_SLEW, OUTWARD_RELEASE_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION, forward_steering
 from concept_feasibility.response61515 import motor_steering, motor_profile
 
 
@@ -108,9 +108,18 @@ def test_diverging_camera_edge_releases_outward_differential_before_full_tyre_ex
     edge = fit_edge(road, observed, include_extent=True)
     assert edge[-1] == pytest.approx(6.)
     previous = side*.2
-    result = preview_steering(edge, side*.2, 0., 0., 0., 1.9, side*.1, previous, 1.6, .2)
-    assert side*result < 0.
-    assert abs(motor_steering(-result, True))*.30 <= .5*1.6 + 1e-10
+    for _ in range(10):
+        result = preview_steering(edge, side*.2, 0., 0., 0., 1.9, side*.1, previous, 1.6, .2)
+        old = motor_steering(-previous, True)
+        new = motor_steering(-result, True)
+        assert abs(new-old) <= OUTWARD_RELEASE_SLEW*.2 + 1e-8
+        assert abs(new)*.30 <= .5*1.6 + 1e-10
+        if side*result < 0.:
+            break
+        assert abs(new) < abs(old)
+        previous = result
+    else:
+        pytest.fail("Outward differential never crossed through equal wheel speeds")
 
 
 @pytest.mark.parametrize('edge,z,heading', [(None, 0., 0.), ((-1,.30,-1.4,2.), 1.9, 0.),
@@ -161,3 +170,14 @@ def test_saved_forward_then_brake_rechecks_steering_against_the_actual_motor():
     with motor_profile(True, (.8, 0.)):
         assert planner.resume_contingency() is False
     assert planner.reserved is None
+
+def test_early_release_uses_the_real_wheel_difference_and_a_coordinated_drive_floor():
+    # Frame 25 of the field approach had a substantial outward command.
+    # A 0.5 m/s slot would otherwise erase more than the whole release budget.
+    edge, previous, dt = (-1,.19,-1.73,5.72), -.218, .2
+    floor = coordinating_drive_floor(edge, -.09, previous, dt)
+    assert floor > .5
+    yaw = preview_steering(edge, -.15, 0., 0., 0., 1.9, -.09, previous, floor, dt)
+    assert yaw < 0.
+    assert abs(motor_steering(-yaw, True)-motor_steering(-previous, True)) == pytest.approx(OUTWARD_RELEASE_SLEW*dt)
+    assert coordinating_drive_floor(edge,-.09,-previous,dt) == 0.
