@@ -93,3 +93,8 @@ A3 V14 官方发布的 ROS 节点输出灯色、红像素数和带相机时间�
 从 Neo d8277bd 取两包和原诊断启动。对仓库源码依次应用 [fresh-non-red.patch](fresh-non-red.patch) 与 [pixel-detour-priority.patch](pixel-detour-priority.patch)。在启动文件所在目录依次应用 [Foxy 参数优先级](foxy-parameter-precedence.patch) 和 [像素旗标超时参数](pixel-planner-launch.patch)。
 
 专用诊断入口与同目录脚本放到工作区的 commissioning/，并将本目录的 [stop_wait_preview.py](stop_wait_preview.py) 一并放入该运行目录供状态转换模块导入。入口从该目录的上一级按 source/workspace/src/aiformula/launchers/launch 查找修补后的启动文件。旧隔离探针 commissioning_probe.py 使用显式合成距离话题，新探针 pixel_commissioning_probe.py 使用默认 /flag_stop 和带源时间戳的合成 A3 检测。两者都要求隔离 localhost ROS 域。
+
+
+## 午后真车红灯排查
+
+15:33 的现场快照、最新 MapAssist 接线文件、旧 motor 的静态 CAN 验证及快捷方式已归档。[红灯事件与验证](red-stop-field/README.md) · [最终接线与启动](red-stop-field/fix/README.md)

@@ -1,0 +1,1575 @@
+diff --git a/vehicle_concept/src/concept/concept/bringup.py b/vehicle_concept/src/concept/concept/bringup.py
+index efa9465..8f00cd9 100644
+--- a/vehicle_concept/src/concept/concept/bringup.py
++++ b/vehicle_concept/src/concept/concept/bringup.py
+@@ -2,10 +2,13 @@
+ import runpy
+ import tempfile
+ import time
++
++import yaml
+ from pathlib import Path
+ 
+ from ament_index_python.packages import get_package_share_directory
+-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, SetEnvironmentVariable
++from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
++                            SetEnvironmentVariable, SetLaunchConfiguration)
+ from launch.event_handlers import OnShutdown
+ from launch.launch_description_sources import PythonLaunchDescriptionSource
+ from launch.substitutions import LaunchConfiguration as LC
+@@ -51,6 +54,19 @@ def check_ownership(context):
+     return []
+ 
+ 
++def zed_actions(context, native, directory):
++    # The wrapper separately caps acquisition and image publication. At 15 Hz
++    # a 60 Hz grab alone still delivers old images to the planning pipeline.
++    original = Path(LC('config_common_path').perform(context))
++    config = yaml.safe_load(original.read_text(encoding='utf-8'))
++    general = config['/**']['ros__parameters']['general']
++    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
++    overlay = Path(directory, 'zed-common.yaml')
++    overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
++    return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
++                                *native['create_zed_node'](context)])
++
++
+ def sensor_actions(context):
+     import xacro
+ 
+@@ -72,7 +88,7 @@ def sensor_actions(context):
+              parameters=[{'robot_description': ParameterValue(description, value_type=str)}]),
+         Node(package='joint_state_publisher', executable='joint_state_publisher', namespace='/aiformula_sensing',
+              arguments=[str(urdf)]),
+-        *native['create_zed_node'](context),
++        zed_actions(context, native, temporary.name),
+         include('launchers', 'vectornav.launch.py'),
+         include('odometry_publisher', 'gyro_odometry_publisher.launch.py', use_rviz='false',
+                 imu_topic='/aiformula_sensing/vectornav/imu'),
+@@ -93,6 +109,13 @@ def build(context):
+     if mode not in ('vehicle', 'replay'):
+         raise ValueError('Select mode:=vehicle or mode:=replay')
+     vehicle = mode == 'vehicle'
++    calibration = LC('calibration').perform(context)
++    if calibration == 'auto':
++        config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
++        receipt = Path(config_home) / 'concept' / 'camera.json'
++        if not receipt.is_file():
++            receipt = receipt.with_name('honda-ground.json')
++        calibration = str(receipt) if vehicle and receipt.is_file() else ''
+     simulated_clock = LC('use_sim_time').perform(context).lower() == 'true'
+     if vehicle and simulated_clock:
+         raise ValueError('Vehicle mode requires the vehicle clock.')
+@@ -115,6 +138,19 @@ def build(context):
+         ('/semantic_drive/motor_session', '/concept/internal/unused_motor_session'),
+         ('/semantic_drive/map_status', '/concept/internal/unused_motor_map_status'),
+     ]
++    direct = LC('onboard_camera').perform(context)
++    if direct not in ('auto', 'true', 'false'):
++        raise ValueError('onboard_camera must be auto, true or false')
++    direct = vehicle if direct == 'auto' else direct == 'true'
++    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
++                  camera_info_topic=LC('camera_info_topic'))
++    driving = dict(onboard_camera=direct,
++                   target_speed_mps=float(LC('target_speed_mps').perform(context)),
++                   planning_hz=float(LC('planning_hz').perform(context)))
++    if direct:
++        driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
++    else:
++        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision))
+     actions.extend([
+         Node(package='motor_controller', executable='motor_controller', name='motor_controller', namespace='/concept/hardware',
+              parameters=[share('vehicle','config','wheel.yaml'), share('motor_controller','config','motor_controller.yaml'), buttons],
+@@ -124,13 +160,9 @@ def build(context):
+              parameters=[buttons, {'max_auto_speed_mps': float(LC('max_auto_speed_mps').perform(context)),
+                                   'can_sender_node': '/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver'}],
+              remappings=[] if vehicle else [(physical, '/concept/replay/reference_signal')]),
+-        include('concept_yolop', 'concept_yolop.launch.py', weights=LC('weights'),
+-                calibration=LC('calibration'), device=LC('device'),
+-                camera_info_topic=LC('camera_info_topic')),
+         Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
+              additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
+-             parameters=[{'target_speed_mps': float(LC('target_speed_mps').perform(context)),
+-                          'planning_hz': float(LC('planning_hz').perform(context))}]),
++             parameters=[driving]),
+         Node(package='concept_visualization', executable='visualization', output='screen'),
+     ])
+     if LC('panel').perform(context).lower() in ('true', '1'):
+diff --git a/vehicle_concept/src/concept/launch/concept.launch.py b/vehicle_concept/src/concept/launch/concept.launch.py
+index 3023ad7..0c82a16 100644
+--- a/vehicle_concept/src/concept/launch/concept.launch.py
++++ b/vehicle_concept/src/concept/launch/concept.launch.py
+@@ -7,13 +7,13 @@ from concept.bringup import build, share
+ 
+ def generate_launch_description():
+     defaults = {
+-        'mode': 'vehicle', 'panel': 'true', 'rviz': 'true',
+-        'target_speed_mps': '1.0', 'max_auto_speed_mps': '1.0', 'planning_hz': '15.0',
+-        'weights': '', 'calibration': '', 'device': 'cuda',
++        'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
++        'target_speed_mps': '4.0', 'max_auto_speed_mps': '4.0', 'planning_hz': '15.0',
++        'weights': '', 'calibration': 'auto', 'device': 'cuda',
+         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
+         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
+         'receiver_interval_sec': '0.1', 'sender_timeout_sec': '0.01',
+-        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '15',
++        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '60',
+         'pub_downscale_factor': '3.0',
+         'config_common_path': share('vehicle', 'config', 'zedx', 'common.yaml'),
+         'config_camera_path': share('vehicle', 'config', 'zedx', 'zedx.yaml'),
+diff --git a/vehicle_concept/src/concept/package.xml b/vehicle_concept/src/concept/package.xml
+index ce198d0..e58f215 100644
+--- a/vehicle_concept/src/concept/package.xml
++++ b/vehicle_concept/src/concept/package.xml
+@@ -18,6 +18,7 @@
+   <exec_depend>concept_visualization</exec_depend>
+   <exec_depend>motor_controller</exec_depend>
+   <exec_depend>vehicle</exec_depend>
++  <exec_depend>python3-yaml</exec_depend>
+   <exec_depend>xacro</exec_depend>
+   <exec_depend>robot_state_publisher</exec_depend>
+   <exec_depend>joint_state_publisher</exec_depend>
+diff --git a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+index eaafe5e..ecbd001 100644
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+@@ -72,9 +72,28 @@ class Gate:
+         self.resume_stamp = stamp
+         return True
+ 
++    def auto_is_fresh(self, stamp, now):
++        return (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT)
++
++    def check_auto_time(self, stamp, now):
++        if self.auto_at == -math.inf or self.auto_is_fresh(stamp, now):
++            return
++        age = stamp-self.auto_stamp
++        if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and age > COMMAND_TIMEOUT):
++            if self.reason != 'waiting_fresh_auto':
++                self.barrier(stamp, 'waiting_fresh_auto')
++        else:
++            self.pause(stamp, 'auto_timeout')
++
+     def command(self, value, source, stamp, now):
+         if self.paused or self.estop or not self.enabled or self.manual_held:
+             return
++        # Enforce deadlines even if a new callback runs before the watchdog tick.
++        self.check_auto_time(stamp, now)
++        if self.paused:
++            return
+         if (source <= max(self.resume_stamp, self.auto_stamp) or
+                 not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
+             return
+@@ -93,8 +112,8 @@ class Gate:
+             return self.manual
+         if self.paused or self.auto_at == -math.inf:
+             return ZERO
+-        if now-self.auto_at > COMMAND_TIMEOUT or not 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT:
+-            self.pause(stamp, 'auto_timeout')
++        self.check_auto_time(stamp, now)
++        if self.paused or self.reason == 'waiting_fresh_auto':
+             return ZERO
+         return self.auto
+ 
+diff --git a/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py b/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
+index f18ad84..f2199e1 100644
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
+@@ -15,7 +15,7 @@ from sensor_msgs.msg import Joy
+ from std_msgs.msg import Bool, String
+ from std_srvs.srv import SetBool, Trigger
+ 
+-from .core import COMMAND_TIMEOUT, Gate, ZERO, ZERO_FRAME
++from .core import Gate, ZERO, ZERO_FRAME
+ 
+ CAN_OUT = '/aiformula_control/motor_controller/reference_signal'
+ JOY = '/aiformula_control/joy_node/joy_l2_throttle'
+@@ -221,7 +221,7 @@ class GateNode(Node):
+             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
+             t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
+             manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
+-            auto_fresh=not g.paused and time.monotonic()-g.auto_at <= COMMAND_TIMEOUT))))
++            auto_fresh=not g.paused and g.auto_is_fresh(self.now(), time.monotonic())))))
+ 
+ 
+ def main(args=None):
+diff --git a/vehicle_concept/src/concept_control_gate/test/test_gate.py b/vehicle_concept/src/concept_control_gate/test/test_gate.py
+index 0430e56..41ec1fc 100644
+--- a/vehicle_concept/src/concept_control_gate/test/test_gate.py
++++ b/vehicle_concept/src/concept_control_gate/test/test_gate.py
+@@ -59,3 +59,44 @@ def test_frame_before_acknowledged_transition_is_never_forwarded():
+     g.tick(1.09, 1.09)
+     g.motor(bytes([1]*8), 1.095, 1.096, 1.096)
+     assert not g.ready
++
++
++def test_capture_expiry_stops_until_zero_ack_and_fresh_frame():
++    g = ready_auto()
++    command = (1., 0.)
++    moving = bytes([1] * 8)
++    for t in (1.12, 1.20, 1.28, 1.36, 1.44):
++        g.motor(ZERO_FRAME, t, t, t)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command(command, 1.06, 1.49, 1.49)
++    g.motor(ZERO_FRAME, 1.50, 1.50, 1.50)
++    assert g.tick(1.51, 1.51) == command
++    assert g.motor(moving, 1.53, 1.53, 1.53) == moving
++    assert g.motor(moving, 1.57, 1.57, 1.57) == ZERO_FRAME
++    assert not g.paused and not g.auto_is_fresh(1.57, 1.57)
++    assert g.tick(1.575, 1.575) == ZERO
++    # Match the recorded gap: source age exceeds 600 ms while command delivery
++    # is still within the 500 ms watchdog. Await a zero frame past the fence.
++    g.command(command, 1.25, 1.73, 1.73)
++    assert g.tick(1.735, 1.735) == ZERO
++    assert g.motor(moving, 1.74, 1.74, 1.74) == ZERO_FRAME
++    g.motor(ZERO_FRAME, 1.745, 1.745, 1.745)
++    assert g.tick(1.75, 1.75) == command
++
++
++def test_late_arrival_cannot_rearm_after_extended_gap():
++    g = ready_auto()
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.49, 1.49)
++    # A valid new command arrives before the next tick but beyond the deadline since the last valid command receipt.
++    g.command((1.,0.), 1.60, 2.01, 2.01)
++    assert g.paused and g.reason == 'auto_timeout'
++    assert g.tick(2.01, 2.01) == ZERO
++
++
++def test_silent_or_replayed_stream_still_latches_at_receipt_deadline():
++    g = ready_auto()
++    g.command((1.,0.), 1.06, 1.06, 1.06)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.565, 1.565)
++    assert g.paused and g.reason == 'auto_timeout'
+diff --git a/vehicle_concept/src/concept_drive/README.md b/vehicle_concept/src/concept_drive/README.md
+index 81b59af..6ed6e0f 100644
+--- a/vehicle_concept/src/concept_drive/README.md
++++ b/vehicle_concept/src/concept_drive/README.md
+@@ -35,7 +35,7 @@ ros2 service call /concept/drive/restart std_srvs/srv/Trigger '{}'
+ - road_rows 每行为 [前距,最左横距,最右横距,左侧误差,右侧误差]。selected_path、每条 path、lines[].points、edges.left/right 使用 [前距,右距] 米。lines[].kind 区分实线、虚线和证据不足。地图原点是本次驾驶开始位置，map.pose 为 [前距,右距,右偏航角]。map.parts 按 ego、adjacent 和 ego_mask 分层；map.changed 每行为 [前格,右格,本车道次数,相邻车道次数,本车道路面掩码次数,相对时间]，每格 0.2 m。map_semantics.changed_markings 给出相同格坐标和线型。map.static、map.dynamic、map.now 是冻结的静态位置估计、动态观测范围和当前观察。objects 保留规划器数值矩阵，tracks 提供人能读的 id / position / velocity / error_m 等。
+ - status 可能为 ok、shadow、invalid 或 late。shadow 时，判据、所选路线和候选控制可用于显示。图像超过 0.5 秒、时间异常、没有相应反馈或标定不匹配时，物理门收不到此帧的新控制。超过 0.5 秒的图像中断、更换相机/几何配置或规划计算中断后需要暂停并重启，以免沿用失效的历史。基于当前正向无符号轮速编码的反馈无法验证倒车方向。驱动保留倒车选择供显示，并抑制该反向输出。
+ 
+-实车图片需要在视觉节点通过物理相机内参、安装与地面点的标定审核。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 进入 shadow。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
++车端可采用本田安装位姿、现场光心高度 0.55 m 和实时 ZED 左相机 CameraInfo.P 投影。驾驶节点接受该配置 `honda-v1.4.0-ground`，在图像和反馈时效满足条件时向 `/concept/auto_cmd` 发布规划指令。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 进入 shadow。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
+ 
+ ## 同帧核验
+ 
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index 444b1d9..5d0f4af 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -2,7 +2,7 @@
+ import json
+ import math
+ import time
+-from threading import Lock
++from threading import Event, Lock
+ from uuid import uuid4
+ 
+ import cv2
+@@ -16,7 +16,8 @@ from rclpy.node import Node
+ from std_msgs.msg import String
+ from std_srvs.srv import Trigger
+ 
+-from concept_yolop.frame_codec import parse_frame_header, decode_frame_data
++from concept_yolop.frame_codec import decode_frame_data, parse_frame_header, validate_pixels, validated_detections
++from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
+ from .core import Drive
+ from .lap_map import encode_map
+ from .transport import Feedback, native_sensor, ros_command, stamp
+@@ -43,14 +44,19 @@ class DriverNode(Node):
+         self.feedback = Feedback()
+         self.lock = Lock()
+         self.telemetry = MutuallyExclusiveCallbackGroup()
++        self.restart_services = MutuallyExclusiveCallbackGroup()
++        self.restart_requested = Event()
++        self.planning_state = Lock()
+         self.reset_driver()
+-        self.add_on_set_parameters_callback(self.update_parameters)
+         self.output = self.create_publisher(TwistStamped, '/concept/auto_cmd', 1)
+         self.decisions = self.create_publisher(String, '/concept/decision', 1)
+         self.create_subscription(String, '/concept/vehicle_state', self.state, 10, callback_group=self.telemetry)
+         self.create_subscription(String, '/concept/gate/status', self.gate, 1, callback_group=self.telemetry)
+-        self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
+-        self.create_service(Trigger, '~/restart', self.restart)
++        self.onboard_camera = self.declare_parameter('onboard_camera', False).value
++        self.add_on_set_parameters_callback(self.update_parameters)
++        if not self.onboard_camera:
++            self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
++        self.create_service(Trigger, '~/restart', self.restart, callback_group=self.restart_services)
+         # The default mutually exclusive group keeps the snapshot consistent
+         # with one completed frame, while feedback still uses its own group.
+         self.create_service(Trigger, '~/lap_map', self.lap_map)
+@@ -61,23 +67,32 @@ class DriverNode(Node):
+         self.first_ns = self.last_ns = self.next_ns = None
+         self.rate_skipped_total = 0
+         self.locked_reason = None
++        self.image_gap = False
+         self.camera_key = None
+         self.cached_lap_map = None
+         with self.lock:
+             self.feedback.samples.clear()
+ 
+     def restart(self, _, response):
+-        with self.lock:
+-            if self.gate_driving:
+-                response.success = False
+-                response.message = 'Pause the active physical gate before clearing driver memory.'
++        self.restart_requested.set()
++        try:
++            with self.planning_state:
++                with self.lock:
++                    if self.gate_driving:
++                        response.message = 'Pause the active physical gate before clearing driver memory.'
++                        return response
++                self.reset_driver()
++                response.success = True
++                response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
+                 return response
+-        self.reset_driver()
+-        response.success = True
+-        response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
+-        return response
++        finally:
++            self.restart_requested.clear()
+ 
+     def lap_map(self, _, response):
++        with self.planning_state:
++            return self.map_snapshot(response)
++
++    def map_snapshot(self, response):
+         if self.last_ns is None:
+             response.message = '等待第一帧有效地图'
+             return response
+@@ -100,8 +115,8 @@ class DriverNode(Node):
+ 
+     def update_parameters(self, parameters):
+         for p in parameters:
+-            if p.name == 'planning_hz':
+-                return SetParametersResult(successful=False, reason='Set planning_hz when launching the driver')
++            if p.name in ('planning_hz','onboard_camera'):
++                return SetParametersResult(successful=False, reason='Set %s when launching the driver' % p.name)
+             if p.name == 'target_speed_mps':
+                 if p.type_ != p.Type.DOUBLE or not math.isfinite(p.value) or not 0. < p.value <= 6.:
+                     return SetParametersResult(successful=False, reason='target_speed_mps must be a double in (0,6]')
+@@ -128,7 +143,21 @@ class DriverNode(Node):
+         except (KeyError, TypeError, ValueError):
+             return
+ 
++    def camera_frame(self, stamp, frame_id, profile, bgr, road, lane, det):
++        ns = stamp.sec * 1_000_000_000 + stamp.nanosec
++        self.process_frame(local=(ns, frame_id, profile, dict(det, bgr=bgr, road=road, lane=lane)))
++
+     def frame(self, message):
++        self.process_frame(message=message)
++
++    def process_frame(self, message=None, local=None):
++        if self.restart_requested.is_set():
++            return
++        with self.planning_state:
++            if not self.restart_requested.is_set():
++                self.plan_frame(message, local)
++
++    def plan_frame(self, message, local):
+         now = lambda: self.get_clock().now().nanoseconds
+         tic = time.monotonic()
+         decision = dict(schema='concept.decision.v1', session=self.session, frame_id='base_footprint',
+@@ -137,7 +166,10 @@ class DriverNode(Node):
+                         whitebox_index=None, command=None, feasible_count=0, candidates=[], selected_path=[],
+                         road_rows=[], objects=[], tracks=[], lines=[], edges={}, map=None, map_semantics=None)
+         try:
+-            packet, ns, optical_frame, profile = parse_frame_header(message.data)
++            if local is None:
++                packet, ns, optical_frame, profile = parse_frame_header(message.data)
++            else:
++                ns, optical_frame, profile, f = local
+             capture = ns / 1e9
+             decision.update(stamp=stamp(ns), geometry_profile=profile)
+             age = (now() - ns) / 1e9
+@@ -156,19 +188,24 @@ class DriverNode(Node):
+                     self.rate_skipped_total += 1
+                     return
+                 if ns - self.last_ns > 500_000_000:
++                    self.image_gap = True
+                     self.locked_reason = 'image gap over 0.5 s; pause the gate and restart the driver'
+                     raise ValueError(self.locked_reason)
+             with self.lock:
+                 sample = self.feedback.at(capture, MAX_STATE_AGE)
+                 limit = self.limit
+             pace = min(self.target, limit) if limit is not None else self.target
+-            f = decode_frame_data(packet)
++            if local is None:
++                f = decode_frame_data(packet)
++                det = {k:f[k] for k in ('boxes','labels','scores')}
++            else:
++                validate_pixels(f['bgr'], f['road'], f['lane'])
++                det = validated_detections(f)
+             self.driver.set_pace(pace)
+             decision.update(effective_speed_mps=pace, sensor_age_s=capture-sample['t'])
+             if self.first_ns is None:
+                 self.first_ns = ns
+             native = native_sensor(sample, (ns-self.first_ns)/1e9)
+-            det = {k:f[k] for k in ('boxes','labels','scores')}
+             try:
+                 result = self.driver.step(f['bgr'], f['road'], f['lane'], det, native)
+             except Exception:
+@@ -180,9 +217,9 @@ class DriverNode(Node):
+             periods = (ns - self.first_ns + CAPTURE_JITTER_NS) // self.period_ns + 1
+             self.next_ns = self.first_ns + periods * self.period_ns
+             cmd = ros_command(result.pop('command_native'))
+-            decision.update(result, command=cmd, status='ok')
+-            if profile != 'calibrated-v626' and not (
+-                    profile == 'frozen-unity-v626' and self.get_parameter('use_sim_time').value):
++            decision.update(result, command=cmd, status='ok', planner_reason=result.get('reason', ''))
++            if profile not in (CALIBRATED, HONDA) and not (
++                    profile == UNITY and self.get_parameter('use_sim_time').value):
+                 decision.update(status='shadow', reason='camera geometry has no validated driving profile')
+             elif cmd['linear_x_mps'] < 0 and sample.get('rpm_encoding') == 'forward_only_uint8':
+                 decision.update(status='shadow', reason='reverse wheel-feedback sign unverified')
+@@ -196,7 +233,7 @@ class DriverNode(Node):
+                 output.twist.angular.z = cmd['angular_z_radps']
+                 self.output.publish(output)
+         except Exception as exc:
+-            decision.update(status='invalid', reason=str(exc))
++            decision.update(status='invalid', reason=str(exc), image_gap_reset_required=self.image_gap)
+         emitted = now()
+         decision.update(emitted_stamp=stamp(emitted), processing_ms=(time.monotonic()-tic)*1000.,
+                         rate_skipped_total=self.rate_skipped_total, planning_hz=1e9/self.period_ns)
+@@ -208,14 +245,23 @@ class DriverNode(Node):
+ def main(args=None):
+     rclpy.init(args=args)
+     node = DriverNode()
+-    executor = MultiThreadedExecutor(num_threads=2)
++    executor = MultiThreadedExecutor(num_threads=3)
+     executor.add_node(node)
++    camera = None
+     try:
++        if node.onboard_camera:
++            from concept_yolop.node import CameraNode
++            # Planning, map snapshots and resets share one mutually exclusive group.
++            # Telemetry and restart can run while a frame owns planning state.
++            camera = CameraNode(node.camera_frame, node.default_callback_group)
++            executor.add_node(camera)
+         executor.spin()
+     except KeyboardInterrupt:
+         pass
+     finally:
+         executor.shutdown()
++        if camera is not None:
++            camera.destroy_node()
+         node.destroy_node()
+         if rclpy.ok():
+             rclpy.shutdown()
+diff --git a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+index 29138c9..4cfc518 100644
+--- a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++++ b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+@@ -21,6 +21,7 @@ from std_srvs.srv import Trigger
+ 
+ from concept_drive.node import DriverNode
+ from concept_yolop.frame_codec import encode_frame
++from concept_yolop.geometry import HONDA
+ 
+ 
+ def main():
+@@ -57,14 +58,18 @@ def main():
+     sensor = dict(row['sensor'], gyro=-row['sensor']['gyro'], valid=True)
+     image = cv2.imread(str(root / '00000_rgb.png'))
+ 
+-    def send_input(profile, sec):
++    def send_input(profile, sec, direct=False):
+         clock.publish(Clock(clock=Time(sec=sec)))
+         until(lambda: driver.get_clock().now().nanoseconds == sec * 10**9)
+         state.publish(String(data=json.dumps(dict(sensor, t=float(sec)))))
+         until(lambda: any(s['t'] == float(sec) for s in driver.feedback.samples))
+         with np.load(root / '00000_perception.npz') as d:
+-            wire = encode_frame(sec, 0, 'camera', image, d['raw'], d['lane'], d, profile)
+-        camera.publish(String(data=wire))
++            if direct:
++                driver.camera_frame(Time(sec=sec), 'camera', profile, image, d['raw'], d['lane'],
++                                    {key: d[key] for key in ('boxes', 'scores', 'labels')})
++            else:
++                wire = encode_frame(sec, 0, 'camera', image, d['raw'], d['lane'], d, profile)
++                camera.publish(String(data=wire))
+         until(lambda: bool(decisions))
+ 
+     def gate_status(paused, limit):
+@@ -90,7 +95,45 @@ def main():
+         send_input('unverified-resize', 11)
+         assert decisions[0]['session'] != initial and decisions[0]['status'] == 'shadow'
+         assert decisions[0]['effective_speed_mps'] == 1. and len(commands) == 1
+-        print('DDS verified command signs, capture stamp, checked selection, gate cap, restart and camera shadow.')
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 12)
++        result = decisions[0]
++        assert result['geometry_profile'] == HONDA and result['status'] == 'ok'
++        until(lambda: len(commands) == 2)
++        command = commands[-1]
++        assert command.header.frame_id == 'base_footprint'
++        assert (command.header.stamp.sec, command.header.stamp.nanosec) == (12, 0)
++        assert command.twist.linear.x > 0
++        np.testing.assert_allclose(
++            [command.twist.linear.x, command.twist.angular.z],
++            [result['command']['linear_x_mps'], result['command']['angular_z_radps']])
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 13, direct=True)
++        until(lambda: len(commands) == 3)
++        assert commands[-1].header.stamp.sec == 13
++        for key in ('status', 'selected_index', 'command', 'feasible_count', 'selected_path', 'candidates'):
++            assert decisions[0][key] == result[key], key
++        decisions.clear()
++        send_input(HONDA, 14)
++        assert decisions[0]['status'] == 'invalid'
++        assert decisions[0]['image_gap_reset_required'] is True
++        assert len(commands) == 3
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        decisions.clear()
++        send_input(HONDA, 15)
++        until(lambda: len(commands) == 4)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 15
++        print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
++              'unverified shadow, Honda commands identical direct-frame choices and restart after a camera gap.')
+     finally:
+         peer.destroy_node()
+         driver.destroy_node()
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/lap_map.py b/vehicle_concept/src/concept_panel/concept_panel/lap_map.py
+index a2fdafe..43f17d9 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/lap_map.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/lap_map.py
+@@ -35,7 +35,7 @@ def unpack_snapshot(message):
+ class MapCanvas(W.QWidget):
+     def __init__(self):
+         super().__init__()
+-        self.setMinimumSize(520, 350)
++        self.setMinimumSize(210, 160)
+         self.data = self.raster = None
+ 
+     def set_map(self, data):
+@@ -131,27 +131,36 @@ class MapCanvas(W.QWidget):
+         painter.restore()
+ 
+ 
+-class LapMapDialog(W.QDialog):
++class LapMapPanel(W.QFrame):
+     def __init__(self, parent):
+         super().__init__(parent)
+-        self.setWindowTitle('Concept · 累计赛道地图')
+-        self.resize(870, 650)
++        self.setObjectName('card')
+         self.key = None
+         shell = W.QVBoxLayout(self)
++        shell.setContentsMargins(14, 9, 14, 9)
+         self.paper = W.QWidget()
++        self.paper.setStyleSheet('background: white')
+         layout = W.QVBoxLayout(self.paper)
+-        self.summary = W.QLabel('从本次驾驶会话开始累计 · 起点朝向为上')
++        layout.setContentsMargins(0, 0, 0, 0)
++        heading = W.QLabel('累计赛道地图')
++        heading.setObjectName('heading')
++        layout.addWidget(heading)
++        self.summary = W.QLabel('起点朝向为上')
++        self.summary.setWordWrap(True)
+         layout.addWidget(self.summary)
+         self.canvas = MapCanvas()
+         layout.addWidget(self.canvas, 1)
+-        layout.addWidget(W.QLabel(
++        legend = W.QLabel(
+             '<span style="color:#3d84b0">■ 本车道</span>　<span style="color:#3f9c84">■ 邻道</span>　'
+-            '<span style="color:#ed841f">━ 橙色标线（虚线保留空档）</span>　'
+-            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span>'))
+-        layout.addWidget(W.QLabel('黄点为起点 · 深色三角为车辆 · 紫点为观测到的场内开口'))
++            '<span style="color:#ed841f">━ 标线</span>　'
++            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span><br>'
++            '黄点为起点 · 三角为车辆 · 紫点为场内开口')
++        legend.setWordWrap(True)
++        layout.addWidget(legend)
+         shell.addWidget(self.paper, 1)
+         footer = W.QHBoxLayout()
+         self.connection = W.QLabel('等待地图服务')
++        self.connection.setWordWrap(True)
+         footer.addWidget(self.connection, 1)
+         self.save_button = W.QPushButton('保存 PNG…')
+         self.save_button.setEnabled(False)
+@@ -159,6 +168,14 @@ class LapMapDialog(W.QDialog):
+         footer.addWidget(self.save_button)
+         shell.addLayout(footer)
+ 
++    def clear_map(self):
++        self.key = None
++        self.canvas.data = self.canvas.raster = None
++        self.canvas.update()
++        self.summary.setText('起点朝向为上')
++        self.connection.setText('等待第一帧有效地图')
++        self.save_button.setEnabled(False)
++
+     def show_map(self, message):
+         data = unpack_snapshot(message)
+         key = data['session'], data['stamp']
+@@ -176,7 +193,13 @@ class LapMapDialog(W.QDialog):
+         if path:
+             if not path.lower().endswith('.png'):
+                 path += '.png'
+-            if self.paper.grab().save(path, 'PNG'):
++            # Keep text and map details readable when the embedded panel is narrow.
++            scale = max(1., 800 / self.paper.width())
++            pixmap = QtGui.QPixmap(math.ceil(self.paper.width() * scale),
++                                   math.ceil(self.paper.height() * scale))
++            pixmap.setDevicePixelRatio(scale)
++            self.paper.render(pixmap)
++            if pixmap.save(path, 'PNG'):
+                 self.connection.setText('已保存 ' + path)
+             else:
+                 W.QMessageBox.warning(self, '地图未保存', '无法写入这个 PNG 文件。')
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/main.py b/vehicle_concept/src/concept_panel/concept_panel/main.py
+index ae92fe0..04287fb 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/main.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/main.py
+@@ -55,42 +55,51 @@ class RecordingControls:
+ 
+ 
+ class LapMapUpdates:
+-    def __init__(self, node, dialog):
++    def __init__(self, node, panel):
+         from std_srvs.srv import Trigger
+ 
+-        self.dialog = dialog
++        self.panel = panel
+         self.client = node.create_client(Trigger, '/concept/drive/lap_map')
+         self.request = Trigger.Request
+         self.pending = None
+         self.sent_at = float('-inf')
+ 
++    def reset(self):
++        if self.pending is not None:
++            self.pending.cancel()
++            self.pending = None
++        self.sent_at = float('-inf')
++        self.panel.clear_map()
++
+     def refresh(self, steady):
+         if self.pending is not None:
+             if self.pending.done():
+                 try:
+                     response = self.pending.result()
+-                    if self.dialog.isVisible():
++                    if self.panel.isVisible():
+                         if response.success:
+-                            self.dialog.show_map(response.message)
++                            self.panel.show_map(response.message)
++                        elif response.message == '等待第一帧有效地图':
++                            self.panel.clear_map()
+                         else:
+-                            self.dialog.connection.setText(response.message)
++                            self.panel.connection.setText(response.message)
+                 except (TypeError, ValueError, KeyError, RuntimeError):
+-                    self.dialog.connection.setText('地图读取失败 · 保留上次地图')
++                    self.panel.connection.setText('地图读取失败 · 保留上次地图')
+                 self.pending = None
+             elif steady-self.sent_at > 3.:
+                 self.pending.cancel()
+                 self.pending = None
+-                self.dialog.connection.setText('地图服务超时 · 保留上次地图')
+-        if self.pending is not None or not self.dialog.isVisible() or steady-self.sent_at < 1.:
++                self.panel.connection.setText('地图服务超时 · 保留上次地图')
++        if self.pending is not None or not self.panel.isVisible() or steady-self.sent_at < 1.:
+             return
+         self.sent_at = steady
+         if not self.client.service_is_ready():
+-            self.dialog.connection.setText('未连接地图服务 · 保留上次地图')
++            self.panel.connection.setText('未连接地图服务')
+             return
+         try:
+             self.pending = self.client.call_async(self.request())
+         except RuntimeError:
+-            self.dialog.connection.setText('地图请求失败 · 保留上次地图')
++            self.panel.connection.setText('地图请求失败')
+ 
+ 
+ def image_from_ros(msg):
+@@ -174,7 +183,7 @@ class Controller:
+             if self.future is not None:
+                 self.future.cancel()
+             self.finish('之前的操作已被中断，以门控回读为准')
+-        self.pending=Action(command,value)
++        self.pending=Action(command, value, image_gap=self.window.image_gap())
+         self.window.busy=True
+         self.issue()
+ 
+@@ -215,6 +224,8 @@ class Controller:
+                 why=reply.results[0].reason if reply.results else '缺少参数结果'
+             else:
+                 ok,why=reply.success,reply.message
++            if key == 'restart' and ok:
++                self.lap_map.reset()
+             next_key=self.pending.completed(ok)
+             text=LABELS[key]+('已确认' if ok else '未执行')+(' · '+why if why else '')
+             if next_key:
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/model.py b/vehicle_concept/src/concept_panel/concept_panel/model.py
+index c11ae88..fd8c50c 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/model.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/model.py
+@@ -44,9 +44,15 @@ class Journal:
+ 
+ 
+ class Action:
+-    """A restart has two distinct acknowledgements. Timeout never advances the sequence."""
+-    def __init__(self, command, value=None):
+-        self.steps = deque(['pause', 'restart'] if command == 'restart' else [command])
++    """Advance through control services only after successful acknowledgements."""
++    def __init__(self, command, value=None, image_gap=False):
++        if command == 'resume' and image_gap:
++            steps = ['pause', 'restart', 'resume']
++        elif command == 'restart':
++            steps = ['pause', 'restart']
++        else:
++            steps = [command]
++        self.steps = deque(steps)
+         self.value = value
+ 
+     def completed(self, ok):
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/window.py b/vehicle_concept/src/concept_panel/concept_panel/window.py
+index 055d164..83f8c8e 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -1,7 +1,7 @@
+ from datetime import datetime
+ import math
+ 
+-from .lap_map import LapMapDialog
++from .lap_map import LapMapPanel
+ 
+ from .model import Feed, Journal
+ from .qt import QtCore, QtGui, QtWidgets as W
+@@ -11,6 +11,7 @@ STATUS = {'ok':'有效', 'invalid':'无效', 'shadow':'影子模式', 'waiting':
+ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','output_disabled':'电机输出已禁用',
+          'operator_pause':'操作员已暂停','manual_takeover':'手柄已接管','manual_released':'手柄已松开，等待继续',
+          'joy_timeout':'手柄数据超时','graph_conflict':'控制链存在冲突','motor_timeout':'电机转换输出超时',
++         'waiting_fresh_auto':'当前指令已到期，零输出等待新帧',
+          'vehicle_state_timeout':'车辆状态超时','speed_limit_changed':'速度上限已更改，等待继续',
+          'auto_timeout':'自动指令超时','auto_speed_limit':'自动指令超过速度上限',
+          'waiting_new_auto':'等待恢复后的新指令','auto_command_received':'已收到新的自动指令','feasible':'已选择可行轨迹',
+@@ -22,6 +23,7 @@ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','outp
+          'recovery_unknown_road':'后方路界未知',
+          'recovery_no_checked_motion':'前后暂时都没有通过检查的方案',
+          'camera geometry has no validated driving profile':'相机安装标定尚未通过',
++         'Honda mount projection active; ground error unmeasured':'本田安装参数投影已启用 · 地面误差未实测',
+          'reverse wheel-feedback sign unverified':'轮速反馈尚未确认能识别倒车方向',
+          'decision exceeded 0.5 s from acquisition':'拍摄到出指令超过 0.5 秒'}
+ 
+@@ -189,7 +191,9 @@ class Window(W.QWidget):
+ 
+         camera, cam = card()
+         cam.setContentsMargins(14, 9, 14, 9)
+-        columns.addWidget(camera, 7)
++        columns.addWidget(camera, 5)
++        self.lap_map = LapMapPanel(self)
++        columns.addWidget(self.lap_map, 4)
+         columns.addWidget(self.decision_surface, 3)
+         bar = W.QHBoxLayout()
+         bar.addWidget(label('摄像头与规划叠图','heading'))
+@@ -248,12 +252,6 @@ class Window(W.QWidget):
+             toolbar.addWidget(button)
+         toolbar.addStretch()
+ 
+-        self.lap_map = LapMapDialog(self)
+-        self.map_button = W.QPushButton('累计赛道地图…')
+-        self.map_button.setEnabled(not self.offline)
+-        self.map_button.clicked.connect(self.lap_map.show)
+-        toolbar.addWidget(self.map_button)
+-
+         self.settings_dialog = W.QDialog(self)
+         self.settings_dialog.setWindowTitle('Concept · 速度设置')
+         self.settings_dialog.setMinimumWidth(420)
+@@ -296,6 +294,10 @@ class Window(W.QWidget):
+         self.action_feedback=label('','muted')
+         self.action_feedback.setWordWrap(True)
+         stack.addWidget(self.action_feedback)
++        self.gap_notice = label('图像断档已锁定。点继续自动驾驶会先清空累计地图并重启规划。', 'muted')
++        self.gap_notice.setWordWrap(True)
++        self.gap_notice.hide()
++        stack.addWidget(self.gap_notice)
+ 
+         metrics=W.QHBoxLayout()
+         self.metrics={}
+@@ -390,6 +392,13 @@ class Window(W.QWidget):
+             description = f'请求速度 {speed:.2f} m/s   ·   {steer}'
+             if decision.get('selected_index') is not None:
+                 description += f"   ·   候选 #{decision['selected_index']}"
++            elif decision.get('selected_path'):
++                description += '   ·   恢复路线'
++            elif 'selected_path' in decision:
++                description += '   ·   当前无选中路径'
++            planner_reason = decision.get('planner_reason')
++            if planner_reason and planner_reason != decision.get('reason'):
++                detail += ' · ' + reason(planner_reason)
+         else:
+             action = '等待决策'
+         self.action.setText('规划 · ' + action)
+@@ -440,6 +449,7 @@ class Window(W.QWidget):
+         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
+                           if effective is not None else '规划按目标和限速中较低的值计算。')
+         self.action_feedback.setText(self.pending_text)
++        self.gap_notice.setVisible(self.image_gap())
+         for key,button in self.buttons.items():
+             ok=live and not self.busy and not self.offline
+             if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
+@@ -447,3 +457,6 @@ class Window(W.QWidget):
+             if key=='disable': ok=not self.offline
+             if key=='pause': ok=not self.offline
+             button.setEnabled(bool(ok))
++
++    def image_gap(self):
++        return self.decision.value.get('image_gap_reset_required') is True
+diff --git a/vehicle_concept/src/concept_panel/test/test_panel.py b/vehicle_concept/src/concept_panel/test/test_panel.py
+index 225b3ad..71f698a 100644
+--- a/vehicle_concept/src/concept_panel/test/test_panel.py
++++ b/vehicle_concept/src/concept_panel/test/test_panel.py
+@@ -41,6 +41,12 @@ def test_offline_qt_render_flags_and_bgr_with_stride(monkeypatch):
+     w.gate.put(dict(mode='auto',output_enabled=True,linear_mps=.87),10.,20.)
+     w.refresh(10.,20.)
+     assert w.connection.text()=='门控在线' and w.metrics['cmd'].text()=='0.87'
++    w.show()
++    w.gate.put(dict(mode='paused', output_enabled=True, paused=True, linear_mps=0.),10.,20.)
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True),10.,20.)
++    w.refresh(10.,20.)
++    assert w.buttons['resume'].text()=='继续自动驾驶'
++    assert w.buttons['resume'].isEnabled() and w.gap_notice.isVisible()
+     w.refresh(10.,20.6)
+     assert w.connection.text()=='门控失联' and w.metrics['cmd'].text()=='—'
+     assert not w.buttons['enable'].isEnabled()
+@@ -138,3 +144,57 @@ def test_controller_pause_timeout_never_restarts():
+     controller.deadline=0
+     controller.poll()
+     assert controller.pending is None and '超时' in controller.window.pending_text
++
++
++def test_embedded_map_resets_on_restart_ack_and_discards_old_snapshot(monkeypatch, tmp_path):
++    import base64
++    from concurrent.futures import Future
++    import json
++    import zlib
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.main import Controller, LapMapUpdates
++    from concept_panel.qt import QtGui, QtWidgets
++    from concept_panel.window import Window
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    window = Window()
++    window.show()
++    app.processEvents()
++    panel = window.lap_map
++    assert panel.isVisible() and panel.window() is window
++    empty = base64.b64encode(zlib.compress(b'')).decode('ascii')
++    snapshot = dict(schema='concept.lap-map.v1', session='old', stamp=1, cell_m=.1, distance_m=0.,
++                    road=empty, lines=empty, track=empty, pose=[0., 0., 0.],
++                    static=[], moving=[], openings=[])
++    panel.show_map(json.dumps(snapshot))
++    path = tmp_path / 'map.png'
++    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args: (str(path), 'PNG'))
++    panel.save_button.click()
++    assert QtGui.QImage(str(path)).width() >= 800
++
++    updates = LapMapUpdates.__new__(LapMapUpdates)
++    updates.panel = panel
++    old_response = Future()
++    old_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.pending = old_response
++    updates.sent_at = 0.
++    new_response = Future()
++    updates.client = SimpleNamespace(service_is_ready=lambda: True, call_async=lambda _: new_response)
++    updates.request = object
++    controller = Controller.__new__(Controller)
++    controller.window, controller.lap_map = window, updates
++    for success in (False, True):
++        controller.pending = Action('restart')
++        controller.pending.completed(True)  # pause acknowledged
++        controller.future = Future()
++        controller.future.set_result(SimpleNamespace(success=success, message=''))
++        controller.poll()
++        assert panel.save_button.isEnabled() == (not success)
++    assert panel.canvas.raster is None and panel.canvas.data is None and panel.key is None
++    updates.refresh(.1)
++    assert panel.key is None and updates.pending is new_response
++    snapshot.update(session='new', stamp=2)
++    new_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.refresh(.2)
++    assert panel.key == ('new', 2) and panel.save_button.isEnabled()
++    window.close()
+diff --git a/vehicle_concept/src/concept_visualization/concept_visualization/node.py b/vehicle_concept/src/concept_visualization/concept_visualization/node.py
+index cf20978..85de9b9 100644
+--- a/vehicle_concept/src/concept_visualization/concept_visualization/node.py
++++ b/vehicle_concept/src/concept_visualization/concept_visualization/node.py
+@@ -69,6 +69,26 @@ def draw_candidates(image, decision):
+         cv2.addWeighted(layer, .65, image, .35, 0, dst=image)
+ 
+ 
++def draw_near_path(image, path):
++    """Body-frame plan at a fixed scale, including the camera's near blind area."""
++    tile = image[6:136, 6:136]
++    tile[:] = (36, 40, 43)
++    origin = (65, 72)
++    scale = 45  # pixels per metre; forward is up, right is right.
++    cv2.line(tile, (origin[0], 18), (origin[0], 127), (94, 94, 94), 1)
++    cv2.line(tile, (4, origin[1]), (126, origin[1]), (94, 94, 94), 1)
++    cv2.line(tile, (7, 122), (7 + scale, 122), (200, 200, 200), 1)
++    cv2.putText(tile, '1m', (55, 126), cv2.FONT_HERSHEY_SIMPLEX, .34, (225, 225, 225), 1, cv2.LINE_AA)
++    cv2.drawMarker(tile, origin, (255, 255, 255), cv2.MARKER_CROSS, 9, 2)
++    if path:
++        points = np.asarray([(origin[0] + scale * p[1], origin[1] - scale * p[0]) for p in path])
++        points = np.rint(points).astype(np.int32)
++        cv2.polylines(tile, [points], False, (170, 72, 250), 3, cv2.LINE_AA)
++        cv2.circle(tile, tuple(points[-1]), 3, (170, 72, 250), -1, cv2.LINE_AA)
++    cv2.putText(tile, 'PLAN' if path else 'NO PATH', (6, 14), cv2.FONT_HERSHEY_SIMPLEX,
++                .42, (240, 240, 240), 1, cv2.LINE_AA)
++
++
+ class Scene:
+     def __init__(self, stamp):
+         self.stamp = stamp
+@@ -127,7 +147,11 @@ class Visualization(Node):
+             for points in (d.get('edges') or {}).values():
+                 draw_path(image,points,(37,157,248),2)
+             draw_candidates(image, d)
+-            draw_path(image,d.get('selected_path',[]),(170,72,250),4)
++            path = d.get('selected_path', [])
++            draw_path(image, path, (43, 30, 55), 7)
++            draw_path(image, path, (170, 72, 250), 4)
++            if d.get('status') in ('ok', 'shadow', 'late'):
++                draw_near_path(image, path)
+         out=self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image),'bgr8')
+         out.header=msg.header
+         self.view.publish(out)
+diff --git a/vehicle_concept/src/concept_visualization/test/test_candidate_overlay.py b/vehicle_concept/src/concept_visualization/test/test_candidate_overlay.py
+index 0624231..60f762d 100644
+--- a/vehicle_concept/src/concept_visualization/test/test_candidate_overlay.py
++++ b/vehicle_concept/src/concept_visualization/test/test_candidate_overlay.py
+@@ -1,7 +1,7 @@
+ import numpy as np
+ 
+ from concept_visualization.geometry import pixel
+-from concept_visualization.node import draw_candidates, draw_path
++from concept_visualization.node import draw_candidates, draw_near_path, draw_path
+ 
+ 
+ def test_candidates_and_selection_have_distinct_camera_strokes():
+@@ -25,3 +25,15 @@ def test_candidates_and_selection_have_distinct_camera_strokes():
+     draw_path(image, paths[2], (170, 72, 250), 4)
+     x, y = pixel(paths[2][1])
+     assert tuple(image[y, x]) == (170, 72, 250)
++
++
++def test_near_view_shows_checked_path_below_camera_and_clears_on_empty_decision():
++    image = np.zeros((360, 640, 3), dtype=np.uint8)
++    path = [(0., 0.), (.15, 0.), (.25, -.05)]
++    color = (170, 72, 250)
++    draw_path(image, path, color, 4)
++    assert not np.any(image)
++    draw_near_path(image, path)
++    assert np.any(np.all(image == color, axis=2))
++    draw_near_path(image, [])
++    assert not np.any(np.all(image == color, axis=2))
+diff --git a/vehicle_concept/src/concept_yolop/README.md b/vehicle_concept/src/concept_yolop/README.md
+index b4afaf8..fc03a90 100644
+--- a/vehicle_concept/src/concept_yolop/README.md
++++ b/vehicle_concept/src/concept_yolop/README.md
+@@ -31,10 +31,14 @@ ros2 launch concept_yolop concept_yolop.launch.py
+ 
+ `concept_yolop.frame_codec.decode_frame(msg.data)` 检查协议版本和模型摘要，返回 `stamp_ns`、`frame_id`、`geometry_profile`、`bgr`、`road`、`lane`、`boxes`、`scores`、`labels`。RGB 通道以 BGR8 内存排列交付。两张 bool 掩膜及 BGR 使用无损 PNG；选择监听规划话题的远端设备时应考虑图像负载。6 月实车 bag 的 12 帧每条消息约 443–493 kB。
+ 
+-实车默认标为 `unverified-resize`。可用一张实测几何登记表，通过 `calibration:=/absolute/path/to/camera.json` 检查。JSON 字段为实际相机的话题 `image_topic`、光学坐标系 `frame_id`、挂载记录编号 `mount_id`、图像 `width` 和 `height`、去畸变后的 3×4 矩阵 `projection`（按行，共 12 个数），以及 `ground_marks`。地面点每行是 `[原图像素u, 原图像素v, 距车中心向右米数, 向前米数]`。这些位置应独立实测。程序验证至少 4 点，覆盖前方 3 米以内和 7 米以外、左右各 0.5 米之外。基于 V6.26 相机模型重建，每点平面误差最多 0.10 米。本版用这个范围筛查明显的投影不匹配；它只说明这批标记的测量结果。登记表与实时话题、光学帧、图像尺寸及 CameraInfo.P 对上后，发布 `calibrated-v626`。更换安装位置后应重新测量。节点仅输出感知，两种状态都能在 RViz 查看。
++实车整机启动会依次查找已安装的 `camera.json` 和 `honda-ground.json`。后者结合实时左相机 CameraInfo.P 与本田安装位姿，输出 `honda-v1.4.0-ground`。没有配置时使用 `unverified-resize`。可用一张实测几何登记表，通过 `calibration:=/absolute/path/to/camera.json` 检查。JSON 字段为实际相机的话题 `image_topic`、光学坐标系 `frame_id`、挂载记录编号 `mount_id`、图像 `width` 和 `height`、去畸变后的 3×4 矩阵 `projection`（按行，共 12 个数），以及 `ground_marks`。地面点每行是 `[原图像素u, 原图像素v, 距车中心向右米数, 向前米数]`。这些位置应独立实测。程序验证至少 4 点，覆盖前方 3 米以内和 7 米以外、左右各 0.5 米之外。基于 V6.26 相机模型重建，每点平面误差最多 0.10 米。本版用这个范围筛查明显的投影不匹配；它只说明这批标记的测量结果。登记表与实时话题、光学帧、图像尺寸及 CameraInfo.P 对上后，发布 `calibrated-v626`。更换安装位置后应重新测量。节点仅输出感知，两种状态都能在 RViz 查看。
+ 
+ ## 复核
+ 
+-现场可用 `ros2 run concept_yolop concept_yolop_calibrate --capture 新目录 --mount-id 安装编号` 取配对原图及参数。若真实镜头与冻结视角有角度或内参差异，在登记表添加另一组实测的 `fit_marks`。程序利用 CameraInfo 和这组点校正观察方向，再用独立的 `ground_marks` 核对米制误差。登记文件可用 `concept_yolop_calibrate --check camera.json` 检查。完整测量步骤见[车辆交接手册](../../AGENTS.md)。
++现场可用 `ros2 run concept_yolop concept_yolop_calibrate --capture 新目录 --mount-id 安装编号 --optical-height-m 0.55` 取配对原图和 CameraInfo。将实际左相机光心到水平地面的米数填入 `--optical-height-m`。该值随草稿保存为 `optical_height_m`。
++
++用实拍图中至少四个已测地面标记填写 `fit_marks`，再用另外至少四个已测标记填写 `ground_marks`。每组都要覆盖左右和远近。以车体 `base_footprint` 为参照记录向右、向前的距离，单位为米。程序按实测光心高度和镜头内参拟合朝向，把地面投影变换到冻结策略的 0.655 m 参考视图，随后用独立标记检验所有点的误差。每点均须在 0.10 m 以内。[车辆交接手册](../../AGENTS.md)
++
++填完后执行 `ros2 run concept_yolop concept_yolop_calibrate --install 新目录/camera.json`。校验通过后，命令会原子写入 `$XDG_CONFIG_HOME/concept/camera.json`（缺省为 `~/.config/concept/camera.json`）。`--check 新目录/camera.json` 可以单独查看验证误差。
+ 
+ `concept_yolop_check image.png --weights model.pth --compare same_frame_perception.npz` 在本机检查道路和标线逐像素相同、检测坐标和分数绝对误差不超过 1e-5，并把规划消息编码、解码与原数组对照。没有比对文件时仍检查推理与消息回读。图像须与比对记录来自同一拍。模型与实测证据见 [来源和实测记录](SOURCES.md)。
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/calibrate.py b/vehicle_concept/src/concept_yolop/concept_yolop/calibrate.py
+index ff75c30..4d7c5a9 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/calibrate.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/calibrate.py
+@@ -1,10 +1,30 @@
+ """Save a matching rectified image and CameraInfo to measure the stopped vehicle."""
+ import argparse
+ import json
++import os
+ from pathlib import Path
++import tempfile
+ import time
+ 
+-from .geometry import CalibrationReceipt
++from .geometry import CalibrationReceipt, optical_height
++
++
++def install_receipt(source):
++    content = source.expanduser().read_bytes()
++    config = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config')
++    destination = config / 'concept' / 'camera.json'
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as staged:
++        stage_path = Path(staged.name)
++        try:
++            staged.write(content)
++            staged.flush()
++            os.fsync(staged.fileno())
++            receipt = CalibrationReceipt(stage_path)
++            os.replace(stage_path, destination)
++        finally:
++            stage_path.unlink(missing_ok=True)
++    return destination, receipt
+ 
+ 
+ def main():
+@@ -12,14 +32,29 @@ def main():
+     mode = parser.add_mutually_exclusive_group(required=True)
+     mode.add_argument('--capture', type=Path, metavar='NEW_DIRECTORY')
+     mode.add_argument('--check', type=Path, metavar='RECEIPT_JSON')
++    mode.add_argument('--install', type=Path, metavar='RECEIPT_JSON',
++                      help='Validate and install the default Concept vehicle receipt')
+     parser.add_argument('--mount-id')
++    parser.add_argument('--optical-height-m', type=float,
++                        help='Measured height of the left optical centre above level ground in metres')
+     parser.add_argument('--image-topic', default='/aiformula_sensing/zed_node/left_image/undistorted')
+     parser.add_argument('--camera-info-topic', default='/aiformula_sensing/zed_node/left/camera_info')
+     args = parser.parse_args()
++    if args.optical_height_m is not None:
++        if not args.capture:
++            parser.error('--optical-height-m is for --capture; receipt validation reads the stored height')
++        try:
++            optical_height(args.optical_height_m)
++        except ValueError as exc:
++            parser.error(str(exc))
+     if args.check:
+         receipt = CalibrationReceipt(args.check)
+         print(f'Maximum held-out ground error: {receipt.max_error:.3f} m')
+         return
++    if args.install:
++        destination, receipt = install_receipt(args.install)
++        print(f'Installed {destination}. Maximum held-out ground error: {receipt.max_error:.3f} m')
++        return
+     if args.capture.exists() or not args.mount_id:
+         parser.error('Choose a new capture directory and supply --mount-id')
+     import cv2
+@@ -56,6 +91,8 @@ def main():
+             record = dict(image_topic=args.image_topic, frame_id=key[0], mount_id=args.mount_id,
+                           width=info.width, height=info.height, projection=list(info.p),
+                           fit_marks=[], ground_marks=[])
++            if args.optical_height_m is not None:
++                record['optical_height_m'] = args.optical_height_m
+             out = args.capture / 'camera.json'
+             out.write_text(json.dumps(record, indent=2), encoding='utf-8')
+             print(out)
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py b/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
+index 0ce23a4..cd2a78d 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
+@@ -13,13 +13,12 @@ SCHEMA = 'concept.perception.v1'
+ W, H = 640, 360
+ 
+ 
+-# A fixed scanline filter avoids trying five filters on every row. The PNG
+-# decoder reconstructs the same pixels for either filter, including on Foxy.
+-_PNG_COLOR = [cv2.IMWRITE_PNG_COMPRESSION, 1]
+-_PNG_MASK = _PNG_COLOR
++# A fixed scanline filter avoids trying five filters on every row. In OpenCV
++# 4.2, specifying the compression level selects adaptive filtering. Leave the
++# level unset on those builds to keep the encoder's fixed SUB filter.
++_PNG_COLOR = _PNG_MASK = [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE]
+ if hasattr(cv2, 'IMWRITE_PNG_FILTER'):
+-    _common = _PNG_COLOR + [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE,
+-                            cv2.IMWRITE_PNG_FILTER]
++    _common = [cv2.IMWRITE_PNG_COMPRESSION, 1, *_PNG_COLOR, cv2.IMWRITE_PNG_FILTER]
+     _PNG_COLOR = _common + [cv2.IMWRITE_PNG_FILTER_SUB]
+     _PNG_MASK = _common + [cv2.IMWRITE_PNG_FILTER_NONE]
+ 
+@@ -51,12 +50,16 @@ def _image(encoded, channels):
+     return image
+ 
+ 
+-def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
+-    if geometry_profile not in PROFILES:
+-        raise ValueError("Invalid camera geometry profile")
++def validate_pixels(bgr, road, lane):
+     if (bgr.shape != (H, W, 3) or bgr.dtype != np.uint8 or road.shape != (H, W)
+             or lane.shape != (H, W) or road.dtype != np.bool_ or lane.dtype != np.bool_):
+         raise ValueError('Expected canonical BGR and boolean road/lane masks')
++
++
++def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
++    if geometry_profile not in PROFILES:
++        raise ValueError("Invalid camera geometry profile")
++    validate_pixels(bgr, road, lane)
+     return json.dumps({
+         'schema': SCHEMA, 'model_sha256': SHA256, 'geometry_profile': geometry_profile,
+         'stamp': {'sec': int(sec), 'nanosec': int(nanosec)}, 'frame_id': frame_id,
+@@ -85,23 +88,28 @@ def parse_frame_header(payload):
+     return obj, sec * 1000000000 + ns, obj['frame_id'], obj['geometry_profile']
+ 
+ 
+-def decode_frame_data(obj):
+-    """Unpack detections and pixels from a header-validated wire object."""
+-    boxes = np.asarray(obj['boxes'], dtype=np.float32)
++def validated_detections(det):
++    boxes = np.asarray(det['boxes'], dtype=np.float32)
+     if boxes.shape == (0,):
+         boxes = boxes.reshape(0, 4)
+-    scores = np.asarray(obj['scores'], dtype=np.float32)
+-    labels = np.asarray(obj['labels'])
++    scores = np.asarray(det['scores'], dtype=np.float32)
++    labels = np.asarray(det['labels'])
+     n = len(scores)
+     if (boxes.shape != (n, 4) or labels.shape != (n,) or scores.shape != (n,) or n > 100
+             or not np.all(np.isfinite(boxes)) or not np.all(np.isfinite(scores))
+             or np.any((scores < 0) | (scores > 1))
+             or (n and (not np.issubdtype(labels.dtype, np.integer) or not np.isin(labels, [1,3,10,91]).all()))):
+         raise ValueError('Invalid B1.4 detections')
++    return dict(boxes=boxes, scores=scores, labels=labels.astype(np.int64, copy=False))
++
++
++def decode_frame_data(obj):
++    """Unpack detections and pixels from a header-validated wire object."""
++    det = validated_detections(obj)
+     return dict(geometry_profile=obj['geometry_profile'], stamp_ns=obj['stamp']['sec'] * 1000000000 + obj['stamp']['nanosec'],
+                 frame_id=obj['frame_id'],
+                 bgr=_image(obj['bgr_png'], 3), road=_image(obj['road_png'], 1),
+-                lane=_image(obj['lane_png'], 1), boxes=boxes, scores=scores, labels=labels.astype(np.int64))
++                lane=_image(obj['lane_png'], 1), **det)
+ 
+ 
+ def decode_frame(payload):
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+index e1cd1a1..af05f20 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+@@ -8,7 +8,8 @@ import cv2
+ UNVERIFIED = 'unverified-resize'
+ CALIBRATED = 'calibrated-v626'
+ UNITY = 'frozen-unity-v626'
+-PROFILES = (UNVERIFIED, CALIBRATED, UNITY)
++HONDA = 'honda-v1.4.0-ground'
++PROFILES = (UNVERIFIED, CALIBRATED, UNITY, HONDA)
+ FX, FY, CX, CY, HEIGHT = 254.391622, 254.391622, 330.01302, 181.14964, .655
+ REFERENCE_K = np.array([[FX, 0., CX], [0., FY, CY], [0., 0., 1.]])
+ 
+@@ -25,43 +26,134 @@ def measured_points(rows, width, height):
+     return marks
+ 
+ 
+-def fit_rotation(source_k, marks):
+-    # Fit a rotation of the camera rays, preserving scene perspective above the road.
+-    # Installation offsets that a rotation cannot explain must fail the independent check.
+-    u, v, right, forward = marks.T
+-    sensor = np.linalg.solve(source_k, np.array([u, v, np.ones_like(u)])).T
+-    target = np.column_stack((right, np.full_like(right, HEIGHT), forward))
+-    sensor /= np.linalg.norm(sensor, axis=1)[:, None]
+-    target /= np.linalg.norm(target, axis=1)[:, None]
+-    a, s, b = np.linalg.svd(target.T @ sensor)
+-    if s[1] <= 1e-7 or source_k[0, 0] <= 0 or source_k[1, 1] <= 0:
+-        raise ValueError('Degenerate camera intrinsics or calibration marks')
+-    rotation = a @ np.diag([1., 1., np.linalg.det(a @ b)]) @ b
+-    return REFERENCE_K @ rotation @ np.linalg.inv(source_k)
+-
+-
+-class CalibrationReceipt:
+-    """Verify held-out ground marks, then bind them to the live rectified stream."""
+-    def __init__(self, path):
+-        data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++def optical_height(value):
++    if type(value) not in (float, int) or not np.isfinite(value) or value <= 0:
++        raise ValueError('optical_height_m must be a finite, positive height in metres')
++    return float(value)
++
++
++def fit_rotation(source_k, marks, optical_height_m=HEIGHT):
++    if source_k[0, 0] <= 0 or source_k[1, 1] <= 0 or np.linalg.matrix_rank(source_k) != 3:
++        raise ValueError('Invalid rectified camera intrinsics')
++    rotation = np.eye(3)
++    if marks is not None:
++        # Estimate orientation against ground rays from the physical camera.
++        u, v, right, forward = marks.T
++        sensor = np.linalg.solve(source_k, np.array([u, v, np.ones_like(u)])).T
++        target = np.column_stack((right, np.full_like(right, optical_height_m), forward))
++        sensor /= np.linalg.norm(sensor, axis=1)[:, None]
++        target /= np.linalg.norm(target, axis=1)[:, None]
++        a, s, b = np.linalg.svd(target.T @ sensor)
++        if s[1] <= 1e-7:
++            raise ValueError('Degenerate calibration marks')
++        rotation = a @ np.diag([1., 1., np.linalg.det(a @ b)]) @ b
++    # A level ground ray (right, measured height, forward) maps to the
++    # same footprint in the frozen camera at its reference height.
++    ground_scale = np.diag([1., HEIGHT / optical_height_m, 1.])
++    return REFERENCE_K @ ground_scale @ rotation @ np.linalg.inv(source_k)
++
++
++class CameraProjection:
++    """Bind image projection and its visibility mask to the source CameraInfo."""
++    def __init__(self, data):
+         self.topic, self.frame_id = data['image_topic'], data['frame_id']
+         self.width, self.height = int(data['width']), int(data['height'])
+         self.projection = np.asarray(data['projection'], dtype=float).reshape(3, 4)
+         if (not self.frame_id or self.width <= 0 or self.height <= 0 or self.width * 9 != self.height * 16
+                 or not np.isfinite(self.projection).all() or not data['mount_id']):
+             raise ValueError('Incomplete rectified camera registration')
++
++    def rectify(self, bgr):
++        if self.warp is None:
++            return bgr
++        return cv2.warpPerspective(bgr, self.warp, (640, 360), flags=cv2.INTER_LINEAR)
++
++    def restrict_predictions(self, road, lane, detections):
++        if self.visible is None:
++            return road, lane, detections
++        boxes = detections['boxes']
++        u = np.clip(((boxes[:, 0] + boxes[:, 2]) * .5).astype(int), 0, 639)
++        v = np.clip(np.ceil(boxes[:, 3]).astype(int) - 1, 0, 359)
++        keep = self.visible[v, u]
++        return road & self.visible, lane & self.visible, {k: values[keep] for k, values in detections.items()}
++
++    def matches(self, topic, image, info):
++        if info is None:
++            return False
++        return (topic == self.topic and image.header.frame_id == self.frame_id == info.header.frame_id
++                and (image.width, image.height) == (info.width, info.height) == (self.width, self.height)
++                and np.allclose(np.array(info.p).reshape(3, 4), self.projection, rtol=0., atol=.001))
++
++
++class HondaMountProjection(CameraProjection):
++    profile = HONDA
++
++    def __init__(self, data):
++        super().__init__(data)
++        if data['profile'] != HONDA:
++            raise ValueError('Unknown nominal mount')
++        h = optical_height(data['optical_height_m'])
++        # Honda v1.4.0 left optical axis in forward/left/up body coordinates.
++        # The xacro's optical RPY (-89, 0, -90) angles the camera up by 1 degree.
++        angle = np.deg2rad(1.)
++        c, s = np.cos(angle), np.sin(angle)
++        optical_to_body = np.array([[0., s, c], [-1., 0., 0.], [0., -c, s]])
++        # Each column multiplies [right_m, forward_m, 1] on level ground.
++        relative_ground = np.array([[0., 1., -.055], [-1., 0., -.0600025], [0., 0., -h]])
++        target = REFERENCE_K @ np.array([[1., 0., 0.], [0., 0., HEIGHT], [0., 1., 0.]])
++        self.ground_to_virtual = target @ np.linalg.inv(optical_to_body.T @ relative_ground)
++        self.update_intrinsics(self.projection)
++
++    def update_intrinsics(self, projection):
++        self.warp = self.ground_to_virtual @ np.linalg.inv(projection[:, :3])
++        coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
++                                       self.warp, (640, 360), flags=cv2.INTER_NEAREST)
++        self.visible = coverage.astype(bool)
++        self.projection = projection.copy()
++
++    def matches(self, topic, image, info):
++        if (info is None or topic != self.topic or image.header.frame_id != self.frame_id
++                or info.header.frame_id != self.frame_id or (image.width, image.height) != (self.width, self.height)
++                or (info.width, info.height) != (self.width, self.height)):
++            return False
++        projection = np.asarray(info.p, dtype=float).reshape(3, 4)
++        if not np.array_equal(projection, self.projection):
++            if (not np.isfinite(projection).all() or projection[0, 0] <= 0 or projection[1, 1] <= 0
++                    or not np.allclose(projection[2], [0., 0., 1., 0.]) or np.any(projection[:, 3])):
++                return False
++            self.update_intrinsics(projection)
++        return True
++
++
++def load_projection(path):
++    data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++    if data.get('profile') == HONDA:
++        return HondaMountProjection(data)
++    return CalibrationReceipt(path)
++
++
++class CalibrationReceipt(CameraProjection):
++    """Verify held-out ground marks before assigning the measured driving profile."""
++    profile = CALIBRATED
++
++    def __init__(self, path):
++        data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++        super().__init__(data)
+         # A fixed ray-to-ground transform is what matters to the existing planner.
+         # Use actual camera pixels and independent vehicle-relative measured positions.
+         marks = measured_points(data['ground_marks'], self.width, self.height)
+         u, v, right, forward = marks.T
+         self.warp = None
+         self.visible = None
++        self.optical_height_m = optical_height(data.get('optical_height_m', HEIGHT))
++        fit = None
+         if 'fit_marks' in data:
+             fit = measured_points(data['fit_marks'], self.width, self.height)
+             separation = np.linalg.norm(fit[:,None,2:] - marks[None,:,2:], axis=-1)
+             if np.min(separation) < .02:
+                 raise ValueError('Use different physical marks for fitting and independent verification')
+-            self.warp = fit_rotation(self.projection[:, :3], fit)
++        if fit is not None or 'optical_height_m' in data:
++            self.warp = fit_rotation(self.projection[:, :3], fit, self.optical_height_m)
+             coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
+                                            self.warp, (640, 360), flags=cv2.INTER_NEAREST)
+             self.visible = coverage.astype(bool)
+@@ -81,24 +173,3 @@ class CalibrationReceipt:
+         if np.max(error) > .10:
+             raise ValueError('Measured camera projection differs from V6.26 by more than 0.10 m')
+         self.max_error = float(np.max(error))
+-
+-    def rectify(self, bgr):
+-        if self.warp is None:
+-            return bgr
+-        return cv2.warpPerspective(bgr, self.warp, (640, 360), flags=cv2.INTER_LINEAR)
+-
+-    def restrict_predictions(self, road, lane, detections):
+-        if self.visible is None:
+-            return road, lane, detections
+-        boxes = detections['boxes']
+-        u = np.clip(((boxes[:, 0] + boxes[:, 2]) * .5).astype(int), 0, 639)
+-        v = np.clip(np.ceil(boxes[:, 3]).astype(int) - 1, 0, 359)
+-        keep = self.visible[v, u]
+-        return road & self.visible, lane & self.visible, {k: values[keep] for k, values in detections.items()}
+-
+-    def matches(self, topic, image, info):
+-        if info is None:
+-            return False
+-        return (topic == self.topic and image.header.frame_id == self.frame_id == info.header.frame_id
+-                and (image.width, image.height) == (info.width, info.height) == (self.width, self.height)
+-                and np.allclose(np.array(info.p).reshape(3, 4), self.projection, rtol=0., atol=.001))
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/inference.py b/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
+index ff7127d..a453a79 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
+@@ -36,7 +36,9 @@ class Predictor:
+             checkpoint = torch.load(stream, map_location='cpu', **kwargs)
+         if checkpoint['architecture'] != 'yolop_b1_honda_three_head_v2':
+             raise ValueError('Unexpected checkpoint architecture')
+-        self.model = B14(checkpoint['model_config'])
++        native_fusion = (self.device.type == 'cuda' and torch.backends.cudnn.version() == 8600
++                         and torch.cuda.get_device_capability(self.device) == (8, 7))
++        self.model = B14(checkpoint['model_config'], native_fusion=native_fusion)
+         self.model.load_state_dict(checkpoint['model'], strict=True)
+         self.model.to(self.device).eval()
+ 
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/model.py b/vehicle_concept/src/concept_yolop/concept_yolop/model.py
+index a3a315d..0e68436 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/model.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/model.py
+@@ -13,19 +13,32 @@ from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
+ from torchvision.ops.misc import FrozenBatchNorm2d
+ 
+ 
+-def lane_conv(in_channels, out_channels):
+-    return nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
++class NativeCudaConv2d(nn.Conv2d):
++    def forward(self, image):
++        # cuDNN 8.6 on Orin is slow for the 112-to-48 decoder fusion.
++        # PyTorch's CUDA convolution keeps this operation in FP32.
++        with torch.backends.cudnn.flags(enabled=False, deterministic=True, allow_tf32=False):
++            return super().forward(image)
++
++
++def lane_conv(in_channels, out_channels, convolution=nn.Conv2d):
++    return nn.Sequential(convolution(in_channels, out_channels, 3, padding=1, bias=False),
+                          nn.GroupNorm(8, out_channels), nn.ReLU(inplace=True))
+ 
+ 
+ class LaneDecoder(nn.Module):
+-    def __init__(self):
++    def __init__(self, native_fusion=False):
+         super().__init__()
+         channels = (16, 24, 40, 112, 960)
+         widths = (16, 32, 48, 64, 96)
+         self.lateral = nn.ModuleList(nn.Conv2d(c, w, 1) for c, w in zip(channels, widths))
+-        self.fuse = nn.ModuleList(nn.Sequential(lane_conv(widths[i] + widths[i + 1], widths[i]),
+-                                                lane_conv(widths[i], widths[i])) for i in range(4))
++        self.fuse = nn.ModuleList([
++            nn.Sequential(
++                lane_conv(widths[i] + widths[i + 1], widths[i],
++                          NativeCudaConv2d if native_fusion and i == 2 else nn.Conv2d),
++                lane_conv(widths[i], widths[i]))
++            for i in range(4)
++        ])
+         self.output = nn.Conv2d(widths[0], 2, 1)
+ 
+     def forward(self, features):
+@@ -48,13 +61,13 @@ class ObjectPyramid(nn.Module):
+ 
+ 
+ class B14(nn.Module):
+-    def __init__(self, config):
++    def __init__(self, config, native_fusion=False):
+         super().__init__()
+         if (config['backend'], config['road_mode'], config['width'], config['depth']) != ('mobile', 'separate', 32, 2):
+             raise ValueError('Unexpected B1.4 network configuration')
+         self.encoder = mobilenet_v3_large(weights=None, norm_layer=FrozenBatchNorm2d).features
+-        self.lane_head = LaneDecoder()
+-        self.road_head = LaneDecoder()
++        self.lane_head = LaneDecoder(native_fusion)
++        self.road_head = LaneDecoder(native_fusion)
+         anchors = AnchorGenerator(((4,), (8,), (16,), (32,), (64,)), ((1.,),) * 5)
+         self.detector = FCOS(ObjectPyramid(), num_classes=4, anchor_generator=anchors,
+                              head=FCOSHead(32, 1, 4, num_convs=2), min_size=config['min_size'],
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/node.py b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+index c138689..c51fd29 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/node.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+@@ -10,7 +10,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
+ from sensor_msgs.msg import CameraInfo, CompressedImage, Image
+ from std_msgs.msg import String
+ 
+-from .geometry import CALIBRATED, UNVERIFIED, CalibrationReceipt
++from .geometry import HONDA, UNVERIFIED, load_projection
+ from .frame_codec import encode_frame
+ from .inference import Predictor
+ from .weights import default_path
+@@ -34,8 +34,9 @@ def draw_overlay(image, road, lane, det):
+ 
+ 
+ class CameraNode(Node):
+-    def __init__(self):
++    def __init__(self, frame_consumer=None, image_group=None):
+         super().__init__('concept_yolop')
++        self.frame_consumer = frame_consumer
+         for name, default in [('weights', str(default_path())), ('device', 'cuda'),
+                               ('camera_info_topic', '/aiformula_sensing/zed_node/left/camera_info'),
+                               ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
+@@ -57,10 +58,10 @@ class CameraNode(Node):
+         self.info = None
+         path = self.get_parameter('calibration').value
+         if path:
+-            self.calibration = CalibrationReceipt(path)
++            self.calibration = load_projection(path)
+             self.info_subscription = self.create_subscription(
+-                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos)
+-        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos)
++                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos, callback_group=image_group)
++        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos, callback_group=image_group)
+ 
+     def on_info(self, msg):
+         self.info = msg
+@@ -68,16 +69,26 @@ class CameraNode(Node):
+     def on_image(self, msg):
+         try:
+             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+-            verified = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+-            if verified:
++            matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
++            if self.calibration and self.calibration.profile == HONDA and not matched:
++                if time.monotonic() - self.last_error_at >= 5.:
++                    self.get_logger().warning('Waiting for matching ZED CameraInfo: topic=%s image=%s info=%s'
++                                              % (self.images.topic_name, msg.header.frame_id,
++                                                 self.info.header.frame_id if self.info else 'missing'))
++                    self.last_error_at = time.monotonic()
++                return
++            if matched:
+                 bgr = self.calibration.rectify(bgr)
+             bgr, road, lane, det = self.predictor.predict(bgr)
+-            if verified:
++            if matched:
+                 road, lane, det = self.calibration.restrict_predictions(road, lane, det)
+             stamp = msg.header.stamp
+-            wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
+-                                CALIBRATED if verified else UNVERIFIED)
+-            self.frames.publish(String(data=wire))
++            profile = self.calibration.profile if matched else UNVERIFIED
++            if self.frame_consumer is not None:
++                self.frame_consumer(stamp, msg.header.frame_id, profile, bgr, road, lane, det)
++            if self.frame_consumer is None or self.frames.get_subscription_count():
++                wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det, profile)
++                self.frames.publish(String(data=wire))
+             display = self.overlay.get_subscription_count()
+             record = self.compressed_overlay.get_subscription_count()
+             if display or record:
+diff --git a/vehicle_concept/src/concept_yolop/test/test_camera_registration.py b/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
+index 65f7ee8..d039e2f 100644
+--- a/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
++++ b/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
+@@ -4,22 +4,42 @@ import cv2
+ import numpy as np
+ import pytest
+ 
+-from concept_yolop.geometry import CalibrationReceipt, REFERENCE_K, HEIGHT
++from concept_yolop.geometry import CalibrationReceipt, HONDA, REFERENCE_K, HEIGHT, load_projection
+ 
+ 
+-def test_measured_intrinsics_pitch_and_independent_check(tmp_path):
++def test_honda_mount_projects_vehicle_centerline_using_left_camera_info(tmp_path):
++    params = dict(profile=HONDA, optical_height_m=.55, image_topic='/camera',
++                  frame_id='left', mount_id='sn', width=640, height=360,
++                  projection=[245.857193, 0, 328.655579, 0, 0, 245.857193,
++                              189.012695, 0, 0, 0, 1, 0])
++    path = tmp_path / 'honda-ground.json'
++    path.write_text(json.dumps(params))
++    mount = load_projection(path)
++    # Raw left-camera pixel independently projected from (right=0, forward=4 m).
++    pixel = mount.warp @ [332.405, 227.675, 1.]
++    expected = REFERENCE_K @ [0, HEIGHT, 4.]
++    np.testing.assert_allclose(pixel[:2] / pixel[2], expected[:2] / expected[2], atol=.002)
++    assert mount.profile == HONDA and mount.visible.shape == (360, 640)
++
++from concept_yolop.calibrate import install_receipt
++
++
++@pytest.mark.parametrize('measured_height', [None, 0.55])
++def test_measured_intrinsics_pitch_and_independent_check(tmp_path, measured_height):
+     k = np.array([[246., 0., 328.7], [0., 246., 189.], [0., 0., 1.]])
+     rotation, _ = cv2.Rodrigues(np.array([.025, .014, -.008]))
+     def measure(points):
+         result = []
+         for x, z in points:
+-            sight = k @ rotation @ np.array([x, HEIGHT, z])
++            sight = k @ rotation @ np.array([x, measured_height or HEIGHT, z])
+             result.append([*(sight[:2] / sight[2]), x, z])
+         return result
+     fit = measure([(-.8, 2.), (.8, 2.), (-1., 8.), (1., 8.)])
+     held = measure([(-.7, 2.5), (.9, 2.6), (-1.1, 7.5), (1.2, 7.8)])
+     record = dict(frame_id='cam', image_topic='/img', mount_id='test', width=640, height=360,
+                   projection=np.c_[k, np.zeros(3)].ravel().tolist(), fit_marks=fit, ground_marks=held)
++    if measured_height is not None:
++        record['optical_height_m'] = measured_height
+     path = tmp_path/'receipt.json'
+     path.write_text(json.dumps(record))
+     receipt = CalibrationReceipt(path)
+@@ -44,3 +64,29 @@ def test_measured_intrinsics_pitch_and_independent_check(tmp_path):
+     path.write_text(json.dumps(record))
+     with pytest.raises(ValueError, match='0.10 m'):
+         CalibrationReceipt(path)
++
++
++def test_level_camera_install_and_reject_invalid_replacement(tmp_path, monkeypatch):
++    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
++    record = dict(frame_id='cam', image_topic='/img', mount_id='test', width=640, height=360,
++                  projection=np.c_[REFERENCE_K, np.zeros(3)].ravel().tolist(), optical_height_m=.55)
++    points = [(-.8, 2.), (.8, 2.), (-1., 8.), (1., 8.)]
++    record['ground_marks'] = []
++    for right, forward in points:
++        pixel = REFERENCE_K @ [right, .55, forward]
++        record['ground_marks'].append([*(pixel[:2] / pixel[2]), right, forward])
++    source = tmp_path / 'source.json'
++    original = json.dumps(record, indent=2).encode('utf8')
++    source.write_bytes(original)
++    destination, receipt = install_receipt(source)
++    assert destination == tmp_path / 'config' / 'concept' / 'camera.json'
++    assert receipt.max_error < 1e-7
++    assert destination.read_bytes() == original
++
++    for bad_height in (0., float('nan'), True, HEIGHT):
++        record['optical_height_m'] = bad_height
++        source.write_text(json.dumps(record))
++        with pytest.raises(ValueError):
++            install_receipt(source)
++        assert destination.read_bytes() == original
++    assert list(destination.parent.iterdir()) == [destination]

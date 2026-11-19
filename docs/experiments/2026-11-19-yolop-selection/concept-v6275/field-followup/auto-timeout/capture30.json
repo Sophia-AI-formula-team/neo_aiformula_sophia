@@ -1,0 +1,92 @@
+{
+  "percentiles": "median,p95,max",
+  "timing_ms": {
+    "capture_to_driver": [
+      299.02,
+      357.11,
+      370.22
+    ],
+    "driver_ms": [
+      95.3,
+      117.43,
+      153.3
+    ],
+    "decision_age_ms": [
+      396.69,
+      453.51,
+      465.37
+    ],
+    "capture_to_vision": [
+      165.47,
+      200.73,
+      212.93
+    ],
+    "publish_to_driver": [
+      48.53,
+      86.09,
+      94.21
+    ],
+    "rectify": [
+      6.17,
+      6.23,
+      6.33
+    ],
+    "predict": [
+      60.53,
+      62.81,
+      91.04
+    ],
+    "encode": [
+      15.18,
+      15.36,
+      15.55
+    ],
+    "visibility": [
+      0.83,
+      0.89,
+      1.1
+    ],
+    "capture_to_raw_sub": [
+      134.13,
+      149.01,
+      153.34
+    ],
+    "raw_sub_to_vision": [
+      32.48,
+      60.44,
+      64.49
+    ],
+    "command_age_ms": [
+      397.33,
+      454.2,
+      466.78
+    ]
+  },
+  "decisions": {
+    "ok feasible": 226
+  },
+  "cmd": 226,
+  "positive": 226,
+  "valid_states": 567,
+  "right_source": [
+    "can_0x711_low_byte_vectornav_ros_z"
+  ],
+  "joy": 573,
+  "auto_windows": [
+    {
+      "secs": 22.02,
+      "modes": {
+        "auto": 6,
+        "paused": 214
+      },
+      "reasons": {
+        "waiting_new_auto": 4,
+        "auto_command_received": 2,
+        "auto_timeout": 214
+      },
+      "positive_status": 2
+    }
+  ],
+  "expiry_gap_count": 112,
+  "max_last_capture_to_next_receipt_ms": 598.43966
+}

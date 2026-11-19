@@ -1,0 +1,119 @@
+diff --git a/vehicle_concept/AGENTS.md b/vehicle_concept/AGENTS.md
+index 4a96695..5bfefff 100644
+--- a/vehicle_concept/AGENTS.md
++++ b/vehicle_concept/AGENTS.md
+@@ -113,7 +113,7 @@ ros2 run concept_yolop concept_yolop_check \
+ 1. 在车前平地布置已量过位置的标记。坐标以车辆规划原点（`base_footprint` 在地面的原点）为基准，记录向右、向前的米数。包括 3 m 内及 7 m 外、车辆左右各 0.5 m 以外。先在原相机运行时取样，或按第 4 节仅开 Concept 观察，保持电机禁用。
+ 2. 执行下方的 `--capture` 命令。它等待同一时间戳、同一光学帧的相机图和 CameraInfo，保存 `camera.png` 和包含真实尺寸、投影矩阵、帧名的 `camera.json`。目录名每次选新的。相机话题不同可传 `--camera-info-topic` 并在启动时传相同的 `camera_info_topic:=...`。
+ 3. 在原图上量每个标记的落地点像素。JSON 每行填 `[像素u, 像素v, 向右米, 向前米]`。用至少 4 个 `fit_marks` 将实际镜头的观察方向对齐冻结相机；另用至少 4 个不同的 `ground_marks` 验证。两组都覆盖远近、左右。若安装本就匹配冻结视角，可移除 `fit_marks` 字段，直接用独立地面点核对。未知图像边缘会从校正后的分割与桶落点中剔除。
+-4. 实测光心高度可通过采集参数 `--optical-height-m` 写入登记表。所有独立验证点的地面位置误差须在 0.10 m 内。若无法达标，复核测量原点、时间、相机固定位置和镜头高度；旋转校正不能补偿显著的安装位置偏移。重新定位安装或补做经过验证的几何适配后再上车。记录版本、标记原图与误差。没有合格登记时仍可看识别和规划，驾驶面板显示影子模式。
++4. 实测光心高度可通过采集参数 `--optical-height-m` 写入登记表。所有独立验证点的地面位置误差须在 0.10 m 内。若无法达标，复核测量原点、时间、相机固定位置和镜头高度；旋转校正不能补偿显著的安装位置偏移。重新定位安装或补做经过验证的几何适配后再上车。记录版本、标记原图与误差。使用未登记的简单缩放（`unverified-resize`）时仍可看识别和规划，驾驶面板显示影子模式。
+ 
+ ```bash
+ ros2 run concept_yolop concept_yolop_calibrate \
+@@ -137,7 +137,7 @@ source "$WS/install/local_setup.bash" &&
+ # 等价长命令是 ros2 launch concept concept.launch.py calibration:=...
+ ```
+ 
+-完成独立验证后，用 `ros2 run concept_yolop concept_yolop_calibrate --install camera.json` 安装登记表。实车启动默认读取已安装的登记表；尚未安装时以影子模式观察。显式传 `calibration:=` 可选择本次不加载登记表。默认目标速度和自动速度上限均为 1.0 m/s。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
++完成独立验证后，用 `ros2 run concept_yolop concept_yolop_calibrate --install camera.json` 安装登记表。实车启动优先读取已安装的 `camera.json`，其次读取同目录的 `honda-ground.json`。本田配置使用实时 ZED 左相机内参和安装位姿，驾驶节点接受 `honda-v1.4.0-ground` 并向 `/concept/auto_cmd` 发布。两份配置都缺失时以影子模式观察。显式传 `calibration:=` 可选择本次不加载登记表。默认目标速度和自动速度上限均为 1.0 m/s。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
+ 
+ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640×360 BGR 图为 691,200 字节。发现节点却收不到图时，先查传输设置和容器的 `df -h /dev/shm`。在环境未指定 `FASTRTPS_DEFAULT_PROFILES_FILE` 时，整机 launch 为子进程选择随包 XML。车端 `vehicle-fastdds.xml` 使用 2 MiB 共享内存段及 UDPv4；同机隔离回放 `foxy-fastdds.xml` 仅用共享内存。单独开的面板、RViz、图像发布器或测试终端应加载对应模式的设置，例如 `export FASTRTPS_DEFAULT_PROFILES_FILE="$(ros2 pkg prefix concept)/share/concept/config/vehicle-fastdds.xml"`。若现场已有 DDS 配置，核对里面的传输和图像容量。本次没有测场地无线网络的延迟。
+ 
+@@ -191,7 +191,7 @@ ros2 topic echo /concept/gate/status
+ python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 60 --planning-hz 5
+ ```
+ 
+-默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
++默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。投影为 unverified-resize 时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
+ 
+ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[V6.27.1 冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [V6.27.1 工作站时钟回放](checks/timing/v6.27.1/README.md)
+ 
+diff --git a/vehicle_concept/src/concept_drive/README.md b/vehicle_concept/src/concept_drive/README.md
+index 81b59af..6ed6e0f 100644
+--- a/vehicle_concept/src/concept_drive/README.md
++++ b/vehicle_concept/src/concept_drive/README.md
+@@ -35,7 +35,7 @@ ros2 service call /concept/drive/restart std_srvs/srv/Trigger '{}'
+ - road_rows 每行为 [前距,最左横距,最右横距,左侧误差,右侧误差]。selected_path、每条 path、lines[].points、edges.left/right 使用 [前距,右距] 米。lines[].kind 区分实线、虚线和证据不足。地图原点是本次驾驶开始位置，map.pose 为 [前距,右距,右偏航角]。map.parts 按 ego、adjacent 和 ego_mask 分层；map.changed 每行为 [前格,右格,本车道次数,相邻车道次数,本车道路面掩码次数,相对时间]，每格 0.2 m。map_semantics.changed_markings 给出相同格坐标和线型。map.static、map.dynamic、map.now 是冻结的静态位置估计、动态观测范围和当前观察。objects 保留规划器数值矩阵，tracks 提供人能读的 id / position / velocity / error_m 等。
+ - status 可能为 ok、shadow、invalid 或 late。shadow 时，判据、所选路线和候选控制可用于显示。图像超过 0.5 秒、时间异常、没有相应反馈或标定不匹配时，物理门收不到此帧的新控制。超过 0.5 秒的图像中断、更换相机/几何配置或规划计算中断后需要暂停并重启，以免沿用失效的历史。基于当前正向无符号轮速编码的反馈无法验证倒车方向。驱动保留倒车选择供显示，并抑制该反向输出。
+ 
+-实车图片需要在视觉节点通过物理相机内参、安装与地面点的标定审核。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 进入 shadow。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
++车端可采用本田安装位姿、现场光心高度 0.55 m 和实时 ZED 左相机 CameraInfo.P 投影。驾驶节点接受该配置 `honda-v1.4.0-ground`，在图像和反馈时效满足条件时向 `/concept/auto_cmd` 发布规划指令。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 进入 shadow。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
+ 
+ ## 同帧核验
+ 
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index 522f785..c329244 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -17,6 +17,7 @@ from std_msgs.msg import String
+ from std_srvs.srv import Trigger
+ 
+ from concept_yolop.frame_codec import parse_frame_header, decode_frame_data
++from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
+ from .core import Drive
+ from .lap_map import encode_map
+ from .transport import Feedback, native_sensor, ros_command, stamp
+@@ -181,10 +182,8 @@ class DriverNode(Node):
+             self.next_ns = self.first_ns + periods * self.period_ns
+             cmd = ros_command(result.pop('command_native'))
+             decision.update(result, command=cmd, status='ok', planner_reason=result.get('reason', ''))
+-            if profile == 'honda-v1.4.0-ground':
+-                decision.update(status='shadow', reason='Honda mount projection active; ground error unmeasured')
+-            elif profile != 'calibrated-v626' and not (
+-                    profile == 'frozen-unity-v626' and self.get_parameter('use_sim_time').value):
++            if profile not in (CALIBRATED, HONDA) and not (
++                    profile == UNITY and self.get_parameter('use_sim_time').value):
+                 decision.update(status='shadow', reason='camera geometry has no validated driving profile')
+             elif cmd['linear_x_mps'] < 0 and sample.get('rpm_encoding') == 'forward_only_uint8':
+                 decision.update(status='shadow', reason='reverse wheel-feedback sign unverified')
+diff --git a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+index 29138c9..5bdbf79 100644
+--- a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++++ b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+@@ -21,6 +21,7 @@ from std_srvs.srv import Trigger
+ 
+ from concept_drive.node import DriverNode
+ from concept_yolop.frame_codec import encode_frame
++from concept_yolop.geometry import HONDA
+ 
+ 
+ def main():
+@@ -90,7 +91,23 @@ def main():
+         send_input('unverified-resize', 11)
+         assert decisions[0]['session'] != initial and decisions[0]['status'] == 'shadow'
+         assert decisions[0]['effective_speed_mps'] == 1. and len(commands) == 1
+-        print('DDS verified command signs, capture stamp, checked selection, gate cap, restart and camera shadow.')
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 12)
++        result = decisions[0]
++        assert result['geometry_profile'] == HONDA and result['status'] == 'ok'
++        until(lambda: len(commands) == 2)
++        command = commands[-1]
++        assert command.header.frame_id == 'base_footprint'
++        assert (command.header.stamp.sec, command.header.stamp.nanosec) == (12, 0)
++        assert command.twist.linear.x > 0
++        np.testing.assert_allclose(
++            [command.twist.linear.x, command.twist.angular.z],
++            [result['command']['linear_x_mps'], result['command']['angular_z_radps']])
++        print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
++              'unverified shadow and Honda command publication.')
+     finally:
+         peer.destroy_node()
+         driver.destroy_node()
+diff --git a/vehicle_concept/src/concept_yolop/README.md b/vehicle_concept/src/concept_yolop/README.md
+index 8ddfb46..fc03a90 100644
+--- a/vehicle_concept/src/concept_yolop/README.md
++++ b/vehicle_concept/src/concept_yolop/README.md
+@@ -31,7 +31,7 @@ ros2 launch concept_yolop concept_yolop.launch.py
+ 
+ `concept_yolop.frame_codec.decode_frame(msg.data)` 检查协议版本和模型摘要，返回 `stamp_ns`、`frame_id`、`geometry_profile`、`bgr`、`road`、`lane`、`boxes`、`scores`、`labels`。RGB 通道以 BGR8 内存排列交付。两张 bool 掩膜及 BGR 使用无损 PNG；选择监听规划话题的远端设备时应考虑图像负载。6 月实车 bag 的 12 帧每条消息约 443–493 kB。
+ 
+-实车默认标为 `unverified-resize`。可用一张实测几何登记表，通过 `calibration:=/absolute/path/to/camera.json` 检查。JSON 字段为实际相机的话题 `image_topic`、光学坐标系 `frame_id`、挂载记录编号 `mount_id`、图像 `width` 和 `height`、去畸变后的 3×4 矩阵 `projection`（按行，共 12 个数），以及 `ground_marks`。地面点每行是 `[原图像素u, 原图像素v, 距车中心向右米数, 向前米数]`。这些位置应独立实测。程序验证至少 4 点，覆盖前方 3 米以内和 7 米以外、左右各 0.5 米之外。基于 V6.26 相机模型重建，每点平面误差最多 0.10 米。本版用这个范围筛查明显的投影不匹配；它只说明这批标记的测量结果。登记表与实时话题、光学帧、图像尺寸及 CameraInfo.P 对上后，发布 `calibrated-v626`。更换安装位置后应重新测量。节点仅输出感知，两种状态都能在 RViz 查看。
++实车整机启动会依次查找已安装的 `camera.json` 和 `honda-ground.json`。后者结合实时左相机 CameraInfo.P 与本田安装位姿，输出 `honda-v1.4.0-ground`。没有配置时使用 `unverified-resize`。可用一张实测几何登记表，通过 `calibration:=/absolute/path/to/camera.json` 检查。JSON 字段为实际相机的话题 `image_topic`、光学坐标系 `frame_id`、挂载记录编号 `mount_id`、图像 `width` 和 `height`、去畸变后的 3×4 矩阵 `projection`（按行，共 12 个数），以及 `ground_marks`。地面点每行是 `[原图像素u, 原图像素v, 距车中心向右米数, 向前米数]`。这些位置应独立实测。程序验证至少 4 点，覆盖前方 3 米以内和 7 米以外、左右各 0.5 米之外。基于 V6.26 相机模型重建，每点平面误差最多 0.10 米。本版用这个范围筛查明显的投影不匹配；它只说明这批标记的测量结果。登记表与实时话题、光学帧、图像尺寸及 CameraInfo.P 对上后，发布 `calibrated-v626`。更换安装位置后应重新测量。节点仅输出感知，两种状态都能在 RViz 查看。
+ 
+ ## 复核
+ 

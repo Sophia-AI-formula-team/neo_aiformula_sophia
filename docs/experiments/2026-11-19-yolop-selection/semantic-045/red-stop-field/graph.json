@@ -1,0 +1,138 @@
+{
+  "/flag_stop": {
+    "pub": [],
+    "sub": [
+      "/map_assist",
+      "/mapassist_incident_observer"
+    ],
+    "samples": []
+  },
+  "/aiformula_perception/yolop_a3/traffic_light/state": {
+    "pub": [
+      "/aiformula_perception/yolop_a3_perception"
+    ],
+    "sub": [
+      "/map_assist",
+      "/mapassist_incident_observer"
+    ],
+    "samples": [
+      "red",
+      "red",
+      "red",
+      "red",
+      "red"
+    ]
+  },
+  "/semantic_drive/map_status": {
+    "pub": [],
+    "sub": [
+      "/mapassist_incident_observer"
+    ],
+    "samples": []
+  },
+  "/semantic_drive/map_assist_045/status": {
+    "pub": [
+      "/map_assist"
+    ],
+    "sub": [
+      "/map_assist_stop_wait_candidate",
+      "/mapassist_incident_observer"
+    ],
+    "samples": [
+      "{\"phase\": \"learning\", \"reason\": \"avoidance_state_unknown\", \"lap\": 1, \"recorded_samples\": 0, \"recorded_distance_m\": 0.0, \"reference_length_m\": null, \"odom_reference_ready\": false, \"fusion_pending\": false, \"route_matched\": false, \"progress_m\": 0.0, \"use_sim_time\": false, \"ros_time_sec\": 1795070020.3686433, \"odom_age_sec\": 0.06971588600208634, \"point_age_sec\": {\"a\": 0.008477660001517506, \"b\": 0.008141566999256611, \"c\": 0.008073406999756116}, \"recording_points_valid\": true, \"odom_covariance_available\": false, \"correction_deg\": 0.0, \"violation_frames\": 0, \"avoidance_active\": null, \"branch_active\": false, \"path_output_allowed\": false, \"enable_correction\": true, \"official_route_node_ids\": [\"10000000000\", \"10000000001\", \"10000000002\", \"10000000003\", \"10000000004\", \"10000000000\"], \"approximate_official_edge\": null, \"official_alignment_diagnostic_only\": null, \"map_fusion\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"official_node_positions_odom\": {}, \"official_node_progress_m\": {}, \"topology_mapping\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"fusion_ambiguity_warning\": false, \"traffic_light_raw\": \"red\", \"traffic_light\": \"red\", \"traffic_vote\": {\"window_sec\": 0.5, \"min_samples\": 3, \"ready\": true, \"sample_count\": 4, \"red_count\": 4, \"green_count\": 0, \"yellow_count\": 0, \"off_count\": 0, \"unknown_count\": 0, \"reported_unknown_count\": 0, \"last_message_age_sec\": 0.022582442001294112}, \"auto_red_signal_valid\": true, \"traffic_mode\": \"prepare\", \"traffic_reason\": \"red_prepare_first_lap\", \"traffic_planner_version\": \"ubs_auto_turn_v1\", \"traffic_stop_flag\": false, \"traffic_stop_flag_role\": \"first_lap_stop\", \"auto_stop_latched\": false, \"traffic_stop_committed\": false, \"traffic_event_consumed\": false, \"detour_next_red_pending\": false, \"traffic_red_rearm_sec\": 2.0, \"smooth_plan_reason\": \"not_planned\", \"smooth_plan_available\": false, \"smooth_min_turn_radius_m\": 5.5, \"smooth_max_curvature_per_m\": null, \"auto_trigger_reason\": \"not_evaluated\", \"auto_current_radius_m\": null, \"auto_predicted_radius_m\": null, \"auto_radius_trigger_m\": 6.0, \"auto_trigger_preview_m\": 1.0, \"smooth_turn_trim_m\": null, \"smooth_detour_progress_m\": null, \"topology_alignment\": null, \"blocked_edge\": null, \"detour_node_ids\": [], \"detour_entry_progress_m\": null, \"detour_approach_remaining_m\": null, \"velocity_gate_reason\": \"avoidance_state_unknown\"}",
+      "{\"phase\": \"learning\", \"reason\": \"avoidance_state_unknown\", \"lap\": 1, \"recorded_samples\": 0, \"recorded_distance_m\": 0.0, \"reference_length_m\": null, \"odom_reference_ready\": false, \"fusion_pending\": false, \"route_matched\": false, \"progress_m\": 0.0, \"use_sim_time\": false, \"ros_time_sec\": 1795070020.7685802, \"odom_age_sec\": 0.06960919799894327, \"point_age_sec\": {\"a\": 0.07881955600169022, \"b\": 0.07870934899983695, \"c\": 0.07864458100084448}, \"recording_points_valid\": true, \"odom_covariance_available\": false, \"correction_deg\": 0.0, \"violation_frames\": 0, \"avoidance_active\": null, \"branch_active\": false, \"path_output_allowed\": false, \"enable_correction\": true, \"official_route_node_ids\": [\"10000000000\", \"10000000001\", \"10000000002\", \"10000000003\", \"10000000004\", \"10000000000\"], \"approximate_official_edge\": null, \"official_alignment_diagnostic_only\": null, \"map_fusion\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"official_node_positions_odom\": {}, \"official_node_progress_m\": {}, \"topology_mapping\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"fusion_ambiguity_warning\": false, \"traffic_light_raw\": \"red\", \"traffic_light\": \"red\", \"traffic_vote\": {\"window_sec\": 0.5, \"min_samples\": 3, \"ready\": true, \"sample_count\": 3, \"red_count\": 3, \"green_count\": 0, \"yellow_count\": 0, \"off_count\": 0, \"unknown_count\": 0, \"reported_unknown_count\": 0, \"last_message_age_sec\": 0.09788752999884309}, \"auto_red_signal_valid\": true, \"traffic_mode\": \"prepare\", \"traffic_reason\": \"red_prepare_first_lap\", \"traffic_planner_version\": \"ubs_auto_turn_v1\", \"traffic_stop_flag\": false, \"traffic_stop_flag_role\": \"first_lap_stop\", \"auto_stop_latched\": false, \"traffic_stop_committed\": false, \"traffic_event_consumed\": false, \"detour_next_red_pending\": false, \"traffic_red_rearm_sec\": 2.0, \"smooth_plan_reason\": \"not_planned\", \"smooth_plan_available\": false, \"smooth_min_turn_radius_m\": 5.5, \"smooth_max_curvature_per_m\": null, \"auto_trigger_reason\": \"not_evaluated\", \"auto_current_radius_m\": null, \"auto_predicted_radius_m\": null, \"auto_radius_trigger_m\": 6.0, \"auto_trigger_preview_m\": 1.0, \"smooth_turn_trim_m\": null, \"smooth_detour_progress_m\": null, \"topology_alignment\": null, \"blocked_edge\": null, \"detour_node_ids\": [], \"detour_entry_progress_m\": null, \"detour_approach_remaining_m\": null, \"velocity_gate_reason\": \"avoidance_state_unknown\"}",
+      "{\"phase\": \"learning\", \"reason\": \"avoidance_state_unknown\", \"lap\": 1, \"recorded_samples\": 0, \"recorded_distance_m\": 0.0, \"reference_length_m\": null, \"odom_reference_ready\": false, \"fusion_pending\": false, \"route_matched\": false, \"progress_m\": 0.0, \"use_sim_time\": false, \"ros_time_sec\": 1795070020.9686253, \"odom_age_sec\": 0.06984125999952084, \"point_age_sec\": {\"a\": 0.10566375499911373, \"b\": 0.1055512759994599, \"c\": 0.10548689300048864}, \"recording_points_valid\": true, \"odom_covariance_available\": false, \"correction_deg\": 0.0, \"violation_frames\": 0, \"avoidance_active\": null, \"branch_active\": false, \"path_output_allowed\": false, \"enable_correction\": true, \"official_route_node_ids\": [\"10000000000\", \"10000000001\", \"10000000002\", \"10000000003\", \"10000000004\", \"10000000000\"], \"approximate_official_edge\": null, \"official_alignment_diagnostic_only\": null, \"map_fusion\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"official_node_positions_odom\": {}, \"official_node_progress_m\": {}, \"topology_mapping\": {\"available\": false, \"reason\": \"waiting_for_odom\"}, \"fusion_ambiguity_warning\": false, \"traffic_light_raw\": \"red\", \"traffic_light\": \"red\", \"traffic_vote\": {\"window_sec\": 0.5, \"min_samples\": 3, \"ready\": true, \"sample_count\": 3, \"red_count\": 3, \"green_count\": 0, \"yellow_count\": 0, \"off_count\": 0, \"unknown_count\": 0, \"reported_unknown_count\": 0, \"last_message_age_sec\": 0.13255761799882748}, \"auto_red_signal_valid\": true, \"traffic_mode\": \"prepare\", \"traffic_reason\": \"red_prepare_first_lap\", \"traffic_planner_version\": \"ubs_auto_turn_v1\", \"traffic_stop_flag\": false, \"traffic_stop_flag_role\": \"first_lap_stop\", \"auto_stop_latched\": false, \"traffic_stop_committed\": false, \"traffic_event_consumed\": false, \"detour_next_red_pending\": false, \"traffic_red_rearm_sec\": 2.0, \"smooth_plan_reason\": \"not_planned\", \"smooth_plan_available\": false, \"smooth_min_turn_radius_m\": 5.5, \"smooth_max_curvature_per_m\": null, \"auto_trigger_reason\": \"not_evaluated\", \"auto_current_radius_m\": null, \"auto_predicted_radius_m\": null, \"auto_radius_trigger_m\": 6.0, \"auto_trigger_preview_m\": 1.0, \"smooth_turn_trim_m\": null, \"smooth_detour_progress_m\": null, \"topology_alignment\": null, \"blocked_edge\": null, \"detour_node_ids\": [], \"detour_entry_progress_m\": null, \"detour_approach_remaining_m\": null, \"velocity_gate_reason\": \"avoidance_state_unknown\"}"
+    ]
+  },
+  "/semantic_drive/map_assist_045/stop_wait_candidate": {
+    "pub": [
+      "/map_assist_stop_wait_candidate"
+    ],
+    "sub": [
+      "/mapassist_incident_observer"
+    ],
+    "samples": [
+      "{\"traffic_policy\": \"stop_wait\", \"traffic_mode\": \"wait\", \"traffic_stop_required\": true, \"traffic_reason\": \"semantic_045_route_or_command_unready\", \"ros_time_sec\": 1795070020.3686433}",
+      "{\"traffic_policy\": \"stop_wait\", \"traffic_mode\": \"wait\", \"traffic_stop_required\": true, \"traffic_reason\": \"semantic_045_route_or_command_unready\", \"ros_time_sec\": 1795070020.7685802}",
+      "{\"traffic_policy\": \"stop_wait\", \"traffic_mode\": \"wait\", \"traffic_stop_required\": true, \"traffic_reason\": \"semantic_045_route_or_command_unready\", \"ros_time_sec\": 1795070020.9686253}"
+    ]
+  },
+  "/semantic_drive/map_assist_045/diagnostic_cmd_vel": {
+    "pub": [
+      "/map_assist"
+    ],
+    "sub": [
+      "/map_assist_stop_wait_candidate",
+      "/mapassist_incident_observer"
+    ],
+    "samples": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "/semantic_drive/map_assist_045/lya_cmd_vel": {
+    "pub": [
+      "/trajectory_follower"
+    ],
+    "sub": [
+      "/map_assist",
+      "/mapassist_incident_observer"
+    ],
+    "samples": []
+  },
+  "/aiformula_control/game_pad/cmd_vel": {
+    "pub": [
+      "/aiformula_control/teleop_node"
+    ],
+    "sub": [
+      "/mapassist_incident_observer"
+    ],
+    "samples": []
+  }
+}

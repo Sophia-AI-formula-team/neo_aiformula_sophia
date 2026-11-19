@@ -1,0 +1,68 @@
+1795070568.0535352 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-19-15-42-48-044925-control-desktop-64819
+1795070568.0540011 [INFO] [launch]: Default logging verbosity is set to INFO
+1795070570.1117976 [INFO] [allnodes.can_ready]: Waiting up to 10.0s for CAN interface 'can0'
+1795070570.1128085 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795070570.3907957 [INFO] [gyro_odometry_publisher-6]: process started with pid [64857]
+1795070570.3917491 [INFO] [rear_potentiometer-7]: process started with pid [64859]
+1795070570.3932946 [INFO] [robot_state_publisher-1]: process started with pid [64847]
+1795070570.3936889 [INFO] [joint_state_publisher-2]: process started with pid [64849]
+1795070570.3939350 [INFO] [zed_wrapper-3]: process started with pid [64851]
+1795070570.3941503 [INFO] [vectornav-4]: process started with pid [64853]
+1795070570.3943541 [INFO] [vn_sensor_msgs-5]: process started with pid [64855]
+1795070570.3945863 [INFO] [joy_node-8]: process started with pid [64861]
+1795070570.3947847 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [64863]
+1795070570.3949900 [INFO] [teleop_node-10]: process started with pid [64865]
+1795070570.3952155 [INFO] [socket_can_receiver_node_exe-11]: process started with pid [64867]
+1795070570.3954368 [INFO] [socket_can_sender_node_exe-12]: process started with pid [64889]
+1795070570.3956475 [INFO] [motor_controller-13]: process started with pid [64952]
+1795070570.3958516 [INFO] [concept_vehicle_state-14]: process started with pid [64956]
+1795070570.3960502 [INFO] [concept_control_gate-15]: process started with pid [64958]
+1795070570.3962522 [INFO] [drive-16]: process started with pid [64960]
+1795070570.3964550 [INFO] [visualization-17]: process started with pid [64962]
+1795070570.3966589 [INFO] [panel-18]: process started with pid [64964]
+1795070570.3968513 [INFO] [rviz2-19]: process started with pid [64966]
+1795070570.4008238 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795070570.4010561 [robot_state_publisher-1] Link base_link had 4 children
+1795070570.4071076 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795070570.4073217 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795070570.4074123 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795070570.4074872 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795070570.4075565 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795070570.4076262 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795070570.4076946 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795070570.4077616 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795070570.4078257 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795070570.4078903 [robot_state_publisher-1] [INFO] [1795070570.324823428] [aiformula_sensing.robot_state_publisher]: got segment base_footprint
+1795070570.4079559 [robot_state_publisher-1] [INFO] [1795070570.324982178] [aiformula_sensing.robot_state_publisher]: got segment base_link
+1795070570.4080195 [robot_state_publisher-1] [INFO] [1795070570.324997186] [aiformula_sensing.robot_state_publisher]: got segment caster_back_link
+1795070570.4080818 [robot_state_publisher-1] [INFO] [1795070570.325004962] [aiformula_sensing.robot_state_publisher]: got segment wheel_left_link
+1795070570.4081442 [robot_state_publisher-1] [INFO] [1795070570.325011586] [aiformula_sensing.robot_state_publisher]: got segment wheel_right_link
+1795070570.4083674 [robot_state_publisher-1] [INFO] [1795070570.325017506] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_center
+1795070570.4084890 [robot_state_publisher-1] [INFO] [1795070570.325023458] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_link
+1795070570.4085653 [robot_state_publisher-1] [INFO] [1795070570.325029346] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_frame
+1795070570.4086342 [robot_state_publisher-1] [INFO] [1795070570.325035778] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_optical_frame
+1795070570.4087315 [robot_state_publisher-1] [INFO] [1795070570.325041698] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_frame
+1795070570.4087996 [robot_state_publisher-1] [INFO] [1795070570.325047746] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_optical_frame
+1795070570.4095597 [vectornav-4] [INFO] [1795070570.352081867] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795070570.4099636 [teleop_node-10] [INFO] [1795070570.330674165] [TeleopTwistJoy]: Teleop enable button 6.
+1795070570.4100709 [teleop_node-10] [INFO] [1795070570.330784724] [TeleopTwistJoy]: Turbo on button 4.
+1795070570.4101467 [teleop_node-10] [INFO] [1795070570.330793812] [TeleopTwistJoy]: Linear axis x on 1 at scale 3.500000.
+1795070570.4102170 [teleop_node-10] [INFO] [1795070570.330804820] [TeleopTwistJoy]: Turbo for linear axis x is scale 3.600000.
+1795070570.4102833 [teleop_node-10] [INFO] [1795070570.330809844] [TeleopTwistJoy]: Angular axis yaw on 3 at scale 0.700000.
+1795070570.4103477 [teleop_node-10] [INFO] [1795070570.330815700] [TeleopTwistJoy]: Turbo for angular axis yaw is scale 1.000000.
+1795070570.4471676 [vectornav-4] [INFO] [1795070570.446588158] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud
+1795070570.4475482 [vectornav-4] [INFO] [1795070570.446700317] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795070570.4480410 [vectornav-4] [INFO] [1795070570.446714013] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795070570.4481409 [vectornav-4] [INFO] [1795070570.446722269] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795070570.4482181 [vectornav-4] [INFO] [1795070570.446729949] [aiformula_sensing.vectornav]: Serial Number : [redacted]
+1795070570.4482887 [vectornav-4] [INFO] [1795070570.446737213] [aiformula_sensing.vectornav]: User Tag : ""
+1795070570.5512245 [vectornav-4] [INFO] [1795070570.548440630] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795070570.5533242 [vectornav-4] [INFO] [1795070570.548539093] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795070570.5579309 [vectornav-4] [INFO] [1795070570.554029865] [aiformula_sensing.vectornav]: GPS Offset     : [redacted]
+1795070570.5669553 [vectornav-4] [INFO] [1795070570.559573789] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795070571.0087934 [joy_node-8] [INFO] [1795070571.008029368] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795070571.0106969 [joy_node-8] [INFO] [1795070571.010309542] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795070573.7476561 [rviz2-19] [INFO] [1795070573.746938874] [rviz2]: Stereo is NOT SUPPORTED
+1795070573.7732604 [rviz2-19] [INFO] [1795070573.772642222] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+1795070574.1924469 [rviz2-19] [INFO] [1795070574.191889136] [rviz2]: Stereo is NOT SUPPORTED
+1795070575.9868717 [rviz2-19] [INFO] [1795070575.986412438] [rviz2]: Stereo is NOT SUPPORTED

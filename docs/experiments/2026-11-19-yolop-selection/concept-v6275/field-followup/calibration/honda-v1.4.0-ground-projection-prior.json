@@ -1,0 +1,62 @@
+{
+  "recorded_jst": "2026-11-19T14:15:02+09:00",
+  "status": "nominal_projection_pending_independent_ground_check",
+  "camera_info_source": "marks-141045/left/camera.json",
+  "official_extrinsic": "https://github.com/aiformula-support/aiformula/blob/5444bc8f907f34d83d92a6ca9c3d38cb8d71270f/vehicle/config/zedx/camera_params/SN48442725/extrinsic.yaml",
+  "official_mount": "https://github.com/aiformula-support/aiformula/blob/5444bc8f907f34d83d92a6ca9c3d38cb8d71270f/vehicle/xacro/parts/zed_macro.xacro",
+  "optical_frame": "zed_left_camera_optical_frame",
+  "image_size": [
+    640,
+    360
+  ],
+  "K": [
+    [
+      245.85719299316406,
+      0.0,
+      328.65557861328125
+    ],
+    [
+      0.0,
+      245.85719299316406,
+      189.0126953125
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "rpy_optical_to_body_deg": [
+    -89.0,
+    0.0,
+    -90.0
+  ],
+  "left_optical_center_body_forward_left_up_m": [
+    0.055,
+    0.0600025,
+    0.55
+  ],
+  "height_source": "现场确认左相机光心离地 0.55 m；本田原文件为 0.54 m。",
+  "coordinates": "[u,v,1] proportional to H @ [right_m,forward_m,1], flat ground at base_footprint z=0",
+  "H_ground_to_left_rectified_pixels": [
+    [
+      245.85719299316403,
+      328.6055227767794,
+      -6.475964434862321
+    ],
+    [
+      -1.1834662589972428e-14,
+      193.27470742114673,
+      122.75645284612617
+    ],
+    [
+      -6.122301397540666e-17,
+      0.9998476951563913,
+      -0.06459044677410751
+    ]
+  ],
+  "example_predicted_uv_at_4m_centreline": [
+    332.405,
+    227.675
+  ]
+}

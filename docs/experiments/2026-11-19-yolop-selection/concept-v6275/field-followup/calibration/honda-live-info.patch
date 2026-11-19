@@ -1,0 +1,52 @@
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+index 1749e2c..af05f20 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+@@ -100,12 +100,29 @@ class HondaMountProjection(CameraProjection):
+         optical_to_body = np.array([[0., s, c], [-1., 0., 0.], [0., -c, s]])
+         # Each column multiplies [right_m, forward_m, 1] on level ground.
+         relative_ground = np.array([[0., 1., -.055], [-1., 0., -.0600025], [0., 0., -h]])
+-        source = self.projection[:, :3] @ optical_to_body.T @ relative_ground
+         target = REFERENCE_K @ np.array([[1., 0., 0.], [0., 0., HEIGHT], [0., 1., 0.]])
+-        self.warp = target @ np.linalg.inv(source)
++        self.ground_to_virtual = target @ np.linalg.inv(optical_to_body.T @ relative_ground)
++        self.update_intrinsics(self.projection)
++
++    def update_intrinsics(self, projection):
++        self.warp = self.ground_to_virtual @ np.linalg.inv(projection[:, :3])
+         coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
+                                        self.warp, (640, 360), flags=cv2.INTER_NEAREST)
+         self.visible = coverage.astype(bool)
++        self.projection = projection.copy()
++
++    def matches(self, topic, image, info):
++        if (info is None or topic != self.topic or image.header.frame_id != self.frame_id
++                or info.header.frame_id != self.frame_id or (image.width, image.height) != (self.width, self.height)
++                or (info.width, info.height) != (self.width, self.height)):
++            return False
++        projection = np.asarray(info.p, dtype=float).reshape(3, 4)
++        if not np.array_equal(projection, self.projection):
++            if (not np.isfinite(projection).all() or projection[0, 0] <= 0 or projection[1, 1] <= 0
++                    or not np.allclose(projection[2], [0., 0., 1., 0.]) or np.any(projection[:, 3])):
++                return False
++            self.update_intrinsics(projection)
++        return True
+ 
+ 
+ def load_projection(path):
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/node.py b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+index e8b58af..9faab57 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/node.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+@@ -70,6 +70,11 @@ class CameraNode(Node):
+             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+             matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+             if self.calibration and self.calibration.profile == HONDA and not matched:
++                if time.monotonic() - self.last_error_at >= 5.:
++                    self.get_logger().warning('Waiting for matching ZED CameraInfo: topic=%s image=%s info=%s'
++                                              % (self.images.topic_name, msg.header.frame_id,
++                                                 self.info.header.frame_id if self.info else 'missing'))
++                    self.last_error_at = time.monotonic()
+                 return
+             if matched:
+                 bgr = self.calibration.rectify(bgr)

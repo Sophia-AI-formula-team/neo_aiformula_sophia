@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+
+usage() {
+    printf '%s\n' 'Usage: semantic [6.0|5.5] [ROS launch arguments]' \
+        'Run without arguments to choose the minimum turn radius interactively.'
+}
+
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    6.0|inner) lane=inner; shift ;;
+    5.5|outer) lane=outer; shift ;;
+    '')
+        if [[ ! -t 0 ]]; then usage >&2; exit 2; fi
+        printf '%s\n' 'Semantic MapAssist 0.4.5' '1. 6.0 m' '2. 5.5 m' 'q. 退出'
+        read -r -p '选择: ' choice || exit 0
+        case "$choice" in
+            1|6.0|inner) lane=inner ;;
+            2|5.5|outer) lane=outer ;;
+            q|Q) exit 0 ;;
+            *) usage >&2; exit 2 ;;
+        esac
+        ;;
+    *) usage >&2; exit 2 ;;
+esac
+
+workspace="$HOME/semantic_045_ws"
+source "$workspace/activate_semantic.bash"
+exec ros2 launch "$workspace/commissioning/semantic_045_commissioning.launch.py" "lane:=$lane" "$@"

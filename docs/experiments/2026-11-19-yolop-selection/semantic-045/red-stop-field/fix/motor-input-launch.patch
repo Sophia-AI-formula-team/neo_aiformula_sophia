@@ -1,0 +1,19 @@
+--- allnodes.before.py	2026-11-19 15:35:52.345423503 +0900
++++ allnodes.launch.py	2026-11-19 15:35:52.384842880 +0900
+@@ -315,6 +315,7 @@
+                 ".yaml",
+             ],
+         ),
++        DeclareLaunchArgument("motor_cmd_topic", default_value="/aiformula_control/game_pad/cmd_vel"),
+         DeclareLaunchArgument("can_interface", default_value="can0"),
+         DeclareLaunchArgument("can_ready_timeout_sec", default_value="120.0"),
+         DeclareLaunchArgument("receiver_interval_sec", default_value="0.1"),
+@@ -459,7 +460,7 @@
+                 LaunchConfiguration("button_layout_config"),
+         ],
+         remappings=[
+-            ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),
++            ("sub_speed_command", LaunchConfiguration("motor_cmd_topic")),
+             ("pub_can", "/aiformula_control/motor_controller/reference_signal"),
+         ],
+     )

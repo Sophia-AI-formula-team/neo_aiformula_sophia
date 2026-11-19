@@ -1,0 +1,89 @@
+{
+  "percentiles": "median,p95,max",
+  "timing_ms": {
+    "capture_to_driver": [
+      204.37,
+      251.68,
+      266.51
+    ],
+    "driver_ms": [
+      116.2,
+      151.97,
+      188.0
+    ],
+    "decision_age_ms": [
+      323.33,
+      373.67,
+      449.01
+    ],
+    "command_age_ms": [
+      324.25,
+      374.4,
+      450.75
+    ]
+  },
+  "decisions": {
+    "ok feasible": 1472,
+    "ok recovery_no_checked_motion": 9,
+    "ok executing_prior_contingency": 1
+  },
+  "cmd": 1482,
+  "positive": 1473,
+  "valid_states": 3889,
+  "right_source": [
+    "can_0x711_low_byte_vectornav_ros_z"
+  ],
+  "joy": 3829,
+  "auto_windows": [
+    {
+      "secs": 62.1,
+      "cmd": 499,
+      "stale_intervals": 34,
+      "worst_interval_ms": 570.4,
+      "modes": {
+        "auto": 23,
+        "paused": 596
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 21,
+        "auto_timeout": 596
+      },
+      "positive_status": 21
+    },
+    {
+      "secs": 62.02,
+      "cmd": 483,
+      "stale_intervals": 40,
+      "worst_interval_ms": 572.99,
+      "modes": {
+        "auto": 18,
+        "paused": 601
+      },
+      "reasons": {
+        "waiting_new_auto": 3,
+        "auto_command_received": 15,
+        "auto_timeout": 601
+      },
+      "positive_status": 15
+    },
+    {
+      "secs": 62.02,
+      "cmd": 487,
+      "stale_intervals": 32,
+      "worst_interval_ms": 553.53,
+      "modes": {
+        "auto": 4,
+        "paused": 615
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 2,
+        "auto_timeout": 615
+      },
+      "positive_status": 2
+    }
+  ],
+  "expiry_gap_count": 106,
+  "max_last_capture_to_next_receipt_ms": 572.990992
+}
