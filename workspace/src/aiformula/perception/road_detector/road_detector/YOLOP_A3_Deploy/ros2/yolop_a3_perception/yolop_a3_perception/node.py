@@ -19,7 +19,9 @@ class YolopA3Node(Node):
         device = str(self.declare_parameter("device", "auto").value)
         threshold = float(self.declare_parameter("score_threshold", .5).value)
         topic = str(self.declare_parameter("input_image_topic", ROS_TOPICS.input_image).value)
-        self.model = PerceptionModel(weights, device=device, score_threshold=threshold)
+        self.lean_runtime = self.declare_parameter("lean_runtime", False).value
+        self.model = PerceptionModel(weights, device=device, score_threshold=threshold,
+                                     lean_runtime=self.lean_runtime)
         self.bridge = CvBridge()
         qos = QoSProfile(history=HistoryPolicy.KEEP_LAST, depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.images = {
@@ -33,12 +35,13 @@ class YolopA3Node(Node):
         self.detections = self.create_publisher(String, ROS_TOPICS.detections_json, 1)
         self.subscription = self.create_subscription(Image, topic, self.receive, qos)
         self.get_logger().info(f"{RELEASE_NAME} single-frame mode; weights={weights}; input={topic}; "
-                               "calibrated temporal input is available through Python predict_frame")
+                               f"lean_runtime={self.lean_runtime}; calibrated temporal input is available through Python predict_frame")
 
     def receive(self, message):
         try:
             image = self.bridge.imgmsg_to_cv2(message, desired_encoding="bgr8")
-            output = self.model.predict(image)
+            # The combined preview has no ROS publisher. Both published overlays remain.
+            output = self.model.predict(image, combined_overlay=False) if self.lean_runtime else self.model.predict(image)
             for name, (publisher, encoding) in self.images.items():
                 result = self.bridge.cv2_to_imgmsg(getattr(output, name), encoding=encoding)
                 result.header = deepcopy(message.header)

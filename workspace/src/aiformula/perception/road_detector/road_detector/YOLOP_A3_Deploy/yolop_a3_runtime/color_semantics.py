@@ -19,12 +19,26 @@ def classify_traffic_light(
 ) -> ColorEvidence:
     crop = _box_crop(image_bgr, box_xyxy)
     counts = _hsv_counts(crop)
-    candidates = {name: counts[name] for name in ("red", "yellow", "green")}
-    label, pixel_count = max(candidates.items(), key=lambda item: item[1])
     minimum = max(3, int(crop.shape[0] * crop.shape[1] * 0.002))
-    if pixel_count < minimum:
-        return ColorEvidence("unknown", counts["red"], counts)
+    # A few lit red pixels can be surrounded by a much larger green background.
+    # Weak or ambiguous warm evidence is not permission to report green.
+    label = "unknown"
+    if counts["red"] >= minimum:
+        label = "red"
+    elif not counts["red"]:
+        if counts["green"] >= minimum and not (counts["orange"] or counts["yellow"]):
+            label = "green"
+        elif counts["yellow"] >= minimum and counts["green"] < minimum:
+            label = "yellow"
     return ColorEvidence(label, counts["red"], counts)
+
+
+def summarize_signal(labels):
+    states = set(labels)
+    if "red" in states:
+        return "red"
+    # Detections do not identify which lamp controls our lane.
+    return "green" if states == {"green"} else "unknown"
 
 
 def classify_traffic_cone(

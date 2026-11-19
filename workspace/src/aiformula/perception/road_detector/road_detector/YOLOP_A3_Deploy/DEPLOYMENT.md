@@ -1,5 +1,105 @@
 # A4 Deployment Guide
 
+## A4 signal-guard update (original tag a4 remains unchanged)
+
+This update keeps the same A4 weights. Qualified red evidence takes priority
+over a larger green region inside the detected box. Weak or conflicting
+evidence is unknown, not green. A4_lite also caches one fixed geometry anchor
+grid. Thresholds, input size and ROS topics are unchanged. This does not
+identify the applicable lamp or recover missed boxes. Never interpret unknown,
+no detection or stale output as authorization to release a red hold.
+
+## Vehicle profiles
+
+Build both standalone archives from this checkout:
+
+```sh
+python tools/package_vehicle.py --out /path/to/output
+```
+
+Extract into separate `A4/` and `A4_lite/` folders under
+`/home/control/aiformula_runtime/` (or set `a4_bundle_parent`).
+Each contains the same runtime and verified A4 checkpoint. The included
+`profile.json` selects plain or lean inference; do not edit it to change a
+bundle's identity. The ROS adapter is included; an environment with compatible
+`torch`, `torchvision`, `cv2`, `numpy`, `rclpy` and `cv_bridge` is required
+at `venv/bin/python3`. These are source/weight bundles, not JetPack images
+or prebuilt Python environments. Do not reuse the V14 Foxy Python 3.8 venv.
+
+Read-only identification on the vehicle: inspect `/proc/<PID>/cmdline`
+and the startup log, then hash the checkpoint from the actual process
+arguments. Folder and ROS node names alone do not identify the model.
+V14 tag: `a3-v14`, exported checkpoint SHA256
+`a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c`
+(architecture `a3_mobilenet_shared_fpn_contract_v14`). The original training
+snapshot with SHA starting `aad5df29` is not the packaged file.
+A4/A4_lite share the A4 hash below; distinguish them by the validated profile
+and logged `lean_runtime` setting. Archived `a3-v6`, `a3-v14`, `a3-v76`
+and `a4` tags remain immutable.
+
+```sh
+# Prints Python, checkpoint hash, profile and remaps; does not start ROS.
+./venv/bin/python3 run_vehicle.py --profile A4_lite --identity
+# Offline bag test in an isolated ROS_DOMAIN_ID: all seven outputs are shadow.
+./venv/bin/python3 run_vehicle.py --profile A4_lite --use-sim-time true
+```
+
+Use the bundle's explicit `--profile` and `--live` only after shadow
+acceptance. Bundling does not change the main vehicle launcher's default or
+the separate experiment selector. Leave the existing V14 installation in
+place. The
+runner rejects pre-existing publishers on all seven selected outputs,
+but graph discovery is not a process lock: start only one profile.
+
+| Vehicle output (matches neo main V14 remaps) | Type |
+|---|---|
+| /aiformula_perception/road_detector/mask_image | Image mono8 |
+| /aiformula_visualization/road_detector/annotated_mask_image | Image bgr8 |
+| /cone_mask | Image mono8 |
+| /cone_bbox_image | Image bgr8 |
+| /aiformula_perception/yolop_a3/detections | String JSON |
+| /aiformula_perception/yolop_a3/traffic_light/state | String |
+| /aiformula_perception/yolop_a3/red_pixels_count | Int32 |
+
+Input is `/aiformula_sensing/zed_node/left_image/undistorted`. Four image
+headers and detection JSON source timestamp/frame ID are preserved.
+LaneLinePublisher consumes the standard lane mask. Avoidance consumes
+the two existing cone topics. Optional semantic modules configured for
+global `/traffic_light/state` or `/red_pixels_count` are **not** implicitly
+rewired; neo's vehicle launcher uses the namespaced perception outputs.
+
+### Lite mode
+
+The ROS boolean startup parameter `lean_runtime` defaults to false. True
+precomputes the frozen encoder normalization coefficients once in FP32,
+transfers the default binary mask instead of a float probability image, and
+omits the unpublished combined preview. The four published image streams,
+objects, signal outputs and source headers remain active. No frame skipping,
+lower resolution, detector cutoff changes, CUDA Graph or model conversion.
+Python users can use `PerceptionModel(weights, lean_runtime=True)`;
+`predict(image)` still returns all overlays. No hardware speedup is assumed.
+
+Use a separate candidate checkout/environment. Verify the actual running
+interpreter and installed package, not just the launch filename: the older neo
+launcher points to a V14 installation by default. Do not apply this to V14.
+Check the A4 weights with `python tools/verify_weights.py`, then compare
+without ROS, on a directory of representative PNG/JPEG camera frames:
+
+```sh
+python tools/compare_lean.py --images /path/to/frames --out lean_orin.json
+```
+
+The tool uses one model at a time, compares every published content field
+except timing, and reports warm model-to-host response times. Test the ROS
+candidate only with the seven shadow remaps below, adding
+`-p lean_runtime:=true` to that node's ROS arguments. Confirm its startup log;
+this parameter is not a top-level argument of the legacy launch file. Restore
+the default by restarting with false. Measure actual camera timestamp to output,
+misses including drops, longest gap, GPU/CPU, power, temperature and memory
+under the same load on Orin for at least 10 minutes per mode. Prefer bag
+playback before connecting to a vehicle stack. Do not promote on offline
+timing alone.
+
 ## Status And Environment
 
 This is the A4 package (version 4.0.0, tag a4), renamed from a3-v76 with identical
