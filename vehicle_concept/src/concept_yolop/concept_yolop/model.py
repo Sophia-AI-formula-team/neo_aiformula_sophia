@@ -15,8 +15,8 @@ from torchvision.ops.misc import FrozenBatchNorm2d
 
 class NativeCudaConv2d(nn.Conv2d):
     def forward(self, image):
-        # cuDNN 8.6 on Orin is slow for the 112-to-48 decoder fusion.
-        # PyTorch's CUDA convolution keeps this operation in FP32.
+        # On selected cuDNN/GPU pairs the chosen algorithm for this layer
+        # has a large workspace. Keep the convolution and weights in FP32.
         with torch.backends.cudnn.flags(enabled=False, deterministic=True, allow_tf32=False):
             return super().forward(image)
 
@@ -27,15 +27,17 @@ def lane_conv(in_channels, out_channels, convolution=nn.Conv2d):
 
 
 class LaneDecoder(nn.Module):
-    def __init__(self, native_fusion=False):
+    def __init__(self, native_fusion=False, native_deep_fusion=False):
         super().__init__()
         channels = (16, 24, 40, 112, 960)
         widths = (16, 32, 48, 64, 96)
+        kernels = (nn.Conv2d, nn.Conv2d,
+                   NativeCudaConv2d if native_fusion else nn.Conv2d,
+                   NativeCudaConv2d if native_deep_fusion else nn.Conv2d)
         self.lateral = nn.ModuleList(nn.Conv2d(c, w, 1) for c, w in zip(channels, widths))
         self.fuse = nn.ModuleList([
             nn.Sequential(
-                lane_conv(widths[i] + widths[i + 1], widths[i],
-                          NativeCudaConv2d if native_fusion and i == 2 else nn.Conv2d),
+                lane_conv(widths[i] + widths[i + 1], widths[i], kernels[i]),
                 lane_conv(widths[i], widths[i]))
             for i in range(4)
         ])
@@ -61,13 +63,13 @@ class ObjectPyramid(nn.Module):
 
 
 class B14(nn.Module):
-    def __init__(self, config, native_fusion=False):
+    def __init__(self, config, native_fusion=False, native_deep_fusion=False):
         super().__init__()
         if (config['backend'], config['road_mode'], config['width'], config['depth']) != ('mobile', 'separate', 32, 2):
             raise ValueError('Unexpected B1.4 network configuration')
         self.encoder = mobilenet_v3_large(weights=None, norm_layer=FrozenBatchNorm2d).features
-        self.lane_head = LaneDecoder(native_fusion)
-        self.road_head = LaneDecoder(native_fusion)
+        self.lane_head = LaneDecoder(native_fusion, native_deep_fusion)
+        self.road_head = LaneDecoder(native_fusion, native_deep_fusion)
         anchors = AnchorGenerator(((4,), (8,), (16,), (32,), (64,)), ((1.,),) * 5)
         self.detector = FCOS(ObjectPyramid(), num_classes=4, anchor_generator=anchors,
                              head=FCOSHead(32, 1, 4, num_convs=2), min_size=config['min_size'],

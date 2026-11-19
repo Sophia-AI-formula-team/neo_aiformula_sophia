@@ -19,3 +19,5 @@
 独立 ROS 2 Foxy 基础容器（Linux x86_64、Ubuntu Focal、Python 3.8.10）断网完成 colcon 构建、ament 发现、三个可执行入口枚举、单独 launch 参数解析和冻结归档权重导入。该基础镜像未装 TorchVision、PyTorch、cv_bridge 和 OpenCV；上述 CUDA 推理来自 Windows 工作站。Jetson 上需另测本地 TorchVision NMS 和整条图像消息链。
 
 后续在独立的 ROS Foxy CUDA 容器中重放了 10 月 27 日实车原始 BGRA8 画面，从相机消息到 B1.4 输出收到 120/120 条，15.00 Hz，延迟中位数 33.48 ms。完整设置、对照和原始统计见[相机墙钟实测](bench/README.md)。
+
+2026-11-20 针对团队 Foxy 开发镜像比较了两种 FP32 卷积实现。117 张图的路面、车线与全部检测逐项相同。两次新版的图像发布到 ROS Twist 中位延迟为 89.25 和 90.90 毫秒，沿用车端当前的 Orin 默认设置。[各轮墙钟、GPU 显存与复测步骤](bench/fusion.md)

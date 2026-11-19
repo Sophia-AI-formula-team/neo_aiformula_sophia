@@ -40,11 +40,14 @@ class CameraNode(Node):
     def __init__(self, frame_consumer=None, image_group=None):
         super().__init__('concept_yolop')
         self.frame_consumer = frame_consumer
-        for name, default in [('weights', str(default_path())), ('device', 'cuda'),
+        for name, default in [('weights', str(default_path())), ('device', 'cuda'), ('cuda_fusion', 'auto'),
                               ('camera_info_topic', '/aiformula_sensing/zed_node/left/camera_info'),
                               ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
             self.declare_parameter(name, default)
-        self.predictor = Predictor(self.get_parameter('weights').value or default_path(), self.get_parameter('device').value)
+        self.predictor = Predictor(self.get_parameter('weights').value or default_path(),
+                                   self.get_parameter('device').value, self.get_parameter('cuda_fusion').value)
+        self.get_logger().info('B1.4 device=%s, native FP32 decoder input channels=%s'
+                               % (self.predictor.device, self.predictor.native_fusion_channels))
         if self.predictor.device.type == 'cuda':
             # Initialize CUDA, cuDNN and detection kernels before subscribing to the
             # camera. predict() copies its outputs to CPU, completing the warm-up.
