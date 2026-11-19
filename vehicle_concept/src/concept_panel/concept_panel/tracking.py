@@ -83,4 +83,3 @@ class TrackingFrames:
         self.frames[key] = points
         if len(self.frames) > 12:
             self.frames.popitem(last=False)
-

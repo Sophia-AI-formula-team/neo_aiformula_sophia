@@ -91,4 +91,3 @@ def test_panel_matches_ns_and_immediately_hides_takeover_stop_and_reset(monkeypa
     assert not w.tracking.frames and w.camera_key is None
     w.close()
     assert app
-
