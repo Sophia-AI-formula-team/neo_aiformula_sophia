@@ -1,6 +1,15 @@
 # A4 Deployment Guide
 
-## Vehicle profiles (not part of the original tag a4)
+## A4 signal-guard update (original tag a4 remains unchanged)
+
+This update keeps the same A4 weights. Qualified red evidence takes priority
+over a larger green region inside the detected box. Weak or conflicting
+evidence is unknown, not green. A4_lite also caches one fixed geometry anchor
+grid. Thresholds, input size and ROS topics are unchanged. This does not
+identify the applicable lamp or recover missed boxes. Never interpret unknown,
+no detection or stale output as authorization to release a red hold.
+
+## Vehicle profiles
 
 Build both standalone archives from this checkout:
 
@@ -35,10 +44,11 @@ and `a4` tags remain immutable.
 ./venv/bin/python3 run_vehicle.py --profile A4_lite --use-sim-time true
 ```
 
-The neo launcher can select either bundle with `yolop_profile:=A4` or
-`yolop_profile:=A4_lite` after shadow acceptance. Leave the existing V14
-installation in place; select `yolop_profile:=V14` to roll back. The
-runner rejects pre-existing publishers on all seven selected outputs,
+After shadow acceptance, select the vehicle bundle with `yolop_profile:=A4`
+or `yolop_profile:=A4_lite` in the neo launcher. V14 remains the default.
+Use `yolop_profile:=V14` to return to the existing V14 installation.
+For standalone launch, use the bundle's explicit `--profile` and `--live`.
+The runner rejects pre-existing publishers on all seven selected outputs,
 but graph discovery is not a process lock: start only one profile.
 
 | Vehicle output (matches neo main V14 remaps) | Type |

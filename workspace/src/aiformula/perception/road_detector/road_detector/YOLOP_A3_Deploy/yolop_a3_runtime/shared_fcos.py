@@ -65,6 +65,20 @@ class SharedPerception(nn.Module):
                              min_size=min_size, max_size=max_size, score_thresh=.05,
                              nms_thresh=.5, detections_per_img=100, topk_candidates=200)
         self.register_buffer("label_map", torch.tensor(LABELS, dtype=torch.long))
+        self.cache_anchor_grid = False
+        self._anchor_grid = None
+
+    def split_anchor_grid(self, batch, maps, sizes):
+        generate = self.detector.anchor_generator
+        if not self.cache_anchor_grid or self.training or not torch.is_inference_mode_enabled() or len(batch.image_sizes) != 1:
+            return [list(a.split(sizes)) for a in generate(batch, maps)]
+        # The grid uses only the padded input size and feature geometry, not RGB.
+        # Keep at most one grid; never share it with training or across devices.
+        key = (tuple(batch.tensors.shape[-2:]),
+               tuple((tuple(v.shape[-2:]), v.device, v.dtype) for v in maps))
+        if self._anchor_grid is None or self._anchor_grid[0] != key:
+            self._anchor_grid = key, [list(a.split(sizes)) for a in generate(batch, maps)]
+        return self._anchor_grid[1]
 
     def extract(self, tensor):
         features = []
@@ -99,11 +113,10 @@ class SharedPerception(nn.Module):
             return lanes, []
         maps = list(self.detector.backbone(features).values())
         outputs = self.detector.head(maps)
-        anchors = self.detector.anchor_generator(batch, maps)
         sizes = [value.shape[-2] * value.shape[-1] for value in maps]
         split = {key: list(value.split(sizes, dim=1)) for key, value in outputs.items()}
         predictions = self.detector.postprocess_detections(
-            split, [list(a.split(sizes)) for a in anchors], batch.image_sizes)
+            split, self.split_anchor_grid(batch, maps, sizes), batch.image_sizes)
         for row in predictions:
             row["labels"] = self.label_map[row["labels"]]
         predictions = self.detector.transform.postprocess(predictions, batch.image_sizes, native)

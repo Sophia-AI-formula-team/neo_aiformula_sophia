@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import torch
 
-from .color_semantics import classify_traffic_cone, classify_traffic_light
+from .color_semantics import classify_traffic_cone, classify_traffic_light, summarize_signal
 from .lane_processing import LaneRuntimeConfig, overlay_lane_mask, postprocess_lane_probability
 from .outputs import Detection, PerceptionOutput, render
 from .lean import cache_encoder_norms
@@ -26,6 +26,7 @@ class TemporalPerceptionModel:
         self.lean_runtime = lean_runtime
         if lean_runtime:
             cache_encoder_norms(self.model.base.encoder)
+            self.model.base.cache_anchor_grid = True
         self.score_threshold = score_threshold
         self.lane_config = lane_config or LaneRuntimeConfig()
 
@@ -74,8 +75,7 @@ class TemporalPerceptionModel:
                 semantic = f"{state}_traffic_light"
             detections.append(Detection(tuple(box), label, name, score, semantic, color, state))
         detections = tuple(detections)
-        states = {item.traffic_light_state for item in detections}
-        state = "red" if "red" in states else "green" if "green" in states else "unknown"
+        state = summarize_signal(item.traffic_light_state for item in detections if item.class_id == 10)
         lane_overlay = overlay_lane_mask(image, lane)
         object_overlay, obstacle = render(image, detections)
         combined = render(lane_overlay, detections)[0] if combined_overlay else None
