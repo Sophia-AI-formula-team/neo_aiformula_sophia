@@ -27,7 +27,7 @@ def percentiles(values):
     return dict(zip(('min', 'p50', 'p95', 'max'), np.percentile(values, [0, 50, 95, 100]).round(2).tolist()))
 
 
-def run(folder, hz, feedback_encoding):
+def run(folder, hz, feedback_encoding, cuda_fusion='auto'):
     rows = [json.loads(s) for s in (folder / 'exchange.jsonl').read_text().splitlines()]
     images = [cv2.imread(str(folder / r['camera_file'])) for r in rows]
     if not images or any(img is None or img.shape != (360, 640, 3) for img in images):
@@ -35,6 +35,7 @@ def run(folder, hz, feedback_encoding):
     target = 2.
     rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=false', '-p', 'target_speed_mps:=2.0',
                      '-p', 'onboard_camera:=true', '-p', 'device:=cuda', '-p', 'image_topic:=' + CAMERA,
+                     '-p', 'cuda_fusion:=' + cuda_fusion,
                      '-p', 'camera_info_topic:=' + INFO, '-p', 'calibration:=' + str(CALIBRATION),
                      '-p', 'weights:=/weights/B1.4.pth'])
     driver = DriverNode()
@@ -118,9 +119,11 @@ if __name__ == '__main__':
     args.add_argument('output', type=Path)
     args.add_argument('--hz', type=float, default=5.)
     args.add_argument('--feedback-encoding', choices=('driver', 'integer'), default='driver')
+    args.add_argument('--cuda-fusion', choices=('auto', 'stock', 'native112', 'native112_160'), default='auto')
     options = args.parse_args()
     if not 0 < options.hz <= 15:
         args.error('cadence must be in (0,15] Hz')
-    result = run(options.recorded_folder, options.hz, options.feedback_encoding)
+    result = run(options.recorded_folder, options.hz, options.feedback_encoding, options.cuda_fusion)
+    result['cuda_fusion_requested'] = options.cuda_fusion
     options.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k:v for k,v in result.items() if k != 'frames'}))

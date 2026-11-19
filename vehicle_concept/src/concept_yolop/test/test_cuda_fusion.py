@@ -8,7 +8,7 @@ from concept_yolop.inference import native_fusion_channels
 
 @pytest.mark.parametrize('version, capability, name, expected', [
     (8600, (8, 7), 'Orin', (112,)),
-    (8700, (8, 9), 'NVIDIA GeForce RTX 4070 Ti', (112, 160)),
+    (8700, (8, 9), 'NVIDIA GeForce RTX 4070 Ti', (112,)),
     (8700, (8, 9), 'another Ada GPU', ()),
     (8900, (8, 9), 'NVIDIA GeForce RTX 4070 Ti', ()),
 ])

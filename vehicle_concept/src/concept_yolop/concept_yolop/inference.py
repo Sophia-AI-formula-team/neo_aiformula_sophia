@@ -29,12 +29,12 @@ def native_fusion_channels(device, setting):
     if setting != 'auto':
         return (112,) if setting == 'native112' else (112, 160)
     backend = (torch.backends.cudnn.version(), torch.cuda.get_device_capability(device))
-    # Preserve the field-tested Orin setting. The additional 160-channel
-    # convolution was measured with the Foxy development image on Ada.
+    # Preserve the Orin setting and the lower-tail-latency option measured
+    # with the full driver at camera cadence on this specific workstation.
     if backend == (8600, (8, 7)):
         return (112,)
     if backend == (8700, (8, 9)) and torch.cuda.get_device_name(device) == 'NVIDIA GeForce RTX 4070 Ti':
-        return (112, 160)
+        return (112,)
     return ()
 
 

@@ -13,14 +13,14 @@
 | 新，第二次 | 17.81 / 47.79 | 184 | 90.90 / 144.73 / 198.46 | 25/25 |
 | 旧，第二次 | 62.12 / 91.16 | 2856 | 140.28 / 186.56 / 232.82 | 25/25 |
 
-ROS 参数 `cuda_fusion` 的默认值为 `auto`。cuDNN 8.6 的 Orin 保留此前在车上使用的 112→48 设置。cuDNN 8.7 的 RTX 4070 Ti 使用上述两个卷积。其他 GPU 和 CPU 保留原来的默认库设置。没有本轮 Jetson 测值。可通过 `stock`、`native112`、`native112_160` 明确选择 CUDA 测试设置。程序启动时会打印实际命中的通道；CPU 始终采用 CPU 后端。
+ROS 参数 `cuda_fusion` 的默认值为 `auto`。cuDNN 8.6 的 Orin 保留此前在车上使用的 112→48 设置。cuDNN 8.7 的 RTX 4070 Ti 在最终弯道对照后，默认只替换 112→48。本文前表归档两类卷积都替换的测值；该版本可显式设为 native112_160。每帧驱动的比较见[最终驾驶报告](../../../checks/edge1120b/README.md)。其他 GPU 和 CPU 保留原来的默认库设置。没有本轮 Jetson 测值。可通过 `stock`、`native112`、`native112_160` 明确选择 CUDA 测试设置。程序启动时会打印实际命中的通道；CPU 始终采用 CPU 后端。
 
 同一台新设备可用下列命令成对测量。Orin 的对照设为 `--before native112 --after native112_160`，与它现有车端路径比。若只验证视觉，可以省去场景与标定文件。ROS 墙钟测试的隔离与启动方式见 [Foxy 执行说明](../../../checks/unity1120/foxy/README.md)。
 
 ```sh
 python3 /opt/concept/src/concept_yolop/bench/cuda_fusion.py \
   --real /data/real_bag --frozen /opt/concept/src/concept_drive/test/data/moving-lap-start \
-  --weights /weights/B1.4.pth --before stock --after auto \
+  --weights /weights/B1.4.pth --before stock --after native112_160 \
   --scene /unity/straight01 --scene /unity/outer_edge01 --scene /unity/inner_edge01 --scene /unity/outer_hard01 \
   --calibration /opt/concept/unity/honda.json --output /evidence/fusion.json
 ```
