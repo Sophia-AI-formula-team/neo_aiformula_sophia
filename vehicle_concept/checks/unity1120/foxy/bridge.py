@@ -33,6 +33,7 @@ FRAME = 'unity_honda_left_optical'
 NS = 10 ** 9
 MAX_JPEG = 2 * 1024 * 1024
 TARGET = float(os.environ.get('CONCEPT_TARGET_MPS', '2'))
+TRACKING_CONTROLLER = os.environ.get('CONCEPT_TRACKING_CONTROLLER', 'pure_pursuit')
 EVIDENCE = Path(os.environ.get('CONCEPT_EVIDENCE', '/evidence'))
 TIMEOUT = 12.
 FRAME_KEYS = frozenset(('schema', 'kind', 'seq', 'simulation_time_s', 'encoding', 'width', 'height',
@@ -195,6 +196,11 @@ def serve(sim, driver, camera, conn):
     last_ack = None
     directory = EVIDENCE / driver.session
     directory.mkdir(parents=True)
+    active = driver.get_parameter('tracking_controller').value
+    if active != TRACKING_CONTROLLER:
+        raise RuntimeError('driver tracking_controller changed before simulation session')
+    (directory / 'session_config.json').write_text(json.dumps(dict(
+        tracking_controller=active, target_mps=TARGET, session=driver.session)), encoding='utf8')
     with conn.makefile('rb') as stream, (directory / 'frames.jsonl').open('w', buffering=1) as log:
         while True:
             header, jpeg = read_frame(stream, seq)
@@ -208,6 +214,7 @@ def serve(sim, driver, camera, conn):
             verify_applied(header, seq, last_ack)
             start = time.monotonic()
             decision, ack = sim.publish_frame(driver, camera, header, jpeg, initial_ns + sim_ns)
+            ack['tracking_controller'] = active
             ack['wall_ms'] = round((time.monotonic() - start) * 1000, 2)
             log.write(json.dumps(dict(input=header, reply=ack, decision=decision), separators=(',', ':'), allow_nan=False) + '\n')
             conn.sendall((json.dumps(ack, separators=(',', ':'), allow_nan=False) + '\n').encode('ascii'))
@@ -216,14 +223,19 @@ def serve(sim, driver, camera, conn):
 
 
 def main():
+    if TRACKING_CONTROLLER not in ('pure_pursuit', 'lya'):
+        raise ValueError('CONCEPT_TRACKING_CONTROLLER must be pure_pursuit or lya')
     args = ['--ros-args']
     for key, val in dict(use_sim_time='true', onboard_camera='true', target_speed_mps=str(float(TARGET)),
+                         tracking_controller=TRACKING_CONTROLLER,
                          image_topic=CAMERA, camera_info_topic=INFO, device='cuda',
                          weights=os.environ.get('CONCEPT_WEIGHTS', '/weights/B1.4.pth'),
                          calibration=str(CALIBRATION)).items():
         args += ['-p', key + ':=' + val]
     rclpy.init(args=args)
     driver = DriverNode()
+    if driver.get_parameter('tracking_controller').value != TRACKING_CONTROLLER:
+        raise RuntimeError('driver did not accept the requested tracking_controller')
     camera = CameraNode(lambda *f: driver.camera_frame(*f, timing_ms=camera.frame_timing_ms), driver.planning_callbacks)
     sim = SimIO()
     executor = MultiThreadedExecutor(num_threads=4)
@@ -244,7 +256,8 @@ def main():
             listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listener.bind(('0.0.0.0', 16826))
             listener.listen(1)
-            print('READY concept-unity/1 port 16826, B1.4 CUDA / Honda / ROS driver, target', TARGET, flush=True)
+            print('READY concept-unity/1 port 16826, B1.4 CUDA / Honda / ROS driver, target', TARGET,
+                  'tracking_controller', TRACKING_CONTROLLER, flush=True)
             while True:
                 conn, _ = listener.accept()
                 with conn:

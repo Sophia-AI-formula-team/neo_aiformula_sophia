@@ -10,6 +10,7 @@ services:
         BASE_IMAGE: ${CONCEPT_BASE_IMAGE:-vehicle-semantic:1120}
     environment:
       CONCEPT_TARGET_MPS: ${CONCEPT_TARGET_MPS:-2.0}
+      CONCEPT_TRACKING_CONTROLLER: ${CONCEPT_TRACKING_CONTROLLER:-pure_pursuit}
     volumes:
       - type: bind
         source: ${CONCEPT_WEIGHTS_FILE:?Set the absolute path to B1.4-road-aligned-research.pth}
