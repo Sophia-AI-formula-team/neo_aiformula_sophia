@@ -45,7 +45,7 @@ def test_field_turn_speed_cap_and_unrepresentable_request():
             assert np.all(last*sign >= 0)
             assert np.all(forward_steering(last, np.zeros(3), speed, last, .2) == 0.)
 
-def test_speed_drop_at_observed_bend_changes_both_wheels_on_the_checked_profile():
+def observed_bend_plan(extra_width=0.):
     # A short extract of the body-frame November simulated frame 28.
     from concept_candidates.curve_road617 import RoadAwareCurvePlanner
     from concept_candidates.rear_reference617 import RecoveryReference
@@ -55,20 +55,41 @@ def test_speed_drop_at_observed_bend_changes_both_wheels_on_the_checked_profile(
     left = [-2,-1.4,-1.4,-2.86,-2.85,-3.23,-3.4,-4.32,-4.55,-4.83,-4.96,-1.6]
     right = [1.5,1.4,1.4,1.73,-.81,3.21,-1.37,-2.06,-3.21,-4.14,2.66,2.25]
     road = np.column_stack((z, left, right, np.full(len(z),.06), np.full(len(z),.06)))
+    road[:, 2] += extra_width
     obs = RecoveryReference(road, np.empty((0,77)), 2.359, -.145, .2, np.zeros(len(z)), road[:,:4], -2.96)
     engine = RoadAwareCurvePlanner(dict(pace=2., uncertainty=1.))
     with motor_profile(True, (2., -.423905)):
         engine.step(obs)
-        audit = engine.last['audit']
-        short = [i for i,plan in enumerate(audit['schedule']) if plan == 'drive_0.2s_then_stop_and_wait']
-        assert short
-        i = short[0]
-        assert audit['retimed_profile_valid'][i] and audit['no_observation_brake_feasible'][i]
-        assert not audit['no_observation_pass_then_stop_feasible'][i]
-        engine.commit(i)
-        controls = engine.reserved['controls']
-        assert np.allclose(controls[0], audit['table'][i][:2], atol=1e-6, rtol=0)
-        assert np.all(controls[:4,0] > 1.5) and np.all(controls[4:,0] == 0.)
-        right,left = can_command(*controls[0],physical=True)
-        assert int(right-left) == 160
-        assert engine.last['contingency']['lower_m'] > 0.
+    return engine, engine.last['audit']
+
+
+def test_immediate_brake_alone_cannot_admit_a_powered_bend_candidate():
+    engine, audit = observed_bend_plan()
+    table = np.asarray(audit['table'])
+    short_only = ((table[:, 0] > 0) & np.asarray(audit['no_observation_brake_feasible'])
+                  & ~np.asarray(audit['no_observation_pass_then_stop_feasible'])
+                  & ~np.asarray(audit['nominal_feasible']))
+    assert short_only.any()
+    assert not table[short_only, 6].any()
+    assert table[audit['selected'], 0] == 0. and engine.command[0] == 0.
+
+
+def test_verified_two_second_alternative_retains_its_scored_path_and_controls():
+    from concept_candidates.curve_profile import evaluate_profile
+
+    engine, audit = observed_bend_plan(extra_width=1.6)
+    index = audit['schedule'].index('drive_2s_then_stop_and_wait')
+    assert audit['no_observation_pass_then_stop_feasible'][index] and audit['table'][index][6]
+    assert audit['retimed_profile_valid'][index] and not audit['nominal_feasible'][index]
+    engine.commit(index)
+    controls = engine.reserved['controls']
+    np.testing.assert_allclose(controls[0], audit['table'][index][:2], atol=1e-6, rtol=0)
+    np.testing.assert_array_equal(controls, engine.pending['profile_controls'][index])
+    assert np.all(controls[:40, 0] > 0.) and np.all(controls[40:, 0] == 0.)
+    assert engine.last['contingency']['lower_m'] > 0.
+    with motor_profile(True, (2., -.423905)):
+        checked = evaluate_profile(engine.current_observation, controls[None], audit['horizon'], 0.)
+    assert checked['valid'][0]
+    np.testing.assert_allclose(checked['paths'][0], audit['paths'][index], atol=5.1e-5, rtol=0)
+    np.testing.assert_allclose(checked['road_progress'][0] / audit['horizon'], audit['table'][index][8],
+                               atol=1e-6, rtol=0)
