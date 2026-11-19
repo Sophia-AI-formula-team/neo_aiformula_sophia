@@ -13,6 +13,8 @@
 
 ## 启动和操作
 
+使用本田投影或实车标定投影时，前进和倒车候选按车上 `motor_controller` 的直行换算预测左右轮指令。规划的零纵向释放动作在实车输出为两轴全零。手柄仍可原地转向。车身速度和制动的响应系数源自 Unity，实车低速起步阈值仍需实测。
+
 在 `/concept/decision` 的 JSON 中查看 `candidate_evaluation`。一次常规前进决策会显示 `mode=exact`、候选总数 `input_count` 和实际模拟数 `evaluated_count`。例如总数 75、实际模拟 55 表示有 20 个目标与速度均相同的重复请求共享了结果。所有 75 个编号仍参加原有的筛选和排序。没有执行前进搜索的决策会显示 0 次。
 
 在已经构建并 source 的 ROS 2 工作区运行。完整的相机、状态和指令门由整机启动入口管理。
@@ -33,9 +35,9 @@ ros2 service call /concept/drive/restart std_srvs/srv/Trigger '{}'
 - /concept/decision 为 std_msgs/String，载荷为 concept.decision.v1。stamp 是图像采集时间，emitted_stamp 是发布时刻，capture_age_s 含推理、调度与规划延迟，sensor_age_s 是图像与轮速的时间差，processing_ms 仅计驾驶节点处理时间。target_speed_mps 与 effective_speed_mps 分别表示用户设定值和本帧实际采用的规划上限。
 - selected_index 是最终候选；whitebox_index 是加神经网络分数之前的选择。每条 candidates 含 index、allowed、selectable、score、speed_mps、yaw_right_radps、clearance_m、path。allowed 表示该动作通过原白盒；selectable 表示当前控制阶段允许排序器或恢复逻辑选择该动作。受控恢复可独占某条已检查动作。没有候选时保留冻结驱动给出的控制和原因，两个索引可为空。
 - road_rows 每行为 [前距,最左横距,最右横距,左侧误差,右侧误差]。selected_path、每条 path、lines[].points、edges.left/right 使用 [前距,右距] 米。lines[].kind 区分实线、虚线和证据不足。地图原点是本次驾驶开始位置，map.pose 为 [前距,右距,右偏航角]。map.parts 按 ego、adjacent 和 ego_mask 分层；map.changed 每行为 [前格,右格,本车道次数,相邻车道次数,本车道路面掩码次数,相对时间]，每格 0.2 m。map_semantics.changed_markings 给出相同格坐标和线型。map.static、map.dynamic、map.now 是冻结的静态位置估计、动态观测范围和当前观察。objects 保留规划器数值矩阵，tracks 提供人能读的 id / position / velocity / error_m 等。
-- status 可能为 ok、shadow、invalid 或 late。shadow 时，判据、所选路线和候选控制可用于显示。图像超过 0.5 秒、时间异常、没有相应反馈或标定不匹配时，物理门收不到此帧的新控制。超过 0.5 秒的图像中断、更换相机/几何配置或规划计算中断后需要暂停并重启，以免沿用失效的历史。基于当前正向无符号轮速编码的反馈无法验证倒车方向。驱动保留倒车选择供显示，并抑制该反向输出。
+- status 可能为 ok、blocked、invalid 或 late。blocked 表示运行时条件拦截输出，仍显示规划结果。图像超过 0.5 秒、时间异常、没有相应反馈或标定不匹配时，物理门收不到此帧的新控制。超过 0.5 秒的图像中断、更换相机/几何配置或规划计算中断后需要暂停并重启，以免沿用失效的历史。经过验证的有符号 0x711 轮速允许实车发送倒车指令。旧版无方向反馈仍会触发倒车互锁。
 
-实车图片需要在视觉节点通过物理相机内参、安装与地面点的标定审核。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 进入 shadow。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
+车端可采用本田安装位姿、现场光心高度 0.55 m 和实时 ZED 左相机 CameraInfo.P 投影。驾驶节点接受该配置 `honda-v1.4.0-ground`，在图像和反馈时效满足条件时向 `/concept/auto_cmd` 发布规划指令。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 会触发输出互锁。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
 
 ## 同帧核验
 

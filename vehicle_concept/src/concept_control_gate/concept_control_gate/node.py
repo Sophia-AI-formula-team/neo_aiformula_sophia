@@ -15,7 +15,8 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, String
 from std_srvs.srv import SetBool, Trigger
 
-from .core import COMMAND_TIMEOUT, Gate, ZERO, ZERO_FRAME
+from .core import Gate, ZERO, ZERO_FRAME
+from .speed_setting import SpeedSetting
 
 CAN_OUT = '/aiformula_control/motor_controller/reference_signal'
 JOY = '/aiformula_control/joy_node/joy_l2_throttle'
@@ -30,7 +31,8 @@ def seconds(stamp):
 class GateNode(Node):
     def __init__(self):
         super().__init__('gate', namespace='/concept')
-        self.limit = self.declare_parameter('max_auto_speed_mps', 1.0).value
+        self.speed_setting = SpeedSetting(self, 'max_auto_speed_mps', 5.)
+        self.limit = self.speed_setting.initial
         if not self.valid_limit(self.limit):
             raise ValueError('max_auto_speed_mps must be in (0, 5]')
         self.add_on_set_parameters_callback(self.parameters)
@@ -68,10 +70,18 @@ class GateNode(Node):
 
     def parameters(self, params):
         for param in params:
+            if param.name == 'speed_settings_directory':
+                return SetParametersResult(successful=False, reason='Set speed_settings_directory at launch')
             if param.name == 'max_auto_speed_mps' and not self.valid_limit(param.value):
                 return SetParametersResult(successful=False, reason='expected (0, 5] m/s')
         for param in params:
-            if param.name == 'max_auto_speed_mps' and param.value != self.limit:
+            if param.name == 'max_auto_speed_mps':
+                try:
+                    self.speed_setting.save(param.value)
+                except (OSError, ValueError) as exc:
+                    return SetParametersResult(successful=False, reason=str(exc))
+                if param.value == self.limit:
+                    continue
                 self.limit = param.value
                 self.gate.pause(self.now(), 'speed_limit_changed')
                 self.stop()
@@ -221,7 +231,7 @@ class GateNode(Node):
             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
             t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
             manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
-            auto_fresh=not g.paused and time.monotonic()-g.auto_at <= COMMAND_TIMEOUT))))
+            auto_fresh=not g.paused and g.auto_is_fresh(self.now(), time.monotonic())))))
 
 
 def main(args=None):

@@ -5,18 +5,21 @@ from concept_feasibility import _motion
 from concept_feasibility.geometry import road_clearance
 from concept_feasibility.geometry61514 import RISK_LIMIT
 from concept_feasibility.path_risk import array_clearance
-from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals
+from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
 from .curve_progress import project, supported_increment
+from .field_controls import forward_steering
 
 DT = .05
-MOTOR = (np.asarray(MODEL['speed']), np.asarray(MODEL['yaw']), MODEL['stop']['delay'],
-         MODEL['stop']['deceleration'])
+def motor_parameters():
+    return (np.asarray(MODEL['speed']), forward_yaw_model(), MODEL['stop']['delay'],
+            MODEL['stop']['deceleration'])
 
 
 def warm_pace(pace):
     parameters=tuple(MODEL['yaw'])
+    physical=physical_motor_enabled()
     for speed in np.asarray([.25,.55,.8,1.])*pace:
-        response_intervals(float(np.float32(speed)),parameters)
+        response_intervals(float(speed if physical else np.float32(speed)), parameters, physical)
 
 
 def initial_state(obs, commands, stop_age, *, forward=False):
@@ -45,9 +48,12 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         desired=parameters['steer_gain']*np.maximum(speed,.5)*2*lateral/(dz*dz+dx*dx+.01)-parameters['yaw_damping']*yaw
         dt=obs.dt if k==0 else .2
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
-        last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
+        if physical_motor_enabled():
+            last=forward_steering(desired,commands,speed,last,dt)
+        else:
+            last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
         controls[t:t+4,:,0]=commands;controls[t:t+4,:,1]=last
-        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*MOTOR)[1:]
+        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*motor_parameters(),physical_motor_enabled())[1:]
     # The frozen simulator's nominal horizon uses this particular evaluation order.
     ticks=np.arange(steps*4)
     times=np.r_[0.,(ticks//4)*.2+(ticks%4+1)*DT]
@@ -136,7 +142,7 @@ def braking(obs,commands,first,stop_age,uncertainty,coast_seconds,details,contro
             controls[:cruise]=coast_sequence[:,:cruise].transpose(1,0,2)
             endpoint=coast_sequence[:,-1,1]
         controls[cruise:,:,1]=endpoint*.65**(((ticks[cruise:]-coast)//4+1)[:,None])
-    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*MOTOR)
+    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
     stopped=np.logical_or.accumulate((ticks[:,None]>last)&(abs(controls[:,:,0])<1e-8)&(states[1:,:,3]<.04),axis=0)
     all_stopped=np.flatnonzero(stopped.all(axis=1))
     nt=int(all_stopped[0])+1 if len(all_stopped) else len(controls)
@@ -157,7 +163,7 @@ def profile(obs,sequence,horizon,stop_age,uncertainty):
     controls[:original]=sequence.transpose(1,0,2)
     ticks=np.arange(nt-original)
     controls[original:,:,1]=sequence[:,-1,1]*.65**((ticks//4+1)[:,None])
-    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*MOTOR)
+    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
     geometric,road,known,obstacle=clearance(obs,state,np.arange(nt+1)*DT,uncertainty)
     progress,used,cost=progress_over(obs,state[:nominal+1])
     finite=np.isfinite(state[1:,:,3:5]).all(axis=(0,2))

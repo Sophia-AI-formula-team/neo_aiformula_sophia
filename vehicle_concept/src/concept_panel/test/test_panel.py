@@ -41,6 +41,17 @@ def test_offline_qt_render_flags_and_bgr_with_stride(monkeypatch):
     w.gate.put(dict(mode='auto',output_enabled=True,linear_mps=.87),10.,20.)
     w.refresh(10.,20.)
     assert w.connection.text()=='门控在线' and w.metrics['cmd'].text()=='0.87'
+    w.show()
+    w.gate.put(dict(mode='paused', output_enabled=True, paused=True, linear_mps=0.),10.,20.)
+    w.decision.put(dict(status='invalid', image_gap_reset_required=True),10.,20.)
+    w.refresh(10.,20.)
+    assert w.buttons['resume'].text()=='继续自动驾驶'
+    assert w.buttons['resume'].isEnabled() and w.gap_notice.isVisible()
+    assert '图像采集间隔' in w.gap_notice.text()
+    w.decision.put(dict(status='invalid', image_gap_reset_required=True,
+                        gap_reason='planning gap over 0.5 s after missing synchronized wheel/gyro feedback'),10.,20.)
+    w.refresh(10.,20.)
+    assert '轮速与陀螺反馈未配对' in w.gap_notice.text()
     w.refresh(10.,20.6)
     assert w.connection.text()=='门控失联' and w.metrics['cmd'].text()=='—'
     assert not w.buttons['enable'].isEnabled()
@@ -138,3 +149,81 @@ def test_controller_pause_timeout_never_restarts():
     controller.deadline=0
     controller.poll()
     assert controller.pending is None and '超时' in controller.window.pending_text
+
+
+def test_embedded_map_resets_on_restart_ack_and_discards_old_snapshot(monkeypatch, tmp_path):
+    import base64
+    from concurrent.futures import Future
+    import json
+    import zlib
+    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
+    from concept_panel.main import Controller, LapMapUpdates
+    from concept_panel.qt import QtGui, QtWidgets
+    from concept_panel.window import Window
+
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = Window()
+    window.show()
+    app.processEvents()
+    panel = window.lap_map
+    assert panel.isVisible() and panel.window() is window
+    empty = base64.b64encode(zlib.compress(b'')).decode('ascii')
+    snapshot = dict(schema='concept.lap-map.v1', session='old', stamp=1, cell_m=.1, distance_m=0.,
+                    road=empty, lines=empty, track=empty, pose=[0., 0., 0.],
+                    static=[], moving=[], openings=[])
+    panel.show_map(json.dumps(snapshot))
+    path = tmp_path / 'map.png'
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args: (str(path), 'PNG'))
+    panel.save_button.click()
+    assert QtGui.QImage(str(path)).width() >= 800
+
+    updates = LapMapUpdates.__new__(LapMapUpdates)
+    updates.panel = panel
+    old_response = Future()
+    old_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
+    updates.pending = old_response
+    updates.sent_at = 0.
+    new_response = Future()
+    updates.client = SimpleNamespace(service_is_ready=lambda: True, call_async=lambda _: new_response)
+    updates.request = object
+    controller = Controller.__new__(Controller)
+    controller.window, controller.lap_map = window, updates
+    for success in (False, True):
+        controller.pending = Action('restart')
+        controller.pending.completed(True)  # pause acknowledged
+        controller.future = Future()
+        controller.future.set_result(SimpleNamespace(success=success, message=''))
+        controller.poll()
+        assert panel.save_button.isEnabled() == (not success)
+    assert panel.canvas.raster is None and panel.canvas.data is None and panel.key is None
+    updates.refresh(.1)
+    assert panel.key is None and updates.pending is new_response
+    snapshot.update(session='new', stamp=2)
+    new_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
+    updates.refresh(.2)
+    assert panel.key == ('new', 2) and panel.save_button.isEnabled()
+    window.close()
+
+
+def test_speed_fields_follow_readbacks_without_discarding_edits(monkeypatch):
+    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
+    from concept_panel.qt import QtWidgets
+    from concept_panel.window import Window
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    w = Window()
+    spin = w.spins['target']
+    assert spin.value() == w.spins['limit'].value() == 4.
+    w.show_speed('target', 2.25)
+    assert spin.value() == 2.25
+    spin.setValue(2.75)
+    w.busy = True
+    w.show_speed('target', 2.25)
+    assert spin.value() == 2.75 and not spin.isEnabled()
+    w.confirmed_speeds['target'] = 2.75
+    w.busy = False
+    w.show_speed('target', 2.75)
+    w.show_speed('target', 3.)
+    assert spin.isEnabled() and spin.value() == 3.
+    assert w.readbacks['target'].text() == '当前 3.00'
+    w.close()
+    assert app

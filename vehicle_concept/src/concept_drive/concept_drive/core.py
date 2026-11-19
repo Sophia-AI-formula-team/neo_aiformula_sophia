@@ -60,7 +60,9 @@ class Drive:
         boxes = det['boxes'][(det['labels'] == 91) & (det['scores'] >= .5)].tolist()
         road, _, heading = self.observer.read(image, raw, lane, boxes, motion_speed, motion_yaw, dt)
         evidence = self.observer.last
-        groups = instances(det, image.shape, image)
+        field_ground = sensor.get('field_ground_projection', False)
+        measurements = []
+        groups = instances(det, image.shape, image, field_ground=field_ground, measurements=measurements)
         objects = self.tracker.update(groups, motion_speed, motion_yaw, dt,
                                       minimum_body_z=float(road[0, 0]) if len(road) else None, image=image)
         parts = lane_sections(evidence, raw, (FOCAL, CX, CY, HEIGHT))
@@ -100,6 +102,7 @@ class Drive:
                     candidates=candidates, feasible_count=sum(c['allowed'] for c in candidates),
                     reason=detail.get('reason', ''), recovery=detail.get('recovery', ''),
                     ranking_active=ranking is not None, road_rows=road.tolist(), heading=heading.tolist(),
+                    **({'obstacle_measurements': measurements} if field_ground else {}),
                     objects=objects.tolist(), tracks=self.tracker.last['tracks'], speed_estimate_mps=float(speed),
                     rejected=audit.get('rejected', {}), edges=edges['edges'], lines=semantic['lines'],
                     map=snapshot, map_semantics={k: semantic[k] for k in ('changed_markings','changed_gaps','changed_repairs')})

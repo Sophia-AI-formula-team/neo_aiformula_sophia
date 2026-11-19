@@ -7,19 +7,33 @@ cdef inline double sign(double v) nogil except? -1e300:
     return (v>0)-(v<0)
 
 @cython.cdivision(True)
-cdef inline int encoded(double v, double steer, double *common, double *ratio) nogil except -1:
-    cdef double w = -<double><float>steer
+cdef inline int encoded(double v, double steer, bint physical, double *common, double *ratio) nogil except -1:
+    cdef double w = -steer if physical else -<double><float>steer
     cdef double limit, gain, offset, bias, bounded, ros, right, left
-    v=<double><float>v
+    if not physical:
+        v=<double><float>v
     if w>=0:
         limit=1.53908994;gain=3.15496243;offset=3.36664054;bias=-.0621119
     else:
         limit=1.68283261;gain=2.91627673;offset=-3.22124235;bias=1.6954783
     bounded=max(-bias+1e-6,min(limit-bias-1e-6,w))
-    ros=offset-log(limit/(bounded+bias)-1)/gain
+    if physical:
+        ros=offset-(1./gain)*log(limit/(bounded+bias)-1)
+        if fabs(w)<=1e-9:
+            ros=0.
+            if fabs(v)<=1e-9:
+                v=0.
+    else:
+        ros=offset-log(limit/(bounded+bias)-1)/gain
     right=v/.127+.6/.254*ros;left=v/.127-.6/.254*ros
-    right=rint(sign(right)*(fabs(right)/.834+2.76)*(60/(2*3.141592653589793)*1.1))
-    left=rint(sign(left)*(fabs(left)/.844+2.81)*(60/(2*3.141592653589793)*1.1))
+    right=sign(right)*(fabs(right)/.834+2.76)
+    left=sign(left)*(fabs(left)/.844+2.81)
+    if physical:
+        right=rint(right*(60/(2*3.141592653589793))*1.1)
+        left=rint(left*(60/(2*3.141592653589793))*1.1)
+    else:
+        right=rint(right*(60/(2*3.141592653589793)*1.1))
+        left=rint(left*(60/(2*3.141592653589793)*1.1))
     common[0]=(right+left)*.5
     ratio[0]=(right-left)/common[0] if fabs(common[0])>1 else 0.
     return 0
@@ -36,7 +50,7 @@ cdef inline double response(double common,double ratio,const double[:] p) nogil 
 @cython.wraparound(False)
 @cython.cdivision(True)
 def advance(const double[:] speed,const double[:] yaw,const double[:] drive,const double[:] steer,
-            double dt,const double[:] age,const double[:] pv,const double[:] pw,double delay,double braking):
+            double dt,const double[:] age,const double[:] pv,const double[:] pw,double delay,double braking,bint physical=False):
     cdef Py_ssize_t n=drive.shape[0],i
     if speed.shape[0]!=n or yaw.shape[0]!=n or steer.shape[0]!=n or age.shape[0]!=n or pv.shape[0]!=6 or pw.shape[0]!=6:
         raise ValueError("invalid motor trajectory batch")
@@ -46,8 +60,8 @@ def advance(const double[:] speed,const double[:] yaw,const double[:] drive,cons
     with nogil:
         for i in range(n):
             if drive[i]>0:
-                encoded(drive[i],steer[i],&common,&ratio)
-                vg=max(0.,response(common,ratio,pv));wg=response(common,ratio,pw)
+                encoded(drive[i],steer[i],physical,&common,&ratio)
+                vg=max(0.,response(common,ratio,pv));wg=steer[i] if physical else response(common,ratio,pw)
                 result[0,i]=vg+(speed[i]-vg)*decay_v
                 result[1,i]=wg+(yaw[i]-wg)*decay_w
                 result[2,i]=0.
@@ -112,7 +126,7 @@ def closest(const double[:] commands,const double[:] predicted,const long long[:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def integrate(const double[:,::1] initial, const double[:,:,:] controls, double dt,
-              const double[:] pv, const double[:] pw, double delay, double braking):
+              const double[:] pv, const double[:] pw, double delay, double braking,bint physical=False):
     """Integrate the full checked action sequence without crossing the Python boundary per 50 ms step.
 
     State columns are forward, right, heading, speed, gyro, distance, turn and brake age.
@@ -130,8 +144,8 @@ def integrate(const double[:,::1] initial, const double[:,:,:] controls, double 
             for i in range(n):
                 speed=out[t,i,3];yaw=out[t,i,4];age=out[t,i,7]
                 if controls[t,i,0]>0:
-                    encoded(controls[t,i,0],controls[t,i,1],&common,&ratio)
-                    vg=max(0.,response(common,ratio,pv));wg=response(common,ratio,pw)
+                    encoded(controls[t,i,0],controls[t,i,1],physical,&common,&ratio)
+                    vg=max(0.,response(common,ratio,pv));wg=controls[t,i,1] if physical else response(common,ratio,pw)
                     velocity=vg+(speed-vg)*decay_v;angular=wg+(yaw-wg)*decay_w
                     elapsed=0.
                 else:

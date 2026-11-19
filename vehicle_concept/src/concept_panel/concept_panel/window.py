@@ -1,16 +1,20 @@
 from datetime import datetime
 import math
 
-from .lap_map import LapMapDialog
+from .lap_map import LapMapPanel
 
 from .model import Feed, Journal
 from .qt import QtCore, QtGui, QtWidgets as W
 
 MODE = {'disabled':'输出禁用', 'paused':'自动已暂停', 'manual':'手柄接管', 'auto':'自动驾驶', 'estop':'软件急停'}
-STATUS = {'ok':'有效', 'invalid':'无效', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
+STATUS = {'ok':'有效', 'invalid':'无效', 'blocked':'输出受阻', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
 REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','output_disabled':'电机输出已禁用',
          'operator_pause':'操作员已暂停','manual_takeover':'手柄已接管','manual_released':'手柄已松开，等待继续',
          'joy_timeout':'手柄数据超时','graph_conflict':'控制链存在冲突','motor_timeout':'电机转换输出超时',
+         'waiting_fresh_auto':'当前指令已到期，零输出等待新帧',
+         'image gap over 0.5 s; pause the gate and restart the driver':'图像采集间隔超过 0.5 秒',
+         'planning gap over 0.5 s after missing synchronized wheel/gyro feedback':'图像已到达，轮速与陀螺反馈未配对，规划中断超过 0.5 秒',
+         'planning gap over 0.5 s between completed frames':'图像已到达，两次完成规划的间隔超过 0.5 秒',
          'vehicle_state_timeout':'车辆状态超时','speed_limit_changed':'速度上限已更改，等待继续',
          'auto_timeout':'自动指令超时','auto_speed_limit':'自动指令超过速度上限',
          'waiting_new_auto':'等待恢复后的新指令','auto_command_received':'已收到新的自动指令','feasible':'已选择可行轨迹',
@@ -22,6 +26,7 @@ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','outp
          'recovery_unknown_road':'后方路界未知',
          'recovery_no_checked_motion':'前后暂时都没有通过检查的方案',
          'camera geometry has no validated driving profile':'相机安装标定尚未通过',
+         'Honda mount projection active; ground error unmeasured':'本田安装参数投影已启用 · 地面误差未实测',
          'reverse wheel-feedback sign unverified':'轮速反馈尚未确认能识别倒车方向',
          'decision exceeded 0.5 s from acquisition':'拍摄到出指令超过 0.5 秒'}
 
@@ -189,7 +194,9 @@ class Window(W.QWidget):
 
         camera, cam = card()
         cam.setContentsMargins(14, 9, 14, 9)
-        columns.addWidget(camera, 7)
+        columns.addWidget(camera, 5)
+        self.lap_map = LapMapPanel(self)
+        columns.addWidget(self.lap_map, 4)
         columns.addWidget(self.decision_surface, 3)
         bar = W.QHBoxLayout()
         bar.addWidget(label('摄像头与规划叠图','heading'))
@@ -248,12 +255,6 @@ class Window(W.QWidget):
             toolbar.addWidget(button)
         toolbar.addStretch()
 
-        self.lap_map = LapMapDialog(self)
-        self.map_button = W.QPushButton('累计赛道地图…')
-        self.map_button.setEnabled(not self.offline)
-        self.map_button.clicked.connect(self.lap_map.show)
-        toolbar.addWidget(self.map_button)
-
         self.settings_dialog = W.QDialog(self)
         self.settings_dialog.setWindowTitle('Concept · 速度设置')
         self.settings_dialog.setMinimumWidth(420)
@@ -266,6 +267,9 @@ class Window(W.QWidget):
         toolbar.addWidget(settings_button)
         self.spins={}
         self.readbacks={}
+        self.edited_speeds = set()
+        self.confirmed_speeds = {}
+        self.parameter_reads = {}
         for key,text,maximum in [('target','目标速度',6.),('limit','自动驾驶限速',5.)]:
             line=W.QHBoxLayout()
             field=label(text)
@@ -275,10 +279,12 @@ class Window(W.QWidget):
             spin.setRange(.05,maximum)
             spin.setSingleStep(.1)
             spin.setSuffix(' m/s')
-            spin.setValue(1.)
+            spin.setValue(4.)
+            spin.valueChanged.connect(lambda value, key=key: self.edited_speeds.add(key))
+            spin.lineEdit().textEdited.connect(lambda text, key=key: self.edited_speeds.add(key))
             line.addWidget(spin)
             self.spins[key]=spin
-            btn=W.QPushButton('应用')
+            btn=W.QPushButton('保存')
             btn.clicked.connect(lambda checked=False,key=key:self.request(key))
             self.buttons[key]=btn
             line.addWidget(btn)
@@ -293,9 +299,16 @@ class Window(W.QWidget):
         self.spins['limit'].setToolTip(limit_tip)
         self.buttons['limit'].setToolTip(limit_tip)
         settings.addWidget(label('修改限速后，需手动继续自动驾驶。','muted'))
+        self.speed_feedback = label('', 'muted')
+        self.speed_feedback.setWordWrap(True)
+        settings.addWidget(self.speed_feedback)
         self.action_feedback=label('','muted')
         self.action_feedback.setWordWrap(True)
         stack.addWidget(self.action_feedback)
+        self.gap_notice = label('', 'muted')
+        self.gap_notice.setWordWrap(True)
+        self.gap_notice.hide()
+        stack.addWidget(self.gap_notice)
 
         metrics=W.QHBoxLayout()
         self.metrics={}
@@ -329,6 +342,20 @@ class Window(W.QWidget):
     def request(self, key):
         if self.dispatch is not None:
             self.dispatch(key,self.spins[key].value() if key in self.spins else None)
+
+    def show_speed(self, key, value):
+        self.readbacks[key].setText('当前 '+number(value, 2))
+        spin = self.spins[key]
+        spin.setEnabled(not self.busy and not self.offline)
+        if value is None:
+            return
+        if self.confirmed_speeds.get(key) == value:
+            self.confirmed_speeds.pop(key)
+            self.edited_speeds.discard(key)
+        if key not in self.edited_speeds:
+            previous = spin.blockSignals(True)
+            spin.setValue(value)
+            spin.blockSignals(previous)
 
     def request_bag(self):
         if self.bag_action and not self.offline:
@@ -374,6 +401,8 @@ class Window(W.QWidget):
         description = ''
         if age is not None and age > 1.:
             action, detail = '决策已过期', '超过 1 秒没有收到新鲜决策'
+        elif status == 'blocked':
+            action = '控制输出受阻'
         elif status in ('invalid', 'late'):
             action = '决策无效' if status == 'invalid' else '决策超时'
         elif status in ('ok', 'shadow') and speed is not None and yaw is not None:
@@ -390,6 +419,13 @@ class Window(W.QWidget):
             description = f'请求速度 {speed:.2f} m/s   ·   {steer}'
             if decision.get('selected_index') is not None:
                 description += f"   ·   候选 #{decision['selected_index']}"
+            elif decision.get('selected_path'):
+                description += '   ·   恢复路线'
+            elif 'selected_path' in decision:
+                description += '   ·   当前无选中路径'
+            planner_reason = decision.get('planner_reason')
+            if planner_reason and planner_reason != decision.get('reason'):
+                detail += ' · ' + reason(planner_reason)
         else:
             action = '等待决策'
         self.action.setText('规划 · ' + action)
@@ -434,12 +470,22 @@ class Window(W.QWidget):
         self.metrics['cmd'].setText(number(g.get('linear_mps')))
         self.metrics['legal'].setText(f"{d['feasible_count']} / {len(d.get('candidates',[]))}" if 'feasible_count' in d else '—')
         self.metrics['lag'].setText(number(da*1000,0) if da is not None else '—')
-        self.readbacks['target'].setText('当前 '+number(d.get('target_speed_mps'),1))
-        self.readbacks['limit'].setText('当前 '+number(g.get('max_auto_speed_mps'),1))
+        for key, feed, value in (('target', self.decision, d.get('target_speed_mps')),
+                                 ('limit', self.gate, g.get('max_auto_speed_mps'))):
+            if key in self.parameter_reads:
+                receipt, actual = self.parameter_reads[key]
+                if steady - receipt <= 2. and (value is None or receipt >= feed.received):
+                    value = actual
+            self.show_speed(key, value)
         effective = d.get('effective_speed_mps') if live else None
         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
                           if effective is not None else '规划按目标和限速中较低的值计算。')
         self.action_feedback.setText(self.pending_text)
+        self.speed_feedback.setText(self.pending_text)
+        if self.image_gap():
+            gap = self.decision.value.get('gap_reason') or 'image gap over 0.5 s; pause the gate and restart the driver'
+            self.gap_notice.setText(reason(gap) + '。点继续自动驾驶会先清空累计地图并重启规划。')
+        self.gap_notice.setVisible(self.image_gap())
         for key,button in self.buttons.items():
             ok=live and not self.busy and not self.offline
             if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
@@ -447,3 +493,6 @@ class Window(W.QWidget):
             if key=='disable': ok=not self.offline
             if key=='pause': ok=not self.offline
             button.setEnabled(bool(ok))
+
+    def image_gap(self):
+        return self.decision.value.get('image_gap_reset_required') is True

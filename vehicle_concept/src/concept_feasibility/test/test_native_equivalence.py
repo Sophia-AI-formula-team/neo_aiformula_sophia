@@ -6,7 +6,13 @@ from concept_feasibility.geometry import road_clearance
 from concept_road.onboard625 import tread_clearance
 
 
-def test_native_integer_steering_search_matches_all_representatives_and_endpoints(monkeypatch):
+@pytest.mark.parametrize('physical', [False, True])
+def test_native_integer_steering_search_matches_all_representatives_and_endpoints(monkeypatch, physical):
+    with response61515.motor_profile(physical):
+        check_integer_steering_search(monkeypatch)
+
+
+def check_integer_steering_search(monkeypatch):
     module = pytest.importorskip('concept_feasibility._motion')
     rng = np.random.default_rng(626)
     for pace in (.2,1.,2.4,3.4,5.99):
@@ -22,6 +28,39 @@ def test_native_integer_steering_search_matches_all_representatives_and_endpoint
         expected = response61515.inverse_yaw(desired,speed,lower,upper,current)
         monkeypatch.setattr(response61515, '_motion', module)
         np.testing.assert_array_equal(response61515.inverse_yaw(desired,speed,lower,upper,current),expected)
+
+
+def test_field_motor_exact_straight_and_zero_drive_release():
+    speed = np.array([-.2, .2, -.2, .2, 0., 0.])
+    steer = np.array([0., 0., 1e-9, -1e-9, .55, -.17])
+    right, left = response61515.can_command(speed, steer, physical=True)
+    for wheel in (right, left):
+        np.testing.assert_array_equal(wheel, [-49, 49, -49, 49, 0, 0])
+    legacy = response61515.can_command(speed, steer)
+    assert legacy[0][0] != right[0] and legacy[1][0] != left[0]
+
+
+def test_field_native_rollouts_match_reference_at_the_steering_discontinuity(monkeypatch):
+    module = pytest.importorskip('concept_feasibility._motion')
+    speed = np.array([1., .8, .2, .2, .2, .2])
+    steer = np.array([0., 1e-9, -1e-9, 1.1e-9, -1.1e-9, .17])
+    stopped = np.zeros_like(speed)
+    model = response61515.MODEL
+
+    with response61515.motor_profile(True):
+        monkeypatch.setattr(response61515, '_motion', None)
+        expected = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
+        monkeypatch.setattr(response61515, '_motion', module)
+        calculated = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
+        np.testing.assert_allclose(calculated, expected, rtol=0, atol=1e-12)
+        controls = np.stack((speed,steer), axis=-1)[None]
+        state = module.integrate(np.zeros((len(speed),8)), controls, .05,
+                                 np.array(model['speed']), response61515.forward_yaw_model(),
+                                 model['stop']['delay'], model['stop']['deceleration'],True)
+        np.testing.assert_allclose(state[1,:,3:5].T, expected[:2], rtol=0, atol=1e-12)
+        np.testing.assert_array_equal(
+            response61515.inverse_yaw(stopped,speed,0.,0.), stopped)
+    assert not response61515.physical_motor_enabled()
 
 
 def test_compiled_tyre_contacts_include_exact_road_end_and_inner_paint():

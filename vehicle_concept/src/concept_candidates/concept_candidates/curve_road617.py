@@ -9,7 +9,8 @@ except ImportError:
 
 from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
 
-from concept_feasibility.response61515 import advance, inverse_yaw
+from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
+from .field_controls import forward_ceiling, forward_steering
 
 from concept_candidates.candidate_merge import distinct_requests
 from concept_candidates.curve_progress import increment
@@ -120,7 +121,9 @@ class RoadAwareCurvePlanner:
         targets = self.target_points(obs, look)
         if targets is None:
             return self.no_observation()
-        speeds = np.array([0., .25, .55, .8, 1.])*p['pace']
+        physical = physical_motor_enabled()
+        ceiling = forward_ceiling(obs.speed, obs.dt, p['pace']) if physical else p['pace']
+        speeds = np.array([0., .25, .55, .8, 1.]) * ceiling
         commands = np.tile(speeds, len(targets))
         targets = np.repeat(targets, len(speeds))
         # The whole batch shares the same vehicle state, observations, parameters
@@ -144,7 +147,7 @@ class RoadAwareCurvePlanner:
         heading_integral = np.zeros(count)
         reference_steps = np.zeros(count,int)
         camera_belief = CameraBelief(obs.objects, count)
-        previous = self.command.copy()
+        previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
         last_yaw = np.full(count, previous[1])
         zero_age = np.where(commands == 0, self.stop_age, 0.)
         horizon = float(np.clip((look+2.)/max(obs.speed, 1.2), 2., 5.))
@@ -174,10 +177,13 @@ class RoadAwareCurvePlanner:
                 lateral = dx*np.cos(heading)-dz*np.sin(heading)
                 desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
                 command_dt = obs.dt if step == 0 else interval
-                command_yaw = inverse_yaw(desired, commands,
-                    lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
-                    upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
-                    current_yaw=yaw,dt=command_dt)
+                if physical:
+                    command_yaw = forward_steering(desired, commands, speed, last_yaw, command_dt)
+                else:
+                    command_yaw = inverse_yaw(desired, commands,
+                        lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
+                        upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
+                        current_yaw=yaw,dt=command_dt)
                 last_yaw = command_yaw
                 if first is None:
                     first = command_yaw.copy()
@@ -345,6 +351,13 @@ class RoadAwareCurvePlanner:
             self.reserved = None
             return False
         tail = reserve['controls'][offset:]
+        if physical_motor_enabled() and tail[0,0] > 0.:
+            drive, steer = tail[0]
+            previous = physical_applied_command()[1]
+            if (drive > forward_ceiling(obs.speed, obs.dt, self.p['pace']) + 1e-9 or
+                    abs(steer-float(forward_steering(steer, drive, obs.speed, previous, obs.dt))) > 1e-8):
+                self.reserved = None
+                return False
         if reserve['mode']=='drive_then_stop_profile':
             checked=evaluate_profile(obs,tail[None,:,:],len(tail)*.05,self.stop_age,self.p['uncertainty'])
             valid=checked['valid'];lower=np.minimum(checked['road_lower'],checked['obstacle_lower'])

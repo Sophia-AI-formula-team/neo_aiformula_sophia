@@ -20,7 +20,7 @@ from .geometry import ObservedMap, body_point, memory_to_body, pixel
 FRAME = 'base_footprint'
 COLORS = {'road': (.20,.43,.53,.65), 'paint': (1.,.54,.12,1.),
           'chosen': (.97,.29,.63,1.), 'allowed': (.27,.76,.64,.32),
-          'blocked': (.52,.56,.59,.14), 'cone': (1.,.45,.09,1.),
+          'blocked': (.52,.56,.59,.14), 'cone': (1.,.45,.09,1.), 'remembered': (.55,.58,.62,.55),
           'footprint': (.76,.82,.82,1.), 'ego': (.14,.49,.68,.75),
           'adjacent': (.19,.60,.43,.60)}
 
@@ -67,6 +67,26 @@ def draw_candidates(image, decision):
             if paths[allowed]:
                 cv2.polylines(layer, paths[allowed], False, color, 1, cv2.LINE_AA)
         cv2.addWeighted(layer, .65, image, .35, 0, dst=image)
+
+
+def draw_near_path(image, path):
+    """Body-frame plan at a fixed scale, including the camera's near blind area."""
+    tile = image[6:136, 6:136]
+    tile[:] = (36, 40, 43)
+    origin = (65, 72)
+    scale = 45  # pixels per metre; forward is up, right is right.
+    cv2.line(tile, (origin[0], 18), (origin[0], 127), (94, 94, 94), 1)
+    cv2.line(tile, (4, origin[1]), (126, origin[1]), (94, 94, 94), 1)
+    cv2.line(tile, (7, 122), (7 + scale, 122), (200, 200, 200), 1)
+    cv2.putText(tile, '1m', (55, 126), cv2.FONT_HERSHEY_SIMPLEX, .34, (225, 225, 225), 1, cv2.LINE_AA)
+    cv2.drawMarker(tile, origin, (255, 255, 255), cv2.MARKER_CROSS, 9, 2)
+    if path:
+        points = np.asarray([(origin[0] + scale * p[1], origin[1] - scale * p[0]) for p in path])
+        points = np.rint(points).astype(np.int32)
+        cv2.polylines(tile, [points], False, (170, 72, 250), 3, cv2.LINE_AA)
+        cv2.circle(tile, tuple(points[-1]), 3, (170, 72, 250), -1, cv2.LINE_AA)
+    cv2.putText(tile, 'PLAN' if path else 'NO PATH', (6, 14), cv2.FONT_HERSHEY_SIMPLEX,
+                .42, (240, 240, 240), 1, cv2.LINE_AA)
 
 
 class Scene:
@@ -127,7 +147,11 @@ class Visualization(Node):
             for points in (d.get('edges') or {}).values():
                 draw_path(image,points,(37,157,248),2)
             draw_candidates(image, d)
-            draw_path(image,d.get('selected_path',[]),(170,72,250),4)
+            path = d.get('selected_path', [])
+            draw_path(image, path, (43, 30, 55), 7)
+            draw_path(image, path, (170, 72, 250), 4)
+            if d.get('status') in ('ok', 'shadow', 'late'):
+                draw_near_path(image, path)
         out=self.bridge.cv2_to_imgmsg(np.ascontiguousarray(image),'bgr8')
         out.header=msg.header
         self.view.publish(out)
@@ -194,12 +218,16 @@ class Visualization(Node):
                 s.add('feasible' if item['allowed'] else 'excluded',Marker.LINE_STRIP,cv(pts),
                       'allowed' if item['allowed'] else 'blocked',.018)
         s.add('selected',Marker.LINE_STRIP,cv(d.get('selected_path',[])),'chosen',.105,z=.12)
-        for obj in d.get('objects',[]):
+        tracks = d.get('tracks', [])
+        for index, obj in enumerate(d.get('objects', [])):
             if len(obj)<2:continue
+            track = tracks[index] if index < len(tracks) else {}
+            remembered = track.get('source') == 'remembered'
+            color = 'remembered' if remembered else 'cone'
             x,y=body_point(obj[0],obj[1])
-            s.add('obstacle',Marker.SPHERE_LIST,[(x,y)],'cone',.36,z=.18)
+            s.add('predicted_obstacle' if remembered else 'obstacle',Marker.SPHERE_LIST,[(x,y)],color,.36,z=.18)
             if len(obj)>=4 and math.hypot(obj[2],obj[3])>.05:
-                s.add('motion_1s',Marker.LINE_STRIP,[(x,y),(x+obj[2],y-obj[3])],'cone',.075,z=.18)
+                s.add('motion_1s',Marker.LINE_STRIP,[(x,y),(x+obj[2],y-obj[3])],color,.075,z=.18)
         self.local.publish(MarkerArray(markers=s.markers))
 
 

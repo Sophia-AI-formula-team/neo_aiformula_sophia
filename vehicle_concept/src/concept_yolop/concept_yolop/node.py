@@ -10,7 +10,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from std_msgs.msg import String
 
-from .geometry import CALIBRATED, UNVERIFIED, CalibrationReceipt
+from .geometry import HONDA, UNVERIFIED, load_projection
 from .frame_codec import encode_frame
 from .inference import Predictor
 from .weights import default_path
@@ -18,11 +18,14 @@ from .weights import default_path
 CAMERA = '/aiformula_sensing/zed_node/left_image/undistorted'
 FRAME = '/concept/perception/frame'
 OVERLAY = '/concept/perception/overlay'
+ROAD_BLEND = (.57 * np.arange(256)[:, None, None] + .43 * np.array([218, 132, 42])).astype(np.uint8)
 
 
 def draw_overlay(image, road, lane, det):
     out = image.copy()
-    out[road] = .57 * out[road] + .43 * np.array([218, 132, 42])
+    # Every uint8 channel has only 256 possible blends. Keep the original
+    # truncation while avoiding several float64 arrays on each camera frame.
+    cv2.copyTo(cv2.LUT(image, ROAD_BLEND), road.view(np.uint8), out)
     out[lane] = (30, 143, 255)
     for box, label, score in zip(det['boxes'], det['labels'], det['scores']):
         if label == 91 and score >= .5:
@@ -34,8 +37,9 @@ def draw_overlay(image, road, lane, det):
 
 
 class CameraNode(Node):
-    def __init__(self):
+    def __init__(self, frame_consumer=None, image_group=None):
         super().__init__('concept_yolop')
+        self.frame_consumer = frame_consumer
         for name, default in [('weights', str(default_path())), ('device', 'cuda'),
                               ('camera_info_topic', '/aiformula_sensing/zed_node/left/camera_info'),
                               ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
@@ -57,27 +61,47 @@ class CameraNode(Node):
         self.info = None
         path = self.get_parameter('calibration').value
         if path:
-            self.calibration = CalibrationReceipt(path)
+            self.calibration = load_projection(path)
             self.info_subscription = self.create_subscription(
-                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos)
-        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos)
+                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos, callback_group=image_group)
+        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos, callback_group=image_group)
 
     def on_info(self, msg):
         self.info = msg
 
     def on_image(self, msg):
         try:
+            received = self.get_clock().now().nanoseconds
+            start = time.monotonic_ns()
             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-            verified = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
-            if verified:
+            matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+            if self.calibration and self.calibration.profile == HONDA and not matched:
+                if time.monotonic() - self.last_error_at >= 5.:
+                    self.get_logger().warning('Waiting for matching ZED CameraInfo: topic=%s image=%s info=%s'
+                                              % (self.images.topic_name, msg.header.frame_id,
+                                                 self.info.header.frame_id if self.info else 'missing'))
+                    self.last_error_at = time.monotonic()
+                return
+            if matched:
                 bgr = self.calibration.rectify(bgr)
+            prepared = time.monotonic_ns()
             bgr, road, lane, det = self.predictor.predict(bgr)
-            if verified:
+            inferred = time.monotonic_ns()
+            if matched:
                 road, lane, det = self.calibration.restrict_predictions(road, lane, det)
             stamp = msg.header.stamp
-            wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
-                                CALIBRATED if verified else UNVERIFIED)
-            self.frames.publish(String(data=wire))
+            profile = self.calibration.profile if matched else UNVERIFIED
+            if self.frame_consumer is not None:
+                self.frame_timing_ms = {
+                    'capture_to_image_callback': (received - stamp.sec * 10**9 - stamp.nanosec) / 1e6,
+                    'decode_and_projection': (prepared - start) / 1e6,
+                    'inference': (inferred - prepared) / 1e6,
+                    'restrict_predictions': (time.monotonic_ns() - inferred) / 1e6,
+                }
+                self.frame_consumer(stamp, msg.header.frame_id, profile, bgr, road, lane, det)
+            if self.frame_consumer is None or self.frames.get_subscription_count():
+                wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det, profile)
+                self.frames.publish(String(data=wire))
             display = self.overlay.get_subscription_count()
             record = self.compressed_overlay.get_subscription_count()
             if display or record:

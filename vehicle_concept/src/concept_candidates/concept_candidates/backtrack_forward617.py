@@ -1,6 +1,7 @@
 """Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/backtrack_forward617.py. """
 
 import numpy as np
+from concept_feasibility.response61515 import physical_motor_enabled
 
 from concept_road.compare61513 import Guided
 
@@ -13,34 +14,52 @@ from concept_feasibility.reverse_model617 import step as advance_reverse
 from concept_feasibility.response61515 import MODEL
 
 def checked_retreat(obs,reverse_seconds,stop_age,horizon,previous_yaw=0.,reverse_steer=0.):
-    z=x=angle=travel=turn=0.;v=obs.speed;w=obs.yaw;age=stop_age
-    controls=[];paths=[];states=[tuple(np.array([q]) if k!=3 else q for k,q in enumerate([0.,0.,0.,0.,0.,0.]))]
-    initial_gap,initial_lower,initial_known=road_clearance(obs.road,np.array([0.]),np.array([0.]),np.array([0.]),1.)
-    lower=float(initial_lower[0]);geometric=float(initial_gap[0]);known=bool(initial_known[0]);max_speed=abs(v)
-    steps=int(np.ceil(max(horizon,reverse_seconds+.5)/.05))
+    steps = int(np.ceil(max(horizon, reverse_seconds + .5) / .05))
+    controls = np.empty((steps, 2))
+    # Keep the scalar frozen dynamics and every 50 ms pose. The footprint
+    # kernel is pointwise and can check the full history in one call.
+    history = np.zeros((steps + 1, 5))
+    z = x = angle = travel = turn = 0.
+    v, w, age = obs.speed, obs.yaw, stop_age
+    max_speed = abs(v)
+    release_from = reverse_steer if reverse_seconds > 0 else previous_yaw
+    release_tick = int(round(reverse_seconds / .05))
     for i in range(steps):
-        q=-.2 if (i+.5)*.05<reverse_seconds else 0.
-        release_from=reverse_steer if reverse_seconds>0 else previous_yaw
-        release_step=max(0,i-int(round(reverse_seconds/.05)))
-        steer=reverse_steer if q<0 else np.sign(release_from)*max(0.,abs(release_from)-1.8*(obs.dt+(release_step//4)*.2))
-        controls.append([q,float(steer)]);ov,ow=v,w
-        v,w,age=[float(a) for a in advance_reverse(v,w,q,steer,.05,age)]
-        mid=angle+.25*(ow+w)*.05
-        z+=(ov+v)*.5*np.cos(mid)*.05;x+=(ov+v)*.5*np.sin(mid)*.05
-        angle+=(ow+w)*.5*.05;travel+=(abs(ov)+abs(v))*.5*.05;turn+=(abs(ow)+abs(w))*.5*.05
-        rg,rl,k=road_clearance(obs.road,np.array([z]),np.array([x]),np.array([angle]),1.)
-        lower=min(lower,float(rl[0]-.04*travel-.08*turn*1.16));geometric=min(geometric,float(rg[0]));known &= bool(k[0])
-        max_speed=max(max_speed,abs(v));states.append(tuple(np.array([a]) if j!=3 else a for j,a in enumerate([z,x,angle,(i+1)*.05,travel,turn])))
-        if (i+1)%4==0:paths.append([z,x])
-    gap,obstacle=path_obstacle_clearance(obs.objects,states)
+        q = -.2 if (i + .5) * .05 < reverse_seconds else 0.
+        release_step = max(0, i - release_tick)
+        steer = reverse_steer if q < 0 else np.sign(release_from) * max(
+            0., abs(release_from) - 1.8 * (obs.dt + (release_step // 4) * .2))
+        controls[i] = q, steer
+        ov, ow = v, w
+        v, w, age = map(float, advance_reverse(v, w, q, steer, .05, age))
+        mid = angle + .25 * (ow + w) * .05
+        z += (ov + v) * .5 * np.cos(mid) * .05
+        x += (ov + v) * .5 * np.sin(mid) * .05
+        angle += (ow + w) * .5 * .05
+        travel += (abs(ov) + abs(v)) * .5 * .05
+        turn += (abs(ow) + abs(w)) * .5 * .05
+        history[i + 1] = z, x, angle, travel, turn
+        max_speed = max(max_speed, abs(v))
+
+    depth, lateral, heading, distance, rotation = history.T
+    road_gap, road_lower, supported = road_clearance(obs.road, depth, lateral, heading, 1.)
+    lower = float((road_lower - .04 * distance - .08 * rotation * 1.16).min())
+    known = bool(supported.all())
+    obstacle_gap = obstacle_lower = 100.
+    if len(obs.objects):
+        times = np.arange(steps + 1) * .05
+        states = list(zip(depth[:, None], lateral[:, None], heading[:, None], times,
+                          distance[:, None], rotation[:, None]))
+        gaps, margins = path_obstacle_clearance(obs.objects, states)
+        obstacle_gap, obstacle_lower = float(gaps[0]), float(margins[0])
     # Inferred startup road may remain populated after historical rear cells
     # disappear. It can never authorize another powered reverse interval.
-    observed_rear=(reverse_seconds==0 or getattr(obs,'rear_observed_limit',None) is not None)
-    valid=lower>=0 and obstacle[0]>0 and known and observed_rear and abs(v)<.04 and max_speed<=.3
-    return dict(valid=bool(valid),controls=np.asarray(controls),path=paths,road_lower=lower,
-        obstacle_lower=float(obstacle[0]),geometric=min(geometric,float(gap[0])),known=known,
-        maximum_speed=max_speed,travel_m=travel,checked_seconds=steps*.05,
-        end_z=z,end_x=x,end_heading=angle)
+    observed_rear = reverse_seconds == 0 or getattr(obs, 'rear_observed_limit', None) is not None
+    valid = lower >= 0 and obstacle_lower > 0 and known and observed_rear and abs(v) < .04 and max_speed <= .3
+    return dict(valid=bool(valid), controls=controls, path=history[4::4, :2].tolist(), road_lower=lower,
+                obstacle_lower=obstacle_lower, geometric=min(float(road_gap.min()), obstacle_gap), known=known,
+                maximum_speed=max_speed, travel_m=travel, checked_seconds=steps*.05,
+                end_z=z, end_x=x, end_heading=angle)
 
 def opening_target(obs):
     """Current observed and remembered openings rank checked reverse actions."""
@@ -183,7 +202,7 @@ class BacktrackSteer:
             duration=min(1.,np.floor(remaining/.3/.2)*.2)
             slew=getattr(self.base,'p',{}).get('slew',1.8);limit=min(.18,slew*obs.dt/2.)
             candidates=[]
-            for steer in [-limit,0.,limit]:
+            for steer in ([0.] if physical_motor_enabled() else [-limit,0.,limit]):
                 if abs(steer-self.command[1])>slew*obs.dt+1e-8:continue
                 candidate=checked_retreat(original,duration,self.zero_age,horizon,self.command[1],steer)
                 valid=duration>=.2 and candidate['valid'] and self.used+candidate['travel_m']<=self.budget

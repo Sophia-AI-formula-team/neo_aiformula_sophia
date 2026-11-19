@@ -30,8 +30,14 @@ def native_sensor(sample, relative_capture):
                 gyro=-sample['gyro'], wheelRadius=sample['wheelRadius'], source=sample['source'])
 
 
-def ros_command(native):
-    return dict(linear_x_mps=float(native[0]), angular_z_radps=-float(native[1]))
+def ros_command(native, *, physical=False):
+    speed, steer = map(float, native)
+    if not math.isfinite(speed) or not math.isfinite(steer):
+        raise ValueError('non-finite planner command')
+    # In the checked rollout a zero-drive action brakes: its residual steering
+    # contributes no powered yaw. The real differential drive would pivot.
+    yaw = 0. if physical and speed == 0. else -steer
+    return dict(linear_x_mps=speed, angular_z_radps=yaw)
 
 
 def stamp(ns):

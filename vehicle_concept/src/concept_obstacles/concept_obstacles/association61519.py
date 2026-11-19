@@ -8,13 +8,15 @@ from scipy.special import logsumexp
 
 from concept_road.vision import FOCAL, CX, CY, HEIGHT
 
-def visible_probability(mean,covariance,size):
+from concept_obstacles.ground import contact_point
+
+def visible_probability(mean,covariance,size,center_offset=0.):
     nodes,weights=np.polynomial.hermite.hermgauss(3)
     root=np.linalg.cholesky(covariance+np.eye(2)*1e-12)
     probability=0.
     for a,wa in zip(nodes,weights):
         for b,wb in zip(nodes,weights):
-            z,x=mean+root@np.array([a,b])*np.sqrt(2)
+            z,x=contact_point(mean+root@np.array([a,b])*np.sqrt(2), center_offset)
             if not .1<z<12:continue
             u,v=CX+x*FOCAL/z,CY+HEIGHT*FOCAL/z
             w,h=size*FOCAL/z
@@ -34,7 +36,7 @@ def assign(tracks,detections,recall=.8,expected_new=1.):
         means=[track.static_state,track.state[:2]]
         covariances=[track.static_covariance,track.covariance[:2,:2]]
         weights=np.array([track.static_probability,1-track.static_probability])
-        pd=recall*np.array([visible_probability(m,p,track.physical_size) for m,p in zip(means,covariances)])
+        pd=recall*np.array([visible_probability(m,p,track.physical_size,track.center_offset) for m,p in zip(means,covariances)])
         missed=max(1e-12,1-float(weights@pd))
         for j,det in enumerate(detections):
             if any(det['clipped']):continue

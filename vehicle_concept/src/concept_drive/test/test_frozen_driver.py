@@ -35,6 +35,21 @@ def test_five_archived_frames_through_real_perception_wire():
         json.dumps(result, allow_nan=False)
 
 
+@pytest.mark.parametrize("speed,steer,expected_yaw", [
+    (0., .55, 0.), (0., -.17, 0.), (0., 0., 0.),
+    (-.2, 0., 0.), (-.2, .12, -.12), (1., -.4, .4),
+])
+def test_physical_release_matches_unpowered_planner_action(speed, steer, expected_yaw):
+    assert ros_command((speed, steer), physical=True) == dict(
+        linear_x_mps=speed, angular_z_radps=expected_yaw)
+    assert ros_command((speed, steer))['angular_z_radps'] == -steer
+
+
+def test_physical_release_rejects_invalid_steering():
+    with pytest.raises(ValueError, match='non-finite'):
+        ros_command((0., float('nan')), physical=True)
+
+
 def test_feedback_only_consumes_causal_valid_measurements():
     feedback = Feedback()
     for t in [4.0, 4.15]:

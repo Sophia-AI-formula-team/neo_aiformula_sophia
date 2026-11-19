@@ -44,9 +44,15 @@ class Journal:
 
 
 class Action:
-    """A restart has two distinct acknowledgements. Timeout never advances the sequence."""
-    def __init__(self, command, value=None):
-        self.steps = deque(['pause', 'restart'] if command == 'restart' else [command])
+    """Advance through control services only after successful acknowledgements."""
+    def __init__(self, command, value=None, image_gap=False):
+        if command == 'resume' and image_gap:
+            steps = ['pause', 'restart', 'resume']
+        elif command == 'restart':
+            steps = ['pause', 'restart']
+        else:
+            steps = [command]
+        self.steps = deque(steps)
         self.value = value
 
     def completed(self, ok):

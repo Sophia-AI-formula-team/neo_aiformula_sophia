@@ -55,42 +55,51 @@ class RecordingControls:
 
 
 class LapMapUpdates:
-    def __init__(self, node, dialog):
+    def __init__(self, node, panel):
         from std_srvs.srv import Trigger
 
-        self.dialog = dialog
+        self.panel = panel
         self.client = node.create_client(Trigger, '/concept/drive/lap_map')
         self.request = Trigger.Request
         self.pending = None
         self.sent_at = float('-inf')
+
+    def reset(self):
+        if self.pending is not None:
+            self.pending.cancel()
+            self.pending = None
+        self.sent_at = float('-inf')
+        self.panel.clear_map()
 
     def refresh(self, steady):
         if self.pending is not None:
             if self.pending.done():
                 try:
                     response = self.pending.result()
-                    if self.dialog.isVisible():
+                    if self.panel.isVisible():
                         if response.success:
-                            self.dialog.show_map(response.message)
+                            self.panel.show_map(response.message)
+                        elif response.message == '等待第一帧有效地图':
+                            self.panel.clear_map()
                         else:
-                            self.dialog.connection.setText(response.message)
+                            self.panel.connection.setText(response.message)
                 except (TypeError, ValueError, KeyError, RuntimeError):
-                    self.dialog.connection.setText('地图读取失败 · 保留上次地图')
+                    self.panel.connection.setText('地图读取失败 · 保留上次地图')
                 self.pending = None
             elif steady-self.sent_at > 3.:
                 self.pending.cancel()
                 self.pending = None
-                self.dialog.connection.setText('地图服务超时 · 保留上次地图')
-        if self.pending is not None or not self.dialog.isVisible() or steady-self.sent_at < 1.:
+                self.panel.connection.setText('地图服务超时 · 保留上次地图')
+        if self.pending is not None or not self.panel.isVisible() or steady-self.sent_at < 1.:
             return
         self.sent_at = steady
         if not self.client.service_is_ready():
-            self.dialog.connection.setText('未连接地图服务 · 保留上次地图')
+            self.panel.connection.setText('未连接地图服务')
             return
         try:
             self.pending = self.client.call_async(self.request())
         except RuntimeError:
-            self.dialog.connection.setText('地图请求失败 · 保留上次地图')
+            self.panel.connection.setText('地图请求失败')
 
 
 def image_from_ros(msg):
@@ -108,7 +117,7 @@ def image_from_ros(msg):
 
 class Controller:
     def __init__(self, node, window):
-        from rcl_interfaces.srv import SetParameters
+        from rcl_interfaces.srv import GetParameters, SetParameters
         from rclpy.qos import qos_profile_sensor_data
         from sensor_msgs.msg import Image
         from std_msgs.msg import String
@@ -126,6 +135,10 @@ class Controller:
             ('target','/concept/drive/set_parameters',SetParameters),('limit','/concept/gate/set_parameters',SetParameters)]:
             self.clients[key]=(node.create_client(kind,path),kind)
         self.clients['disable']=self.clients['enable']
+        self.read_clients = {key: node.create_client(GetParameters, path + '/get_parameters') for key, path
+                             in (('target', '/concept/drive'), ('limit', '/concept/gate'))}
+        self.read_requests = {}
+        self.next_read = 0.
         node.create_subscription(String,'/concept/gate/status',lambda m:self.message('门控',m),1)
         node.create_subscription(String,'/concept/decision',lambda m:self.message('决策',m),1)
         node.create_subscription(Image,'/concept/view/camera',self.camera,qos_profile_sensor_data)
@@ -174,7 +187,7 @@ class Controller:
             if self.future is not None:
                 self.future.cancel()
             self.finish('之前的操作已被中断，以门控回读为准')
-        self.pending=Action(command,value)
+        self.pending=Action(command, value, image_gap=self.window.image_gap())
         self.window.busy=True
         self.issue()
 
@@ -213,8 +226,13 @@ class Controller:
             if key in ('target','limit'):
                 ok=len(reply.results)==1 and reply.results[0].successful
                 why=reply.results[0].reason if reply.results else '缺少参数结果'
+                if ok:
+                    self.window.confirmed_speeds[key] = self.pending.value
+                    self.next_read = 0.
             else:
                 ok,why=reply.success,reply.message
+            if key == 'restart' and ok:
+                self.lap_map.reset()
             next_key=self.pending.completed(ok)
             text=LABELS[key]+('已确认' if ok else '未执行')+(' · '+why if why else '')
             if next_key:
@@ -225,11 +243,36 @@ class Controller:
         except Exception as exc:
             self.finish('响应无效 · '+str(exc))
 
+    def read_speeds(self, steady):
+        from rcl_interfaces.msg import ParameterType
+        from rcl_interfaces.srv import GetParameters
+        if not self.window.settings_dialog.isVisible():
+            return
+        for key, (future, started) in list(self.read_requests.items()):
+            if future.done():
+                try:
+                    values = future.result().values
+                    if len(values) == 1 and values[0].type == ParameterType.PARAMETER_DOUBLE:
+                        self.window.parameter_reads[key] = (started, values[0].double_value)
+                except (RuntimeError, AttributeError):
+                    pass
+                del self.read_requests[key]
+            elif steady - started >= 2.:
+                future.cancel()
+                del self.read_requests[key]
+        if steady >= self.next_read:
+            self.next_read = steady + .75
+            for key, client in self.read_clients.items():
+                if key not in self.read_requests and client.service_is_ready():
+                    name = 'target_speed_mps' if key == 'target' else 'max_auto_speed_mps'
+                    self.read_requests[key] = (client.call_async(GetParameters.Request(names=[name])), steady)
+
     def update(self):
         self.recording.refresh()
         self.poll()
         now=self.ros()
         steady=time.monotonic()
+        self.read_speeds(steady)
         self.lap_map.refresh(steady)
         age=self.window.gate.age(now,steady)
         live=age is not None and age<=.5

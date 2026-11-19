@@ -1,7 +1,7 @@
 import numpy as np
 
 from concept_visualization.geometry import pixel
-from concept_visualization.node import draw_candidates, draw_path
+from concept_visualization.node import draw_candidates, draw_near_path, draw_path
 
 
 def test_candidates_and_selection_have_distinct_camera_strokes():
@@ -25,3 +25,15 @@ def test_candidates_and_selection_have_distinct_camera_strokes():
     draw_path(image, paths[2], (170, 72, 250), 4)
     x, y = pixel(paths[2][1])
     assert tuple(image[y, x]) == (170, 72, 250)
+
+
+def test_near_view_shows_checked_path_below_camera_and_clears_on_empty_decision():
+    image = np.zeros((360, 640, 3), dtype=np.uint8)
+    path = [(0., 0.), (.15, 0.), (.25, -.05)]
+    color = (170, 72, 250)
+    draw_path(image, path, color, 4)
+    assert not np.any(image)
+    draw_near_path(image, path)
+    assert np.any(np.all(image == color, axis=2))
+    draw_near_path(image, [])
+    assert not np.any(np.all(image == color, axis=2))

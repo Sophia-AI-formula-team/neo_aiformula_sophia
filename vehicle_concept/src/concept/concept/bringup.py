@@ -2,10 +2,13 @@
 import runpy
 import tempfile
 import time
+
+import yaml
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, SetEnvironmentVariable
+from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
+                            SetEnvironmentVariable, SetLaunchConfiguration)
 from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration as LC
@@ -51,13 +54,25 @@ def check_ownership(context):
     return []
 
 
+def zed_actions(context, native, directory):
+    # The wrapper separately caps acquisition and image publication. At 15 Hz
+    # a 60 Hz grab alone still delivers old images to the planning pipeline.
+    original = Path(LC('config_common_path').perform(context))
+    config = yaml.safe_load(original.read_text(encoding='utf-8'))
+    general = config['/**']['ros__parameters']['general']
+    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
+    overlay = Path(directory, 'zed-common.yaml')
+    overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
+    return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
+                                *native['create_zed_node'](context)])
+
+
 def sensor_actions(context):
     import xacro
 
     native = runpy.run_path(share('launchers', 'launch', 'allnodes.launch.py'))
     native['wait_for_can_interface'](context)
     joy_config = share('launchers', 'config', 'joy.yaml')
-    buttons = share('launchers', 'config', 'gamepad', 'dualshock4.yaml')
     remap = '/aiformula_control/joy_node/joy_l2_throttle'
     # The original launcher generates a URDF inside the installed vehicle share.
     # Render the same chassis into a private temporary file for this launch.
@@ -72,7 +87,7 @@ def sensor_actions(context):
              parameters=[{'robot_description': ParameterValue(description, value_type=str)}]),
         Node(package='joint_state_publisher', executable='joint_state_publisher', namespace='/aiformula_sensing',
              arguments=[str(urdf)]),
-        *native['create_zed_node'](context),
+        zed_actions(context, native, temporary.name),
         include('launchers', 'vectornav.launch.py'),
         include('odometry_publisher', 'gyro_odometry_publisher.launch.py', use_rviz='false',
                 imu_topic='/aiformula_sensing/vectornav/imu'),
@@ -82,8 +97,6 @@ def sensor_actions(context):
         Node(package='launchers', executable='l2_throttle_joy_remap.py', name='l2_throttle_joy_remap',
              namespace='/aiformula_control',
              remappings=[('joy_in', '/aiformula_control/joy_node/joy'), ('joy_out', remap)]),
-        Node(package='teleop_twist_joy', executable='teleop_node', namespace='/aiformula_control',
-             parameters=[buttons], remappings=[('joy', remap), ('cmd_vel', '/concept/manual_preview')]),
         *native['create_socket_can_receiver'](), *native['create_socket_can_sender'](),
     ]
 
@@ -93,6 +106,13 @@ def build(context):
     if mode not in ('vehicle', 'replay'):
         raise ValueError('Select mode:=vehicle or mode:=replay')
     vehicle = mode == 'vehicle'
+    calibration = LC('calibration').perform(context)
+    if calibration == 'auto':
+        config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
+        receipt = Path(config_home) / 'concept' / 'camera.json'
+        if not receipt.is_file():
+            receipt = receipt.with_name('honda-ground.json')
+        calibration = str(receipt) if vehicle and receipt.is_file() else ''
     simulated_clock = LC('use_sim_time').perform(context).lower() == 'true'
     if vehicle and simulated_clock:
         raise ValueError('Vehicle mode requires the vehicle clock.')
@@ -115,22 +135,36 @@ def build(context):
         ('/semantic_drive/motor_session', '/concept/internal/unused_motor_session'),
         ('/semantic_drive/map_status', '/concept/internal/unused_motor_map_status'),
     ]
+    direct = LC('onboard_camera').perform(context)
+    if direct not in ('auto', 'true', 'false'):
+        raise ValueError('onboard_camera must be auto, true or false')
+    direct = vehicle if direct == 'auto' else direct == 'true'
+    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
+                  camera_info_topic=LC('camera_info_topic'))
+    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)))
+    gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')
+    for params, key in ((driving, 'target_speed_mps'), (gate, 'max_auto_speed_mps')):
+        if vehicle:
+            config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
+            params['speed_settings_directory'] = str(Path(config_home) / 'concept' / 'speed')
+        explicit = LC(key).perform(context)
+        if explicit:
+            params[key] = float(explicit)
+    if direct:
+        driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
+    else:
+        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision))
     actions.extend([
         Node(package='motor_controller', executable='motor_controller', name='motor_controller', namespace='/concept/hardware',
              parameters=[share('vehicle','config','wheel.yaml'), share('motor_controller','config','motor_controller.yaml'), buttons],
              remappings=motor_remaps),
         Node(package='concept_vehicle_state', executable='concept_vehicle_state', output='screen'),
         Node(package='concept_control_gate', executable='concept_control_gate', output='screen',
-             parameters=[buttons, {'max_auto_speed_mps': float(LC('max_auto_speed_mps').perform(context)),
-                                  'can_sender_node': '/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver'}],
+             parameters=[buttons, gate],
              remappings=[] if vehicle else [(physical, '/concept/replay/reference_signal')]),
-        include('concept_yolop', 'concept_yolop.launch.py', weights=LC('weights'),
-                calibration=LC('calibration'), device=LC('device'),
-                camera_info_topic=LC('camera_info_topic')),
         Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
              additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
-             parameters=[{'target_speed_mps': float(LC('target_speed_mps').perform(context)),
-                          'planning_hz': float(LC('planning_hz').perform(context))}]),
+             parameters=[driving]),
         Node(package='concept_visualization', executable='visualization', output='screen'),
     ])
     if LC('panel').perform(context).lower() in ('true', '1'):

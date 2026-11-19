@@ -13,13 +13,14 @@ from concept_obstacles.silhouette615 import complete_box
 from concept_obstacles.association61519 import assign
 
 from concept_obstacles.clipped617 import censored_support
+from concept_obstacles.ground import contact_point
 
 def overlap(a, b):
     intersection = np.maximum(0., np.minimum(a[2:], b[2:])-np.maximum(a[:2], b[:2])).prod()
     areas = [np.maximum(0., q[2:]-q[:2]).prod() for q in (a, b)]
     return float(intersection/max(min(areas), 1.)), float(intersection/max(sum(areas)-intersection, 1.))
 
-def instances(prediction, shape=(360, 640), image=None):
+def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, measurements=None):
     """A nested narrow fragment cannot become a second cone on its own.
 
     Group only near-contained, aligned boxes, not merely intersecting boxes.
@@ -46,7 +47,8 @@ def instances(prediction, shape=(360, 640), image=None):
                 # Camera mount .655m above body root; settled root is near -.05m.
                 # Pavement is at -.049m, but these cone bases are placed at y=0.
                 # Do NOT change the road projector's .655m height.
-                foot_height = .605 if foot_source == 'observed_black_base' else .605-(.06-.05*.675)
+                if not field_ground:
+                    foot_height = .605 if foot_source == 'observed_black_base' else .605-(.06-.05*.675)
             # In these cone experiments, stand legs repeatedly scored as cones.
             # Requiring visible cone colour applies only to NEW measurements;
             # it never deletes an existing blind occupancy track.
@@ -99,8 +101,18 @@ def instances(prediction, shape=(360, 640), image=None):
         foot_height = group['foot_height']
         z = foot_height*FOCAL/(box[3]-CY)
         x = (.5*(box[0]+box[2])-CX)*z/FOCAL
+        if field_ground and measurements is not None:
+            measurements.append(dict(foot_uv=[float((box[0]+box[2])*.5), float(box[3])],
+                                     foot_source=group['foot_source'], score=group['score'],
+                                     ground_forward_right_m=[float(z), float(x)],
+                                     within_tracking_range=bool(0 < z < 12)))
         if not 0 < z < 12:
             continue
+        if field_ground:
+            # Track a footprint center for collision checking. Image evidence and
+            # the 12 m observability bound both refer to the actual ground contact.
+            group['center_offset'] = .24 if image is not None else 0.
+            group['contact_depth'] = z
         clipped = [box[0] <= 2, box[1] <= 2, box[2] >= width-2, box[3] >= height-2]
         # Three pixels of foot jitter, plus a small ground-model allowance.
         dzdv = -z*z/(foot_height*FOCAL)
@@ -142,6 +154,7 @@ class Track:
     # Presence of a clipped silhouette is not a new position measurement.
     # Keep its continuity separate from the age of the last complete foot.
     presence_age: float = 0.
+    center_offset: float = 0.
 
 class Occupancy617:
     def __init__(self):
@@ -153,7 +166,7 @@ class Occupancy617:
 
     @staticmethod
     def image_box(track):
-        z, x = track.state[:2]
+        z, x = contact_point(track.state[:2], track.center_offset)
         if z <= .1:
             return None
         u, v = CX+x*FOCAL/z, CY+HEIGHT*FOCAL/z
@@ -217,7 +230,7 @@ class Occupancy617:
                 support=0.
                 mode_support=[]
                 for weight,point in [(track.static_probability,track.static_state),(1-track.static_probability,track.state[:2])]:
-                    z,x=point
+                    z,x=contact_point(point, track.center_offset)
                     if z<=.1:
                         mode_support.append(False)
                         continue
@@ -309,7 +322,7 @@ class Occupancy617:
             h = np.zeros((2, 4)); h[:, :2] = np.eye(2)
             residual = np.eye(4)-gain@h
             track.covariance = residual@track.covariance@residual.T+gain@r@gain.T
-            track.physical_size = (detection['box'][2:]-detection['box'][:2])*detection['point'][0]/FOCAL
+            track.physical_size = (detection['box'][2:]-detection['box'][:2])*detection.get('contact_depth',detection['point'][0])/FOCAL
             track.age = 0.
             track.hits += 1
             track.source = 'complete_box_update'
@@ -341,8 +354,8 @@ class Occupancy617:
             if any(detection['clipped']):
                 # First sight is an interval, never an invented accurate point.
                 covariance[:2, :2] += np.eye(2)*.5**2
-            size = (detection['box'][2:]-detection['box'][:2])*point[0]/FOCAL
-            self.tracks.append(Track(self.next_id, np.r_[point, 0., 0.], covariance, size, score=detection['score'], static_state=point.copy(), static_covariance=covariance[:2,:2].copy(),maximum_radius=float(np.linalg.norm(point))))
+            size = (detection['box'][2:]-detection['box'][:2])*detection.get('contact_depth',point[0])/FOCAL
+            self.tracks.append(Track(self.next_id, np.r_[point, 0., 0.], covariance, size, score=detection['score'], static_state=point.copy(), static_covariance=covariance[:2,:2].copy(),maximum_radius=float(np.linalg.norm(point)), center_offset=detection.get('center_offset', 0.)))
             self.next_id += 1
         retained, objects, audit, released, inactive = [], [], [], [], []
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) if image is not None else None
@@ -359,7 +372,7 @@ class Occupancy617:
             front = float(np.max(z+vz*future+.34+.07+2*np.sqrt(np.maximum(0.,variance))))
             if hsv is not None and track.source == 'remembered':
                 def contradicted(position,covariance):
-                    zz,xx=position
+                    zz,xx=contact_point(position, track.center_offset)
                     if zz<=.1:return False
                     u,v=CX+xx*FOCAL/zz,CY+HEIGHT*FOCAL/zz
                     w,h=track.physical_size*FOCAL/zz

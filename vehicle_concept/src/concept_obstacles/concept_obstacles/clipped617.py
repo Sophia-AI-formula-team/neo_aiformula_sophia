@@ -4,6 +4,8 @@ import numpy as np
 
 from concept_road.vision import FOCAL, CX, CY, HEIGHT
 
+from concept_obstacles.ground import contact_point
+
 def censored_support(track,detection,dt):
     left,top,right,bottom=detection['clipped']
     if not bottom or not (left != right) or top or track.hits<3 or track.presence_age>2*dt+1e-5:
@@ -17,7 +19,7 @@ def censored_support(track,detection,dt):
         root=np.linalg.cholesky(cov+np.eye(2)*1e-12);mass=0.
         for a,wa in zip(nodes,weights):
             for b,wb in zip(nodes,weights):
-                z,x=mean+root@np.array([a,b])*np.sqrt(2)
+                z,x=contact_point(mean+root@np.array([a,b])*np.sqrt(2), track.center_offset)
                 if z<=.1:continue
                 u,v=CX+x*FOCAL/z,CY+HEIGHT*FOCAL/z
                 w,h=track.physical_size*FOCAL/z

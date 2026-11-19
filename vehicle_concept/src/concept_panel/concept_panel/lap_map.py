@@ -35,7 +35,7 @@ def unpack_snapshot(message):
 class MapCanvas(W.QWidget):
     def __init__(self):
         super().__init__()
-        self.setMinimumSize(520, 350)
+        self.setMinimumSize(210, 160)
         self.data = self.raster = None
 
     def set_map(self, data):
@@ -131,33 +131,50 @@ class MapCanvas(W.QWidget):
         painter.restore()
 
 
-class LapMapDialog(W.QDialog):
+class LapMapPanel(W.QFrame):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowTitle('Concept · 累计赛道地图')
-        self.resize(870, 650)
+        self.setObjectName('card')
         self.key = None
         shell = W.QVBoxLayout(self)
+        shell.setContentsMargins(14, 9, 14, 9)
         self.paper = W.QWidget()
+        self.paper.setStyleSheet('background: white')
         layout = W.QVBoxLayout(self.paper)
-        self.summary = W.QLabel('从本次驾驶会话开始累计 · 起点朝向为上')
+        layout.setContentsMargins(0, 0, 0, 0)
+        heading = W.QLabel('累计赛道地图')
+        heading.setObjectName('heading')
+        layout.addWidget(heading)
+        self.summary = W.QLabel('起点朝向为上')
+        self.summary.setWordWrap(True)
         layout.addWidget(self.summary)
         self.canvas = MapCanvas()
         layout.addWidget(self.canvas, 1)
-        layout.addWidget(W.QLabel(
+        legend = W.QLabel(
             '<span style="color:#3d84b0">■ 本车道</span>　<span style="color:#3f9c84">■ 邻道</span>　'
-            '<span style="color:#ed841f">━ 橙色标线（虚线保留空档）</span>　'
-            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span>'))
-        layout.addWidget(W.QLabel('黄点为起点 · 深色三角为车辆 · 紫点为观测到的场内开口'))
+            '<span style="color:#ed841f">━ 标线</span>　'
+            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span><br>'
+            '黄点为起点 · 三角为车辆 · 紫点为场内开口')
+        legend.setWordWrap(True)
+        layout.addWidget(legend)
         shell.addWidget(self.paper, 1)
         footer = W.QHBoxLayout()
         self.connection = W.QLabel('等待地图服务')
+        self.connection.setWordWrap(True)
         footer.addWidget(self.connection, 1)
         self.save_button = W.QPushButton('保存 PNG…')
         self.save_button.setEnabled(False)
         self.save_button.clicked.connect(self.save)
         footer.addWidget(self.save_button)
         shell.addLayout(footer)
+
+    def clear_map(self):
+        self.key = None
+        self.canvas.data = self.canvas.raster = None
+        self.canvas.update()
+        self.summary.setText('起点朝向为上')
+        self.connection.setText('等待第一帧有效地图')
+        self.save_button.setEnabled(False)
 
     def show_map(self, message):
         data = unpack_snapshot(message)
@@ -176,7 +193,13 @@ class LapMapDialog(W.QDialog):
         if path:
             if not path.lower().endswith('.png'):
                 path += '.png'
-            if self.paper.grab().save(path, 'PNG'):
+            # Keep text and map details readable when the embedded panel is narrow.
+            scale = max(1., 800 / self.paper.width())
+            pixmap = QtGui.QPixmap(math.ceil(self.paper.width() * scale),
+                                   math.ceil(self.paper.height() * scale))
+            pixmap.setDevicePixelRatio(scale)
+            self.paper.render(pixmap)
+            if pixmap.save(path, 'PNG'):
                 self.connection.setText('已保存 ' + path)
             else:
                 W.QMessageBox.warning(self, '地图未保存', '无法写入这个 PNG 文件。')

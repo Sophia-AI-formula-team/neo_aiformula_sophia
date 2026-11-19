@@ -72,8 +72,27 @@ class Gate:
         self.resume_stamp = stamp
         return True
 
+    def auto_is_fresh(self, stamp, now):
+        return (0 <= now-self.auto_at <= COMMAND_TIMEOUT
+                and 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT)
+
+    def check_auto_time(self, stamp, now):
+        if self.auto_at == -math.inf or self.auto_is_fresh(stamp, now):
+            return
+        age = stamp-self.auto_stamp
+        if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
+                and age > COMMAND_TIMEOUT):
+            if self.reason != 'waiting_fresh_auto':
+                self.barrier(stamp, 'waiting_fresh_auto')
+        else:
+            self.pause(stamp, 'auto_timeout')
+
     def command(self, value, source, stamp, now):
         if self.paused or self.estop or not self.enabled or self.manual_held:
+            return
+        # Enforce deadlines even if a new callback runs before the watchdog tick.
+        self.check_auto_time(stamp, now)
+        if self.paused:
             return
         if (source <= max(self.resume_stamp, self.auto_stamp) or
                 not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
@@ -93,8 +112,8 @@ class Gate:
             return self.manual
         if self.paused or self.auto_at == -math.inf:
             return ZERO
-        if now-self.auto_at > COMMAND_TIMEOUT or not 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT:
-            self.pause(stamp, 'auto_timeout')
+        self.check_auto_time(stamp, now)
+        if self.paused or self.reason == 'waiting_fresh_auto':
             return ZERO
         return self.auto
 

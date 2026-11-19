@@ -13,13 +13,12 @@ SCHEMA = 'concept.perception.v1'
 W, H = 640, 360
 
 
-# A fixed scanline filter avoids trying five filters on every row. The PNG
-# decoder reconstructs the same pixels for either filter, including on Foxy.
-_PNG_COLOR = [cv2.IMWRITE_PNG_COMPRESSION, 1]
-_PNG_MASK = _PNG_COLOR
+# A fixed scanline filter avoids trying five filters on every row. In OpenCV
+# 4.2, specifying the compression level selects adaptive filtering. Leave the
+# level unset on those builds to keep the encoder's fixed SUB filter.
+_PNG_COLOR = _PNG_MASK = [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE]
 if hasattr(cv2, 'IMWRITE_PNG_FILTER'):
-    _common = _PNG_COLOR + [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE,
-                            cv2.IMWRITE_PNG_FILTER]
+    _common = [cv2.IMWRITE_PNG_COMPRESSION, 1, *_PNG_COLOR, cv2.IMWRITE_PNG_FILTER]
     _PNG_COLOR = _common + [cv2.IMWRITE_PNG_FILTER_SUB]
     _PNG_MASK = _common + [cv2.IMWRITE_PNG_FILTER_NONE]
 
@@ -51,12 +50,16 @@ def _image(encoded, channels):
     return image
 
 
-def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
-    if geometry_profile not in PROFILES:
-        raise ValueError("Invalid camera geometry profile")
+def validate_pixels(bgr, road, lane):
     if (bgr.shape != (H, W, 3) or bgr.dtype != np.uint8 or road.shape != (H, W)
             or lane.shape != (H, W) or road.dtype != np.bool_ or lane.dtype != np.bool_):
         raise ValueError('Expected canonical BGR and boolean road/lane masks')
+
+
+def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
+    if geometry_profile not in PROFILES:
+        raise ValueError("Invalid camera geometry profile")
+    validate_pixels(bgr, road, lane)
     return json.dumps({
         'schema': SCHEMA, 'model_sha256': SHA256, 'geometry_profile': geometry_profile,
         'stamp': {'sec': int(sec), 'nanosec': int(nanosec)}, 'frame_id': frame_id,
@@ -85,23 +88,28 @@ def parse_frame_header(payload):
     return obj, sec * 1000000000 + ns, obj['frame_id'], obj['geometry_profile']
 
 
-def decode_frame_data(obj):
-    """Unpack detections and pixels from a header-validated wire object."""
-    boxes = np.asarray(obj['boxes'], dtype=np.float32)
+def validated_detections(det):
+    boxes = np.asarray(det['boxes'], dtype=np.float32)
     if boxes.shape == (0,):
         boxes = boxes.reshape(0, 4)
-    scores = np.asarray(obj['scores'], dtype=np.float32)
-    labels = np.asarray(obj['labels'])
+    scores = np.asarray(det['scores'], dtype=np.float32)
+    labels = np.asarray(det['labels'])
     n = len(scores)
     if (boxes.shape != (n, 4) or labels.shape != (n,) or scores.shape != (n,) or n > 100
             or not np.all(np.isfinite(boxes)) or not np.all(np.isfinite(scores))
             or np.any((scores < 0) | (scores > 1))
             or (n and (not np.issubdtype(labels.dtype, np.integer) or not np.isin(labels, [1,3,10,91]).all()))):
         raise ValueError('Invalid B1.4 detections')
+    return dict(boxes=boxes, scores=scores, labels=labels.astype(np.int64, copy=False))
+
+
+def decode_frame_data(obj):
+    """Unpack detections and pixels from a header-validated wire object."""
+    det = validated_detections(obj)
     return dict(geometry_profile=obj['geometry_profile'], stamp_ns=obj['stamp']['sec'] * 1000000000 + obj['stamp']['nanosec'],
                 frame_id=obj['frame_id'],
                 bgr=_image(obj['bgr_png'], 3), road=_image(obj['road_png'], 1),
-                lane=_image(obj['lane_png'], 1), boxes=boxes, scores=scores, labels=labels.astype(np.int64))
+                lane=_image(obj['lane_png'], 1), **det)
 
 
 def decode_frame(payload):

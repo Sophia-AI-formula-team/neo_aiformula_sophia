@@ -36,7 +36,9 @@ class Predictor:
             checkpoint = torch.load(stream, map_location='cpu', **kwargs)
         if checkpoint['architecture'] != 'yolop_b1_honda_three_head_v2':
             raise ValueError('Unexpected checkpoint architecture')
-        self.model = B14(checkpoint['model_config'])
+        native_fusion = (self.device.type == 'cuda' and torch.backends.cudnn.version() == 8600
+                         and torch.cuda.get_device_capability(self.device) == (8, 7))
+        self.model = B14(checkpoint['model_config'], native_fusion=native_fusion)
         self.model.load_state_dict(checkpoint['model'], strict=True)
         self.model.to(self.device).eval()
 
@@ -45,5 +47,7 @@ class Predictor:
         frame = canonical_bgr(bgr)
         rgb = frame[:, :, ::-1].transpose(2, 0, 1).copy()
         road, lane, detections = self.model(torch.from_numpy(rgb).to(self.device).float() / 255)
-        return (frame, road.cpu().numpy().astype(bool), lane.cpu().numpy().astype(bool),
+        # The two-class argmax returns int64. Move one byte per mask pixel
+        # across the device boundary and keep the original comparison and ties.
+        return (frame, road.bool().cpu().numpy(), lane.bool().cpu().numpy(),
                 {k: v.cpu().numpy() for k, v in detections.items()})
