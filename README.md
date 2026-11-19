@@ -1,8 +1,8 @@
 # Sophia AI Formula ROS 2 Snapshot
 
-## Concept V6.27.4 vehicle deployment
+## Concept V6.27.5 vehicle deployment
 
-This branch, `feat/concept-v626-live`, carries V6.27.4 with JPEG perception overlays in panel rosbag recordings, the V6.27.2 planner and the frozen V6.26 driving policy. The [vehicle deployment handoff](vehicle_concept/AGENTS.md) covers installation, B1.4 weights, startup, recording and rollback. See the [image recording tests](vehicle_concept/checks/recording/overlay-v6.27.4.md) and the [planner timing report](vehicle_concept/checks/timing/v6.27.2/README.md).
+This branch, `feat/concept-v626-live`, carries V6.27.5 with a fixed overhead lap map and JPEG perception overlays in panel rosbag recordings. The [vehicle deployment handoff](vehicle_concept/AGENTS.md) covers installation, startup, recording, map export and rollback. See the [lap-map acceptance](vehicle_concept/checks/lap_map/README.md), [image recording tests](vehicle_concept/checks/recording/overlay-v6.27.4.md) and [planner timing report](vehicle_concept/checks/timing/v6.27.2/README.md).
 
 ## Selected experiment source (2026-11-04)
 

@@ -1,4 +1,4 @@
-# Concept V6.27.4 部署手册（V6.26 驾驶策略）
+# Concept V6.27.5 部署手册（V6.26 驾驶策略）
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
@@ -9,6 +9,7 @@
 | 相机识别是否接对 | B1.4 在工作站 GPU 上复核 12 张实车录像图，5,529,600 个道路与标线像素判断、1,200 个检测结果与原模型一致。[对照记录](src/concept_yolop/SOURCES.md) |
 | 手柄与面板 | Foxy 软件 CAN 端点实测手柄优先、松手停车、恢复只收新指令和各输入失联。面板在相机上绘制候选与最终路线，并显示自动或手柄的实际输出方向。[手柄试验](checks/foxy_gate_dds.md) · [新版面板截图](checks/recording/panel-v6.27.4.png) |
 | V6.27.4 面板录包 | 在摄像头画面下方点「开始录包」或「停止录包」。11 个话题保留 640×360 的 JPEG 识别叠图、驾驶决策、反馈和控制。叠图按 B1.4 的输出频率录制。[图像和 Foxy 验收](checks/recording/overlay-v6.27.4.md) |
+| V6.27.5 累计赛道地图 | 底部「累计赛道地图…」打开固定起点坐标的俯视图，包含本车道、邻道、虚实线、车迹和桶。结束后在窗口点「保存 PNG…」。[整圈验收](checks/lap_map/README.md) |
 | V6.26 初版从相机到车身图的接线验证 | Foxy 中从原始 RGB 走 B1.4 CPU 推理、轮速/IMU、白盒和 H12，到 RViz 消息。目标/上限为 1.0 m/s。内圈归档的首帧两次均得到 75 条可行候选、选择索引 4、路径 21 点、地图 1,931 点，单帧驾驶计算 507 / 560 ms。从干净 Git 归档构建后，以本仓库自带的移动桶外圈首帧复验，75 条可行、选择索引 29、路径 25 点、地图 2,142 点，用时 782 ms。三次均未标定，自动输出均为零。时钟由测试控制，Jetson 在真实时钟下是否满足 0.5 秒新鲜度需要实测。[复验脚本](checks/replay_camera.py) |
 | 下一位 agent 的第一项实车工作 | 查实际设备和旧启动命令，核对当前 ZED 安装与投影。确认输入、左右方向、静止轮速和驱动器断 CAN 后的表现，才进入低速自动。车载 Jetson 的推理耗时、实车制动距离、行驶方向与圈速均待测。 |
 
@@ -34,13 +35,13 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连�
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
-部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.4**，各功能包保留各自版本。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
+部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.5**。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
 
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6274"
-export WS="$HOME/concept_v6274_ws"
+export REPO="$HOME/src/neo-concept-v6275"
+export WS="$HOME/concept_v6275_ws"
 (
   set -e
   branch=feat/concept-v626-live
@@ -97,7 +98,7 @@ python3 -c 'from concept_road import _markings, _memory; from concept_candidates
 python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
-[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动包显示 `concept 6.27.4`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
+[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动、驾驶、道路和面板包均显示 `6.27.5`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
 
 B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
@@ -128,8 +129,8 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 ```bash
 source /opt/ros/foxy/setup.bash
 source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6274"
-export WS="$HOME/concept_v6274_ws"
+export REPO="$HOME/src/neo-concept-v6275"
+export WS="$HOME/concept_v6275_ws"
 source "$WS/install/local_setup.bash" &&
   python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
   ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
@@ -148,6 +149,14 @@ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640
 | 调速 | 点底部「调参…」打开速度对话框。「目标速度」是希望规划参考的速度。「自动驾驶限速」是门控允许发送的自动速度指令上限。比如目标设 3 m/s、限速设 1 m/s，规划就按 1 m/s 计算，遇到弯道或障碍还能主动降速。修改限速会暂停自动驾驶，确认后点「继续自动驾驶」。手柄控制使用自己的设置，实际车速看轮速。 |
 | 动作 | 开启输出后仍处于暂停。手柄居中、有心跳、状态有效时点击「继续运行」。手柄一旦接管，自动命令被切断；视觉和选路继续。松手立即要求零轮速，保持到下一次点击「继续」，恢复前产生的指令全部作废。禁用输出覆盖手动和自动。 |
 | 停滞重启 | 先读原因。在面板点重启，面板先等门控确认暂停，再请求驾驶节点清空路界、桶和时序历史，重新接收传感器。等待新输入后手动继续。若驾驶进程退出，launch 尝试重启进程；门控超时后仍需手动恢复。服务未应答时按第 6 节处理。 |
+
+### 查看和保存整圈地图
+
+点底部「累计赛道地图…」。画面从本次驾驶节点初始化时的位置累计，起点朝向固定为图上的上方。黄点是起点，深色三角是车辆，深线是已走过的车迹。蓝色和绿色区分本车道与邻道，橙色是标线，虚线保留空档。橙红点是跟踪器判为静止的桶；紫色轮廓是已确认移动桶的预计位置范围，早前的范围会淡化。紫色实点是重复观察到的场内开口。
+
+窗口打开时约每秒读取一次 `/concept/drive/lap_map`。中途打开或停车后再打开都能看到此前累计的区域。点「保存 PNG…」保存此时的地图和图例。地图以轮速和陀螺仪推算位置，起终点可能存在漂移；建图窗口保留当前会话的结果，重启驾驶节点会开始新的地图会话。若要保留旧图，先保存。
+
+正常自动行驶时，软件没有按圈数、运行时间或距离结束任务的条件。路况和输入持续有效、规划持续选出前进指令时，过起点会继续行驶。操作者可用硬件急停或面板暂停／禁用输出结束实验。无可行路线、输入失联、门控故障与手柄接管仍可中止自动输出。打开、关闭、保存地图均不发控制指令。
 
 ### 用驾驶面板记录一次实验
 

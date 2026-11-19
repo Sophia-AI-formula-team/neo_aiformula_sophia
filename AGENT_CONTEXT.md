@@ -1,6 +1,6 @@
 # Agent context — 一圈建图，再跑定轨迹
 
-部署本分支的 **Concept V6.27.4** 请直接阅读 [车端部署手册](vehicle_concept/AGENTS.md)。以下内容适用于建图与定轨迹项目。
+部署本分支的 **Concept V6.27.5** 请直接阅读 [车端部署手册](vehicle_concept/AGENTS.md)。以下内容适用于建图与定轨迹项目。
 
 这是现场 agent 的入口，不依赖旧聊天记录。**先读本文件，再读
 [当前状态/任务](docs/agent-context/STATUS.md)、[交接规则](docs/agent-context/PROTOCOL.md)

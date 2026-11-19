@@ -1,0 +1,101 @@
+{
+  "camera_hz": 15,
+  "decision_hz": 15,
+  "seconds": 60,
+  "planned_frames": 900,
+  "sent_frames": 900,
+  "unique_archived_images": 300,
+  "archive_hz": 5,
+  "feedback": "archive",
+  "publish_lag_ms": {
+    "p50": 0.384,
+    "p95": 0.45,
+    "p99": 0.497,
+    "max": 0.616
+  },
+  "perception_frames": 899,
+  "decision_frames": 796,
+  "expected_slots": 900,
+  "distinct_output_slots": 796,
+  "raw_matching_twists": 796,
+  "twists_with_matching_ok_decision": 796,
+  "zero_linear_outputs": 33,
+  "nonzero_linear_outputs": 763,
+  "zero_twists": 0,
+  "nonzero_twists": 796,
+  "yaw_only_twists": 33,
+  "forward_twists": 763,
+  "reverse_twists": 0,
+  "on_slot_deadline": 0,
+  "late_slots": 796,
+  "within_200ms_capture": 790,
+  "missing_slots": 104,
+  "latency_ms": {
+    "p50": 138.736,
+    "p95": 184.54,
+    "p99": 196.029,
+    "max": 209.829
+  },
+  "output_interval_ms": {
+    "p50": 72.52,
+    "p95": 102.705,
+    "p99": 120.841,
+    "max": 144.26
+  },
+  "consecutive_intervals_over_200ms": 0,
+  "longest_gap_including_run_edges_ms": 144.26,
+  "pauses_over_200ms": 0,
+  "status_reason": {
+    "ok / feasible": 762,
+    "ok / no_feasible_trajectory": 27,
+    "ok / executing_prior_contingency": 7
+  },
+  "first_output_ms": 134.381,
+  "policy_processing_ms": {
+    "p50": 66.734,
+    "p95": 97.718,
+    "p99": 115.635,
+    "max": 139.484
+  },
+  "cold_first_5s": {
+    "expected": 75,
+    "received": 73,
+    "on_deadline": 0,
+    "within_200ms": 73,
+    "latency_ms": {
+      "p50": 119.662,
+      "p95": 168.07,
+      "p99": 178.53,
+      "max": 185.659
+    }
+  },
+  "following_slots": {
+    "expected": 825,
+    "received": 723,
+    "on_deadline": 0,
+    "within_200ms": 717,
+    "latency_ms": {
+      "p50": 142.341,
+      "p95": 185.143,
+      "p99": 197.683,
+      "max": 209.829
+    }
+  },
+  "output_source_phase_counts": {
+    "0": 796
+  },
+  "distinct_receive_slots": 782,
+  "receive_slots_with_capture_age_at_most_200ms": 776,
+  "duplicate_output_stamps": 0,
+  "min_twists_in_sliding_1s": 10,
+  "missing_slot_evidence": {
+    "no_perception_observed": 1,
+    "no_decision_observed": 103
+  },
+  "capture_plan_to_receive_ms": {
+    "p50": 139.158,
+    "p95": 184.92,
+    "p99": 196.415,
+    "max": 210.214
+  }
+}
