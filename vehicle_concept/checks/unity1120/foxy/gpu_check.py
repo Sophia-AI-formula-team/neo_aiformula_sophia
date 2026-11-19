@@ -16,7 +16,7 @@ weight = Path(os.environ.get('CONCEPT_WEIGHTS', '/weights/B1.4.pth'))
 with weight.open('rb') as file:
     verify(file)
 h12 = Path(importlib.import_module('concept_ranker').__file__).with_name('model-h12.json')
-extensions = ['concept_road._memory', 'concept_road._markings', 'concept_candidates._progress',
+extensions = ['concept_road._memory', 'concept_road._markings', 'concept_road.field_scan', 'concept_candidates._progress',
               'concept_feasibility._motion', 'concept_feasibility._tread', 'concept_feasibility._risk']
 native = [importlib.import_module(n).__file__ for n in extensions]
 assert all(p.endswith('.so') for p in native)

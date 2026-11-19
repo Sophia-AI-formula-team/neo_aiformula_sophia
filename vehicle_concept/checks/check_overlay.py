@@ -15,7 +15,7 @@ SOURCE = Path(__file__).resolve().parents[1] / "src"
 NATIVE = {
     "concept_candidates": ("_progress",),
     "concept_feasibility": ("_motion", "_risk", "_tread"),
-    "concept_road": ("_markings", "_memory"),
+    "concept_road": ("_markings", "_memory", "field_scan"),
 }
 EXPECTED_VERSIONS = dict(concept="6.27.6", concept_panel="6.27.6", concept_drive="6.27.6",
                          concept_road="6.27.6", concept_candidates="6.27.6", concept_ranker="6.27.6",
