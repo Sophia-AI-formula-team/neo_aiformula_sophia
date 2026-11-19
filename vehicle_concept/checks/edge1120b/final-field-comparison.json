@@ -1,0 +1,264 @@
+{
+  "source_revision": "fdeb2a31127ec65c0f1a1cb59231a05e721beea2",
+  "windows": {
+    "170616-whole": {
+      "field_1119": {
+        "forward": 309,
+        "stop": 193,
+        "reverse": 1
+      },
+      "v6276": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "early": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "bounded": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "trial3": {
+        "forward": 313,
+        "stop": 188,
+        "reverse": 2
+      },
+      "final": {
+        "forward": 307,
+        "stop": 194,
+        "reverse": 2
+      },
+      "final_all75_obstacle": 81,
+      "changed_class_vs_trial3": [
+        387,
+        388,
+        401,
+        402,
+        403,
+        404
+      ],
+      "changed_class_vs_bounded": [
+        413
+      ]
+    },
+    "170616-straight": {
+      "field_1119": {
+        "forward": 0,
+        "stop": 67,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "final": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "final_all75_obstacle": 0,
+      "changed_class_vs_trial3": [],
+      "changed_class_vs_bounded": []
+    },
+    "170616-near_cone": {
+      "field_1119": {
+        "forward": 4,
+        "stop": 66,
+        "reverse": 1
+      },
+      "v6276": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "early": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "bounded": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "trial3": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "final": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "final_all75_obstacle": 65,
+      "changed_class_vs_trial3": [],
+      "changed_class_vs_bounded": []
+    },
+    "170817-whole": {
+      "field_1119": {
+        "forward": 37,
+        "stop": 69,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 70,
+        "stop": 36,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "final": {
+        "forward": 72,
+        "stop": 34,
+        "reverse": 0
+      },
+      "final_all75_obstacle": 0,
+      "changed_class_vs_trial3": [
+        29
+      ],
+      "changed_class_vs_bounded": [
+        30,
+        31
+      ]
+    },
+    "170817-approach": {
+      "field_1119": {
+        "forward": 9,
+        "stop": 0,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 1,
+        "stop": 8,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "final": {
+        "forward": 3,
+        "stop": 6,
+        "reverse": 0
+      },
+      "final_all75_obstacle": 0,
+      "changed_class_vs_trial3": [
+        29
+      ],
+      "changed_class_vs_bounded": [
+        30,
+        31
+      ]
+    },
+    "170817-later": {
+      "field_1119": {
+        "forward": 0,
+        "stop": 46,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "final": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "final_all75_obstacle": 0,
+      "changed_class_vs_trial3": [],
+      "changed_class_vs_bounded": []
+    }
+  },
+  "inputs": {
+    "170616": {
+      "archived_decisions": 504,
+      "replayed": 503,
+      "unreplayed": [
+        {
+          "i": 1,
+          "arrival_ns": 1795075578986323525
+        }
+      ],
+      "sha256": "1b930eacc22030368de0044a13f6985e5012e939a6b3a9f781531ea80fe500b8"
+    },
+    "170817": {
+      "archived_decisions": 108,
+      "replayed": 106,
+      "unreplayed": [
+        {
+          "i": 87,
+          "arrival_ns": 1795075720574361670
+        },
+        {
+          "i": 88,
+          "arrival_ns": 1795075720661256042
+        }
+      ],
+      "sha256": "7745e450d0e65c4d7936505a37b1bd772e67bcc3933f34eaa80ee74fe898cad6"
+    }
+  },
+  "previous_command": "Actual original gate command before callback for every policy, right minus left RPM positive = left turn.",
+  "source": "Cold start per bag. Drive.step uses precomputed field image and segmentation reconstructed from archived JPEG overlay, recorded upstream geometry/objects and wheel/IMU. Original vehicle motion stays unchanged. All archived fields are rerun, excluding missing input or invalid samples."
+}

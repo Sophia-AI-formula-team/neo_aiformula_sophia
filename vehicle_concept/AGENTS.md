@@ -1,5 +1,7 @@
 # Concept 车端接手手册
 
+本分支供 V6.27.7 实验复核。接手时先读[关键帧、轮速、仿真和延迟](checks/edge1120b/README.md)，再按下方手册核对实际设备。11/20 原备车手册仍指向已备份的 V6.27.6。
+
 **11 月 20 日实验部署分支为 `experiment/concept-foxy-unity-20261120`，车端包为 V6.27.6。** 以 11 月 19 日实车安装源码为基线，修了赛道外缘、贴边回正和直路起步。H12 负责可行路线排序。已有原车录包重放、Foxy/GPU 与独立 Unity 的短程闭环和软件 CAN 控制门重放。车头大角度朝外的案例仍会停在道内。实车复测待做。[实车修复记录](checks/field_20261119.md) · [Unity 入口](checks/unity1120/) · [车机部署和结果](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)
 
 以下接线和操作说明来自冻结的 **V6.27.5**。第 2 节的 GitHub 分支和版本检查用于取回该冻结版。在本地修复分支上构建请按上面的修复文档选源码和工作区。

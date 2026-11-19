@@ -1,0 +1,242 @@
+{
+  "unit": "RPM; right minus left. Positive difference turns left. Times JST.",
+  "comparison": "Each policy starts from the gate command recorded before the original callback. Deltas are not sequential new-policy outputs.",
+  "method": "JPEG-derived B/lane/color, archived upstream road and obstacle measurements, recorded RPM/gyro and gate. Each scene is a continuous offline Drive.step replay.",
+  "versions": {
+    "field_1119": "actually recorded original ROS auto command",
+    "v6276": "b724b3e",
+    "early": "c786bf3 (17:08 same as 6487cf4)",
+    "bounded": "b2938f1"
+  },
+  "windows": {
+    "170616-all": {
+      "valid_frames": 503,
+      "field_1119": {
+        "forward": 309,
+        "stop": 193,
+        "reverse": 1,
+        "all75_obstacle": 3
+      },
+      "v6276": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2,
+        "all75_obstacle": 81
+      },
+      "early": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2,
+        "all75_obstacle": 81
+      },
+      "bounded": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2,
+        "all75_obstacle": 81
+      }
+    },
+    "170616-straight": {
+      "valid_frames": 67,
+      "field_1119": {
+        "forward": 0,
+        "stop": 67,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "v6276": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "early": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "bounded": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0,
+        "all75_obstacle": 0
+      }
+    },
+    "170616-near_cone": {
+      "valid_frames": 71,
+      "field_1119": {
+        "forward": 4,
+        "stop": 66,
+        "reverse": 1,
+        "all75_obstacle": 3
+      },
+      "v6276": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2,
+        "all75_obstacle": 65
+      },
+      "early": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2,
+        "all75_obstacle": 65
+      },
+      "bounded": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2,
+        "all75_obstacle": 65
+      }
+    },
+    "170817-all": {
+      "valid_frames": 106,
+      "field_1119": {
+        "forward": 37,
+        "stop": 69,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "v6276": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "early": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "bounded": {
+        "forward": 70,
+        "stop": 36,
+        "reverse": 0,
+        "all75_obstacle": 0
+      }
+    },
+    "170817-approach": {
+      "valid_frames": 9,
+      "field_1119": {
+        "forward": 9,
+        "stop": 0,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "v6276": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "early": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "bounded": {
+        "forward": 1,
+        "stop": 8,
+        "reverse": 0,
+        "all75_obstacle": 0
+      }
+    },
+    "170817-later": {
+      "valid_frames": 46,
+      "field_1119": {
+        "forward": 0,
+        "stop": 46,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "v6276": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "early": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0,
+        "all75_obstacle": 0
+      },
+      "bounded": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0,
+        "all75_obstacle": 0
+      }
+    }
+  },
+  "differences": {
+    "170616": {
+      "field_1119": {
+        "maximum_abs_delta_RPM": 53,
+        "frame": 415,
+        "drive_mps": 0.0,
+        "delta_RPM": -53
+      },
+      "v6276": {
+        "maximum_abs_delta_RPM": 166,
+        "frame": 395,
+        "drive_mps": 0.0,
+        "delta_RPM": -166
+      },
+      "early": {
+        "maximum_abs_delta_RPM": 166,
+        "frame": 395,
+        "drive_mps": 0.0,
+        "delta_RPM": -166
+      },
+      "bounded": {
+        "maximum_abs_delta_RPM": 166,
+        "frame": 395,
+        "drive_mps": 0.0,
+        "delta_RPM": -166
+      }
+    },
+    "170817": {
+      "field_1119": {
+        "maximum_abs_delta_RPM": 100,
+        "frame": 15,
+        "drive_mps": 0.0,
+        "delta_RPM": -100
+      },
+      "v6276": {
+        "maximum_abs_delta_RPM": 71,
+        "frame": 32,
+        "drive_mps": 0.0,
+        "delta_RPM": -71
+      },
+      "early": {
+        "maximum_abs_delta_RPM": 212,
+        "frame": 25,
+        "drive_mps": 1.937354,
+        "delta_RPM": -212
+      },
+      "bounded": {
+        "maximum_abs_delta_RPM": 124,
+        "frame": 29,
+        "drive_mps": 0.0,
+        "delta_RPM": -124
+      }
+    }
+  },
+  "timing": "Windows use original bag decision arrival; frame clock uses original camera capture.",
+  "original_actual_evidence": {
+    "recorded_first_zero_wheels_after_stop_jst": "17:08:29.776",
+    "see": "latency1120/events.json",
+    "original_change": {
+      "between_photo_s": 1.850032,
+      "wheel_integral_between_photos_m": 4.214710084543778,
+      "wheel_integral_during_processing_and_gate_m": 0.6394127626098427,
+      "wheel_integral_while_right_gate_m": 0.4363181140230704,
+      "measured_imu_net_while_right_gate_rad": 0.003148922809218372,
+      "gate_right_duration_ms": 198.696715
+    }
+  }
+}

@@ -1,0 +1,204 @@
+{
+  "baseline_609_csv": "all-609.csv = original / V6.27.6 / fast / bounded (trial 2)",
+  "revision": "3efdc05e3479462b8512c294b3c932f5b15b80b8",
+  "method": "Offline sequential ROS Drive.step on original recorded gate state, wheels, gyro, reconstructed JPEG masks and archived upstream contours/obstacles. Controlled input is the previous recorded gate output for every method. No physical motion predicted by the results.",
+  "unit": "RPM difference = right minus left; positive turns left",
+  "windows": {
+    "170616-whole": {
+      "valid_frames": 503,
+      "field_1119": {
+        "forward": 309,
+        "stop": 193,
+        "reverse": 1
+      },
+      "v6276": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "early": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "bounded": {
+        "forward": 306,
+        "stop": 195,
+        "reverse": 2
+      },
+      "trial3": {
+        "forward": 313,
+        "stop": 188,
+        "reverse": 2
+      },
+      "trial3_all75_obstacle": 81,
+      "changed_class_vs_bounded": [
+        387,
+        388,
+        401,
+        402,
+        403,
+        404,
+        413
+      ]
+    },
+    "170616-straight": {
+      "valid_frames": 67,
+      "field_1119": {
+        "forward": 0,
+        "stop": 67,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 40,
+        "stop": 27,
+        "reverse": 0
+      },
+      "trial3_all75_obstacle": 0,
+      "changed_class_vs_bounded": []
+    },
+    "170616-near_cone": {
+      "valid_frames": 71,
+      "field_1119": {
+        "forward": 4,
+        "stop": 66,
+        "reverse": 1
+      },
+      "v6276": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "early": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "bounded": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "trial3": {
+        "forward": 2,
+        "stop": 67,
+        "reverse": 2
+      },
+      "trial3_all75_obstacle": 65,
+      "changed_class_vs_bounded": []
+    },
+    "170817-whole": {
+      "valid_frames": 106,
+      "field_1119": {
+        "forward": 37,
+        "stop": 69,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 70,
+        "stop": 36,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 73,
+        "stop": 33,
+        "reverse": 0
+      },
+      "trial3_all75_obstacle": 0,
+      "changed_class_vs_bounded": [
+        29,
+        30,
+        31
+      ]
+    },
+    "170817-approach": {
+      "valid_frames": 9,
+      "field_1119": {
+        "forward": 9,
+        "stop": 0,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 1,
+        "stop": 8,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 4,
+        "stop": 5,
+        "reverse": 0
+      },
+      "trial3_all75_obstacle": 0,
+      "changed_class_vs_bounded": [
+        29,
+        30,
+        31
+      ]
+    },
+    "170817-later": {
+      "valid_frames": 46,
+      "field_1119": {
+        "forward": 0,
+        "stop": 46,
+        "reverse": 0
+      },
+      "v6276": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "early": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "bounded": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "trial3": {
+        "forward": 22,
+        "stop": 24,
+        "reverse": 0
+      },
+      "trial3_all75_obstacle": 0,
+      "changed_class_vs_bounded": []
+    }
+  }
+}
