@@ -214,6 +214,8 @@ def serve(sim, driver, camera, conn):
             verify_applied(header, seq, last_ack)
             start = time.monotonic()
             decision, ack = sim.publish_frame(driver, camera, header, jpeg, initial_ns + sim_ns)
+            if decision.get('status') == 'ok' and (decision.get('tracking_controller') or {}).get('mode') != active:
+                raise RuntimeError('driver decision reported a different tracking controller')
             ack['tracking_controller'] = active
             ack['wall_ms'] = round((time.monotonic() - start) * 1000, 2)
             log.write(json.dumps(dict(input=header, reply=ack, decision=decision), separators=(',', ':'), allow_nan=False) + '\n')
