@@ -1,12 +1,8 @@
 # Concept 车端接手手册
 
-本分支为 **V6.27.8 双控制器实验版**。在独立工作区构建本分支，加载该工作区的 `install/local_setup.bash`，运行 `ros2 run concept live`。终端输入 **1** 选 Pure Pursuit，输入 **2** 选 LYA，直接回车选 Pure Pursuit。脚本可显式传 `tracking_controller:=lya` 或 `tracking_controller:=pure_pursuit`。无交互终端且未指定时沿用 Pure Pursuit。选择在传感器和电机节点启动前生效，启动后可用 `ros2 param get /concept/drive tracking_controller` 核对。面板的电机使能与继续运行仍需分别操作。[两种控制器和 Unity 对照](checks/tracking_v6278/README.md) · [上版外缘和延迟记录](checks/edge1120b/README.md)
+**11 月 20 日现场部署 V6.27.8**，团队分支 `feat/concept-v626-live`，本轮固定运行源码 `f305d5f7acea5c87af0e2003bec13bdc06199d8f`。安装、迁移旧快捷方式及回退操作见[1120 备车手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)。安装后打开原来的 Concept 图标或在终端运行 `concept-live`。输入 **1** 选 Pure Pursuit，**2** 选 LYA，回车选 Pure Pursuit。电机输出启动时禁用，LYA 使用的 A、B、C 三点会叠到本帧相机画面上。[Unity 短程对照、视频及仍会停车的情况](checks/tracking_v6278/README.md)
 
-**11 月 20 日实验部署分支为 `experiment/concept-foxy-unity-20261120`，车端包为 V6.27.6。** 以 11 月 19 日实车安装源码为基线，修了赛道外缘、贴边回正和直路起步。H12 负责可行路线排序。已有原车录包重放、Foxy/GPU 与独立 Unity 的短程闭环和软件 CAN 控制门重放。车头大角度朝外的案例仍会停在道内。实车复测待做。[实车修复记录](checks/field_20261119.md) · [Unity 入口](checks/unity1120/) · [车机部署和结果](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)
-
-以下接线和操作说明来自冻结的 **V6.27.5**。第 2 节的 GitHub 分支和版本检查用于取回该冻结版。在本地修复分支上构建请按上面的修复文档选源码和工作区。
-
-**从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
+以下各节提供原车接线、录包、面板和诊断参考。11/19 V6.27.5 的原安装记录和回退命令保存在[冻结手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/a9d7d7a94d062ad5ff61fedfe21d3dbe94fa1bd1/vehicle_concept/AGENTS.md)。
 
 | 接手时先确认 | 目前证据 |
 |---|---|
@@ -29,7 +25,7 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连�
 
 | 设备 | neo 配置与 Concept 的读写位置 | 现场核对 |
 |---|---|---|
-| ZED X 前相机 | 复用 `zed_wrapper`。HD1080、15 Hz、输出缩小 3 倍。左侧去畸变图 `/aiformula_sensing/zed_node/left_image/undistorted`，配对的 `CameraInfo` 默认 `/aiformula_sensing/zed_node/left/camera_info`。 | 查实际尺寸、时间、镜头光学帧和相机序号。neo 的车身 xacro 引用 SN48442725，而另一组在用的 nHD 内参来自 SN48797506；要用现场画面做第 3 节核验。 |
+| ZED X 前相机 | 复用 `zed_wrapper`。HD1080、默认请求 60 Hz、输出缩小 3 倍。左侧去畸变图 `/aiformula_sensing/zed_node/left_image/undistorted`，配对的 `CameraInfo` 默认 `/aiformula_sensing/zed_node/left/camera_info`。 | 查实际尺寸、时间、镜头光学帧和相机序号。neo 的车身 xacro 引用 SN48442725，而另一组在用的 nHD 内参来自 SN48797506；要用现场画面做第 3 节核验。 |
 | VectorNav | 串口缺省 `/dev/ttyUSB0`、115200。原生 `vectornav` 和 `vn_sensor_msgs` 发布 `/aiformula_sensing/vectornav/imu`。使用 z 轴角速度，ROS 左转为正。 | 查设备实际指向、IMU 帧和频率。规划输入取拍摄时已经收到的轮速与陀螺。 |
 | Kvaser USB-CAN | `kvaser_usb`，经典 CAN `can0`，500000 bit/s，原 socketcan receiver 发布 `/aiformula_sensing/vehicle_info`。0x711 低字节为右轮 data[0]、左轮 data[4]。轮径 0.254 m，轮距 0.60 m，传动比 1.1。 | 检查 `ip -details -statistics link show can0`。记录 CAN 错误计数、左右方向及单位。只验证过 8 位正向反馈，高位非零时状态无效。 |
 | 后轮电位计、里程计、TF | 原电位计节点读取同一 CAN 的 0x11，输出 `/aiformula_sensing/rear_potentiometer/yaw`。原 gyro 里程计和车辆 TF 同时启动，便于独立检查。 | 规划和记忆用轮速与陀螺，首圈从空地图开始。 |
@@ -41,80 +37,19 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连�
 
 neo 记录的平台为 Ubuntu 20.04 aarch64、ROS 2 Foxy、L4T 35.4.1、CUDA 11.4、cuDNN 8.6、ZED SDK 4.1.4。以下命令在实际能访问 ZED/CAN 的原车 ROS 环境内执行。如果原节点在车载容器中运行，使用同一容器的设备映射和显示环境。[平台清单](../dependencies/README.md)
 
-部署时取团队分支的最新提交并记录完整 SHA。启动包 `concept` 的 ROS 版本应为 **6.27.5**。首次安装和从旧版升级都使用下方的新版源码与构建目录。升级时打开干净终端，仅加载 Foxy 和原车底层。若 shell 启动文件自动加载旧 Concept，请在本次终端跳过该设置。旧版目录可保留供回退。
+使用 [1120 备车手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)中的 `prepare-concept.sh`。程序为 V6.27.8 单独建立 `~/src/neo-concept-1120-v6278` 和 `~/concept_1120_v6278_ws`。验证清单含车端底层、B1.4、H12、工作区包和终端参数。部署完成后可用以下命令复核。
 
 ```bash
-source /opt/ros/foxy/setup.bash
-source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6275"
-export WS="$HOME/concept_v6275_ws"
-(
-  set -e
-  branch=feat/concept-v626-live
-  url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
-  mkdir -p "$HOME/src" "$WS"
-  if [ ! -e "$REPO" ]; then
-    git clone --depth 1 --single-branch --branch "$branch" "$url" "$REPO"
-  fi
-  cd "$REPO"
-  test "$(git rev-parse --show-toplevel)" = "$(pwd -P)"
-  test "$(git branch --show-current)" = "$branch"
-  git diff --exit-code --quiet
-  git diff --cached --exit-code --quiet
-  git fetch "$url" "refs/heads/$branch"
-  git merge --ff-only FETCH_HEAD
-  test "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)"
-  git show -s --format='Concept deployment commit %H %s'
-)
-```
-
-看到最后的 `Concept deployment commit` 再继续。遇到本地改动或分叉时，在新的空目录检出并保留原目录。用下面的命令核对原车底层。
-
-```bash
-python3 "$REPO/vehicle_concept/checks/check_underlay.py"
-```
-
-核对脚本逐项比较当前安装的手柄映射、电机换算源码及接线配置。出现 `DIFF/MISSING`，先看具体差异。若车机仍安装较早的 neo 电机或启动器，可在新工作区覆盖安装本分支对应的底层包，保留原安装目录供回退。下面仅在需要覆盖时执行。
-
-```bash
-cd "$WS"
-colcon build --base-paths "$REPO/workspace/src/aiformula/common/common_python"
-source install/local_setup.bash
-colcon build --base-paths "$REPO/workspace/src/aiformula/vehicle" \
-  "$REPO/workspace/src/aiformula/launchers" "$REPO/workspace/src/aiformula/control/motor_controller"
-source install/local_setup.bash
-python3 "$REPO/vehicle_concept/checks/check_underlay.py"
-```
-
-安装新包前，核对车机的 SDK、CAN/IMU 驱动和显示环境。Python 需要 NumPy、SciPy、OpenCV、cv_bridge、python_qt_binding（Qt5），以及适配此 JetPack 的 PyTorch/TorchVision。TorchVision 要能在 CUDA 上执行 NMS。Foxy 系统 SciPy 1.3.3 与 NumPy 1.24 不能直接混用；Linux x86 测试组合为 NumPy 1.24.4 / SciPy 1.10.1。Jetson 需选配套的 aarch64 二进制并复测。可用 `rosdep check --from-paths "$REPO/vehicle_concept/src" --ignore-src --rosdistro foxy` 作清单核对；自建包通过 neo 底层工作区提供。不要对工作中的车机环境执行无差别升级。
-
-```bash
-cd "$WS"
-# 这三个包编译 C 扩展。需要 C 编译器（含 OpenMP）、Python 开发头文件和 Cython。
-# 已验证 Cython 3.0.12、SciPy 1.10.1（Python 3.8）。在当前 ROS Python 环境核对。
-python3 -c 'import Cython,scipy; print(Cython.__version__, scipy.__version__)'
-colcon build --base-paths "$REPO/vehicle_concept/src" --symlink-install &&
-  source install/local_setup.bash &&
-  python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS"
-ros2 pkg executables concept
-ros2 bag record --help
-ros2 pkg prefix rosbag2_storage_default_plugins
+source "$HOME/concept_1120_v6278_ws/activate_concept.bash"
+python3 "$HOME/src/neo-concept-1120-v6278/vehicle_concept/checks/check_overlay.py" "$HOME/concept_1120_v6278_ws"
 ros2 run concept live --show-args
-python3 -c 'from concept_road import _markings, _memory; from concept_candidates import _progress; from concept_feasibility import _motion, _risk, _tread; from concept_drive.core import Drive; Drive(); print("V6.26 H12 and native kernels loaded")'
-python3 -c 'import torch,torchvision; from torchvision.ops import nms; b=torch.tensor([[0.,0.,2.,2.]],device="cuda"); print(torch.__version__, torchvision.__version__, nms(b,b[:,2],.5))'
 ```
 
-[安装路径检查](checks/check_overlay.py)应列出 12 个功能包的 ROS 与 Python 路径，启动、驾驶、道路和面板包均显示 `6.27.5`，验收行显示 `material_sections=native candidate_merge=exact`，退出码为 0。脚本核对启动文件、六个编译模块的实际加载位置、原生道路截面扫描函数与候选精确分组。旧实验环境变量不会开启近似合并。`ros2 run concept live --show-args` 应显示 `planning_hz` 默认 `15.0`。若看到旧前缀或 5.0，在干净终端按本节重新加载、构建并核对。
+12 个 Concept 包里，`concept`、`concept_candidates`、`concept_drive` 和 `concept_panel` 应为 6.27.8。B1.4 权重 SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`，H12 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
 
-B1.4 视觉权重大小 15,293,077 字节，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。取自团队已授权的研究原件 `B1.4-road-aligned-research.pth`，或从现有研究工程 `workspace/concept_modules_v4/evidence/v626-frozen/V6.26.zip` 直接导入。公开 Git 分支提供导入器和完整推理源码。没有上述文件的新机器，需要向项目持有人取一份。H12 选路模型已随包安装，SHA-256 为 `e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6`。
+## 3. 相机安装与可选的停车位测量
 
-```bash
-ros2 run concept_yolop concept_yolop_weights /media/usb/V6.26.zip
-ros2 run concept_yolop concept_yolop_check \
-  "$REPO/vehicle_concept/src/concept_drive/test/data/moving-lap-start/00000_rgb.png" --device cuda
-```
-
-## 3. 在停车位标定前视相机
+11/19 固定安装的车优先使用现场已有登记。启动时自动查找 `${XDG_CONFIG_HOME:-$HOME/.config}/concept/camera.json`，缺少时查找同目录的 `honda-ground.json`。先确认文件、相机身份和投影匹配。下面是换装相机或需要重新测量时的做法。
 
 1. 在车前平地布置已量过位置的标记。坐标以车辆规划原点（`base_footprint` 在地面的原点）为基准，记录向右、向前的米数。包括 3 m 内及 7 m 外、车辆左右各 0.5 m 以外。先在原相机运行时取样，或按第 4 节仅开 Concept 观察，保持电机禁用。
 2. 执行下方的 `--capture` 命令。它等待同一时间戳、同一光学帧的相机图和 CameraInfo，保存 `camera.png` 和包含真实尺寸、投影矩阵、帧名的 `camera.json`。目录名每次选新的。相机话题不同可传 `--camera-info-topic` 并在启动时传相同的 `camera_info_topic:=...`。
@@ -132,18 +67,15 @@ ros2 run concept_yolop concept_yolop_calibrate --check "$HOME/concept_calibratio
 
 先记录原方案的启动命令、当前 `ros2 node list`、ROS_DOMAIN_ID，以及第 2 节的 SHA。使用原系统的 `aiformula-init-sensors.service` 或原传感器初始化流程配置 can0 和串口。查看 `systemctl cat aiformula-init-sensors.service`、`ip -details link show can0` 和 `ls -l /dev/ttyUSB0`。停止已经在运行的旧 allnodes、LYA 和其它向电机发命令的进程，让出传感器、手柄和 CAN。确认同一块 CAN 网卡没有被另一容器、ROS 域或非 ROS 程序写入。启动前的图检查只能看到当前 DDS 域。
 
+安装后打开桌面的 **Concept**，或从新 Bash 终端运行
+
 ```bash
-source /opt/ros/foxy/setup.bash
-source /home/workspace/install/setup.bash
-export REPO="$HOME/src/neo-concept-v6275"
-export WS="$HOME/concept_v6275_ws"
-source "$WS/install/local_setup.bash" &&
-  python3 "$REPO/vehicle_concept/checks/check_overlay.py" "$WS" &&
-  ros2 run concept live calibration:="$HOME/concept_calibration/run01/camera.json"
-# 等价长命令是 ros2 launch concept concept.launch.py calibration:=...
+concept-live
+# 指定控制器并跳过菜单
+concept-live tracking_controller:=lya
 ```
 
-首次仅观察可省略 `calibration:=...`。默认目标速度和自动速度上限均为 1.0 m/s。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
+V6.27.8 默认读取上次保存的目标速度和自动速度上限。首次没有有效设置文件时，代码的缺省值为 **4.0 m/s**；本轮 Unity 对照用的是 **2.0 m/s**。在面板禁用输出时核对两个实际值。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
 
 Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640×360 BGR 图为 691,200 字节。发现节点却收不到图时，先查传输设置和容器的 `df -h /dev/shm`。在环境未指定 `FASTRTPS_DEFAULT_PROFILES_FILE` 时，整机 launch 为子进程选择随包 XML。车端 `vehicle-fastdds.xml` 使用 2 MiB 共享内存段及 UDPv4；同机隔离回放 `foxy-fastdds.xml` 仅用共享内存。单独开的面板、RViz、图像发布器或测试终端应加载对应模式的设置，例如 `export FASTRTPS_DEFAULT_PROFILES_FILE="$(ros2 pkg prefix concept)/share/concept/config/vehicle-fastdds.xml"`。若现场已有 DDS 配置，核对里面的传输和图像容量。本次没有测场地无线网络的延迟。
 
@@ -197,7 +129,7 @@ ros2 topic echo /concept/gate/status
 python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 60 --planning-hz 5
 ```
 
-默认 ZED 采集 15 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
+启动参数默认请求 ZED 采集 60 Hz，规划对新图最高请求 15 Hz。要复现原来的抽帧档，启动时显式传 `planning_hz:=5.0`。测速工具继续按 5 Hz 的最低服务要求统计 200 ms 时间窗。用于调参时先禁用电机输出，核对相机时钟，然后测 60 秒。指标看实际收到的新 `/concept/auto_cmd`、两条指令的间隔、采集至指令的 P95 和最大值，同时检查 200 ms 时间窗中是否有空窗。界面或 CAN 重发同一个指令不能代表有了新决策。相机未标定时驾驶节点输出 shadow，可以定位耗时，此时真实新指令数为零。[测速字段与车端命令](checks/measure_timing.md)
 
 V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[V6.27.1 冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [V6.27.1 工作站时钟回放](checks/timing/v6.27.1/README.md)
 

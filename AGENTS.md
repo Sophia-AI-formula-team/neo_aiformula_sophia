@@ -1,8 +1,6 @@
 # Concept 车端部署
 
-V6.27.7 在独立试验分支 `experiment/concept-edge-latency-1120b`。这份记录给出 11/19 实车连续向外打的帧、同起点 Unity 对照和 Foxy 实时计时。部署前先看已通过与仍会停车的条件。[外缘与转向实验](vehicle_concept/checks/edge1120b/README.md)
-
-11 月 20 日实验源码在团队分支 `experiment/concept-foxy-unity-20261120`，车端软件版本 V6.27.6。部署先看[1120 车机手册](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)。实车修复的本地基线为 `70209be`，冻结部署分支 `feat/concept-v626-live` 在此次修复开始时为 V6.27.5（`a9d7d7a`）。[11/19 录包结果](vehicle_concept/checks/field_20261119.md) · [Unity 独立实例复现](vehicle_concept/checks/unity1120/) · [传感器接线和面板](vehicle_concept/AGENTS.md)
+11 月 20 日 Concept 部署版本为 **V6.27.8**，分支 `feat/concept-v626-live`，已验证源码 `f305d5f7acea5c87af0e2003bec13bdc06199d8f`。车机部署从备车目录开始。该目录的安装器负责新工作区、原名快捷方式和退出后回退。纯追踪是默认控制器，LYA 可在启动终端选择。[1120 部署说明](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md) · [实测报告、视频和面板](vehicle_concept/checks/tracking_v6278/README.md) · [传感器接线](vehicle_concept/AGENTS.md)
 
 # User-authorized experiment import (2026-11-04)
 

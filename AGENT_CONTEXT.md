@@ -1,8 +1,6 @@
 # Agent context — 一圈建图，再跑定轨迹
 
-本分支的 Concept V6.27.7 源码、部署入口及复测数据在 [外缘和转向报告](vehicle_concept/checks/edge1120b/README.md) 和 [Concept 车端接手手册](vehicle_concept/AGENTS.md)。
-
-部署本分支的 **Concept V6.27.5** 请直接阅读 [车端部署手册](vehicle_concept/AGENTS.md)。以下内容适用于建图与定轨迹项目。
+Concept V6.27.8 的运行代码在 `feat/concept-v626-live`，固定源码 `f305d5f`。部署 agent 先读 [11/20 安装与快捷方式说明](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)，验证两个终端选项后，按[车端手册](vehicle_concept/AGENTS.md)核对现场设备。以下为建图与定轨迹项目交接。
 
 这是现场 agent 的入口，不依赖旧聊天记录。**先读本文件，再读
 [当前状态/任务](docs/agent-context/STATUS.md)、[交接规则](docs/agent-context/PROTOCOL.md)

@@ -1,8 +1,8 @@
 # Sophia AI Formula ROS 2 Snapshot
 
-## Concept V6.27.5 vehicle deployment
+## Concept V6.27.8 vehicle deployment
 
-This branch, `feat/concept-v626-live`, carries V6.27.5 with a fixed overhead lap map and JPEG perception overlays in panel rosbag recordings. The [vehicle deployment handoff](vehicle_concept/AGENTS.md) covers installation, startup, recording, map export and rollback. See the [lap-map acceptance](vehicle_concept/checks/lap_map/README.md), [image recording tests](vehicle_concept/checks/recording/overlay-v6.27.4.md) and [planner timing report](vehicle_concept/checks/timing/v6.27.2/README.md).
+The deployment branch `feat/concept-v626-live` now carries the V6.27.8 Pure Pursuit / LYA menu and the camera overlay for controller targets. The 11/20 installer builds an isolated Foxy workspace and updates the existing `concept-live` command and Concept desktop launcher. [11/20 deployment and shortcut migration](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md) · [Unity comparison](vehicle_concept/checks/tracking_v6278/README.md) · [Vehicle wiring](vehicle_concept/AGENTS.md)
 
 ## Selected experiment source (2026-11-04)
 
