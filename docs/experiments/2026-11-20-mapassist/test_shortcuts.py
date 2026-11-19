@@ -45,6 +45,12 @@ class ShortcutUpgrade(unittest.TestCase):
                     entry = (desktop / ("1120-" + name + ".desktop")).read_text()
                     self.assertIn(f"Name=1120 {index} {name}\n", entry)
                     self.assertIn(f'Exec="{commands / name}"\n', entry)
+                map_icon = desktop / "1120-mapassist.desktop"
+                self.assertIn(f'Exec="{commands / "mapassist"}" inner 450\n', map_icon.read_text())
+                # Upgrade a previously installed plain 1120 MapAssist desktop entry.
+                map_icon.write_text(map_icon.read_text().split("Actions=Inner450;")[0])
+                shortcuts.migrate(home, desktop, True)
+                self.assertIn("[Desktop Action Inner450]", map_icon.read_text())
                 shutil.copy2(desktop / "1120-mapassist.desktop", menu / "old-mapassist.desktop")
                 shutil.copy2(commands / "mapassist", commands / "old-mapassist")
                 with self.assertRaises(SystemExit):

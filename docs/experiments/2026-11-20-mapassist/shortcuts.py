@@ -22,17 +22,22 @@ def migrate(home, desktop, apply, check=False):
     selector = home / "aiformula_runtime/2026-11-19-yolop-selection/yolop.launch"
     driver = (HERE / "vehicle-command").read_bytes()
     wanted = {bin_dir / name: driver for name in COMMANDS}
+    desktop_hashes = {value for key, value in old.items() if key.endswith(".desktop")}
     for i, name in enumerate(COMMANDS, start=1):
         entry = ("[Desktop Entry]\nType=Application\nVersion=1.0\n"
                  f"Name=1120 {i} {name}\nExec=\"{bin_dir / name}\"\n"
                  "Terminal=true\nIcon=utilities-terminal\nCategories=Utility;\n")
+        desktop_hashes.add(hashlib.sha256(entry.encode()).hexdigest())
+        if name == "mapassist":
+            entry += ("Actions=Inner450;\n\n[Desktop Action Inner450]\n"
+                      "Name=AV314 inner (450 px)\n"
+                      f'Exec="{bin_dir / name}" inner 450\n')
         wanted[desktop / f"1120-{name}.desktop"] = entry.encode()
     old_paths = {bin_dir / name for name in old if not name.endswith(".desktop")}
     old_paths.update([bin_dir / "yolop", bin_dir / "yolop-launch"])
     menu = Path(os.environ.get("XDG_DATA_HOME") or home / ".local/share") / "applications"
     desktops = {desktop, home / "Desktop", home / ".xdg-hidden/Desktop", home / ".local/share/applications", menu}
     # Identify extra copies by content, including a 1120 desktop moved to another XDG directory.
-    desktop_hashes = {value for key, value in old.items() if key.endswith(".desktop")}
     desktop_hashes.update(hashlib.sha256(data).hexdigest()
                           for path, data in wanted.items() if path.suffix == ".desktop")
     command_hashes = {value for key, value in old.items() if not key.endswith(".desktop")}
