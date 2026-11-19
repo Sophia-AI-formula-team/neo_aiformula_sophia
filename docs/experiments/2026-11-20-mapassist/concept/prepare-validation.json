@@ -1,0 +1,78 @@
+{
+  "date_jst": "2026-11-20",
+  "setup_scripts": "d8b2648",
+  "runtime_commit": "f305d5f7acea5c87af0e2003bec13bdc06199d8f",
+  "shortcuts_tested": "f3454c7",
+  "docker_image": "aiformula-concept:foxy-gpu-v6278-release",
+  "docker_image_id": "sha256:b1c1839b1d5529ae111e8785f1c6a5ef7aa8383efa76a306d08f2f8997368c37",
+  "environment": "Foxy Ubuntu 20.04 amd64, isolated Docker network and software replay CAN endpoint; no physical sensors or motors. The workstation GPU ran the frozen B1.4 frame.",
+  "git_validation": {
+    "branch": "feat/concept-v626-live",
+    "github_head_at_check": "302fc1d4f534d7a53b24a18721298a1bde665327",
+    "github_ahead_of_pin": 1,
+    "github_behind_pin": 0,
+    "actual_remote_sparse_checkout": true,
+    "roots": [
+      "vehicle_concept",
+      "workspace/src/aiformula/launchers",
+      "workspace/src/aiformula/vehicle",
+      "workspace/src/aiformula/control/motor_controller"
+    ]
+  },
+  "build": {
+    "packages": 13,
+    "concept_packages": 12,
+    "extra_package": "private launchers",
+    "ros_underlay_checked_files": 12,
+    "native_extensions": 7,
+    "repeated_prepare_success": true,
+    "source_changes_after_repeat": 0,
+    "dirty_checkout_preserved": true,
+    "shortcuts_unchanged_on_dirty_check": true,
+    "previously_sourced_older_overlay_tested": true,
+    "qt_torch_cv_bridge_imports": true,
+    "runtime_h12_sha256": "e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6",
+    "weight_check": {
+      "weights": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+      "device": "cuda",
+      "torch": "2.0.0+cu118",
+      "torchvision": "0.15.1+cu118",
+      "detections": 100,
+      "road_pixels": 82849,
+      "lane_pixels": 1913,
+      "wire_bytes": 194733
+    }
+  },
+  "tty_replay": {
+    "pure_pursuit": {
+      "mode": "pure_pursuit",
+      "status": "blocked",
+      "reason": "camera geometry has no validated driving profile",
+      "candidates": 75,
+      "feasible": 42,
+      "selected": 37,
+      "selected_points": 25,
+      "map_points": 2142,
+      "chosen_pixels": 799,
+      "auto_messages": 0
+    },
+    "lya": {
+      "mode": "lya",
+      "status": "blocked",
+      "reason": "camera geometry has no validated driving profile",
+      "candidates": 75,
+      "feasible": 52,
+      "selected": 37,
+      "selected_points": 25,
+      "map_points": 2142,
+      "chosen_pixels": 804,
+      "auto_messages": 0
+    }
+  },
+  "limits": [
+    "The GitHub sparse download was checked independently; offline Docker built a clean worktree at the exact same commit.",
+    "Foxy GPU container required the official Ubuntu xdg-user-dirs package for its simulated desktop; desktop integration used a temporary home.",
+    "ROS replay used an unregistered camera and the physical output was inhibited. The release calls this status blocked; the isolated probe accepted this name in place of the older shadow assertion.",
+    "Jetson aarch64 TLS loading, real ZED, CAN and laptop desktop interaction require the vehicle environment."
+  ]
+}
