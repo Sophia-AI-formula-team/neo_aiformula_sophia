@@ -1,0 +1,51 @@
+2026-11-19T10:13:30+09:00 Deployment preflight began. Official feat/concept-v626-live resolved at 10:13:17 JST to a9d7d7a94d062ad5ff61fedfe21d3dbe94fa1bd1; AGENTS.md specifies a separate ROS workspace.
+2026-11-19T10:13:36+09:00 Syncing the official Concept branch into a separate sparse checkout.
+2026-11-19T10:13:50+09:00 Git 2.25 clone --sparse failed before creating a checkout. Retrying with Git sparse setup after fetch.
+2026-11-19T10:13:55+09:00 Git 2.25 also requires explicit partial-clone configuration for a filtered fetch; enabling it in the new checkout.
+2026-11-19T10:13:55+09:00 Vehicle Python lacks ensurepip; creating the private environment without bootstrapping pip and staging wheels only into it.
+2026-11-19T10:14:12+09:00 Pinned NumPy/SciPy/Cython and reused the existing Jetson Torch/TorchVision builds in the private environment.
+2026-11-19T10:14:49+09:00 Resolved Torch import dependencies from the verified A2/A4 environment after the first private-environment CUDA check reported missing typing_extensions and SymPy.
+2026-11-19T10:14:58+09:00 The combined Torch/Qt check hit aarch64 static TLS allocation for libGLdispatch. Adding both libGLdispatch and libgomp to the Concept-only environment.
+2026-11-19T10:15:03+09:00 Concept source synchronized at a9d7d7a94d062ad5ff61fedfe21d3dbe94fa1bd1.
+2026-11-19T10:15:04+09:00 Vehicle underlay check exited 1.
+2026-11-19T10:15:04+09:00 Verified pinned NumPy/SciPy/Cython, ROS cv_bridge, Qt5 and TorchVision CUDA NMS together.
+2026-11-19T10:15:12+09:00 Underlay comparison found only the intentional YOLOP A3 default change. Building the branch launchers in the isolated overlay, with original calibration, motor and system installation preserved.
+2026-11-19T10:15:15+09:00 Exact underlay check passed. Building all 12 Concept packages including native Cython extensions.
+2026-11-19T10:15:38+09:00 Starting a bounded, offscreen Qt panel-only smoke test in localhost ROS domain 196.
+2026-11-19T10:15:45+09:00 Qt panel stayed up for the full 7-second offscreen check and was stopped; no vehicle launch was used.
+2026-11-19T10:16:43+09:00 Concept package build exited 0.
+2026-11-19T10:16:48+09:00 Overlay path and version check, launch argument inspection, ROS bag tools, H12 and six native kernels all passed.
+2026-11-19T10:16:53+09:00 Built the real vehicle sensor graph in memory without opening a camera, CAN, or control device.
+2026-11-19T10:16:56+09:00 B1.4 is absent from the default location. No matching checkpoint or V6.26 archive was found in the searched vehicle and workstation paths, Neo releases, or accessible Drive. CUDA image acceptance awaits the authorized file.
+2026-11-19T10:16:56+09:00 No Concept calibration directory was found. Vehicle commissioning and motor output were not started.
+2026-11-19T10:16:56+09:00 Offline control-gate and frozen-driver fixture tests passed.
+2026-11-19T10:17:01+09:00 Reviewed the deployment evidence and staged a local report for end-of-day packaging. GitHub publication deferred.
+2026-11-19T10:18:44+09:00 Located the authorized B1.4 checkpoint in the workstation Downloads folder; verified its size and official SHA-256 locally.
+2026-11-19T10:18:45+09:00 Received the B1.4 checkpoint on the Jetson and verified its SHA-256 after transfer.
+2026-11-19T10:18:47+09:00 Official importer installed B1.4 in the private default model directory. Starting the documented CUDA acceptance on the bundled fixture image.
+2026-11-19T10:18:57+09:00 B1.4 CUDA fixture check exited 0.
+2026-11-19T10:19:05+09:00 Starting documented localhost replay in domain 76 with the installed CUDA model, software CAN sink and no physical devices.
+2026-11-19T10:19:23+09:00 Documented camera-to-planner CUDA replay exited 0.
+2026-11-19T10:19:30+09:00 Replay process group remained after cleanup.
+2026-11-19T10:19:43+09:00 Verified by process list that the replay group exited after the shutdown grace period. Starting only the ZED driver and B1.4 perception in localhost ROS domain 197.
+2026-11-19T10:20:03+09:00 Real ZED to B1.4 CUDA perception check exited 0. Probe retained counters only.
+2026-11-19T10:20:15+09:00 Confirmed the isolated camera and perception process groups exited.
+2026-11-19T10:20:20+09:00 Reviewed CUDA, replay and live-camera summaries and added them to the local end-of-day report.
+2026-11-19T10:21:09+09:00 10:20:49 JST recheck located the Neo and vehicle copies of the SN48797506 nHD intrinsics, with matching file hash. The current ZED log identified SN48797506. The retained xacro uses the legacy SN48442725 extrinsic; no measured Concept receipt was found.
+2026-11-19T10:21:09+09:00 Starting only ZED in isolated localhost ROS domain 198 to capture a single paired image and CameraInfo using the official Concept tool.
+2026-11-19T10:21:25+09:00 Camera launch group remained after cleanup.
+2026-11-19T10:21:35+09:00 Added the live CameraInfo comparison to the local deployment report. The source image remains on the Jetson.
+2026-11-19T10:21:35+09:00 Confirmed the camera process group had exited after the initial cleanup check. Captured one private 640x360 PNG and paired CameraInfo; live focal length differed from Neo nHD YAML by about 0.214 px. The draft uses the actual CameraInfo projection and contains no independent ground measurements.
+2026-11-19T10:22:42+09:00 User supplied a current camera height of 0.55 m. Recorded as an optical-center-to-ground assumption pending confirmation and measured ground points. Concept V6.26 reference height is 0.655 m; no driving receipt or package changes were applied.
+2026-11-19T10:39:33+09:00 Verified Bash syntax plus environment activation, argument forwarding and exit propagation with a fake ros2 executable.
+2026-11-19T10:39:33+09:00 Verified the Concept activation script is present and the terminal command name is free.
+2026-11-19T10:39:34+09:00 Installed concept-live in the terminal PATH and verified lookup. No Concept process was launched.
+2026-11-19T10:39:39+09:00 Saved the terminal shortcut and its verification in the local end-of-day report.
+2026-11-19T10:40:30+09:00 Installed and validated the executable Concept desktop entry pointing at concept-live. No app launch was performed.
+2026-11-19T10:40:30+09:00 Verified the XDG desktop directory is available, the Concept terminal command is executable and the shortcut name is free.
+2026-11-19T10:40:34+09:00 Archived the desktop entry and validation in the local end-of-day report.
+2026-11-19T11:30:14+09:00 Concept gate acknowledged output disable before shutdown.
+2026-11-19T11:30:14+09:00 Sent SIGINT to the Concept launch process to stop its own child nodes.
+2026-11-19T11:30:26+09:00 Concept shutdown is still in progress after the initial grace period.
+2026-11-19T11:30:34+09:00 Confirmed Concept launch group fully exited; independently verified camera, detector, motor and CAN PIDs were gone.
+2026-11-19T11:30:34+09:00 Only the Qt panel and launcher remained; panel had no recording child. Sent TERM to the panel.

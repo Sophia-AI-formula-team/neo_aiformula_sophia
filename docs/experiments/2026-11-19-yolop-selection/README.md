@@ -1,5 +1,7 @@
 # Jetson YOLOP selection experiment · 2026-11-19 JST
 
+今日全部测试按 YOLOP、Concept 与 Semantic 分类。见 [验收索引](TEST_INDEX.md) 和 [当天实验 ZIP](2026-11-19-experiment-report.zip)。
+
 This is a reversible local experiment for A3 V14, A4 and A4Light in the Neo vehicle workspace. Neo repository ID: 1303517209. Repository main inspected at `d8277bd2b4ce95bcab2883e9b68b011749c0d9ad`. The experiment follows the A4 package AGENTS.md, DEPLOYMENT.md, JETSON.md and the A4 identity handoff in docs/agent-context.
 
 ## Run

@@ -1,0 +1,12 @@
+~/concept_v6275_ws/venv/lib/python3.8/site-packages/torch/_utils.py:776: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  return self.fget.__get__(instance, owner)()
+{
+  "weights": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+  "device": "cuda",
+  "torch": "2.0.0+nv23.05",
+  "torchvision": "0.15.1",
+  "detections": 100,
+  "road_pixels": 82849,
+  "lane_pixels": 1913,
+  "wire_bytes": 233597
+}

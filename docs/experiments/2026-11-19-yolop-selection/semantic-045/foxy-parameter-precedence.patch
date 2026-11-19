@@ -1,0 +1,30 @@
+--- a/semantic_vehicle_045.launch.py
++++ b/semantic_vehicle_045.launch.py
+@@ -3,6 +3,8 @@
+ from pathlib import Path
+ import re
+ 
++import yaml
++
+ from ament_index_python.packages import get_package_share_directory
+ from launch import LaunchDescription
+ from launch.actions import DeclareLaunchArgument, OpaqueFunction
+@@ -48,10 +50,14 @@
+         overrides[f"input_point_{label}_topic"] = f"/processed_point_{label}"
+         overrides[f"output_point_{label}_topic"] = f"{PREFIX}/point_{label}"
+ 
+-    # Keep the name used by the installed YAML. The separate status/command
+-    # topics keep the running vehicle gate and LYA independent of this node.
+-    return [Node(package="semantic_local_planner_ros", executable="map_assist", name="map_assist",
+-                 output="screen", parameters=[str(share / "config" / "map_assist.yaml"), overrides],
++    # Foxy can give the node-specific base YAML precedence over a wildcard
++    # override file. Pass one node-specific parameter set to keep the outputs
++    # on the diagnostic topics.
++    with (share / "config" / "map_assist.yaml").open(encoding="utf-8") as config:
++        parameters = yaml.safe_load(config)["map_assist"]["ros__parameters"]
++    parameters.update(overrides)
++    return [Node(package="semantic_local_planner_ros", executable="map_assist",
++                 name="map_assist", namespace="/", output="screen", parameters=[parameters],
+                  remappings=[("/map_assist/detour_path", PREFIX + "/detour_path")])]
+ 
+ 

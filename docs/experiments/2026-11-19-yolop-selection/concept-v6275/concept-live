@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+source "$HOME/concept_v6275_ws/activate_concept.bash"
+exec ros2 run concept live "$@"

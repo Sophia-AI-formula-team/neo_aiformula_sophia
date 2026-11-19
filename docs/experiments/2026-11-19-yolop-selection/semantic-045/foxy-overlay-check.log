@@ -1,0 +1,14 @@
+semantic_local_planner_ros 0.4.5 ~/semantic_045_ws/install/semantic_local_planner_ros
+semantic_planner_core 0.4.5 ~/semantic_045_ws/install/semantic_planner_core
+Foxy map_assist imports, numpy 1.17.4
+semantic_local_planner_ros lane_points_mux_node
+semantic_local_planner_ros local_primitive_planner_node
+semantic_local_planner_ros map_assist
+semantic_local_planner_ros planned_lane_points_adapter_node
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'lane':
+        Select the minimum radius for the commissioned lane. Valid choices are: ['inner', 'outer']
+
+    'traffic_stop_flag_topic':
+        Confirmed vehicle publisher of the continuous distance Bool.

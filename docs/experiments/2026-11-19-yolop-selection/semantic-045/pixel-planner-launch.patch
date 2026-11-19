@@ -1,0 +1,17 @@
+--- a/semantic_vehicle_045.launch.py
++++ b/semantic_vehicle_045.launch.py
+@@ -37,6 +37,7 @@
+         "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
+         "traffic_light_topic": "/aiformula_perception/yolop_a3/traffic_light/state",
+         "traffic_stop_flag_topic": stop_topic,
++        "traffic_stop_flag_timeout_sec": float(LaunchConfiguration("traffic_stop_flag_timeout_sec").perform(context)),
+         "avoidance_flag_topic": AVOIDANCE_TOPIC,
+         "branch_active_topic": BRANCH_TOPIC,
+         "reset_topic": PREFIX + "/reset",
+@@ -67,5 +68,6 @@
+                               description="Select the minimum radius for the commissioned lane."),
+         DeclareLaunchArgument("traffic_stop_flag_topic",
+                               description="Confirmed vehicle publisher of the continuous distance Bool."),
++        DeclareLaunchArgument("traffic_stop_flag_timeout_sec", default_value="0.0"),
+         OpaqueFunction(function=_map_assist_node),
+     ])

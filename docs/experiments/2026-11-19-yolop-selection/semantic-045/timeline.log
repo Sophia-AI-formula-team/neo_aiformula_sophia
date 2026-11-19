@@ -1,0 +1,46 @@
+2026-11-19T10:49:31+09:00 Resolved MapAssist 0.4.5 in Neo main and read the PR and deployment handoff. Initial vehicle SSH checks timed out or returned no route.
+2026-11-19T10:49:47+09:00 Checked out the scoped source at the pinned merge commit.
+2026-11-19T10:50:47+09:00 Verified 35 focused tests and 4 subtests on desktop after disabling incompatible pytest plugin autoload.
+2026-11-19T10:50:53+09:00 Prepared the tracked-source archive and verified 65 Python 3.8 syntax parses; vehicle SSH still unavailable.
+2026-11-19T10:50:59+09:00 Passed clean-domain desktop DDS verification; all temporary MapAssist nodes exited.
+2026-11-19T10:51:07+09:00 Saved the local diagnostic wiring and source provenance for the end-of-day bundle.
+2026-11-19T11:04:53+09:00 SSH reconnected at 11:04:48 JST. Starting read-only vehicle package and topic audit.
+2026-11-19T11:05:10+09:00 Finished read-only package and DDS audit.
+2026-11-19T11:05:24+09:00 Received and verified the pinned Neo MapAssist 0.4.5 source. Concept was active, so this install will neither change its underlay nor start a vehicle launch.
+2026-11-19T11:05:25+09:00 Backed up actual vehicle Semantic source, both previous install locations, and existing Semantic launch files. Active originals and map data were left in place.
+2026-11-19T11:05:35+09:00 Vehicle native Foxy build and package/version, Python import and launch argument checks passed. No default environment files or active Concept process were changed.
+2026-11-19T11:05:40+09:00 Starting only the installed MapAssist diagnostic launch in localhost ROS domain 200. Synthetic fixture topics are isolated from active Concept.
+2026-11-19T11:05:55+09:00 Compared vehicle legacy Semantic source files against the matching-version Neo import branch using Git blob hashes.
+2026-11-19T11:06:06+09:00 First Foxy isolated run started the node but the probe received no status before timeout. Confirmed temporary processes exited. Retrying in a low domain with the already validated localhost-only Fast DDS profile.
+2026-11-19T11:06:30+09:00 Confirmed previously running Concept launch remained active.
+2026-11-19T11:06:30+09:00 Jetson Foxy isolated DDS retry finished with status 1 and test process group exited.
+2026-11-19T11:06:45+09:00 Applied Foxy launch-only compatibility fix: merge defaults and diagnostic overrides in one node-specific file. Preserved upstream copy and planner binaries.
+2026-11-19T11:06:50+09:00 Verifying the patched Foxy launch on isolated domain 73 after reproducing the parameter precedence issue.
+2026-11-19T11:06:58+09:00 Confirmed previously running Concept launch remained active.
+2026-11-19T11:06:58+09:00 Jetson Foxy patched launch DDS verification exited 0 and test processes have stopped.
+2026-11-19T11:07:06+09:00 Reviewed and collected the local staging report, legacy hash comparison, native Foxy results and launch-only patch. Publication remains deferred.
+2026-11-19T11:09:23+09:00 Reconfirmed YOLOP publishes color and red pixel count and the old motor expects stop_wait. Further SSH readback returned no route. No runtime or wiring changes.
+2026-11-19T11:17:24+09:00 A3 and legacy stop_wait source audit found the old stamped color bridge and no metric distance. Vehicle SSH retries returned no route.
+2026-11-19T11:17:50+09:00 Verified the preview adapter with Neo motor 0.4.1 MotorGate logic.
+2026-11-19T11:18:12+09:00 Verified preview wait/normal via isolated Jazzy DDS using the actual 0.4.5 launch and synthetic inputs; no physical ROS outputs.
+2026-11-19T11:20:42+09:00 Reviewed the deployed 0.4.5 state machine after user clarification. Logged learning-lap distance hold, green release, prepare-to-detour transition, and the preview-only adapter limitation. No vehicle or package changes.
+2026-11-19T11:23:57+09:00 Passed focused tests for the confirmed-non-red rule and existing detour logic.
+2026-11-19T11:24:24+09:00 Isolated desktop DDS verified red wait, unknown hold, explicit off and yellow resume, and zero physical output publishers.
+2026-11-19T11:24:32+09:00 Saved the local non-red traffic patch and tests; retained the existing motor and deferred vehicle install and GitHub upload.
+2026-11-19T11:25:19+09:00 Passed 55 tests and 44 subtests after counting explicit fresh unknown observations as non-red in MapAssist.
+2026-11-19T11:25:30+09:00 Isolated DDS confirmed no-message hold and fresh unknown resume after a red wait. No live motor or GitHub change.
+2026-11-19T11:28:22+09:00 Applied checked MapAssist-only patch after saving both pre-change package trees.
+2026-11-19T11:28:22+09:00 SSH restored at 11:28:16 JST. Preparing to install the fresh-unknown non-red patch in the isolated 0.4.5 overlay.
+2026-11-19T11:28:31+09:00 Installed and verified the current traffic patch. Motor, old underlay and running nodes were untouched.
+2026-11-19T11:28:35+09:00 Audited installed A3 source, native motor files, and current endpoint ownership without starting any vehicle nodes.
+2026-11-19T11:29:18+09:00 Installed the separate commissioning launch, OA fresh-switch wrapper and compatible stop-state candidate with private outputs. Existing Concept and motor/CAN unchanged.
+2026-11-19T11:29:32+09:00 Starting the patched MapAssist, OA selector, stock LYA and stop_wait candidate only in localhost domain 75.
+2026-11-19T11:29:45+09:00 Native isolated commissioning exited 0. No physical CAN or motor node was launched.
+2026-11-19T11:30:44+09:00 Collected verified vehicle install, diagnostic wiring and Concept shutdown evidence for the local end-of-day report.
+2026-11-19T11:34:38+09:00 Installed the checked 600-pixel Bool source, explicit flag timeout and valid matched-detour priority. Began the isolated Foxy rebuild.
+2026-11-19T11:34:44+09:00 Foxy build passed; waiting for isolated ROS acceptance. No motor or physical CAN changes.
+2026-11-19T11:35:32+09:00 Native planner tests passed for pixel fallback and matched-detour priority. Starting isolated 599/600-pixel and command/ABC checks.
+2026-11-19T11:35:47+09:00 Native isolated pixel commissioning finished with status 0 and test process group exited.
+2026-11-19T11:36:13+09:00 Verified the native 599/600 boundary, waypoint output and red fallback evidence and saved it locally without GitHub publication.
+2026-11-19T11:38:47+09:00 Checked deployed Semantic launcher and pixel adapter digests and reviewed today’s evidence for the public experiment archive.
+2026-11-19T11:39:23+09:00 Rebuilt the archived source patch chain in a clean snapshot and matched the deployed launcher SHA-256.

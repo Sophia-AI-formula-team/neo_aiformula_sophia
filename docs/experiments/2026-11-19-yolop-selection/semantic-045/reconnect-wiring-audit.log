@@ -1,0 +1,58 @@
+2026-11-19T11:28:29+09:00
+  24290 ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 run concept live
+  24328 ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch concept concept.launch.py
+
+^ A3 / flag_stop / stop thresholds
+~/aiformula_runtime/yolop_a3_v14_20261012/ros_install
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy
+/home/workspace/src/aiformula/perception/obsticle_avoidence/b_spline_oa_2.py:5:发布:  /processed_image  /bspline_path  /path_point  /red_pixels_count
+/home/workspace/src/aiformula/perception/obsticle_avoidence/b_spline_oa_2.py:55:        self.red_pub  = self.create_publisher(Int32, '/red_pixels_count',10)
+/home/workspace/src/aiformula/perception/obsticle_avoidence/b_spline_oa_1.py:22:        self.red_pixels_publisher = self.create_publisher(Int32, '/red_pixels_count', 10)
+/home/workspace/src/aiformula/launchers/launch/yolop_a2.launch.py:65:            "red_pixels_count_topic",
+/home/workspace/src/aiformula/launchers/launch/yolop_a2.launch.py:66:            default_value="/aiformula_perception/yolop_a2/red_pixels_count",
+/home/workspace/src/aiformula/launchers/launch/yolop_a2.launch.py:91:            "-r", ["/red_pixels_count:=", LaunchConfiguration("red_pixels_count_topic")],
+/home/workspace/src/aiformula/launchers/launch/yolop_a3.launch.py:67:    red_topic = "/a3_shadow/red_pixels_count" if shadow else "/aiformula_perception/yolop_a3/red_pixels_count"
+/home/workspace/src/aiformula/launchers/launch/yolop_a3.launch.py:84:             "-r", "/red_pixels_count:=" + red_topic],
+/home/workspace/src/aiformula/perception/lane_points/lane_points/lane_oa1.py:72:            '/red_pixels_count',
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/yolop_a3_runtime/outputs.py:31:    red_pixels_count: int
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/yolop_a3_runtime/outputs.py:37:                    red_pixels_count=self.red_pixels_count, timings_ms=self.timings_ms)
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/yolop_a3_runtime/contracts.py:11:    red_pixels_count: str = "/red_pixels_count"
+/home/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_0312.py:37:            '/red_pixels_count',
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_bringup/config/semantic_vehicle_live.yaml:19:    red_pixels_topic: /red_pixels_count
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_bringup/config/semantic_vehicle_live.yaml:21:    red_pixel_threshold: 600
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_bringup/config/semantic_vehicle_shadow_demo.yaml:19:    red_pixels_topic: /red_pixels_count
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_bringup/config/semantic_vehicle_shadow_demo.yaml:21:    red_pixel_threshold: 600
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_gate_ros/semantic_gate_ros/red_pixel_traffic_light_adapter_node.py:16:            ("red_pixels_topic", "/red_pixels_count"),
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_gate_ros/semantic_gate_ros/red_pixel_traffic_light_adapter_node.py:18:            ("red_pixel_threshold", 600),
+/home/workspace/src/aiformula/perception/semantic_planning_system/semantic_gate_ros/semantic_gate_ros/red_pixel_traffic_light_adapter_node.py:37:        if self.latest_count >= int(self.get_parameter("red_pixel_threshold").value):
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/ros2/yolop_a3_perception/yolop_a3_perception/node.py:30:        self.red = self.create_publisher(Int32, ROS_TOPICS.red_pixels_count, 1)
+~/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/ros2/yolop_a3_perception/yolop_a3_perception/node.py:44:            self.red.publish(Int32(data=output.red_pixels_count))
+~/aiformula_runtime/yolop_a3_v14_20261012/ros_install/yolop_a3_perception/lib/python3.8/site-packages/yolop_a3_perception/node.py:30:        self.red = self.create_publisher(Int32, ROS_TOPICS.red_pixels_count, 1)
+~/aiformula_runtime/yolop_a3_v14_20261012/ros_install/yolop_a3_perception/lib/python3.8/site-packages/yolop_a3_perception/node.py:44:            self.red.publish(Int32(data=output.red_pixels_count))
+
+^ ROS executable packages and native gate hashes
+trajectory_follower /home/workspace/install/trajectory_follower
+/home/workspace/install/trajectory_follower/lib/trajectory_follower/lya_0221
+/home/workspace/install/trajectory_follower/lib/trajectory_follower/lya_follower_connected_omegat_global
+kalman_filter /home/workspace/install/kalman_filter
+/home/workspace/install/kalman_filter/lib/kalman_filter/withoutkalman_0312
+semantic_vehicle_wiring /home/workspace/install/semantic_vehicle_wiring
+/home/workspace/install/semantic_vehicle_wiring/lib/semantic_vehicle_wiring/a3_signal_capture
+/home/workspace/install/semantic_vehicle_wiring/lib/semantic_vehicle_wiring/motor_gate_session
+motor_controller /home/workspace/install/motor_controller
+/home/workspace/install/motor_controller/lib/motor_controller/motor_controller
+5051626c0497763d8aa6baab307d96b1330219876358968d1ecb110699905ac1  /home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/gate.py
+7a6282c6a7e8f0215477da917f654fc39d15891c76a0b4209edeeb859519fd7d  /home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/motor_controller.py
+
+^ Sensor and command graph
+{"topic": "/flag_stop", "publishers": [], "subscribers": []}
+{"topic": "/point_flag", "publishers": [], "subscribers": []}
+{"topic": "/aiformula_perception/yolop_a3/red_pixels_count", "publishers": [], "subscribers": []}
+{"topic": "/aiformula_perception/yolop_a3/traffic_light/state", "publishers": [], "subscribers": []}
+{"topic": "/processed_point_a", "publishers": [], "subscribers": []}
+{"topic": "/oa_point_a", "publishers": [], "subscribers": []}
+{"topic": "/filtered_lane_pose", "publishers": [], "subscribers": []}
+{"topic": "/aiformula_control/game_pad/cmd_vel", "publishers": [], "subscribers": []}
+{"topic": "/semantic_drive/map_status", "publishers": [], "subscribers": []}
+{"topic": "/semantic_drive/motor_session", "publishers": [], "subscribers": []}
+{"topic": "/aiformula_control/motor_controller/reference_signal", "publishers": [["/concept", "gate", "can_msgs/msg/Frame"]], "subscribers": [["/aiformula_control", "socket_can_sender", "can_msgs/msg/Frame"]]}

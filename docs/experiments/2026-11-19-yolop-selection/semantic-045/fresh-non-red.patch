@@ -1,0 +1,305 @@
+diff --git a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
+index 525e82e..3463029 100644
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
+@@ -26,7 +26,7 @@ from semantic_planner_core.rough_topology import OfficialRoute
+ from semantic_planner_core.route_fusion import build_fused_route, build_odom_reference
+ from semantic_planner_core.anchored_topology import anchored_graph
+ from semantic_planner_core.traffic_route import OfficialToOdom, TopologyGraph
+-from semantic_planner_core.traffic_light_filter import TrafficLightFilter
++from semantic_planner_core.traffic_light_filter import NON_RED_STATES, TrafficLightFilter
+ from semantic_planner_core.smooth_detour import SmoothDetourTracker, build_smooth_detour
+ 
+ 
+@@ -163,6 +163,7 @@ class MapAssist(Node):
+         self.light_filter = TrafficLightFilter(
+             window_sec=self.p["traffic_vote_window_sec"],
+             min_samples=self.p["traffic_vote_min_samples"],
++            unknown_is_non_red=True,
+         )
+         self.traffic_light_raw = "unknown"
+         self.traffic_light = "unknown"
+@@ -173,7 +174,6 @@ class MapAssist(Node):
+         self.stop_committed = False
+         self.traffic_event_consumed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.last_red_observed_at = -math.inf
+         self.detour_green_seen = False
+@@ -318,7 +318,6 @@ class MapAssist(Node):
+         # A completed bypass must not suppress a red event after map reset.
+         self.traffic_event_consumed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.last_red_observed_at = -math.inf
+         self.detour_green_seen = False
+@@ -385,7 +384,9 @@ class MapAssist(Node):
+ 
+     def _on_light_state(self, msg: String) -> None:
+         state = str(msg.data).strip().lower()
+-        self.traffic_light_raw = state if state in ("red", "green") else "unknown"
++        if state not in ("red", "unknown", *NON_RED_STATES):
++            return
++        self.traffic_light_raw = state
+         if not self.p["enable_traffic_control"]:
+             return
+         now = time.monotonic()
+@@ -406,9 +407,6 @@ class MapAssist(Node):
+             self.traffic_mode = "prepare"
+             self.traffic_reason = "red_preview_unconfirmed"
+             self.red_preview_unconfirmed = True
+-            self.red_preview_green_seen = False
+-        elif self.red_preview_unconfirmed and self.traffic_light_raw == "green":
+-            self.red_preview_green_seen = True
+         self.light_filter.add(self.traffic_light_raw, now)
+         self._update_light_vote(now)
+         self._publish_velocity_stop_if_needed(now)
+@@ -431,6 +429,12 @@ class MapAssist(Node):
+         if not self.p["enable_traffic_control"]:
+             return
+         self.traffic_light = self.light_filter.evaluate(now)
++        # A detector frame with no confirmed red can vote to resume. A
++        # newer red or an expired observation window cannot release a stop.
++        non_red = (
++            self.traffic_light_raw != "red"
++            and self.traffic_light in (*NON_RED_STATES, "not_red")
++        )
+         if self.traffic_light == "red":
+             self.red_last_confirmed_at = now
+         if self.traffic_mode == "detour":
+@@ -439,18 +443,19 @@ class MapAssist(Node):
+                 self.detour_next_red_pending = False
+             elif (self.detour_green_seen or self.detour_signal_rearmed) and self.traffic_light == "red":
+                 self.detour_next_red_pending = True
+-        if self.traffic_light == "green":
++        if non_red:
+             self.traffic_event_consumed = False
+         elif self.traffic_light == "red" and self.traffic_mode == "prepare":
+             self.red_preview_unconfirmed = False
+         if self.traffic_light == "red" and self.traffic_mode == "normal" and not self.traffic_event_consumed:
+             self.traffic_mode = "prepare"
+             self.traffic_reason = "red_prepare"
+-        elif self.traffic_light == "green" and self.traffic_mode in ("prepare", "wait"):
+-            # Do not cancel a just-received raw red using only older green
+-            # votes; a green observation after that red may still cancel.
+-            if not self.red_preview_unconfirmed or self.red_preview_green_seen:
+-                self._resume_vision("green_resume")
++        elif self.traffic_mode in ("prepare", "wait") and non_red:
++            reason = {
++                "green": "green_resume",
++                "off": "red_off_resume",
++            }.get(self.traffic_light, "non_red_resume")
++            self._resume_vision(reason)
+         if self.reference is not None:
+             return
+         # First lap only: the distance flag controls the red-light stop.
+@@ -471,15 +476,14 @@ class MapAssist(Node):
+             self.visual_motion_ready = False
+             if self.avoidance_active is not True:
+                 self.last_cmd_time = -math.inf
+-        # Unknown/missing detections never release an already confirmed red.
+-        # A committed detour finishes even if its light subsequently turns green.
++        # Missing messages cannot cast a non-red vote. A committed detour
++        # finishes even if its light subsequently changes.
+ 
+     def _resume_vision(self, reason: str) -> None:
+         self.traffic_mode = "normal"
+         self.traffic_reason = reason
+         self.stop_committed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.detour_green_seen = False
+         self.detour_signal_rearmed = False
+diff --git a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py
+index 21f4ba1..c042537 100644
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py
+@@ -43,6 +43,50 @@ class AutoTurnTests(unittest.TestCase):
+         self.assertEqual(self.node.traffic_mode, 'normal')
+         self.assertIsNone(self.node.smooth_path)
+ 
++    def test_confirmed_off_releases_first_lap_wait(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
++        self.node._on_light_state(fixtures.DataMessage("off"))
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.confirm_light("off", refresh_points=False)
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "red_off_resume")
++        self.node._on_controller_cmd(self.h.command())
++        self.h.assert_stopped()
++
++    def test_confirmed_yellow_releases_red_wait(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.confirm_light("yellow")
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "non_red_resume")
++
++    def test_off_does_not_cancel_a_committed_detour(self):
++        self.node.p["detour_trigger_margin_m"] = 100.0
++        self.h.confirm_light("red")
++        self.node._tick()
++        self.assertEqual(self.node.traffic_mode, "detour")
++        self.h.confirm_light("off")
++        self.assertEqual(self.node.traffic_mode, "detour")
++
++    def test_silence_and_one_unknown_frame_hold_but_fresh_unknown_votes_release(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.h.advance(0.6)
++        self.node._tick()
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.node._on_light_state(fixtures.DataMessage("unknown"))
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.advance(0.11)
++        for _ in range(6):
++            self.node._on_light_state(fixtures.DataMessage("unknown"))
++            self.h.advance(0.11)
++        self.assertEqual(self.node.traffic_light, "not_red")
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "non_red_resume")
++
+     def test_margin_triggers_turn_without_flag_stop(self):
+         self.case.red_far()
+         self.assertEqual(self.node.traffic_mode, 'prepare')
+diff --git a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py
+index 16762a3..a1528fb 100644
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py
+@@ -5,17 +5,21 @@ import math
+ from typing import Deque, Dict, Optional, Tuple
+ 
+ 
++NON_RED_STATES = ("green", "yellow", "off")
++
++
+ class TrafficLightFilter:
+     """Require a strict majority of real messages in a sliding time window.
+ 
+     The caller supplies monotonic arrival times, not image/ROS timestamps.  The
+     first decision waits for a complete observation window.  A message gap
+-    longer than the window starts that observation period again.  ``unknown``
+-    results count in the denominator but never release a stop by themselves;
+-    retaining a red-light stop belongs to the calling state machine.
++    longer than the window starts that observation period again. Callers
++    can count explicit detector ``unknown`` frames as non-red. Silence and
++    invalid observations never provide non-red votes.
+     """
+ 
+-    def __init__(self, window_sec: float = 0.5, min_samples: int = 3):
++    def __init__(self, window_sec: float = 0.5, min_samples: int = 3,
++                 *, unknown_is_non_red: bool = False):
+         try:
+             window_sec = float(window_sec)
+         except (TypeError, ValueError, OverflowError):
+@@ -26,6 +30,7 @@ class TrafficLightFilter:
+             raise ValueError("min_samples must be an integer of at least 2")
+         self.window_sec = window_sec
+         self.min_samples = min_samples
++        self.unknown_is_non_red = unknown_is_non_red
+         self._samples: Deque[Tuple[float, str]] = deque()
+         self._started_at: Optional[float] = None
+         self._last_message_at: Optional[float] = None
+@@ -43,9 +48,9 @@ class TrafficLightFilter:
+         now = self._advance(now)
+         if self._started_at is None:
+             self._started_at = now
+-        state = state.strip().lower() if isinstance(state, str) else "unknown"
+-        if state not in ("red", "green"):
+-            state = "unknown"
++        state = state.strip().lower() if isinstance(state, str) else ""
++        if state not in ("red", "unknown", *NON_RED_STATES):
++            state = "invalid"
+         self._samples.append((now, state))
+         self._last_message_at = now
+         return self._decision(self._snapshot(now))
+@@ -79,7 +84,10 @@ class TrafficLightFilter:
+ 
+     def _snapshot(self, now: float) -> Dict[str, object]:
+         red_count = sum(state == "red" for _, state in self._samples)
+-        green_count = sum(state == "green" for _, state in self._samples)
++        non_red = {
++            state: sum(sample == state for _, sample in self._samples)
++            for state in NON_RED_STATES
++        }
+         count = len(self._samples)
+         ready = (self._started_at is not None
+                  and now - self._started_at >= self.window_sec
+@@ -90,19 +98,25 @@ class TrafficLightFilter:
+             "ready": ready,
+             "sample_count": count,
+             "red_count": red_count,
+-            "green_count": green_count,
+-            "unknown_count": count - red_count - green_count,
++            **{state + "_count": votes for state, votes in non_red.items()},
++            "unknown_count": count - red_count - sum(non_red.values()),
++            "reported_unknown_count": sum(state == "unknown" for _, state in self._samples),
+             "last_message_age_sec": (None if self._last_message_at is None
+                                      else now - self._last_message_at),
+         }
+ 
+-    @staticmethod
+-    def _decision(snapshot: Dict[str, object]) -> str:
++    def _decision(self, snapshot: Dict[str, object]) -> str:
+         if not snapshot["ready"]:
+             return "unknown"
+         count = snapshot["sample_count"]
+         if 2 * snapshot["red_count"] > count:
+             return "red"
+-        if 2 * snapshot["green_count"] > count:
+-            return "green"
+-        return "unknown"
++        non_red_votes = 0
++        for state in NON_RED_STATES:
++            votes = snapshot[state + "_count"]
++            if 2 * votes > count:
++                return state
++            non_red_votes += votes
++        if self.unknown_is_non_red:
++            non_red_votes += snapshot["reported_unknown_count"]
++        return "not_red" if 2 * non_red_votes > count else "unknown"
+diff --git a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py
+index 98e0990..a73423e 100644
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py
+@@ -56,6 +56,25 @@ class TrafficLightFilterTests(unittest.TestCase):
+                     vote.add(state, index * 0.1)
+                 self.assertEqual(vote.evaluate(0.5), expected)
+ 
++    def test_observed_non_red_states_vote_together_but_unknown_does_not(self):
++        vote = TrafficLightFilter()
++        for index, state in enumerate(("green", "off", "yellow", "red", "unknown")):
++            vote.add(state, index * 0.1)
++        self.assertEqual(vote.evaluate(0.5), "not_red")
++        counts = vote.snapshot(0.5)
++        self.assertEqual(counts["unknown_count"], 1)
++        self.assertEqual(counts["yellow_count"], 1)
++        self.assertEqual(counts["off_count"], 1)
++
++    def test_only_explicit_unknown_observations_can_vote_to_resume(self):
++        for state, expected in (("unknown", "not_red"), ("invalid", "unknown")):
++            vote = TrafficLightFilter(unknown_is_non_red=True)
++            self.assertEqual(vote.evaluate(0.0), "unknown")
++            for index in range(7):
++                vote.add(state, index * 0.1)
++            self.assertEqual(vote.evaluate(0.6 + 1e-6), expected)
++            self.assertEqual(vote.evaluate(1.2), "unknown")
++
+     def test_sliding_window_changes_red_to_green(self):
+         vote = TrafficLightFilter()
+         for now in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5):
+@@ -114,7 +133,7 @@ class TrafficLightFilterTests(unittest.TestCase):
+     def test_invalid_colors_become_unknown_and_strings_are_normalized(self):
+         vote = TrafficLightFilter()
+         for state, now in ((" RED ", 0.0), ("Red", 0.1), (None, 0.2),
+-                           ("yellow", 0.3), ("", 0.4)):
++                           ("blue", 0.3), ("", 0.4)):
+             vote.add(state, now)
+         status = vote.snapshot(0.5)
+         self.assertEqual(status["red_count"], 2)

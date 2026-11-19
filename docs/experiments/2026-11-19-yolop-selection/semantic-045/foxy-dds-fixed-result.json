@@ -1,0 +1,66 @@
+{
+  "time_jst": "2026-11-19T11:06:57+09:00",
+  "middleware": "Jetson ROS Foxy localhost domain 73",
+  "planner": "ubs_auto_turn_v1",
+  "radius_m": 6.0,
+  "subscriptions": {
+    "/aiformula_sensing/gyro_odometry_publisher/odom": {
+      "type": "nav_msgs/msg/Odometry",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/aiformula_perception/yolop_a3/traffic_light/state": {
+      "type": "std_msgs/msg/String",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/semantic_fixture/stop_distance": {
+      "type": "std_msgs/msg/Bool",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/point_flag": {
+      "type": "std_msgs/msg/Bool",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/semantic_drive/branch_active": {
+      "type": "std_msgs/msg/Bool",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/aiformula_control/game_pad/cmd_vel": {
+      "type": "geometry_msgs/msg/Twist",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/processed_point_a": {
+      "type": "geometry_msgs/msg/Pose2D",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/processed_point_b": {
+      "type": "geometry_msgs/msg/Pose2D",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    },
+    "/processed_point_c": {
+      "type": "geometry_msgs/msg/Pose2D",
+      "reliability": "RMW_QOS_POLICY_RELIABILITY_RELIABLE",
+      "durability": "RMW_QOS_POLICY_DURABILITY_VOLATILE"
+    }
+  },
+  "diagnostic_outputs": [
+    "/semantic_drive/map_assist_045/status",
+    "/semantic_drive/map_assist_045/diagnostic_cmd_vel",
+    "/semantic_drive/map_assist_045/path",
+    "/semantic_drive/map_assist_045/detour_path",
+    "/semantic_drive/map_assist_045/point_a",
+    "/semantic_drive/map_assist_045/point_b",
+    "/semantic_drive/map_assist_045/point_c"
+  ],
+  "red_no_stop_publisher": "red_wait_flag_unavailable",
+  "red_stop_true": "red_wait_first_lap",
+  "green_reason": "green_resume",
+  "physical_outputs": 0
+}
