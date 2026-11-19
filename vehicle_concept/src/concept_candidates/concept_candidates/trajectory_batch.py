@@ -7,8 +7,7 @@ from concept_feasibility.geometry61514 import RISK_LIMIT
 from concept_feasibility.path_risk import array_clearance
 from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
 from .curve_progress import project, supported_increment
-from .field_controls import forward_steering
-from .edge_recovery import edge_control
+from .edge_recovery import edge_control, preview_steering
 
 DT = .05
 def motor_parameters():
@@ -51,7 +50,7 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         dt=obs.dt if k==0 else .2
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
         if physical_motor_enabled():
-            steering = forward_steering(desired,commands,speed,last,dt)
+            steering = preview_steering(edge, desired, z, x, heading, speed, yaw, last, commands, dt)
             if edge is not None:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],

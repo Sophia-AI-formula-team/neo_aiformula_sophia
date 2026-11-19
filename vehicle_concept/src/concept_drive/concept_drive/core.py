@@ -92,7 +92,7 @@ class Drive:
             if len(road):
                 guidance = guidance[(guidance[:, 0] >= road[0, 0]) & (guidance[:, 0] <= road[-1, 0])]
                 if reference is not None:
-                    reference['_field_edge'] = fit_edge(road, scene.audit['observed_bounds'])
+                    reference['_field_edge'] = fit_edge(road, scene.audit['observed_bounds'], include_extent=True)
             else:
                 guidance, reference = np.empty((0, 4)), None
             near_visibility = [row['z'] for row in near_rows

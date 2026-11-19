@@ -5,7 +5,7 @@ from concept_candidates.field_controls import (
     DIFFERENTIAL_SLEW, FORWARD_ACCEL, HALF_TREAD, TRACKING_HEADROOM,
     WHEEL_SPEED_FRACTION, forward_steering,
 )
-from concept_feasibility.response61515 import motor_steering
+from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering
 from concept_road.onboard625 import HALF_TRACK
 
 MARGIN_M = .5  # Desired turn-away space, in addition to wheel-centre offset.
@@ -68,10 +68,10 @@ def _unambiguous_line(lines):
         error = max(abs((slope-other_slope)*z + intercept-other_intercept) for z in (left, right))
         if error > 2*EDGE_RESIDUAL_M:
             return None
-    return slope, intercept
+    return slope, intercept, end
 
 
-def fit_edge(road, observed_bounds):
+def fit_edge(road, observed_bounds, *, include_extent=False):
     """Return (side, tangent angle, signed distance) in the current camera frame.
 
     A negative side is the left exterior. A road mask or a lane divider alone
@@ -96,16 +96,46 @@ def fit_edge(road, observed_bounds):
             lines.extend(_supported_lines(z, x, side))
         line = _unambiguous_line(lines)
         if line is not None:
-            slope, intercept = line
+            slope, intercept, end = line
             angle = np.arctan(slope)
             distance = intercept*np.cos(angle)
-            fits.append((side, float(angle), float(distance)))
+            fit = (side, float(angle), float(distance))
+            fits.append(fit + (float(end),) if include_extent else fit)
     return min(fits, key=lambda edge: abs(edge[2])) if fits else None
+
+
+def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, dt):
+    """Turn back while the currently observed verge is still reachable.
+
+    The measured gyro continues rotating the body while the motor changes
+    response. Project that heading only as far as this camera's edge support.
+    If continuing on this heading consumes the turn-away space, release the
+    outward wheel differential and request an inward turn. The ordinary grip
+    and wheel-speed limits apply during both the response and the rollout.
+    """
+    if edge is None or len(edge) < 4:
+        return forward_steering(desired, drive, speed, previous, dt)
+    side, angle, normal_distance, end = edge
+    z, x, heading, speed, yaw = map(np.asarray, (z, x, heading, speed, yaw))
+    distance = side*(normal_distance + np.sin(angle)*z - np.cos(angle)*x)
+    predicted_heading = heading + FIELD_YAW_TAU_S*yaw - angle
+    outward = side*np.sin(predicted_heading)
+    reach = np.maximum(0., end-z)
+    reserve = HALF_TRACK + MARGIN_M
+    predicted_margin = distance - reach*outward
+    conflict = (reach > .25) & (outward > 0.) & (predicted_margin < reserve)
+    urgency = np.where(conflict, np.clip((reserve-predicted_margin) / MARGIN_M, 0., 1.), 0.)
+    # Turning parallel removes the closing velocity. A near wheel also needs
+    # inward displacement to recover the available turn-away margin.
+    inside = np.maximum(0., 2.*side*predicted_heading + .35*np.maximum(0., reserve-distance))
+    desired = np.where(conflict, -side*np.maximum(-side*desired, inside), desired)
+    previous = np.where(conflict & (side*np.asarray(previous) > 0.), 0., previous)
+    return forward_steering(desired, drive, speed, previous, dt, edge_urgency=urgency)
 
 
 def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace):
     """One proposal step; positive steer is clockwise. No direct motor output."""
-    side, angle, normal_distance = edge
+    side, angle, normal_distance = edge[:3]
     relative_heading = np.asarray(heading)-angle
     distance = side*(normal_distance + np.sin(angle)*z - np.cos(angle)*x)
     reserve = HALF_TRACK + MARGIN_M
@@ -121,5 +151,5 @@ def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, 
     goal = np.where(approaching, np.minimum(pace, turning_drive), pace)
     drive = np.minimum(goal, np.minimum(applied_drive + FORWARD_ACCEL*dt_step,
                                         np.maximum(speed, 0.) + TRACKING_HEADROOM))
-    steer = forward_steering(desired, drive, speed, applied_steer, dt)
+    steer = preview_steering(edge, desired, z, x, heading, speed, yaw, applied_steer, drive, dt)
     return drive, steer

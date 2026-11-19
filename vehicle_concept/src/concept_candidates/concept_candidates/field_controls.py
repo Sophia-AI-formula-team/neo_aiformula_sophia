@@ -1,7 +1,7 @@
 """Field candidate limits, applied before any path or braking branch is evaluated."""
 import numpy as np
 
-from concept_feasibility.response61515 import motor_steering, physical_applied_command
+from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering, physical_applied_command
 
 # Initial commissioning limits. The turn ceiling is below the ±0.7 rad/s
 # manual plateaus recorded by VectorNav on 2026-11-19.
@@ -20,7 +20,7 @@ def forward_ceiling(measured, dt, pace):
                max(0., measured) + TRACKING_HEADROOM)
 
 
-def forward_steering(desired, drive, measured, previous, dt):
+def forward_steering(desired, drive, measured, previous, dt, *, edge_urgency=None):
     """Choose a real motor input whose actual wheel differential rises smoothly.
 
     The stock inverse sigmoid has disjoint fitted branches at zero. Project
@@ -36,6 +36,11 @@ def forward_steering(desired, drive, measured, previous, dt):
     requested = np.where(requested * ros > 0., requested, 0.)
     last = motor_steering(-np.asarray(previous, dtype=float), physical=True)
     delta = DIFFERENTIAL_SLEW * min(dt, .2)
+    if edge_urgency is not None:
+        # On the approach to a measured verge the differential should respond
+        # within the observed vehicle yaw time constant. The wheel-speed and
+        # lateral-acceleration bounds below still apply on each step.
+        delta = np.maximum(delta, edge_urgency * abs(requested-last) * min(dt, .2) / FIELD_YAW_TAU_S)
     wheel_limit = drive * WHEEL_SPEED_FRACTION / HALF_TREAD
     raw = np.clip(np.clip(requested, last-delta, last+delta), -wheel_limit, wheel_limit)
     # Additionally respect the body-yaw ceiling when speed changes.

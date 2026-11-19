@@ -3,8 +3,8 @@ import math
 import numpy as np
 import pytest
 
-from concept_candidates.edge_recovery import edge_control, fit_edge
-from concept_candidates.field_controls import DIFFERENTIAL_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION
+from concept_candidates.edge_recovery import edge_control, fit_edge, preview_steering
+from concept_candidates.field_controls import DIFFERENTIAL_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION, forward_steering
 from concept_feasibility.response61515 import motor_steering, motor_profile
 
 
@@ -100,3 +100,29 @@ def test_vectorized_rollout_matches_individual_shapes():
         expected = [edge_control(edge, *s, .2, 2.) for s in samples]
         command = edge_control(edge, *np.asarray(samples).T, .2, 2.)
     np.testing.assert_allclose(np.array(command).T, expected)
+
+@pytest.mark.parametrize('side', [-1, 1])
+def test_diverging_camera_edge_releases_outward_differential_before_full_tyre_exit(side):
+    # Same relative geometry on either side, 1.5 m now but converging at 18бу.
+    road, observed = observations(-.31*side, side)
+    edge = fit_edge(road, observed, include_extent=True)
+    assert edge[-1] == pytest.approx(6.)
+    previous = side*.2
+    result = preview_steering(edge, side*.2, 0., 0., 0., 1.9, side*.1, previous, 1.6, .2)
+    assert side*result < 0.
+    assert abs(motor_steering(-result, True))*.30 <= .5*1.6 + 1e-10
+
+
+@pytest.mark.parametrize('edge,z,heading', [(None, 0., 0.), ((-1,.30,-1.4,2.), 1.9, 0.),
+                                             ((-1,.30,-1.4,5.), 0., .45),
+                                             ((-1,.01,-2.,5.), 0., 0.)])
+def test_unobserved_beyond_support_open_or_already_correcting_uses_ordinary_steer(edge,z,heading):
+    desired, previous = -.12, -.1
+    assert preview_steering(edge, desired, z, 0., heading, 1.7, 0., previous, 1.5, .2) == (
+        forward_steering(desired, 1.5, 1.7, previous, .2))
+
+
+def test_near_internal_lane_line_cannot_trigger_preview_guard():
+    road, observed = observations(.3, -1)
+    observed = [[z, 'paint_connected_asphalt', 'road_head'] for z, *_ in observed]
+    assert fit_edge(road, observed, include_extent=True) is None

@@ -10,8 +10,8 @@ except ImportError:
 from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
-from .field_controls import forward_ceiling, forward_steering
-from .edge_recovery import edge_control
+from .field_controls import forward_ceiling
+from .edge_recovery import edge_control, preview_steering
 
 from concept_candidates.candidate_merge import distinct_requests
 from concept_candidates.curve_progress import increment
@@ -201,7 +201,7 @@ class RoadAwareCurvePlanner:
                 desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
                 command_dt = obs.dt if step == 0 else interval
                 if physical:
-                    command_yaw = forward_steering(desired, commands, speed, last_yaw, command_dt)
+                    command_yaw = preview_steering(edge, desired, z, x, heading, speed, yaw, last_yaw, commands, command_dt)
                     if edge_slot is not None:
                         drive[-1], command_yaw[-1] = edge_control(
                             edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
