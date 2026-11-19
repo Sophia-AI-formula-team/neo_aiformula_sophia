@@ -1,5 +1,7 @@
 # 11 月 20 日实车实验准备
 
+**车端部署 agent 从这里开始：[1120 全量移植、清理重编与接线交接](AGENT_DEPLOY_1120.md)。** 一份文档覆盖 MapAssist、A3/A4/A4Light、Concept、五个入口和分套验收。
+
 **Concept V6.27.8 已合入正式部署分支。** 车机用同名 `concept-live`、原 Concept 桌面图标或应用菜单启动，在终端选 Pure Pursuit 或 LYA。首次安装、覆盖旧快捷方式以及回退请按 [Concept 1120 部署说明](concept/DEPLOY.md)。下方四终端是单独的 MapAssist 方案。
 
 部署 Agent 在车机 `control` 账号操作。采用 11 月 19 日收车时已安装的 Allnodes、`lane_0927oa`、YOLOP 选择器和 LYA。`oa_2` 由本次 overlay 提供。MapAssist 使用本分支包含的绿灯放行修复 `43f3df8`。AV314 分组试验已经合入本准备分支。
@@ -11,8 +13,10 @@
 车辆静止且上次实验进程已退出时，在新 Bash 终端运行。选择新的检出目录，保留原车工作区。
 
 ```bash
-git clone --filter=blob:none --sparse --single-branch -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120
+git clone --filter=blob:none --no-checkout --single-branch -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120
+git -C ~/neo-1120 sparse-checkout init --cone
 git -C ~/neo-1120 sparse-checkout set docs/experiments/2026-11-20-mapassist workspace/src/aiformula/launchers workspace/src/aiformula/perception/semantic_planning_system workspace/src/aiformula/control/semantic_vehicle_wiring workspace/src/aiformula/perception/obsticle_avoidence
+git -C ~/neo-1120 checkout experiment/vehicle-prep-20261120
 cd ~/neo-1120/docs/experiments/2026-11-20-mapassist
 python3 shortcuts.py
 bash prepare.sh
@@ -66,6 +70,6 @@ python3 update_yolop_1120.py --checkout ~/neo-1120 --apply
 
 ## 发布前验证记录
 
-在断网的 ROS 2 Foxy 容器中，四个 overlay 包通过 colcon 构建，两个 launch 文件的参数可以展开。用 19 日现场归档还原七个命令文件、两个命令链接、八个桌面入口和一份应用菜单副本，预览后共归档 18 个旧入口，并生成四个命令和四个桌面入口。重复安装没有增加备份；同名自定义命令会中止迁移，无关桌面文件保留。
+早期四包版本曾在断网 Foxy 容器中构建，并用 19 日归档测试过 18 个旧入口的迁移。本轮 AV314 安装器实际编译 **五包**，包括分组 OA2。Concept 的命令、桌面和菜单由自己的安装器处理。当前验收数量和两套共存时的核对方法见上方全量交接。
 
 在隔离环境中执行四个新命令，记录 ROS 命令行参数。已验证 YOLOP 菜单选 1、内外圈参数、OA 随 MapAssist 启动及独立 LYA 的三条 remap。该项用命令记录器代替最终的 ROS 执行命令。真实传感器、OA 点、交通灯和 motor 的闭环留待车上实验记录。

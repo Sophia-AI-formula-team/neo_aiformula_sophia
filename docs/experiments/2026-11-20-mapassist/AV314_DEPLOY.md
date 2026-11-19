@@ -1,5 +1,7 @@
 # 1120 车端部署 · AV314、分组 OA2 和内圈 450 px 试验
 
+车端 agent 同时更新 Concept、识别和本方案时，从[整车一份交接](AGENT_DEPLOY_1120.md)开始。下面保留 AV314 单项试验的参数和结果。
+
 **本轮内圈命令为 `mapassist inner 450`，YOLOP 选 1（A3 V14）。** 第二个参数按检测框内的红色像素数判断停车位置，省略时使用 600。内圈和外圈的转弯半径分别为 6.0 m 和 5.5 m。bbox 尺寸估距属于另一个试验。
 
 ## 先核对版本并安装
@@ -7,9 +9,11 @@
 本分支整合 1120 准备分支、PR47 的红灯停车优先级，以及 AV314 实跑所用的 OA2 发布端和选择器。已有准备目录的车机请另开干净 Bash 终端，在新的检出目录执行以下命令。安装前车辆停稳，退出原来的四个终端，保留原来的 overlay 和现场改动。
 
 ```bash
-git clone --filter=blob:none --sparse -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120-av314
+git clone --filter=blob:none --no-checkout -b experiment/vehicle-prep-20261120 https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git ~/neo-1120-av314
 cd ~/neo-1120-av314
+git sparse-checkout init --cone
 git sparse-checkout set docs/experiments/2026-11-20-mapassist workspace/src/aiformula/launchers workspace/src/aiformula/control/semantic_vehicle_wiring workspace/src/aiformula/perception/semantic_planning_system workspace/src/aiformula/perception/obsticle_avoidence
+git checkout experiment/vehicle-prep-20261120
 git rev-parse HEAD
 cd docs/experiments/2026-11-20-mapassist
 python3 shortcuts.py

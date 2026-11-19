@@ -1,5 +1,7 @@
 # 1120 车机部署 · Concept V6.27.8
 
+这份说明针对 Concept 单项。车端 agent 需要完成 1120 整套迁移、清空编译和安装目录时，请从[整车一份交接](../AGENT_DEPLOY_1120.md)开始。
+
 **现场入口沿用原名。** 安装完成后，双击 **Concept** 或运行 `concept-live`。在弹出的终端输入 **1** 使用 Pure Pursuit，**2** 使用 LYA，回车使用 Pure Pursuit。LYA 的 A、B、C 叠在同一拍的摄像头画面上。操作员使用 Concept 时，先停稳并退出另一套驾驶方案。Concept 自己启动相机、识别、手柄、门控、面板和 RViz。
 
 | 用途 | 来源 |
@@ -23,8 +25,10 @@
   branch=experiment/vehicle-prep-20261120
   url=https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git
   if [[ ! -e "$prep_repo" ]]; then
-    git clone --depth 1 --filter=blob:none --sparse --single-branch --branch "$branch" "$url" "$prep_repo"
+    git clone --depth 1 --filter=blob:none --no-checkout --single-branch --branch "$branch" "$url" "$prep_repo"
+    git -C "$prep_repo" sparse-checkout init --cone
     git -C "$prep_repo" sparse-checkout set docs/experiments/2026-11-20-mapassist
+    git -C "$prep_repo" checkout "$branch"
   else
     test "$(git -C "$prep_repo" remote get-url origin)" = "$url"
     test "$(git -C "$prep_repo" branch --show-current)" = "$branch"
