@@ -2,7 +2,7 @@
 
 ## 当日全部实验资料
 
-[下载整日报告 ZIP](2026-11-19-field-report.zip) · [ZIP 校验值](records/report-zip.sha256)
+[下载整日报告 ZIP](2026-11-19-field-report.zip) · [ZIP 校验值](records/report-zip.sha256) · [GitHub 回读核验](records/remote-verification.json)
 
 压缩包收录发布快照中的 1,778 个文件，含完整时间线、两段对话、图文报告、ROS 日志和每场录包的下载入口。解压后打开顶层 README.md。
 
