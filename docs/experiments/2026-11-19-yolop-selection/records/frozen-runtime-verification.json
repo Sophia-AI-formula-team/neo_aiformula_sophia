@@ -1,0 +1,94 @@
+{
+  "verified_jst": "2026-11-19T20:55:18+09:00",
+  "repository": {
+    "name": "Sophia-AI-formula-team/neo_aiformula_sophia",
+    "id": 1303517209,
+    "branch": "experiment/yolop-selection-20261119"
+  },
+  "release": {
+    "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/tag/field-archive-2026-11-19",
+    "tag": "field-archive-2026-11-19",
+    "tag_commit": "18d2993784823080ec93594418b7ba48a8e39dcc",
+    "report_and_assessment_commit": "ccb72d5096bb771db5ab77e05d90117720dfd9ad",
+    "verified_jst": "2026-11-19T20:47:01+09:00",
+    "assets_verified": 24,
+    "all_assets_bytes": 807649765,
+    "original_assets": 23,
+    "added_assets": [
+      "2026-11-19-vehicle-frozen-runtime.zip"
+    ],
+    "assessment_url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/ccb72d5096bb771db5ab77e05d90117720dfd9ad/docs/experiments/2026-11-19-yolop-selection/ASSESSMENT.md",
+    "manifest_url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/ccb72d5096bb771db5ab77e05d90117720dfd9ad/docs/experiments/2026-11-19-yolop-selection/records/SHA256SUMS",
+    "report_url": "https://raw.githubusercontent.com/Sophia-AI-formula-team/neo_aiformula_sophia/ccb72d5096bb771db5ab77e05d90117720dfd9ad/docs/experiments/2026-11-19-yolop-selection/2026-11-19-field-report.zip"
+  },
+  "vehicle_frozen_source": {
+    "source_asset": "2026-11-19-vehicle-active-code.tar.gz",
+    "source_bytes": 143445917,
+    "source_sha256": "3ee71ae49b45ea78d676c5ada5b2bc66111051112e32025234d5360fca3a182e",
+    "member_count": 8486,
+    "counts": {
+      "regular_files": 5321,
+      "symbolic_links": 1194,
+      "directories": 1964,
+      "hard_links_stored_as_regular_files": 7
+    },
+    "underlay_workspace_variants": 60,
+    "installed_executable_targets": 152
+  },
+  "public_runtime_download": {
+    "asset": "2026-11-19-vehicle-frozen-runtime.zip",
+    "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-frozen-runtime.zip",
+    "github_asset_id": 767433255,
+    "github_created_utc": "2026-11-19T11:31:10Z",
+    "bytes": 259393710,
+    "sha256": "93fb34a5f07eecbbd53a1f90d6ace9e399210ae591edb943f77c2c501c8bfc9e",
+    "github_digest": "sha256:93fb34a5f07eecbbd53a1f90d6ace9e399210ae591edb943f77c2c501c8bfc9e",
+    "public_readback_started_jst": "2026-11-19T20:32:27+09:00",
+    "public_readback_completed_jst": "2026-11-19T20:45:21+09:00",
+    "independently_read_http_ranges": 248
+  },
+  "public_report_download": {
+    "asset": "2026-11-19-field-report.zip",
+    "bytes": 13534263,
+    "sha256": "6782b955438645ae31fc0b7c833ad471858f93d8897136e5dbf91e4d5e210361",
+    "source_commit": "282e560bc87144ece0eae8084f1c30c8581a238f",
+    "files_matched_to_git_blobs": 1786,
+    "source_exclusions": [
+      "2026-11-19-field-report.zip",
+      "records/report-zip.sha256"
+    ],
+    "verified_jst": "2026-11-19T20:45:18+09:00",
+    "published_commit": "ccb72d5096bb771db5ab77e05d90117720dfd9ad",
+    "url": "https://raw.githubusercontent.com/Sophia-AI-formula-team/neo_aiformula_sophia/ccb72d5096bb771db5ab77e05d90117720dfd9ad/docs/experiments/2026-11-19-yolop-selection/2026-11-19-field-report.zip",
+    "public_readback_started_jst": "2026-11-19T20:54:11+09:00",
+    "public_readback_completed_jst": "2026-11-19T20:54:41+09:00",
+    "independently_read_http_ranges": 52
+  },
+  "dated_git_tree": {
+    "tree": "7fd3f29558ec5046e3d51363e74d3bd5c86352d7",
+    "commit": "ccb72d5096bb771db5ab77e05d90117720dfd9ad",
+    "git_blobs_compared": 1788,
+    "checked_jst": "2026-11-19T20:47:57+09:00",
+    "report_git_blob": "b3019702a9477db2c6724bc5aa978a2568fc9d9a",
+    "assessment_git_blob": "bc1960de1dbad149b5e1d45385756e53494b1d54",
+    "field_data_git_blob": "1e1658290e0dc74273a384dbd40038678be83b35"
+  },
+  "ssd_separate_concept_weight": {
+    "name": "B1.4-road-aligned-research.pth",
+    "bytes": 15293077,
+    "sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+    "checked_jst": "2026-11-19T20:48:37+09:00",
+    "ssd_relative_path": "frozen-runtime-dependencies/B1.4-road-aligned-research.pth",
+    "delivery": "Separate team-supplied dependency on Extreme SSD"
+  },
+  "handoff": {
+    "id": "2026-11-19-experiment-frozen-runtime",
+    "asset_sha256": "97729a5205b3ade24aa45e0379a25bf9571cb02d8d424674d8466b3efa856e12",
+    "bytes": 25315
+  },
+  "retained_previous_report": {
+    "published_commit": "b71ef6340bacef8eca76e9487552e7daccb955a4",
+    "sha256": "08ef058faef2c2aa3de0cd484d4d6ad1a5c55e7f8b33ebfea0176e349bdc8031"
+  },
+  "scope": "Archived vehicle dataset. Public runtime reconstructed from the frozen source archive. Assessment uses original captured sensor and command data. This publication involved offline analysis and file checks."
+}
