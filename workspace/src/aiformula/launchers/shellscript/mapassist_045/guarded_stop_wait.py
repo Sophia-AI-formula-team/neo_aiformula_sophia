@@ -32,6 +32,8 @@ def translate(text, now_ns, has_fresh_command):
     allowed = (
         has_fresh_command and route_ready
         and mode in ("normal", "prepare", "detour")
+        # A mixed installation may still receive the earlier field policy.
+        and source.get("traffic_reason") not in ("non_red_resume", "red_off_resume")
         and source.get("traffic_planner_version") == "ubs_auto_turn_v1"
         and source.get("use_sim_time") is False
         and type(source.get("avoidance_active")) is bool

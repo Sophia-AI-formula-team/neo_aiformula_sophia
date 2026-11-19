@@ -164,8 +164,9 @@ class MapAssist(Node):
         self.light_filter = TrafficLightFilter(
             window_sec=self.p["traffic_vote_window_sec"],
             min_samples=self.p["traffic_vote_min_samples"],
-            unknown_is_non_red=True,
         )
+        self.green_on_last_frame = False
+        self.green_frames_since_red = 0
         self.traffic_light_raw = "unknown"
         self.traffic_light = "unknown"
         self.traffic_mode = "normal"
@@ -337,7 +338,7 @@ class MapAssist(Node):
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
         if self.p["enable_traffic_control"]:
-            if was_detouring and self.traffic_light == "green":
+            if was_detouring and self._confirmed_green():
                 self._resume_vision("map_reset_resume_vision")
             elif was_detouring or (self.traffic_light == "red" and self.stop_flag is not False):
                 self.traffic_mode = "wait"
@@ -387,7 +388,7 @@ class MapAssist(Node):
     def _on_light_state(self, msg: String) -> None:
         state = str(msg.data).strip().lower()
         if state not in ("red", "unknown", *NON_RED_STATES):
-            return
+            state = "unknown"
         self.traffic_light_raw = state
         if not self.p["enable_traffic_control"]:
             return
@@ -409,8 +410,7 @@ class MapAssist(Node):
             self.traffic_mode = "prepare"
             self.traffic_reason = "red_preview_unconfirmed"
             self.red_preview_unconfirmed = True
-        self.light_filter.add(self.traffic_light_raw, now)
-        self._update_light_vote(now)
+        self._update_light_vote(now, received_frame=True)
         self._publish_velocity_stop_if_needed(now)
 
     @property
@@ -439,42 +439,69 @@ class MapAssist(Node):
             self._update_traffic(now)
         self._publish_velocity_stop_if_needed(now)
 
-    def _update_light_vote(self, now: float) -> None:
+    def _confirmed_green(self) -> bool:
+        # A vote can change between frames as older observations expire.
+        # Release requires a green majority on the incoming green frame itself.
+        return self.green_on_last_frame and self.traffic_light == "green"
+
+    def _clear_light_confirmation(self) -> None:
+        self.light_filter.clear()
+        self.traffic_light = "unknown"
+        self.green_on_last_frame = False
+        self.green_frames_since_red = 0
+        self.red_last_confirmed_at = -math.inf
+
+    def _update_light_vote(self, now: float, *, received_frame: bool = False) -> None:
         if not self.p["enable_traffic_control"]:
             return
-        self.traffic_light = self.light_filter.evaluate(now)
-        # A detector frame with no confirmed red can vote to resume. A
-        # newer red or an expired observation window cannot release a stop.
-        non_red = (
-            self.traffic_light_raw != "red"
-            and self.traffic_light in (*NON_RED_STATES, "not_red")
-        )
-        if self.traffic_light == "red":
-            self.red_last_confirmed_at = now
+        raw = self.traffic_light_raw
+        watching_red = self.traffic_mode in ("prepare", "wait") or self.detour_next_red_pending
+        if (watching_red and math.isfinite(self.red_last_confirmed_at)
+                and (raw not in ("red", "green")
+                     or now - self.red_last_confirmed_at > self.p["traffic_vote_window_sec"])):
+            # A missing lamp also produces zero red pixels. Hold before the pixel
+            # stop point, and require a new vote before committing a red detour.
+            if self.traffic_mode != "detour":
+                self._auto_red_hold("red_wait_signal_lost")
+            self._clear_light_confirmation()
+        if received_frame:
+            self.traffic_light = self.light_filter.add(raw, now)
+            self.green_on_last_frame = False
+            if raw == "green":
+                self.green_frames_since_red += 1
+                if self.traffic_light == "green":
+                    # Green frames preceding the latest red belong to the previous signal state.
+                    count = self.light_filter.snapshot(now)["sample_count"]
+                    self.green_on_last_frame = 2 * self.green_frames_since_red > count
+            elif raw == "red":
+                self.green_frames_since_red = 0
+                if self.traffic_light == "red":
+                    self.red_last_confirmed_at = now
+        else:
+            self.traffic_light = self.light_filter.evaluate(now)
+        green = self._confirmed_green()
+        red = self.traffic_light == "red" and self._red_recently_confirmed(now)
         if self.traffic_mode == "detour":
-            if self.traffic_light == "green":
+            if green:
                 self.detour_green_seen = True
                 self.detour_next_red_pending = False
-            elif (self.detour_green_seen or self.detour_signal_rearmed) and self.traffic_light == "red":
+            elif (self.detour_green_seen or self.detour_signal_rearmed) and red:
                 self.detour_next_red_pending = True
-        if non_red:
+        if green:
             self.traffic_event_consumed = False
-        elif self.traffic_light == "red" and self.traffic_mode == "prepare":
+        elif red and self.traffic_mode == "prepare":
             self.red_preview_unconfirmed = False
-        if self.traffic_light == "red" and self.traffic_mode == "normal" and not self.traffic_event_consumed:
+        if red and self.traffic_mode == "normal" and not self.traffic_event_consumed:
             self.traffic_mode = "prepare"
             self.traffic_reason = "red_prepare"
-        elif self.traffic_mode in ("prepare", "wait") and non_red:
-            reason = {
-                "green": "green_resume",
-                "off": "red_off_resume",
-            }.get(self.traffic_light, "non_red_resume")
-            self._resume_vision(reason)
+        elif self.traffic_mode in ("prepare", "wait") and green:
+            self._resume_vision("green_resume")
         if self.reference is not None:
             return
-        # First lap only: the distance flag controls the red-light stop.
+        # On the first lap the distance flag marks the usual red stop position.
         if (self.traffic_mode == "wait" and self.traffic_reason == "red_wait_flag_unavailable"
-                and self.stop_flag is not None):
+                and not self.stop_committed and self.stop_flag is False
+                and self._red_recently_confirmed(now)):
             self.traffic_mode = "prepare"
             self.traffic_reason = "red_prepare"
         if self.traffic_mode == "prepare" and self.stop_flag is None:
@@ -483,15 +510,13 @@ class MapAssist(Node):
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        elif self.traffic_mode == "prepare" and self.stop_flag is True:
+        elif self.traffic_mode in ("prepare", "wait") and self.stop_flag is True:
             self.traffic_mode = "wait"
             self.stop_committed = True
             self.traffic_reason = "red_wait_first_lap"
             self.visual_motion_ready = False
             if self.avoidance_active is not True:
                 self.last_cmd_time = -math.inf
-        # Missing messages cannot cast a non-red vote. A committed detour
-        # finishes even if its light subsequently changes.
 
     def _resume_vision(self, reason: str) -> None:
         self.traffic_mode = "normal"
@@ -780,6 +805,8 @@ class MapAssist(Node):
     def _update_traffic(self, now: float) -> None:
         if not self.p["enable_traffic_control"] or self.traffic_mode not in ("prepare", "wait"):
             return
+        if self.traffic_mode == "wait" and not self._red_recently_confirmed(now):
+            return
         if self.reference is None:
             # During the learning lap only, preserve the existing distance stop.
             if self.stop_flag is None:
@@ -906,16 +933,23 @@ class MapAssist(Node):
             self.pending_distance = 0.0
             self.matched = False
             new_red_waiting = self.detour_next_red_pending
-            light_at_exit = self.traffic_light
+            green_at_exit = self._confirmed_green()
+            red_at_exit = self._red_recently_confirmed(now)
+            red_confirmed_at = self.red_last_confirmed_at
             self._resume_vision("detour_complete_resume_vision")
             # No second-lap distance flag is used to distinguish lights. A
             # green or long absence followed by red can re-arm a new event.
-            if new_red_waiting and light_at_exit != "green":
-                self.traffic_mode = "prepare"
-                self.traffic_reason = "red_prepare_next_event"
+            if new_red_waiting and not green_at_exit:
                 self.traffic_event_consumed = False
+                if red_at_exit:
+                    self.red_last_confirmed_at = red_confirmed_at
+                    self.traffic_mode = "prepare"
+                    self.traffic_reason = "red_prepare_next_event"
+                else:
+                    self._auto_red_hold("red_wait_signal_lost")
+                    self._clear_light_confirmation()
             else:
-                self.traffic_event_consumed = light_at_exit != "green"
+                self.traffic_event_consumed = not green_at_exit
             return
         if result.available:
             for label, (x, y) in zip("abc", result.points):
@@ -1119,6 +1153,8 @@ class MapAssist(Node):
             self.get_logger().warn(str(exc))
             return
         self.reference = reference
+        # A first-lap stop may still be latched when the map closes.
+        self.auto_stop_latched = self.stop_committed
         self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_pending"}
         self.alignment = {"diagnostic_only": True, "superseded_by": "map_fusion"}
         self.recorded_distance += math.hypot(current[0] - self.samples[-1].x, current[1] - self.samples[-1].y)
