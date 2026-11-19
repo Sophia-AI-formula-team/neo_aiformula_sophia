@@ -8,6 +8,7 @@ def decision(mode, sec, ns):
     return dict(stamp=dict(sec=sec,nanosec=ns), session='test', selected_index=0, status='ok',
                 command=dict(linear_x_mps=.8,angular_z_radps=.2),
                 tracking_controller=dict(mode=mode, active=True, owner='candidate',
+                                         checked_speed_mps=.8,checked_yaw_right_radps=-.2,
                                          points_zx_m=points,target_zx_m=points[0]))
 
 
@@ -37,6 +38,8 @@ def test_no_transfer_of_points_across_modes_or_failed_decisions():
     assert not buf.frames
     buf.put(b)
     buf.put(dict(b,command=dict(linear_x_mps=0.)))
+    assert not buf.frames
+    buf.put(dict(b,command=dict(linear_x_mps=.8,angular_z_radps=-.2)))
     assert not buf.frames
 
 

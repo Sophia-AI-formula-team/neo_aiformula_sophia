@@ -65,9 +65,15 @@ class TrackingFrames:
         self.newest = key
         command = decision.get('command') or {}
         speed = command.get('linear_x_mps')
+        yaw = command.get('angular_z_radps')
+        checked_speed = tracking.get('checked_speed_mps')
+        checked_yaw = tracking.get('checked_yaw_right_radps')
         if (not session or not key or decision.get('status') != 'ok' or
-                type(speed) not in (int, float) or not math.isfinite(speed) or speed <= 0. or
-                decision.get('selected_index') is None):
+                not all(type(v) in (int, float) and math.isfinite(v)
+                        for v in (speed, yaw, checked_speed, checked_yaw)) or
+                speed <= 0. or decision.get('selected_index') is None or
+                not math.isclose(speed, checked_speed, abs_tol=1e-7) or
+                not math.isclose(yaw, -checked_yaw, abs_tol=1e-7)):
             self.frames.clear()
             return
         points = used_points(tracking)

@@ -469,7 +469,7 @@ class Window(W.QWidget):
         else:
             points = self.tracking.frames[self.camera_key]
             marks = tuple((name, uv) for name, uv in points if uv is not None)
-            detail = 'P 预瞄目标' if mode == 'pure_pursuit' else 'A 目标点 · A→B 切向 · C 第三点'
+            detail = 'P 预瞄目标' if mode == 'pure_pursuit' else 'A 目标点 · A→B 给方向 · B→C 看弯势'
             missing = [name for name, uv in points if uv is None]
             if missing:
                 detail += ' · ' + '/'.join(missing) + ' 在画面外'
