@@ -1,6 +1,6 @@
 # 11 月 20 日 · Concept V6.27.6 实验准备
 
-车端源码已经能从团队 neo 取回。11/19 原车录包重放和 Foxy 工作站检查已完成。贴近外缘时，现有控制器在部分实车初态的局部闭环试验中仍然停住。此版本用于部署准备和采集证据；实车整圈尚待验收。[已核验的车端源码](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/70209be0722f439158a3bb764b55817f364bcb55/vehicle_concept) · [路界、方向和停车的已知结果](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/70209be0722f439158a3bb764b55817f364bcb55/vehicle_concept/checks/field_20261119.md)
+车端源码、独立 Unity/Foxy 仿真入口和复核脚本都在团队 neo。V6.27.6 完成了 11/19 原车录包重放和四场 Unity 短闭环。朝外偏 23° 的场次停在道内。实车整圈、边缘恢复、Jetson 实际发令频率尚待验收。[四场实测与实车回正图](README.md) · [车端源码](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept) · [路界修复记录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept/checks/field_20261119.md)
 
 ## 车机上建立独立工作区
 
@@ -15,7 +15,7 @@ concept_ws="$HOME/concept_1120_ws"
 git clone --filter=blob:none --sparse --single-branch -b experiment/concept-foxy-unity-20261120 \
   https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia.git "$concept_repo"
 git -C "$concept_repo" sparse-checkout set vehicle_concept workspace/src/aiformula
-git -C "$concept_repo" checkout --detach 70209be0722f439158a3bb764b55817f364bcb55
+git -C "$concept_repo" checkout --detach 5511be2fc48299180a4c8287c179588f81730449
 python3 "$concept_repo/vehicle_concept/checks/check_underlay.py"
 mkdir -p "$concept_ws"
 cd "$concept_ws"
@@ -29,7 +29,7 @@ python3 "$concept_repo/vehicle_concept/checks/check_overlay.py" "$concept_ws"
 
 ## 核对 B1.4、GPU 和传感器
 
-若车上已有 B1.4，可复用同一文件。只有权重尚未导入时，才需从团队已有模型归档或实车备份取回。权重大小 **15,293,077 字节**，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。H12 随源码安装。
+若车上已有 B1.4，可复用同一文件。默认路径为 `${XDG_DATA_HOME:-$HOME/.local/share}/concept_yolop/B1.4-road-aligned-research.pth`。若目录中没有它，先从团队模型归档或实车备份取回。权重大小 **15,293,077 字节**，SHA-256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。H12 随源码安装。
 
 ```bash
 # 首次导入时，将路径改成已有的 B1.4 权重或 V6.26.zip
@@ -39,11 +39,13 @@ ros2 run concept_yolop concept_yolop_check \
 ros2 run concept live --show-args
 ```
 
-现场软件启动入口是 `ros2 run concept live`。在车静止、旧控制进程已退出时检查相机图像与 CameraInfo、双轮转速、陀螺和手柄心跳。启动后电机输出默认禁用。沿用现场匹配的相机配置。光心距路面约 0.54–0.55 m；还需匹配图像尺寸、内参、光轴方向及帧名。手柄有操作即接管，松开停住，面板点“继续”才恢复自动。结束时先禁用输出、退出本次 launch，再用干净终端启动原方案。[传感器接线、话题和故障处理](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/70209be0722f439158a3bb764b55817f364bcb55/vehicle_concept/AGENTS.md)
+现场软件启动入口是 `ros2 run concept live`。在车静止、旧控制进程已退出时检查相机图像与 CameraInfo、双轮转速、陀螺和手柄心跳。启动后电机输出默认禁用。沿用现场匹配的相机配置。光心距路面约 0.54–0.55 m；还需匹配图像尺寸、内参、光轴方向及帧名。手柄有操作即接管，松开停住，面板点“继续”才恢复自动。结束时先禁用输出、退出本次 launch，再用干净终端启动原方案。[传感器接线、话题和故障处理](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/5511be2fc48299180a4c8287c179588f81730449/vehicle_concept/AGENTS.md)
 
 ## Unity 对照环境
 
-桌面选 Concept 自己的 UnityLab 实例。可复用 semantic 的 Foxy 镜像和 `/vision` 中的 Torch 2.0.0+cu118、TorchVision 0.15.1+cu118、NumPy 1.24.4。本机镜像标签 `vehicle-semantic:pr47-grouped`，实测镜像 ID 为 `sha256:1a9afe0c25145f43291f25ffaa3395bfb24e61de0b069b2051847724bddd950d`。Jetson 的 Torch 为 2.0.0+nv23.05。B1.4 已在桌面复用环境的 GPU 上成功推理；冻结样本的路面及车线掩膜差异均为零。
+桌面选 Concept 自己的 UnityLab 实例。四场闭环以 semantic 共用的 `vehicle-semantic:1120` 为基础镜像（ID `sha256:3fb88ac063248c0c78f21f115544d86994b754c5a286ca954bb1c872ebca8997`）。其上使用 `/vision` 中的 Torch 2.0.0+cu118、TorchVision 0.15.1+cu118、NumPy 1.24.4，另加 SciPy 1.10.1，构建镜像内 Cython 为 0.29.14。用同一基础上的 `vehicle-semantic:pr47-grouped`（ID `sha256:1a9afe0c25145f43291f25ffaa3395bfb24e61de0b069b2051847724bddd950d`）核对了 100 条指令经过真实 ROS 门控后的软件 CAN 输出。Jetson 的 Torch 为 2.0.0+nv23.05。桌面 B1.4 在冻结样本上的路面及车线掩膜差异均为零。
+
+新工作站需从已有团队开发机取两个本地镜像或等价的已核实环境、B1.4 权重，以及私有仿真工程和 V6.26 裁判源码快照。车机部署上述 ROS 包时不需要 Unity 或桌面镜像。[仿真容器准备及镜像迁移](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/experiment/concept-foxy-unity-20261120/vehicle_concept/checks/unity1120/foxy) · [Unity 工程和裁判源码哈希](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/experiment/concept-foxy-unity-20261120/vehicle_concept/checks/unity1120/host)
 
 ## 怎么核对“打方向晚”
 

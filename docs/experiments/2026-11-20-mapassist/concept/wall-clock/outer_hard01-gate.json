@@ -1,0 +1,386 @@
+{
+  "software": "vehicle gate + stock motor controller + DDS software CAN receiver",
+  "input": "Unity Twist sequence, freshly timestamped at its simulated capture cadence",
+  "feedback": "fixture wheel, IMU and idle joystick heartbeat",
+  "commands": 25,
+  "matches": 25,
+  "watchdog_stop": true,
+  "zero_frames_after_timeout": 30,
+  "rows": [
+    {
+      "seq": 0,
+      "expected_right_left": [
+        36,
+        32
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        36,
+        32
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 23.4
+    },
+    {
+      "seq": 1,
+      "expected_right_left": [
+        59,
+        39
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        59,
+        39
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.02
+    },
+    {
+      "seq": 2,
+      "expected_right_left": [
+        62,
+        40
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        62,
+        40
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.0
+    },
+    {
+      "seq": 3,
+      "expected_right_left": [
+        63,
+        41
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        63,
+        41
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 19.37
+    },
+    {
+      "seq": 4,
+      "expected_right_left": [
+        64,
+        41
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        64,
+        41
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 16.16
+    },
+    {
+      "seq": 5,
+      "expected_right_left": [
+        45,
+        35
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        45,
+        35
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 12.39
+    },
+    {
+      "seq": 6,
+      "expected_right_left": [
+        54,
+        38
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        54,
+        38
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 10.11
+    },
+    {
+      "seq": 7,
+      "expected_right_left": [
+        43,
+        34
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        43,
+        34
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 5.71
+    },
+    {
+      "seq": 8,
+      "expected_right_left": [
+        53,
+        37
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        53,
+        37
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 5.71
+    },
+    {
+      "seq": 9,
+      "expected_right_left": [
+        42,
+        34
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        42,
+        34
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 21.47
+    },
+    {
+      "seq": 10,
+      "expected_right_left": [
+        40,
+        33
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        40,
+        33
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.98
+    },
+    {
+      "seq": 11,
+      "expected_right_left": [
+        39,
+        33
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        39,
+        33
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 19.73
+    },
+    {
+      "seq": 12,
+      "expected_right_left": [
+        39,
+        33
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        39,
+        33
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 6.04
+    },
+    {
+      "seq": 13,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 5.75
+    },
+    {
+      "seq": 14,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 5.43
+    },
+    {
+      "seq": 15,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 1.43
+    },
+    {
+      "seq": 16,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 31,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 31,
+      "match": true,
+      "settled_after_ms": 1.08
+    },
+    {
+      "seq": 17,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 5.89
+    },
+    {
+      "seq": 18,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 1.63
+    },
+    {
+      "seq": 19,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 31,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 31,
+      "match": true,
+      "settled_after_ms": 1.07
+    },
+    {
+      "seq": 20,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 31,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 31,
+      "match": true,
+      "settled_after_ms": 3.93
+    },
+    {
+      "seq": 21,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 10.26
+    },
+    {
+      "seq": 22,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 9.89
+    },
+    {
+      "seq": 23,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 5.85
+    },
+    {
+      "seq": 24,
+      "expected_right_left": [
+        0,
+        0
+      ],
+      "received_frames": 30,
+      "final_right_left": [
+        0,
+        0
+      ],
+      "stable_frames": 30,
+      "match": true,
+      "settled_after_ms": 5.75
+    }
+  ]
+}
