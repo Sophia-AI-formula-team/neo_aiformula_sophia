@@ -31,9 +31,13 @@ bash prepare.sh
 
 ## 出发前核对
 
-在车机同一 ROS 域查看 `ros2 topic info --verbose`。核对 `/point_flag` 来自 OA、三个 `/oa_point_*` 均接选择器、`/flag_stop` 来自真实检测像素适配器。`/semantic_drive/map_assist_045/lya_cmd_vel` 应由专用 LYA 发布，`/semantic_drive/map_assist_045/diagnostic_cmd_vel` 应由 MapAssist 发布并被旧 motor 订阅；该历史命名在正式模式承担受控速度。核对 `/semantic_drive/map_status` 与 `/semantic_drive/motor_session` 的唯一发布者。若 19 日现场安装与当前机器不符，记录包路径、话题和发布者后反馈；不要用固定 Bool 或手发 ABC 代替。
+接线按 11 月 19 日从车机带回的已安装文件核对。`lane_0927oa` 的 `/original_processed_point_a/b/c` 送给 MapAssist。独立 YOLOP 发布 `/aiformula_perception/yolop_a3/traffic_light/state` 给 MapAssist，并另发检测 JSON 给停车像素适配器。
 
-确认红灯后丢框，即使停车旗标为 False 也要停车。稳定绿灯才可直行；重新确认红灯且已匹配、有可行切入轨迹才可绕行。建图试验应起步前开录，保留同一 MapAssist 进程连续两圈。结束时先人工停稳，再按 LYA、MapAssist、YOLOP、Allnodes 的顺序 Ctrl-C。OA 和 MapAssist 随第三个终端一起退出。
+在车机同一 ROS 域用 `ros2 topic info --verbose` 核对 `/point_flag` 来自 OA，三个 `/oa_point_*` 进入选择器，选择器以 `/semantic_drive/map_assist_045/oa_ready` 通知 MapAssist 收到了新的一组 OA 三点。核对 `/flag_stop` 来自停车像素适配器。专用 LYA 发布 `/semantic_drive/map_assist_045/lya_cmd_vel`，MapAssist 向旧 motor 发布 `/semantic_drive/map_assist_045/diagnostic_cmd_vel`。同时核对 `/semantic_drive/map_status` 和 `/semantic_drive/motor_session` 的发布者。Allnodes 的全局三点处理器和私有选择器都叫 `data_processing_node`，专用 LYA 读取私有的 `filtered_lane_pose` 和 `filtered_omega_t`。若车机安装与 19 日归档不符，记录实际包路径和话题发布者。
+
+自动速度优先级为 **红灯停车 > OA > 绿灯后正常循迹**。进入红灯停车即发送全零速度，之后由独立的定时器默认以 20 Hz 持续发送。首圈按距离标志停车。确认红灯后丢框也会停车。因到达停车点、距离信号缺失或无可用绕行而锁定停车后，`flag_stop=False`、`unknown` 和 OA 指令都不能解除。绿灯确认后，如果 OA 仍接管，要先收到新的一组 OA 三点和新 LYA 速度。OA 已退出时，使用新的视觉三点和新 LYA 速度。在后续圈因丢失灯色暂时停止时，重新确认红灯且切入轨迹通过检查，可以恢复已验证的绕行流程。
+
+建图试验应起步前开录，保留同一 MapAssist 进程连续两圈。结束时先人工停稳，再按 LYA、MapAssist、YOLOP、Allnodes 的顺序 Ctrl-C。OA 和 MapAssist 随第三个终端一起退出。
 
 如需恢复快捷方式，停稳退出所有实验进程，移走本次安装的四个 `~/.local/bin` 命令和四个 `1120-*.desktop`（仅对应本实验的文件），将备份目录中的文件按相对路径还原到 HOME。原车 Allnodes 和识别权重沿用 19 日安装。
 
