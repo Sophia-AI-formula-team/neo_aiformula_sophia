@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -eo pipefail
+experiment="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
+if [[ $# -gt 1 ]]; then
+    echo "Usage: $0 [a3|a4|a4l]" >&2
+    exit 2
+fi
+choice="${1:-}"
+if [[ -z "$choice" ]]; then
+    printf 'Choose YOLOP: [1] A3 V14  [2] A4 (vehicle topics)  [3] A4Light (shadow)\n> '
+    read -r choice || exit 2
+fi
+case "${choice,,}" in
+    1|a3) profile=V14 ;;
+    2|a4) profile=A4 ;;
+    3|a4l|a4light|a4_lite) profile=A4_lite ;;
+    *) echo "Choose a3, a4, or a4l." >&2; exit 2 ;;
+esac
+
+# Hold the same lock across all three selector choices in this ROS domain.
+exec 9>"$experiment/selector-${ROS_DOMAIN_ID:-0}.lock"
+if ! flock -n 9; then
+    echo "A YOLOP selection is already running in this ROS domain. Stop it with Ctrl-C first." >&2
+    exit 1
+fi
+
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/local_setup.bash
+export PYTHONDONTWRITEBYTECODE=1
+if [[ "$profile" == V14 ]]; then
+    exec ros2 launch launchers yolop_a3.launch.py start_camera:=false start_lane_publisher:=false
+fi
+
+bundle="$experiment/bundles/$profile"
+if [[ ! -x "$experiment/foxy-env/bin/python3" || ! -f "$bundle/run_vehicle.py" ]]; then
+    echo "$profile is not configured. See $experiment/README.md." >&2
+    exit 1
+fi
+export PYTHONNOUSERSITE=1
+export YOLOP_FOXY_EXPERIMENT=1
+export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
+args=(--profile "$profile")
+if [[ "$profile" == A4 ]]; then
+    args+=(--live)
+fi
+exec "$experiment/foxy-env/bin/python3" "$bundle/run_vehicle.py" "${args[@]}"

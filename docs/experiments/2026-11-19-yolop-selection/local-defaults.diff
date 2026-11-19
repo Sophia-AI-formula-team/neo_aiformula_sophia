@@ -1,0 +1,22 @@
+--- before/allnodes.launch.py
++++ /home/workspace/src/aiformula/launchers/launch/allnodes.launch.py
+@@ -273,7 +273,7 @@
+     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
+ 
+     launch_args = (
+-        DeclareLaunchArgument("launch_yolop_a3", default_value="true",
++        DeclareLaunchArgument("launch_yolop_a3", default_value="false",
+                               description="Start A3 V14 on the existing lane/object topics."),
+         DeclareLaunchArgument(
+             "launch_legacy_road_detector",
+--- before/allnodes_2.launch.py
++++ /home/workspace/src/aiformula/launchers/launch/allnodes_2.launch.py
+@@ -273,7 +273,7 @@
+     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
+ 
+     launch_args = (
+-        DeclareLaunchArgument("launch_yolop_a3", default_value="true",
++        DeclareLaunchArgument("launch_yolop_a3", default_value="false",
+                               description="Start A3 V14 on the existing lane/object topics."),
+         DeclareLaunchArgument(
+             "launch_legacy_road_detector",

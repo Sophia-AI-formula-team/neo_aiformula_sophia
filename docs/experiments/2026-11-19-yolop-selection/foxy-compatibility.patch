@@ -1,0 +1,31 @@
+--- a/run_vehicle.py
++++ b/run_vehicle.py
+@@ -2,6 +2,7 @@
+ import argparse
+ import hashlib
+ import json
++import os
+ from pathlib import Path
+ import sys
+ import time
+@@ -89,8 +90,10 @@
+                           input=args.input_image_topic, outputs=routes(args.live), live=args.live)), flush=True)
+     if args.identity:
+         return
+-    if sys.version_info < (3, 10):
+-        raise RuntimeError("A4 requires a compatible Python >=3.10, rclpy and cv_bridge; not stock Foxy Python 3.8")
++    # The dated experiment opts into the tested local Foxy compatibility overlay.
++    foxy_overlay = sys.version_info[:2] == (3, 8) and os.environ.get("YOLOP_FOXY_EXPERIMENT") == "1"
++    if sys.version_info < (3, 10) and not foxy_overlay:
++        raise RuntimeError("A4 requires Python >=3.10 or the dated Foxy compatibility overlay")
+     sys.path.insert(0, str(ROOT / "ros2/yolop_a3_perception"))
+     from yolop_a3_perception.node import main as ros_main
+ 
+--- a/yolop_a3_runtime/outputs.py
++++ b/yolop_a3_runtime/outputs.py
+@@ -1,3 +1,5 @@
++from __future__ import annotations
++
+ """Independent lane and object outputs shared by Python and ROS callers."""
+ from dataclasses import asdict, dataclass
+ 
