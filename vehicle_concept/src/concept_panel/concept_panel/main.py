@@ -87,7 +87,10 @@ class LapMapUpdates:
         if not self.client.service_is_ready():
             self.dialog.connection.setText('未连接地图服务 · 保留上次地图')
             return
-        self.pending = self.client.call_async(self.request())
+        try:
+            self.pending = self.client.call_async(self.request())
+        except RuntimeError:
+            self.dialog.connection.setText('地图请求失败 · 保留上次地图')
 
 
 def image_from_ros(msg):

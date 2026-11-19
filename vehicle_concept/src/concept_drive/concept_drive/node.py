@@ -84,10 +84,18 @@ class DriverNode(Node):
         if self.driver.mapper.t != self.driver.previous_time:
             response.message = '最新规划未完成，保留上次地图'
             return response
-        if self.cached_lap_map is None or self.cached_lap_map[0] != self.last_ns:
-            self.cached_lap_map = (self.last_ns, encode_map(self.driver, self.session, stamp(self.last_ns)))
+        now = time.monotonic()
+        if self.cached_lap_map is None or (
+                self.cached_lap_map[0] != self.last_ns and now-self.cached_lap_map[1] >= 1.):
+            try:
+                message = encode_map(self.driver, self.session, stamp(self.last_ns))
+            except (ValueError, TypeError, OverflowError) as exc:
+                self.get_logger().warning('Could not export lap map: %s' % exc)
+                response.message = '地图读取失败 · 保留上次地图'
+                return response
+            self.cached_lap_map = (self.last_ns, now, message)
         response.success = True
-        response.message = self.cached_lap_map[1]
+        response.message = self.cached_lap_map[2]
         return response
 
     def update_parameters(self, parameters):
