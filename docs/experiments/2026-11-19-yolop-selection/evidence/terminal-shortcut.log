@@ -1,0 +1,11 @@
+2026-11-19T09:55:34+09:00 Preflight sampled at 2026-11-19T09:55:28+09:00: Bash login PATH resolved yolop-launch; the yolop-a4 path was free; the GitHub experiment branch matched local baseline 6f9fa1b.
+2026-11-19T09:55:34+09:00 Created the direct A4 wrapper and checked POSIX shell syntax.
+2026-11-19T09:55:34+09:00 Verified wrapper against a stub selector: it passed exactly a4 and propagated exit code 37.
+2026-11-19T09:55:34+09:00 Installed the versioned wrapper and linked it into the terminal PATH as yolop-a4.
+2026-11-19T09:55:34+09:00 Verified login-shell command resolution, symlink target, installed bytes, and stub execution through the installed path. No ROS process was launched.
+2026-11-19T09:55:54+09:00 Clarified scope: the terminal shortcut should open the interactive A3 V14, A4 and A4Light selector.
+2026-11-19T09:55:54+09:00 Verified the selector target, temporary wrapper contents, and that the yolop command name was free.
+2026-11-19T09:55:54+09:00 Installed yolop as a relative symlink to yolop-launch in the terminal PATH.
+2026-11-19T09:55:54+09:00 Verified login-shell PATH, the resolved selector and all three displayed choices. EOF returned 2 before a selection or any ROS startup.
+2026-11-19T09:55:54+09:00 Removed the temporary direct-A4 wrapper and its symlink.
+2026-11-19T09:55:58+09:00 Archived the shortcut timeline, documented the link and rollback, and checked the staged Git diff.

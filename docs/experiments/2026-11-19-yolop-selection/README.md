@@ -4,7 +4,7 @@ This is a reversible local experiment for A3 V14, A4 and A4Light in the Neo vehi
 
 ## Run
 
-Open **YOLOP Perception** from the desktop or Applications menu, or run `~/.local/bin/yolop-launch` in a terminal. Choose 1 (A3 V14), 2 (A4), or 3 (A4Light). For explicit selection, pass `a3`, `a4`, or `a4l`. Use Ctrl-C to stop a selection before starting another. The selector subscribes to the existing camera stream and holds a per-ROS-domain process lock. A3 and A4 publish on the vehicle perception topics. A4 uses the upstream `--live` routing and duplicate publisher check, with the image-only single-frame model. A4Light publishes its outputs under `/a3_shadow/`. The desktop and application menu entries open the selector in a terminal. The selector starts only the selected detector.
+Type `yolop` in a terminal, or open **YOLOP Perception** from the desktop or Applications menu. The terminal shortcut links `~/.local/bin/yolop` to the existing `yolop-launch` selector. Choose 1 (A3 V14), 2 (A4), or 3 (A4Light). For explicit selection, pass `a3`, `a4`, or `a4l`. Use Ctrl-C to stop a selection before starting another. The selector subscribes to the existing camera stream and holds a per-ROS-domain process lock. A3 and A4 publish on the vehicle perception topics. A4 uses the upstream `--live` routing and duplicate publisher check, with the image-only single-frame model. A4Light publishes its outputs under `/a3_shadow/`. The desktop and application menu entries open the selector in a terminal. The selector starts only the selected detector.
 
 `allnodes.launch.py` and `allnodes_2.launch.py` now default `launch_yolop_a3` to false on the local machine. Consequently an unqualified allnodes start supplies no YOLOP lane mask until A3 or A4 is selected. The existing explicit opt-in remains available.
 
@@ -36,7 +36,11 @@ The camera and vehicle consumers were represented by an isolated DDS probe. Real
 1. Stop the selected launcher with Ctrl-C.
 2. To undo only the A4 routing and shortcut follow-up, restore `yolop.launch` from `before-live/yolop.launch` with `cp -p`. Remove the two installed desktop entry copies if they still match the experiment's `YOLOP.desktop`. Their paths are `$(xdg-user-dir DESKTOP)/YOLOP.desktop` and `~/.local/share/applications/aiformula-yolop.desktop`.
 3. To undo the local launcher defaults as well, from this machine run `python3 ~/aiformula_runtime/2026-11-19-yolop-selection/vehicle_defaults.py rollback`. The script restores the exact originals from `before/` and refuses to overwrite later unrelated edits.
-4. Verify `~/.local/bin/yolop-launch` points to this experiment, then remove that symlink with `unlink ~/.local/bin/yolop-launch`. Archive the dated local folder to remove the isolated profiles from use while keeping the record.
+4. Verify `~/.local/bin/yolop` links to `yolop-launch` before removing the shortcut with `unlink ~/.local/bin/yolop`. Verify `~/.local/bin/yolop-launch` points to this experiment, then remove that symlink with `unlink ~/.local/bin/yolop-launch`. Archive the dated local folder to remove the isolated profiles from use while keeping the record.
+
+## Terminal shortcut follow-up
+
+The selector shortcut was installed and verified at 09:55:54 JST. To recreate the link in the same layout, run `ln -s yolop-launch ~/.local/bin/yolop`. The verification opened the three-choice prompt with stdin closed and confirmed exit before detector selection. See the [timestamped change log](evidence/terminal-shortcut.log) for the initial interpretation, correction, and checks.
 
 ## Archived files
 
