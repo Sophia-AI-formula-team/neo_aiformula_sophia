@@ -303,6 +303,7 @@ class RoadAwareCurvePlanner:
         targets, commands = full_targets, full_commands
         count = len(commands)
         self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower,
+                            nominal_substeps=nominal_controls, nominal_indices=inverse,
                             brake_controls=brake_controls, escape_ok=escape_ok,
                             escape_lower=escape_lower, escape_controls=escape_controls,
                             escape_duration=horizon, retimed=retimed,

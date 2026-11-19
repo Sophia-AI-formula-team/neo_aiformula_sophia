@@ -102,6 +102,17 @@ class SupportedLaunch:
         moving = allowed & (table[:, 0] > 0)
         top = choose(scores, moving)
         certified, reasons = certify_forward(moving, table, audit, pick, evidence)
+        if certified.any() and 'check_localized_cones' in evidence:
+            indices = np.flatnonzero(certified)
+            margins = np.asarray(evidence['check_localized_cones'](indices))
+            if margins.shape != indices.shape:
+                return keep('missing_localized_cone_trajectory_check')
+            passes = np.isfinite(margins) & (margins >= CLEAR_MARGIN_M)
+            decision['localized_cone_checked'] = len(indices)
+            decision['localized_cone_clear'] = int(np.sum(passes))
+            for idx in indices[~passes]:
+                reasons[int(idx)] = 'localized_cone_on_drive_or_brake_path'
+            certified[indices] = passes
         selected = choose(scores, certified)
         decision.update(forward_index=top, h12_top_forward_score=float(scores[top]),
                         top_forward_rejection=reasons.get(top), certified_index=selected,

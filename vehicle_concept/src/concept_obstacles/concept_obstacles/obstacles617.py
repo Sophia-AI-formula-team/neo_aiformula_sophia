@@ -15,6 +15,21 @@ from concept_obstacles.association61519 import assign
 from concept_obstacles.clipped617 import censored_support
 from concept_obstacles.ground import contact_point
 
+INITIAL_SPEED_SIGMA = .45
+UNKNOWN_ACCELERATION_SIGMA = .6
+
+
+def projected_foot(z, x, foot_height, has_image):
+    dzdv = -z*z/(foot_height*FOCAL)
+    jacobian = np.array([[0., dzdv], [z/FOCAL, x/z*dzdv]])
+    covariance = jacobian@np.diag([3.**2, 3.**2])@jacobian.T+np.eye(2)*.04**2
+    if has_image:
+        # The front of the square base is observed, its centre is modelled.
+        scale = 1.+.24/max(np.hypot(z, x), .1)
+        z, x = z*scale, x*scale
+        covariance += np.eye(2)*.05**2
+    return np.array([z, x]), covariance
+
 def overlap(a, b):
     intersection = np.maximum(0., np.minimum(a[2:], b[2:])-np.maximum(a[:2], b[:2])).prod()
     areas = [np.maximum(0., q[2:]-q[:2]).prod() for q in (a, b)]
@@ -35,6 +50,7 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
     proposals = []
     for box, score, label in zip(prediction['boxes'], prediction['scores'], prediction['labels']):
         box = np.asarray(box, float)
+        source_box = box.tolist()
         if label == 91 and score >= .15 and np.isfinite(box).all() and np.all(box[2:] > box[:2]):
             foot_height = HEIGHT
             foot_source = 'detector_box'
@@ -67,9 +83,9 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
                 # cannot lend that proposal an unsupported, much nearer foot.
                 if box[3]-bottom > max(3., .15*(box[3]-box[1])):
                     continue
-            proposals.append((box, float(score), foot_height, foot_source, support))
+            proposals.append((box, float(score), foot_height, foot_source, support, source_box))
     groups = []
-    for box, score, foot_height, foot_source, support in sorted(proposals, key=lambda b: -np.prod(b[0][2:]-b[0][:2])):
+    for box, score, foot_height, foot_source, support, source_box in sorted(proposals, key=lambda b: -np.prod(b[0][2:]-b[0][:2])):
         match = None
         for group in groups:
             outer = group['box']
@@ -89,10 +105,11 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
                 break
         if match is None:
             groups.append(dict(box=box, score=score, members=1, foot_height=foot_height,
-                               foot_source=foot_source, support=support))
+                               foot_source=foot_source, support=support, source_boxes=[source_box]))
         else:
             match['score'] = max(score, match['score'])
             match['members'] += 1
+            match['source_boxes'].append(source_box)
     result = []
     for group in groups:
         box = group['box']
@@ -101,10 +118,13 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
         foot_height = group['foot_height']
         z = foot_height*FOCAL/(box[3]-CY)
         x = (.5*(box[0]+box[2])-CX)*z/FOCAL
+        clipped = [box[0] <= 2, box[1] <= 2, box[2] >= width-2, box[3] >= height-2]
+        source_boxes = group.pop('source_boxes')
         if field_ground and measurements is not None:
             measurements.append(dict(foot_uv=[float((box[0]+box[2])*.5), float(box[3])],
                                      foot_source=group['foot_source'], score=group['score'],
                                      ground_forward_right_m=[float(z), float(x)],
+                                     source_boxes=source_boxes, clipped=bool(any(clipped)),
                                      within_tracking_range=bool(0 < z < 12)))
         if not 0 < z < 12:
             continue
@@ -113,20 +133,9 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
             # the 12 m observability bound both refer to the actual ground contact.
             group['center_offset'] = .24 if image is not None else 0.
             group['contact_depth'] = z
-        clipped = [box[0] <= 2, box[1] <= 2, box[2] >= width-2, box[3] >= height-2]
-        # Three pixels of foot jitter, plus a small ground-model allowance.
-        dzdv = -z*z/(foot_height*FOCAL)
-        jacobian = np.array([[0., dzdv], [z/FOCAL, x/z*dzdv]])
-        covariance = jacobian@np.diag([3.**2, 3.**2])@jacobian.T+np.eye(2)*.04**2
-        if image is not None:
-            # The visible foot is the front edge of a 0.48m square base, not its
-            # centre. Heading is not supplied: .24m correction plus .05m error
-            # covers the .24..sqrt(2)*.24 orientation range approximately.
-            factor = 1.+.24/max(np.hypot(z, x), .1)
-            z, x = z*factor, x*factor
-            covariance += np.eye(2)*.05**2
+        point, covariance = projected_foot(z, x, foot_height, image is not None)
         del group['support']
-        result.append(dict(**group, point=np.array([z, x]), R=covariance, clipped=clipped))
+        result.append(dict(**group, point=point, R=covariance, clipped=clipped))
     return result
 
 @dataclass
@@ -155,6 +164,21 @@ class Track:
     # Keep its continuity separate from the age of the last complete foot.
     presence_age: float = 0.
     center_offset: float = 0.
+
+def collision_row(track, acceleration):
+    prob = track.static_probability
+    ms = np.r_[track.static_state,0.,0.]
+    ps = np.zeros((4,4));ps[:2,:2]=track.static_covariance
+    mean = prob*ms+(1-prob)*track.state
+    ds,dc = ms-mean,track.state-mean
+    pm = prob*(ps+np.outer(ds,ds))+(1-prob)*(track.covariance+np.outer(dc,dc))
+    noise = .04+2*np.sqrt(np.linalg.eigvalsh(pm[:2,:2]).max())
+    # 0:24 compatible summary; 25:68 explicit mode states/probability.
+    return [*mean,.34,noise,*pm.ravel(),track.age,track.hits,
+                    np.sqrt(1-prob)*.6,prob,*ms,*ps.ravel(),*track.state,
+                    *track.covariance.ravel(),.6,.02,.005,*acceleration.ravel(),
+                    track.travel_since_fix,track.turn_since_fix,track.maximum_radius,track.odometry_budget]
+
 
 class Occupancy617:
     def __init__(self):
@@ -350,7 +374,7 @@ class Occupancy617:
             point = detection['point'].copy()
             covariance = np.zeros((4, 4))
             covariance[:2, :2] = detection['R']
-            covariance[2:, 2:] = np.eye(2)*.45**2
+            covariance[2:, 2:] = np.eye(2)*INITIAL_SPEED_SIGMA**2
             if any(detection['clipped']):
                 # First sight is an interval, never an invented accurate point.
                 covariance[:2, :2] += np.eye(2)*.5**2
@@ -365,7 +389,7 @@ class Occupancy617:
             # Use the same CV prediction as the collision check, including
             # cross covariance and acceleration noise. Never release by age.
             axis=track.motion_axis
-            acceleration=np.eye(2)*.6**2 if axis is None else (.12**2*np.eye(2)+(.6**2-.12**2)*np.outer(axis,axis))
+            acceleration=np.eye(2)*UNKNOWN_ACCELERATION_SIGMA**2 if axis is None else (.12**2*np.eye(2)+(.6**2-.12**2)*np.outer(axis,axis))
             future = np.linspace(0., 5., 101)
             variance = (track.covariance[0,0]+2*future*track.covariance[0,2]
                         +future**2*track.covariance[2,2]+acceleration[0,0]*future**3/3)
@@ -403,18 +427,9 @@ class Occupancy617:
                                      age=track.age,cv_front=front,static_front=static_front))
                 continue
             retained.append(track)
-            prob = track.static_probability
-            ms = np.r_[track.static_state,0.,0.]
-            ps = np.zeros((4,4));ps[:2,:2]=track.static_covariance
-            mean = prob*ms+(1-prob)*track.state
-            ds,dc = ms-mean,track.state-mean
-            pm = prob*(ps+np.outer(ds,ds))+(1-prob)*(track.covariance+np.outer(dc,dc))
-            noise = .04+2*np.sqrt(np.linalg.eigvalsh(pm[:2,:2]).max())
-            # 0:24 compatible summary; 25:68 explicit mode states/probability.
-            objects.append([*mean,.34,noise,*pm.ravel(),track.age,track.hits,
-                            np.sqrt(1-prob)*.6,prob,*ms,*ps.ravel(),*track.state,
-                            *track.covariance.ravel(),.6,.02,.005,*acceleration.ravel(),
-                            track.travel_since_fix,track.turn_since_fix,track.maximum_radius,track.odometry_budget])
+            row = collision_row(track, acceleration)
+            objects.append(row)
+            mean, noise, prob = np.asarray(row[:4]), row[5], row[25]
             audit.append(dict(id=track.number, source=track.source, position=mean[:2].tolist(),
                               velocity=mean[2:].tolist(), error_m=float(noise),
                               last_observation_age_s=track.age, last_presence_age_s=track.presence_age, hits=track.hits, score=track.score,

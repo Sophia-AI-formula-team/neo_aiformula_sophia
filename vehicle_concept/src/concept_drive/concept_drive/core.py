@@ -3,6 +3,7 @@
 All geometry here uses metres forward/right. Sensor gyro and output yaw in this
 module are clockwise-positive; the ROS adapter performs the two sign conversions.
 """
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -10,11 +11,13 @@ import numpy as np
 from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
 from concept_candidates.edge_recovery import fit_edge
+from concept_candidates.launch_clearance import launch_clearance
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
 from concept_candidates.rear_reference617 import RecoveryReference
 from concept_feasibility.response61515 import physical_applied_command
 from concept_obstacles.obstacles617 import Occupancy617, instances
+from concept_obstacles.launch_view import launch_objects
 from concept_ranker import trajectory624
 from concept_road.field_road import FieldRoad
 from concept_road.limits6251 import JunctionLimits, observed_direction
@@ -94,9 +97,10 @@ class Drive:
                 guidance, reference = np.empty((0, 4)), None
             near_visibility = [row['z'] for row in near_rows
                                if row['source'] == 'historical_material_observation']
+            provisional = launch_objects(det, objects, measurements)
             launch_evidence = dict(stamp_s=float(sensor['t']), applied_speed_mps=physical_applied_command()[0],
                                    observed_near_z=near_visibility, visible_z=scene.audit.get('visible_z'),
-                                   obstacle_clear=clear_launch_view(det, objects, measurements))
+                                   obstacle_clear=provisional is not None)
         else:
             if set(edges['edges']) == {'left', 'right'}:
                 guidance = np.empty((0, 4))
@@ -108,7 +112,11 @@ class Drive:
         features, allowed, baseline = self.builder.prepare(obs)
         pick, ranking = baseline, None
         if self.builder.network_allowed:
-            pick, ranking = self.ranker.rank(features, allowed, baseline, self.builder.planner.last['audit'], obs,
+            audit = self.builder.planner.last['audit']
+            if field_ground and provisional is not None and len(provisional):
+                launch_evidence['check_localized_cones'] = partial(
+                    launch_clearance, provisional, obs, self.planner.pending, audit)
+            pick, ranking = self.ranker.rank(features, allowed, baseline, audit, obs,
                                             **({'launch_evidence': launch_evidence} if field_ground else {}))
         control = self.builder.command(pick)
         self.previous_time = sensor['t']
@@ -172,13 +180,6 @@ def intersect_confirmed_edges(camera_road, constrained, edges):
 
 
 def clear_launch_view(detections, objects, measurements):
-    """Keep stopping eligible for untracked or unprojectable nearby detections."""
-    if len(objects) or any(m.get('within_tracking_range', True) for m in measurements):
-        return False
-    boxes = detections['boxes'][(detections['labels'] == 91) & (detections['scores'] >= .15)]
-    for box in boxes:
-        if not np.isfinite(box).all() or box[3] <= CY + 5:
-            return False
-        if HEIGHT * FOCAL / (box[3] - CY) <= 12.:
-            return False
-    return True
+    """True only when launch needs no additional cone check."""
+    provisional = launch_objects(detections, objects, measurements)
+    return provisional is not None and not len(provisional)

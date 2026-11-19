@@ -29,4 +29,5 @@ def test_launch_preference_defers_to_observed_or_unresolved_cones():
     assert not clear_launch_view(box(250), [], [])  # close but not yet tracked
     assert not clear_launch_view(box(190), [object()], [])
     assert not clear_launch_view(box(190), [], [{}])
-    assert clear_launch_view(box(190), [], [{'within_tracking_range': False}])
+    # A range flag alone cannot associate a raw box to a measured foot.
+    assert not clear_launch_view(box(190), [], [{'within_tracking_range': False}])
