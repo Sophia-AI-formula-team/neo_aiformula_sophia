@@ -1,0 +1,345 @@
+{
+  "clock": "system clock; timestamps assigned on replay publication of decoded recorded image",
+  "input_count": 25,
+  "requested_hz": 5.0,
+  "feedback_encoding": "driver",
+  "measured_publish_hz": 4.999706482856475,
+  "status_counts": {
+    "invalid": 7,
+    "no_decision": 16,
+    "ok": 1,
+    "late": 1
+  },
+  "command_count": 1,
+  "capture_to_twist_ms": {
+    "min": 212.01,
+    "p50": 212.01,
+    "p95": 212.01,
+    "max": 212.01
+  },
+  "frames": [
+    {
+      "seq": 0,
+      "stamp_ns": 1795109169527369484,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 5.080315,
+        "decode_and_projection": 1.837752,
+        "inference": 882.249191,
+        "restrict_predictions": 0.216013
+      },
+      "planner_ms": 0.06333700730465353
+    },
+    {
+      "seq": 1,
+      "stamp_ns": 1795109169727675108,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 2,
+      "stamp_ns": 1795109169927684266,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 3,
+      "stamp_ns": 1795109170127693544,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 4,
+      "stamp_ns": 1795109170327691142,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 92.070901,
+        "decode_and_projection": 2.109261,
+        "inference": 807.250013,
+        "restrict_predictions": 0.178797
+      },
+      "planner_ms": 0.0445649930043146
+    },
+    {
+      "seq": 5,
+      "stamp_ns": 1795109170527667351,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 6,
+      "stamp_ns": 1795109170727665025,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 7,
+      "stamp_ns": 1795109170927670390,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 8,
+      "stamp_ns": 1795109171127687595,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 104.552823,
+        "decode_and_projection": 2.077504,
+        "inference": 686.742829,
+        "restrict_predictions": 0.171657
+      },
+      "planner_ms": 0.042113999370485544
+    },
+    {
+      "seq": 9,
+      "stamp_ns": 1795109171327683930,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 10,
+      "stamp_ns": 1795109171527686220,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 11,
+      "stamp_ns": 1795109171727691430,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 195.635694,
+        "decode_and_projection": 1.901852,
+        "inference": 617.983721,
+        "restrict_predictions": 0.170166
+      },
+      "planner_ms": 0.04165401333011687
+    },
+    {
+      "seq": 12,
+      "stamp_ns": 1795109171927645019,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 13,
+      "stamp_ns": 1795109172127687138,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 14,
+      "stamp_ns": 1795109172327687977,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 15,
+      "stamp_ns": 1795109172527681611,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 19.0807,
+        "decode_and_projection": 1.981975,
+        "inference": 582.109604,
+        "restrict_predictions": 0.152025
+      },
+      "planner_ms": 0.02913300704676658
+    },
+    {
+      "seq": 16,
+      "stamp_ns": 1795109172727684140,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 17,
+      "stamp_ns": 1795109172927680079,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 18,
+      "stamp_ns": 1795109173127650886,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.42496555373163863
+      ],
+      "capture_to_twist_ms": 212.006789,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 4.284561,
+        "decode_and_projection": 1.585861,
+        "inference": 75.886444,
+        "restrict_predictions": 0.175248
+      },
+      "planner_ms": 125.97937299869955
+    },
+    {
+      "seq": 19,
+      "stamp_ns": 1795109173327724242,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "late",
+      "reason": "decision exceeded 0.5 s from acquisition",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 14.048451,
+        "decode_and_projection": 4.37376,
+        "inference": 452.65408,
+        "restrict_predictions": 0.199669
+      },
+      "planner_ms": 67.6126009930158
+    },
+    {
+      "seq": 20,
+      "stamp_ns": 1795109173527699400,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 21,
+      "stamp_ns": 1795109173727699634,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 146.669136,
+        "decode_and_projection": 1.431186,
+        "inference": 553.001463,
+        "restrict_predictions": 0.183278
+      },
+      "planner_ms": 0.04258399712853134
+    },
+    {
+      "seq": 22,
+      "stamp_ns": 1795109173927677726,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 23,
+      "stamp_ns": 1795109174127684296,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "no_decision",
+      "reason": null,
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": null,
+      "planner_ms": null
+    },
+    {
+      "seq": 24,
+      "stamp_ns": 1795109174325077419,
+      "feedback_roundoff_ns": 0.0,
+      "decision": "invalid",
+      "reason": "image is stale or its stamp is in the future",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 103.338513,
+        "decode_and_projection": 1.418549,
+        "inference": 602.910495,
+        "restrict_predictions": 0.164056
+      },
+      "planner_ms": 0.04758499562740326
+    }
+  ]
+}

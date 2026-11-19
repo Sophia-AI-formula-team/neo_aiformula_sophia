@@ -1,0 +1,65 @@
+{
+  "archived_frames_with_same_DDS_and_CAN": [
+    {
+      "schema": "concept-unity/1",
+      "kind": "command",
+      "seq": 0,
+      "simulation_time_s": 0.0,
+      "mode": "auto",
+      "status": "ok",
+      "reason": "feasible",
+      "linear_mps": 0.2,
+      "angular_z_radps": -0.0,
+      "right_can_rpm": 49,
+      "left_can_rpm": 49,
+      "selected_index": 54,
+      "feasible_count": 75,
+      "geometry_profile": "honda-v1.4.0-ground",
+      "wall_ms": 388.92
+    },
+    {
+      "schema": "concept-unity/1",
+      "kind": "command",
+      "seq": 1,
+      "simulation_time_s": 0.199999988,
+      "mode": "auto",
+      "status": "ok",
+      "reason": "feasible",
+      "linear_mps": 0.39999998800000003,
+      "angular_z_radps": -0.0,
+      "right_can_rpm": 69,
+      "left_can_rpm": 69,
+      "selected_index": 54,
+      "feasible_count": 75,
+      "geometry_profile": "honda-v1.4.0-ground",
+      "wall_ms": 382.72
+    },
+    {
+      "schema": "concept-unity/1",
+      "kind": "command",
+      "seq": 2,
+      "simulation_time_s": 0.399999976,
+      "mode": "auto",
+      "status": "ok",
+      "reason": "feasible",
+      "linear_mps": 0.599999964,
+      "angular_z_radps": -0.0,
+      "right_can_rpm": 88,
+      "left_can_rpm": 88,
+      "selected_index": 54,
+      "feasible_count": 75,
+      "geometry_profile": "honda-v1.4.0-ground",
+      "wall_ms": 331.51
+    }
+  ],
+  "wrong_applied_CAN": {
+    "schema": "concept-unity/1",
+    "kind": "error",
+    "reason": "host CAN echo differs from sent command: right_can_rpm"
+  },
+  "extra_global_input": {
+    "schema": "concept-unity/1",
+    "kind": "error",
+    "reason": "frame fields must contain exactly the documented onboard sensor and applied values"
+  }
+}

@@ -27,9 +27,10 @@ def convert_status(text, now_ns):
         source.get("traffic_planner_version") == "ubs_auto_turn_v1"
         and source.get("use_sim_time") is False
         and mode == "normal"
+        and source.get("red_stop_required") is not True
         and isinstance(reason, str)
-        and source.get("traffic_light") in ("green", "yellow", "off", "not_red")
-        and source.get("traffic_light_raw") in ("green", "yellow", "off", "unknown")
+        and source.get("traffic_light") == "green"
+        and source.get("traffic_light_raw") == "green"
         and source.get("traffic_stop_committed") is False
         and source.get("auto_stop_latched") is False
         and source.get("avoidance_active") is False

@@ -1,0 +1,435 @@
+{
+  "clock": "system clock; timestamps assigned on replay publication of decoded recorded image",
+  "input_count": 25,
+  "requested_hz": 5.0,
+  "measured_publish_hz": 4.999743316302981,
+  "status_counts": {
+    "ok": 22,
+    "invalid": 3
+  },
+  "command_count": 22,
+  "capture_to_twist_ms": {
+    "min": 127.33,
+    "p50": 143.41,
+    "p95": 185.3,
+    "max": 186.43
+  },
+  "frames": [
+    {
+      "seq": 0,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        0.2,
+        -0.0
+      ],
+      "capture_to_twist_ms": 186.432658,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 4.436599,
+        "decode_and_projection": 1.708481,
+        "inference": 60.053588,
+        "restrict_predictions": 0.174033
+      },
+      "planner_ms": 116.67485300858971
+    },
+    {
+      "seq": 1,
+      "decision": "invalid",
+      "reason": "no recent wheel and gyro measurement at image capture",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 4.161303,
+        "decode_and_projection": 1.929118,
+        "inference": 89.316254,
+        "restrict_predictions": 0.160883
+      },
+      "planner_ms": 0.05449399759527296
+    },
+    {
+      "seq": 2,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        0.599999976,
+        -0.0
+      ],
+      "capture_to_twist_ms": 158.293693,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.4474,
+        "decode_and_projection": 1.62231,
+        "inference": 91.22143,
+        "restrict_predictions": 0.160692
+      },
+      "planner_ms": 59.21079800464213
+    },
+    {
+      "seq": 3,
+      "decision": "invalid",
+      "reason": "no recent wheel and gyro measurement at image capture",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 3.683821,
+        "decode_and_projection": 1.95781,
+        "inference": 68.875962,
+        "restrict_predictions": 0.169213
+      },
+      "planner_ms": 0.0718950032023713
+    },
+    {
+      "seq": 4,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        0.999999952,
+        0.062208589357279895
+      ],
+      "capture_to_twist_ms": 151.417041,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 3.430562,
+        "decode_and_projection": 2.011904,
+        "inference": 70.68987,
+        "restrict_predictions": 0.177133
+      },
+      "planner_ms": 70.77559200115502
+    },
+    {
+      "seq": 5,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        1.19999994,
+        0.06236101127121435
+      ],
+      "capture_to_twist_ms": 185.415707,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.527365,
+        "decode_and_projection": 2.153929,
+        "inference": 102.746361,
+        "restrict_predictions": 0.185294
+      },
+      "planner_ms": 74.01650500833057
+    },
+    {
+      "seq": 6,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        1.3999903850000002,
+        0.06220859387394507
+      ],
+      "capture_to_twist_ms": 154.181925,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 3.057814,
+        "decode_and_projection": 1.673008,
+        "inference": 79.784965,
+        "restrict_predictions": 0.190395
+      },
+      "planner_ms": 65.11621500249021
+    },
+    {
+      "seq": 7,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        1.59999986,
+        0.06236101127121435
+      ],
+      "capture_to_twist_ms": 136.753048,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.370089,
+        "decode_and_projection": 1.874197,
+        "inference": 59.282366,
+        "restrict_predictions": 0.186334
+      },
+      "planner_ms": 69.9796620028792
+    },
+    {
+      "seq": 8,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        1.7999906920000002,
+        0.06275357669123838
+      ],
+      "capture_to_twist_ms": 135.280426,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.506224,
+        "decode_and_projection": 1.698936,
+        "inference": 61.556888,
+        "restrict_predictions": 0.155842
+      },
+      "planner_ms": 65.7814409933053
+    },
+    {
+      "seq": 9,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        1.999957253,
+        0.06376391529771225
+      ],
+      "capture_to_twist_ms": 163.954126,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.318635,
+        "decode_and_projection": 1.849881,
+        "inference": 95.041993,
+        "restrict_predictions": 0.172673
+      },
+      "planner_ms": 61.328185998718254
+    },
+    {
+      "seq": 10,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.06636221272656188
+      ],
+      "capture_to_twist_ms": 137.444846,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.436974,
+        "decode_and_projection": 1.464592,
+        "inference": 68.684042,
+        "restrict_predictions": 0.163873
+      },
+      "planner_ms": 59.879836000618525
+    },
+    {
+      "seq": 11,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.07301596959315015
+      ],
+      "capture_to_twist_ms": 133.107785,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.909851,
+        "decode_and_projection": 2.418439,
+        "inference": 61.030678,
+        "restrict_predictions": 0.158982
+      },
+      "planner_ms": 63.65744399954565
+    },
+    {
+      "seq": 12,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.08989285430323109
+      ],
+      "capture_to_twist_ms": 138.222296,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.343367,
+        "decode_and_projection": 1.611803,
+        "inference": 69.139668,
+        "restrict_predictions": 0.172573
+      },
+      "planner_ms": 61.49122799979523
+    },
+    {
+      "seq": 13,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.1317186843603766
+      ],
+      "capture_to_twist_ms": 161.398661,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.399241,
+        "decode_and_projection": 1.596652,
+        "inference": 89.294413,
+        "restrict_predictions": 0.173873
+      },
+      "planner_ms": 65.06940699182451
+    },
+    {
+      "seq": 14,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.22953842991326567
+      ],
+      "capture_to_twist_ms": 128.825648,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.355853,
+        "decode_and_projection": 1.576091,
+        "inference": 59.986173,
+        "restrict_predictions": 0.159272
+      },
+      "planner_ms": 61.59768099314533
+    },
+    {
+      "seq": 15,
+      "decision": "invalid",
+      "reason": "no recent wheel and gyro measurement at image capture",
+      "command": null,
+      "capture_to_twist_ms": null,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.245055,
+        "decode_and_projection": 1.587311,
+        "inference": 60.624972,
+        "restrict_predictions": 0.157482
+      },
+      "planner_ms": 0.059475001762621105
+    },
+    {
+      "seq": 16,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.4255085395324304
+      ],
+      "capture_to_twist_ms": 148.590272,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.382355,
+        "decode_and_projection": 1.436164,
+        "inference": 82.081337,
+        "restrict_predictions": 0.148141
+      },
+      "planner_ms": 59.63266600156203
+    },
+    {
+      "seq": 17,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.4251495740858041
+      ],
+      "capture_to_twist_ms": 127.330342,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.337841,
+        "decode_and_projection": 1.918797,
+        "inference": 59.402257,
+        "restrict_predictions": 0.161912
+      },
+      "planner_ms": 60.277990996837616
+    },
+    {
+      "seq": 18,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.42496555373163863
+      ],
+      "capture_to_twist_ms": 137.952734,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.359968,
+        "decode_and_projection": 1.665707,
+        "inference": 70.919573,
+        "restrict_predictions": 0.156032
+      },
+      "planner_ms": 59.530879007070325
+    },
+    {
+      "seq": 19,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.42487116770530764
+      ],
+      "capture_to_twist_ms": 134.795409,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.56287,
+        "decode_and_projection": 1.837076,
+        "inference": 60.992274,
+        "restrict_predictions": 0.162783
+      },
+      "planner_ms": 66.05865800520405
+    },
+    {
+      "seq": 20,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.4248226720981535
+      ],
+      "capture_to_twist_ms": 129.491468,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.337246,
+        "decode_and_projection": 1.749253,
+        "inference": 58.392952,
+        "restrict_predictions": 0.161802
+      },
+      "planner_ms": 63.33126898971386
+    },
+    {
+      "seq": 21,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.4247977690667888
+      ],
+      "capture_to_twist_ms": 183.045354,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.281377,
+        "decode_and_projection": 1.522146,
+        "inference": 57.609451,
+        "restrict_predictions": 0.165413
+      },
+      "planner_ms": 118.4697629942093
+    },
+    {
+      "seq": 22,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.4243465790249005
+      ],
+      "capture_to_twist_ms": 159.875195,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.38766,
+        "decode_and_projection": 1.666458,
+        "inference": 88.201104,
+        "restrict_predictions": 0.173834
+      },
+      "planner_ms": 64.25489899993408
+    },
+    {
+      "seq": 23,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.42411528366287754
+      ],
+      "capture_to_twist_ms": 130.68058,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.289484,
+        "decode_and_projection": 1.592161,
+        "inference": 61.591487,
+        "restrict_predictions": 0.159442
+      },
+      "planner_ms": 61.944082990521565
+    },
+    {
+      "seq": 24,
+      "decision": "ok",
+      "reason": "feasible",
+      "command": [
+        2.0,
+        0.42399668450954486
+      ],
+      "capture_to_twist_ms": 151.831025,
+      "ros_camera_ms": {
+        "capture_to_image_callback": 1.44647,
+        "decode_and_projection": 1.625765,
+        "inference": 80.262202,
+        "restrict_predictions": 0.158932
+      },
+      "planner_ms": 64.08309598919004
+    }
+  ]
+}

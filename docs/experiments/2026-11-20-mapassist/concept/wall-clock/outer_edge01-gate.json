@@ -1,0 +1,386 @@
+{
+  "software": "vehicle gate + stock motor controller + DDS software CAN receiver",
+  "input": "Unity Twist sequence, freshly timestamped at its simulated capture cadence",
+  "feedback": "fixture wheel, IMU and idle joystick heartbeat",
+  "commands": 25,
+  "matches": 25,
+  "watchdog_stop": true,
+  "zero_frames_after_timeout": 30,
+  "rows": [
+    {
+      "seq": 0,
+      "expected_right_left": [
+        56,
+        38
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        56,
+        38
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 27.46
+    },
+    {
+      "seq": 1,
+      "expected_right_left": [
+        83,
+        47
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        83,
+        47
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 23.59
+    },
+    {
+      "seq": 2,
+      "expected_right_left": [
+        109,
+        56
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        109,
+        56
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 23.19
+    },
+    {
+      "seq": 3,
+      "expected_right_left": [
+        136,
+        65
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        136,
+        65
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.48
+    },
+    {
+      "seq": 4,
+      "expected_right_left": [
+        163,
+        74
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        163,
+        74
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 19.83
+    },
+    {
+      "seq": 5,
+      "expected_right_left": [
+        192,
+        84
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        192,
+        84
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.05
+    },
+    {
+      "seq": 6,
+      "expected_right_left": [
+        220,
+        95
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        220,
+        95
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 15.52
+    },
+    {
+      "seq": 7,
+      "expected_right_left": [
+        243,
+        100
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        243,
+        100
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 11.61
+    },
+    {
+      "seq": 8,
+      "expected_right_left": [
+        272,
+        111
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        272,
+        111
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 9.57
+    },
+    {
+      "seq": 9,
+      "expected_right_left": [
+        301,
+        122
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        301,
+        122
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 25.58
+    },
+    {
+      "seq": 10,
+      "expected_right_left": [
+        319,
+        135
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        319,
+        135
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 25.36
+    },
+    {
+      "seq": 11,
+      "expected_right_left": [
+        310,
+        144
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        310,
+        144
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 21.43
+    },
+    {
+      "seq": 12,
+      "expected_right_left": [
+        305,
+        149
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        305,
+        149
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 21.06
+    },
+    {
+      "seq": 13,
+      "expected_right_left": [
+        304,
+        150
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        304,
+        150
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 20.29
+    },
+    {
+      "seq": 14,
+      "expected_right_left": [
+        302,
+        152
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        302,
+        152
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 19.59
+    },
+    {
+      "seq": 15,
+      "expected_right_left": [
+        300,
+        153
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        300,
+        153
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 15.69
+    },
+    {
+      "seq": 16,
+      "expected_right_left": [
+        309,
+        145
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        309,
+        145
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 11.73
+    },
+    {
+      "seq": 17,
+      "expected_right_left": [
+        300,
+        153
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        300,
+        153
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 10.87
+    },
+    {
+      "seq": 18,
+      "expected_right_left": [
+        309,
+        145
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        309,
+        145
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 9.89
+    },
+    {
+      "seq": 19,
+      "expected_right_left": [
+        300,
+        153
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        300,
+        153
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 9.7
+    },
+    {
+      "seq": 20,
+      "expected_right_left": [
+        291,
+        162
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        291,
+        162
+      ],
+      "stable_frames": 20,
+      "match": true,
+      "settled_after_ms": 9.82
+    },
+    {
+      "seq": 21,
+      "expected_right_left": [
+        300,
+        153
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        300,
+        153
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 25.58
+    },
+    {
+      "seq": 22,
+      "expected_right_left": [
+        309,
+        145
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        309,
+        145
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 21.75
+    },
+    {
+      "seq": 23,
+      "expected_right_left": [
+        300,
+        153
+      ],
+      "received_frames": 20,
+      "final_right_left": [
+        300,
+        153
+      ],
+      "stable_frames": 18,
+      "match": true,
+      "settled_after_ms": 21.18
+    },
+    {
+      "seq": 24,
+      "expected_right_left": [
+        291,
+        162
+      ],
+      "received_frames": 21,
+      "final_right_left": [
+        291,
+        162
+      ],
+      "stable_frames": 19,
+      "match": true,
+      "settled_after_ms": 21.22
+    }
+  ]
+}

@@ -15,6 +15,7 @@ from launch_ros.actions import Node
 PREFIX = "/semantic_drive/map_assist_045"
 LANE_RADII = {"inner": 6.0, "outer": 5.5}
 AVOIDANCE_TOPIC = "/point_flag"
+OA_READY_TOPIC = PREFIX + "/oa_ready"
 BRANCH_TOPIC = "/semantic_drive/branch_active"
 
 
@@ -25,7 +26,7 @@ def _map_assist_node(context):
         raise ValueError("lane must be inner or outer")
     if not re.fullmatch(r"(?:/[A-Za-z_][A-Za-z0-9_]*)+", stop_topic):
         raise ValueError("Set traffic_stop_flag_topic to the verified absolute std_msgs/msg/Bool topic")
-    if stop_topic in {AVOIDANCE_TOPIC, BRANCH_TOPIC, "/lane_stop_flag", PREFIX + "/reset"}:
+    if stop_topic in {AVOIDANCE_TOPIC, OA_READY_TOPIC, BRANCH_TOPIC, "/lane_stop_flag", PREFIX + "/reset"}:
         raise ValueError("traffic_stop_flag_topic must be a separate distance flag topic")
 
     share = Path(get_package_share_directory("semantic_local_planner_ros"))
@@ -39,6 +40,7 @@ def _map_assist_node(context):
         "traffic_stop_flag_topic": stop_topic,
         "traffic_stop_flag_timeout_sec": float(LaunchConfiguration("traffic_stop_flag_timeout_sec").perform(context)),
         "avoidance_flag_topic": AVOIDANCE_TOPIC,
+        "oa_ready_topic": OA_READY_TOPIC,
         "branch_active_topic": BRANCH_TOPIC,
         "reset_topic": PREFIX + "/reset",
         "status_topic": PREFIX + "/status",
@@ -48,7 +50,7 @@ def _map_assist_node(context):
         "detour_min_turn_radius_m": LANE_RADII[lane],
     }
     for label in "abc":
-        overrides[f"input_point_{label}_topic"] = f"/processed_point_{label}"
+        overrides[f"input_point_{label}_topic"] = LaunchConfiguration("lane_point_topic_prefix").perform(context) + label
         overrides[f"output_point_{label}_topic"] = f"{PREFIX}/point_{label}"
 
     # Foxy can give the node-specific base YAML precedence over a wildcard
@@ -64,6 +66,8 @@ def _map_assist_node(context):
 
 def generate_launch_description():
     return LaunchDescription([
+        DeclareLaunchArgument("lane_point_topic_prefix", default_value="/processed_point_",
+                              choices=["/processed_point_", "/original_processed_point_"]),
         DeclareLaunchArgument("oa_initially_idle", default_value="false", choices=["true", "false"]),
         DeclareLaunchArgument("lane", choices=["inner", "outer"],
                               description="Select the minimum radius for the commissioned lane."),

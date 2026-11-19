@@ -1,0 +1,46 @@
+{
+  "version": "1120-av314.1",
+  "vehicle_packages": {
+    "launchers": "0.1.1",
+    "obsticle_avoidence": "0.1.0"
+  },
+  "simulator_harness_commit": "83ea1442d9f6a25a6491c62869ba926bdfbce5ec",
+  "simulator": {
+    "pr": 47,
+    "head": "cd8d31898b0491a5a80c280425552f71e787c4ce",
+    "base": "c175d2066454638adc0d9a3a3e8bfe21e834fa32",
+    "field_archive_sha256": "3ee71ae49b45ea78d676c5ada5b2bc66111051112e32025234d5360fca3a182e",
+    "base_image": {
+      "tag": "vehicle-semantic:1120",
+      "id": "sha256:3fb88ac063248c0c78f21f115544d86994b754c5a286ca954bb1c872ebca8997"
+    },
+    "image": {
+      "tag": "vehicle-semantic:pr47-grouped",
+      "id": "sha256:1a9afe0c25145f43291f25ffaa3395bfb24e61de0b069b2051847724bddd950d"
+    },
+    "default_detector": "A3 V14",
+    "a3_weights_sha256": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+    "ros": "Foxy",
+    "python": "3.8.10",
+    "torch": "2.0.0+cu118",
+    "torchvision": "0.15.1+cu118",
+    "vision_numpy": "1.24.4",
+    "platform": "linux/amd64"
+  },
+  "sha256": {
+    "v14_weight": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c",
+    "oa2": "2db3be8a42971055fa235127652330bb3c21c25e33683ccbcf1ebf89b6a17828",
+    "selector": "c47cd40ae9719bd16c0c51b5ed58c9087462f7c46e7d091110ad1d0b59e1b518",
+    "pixels": "cd89891cc1627205228a78d8642df638dc3037056a771b0df9f42899c3c0d148",
+    "stop_gate": "d295ee55f084dafc31d0d5ddfca768803f87d3239fd0c4c6af2780e871485c33",
+    "allnodes": "af3dd1c8f990cd5d7fa1fdd886f682ce580e448757635b01db85c5a2d1e9fb64",
+    "lya_module": "76cc9931f363dbedbd9031b7fd5f49f53637d002180e659c490b783831a6cf5b",
+    "kalman_module": "aef3ff2e69ad09f8a984121d3668e978b73ac511c09b539800cfacd408a437b0"
+  },
+  "simulation_wiring_sha256": {
+    "oa2": "8a8fb936b3f2cb40d49f4cb064f200db68b7fc0e158afbc51873c149a68c89e6",
+    "selector": "68ac6a7952c807022c84bf2fd490b92c1223913f8868e0c7e5f9c72825436f06",
+    "pixels": "b233da4f3be5a96c765903266194d49bdf541e2eb824c784cb03980a82ea45c7",
+    "stop_gate": "1513b554e791024791392ba4ab0e0793a5fcfb41947511eac4fa5a1c614743b9"
+  }
+}

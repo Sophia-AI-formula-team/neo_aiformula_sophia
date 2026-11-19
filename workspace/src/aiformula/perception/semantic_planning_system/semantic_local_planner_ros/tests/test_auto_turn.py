@@ -43,25 +43,39 @@ class AutoTurnTests(unittest.TestCase):
         self.assertEqual(self.node.traffic_mode, 'normal')
         self.assertIsNone(self.node.smooth_path)
 
-    def test_confirmed_off_releases_first_lap_wait(self):
+    def test_only_confirmed_green_releases_first_lap_wait(self):
         self.node.reference = None
         self.h.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
-        self.node._on_light_state(fixtures.DataMessage("off"))
-        self.assertEqual(self.node.traffic_mode, "wait")
-        self.h.confirm_light("off", refresh_points=False)
+        for state in ("off", "yellow", "unknown"):
+            self.h.confirm_light(state)
+            self.node._on_controller_cmd(self.h.command())
+            self.assertEqual(self.node.traffic_mode, "wait")
+            self.h.assert_stopped()
+        self.h.confirm_light("green", refresh_points=False)
         self.assertEqual(self.node.traffic_mode, "normal")
-        self.assertEqual(self.node.traffic_reason, "red_off_resume")
+        self.assertEqual(self.node.traffic_reason, "green_resume")
         self.node._on_controller_cmd(self.h.command())
         self.h.assert_stopped()
 
-    def test_confirmed_yellow_releases_red_wait(self):
+    def test_green_majority_from_aging_votes_requires_a_new_green_frame(self):
         self.node.reference = None
         self.h.confirm_light("red", stop_flag=True)
         self.assertEqual(self.node.traffic_mode, "wait")
-        self.h.confirm_light("yellow")
-        self.assertEqual(self.node.traffic_mode, "normal")
-        self.assertEqual(self.node.traffic_reason, "non_red_resume")
+        for _ in range(3):
+            self.h.advance(0.02)
+            self.node._on_light_state(fixtures.DataMessage("green"))
+            self.assertEqual(self.node.traffic_mode, "wait")
+        self.h.advance(0.38)
+        self.node._tick()
+        self.assertEqual(self.node.traffic_light, "green")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_light_state(fixtures.DataMessage("unknown"))
+        self.node._on_controller_cmd(self.h.command())
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.h.assert_stopped()
+        self.h.confirm_light("green")
+        self.assertEqual(self.node.traffic_reason, "green_resume")
 
     def test_off_does_not_cancel_a_committed_detour(self):
         self.node.p["detour_trigger_margin_m"] = 100.0
@@ -71,8 +85,9 @@ class AutoTurnTests(unittest.TestCase):
         self.h.confirm_light("off")
         self.assertEqual(self.node.traffic_mode, "detour")
 
-    def test_silence_and_one_unknown_frame_hold_but_fresh_unknown_votes_release(self):
+    def test_unknown_and_recovered_distance_cannot_reopen_red_stop(self):
         self.node.reference = None
+        self.node.p["traffic_stop_flag_timeout_sec"] = 0.5
         self.h.confirm_light("red", stop_flag=True)
         self.h.advance(0.6)
         self.node._tick()
@@ -83,9 +98,12 @@ class AutoTurnTests(unittest.TestCase):
         for _ in range(6):
             self.node._on_light_state(fixtures.DataMessage("unknown"))
             self.h.advance(0.11)
-        self.assertEqual(self.node.traffic_light, "not_red")
-        self.assertEqual(self.node.traffic_mode, "normal")
-        self.assertEqual(self.node.traffic_reason, "non_red_resume")
+        self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
+        self.node._tick()
+        self.assertEqual(self.node.traffic_light, "unknown")
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_controller_cmd(self.h.command())
+        self.h.assert_stopped()
 
     def test_margin_triggers_turn_without_flag_stop(self):
         self.case.red_far()
@@ -136,31 +154,117 @@ class AutoTurnTests(unittest.TestCase):
         self.h.confirm_light('green')
         self.assertEqual(self.node.traffic_mode, 'normal')
 
-    def test_no_distance_message_and_no_plan_holds_until_a_state_arrives(self):
+    def test_no_distance_message_and_no_plan_holds_until_green(self):
         self.node.p['detour_min_turn_radius_m'] = 100.0
         self.h.confirm_light('red')
         self.node._tick()
         self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
-        self.assertFalse(self.node.auto_stop_latched)
+        self.assertTrue(self.node.auto_stop_latched)
         self.h.assert_stopped()
         self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
         self.node._tick()
-        self.assertEqual(self.node.traffic_mode, 'prepare')
-        self.assertEqual(self.node.traffic_reason, 'red_prepare_spline_unavailable')
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
+        self.h.confirm_light('unknown')
+        count = len(self.node.cmd_pub.messages)
+        for _ in range(20):
+            self.h.advance(.05)
+            self.node._red_hold_tick()
+            self.h.assert_stopped()
+        self.assertEqual(len(self.node.cmd_pub.messages), count + 20)
+        self.h.confirm_light('green')
+        self.assertEqual(self.node.traffic_mode, 'normal')
 
     def test_unconfirmed_or_unknown_light_never_starts_turn(self):
         self.case.red_far()
         self.node._on_light_state(fixtures.DataMessage('unknown'))
         self.node.p['detour_trigger_margin_m'] = 100.0
         self.node._tick()
-        self.assertEqual(self.node.traffic_mode, 'prepare')
-        self.assertEqual(self.node.traffic_reason, 'red_prepare_light_confirmation')
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_signal_lost')
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertEqual(self.node.traffic_reason, 'red_wait_light_confirmation')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_signal_lost')
         self.h.confirm_light('green')
         self.assertEqual(self.node.traffic_mode, 'normal')
+
+    def test_lost_red_before_pixel_threshold_requires_green_for_straight(self):
+        self.node.reference = None
+        self.case.red_far()
+        self.assertIs(self.node.stop_flag, False)
+        self.node._on_light_state(fixtures.DataMessage('unknown'))
+        self.h.assert_stopped()
+        self.assertTrue(self.node.stop_committed)
+        self.h.confirm_light('red', stop_flag=False)
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.h.confirm_light('green')
+        self.assertEqual(self.node.traffic_reason, 'green_resume')
+
+    def test_matched_route_only_turns_after_fresh_red_reconfirmation(self):
+        self.case.red_far()
+        self.node._on_light_state(fixtures.DataMessage('unknown'))
+        self.node.p['detour_trigger_margin_m'] = 100.0
+        self.h.advance(0.02)
+        self.node._on_light_state(fixtures.DataMessage('red'))
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertIsNone(self.node.detour_tracker)
+        self.h.confirm_light('red')
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, 'detour')
+        self.assertTrue(self.node.detour_motion_ready)
+
+    def test_detector_silence_stops_red_approach(self):
+        self.case.red_far()
+        self.h.advance(0.51)
+        self.node._tick()
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_signal_lost')
+        self.h.assert_stopped()
+
+    def test_lost_next_signal_holds_at_detour_exit(self):
+        self.case.start_detour()
+        self.h.confirm_light('green')
+        self.h.confirm_light('red')
+        self.assertTrue(self.node.detour_next_red_pending)
+        self.node._on_light_state(fixtures.DataMessage('unknown'))
+        self.node._on_light_state(fixtures.DataMessage('red'))
+        self.assertEqual(self.node.traffic_mode, 'detour')
+        self.h.emit_detour_completion()
+        self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
+        self.node._on_controller_cmd(self.h.command())
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_signal_lost')
+        self.h.assert_stopped()
+
+    def test_greens_before_red_stop_cannot_release_it(self):
+        self.node.reference = None
+        self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
+        start = self.h.now + 2.1
+        for offset, color in ((0, 'red'), (.08, 'red'), (.19, 'green'), (.22, 'green'),
+                              (.40, 'red'), (.501, 'red')):
+            self.h.now = start + offset
+            self.node._on_light_state(fixtures.DataMessage(color))
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.h.now = start + .60
+        self.node._on_light_state(fixtures.DataMessage('green'))
+        self.assertEqual(self.node.traffic_light, 'green')
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.h.confirm_light('green')
+        self.assertEqual(self.node.traffic_reason, 'green_resume')
+
+    def test_uncertain_lamp_at_detour_exit_requires_new_red_votes(self):
+        self.case.start_detour()
+        self.h.confirm_light('green')
+        self.h.confirm_light('red')
+        self.node._on_light_state(fixtures.DataMessage('green'))
+        self.assertTrue(self.node.detour_next_red_pending)
+        self.h.emit_detour_completion()
+        self.node._on_light_state(fixtures.DataMessage('red'))
+        self.assertFalse(self.node._red_recently_confirmed(self.h.now))
+        self.assertEqual(self.node.traffic_mode, 'wait')
 
     def test_brief_missing_vote_uses_only_a_fresh_recently_confirmed_red(self):
         self.case.red_far()
@@ -173,7 +277,7 @@ class AutoTurnTests(unittest.TestCase):
         self.node._update_light_vote(self.h.now)
         self.assertFalse(self.node._red_recently_confirmed(self.h.now))
 
-    def test_oa_owns_control_even_when_fallback_stop_is_requested(self):
+    def test_red_fallback_stop_preempts_oa(self):
         self.node.p['detour_min_turn_radius_m'] = 100.0
         self.case.red_far()
         self.node._on_avoidance(fixtures.DataMessage(True))
@@ -181,14 +285,16 @@ class AutoTurnTests(unittest.TestCase):
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
         self.node._tick()
         self.assertEqual(self.h.output_count(), count)
-        self.assertEqual(len(self.node.cmd_pub.messages), commands)
+        self.assertGreater(len(self.node.cmd_pub.messages), commands)
+        self.assertEqual(self.node.traffic_reason, 'red_wait_maneuver_release')
+        self.h.assert_stopped()
         self.node._on_avoidance(fixtures.DataMessage(False))
         self.h.advance(0.25)
         self.h.triplet()
         self.h.odom(*self.node.odom)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertTrue(self.node.traffic_reason.startswith('red_wait_spline_'))
+        self.assertEqual(self.node.traffic_reason, 'red_wait_maneuver_release')
         self.h.assert_stopped()
 
     def test_status_exposes_configured_radius_and_fallback_role(self):

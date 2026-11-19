@@ -151,7 +151,7 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
         self.h.assert_stopped()
         self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
-        self.assertEqual(self.node.traffic_mode, 'prepare')
+        self.assertEqual(self.node.traffic_mode, 'wait')
         self.h.confirm_light('green')
         self.set_fused_map()
         self.node.p['detour_min_turn_radius_m'] = 100.0
@@ -171,7 +171,7 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.node._tick()
         self.assertTrue(self.node.stop_committed)
         self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertEqual(self.node.traffic_reason, 'red_wait_first_lap')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
 
     def test_oa_owns_points_and_commands_while_detouring(self):
         self.start_detour()
@@ -240,7 +240,7 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.h.emit_detour_completion()
         self.assertEqual(self.node.traffic_mode, 'normal')
 
-    def test_distance_event_during_oa_is_deferred_until_oa_releases(self):
+    def test_distance_event_during_oa_holds_until_green(self):
         self.set_fused_map()
         self.red_far()
         self.node.p['detour_trigger_margin_m'] = 100.0
@@ -250,15 +250,17 @@ class StopFlagAndUbsTests(unittest.TestCase):
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
         self.node._tick()
         self.assertEqual(self.h.output_count(), points)
-        self.assertEqual(len(self.node.cmd_pub.messages), commands)
+        self.assertGreater(len(self.node.cmd_pub.messages), commands)
         moving = self.h.command(0.4, -0.2)
         self.node._on_controller_cmd(moving)
-        self.assertEqual(self.h.twist_values(self.node.cmd_pub.messages[-1]), self.h.twist_values(moving))
+        self.h.assert_stopped()
         self.node._on_avoidance(fixtures.DataMessage(False))
         self.h.advance(0.25)
         self.h.odom(*self.node.odom)
         self.node._tick()
-        self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
+        self.assertEqual(self.node.traffic_mode, 'wait', self.node.traffic_reason)
+        self.h.confirm_light('green')
+        self.assertEqual(self.node.traffic_mode, 'normal')
 
     def test_full_ideal_pose_replay_returns_to_main_line_and_visual_control(self):
         self.start_detour()

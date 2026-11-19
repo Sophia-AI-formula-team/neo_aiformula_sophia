@@ -19,6 +19,7 @@ def translate(text, now_ns, has_fresh_command):
 
     source = json.loads(text)
     mode = source.get("traffic_mode")
+    red_stop = mode == "wait" or source.get("red_stop_required") is True
     route_ready = source.get("path_output_allowed") is True
     if mode == "detour":
         route_ready = (
@@ -27,11 +28,14 @@ def translate(text, now_ns, has_fresh_command):
             and source.get("route_matched") is True
         )
     if source.get("avoidance_active") is True:
-        route_ready = True
+        route_ready = source.get("oa_command_ready") is True
 
     allowed = (
         has_fresh_command and route_ready
+        and not red_stop
         and mode in ("normal", "prepare", "detour")
+        # A mixed installation may still receive the earlier field policy.
+        and source.get("traffic_reason") not in ("non_red_resume", "red_off_resume")
         and source.get("traffic_planner_version") == "ubs_auto_turn_v1"
         and source.get("use_sim_time") is False
         and type(source.get("avoidance_active")) is bool
@@ -46,6 +50,8 @@ def translate(text, now_ns, has_fresh_command):
     status["traffic_stop_required"] = not allowed
     if allowed:
         status["traffic_reason"] = str(source.get("traffic_reason", "map_assist_ready"))
+    elif red_stop:
+        status["traffic_reason"] = str(source.get("traffic_reason") or "red_wait")
     elif mode != "wait":
         status["traffic_reason"] = "semantic_045_route_or_command_unready"
     return status
