@@ -6,6 +6,8 @@ on:
       - 'AGENTS.md'
       - 'AGENT_CONTEXT.md'
       - 'README.md'
+      - 'vehicle_concept/AGENTS.md'
+      - 'vehicle_concept/checks/tracking_v6278/README.md'
       - '.gitattributes'
       - 'docs/agent-context/**'
       - 'tools/agent_handoff.py'
@@ -16,6 +18,8 @@ on:
       - 'AGENTS.md'
       - 'AGENT_CONTEXT.md'
       - 'README.md'
+      - 'vehicle_concept/AGENTS.md'
+      - 'vehicle_concept/checks/tracking_v6278/README.md'
       - '.gitattributes'
       - 'docs/agent-context/**'
       - 'tools/agent_handoff.py'
@@ -30,7 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # setup-python supplies Foxy's Python 3.8 for Ubuntu 24.04.
+        os: [ubuntu-24.04, windows-latest]
         python: ['3.8', '3.13']
     steps:
       - name: Verify canonical repository identity
@@ -42,6 +47,7 @@ jobs:
             codexws
             docs/agent-context
             tools
+            vehicle_concept/checks/tracking_v6278
             workspace/src/aiformula/control/lane_mapping_lya_reference
             workspace/src/aiformula/control/lane_mapping_fixed
             workspace/src/aiformula/control/lane_mapping_fixed_gnss
