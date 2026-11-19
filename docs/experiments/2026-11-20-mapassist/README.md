@@ -1,5 +1,7 @@
 # 11 月 20 日实车实验准备
 
+Concept V6.27.6 在独立工作区构建，使用 B1.4、白盒与 H12。负责 Concept 的同学请从[部署说明](concept/DEPLOY.md)开始。下方的四终端流程用于 MapAssist。
+
 部署 Agent 在车机 `control` 账号操作。采用 11 月 19 日收车时已安装的 Allnodes、`lane_0927oa`、YOLOP 选择器、`oa_2` 和 LYA。MapAssist 使用本分支包含的绿灯放行修复 `43f3df8`。实验分支为 `experiment/vehicle-prep-20261120`。
 
 ## 整理旧快捷方式并安装
