@@ -150,3 +150,14 @@ def test_audit_carries_signed_observed_geometry_and_distinguishes_an_absent_edge
     assert trace['triggered'] and trace['side'] == 'left' and trace['normal_distance_m'] == -1.3
     assert trace['projected_center_clearance_m'] < trace['desired_center_clearance_m']
     assert preview_audit(None, '', 0.) == dict(source='no_supported_exterior', side=None, triggered=False)
+
+def test_saved_forward_then_brake_rechecks_steering_against_the_actual_motor():
+    from types import SimpleNamespace
+    from concept_candidates.curve_road617 import RoadAwareCurvePlanner
+
+    planner = RoadAwareCurvePlanner(dict(pace=2.))
+    planner.current_observation = SimpleNamespace(road=np.zeros((4,5)), speed=1., dt=.2)
+    planner.reserved = dict(issued_at=0., controls=np.array([[.8, .55], [0., 0.]]))
+    with motor_profile(True, (.8, 0.)):
+        assert planner.resume_contingency() is False
+    assert planner.reserved is None
