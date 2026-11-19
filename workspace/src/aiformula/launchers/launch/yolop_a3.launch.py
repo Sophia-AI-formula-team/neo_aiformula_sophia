@@ -1,4 +1,4 @@
-"""One-command camera and A3 V14 perception, with the existing vehicle topics."""
+"""Vehicle perception selection; keep camera and lane-consumer wiring unchanged."""
 import importlib.util
 import os
 from pathlib import Path
@@ -20,8 +20,17 @@ def prepare(context):
     spec.loader.exec_module(vehicle)
     enabled = lambda name: LaunchConfiguration(name).perform(context).lower() in ("true", "1", "yes")
     shadow = enabled("shadow")
+    profile = LaunchConfiguration("yolop_profile").perform(context)
+    if profile not in ("V14", "A4", "A4_lite"):
+        raise ValueError("yolop_profile must be V14, A4, or A4_lite")
     if shadow and enabled("start_lane_publisher"):
         raise RuntimeError("shadow:=true requires start_lane_publisher:=false")
+    if profile != "V14":
+        bundle = Path(LaunchConfiguration("a4_bundle_parent").perform(context)) / profile
+        python = bundle / "venv/bin/python3"
+        entrypoint = bundle / "run_vehicle.py"
+        if not all(p.is_file() for p in (python, entrypoint, bundle / "profile.json")):
+            raise RuntimeError(f"{profile} bundle or compatible venv missing under {bundle}")
 
     import rclpy
     from rclpy.context import Context
@@ -56,6 +65,18 @@ def prepare(context):
         actions.extend(vehicle.create_zed_node(context))
     if enabled("start_lane_publisher"):
         actions.extend(vehicle.create_lane_line_publisher_node(context))
+
+    if profile != "V14":
+        command = [str(python), str(entrypoint), "--profile", profile,
+                   "--device", LaunchConfiguration("device"),
+                   "--score-threshold", LaunchConfiguration("score_threshold"),
+                   "--input-image-topic", LaunchConfiguration("input_image_topic"),
+                   "--use-sim-time", "true" if enabled("use_sim_time") else "false"]
+        if not shadow:
+            command.append("--live")
+        actions.append(ExecuteProcess(name=f"yolop_{profile.lower()}", cmd=command, output="screen",
+                                      additional_env={"PYTHONNOUSERSITE": "1", "PYTHONUNBUFFERED": "1"}))
+        return actions
 
     root = LaunchConfiguration("deployment_root")
     lane_topic = "/a3_shadow/lane_mask" if shadow else "/aiformula_perception/road_detector/mask_image"
@@ -95,6 +116,8 @@ def generate_launch_description():
     vehicle_dir = get_package_share_directory("vehicle")
     args = {
         "deployment_root": "/home/control/aiformula_runtime/yolop_a3_v14_20261012",
+        "yolop_profile": "V14",
+        "a4_bundle_parent": "/home/control/aiformula_runtime",
         "start_camera": "true", "start_lane_publisher": "true", "shadow": "false",
         "device": "cuda", "score_threshold": "0.5",
         "input_image_topic": "/aiformula_sensing/zed_node/left_image/undistorted",

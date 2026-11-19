@@ -44,11 +44,11 @@ and `a4` tags remain immutable.
 ./venv/bin/python3 run_vehicle.py --profile A4_lite --use-sim-time true
 ```
 
-Use the bundle's explicit `--profile` and `--live` only after shadow
-acceptance. Bundling does not change the main vehicle launcher's default or
-the separate experiment selector. Leave the existing V14 installation in
-place. The
-runner rejects pre-existing publishers on all seven selected outputs,
+After shadow acceptance, select the vehicle bundle with `yolop_profile:=A4`
+or `yolop_profile:=A4_lite` in the neo launcher. V14 remains the default.
+Use `yolop_profile:=V14` to return to the existing V14 installation.
+For standalone launch, use the bundle's explicit `--profile` and `--live`.
+The runner rejects pre-existing publishers on all seven selected outputs,
 but graph discovery is not a process lock: start only one profile.
 
 | Vehicle output (matches neo main V14 remaps) | Type |
