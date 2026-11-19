@@ -5,6 +5,7 @@ from .lap_map import LapMapPanel
 
 from .model import Feed, Journal
 from .qt import QtCore, QtGui, QtWidgets as W
+from .tracking import MODES as TRACK_MODES, OWNERS, TrackingFrames
 
 MODE = {'disabled':'输出禁用', 'paused':'自动已暂停', 'manual':'手柄接管', 'auto':'自动驾驶', 'estop':'软件急停'}
 STATUS = {'ok':'有效', 'invalid':'无效', 'blocked':'输出受阻', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
@@ -79,6 +80,36 @@ def number(value, digits=2):
     return format(value, '.'+str(digits)+'f') if isinstance(value,(float,int)) else '—'
 
 
+def draw_tracking_marks(view, marks):
+    painter = QtGui.QPainter(view)
+    painter.setRenderHint(QtGui.QPainter.Antialiasing)
+    font = painter.font()
+    font.setPixelSize(13)
+    font.setBold(True)
+    painter.setFont(font)
+    used = []
+    for name, (u, v) in marks:
+        x, y = (u+.5)*view.width()/640., (v+.5)*view.height()/360.
+        point = QtCore.QPointF(x, y)
+        ink = QtGui.QColor('#ffe25c' if name in ('P','A') else '#68efff')
+        painter.setBrush(QtCore.Qt.NoBrush)
+        for color, width in ((QtGui.QColor('#172324'), 5), (ink, 2)):
+            painter.setPen(QtGui.QPen(color, width))
+            painter.drawEllipse(point, 6., 6.)
+        # Separate the letter tags when nearby ground points project close together.
+        # The circles remain at the measured coordinates.
+        for dx, dy in ((9,-21),(9,5),(-28,-21),(-28,5),(9,22),(-28,22)):
+            rect = QtCore.QRectF(min(max(0.,x+dx),view.width()-19.), min(max(0.,y+dy),view.height()-17.), 19., 17.)
+            if not any(rect.intersects(previous) for previous in used):
+                break
+        used.append(rect)
+        painter.drawLine(point, rect.center())
+        painter.fillRect(rect, QtGui.QColor('#172324'))
+        painter.setPen(ink)
+        painter.drawText(rect, QtCore.Qt.AlignCenter, name)
+    painter.end()
+
+
 AUTO_YAW_LIMIT = 1.55  # V6.26 candidate yaw limit, used only to scale the display.
 
 
@@ -140,6 +171,9 @@ class Window(W.QWidget):
         self.gate, self.decision, self.image_feed = Feed(), Feed(), Feed()
         self.journal = Journal()
         self.pix = None
+        self.tracking = TrackingFrames()
+        self.camera_key = None
+        self.tracking_marks = ()
         self.setWindowTitle('Concept · 驾驶控制台')
         self.setStyleSheet(STYLE)
         self.resize(1120, 720)
@@ -148,7 +182,7 @@ class Window(W.QWidget):
         root.setSpacing(8)
         title = W.QHBoxLayout()
         title.addWidget(label('驾驶控制台','title'))
-        title.addWidget(label('V6.27.7 · H12 实车候选版','muted'))
+        title.addWidget(label('V6.27.8 · H12 实车候选版','muted'))
         title.addStretch()
         self.connection = label('等待门控','badge')
         title.addWidget(self.connection)
@@ -216,6 +250,10 @@ class Window(W.QWidget):
             legend.addWidget(item)
         legend.addStretch()
         cam.addLayout(legend)
+        self.tracking_label = label('追踪控制器 · 等待同帧决策','muted')
+        self.tracking_label.setWordWrap(True)
+        self.tracking_label.setToolTip('标记取自当前相机画面同一采集时间的控制计算；坐标向右为正。')
+        cam.addWidget(self.tracking_label)
         recording = W.QHBoxLayout()
         recording.addWidget(label('ROS 数据包','heading'))
         self.bag_status = label('未录制')
@@ -378,14 +416,75 @@ class Window(W.QWidget):
         for r in self.journal.rows:
             W.QTreeWidgetItem(self.table,[r['channel'],r['message'],r['first'],r['last'],str(r['count'])])
 
-    def image(self, image, source, receipt):
+    def image(self, image, source, receipt, key=None, ros=None):
         self.pix=QtGui.QPixmap.fromImage(image)
         self.image_feed.put({},source,receipt)
+        self.camera_key = key
+        self.tracking_marks = ()
+        if ros is not None:
+            self.show_tracking(ros, receipt, redraw=False)
         self.draw_image()
+
+    def reset_tracking(self):
+        self.tracking = TrackingFrames()
+        self.camera_key = None
+        self.tracking_marks = ()
+        self.tracking_label.setText('追踪控制器 · 等待重启后的同帧决策')
+        self.draw_image()
+
+    def show_tracking(self, ros, steady, redraw=True):
+        age = self.gate.age(ros, steady)
+        gate = self.gate.value if age is not None and age <= .5 else {}
+        d = self.decision.value
+        tracking = d.get('tracking_controller') or {}
+        mode = tracking.get('mode')
+        title = TRACK_MODES.get(mode, '追踪控制器')
+        camera_age = self.image_feed.age(ros, steady)
+        decision_age = self.decision.age(ros, steady)
+        sent_speed = gate.get('linear_mps')
+        marks = ()
+        if (gate.get('mode') != 'auto' or not gate.get('output_enabled') or gate.get('paused') or
+                gate.get('manual_held') or gate.get('estop')):
+            self.tracking.frames.clear()
+            detail = MODE.get(gate.get('mode'), '等待门控')
+        elif (type(sent_speed) not in (int, float) or not math.isfinite(sent_speed) or
+                sent_speed <= 0. or gate.get('auto_fresh') is False):
+            self.tracking.frames.clear()
+            detail = '门控未输出前进指令'
+        elif decision_age is None or decision_age > .5:
+            detail = '等待新鲜决策'
+        elif d.get('status') != 'ok':
+            detail = STATUS.get(d.get('status'), '等待决策')
+        elif mode not in TRACK_MODES:
+            detail = '本帧无控制器记录'
+        elif tracking.get('owner') != 'candidate':
+            detail = OWNERS.get(tracking.get('owner'), '本帧未采用跟踪点')
+        elif tracking.get('active') is not True:
+            detail = '本帧未采用跟踪点'
+        elif camera_age is None or camera_age > .5:
+            detail = '等待新鲜画面'
+        elif (self.pix is None or self.pix.width() != 640 or self.pix.height() != 360 or
+              self.camera_key not in self.tracking.frames):
+            detail = '等待同帧选点'
+        else:
+            points = self.tracking.frames[self.camera_key]
+            marks = tuple((name, uv) for name, uv in points if uv is not None)
+            detail = 'P 预瞄目标' if mode == 'pure_pursuit' else 'A 目标点 · A→B 切向 · C 第三点'
+            missing = [name for name, uv in points if uv is None]
+            if missing:
+                detail += ' · ' + '/'.join(missing) + ' 在画面外'
+        self.tracking_label.setText(title + ' · ' + detail)
+        if marks != self.tracking_marks:
+            self.tracking_marks = marks
+            if redraw:
+                self.draw_image()
 
     def draw_image(self):
         if self.pix is not None and not self.pix.isNull():
-            self.camera.setPixmap(self.pix.scaled(self.camera.size(),QtCore.Qt.KeepAspectRatio,QtCore.Qt.SmoothTransformation))
+            view = self.pix.scaled(self.camera.size(),QtCore.Qt.KeepAspectRatio,QtCore.Qt.SmoothTransformation)
+            if self.tracking_marks:
+                draw_tracking_marks(view, self.tracking_marks)
+            self.camera.setPixmap(view)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -466,6 +565,7 @@ class Window(W.QWidget):
         self.camera_time.setText('等待图像' if ca is None else ('图像已过期 · ' if ca>1. else '图像 · ')+f'{ca:.2f} s')
         self.show_output(g, steady)
         self.show_decision(d, da)
+        self.show_tracking(ros, steady)
         self.metrics['speed'].setText(number(d.get('speed_estimate_mps')))
         self.metrics['cmd'].setText(number(g.get('linear_mps')))
         self.metrics['legal'].setText(f"{d['feasible_count']} / {len(d.get('candidates',[]))}" if 'feasible_count' in d else '—')

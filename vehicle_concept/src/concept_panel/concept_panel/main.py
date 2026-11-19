@@ -151,24 +151,31 @@ class Controller:
     def message(self, channel, msg):
         try:
             d=json.loads(msg.data)
+            steady=time.monotonic()
             if channel=='门控':
                 stamp=stamp_seconds(d['t'])
-                self.window.gate.put(d,stamp,time.monotonic())
+                self.window.gate.put(d,stamp,steady)
                 detail=MODE.get(d['mode'],d['mode'])+' · '+reason(d.get('reason','—'))
             else:
                 stamp=stamp_seconds(d['stamp']) if d.get('stamp') is not None else None
-                self.window.decision.put(d,stamp,time.monotonic())
+                if self.window.tracking.session is not None and self.window.tracking.session != d.get('session'):
+                    self.window.reset_tracking()
+                self.window.tracking.put(d)
+                self.window.decision.put(d,stamp,steady)
                 detail=STATUS.get(d['status'],d['status'])+' · '+reason(d.get('reason','—'))
+            self.window.show_tracking(self.ros(),steady)
             self.window.log_event(channel,detail)
         except (ValueError,TypeError,KeyError) as exc:
             feed=self.window.gate if channel=='门控' else self.window.decision
             feed.put({},None,time.monotonic())
+            self.window.reset_tracking()
             self.window.log_event(channel,'消息无效 · '+str(exc))
 
     def camera(self,msg):
         try:
             stamp=msg.header.stamp
-            self.window.image(image_from_ros(msg),stamp.sec+stamp.nanosec*1e-9,time.monotonic())
+            self.window.image(image_from_ros(msg),stamp.sec+stamp.nanosec*1e-9,time.monotonic(),
+                              key=(stamp.sec, stamp.nanosec), ros=self.ros())
         except (TypeError,ValueError) as exc:
             self.window.log_event('摄像头',str(exc))
 
@@ -233,6 +240,7 @@ class Controller:
                 ok,why=reply.success,reply.message
             if key == 'restart' and ok:
                 self.lap_map.reset()
+                self.window.reset_tracking()
             next_key=self.pending.completed(ok)
             text=LABELS[key]+('已确认' if ok else '未执行')+(' · '+why if why else '')
             if next_key:
