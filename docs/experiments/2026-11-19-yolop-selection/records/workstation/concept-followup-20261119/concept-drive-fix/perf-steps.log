@@ -1,0 +1,8 @@
+2026-11-19T16:03:44+09:00 Inspect previous field timing and source
+2026-11-19T16:05:28+09:00 Extracted 13 slow-reverse road/sensor observations from 15:50 bag. Scalar sweep repeats per-tick geometry and constant model features.
+2026-11-19T16:05:55+09:00 Batched all retreat road checks over the original 50 ms pose sequence; cached static reverse-response coefficients. Start exact old/new field parity.
+2026-11-19T16:06:47+09:00 Jetson offline parity: 273/273 complete cable-independent branch sweeps exactly identical across all fields, 13 recorded selected paths reproduced; 4 edge cases passed.
+2026-11-19T16:07:09+09:00 Explicitly keyed reverse model cache by physical/frozen transfer; added regression covering release ticks, invisible rear corridor, mixed profiles.
+2026-11-19T16:08:27+09:00 Running read-only GC attribution on isolated Jetson Python with Torch and 64 planning steps. No ROS nodes or CAN writes.
+2026-11-19T16:09:39+09:00 Live driver startup now collects once and excludes startup heap from subsequent periodic full-heap scans; unfreezes for shutdown. Frame-created objects keep normal GC.
+2026-11-19T16:10:35+09:00 Saved per-stage performance report, exact 273-case field parity, 13 recorded path matches, GC full-heap timings 126–135 to 2.2–4.82 ms, and remaining non-GC outlier.

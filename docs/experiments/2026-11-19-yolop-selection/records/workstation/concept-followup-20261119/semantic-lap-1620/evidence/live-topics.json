@@ -1,0 +1,63 @@
+{
+  "collected": "2026-11-19T16:23:11.735+09:00",
+  "duration_s": 4.0,
+  "endpoints": {
+    "/semantic_drive/map_assist_045/status": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/map_status": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/map_assist_045/stop_wait_candidate": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/motor_session": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/map_assist_045/pixel_stop_status": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/aiformula_control/motor_controller/gate_status": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/aiformula_perception/yolop_a3/traffic_light/state": {
+      "publishers": [
+        "/aiformula_perception/yolop_a3_perception"
+      ],
+      "subscribers": []
+    },
+    "/aiformula_perception/yolop_a3/red_pixels_count": {
+      "publishers": [
+        "/aiformula_perception/yolop_a3_perception"
+      ],
+      "subscribers": []
+    },
+    "/flag_stop": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/point_flag": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/map_assist_045/diagnostic_cmd_vel": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/semantic_drive/map_assist_045/lya_cmd_vel": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/aiformula_control/game_pad/cmd_vel": {
+      "publishers": [],
+      "subscribers": []
+    }
+  },
+  "samples": {}
+}

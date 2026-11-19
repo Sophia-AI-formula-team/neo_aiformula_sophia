@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+workspace="$HOME/semantic_045_ws"
+source "$workspace/activate_semantic.bash"
+exec ros2 launch "$workspace/commissioning/mapassist_formal.launch.py" "$@"

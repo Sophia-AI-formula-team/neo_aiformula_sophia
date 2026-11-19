@@ -1,0 +1,15 @@
+# 问题、修复与证据边界
+
+| 现场现象 | 查到的原因和处理 | 实际验证 |
+| --- | --- | --- |
+| A4Light 菜单能启动，车上话题没有数据 | 选择器漏传 `--live`。将车辆模式、ZED 图像与七个输出接入，并加单实例锁。 | A3 V14、A4、A4Light 均录得非空物体检测，三档各做两轮约十秒的负载与帧时序测试。详见[图文报告](gpu-load-10s/README.md)。 |
+| Concept 有识别、没有自动指令 | 10:59 的 288 帧在规划入口超时；B1.4 的路面和车道两个解码卷积在 Jetson 上各约 259 ms。保留 FP32 数值路径并调整这两层实现和编码。13:49 场另外出现 468 条影子决策、手柄心跳缺失。 | 真实 ZED 推理中位数从 600 降到 60 ms。13:49 原包自动指令为零。[分段剖析](records/workstation/concept-latency-20261119-1310/) · [13:49 回溯](records/workstation/concept-followup-20261119/logs/) |
+| UI 有灰色候选，无选中路径 | 近车观测与投影约束使候选被淘汰，早期标定状态也限制发布。使用实时 ZED CameraInfo、Honda 安装姿态和 0.55 m 高度；修正近车路径和面板累计地图的显示、重置流程。 | 相机输入、选中路径和自动话题有回放与现场数据。大风导致现场点位缺少同帧量测，地面绝对精度仍未验收。[标定与几何](concept-v6275/field-followup/calibration/) · [现场显示与路径](records/workstation/concept-followup-20261119/logs/) |
+| 恢复自动后因 `auto_timeout` 暂停 | 真实输入复现规划前约 282 ms。15 Hz 配置下相机独立订阅中位 113 ms，识别回调在采集后 144 ms 才开始。60/60 Hz、同进程传递和门控修订分步对照。后续修正将接收断流计时与源帧过期清零分开。 | 仅调相机的三轮长测仍锁停。修复后真实传感器、软件 CAN 接收端两轮各 22 秒，收到 110、107 条自动指令；刻意断流后 75 条电机请求全零。[分段基准](records/workstation/concept-followup-20261119/auto-timeout/) · [修复前后及复测](records/workstation/concept-followup-20261119/concept-postdeploy/) |
+| 继续按钮缺失、面板速度重启后变化 | 恢复和累计地图清理增加节点确认，修复面板状态呈现与两项速度的持久化。车端规划目标与门控限速均设置为 4.0 m/s。 | 两项以 2.3/1.7 改写读回，再恢复 4.0/4.0，重开面板和重启后复核。[面板重启](records/workstation/concept-followup-20261119/concept-1542/) · [速度和日志](records/workstation/concept-followup-20261119/concept-drive-fix/) |
+| 小指令无反应、倒车 0.2 m/s | 15:50 场有 13 条 −0.2 m/s 决策在 shadow 阶段被拦，未到达自动话题。修正有符号轮速解码、倒车方向确认和原版电机换算预测。 | 该场自动段实际最高 1.350 m/s，规划目标 1.0 m/s。没测出机械起动死区，保留原始对照。[低速证据](records/workstation/concept-followup-20261119/concept-low-speed/) · [修复与实测](records/workstation/concept-followup-20261119/concept-drive-fix/) |
+| 16:35 起步过猛，转向响应和障碍距离异常 | 停稳后首条请求 4.00 m/s、+1.55 rad/s；单轮 363 RPM 超过旧上限，暂停 11.56 秒。障碍接地点重复应用仿真高度修正。调整起步、转向、反馈有效范围和投影。 | 同输入静态分级 0.20 → 0.40 → 0.50 m/s。停用独立 A4_lite 后 B1.4 推理中位从 127 降至 74 ms。左侧一目标的前向偏差中位仍约 −3.17 m。[16:35 图文和完整测量](records/workstation/concept-followup-20261119/concept-1635/) |
+| MapAssist 首圈经过红灯继续行驶 | 旧 motor 订阅的速度和会话必须随 `stop_wait` 接线。A3 检测 JSON 提供像素数，车端适配器生成布尔 `/flag_stop`。静态使用 599/600 分界，已匹配且有有效绕行路径时优先绕行。早期现场缺同步像素和 CAN 窗口。 | 真实 ZED/A3 现场静态样本只有 0–19 像素；600 像素停车验证用合成检测与软件 CAN。晚间实录独立见到 5 条 `red_wait_first_lap` 和 15 条旧门控对应记录。[停车联测](records/workstation/concept-followup-20261119/semantic-red-1533/fix/) · [晚间三场](bag/semantic/) |
+| 16:10 未见首圈闭合，OA 没有接管 | 独立 allnodes 保留了原手柄速度入口，裸 `oa_2` 的标志和三路 ABC 也未接入 MapAssist。新增正式组合启动和单独 OA、LYA 快捷方式；后续接入 `lane_0927oa` 原生 ABC。 | 原场次处理 1,431 组 ABC，未记录成功切 OA。隔离试验证实车道 → OA → 车道。首圈闭合和拓扑匹配仍要有对应场次的直接记录。[现场取证](records/workstation/concept-followup-20261119/semantic-lap-1620/) · [实际接线](records/workstation/concept-followup-20261119/semantic-shortcut/) |
+| 末段 Concept 再现暂停 | 17:08 场记录到 106 条自动指令和 54 条 `invalid_vehicle_state` 门控原因。 | 这份记录显示暂停仍有发生，之前隔离复测的通过范围只限对应输入。详见[该场逐话题证据](bag/concept/concept_20261119_170817_6e2488e80f3a400fa08f855537b2ab02/)。 |
+| LYA 车上安装件与工作区增益不一致 | 实际启动使用安装目录的 `lya_follower_connected_omegat_global.py`。已把实际使用的副本、源文件和差异归档。 | 对比以当日最后有效的安装层为准，motor_controller 对应源码与 Neo main 一致。[LYA 两份实现的差异](active-code/neo-diff/lya-source-vs-installed.patch) |

@@ -1,0 +1,211 @@
+--- a/vehicle_concept/src/concept_obstacles/concept_obstacles/association61519.py
++++ b/vehicle_concept/src/concept_obstacles/concept_obstacles/association61519.py
+@@ -8,13 +8,15 @@
+ 
+ from concept_road.vision import FOCAL, CX, CY, HEIGHT
+ 
+-def visible_probability(mean,covariance,size):
++from concept_obstacles.ground import contact_point
++
++def visible_probability(mean,covariance,size,center_offset=0.):
+     nodes,weights=np.polynomial.hermite.hermgauss(3)
+     root=np.linalg.cholesky(covariance+np.eye(2)*1e-12)
+     probability=0.
+     for a,wa in zip(nodes,weights):
+         for b,wb in zip(nodes,weights):
+-            z,x=mean+root@np.array([a,b])*np.sqrt(2)
++            z,x=contact_point(mean+root@np.array([a,b])*np.sqrt(2), center_offset)
+             if not .1<z<12:continue
+             u,v=CX+x*FOCAL/z,CY+HEIGHT*FOCAL/z
+             w,h=size*FOCAL/z
+@@ -34,7 +36,7 @@
+         means=[track.static_state,track.state[:2]]
+         covariances=[track.static_covariance,track.covariance[:2,:2]]
+         weights=np.array([track.static_probability,1-track.static_probability])
+-        pd=recall*np.array([visible_probability(m,p,track.physical_size) for m,p in zip(means,covariances)])
++        pd=recall*np.array([visible_probability(m,p,track.physical_size,track.center_offset) for m,p in zip(means,covariances)])
+         missed=max(1e-12,1-float(weights@pd))
+         for j,det in enumerate(detections):
+             if any(det['clipped']):continue
+--- a/vehicle_concept/src/concept_obstacles/concept_obstacles/clipped617.py
++++ b/vehicle_concept/src/concept_obstacles/concept_obstacles/clipped617.py
+@@ -3,6 +3,8 @@
+ import numpy as np
+ 
+ from concept_road.vision import FOCAL, CX, CY, HEIGHT
++
++from concept_obstacles.ground import contact_point
+ 
+ def censored_support(track,detection,dt):
+     left,top,right,bottom=detection['clipped']
+@@ -17,7 +19,7 @@
+         root=np.linalg.cholesky(cov+np.eye(2)*1e-12);mass=0.
+         for a,wa in zip(nodes,weights):
+             for b,wb in zip(nodes,weights):
+-                z,x=mean+root@np.array([a,b])*np.sqrt(2)
++                z,x=contact_point(mean+root@np.array([a,b])*np.sqrt(2), track.center_offset)
+                 if z<=.1:continue
+                 u,v=CX+x*FOCAL/z,CY+HEIGHT*FOCAL/z
+                 w,h=track.physical_size*FOCAL/z
+--- /dev/null
++++ b/vehicle_concept/src/concept_obstacles/concept_obstacles/ground.py
+@@ -0,0 +1,13 @@
++"""Reproject the contact footprint of a metric obstacle into the rectified view."""
++import math
++
++
++def contact_point(position, center_offset):
++    z, x = position
++    if center_offset:
++        distance = math.hypot(z, x)
++        if distance <= center_offset:
++            return 0., 0.
++        scale = 1. - center_offset / distance
++        return z * scale, x * scale
++    return z, x
+--- a/vehicle_concept/src/concept_obstacles/concept_obstacles/obstacles617.py
++++ b/vehicle_concept/src/concept_obstacles/concept_obstacles/obstacles617.py
+@@ -13,13 +13,14 @@
+ from concept_obstacles.association61519 import assign
+ 
+ from concept_obstacles.clipped617 import censored_support
++from concept_obstacles.ground import contact_point
+ 
+ def overlap(a, b):
+     intersection = np.maximum(0., np.minimum(a[2:], b[2:])-np.maximum(a[:2], b[:2])).prod()
+     areas = [np.maximum(0., q[2:]-q[:2]).prod() for q in (a, b)]
+     return float(intersection/max(min(areas), 1.)), float(intersection/max(sum(areas)-intersection, 1.))
+ 
+-def instances(prediction, shape=(360, 640), image=None):
++def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, measurements=None):
+     """A nested narrow fragment cannot become a second cone on its own.
+ 
+     Group only near-contained, aligned boxes, not merely intersecting boxes.
+@@ -46,7 +47,8 @@
+                 # Camera mount .655m above body root; settled root is near -.05m.
+                 # Pavement is at -.049m, but these cone bases are placed at y=0.
+                 # Do NOT change the road projector's .655m height.
+-                foot_height = .605 if foot_source == 'observed_black_base' else .605-(.06-.05*.675)
++                if not field_ground:
++                    foot_height = .605 if foot_source == 'observed_black_base' else .605-(.06-.05*.675)
+             # In these cone experiments, stand legs repeatedly scored as cones.
+             # Requiring visible cone colour applies only to NEW measurements;
+             # it never deletes an existing blind occupancy track.
+@@ -99,8 +101,18 @@
+         foot_height = group['foot_height']
+         z = foot_height*FOCAL/(box[3]-CY)
+         x = (.5*(box[0]+box[2])-CX)*z/FOCAL
++        if field_ground and measurements is not None:
++            measurements.append(dict(foot_uv=[float((box[0]+box[2])*.5), float(box[3])],
++                                     foot_source=group['foot_source'], score=group['score'],
++                                     ground_forward_right_m=[float(z), float(x)],
++                                     within_tracking_range=bool(0 < z < 12)))
+         if not 0 < z < 12:
+             continue
++        if field_ground:
++            # Track a footprint center for collision checking. Image evidence and
++            # the 12 m observability bound both refer to the actual ground contact.
++            group['center_offset'] = .24 if image is not None else 0.
++            group['contact_depth'] = z
+         clipped = [box[0] <= 2, box[1] <= 2, box[2] >= width-2, box[3] >= height-2]
+         # Three pixels of foot jitter, plus a small ground-model allowance.
+         dzdv = -z*z/(foot_height*FOCAL)
+@@ -142,6 +154,7 @@
+     # Presence of a clipped silhouette is not a new position measurement.
+     # Keep its continuity separate from the age of the last complete foot.
+     presence_age: float = 0.
++    center_offset: float = 0.
+ 
+ class Occupancy617:
+     def __init__(self):
+@@ -153,7 +166,7 @@
+ 
+     @staticmethod
+     def image_box(track):
+-        z, x = track.state[:2]
++        z, x = contact_point(track.state[:2], track.center_offset)
+         if z <= .1:
+             return None
+         u, v = CX+x*FOCAL/z, CY+HEIGHT*FOCAL/z
+@@ -217,7 +230,7 @@
+                 support=0.
+                 mode_support=[]
+                 for weight,point in [(track.static_probability,track.static_state),(1-track.static_probability,track.state[:2])]:
+-                    z,x=point
++                    z,x=contact_point(point, track.center_offset)
+                     if z<=.1:
+                         mode_support.append(False)
+                         continue
+@@ -309,7 +322,7 @@
+             h = np.zeros((2, 4)); h[:, :2] = np.eye(2)
+             residual = np.eye(4)-gain@h
+             track.covariance = residual@track.covariance@residual.T+gain@r@gain.T
+-            track.physical_size = (detection['box'][2:]-detection['box'][:2])*detection['point'][0]/FOCAL
++            track.physical_size = (detection['box'][2:]-detection['box'][:2])*detection.get('contact_depth',detection['point'][0])/FOCAL
+             track.age = 0.
+             track.hits += 1
+             track.source = 'complete_box_update'
+@@ -341,8 +354,8 @@
+             if any(detection['clipped']):
+                 # First sight is an interval, never an invented accurate point.
+                 covariance[:2, :2] += np.eye(2)*.5**2
+-            size = (detection['box'][2:]-detection['box'][:2])*point[0]/FOCAL
+-            self.tracks.append(Track(self.next_id, np.r_[point, 0., 0.], covariance, size, score=detection['score'], static_state=point.copy(), static_covariance=covariance[:2,:2].copy(),maximum_radius=float(np.linalg.norm(point))))
++            size = (detection['box'][2:]-detection['box'][:2])*detection.get('contact_depth',point[0])/FOCAL
++            self.tracks.append(Track(self.next_id, np.r_[point, 0., 0.], covariance, size, score=detection['score'], static_state=point.copy(), static_covariance=covariance[:2,:2].copy(),maximum_radius=float(np.linalg.norm(point)), center_offset=detection.get('center_offset', 0.)))
+             self.next_id += 1
+         retained, objects, audit, released, inactive = [], [], [], [], []
+         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) if image is not None else None
+@@ -359,7 +372,7 @@
+             front = float(np.max(z+vz*future+.34+.07+2*np.sqrt(np.maximum(0.,variance))))
+             if hsv is not None and track.source == 'remembered':
+                 def contradicted(position,covariance):
+-                    zz,xx=position
++                    zz,xx=contact_point(position, track.center_offset)
+                     if zz<=.1:return False
+                     u,v=CX+xx*FOCAL/zz,CY+HEIGHT*FOCAL/zz
+                     w,h=track.physical_size*FOCAL/zz
+--- /dev/null
++++ b/vehicle_concept/src/concept_obstacles/test/test_field_contact.py
+@@ -0,0 +1,41 @@
++import numpy as np
++
++from concept_obstacles.obstacles617 import instances, Occupancy617
++from concept_road.vision import HEIGHT, FOCAL, CX, CY
++
++
++def cone_at_foot(u, v):
++    image = np.full((360, 640, 3), 140, np.uint8)
++    image[v-8:v, u-3:u+4] = [10, 20, 180]
++    pred = dict(boxes=np.array([[u-4, v-9, u+4, v]], float),
++                labels=np.array([91]), scores=np.array([.91]))
++    return image, pred
++
++
++def test_field_observation_and_matching_share_ground_contact_pixels():
++    image, pred = cone_at_foot(390, 215)
++    measurements = []
++    observation, = instances(pred, image.shape, image, field_ground=True, measurements=measurements)
++    u, v = measurements[0]['foot_uv']
++    z, x = measurements[0]['ground_forward_right_m']
++    assert (u, v) == (390., 215.)
++    np.testing.assert_allclose([z, x], [HEIGHT*FOCAL/(v-CY), (u-CX)*HEIGHT/(v-CY)])
++    track = Occupancy617()
++    obj = track.update([observation], 0., 0., .1, image=image)
++    assert obj[0, 4] == .34
++    np.testing.assert_allclose(track.image_box(track.tracks[0]), observation['box'], atol=1e-10)
++    empty = np.zeros_like(image)
++    for _ in range(3):
++        obj = track.update([], 0., 0., .1, image=empty)
++    assert len(obj) == 1 and track.last['tracks'][0]['source'] == 'remembered'
++
++
++def test_distant_field_contact_stays_visible_without_an_in_range_track():
++    image, pred = cone_at_foot(30, 194)
++    measurements = []
++    assert instances(pred, image.shape, image, field_ground=True, measurements=measurements) == []
++    assert len(measurements) == 1
++    assert measurements[0]['ground_forward_right_m'][0] > 12
++    assert not measurements[0]['within_tracking_range']
++    old, = instances(pred, image.shape, image)
++    assert old['point'][0] < 12

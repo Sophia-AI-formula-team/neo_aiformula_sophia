@@ -1,0 +1,341 @@
+--- /dev/null
++++ b/concept/concept/__init__.py
+@@ -0,0 +1 @@
++
+--- /dev/null
++++ b/concept/concept/bringup.py
+@@ -0,0 +1,178 @@
++"""Vehicle wiring from neo main d8277bd. Reuse native camera and lifecycle CAN actions."""
++import runpy
++import tempfile
++import time
++
++import yaml
++from pathlib import Path
++
++from ament_index_python.packages import get_package_share_directory
++from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
++                            SetEnvironmentVariable, SetLaunchConfiguration)
++from launch.event_handlers import OnShutdown
++from launch.launch_description_sources import PythonLaunchDescriptionSource
++from launch.substitutions import LaunchConfiguration as LC
++from launch_ros.actions import Node, SetParameter
++from launch_ros.parameter_descriptions import ParameterValue
++
++
++def share(package, *parts):
++    return str(Path(get_package_share_directory(package), *parts))
++
++
++def include(package, filename, **arguments):
++    return IncludeLaunchDescription(
++        PythonLaunchDescriptionSource(share(package, 'launch', filename)),
++        launch_arguments=arguments.items())
++
++
++def check_ownership(context):
++    """Refuse a second motor chain before opening a physical CAN sender."""
++    import rclpy
++    from rclpy.context import Context
++    from rclpy.executors import SingleThreadedExecutor
++
++    ros = Context()
++    rclpy.init(args=[], context=ros)
++    probe = rclpy.create_node('concept_launch_probe', context=ros)
++    executor = SingleThreadedExecutor(context=ros)
++    executor.add_node(probe)
++    try:
++        deadline = time.monotonic() + 1.8
++        while time.monotonic() < deadline:
++            executor.spin_once(timeout_sec=.1)
++            # The public motor/sender may be in an older namespace on installed vehicles.
++            owners = {name for name, ns in probe.get_node_names_and_namespaces()
++                      if name in ('socket_can_sender', 'socket_can_receiver', 'motor_controller', 'zed_node', 'joy_node')}
++            if owners or probe.count_publishers('/aiformula_control/motor_controller/reference_signal'):
++                raise RuntimeError('Original vehicle stack already active: ' + ', '.join(sorted(owners))
++                                   + '. Stop that launch before starting Concept.')
++    finally:
++        executor.shutdown()
++        probe.destroy_node()
++        rclpy.shutdown(context=ros)
++    return []
++
++
++def zed_actions(context, native, directory):
++    # The wrapper separately caps acquisition and image publication. At 15 Hz
++    # a 60 Hz grab alone still delivers old images to the planning pipeline.
++    original = Path(LC('config_common_path').perform(context))
++    config = yaml.safe_load(original.read_text(encoding='utf-8'))
++    general = config['/**']['ros__parameters']['general']
++    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
++    overlay = Path(directory, 'zed-common.yaml')
++    overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
++    return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
++                                *native['create_zed_node'](context)])
++
++
++def sensor_actions(context):
++    import xacro
++
++    native = runpy.run_path(share('launchers', 'launch', 'allnodes.launch.py'))
++    native['wait_for_can_interface'](context)
++    joy_config = share('launchers', 'config', 'joy.yaml')
++    remap = '/aiformula_control/joy_node/joy_l2_throttle'
++    # The original launcher generates a URDF inside the installed vehicle share.
++    # Render the same chassis into a private temporary file for this launch.
++    description = xacro.process_file(share('vehicle', 'xacro', 'ai_car1.xacro')).toxml()
++    temporary = tempfile.TemporaryDirectory(prefix='concept-chassis-')
++    urdf = Path(temporary.name, 'ai_car1.urdf')
++    urdf.write_text(description, encoding='utf-8')
++    return [
++        RegisterEventHandler(OnShutdown(on_shutdown=[
++            OpaqueFunction(function=lambda _: temporary.cleanup())])),
++        Node(package='robot_state_publisher', executable='robot_state_publisher', namespace='/aiformula_sensing',
++             parameters=[{'robot_description': ParameterValue(description, value_type=str)}]),
++        Node(package='joint_state_publisher', executable='joint_state_publisher', namespace='/aiformula_sensing',
++             arguments=[str(urdf)]),
++        zed_actions(context, native, temporary.name),
++        include('launchers', 'vectornav.launch.py'),
++        include('odometry_publisher', 'gyro_odometry_publisher.launch.py', use_rviz='false',
++                imu_topic='/aiformula_sensing/vectornav/imu'),
++        include('rear_potentiometer', 'rear_potentiometer.launch.py'),
++        Node(package='joy', executable='joy_node', name='joy_node', namespace='/aiformula_control',
++             parameters=[joy_config], remappings=[('joy', '/aiformula_control/joy_node/joy')]),
++        Node(package='launchers', executable='l2_throttle_joy_remap.py', name='l2_throttle_joy_remap',
++             namespace='/aiformula_control',
++             remappings=[('joy_in', '/aiformula_control/joy_node/joy'), ('joy_out', remap)]),
++        *native['create_socket_can_receiver'](), *native['create_socket_can_sender'](),
++    ]
++
++
++def build(context):
++    mode = LC('mode').perform(context)
++    if mode not in ('vehicle', 'replay'):
++        raise ValueError('Select mode:=vehicle or mode:=replay')
++    vehicle = mode == 'vehicle'
++    calibration = LC('calibration').perform(context)
++    if calibration == 'auto':
++        config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
++        receipt = Path(config_home) / 'concept' / 'camera.json'
++        if not receipt.is_file():
++            receipt = receipt.with_name('honda-ground.json')
++        calibration = str(receipt) if vehicle and receipt.is_file() else ''
++    simulated_clock = LC('use_sim_time').perform(context).lower() == 'true'
++    if vehicle and simulated_clock:
++        raise ValueError('Vehicle mode requires the vehicle clock.')
++    actions = []
++    if not context.environment.get('FASTRTPS_DEFAULT_PROFILES_FILE'):
++        profile = 'vehicle-fastdds.xml' if vehicle else 'foxy-fastdds.xml'
++        actions.append(SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE',
++                                              share('concept', 'config', profile)))
++    actions.append(SetParameter(name='use_sim_time', value=simulated_clock))
++    if vehicle:
++        actions.extend([OpaqueFunction(function=check_ownership), OpaqueFunction(function=sensor_actions)])
++    else:
++        actions.append(Node(package='concept', executable='replay_sink'))
++    physical = '/aiformula_control/motor_controller/reference_signal'
++    buttons = share('launchers', 'config', 'gamepad', 'dualshock4.yaml')
++    motor_remaps = [
++        ('sub_speed_command', '/concept/internal/motor_cmd'),
++        ('pub_can', '/concept/internal/motor_can'),
++        ('/aiformula_control/joy_node/joy_l2_throttle', '/concept/internal/unused_motor_joy'),
++        ('/semantic_drive/motor_session', '/concept/internal/unused_motor_session'),
++        ('/semantic_drive/map_status', '/concept/internal/unused_motor_map_status'),
++    ]
++    direct = LC('onboard_camera').perform(context)
++    if direct not in ('auto', 'true', 'false'):
++        raise ValueError('onboard_camera must be auto, true or false')
++    direct = vehicle if direct == 'auto' else direct == 'true'
++    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
++                  camera_info_topic=LC('camera_info_topic'))
++    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)))
++    gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')
++    for params, key in ((driving, 'target_speed_mps'), (gate, 'max_auto_speed_mps')):
++        if vehicle:
++            config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
++            params['speed_settings_directory'] = str(Path(config_home) / 'concept' / 'speed')
++        explicit = LC(key).perform(context)
++        if explicit:
++            params[key] = float(explicit)
++    if direct:
++        driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
++    else:
++        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision))
++    actions.extend([
++        Node(package='motor_controller', executable='motor_controller', name='motor_controller', namespace='/concept/hardware',
++             parameters=[share('vehicle','config','wheel.yaml'), share('motor_controller','config','motor_controller.yaml'), buttons],
++             remappings=motor_remaps),
++        Node(package='concept_vehicle_state', executable='concept_vehicle_state', output='screen'),
++        Node(package='concept_control_gate', executable='concept_control_gate', output='screen',
++             parameters=[buttons, gate],
++             remappings=[] if vehicle else [(physical, '/concept/replay/reference_signal')]),
++        Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
++             additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
++             parameters=[driving]),
++        Node(package='concept_visualization', executable='visualization', output='screen'),
++    ])
++    if LC('panel').perform(context).lower() in ('true', '1'):
++        # The panel alone owns a bag process. Allow startup (15 s), graceful
++        # finalization (15 s), group cleanup and readback of a long recording.
++        actions.append(Node(package='concept_panel', executable='panel', output='screen',
++                            sigterm_timeout='45', sigkill_timeout='75'))
++    if LC('rviz').perform(context).lower() in ('true', '1'):
++        actions.append(Node(package='rviz2', executable='rviz2', name='concept_rviz',
++                            arguments=['-d', share('concept_visualization', 'rviz', 'concept.rviz')]))
++    return actions
+--- /dev/null
++++ b/concept/concept/live.py
+@@ -0,0 +1,7 @@
++"""The short command and ros2 launch use identical launch arguments."""
++import os
++import sys
++
++
++def main():
++    os.execvp('ros2', ['ros2', 'launch', 'concept', 'concept.launch.py', *sys.argv[1:]])
+--- /dev/null
++++ b/concept/concept/replay_sink.py
+@@ -0,0 +1,16 @@
++"""Consume simulated CAN frames in isolation. This node never opens a CAN device."""
++import rclpy
++from can_msgs.msg import Frame
++from rclpy.node import Node
++
++
++def main(args=None):
++    rclpy.init(args=args)
++    node = Node('virtual_receiver', namespace='/concept/replay')
++    node.create_subscription(Frame, '/concept/replay/reference_signal', lambda _: None, 1)
++    try:
++        rclpy.spin(node)
++    finally:
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
+--- /dev/null
++++ b/concept/config/foxy-fastdds.xml
+@@ -0,0 +1,9 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
++ <transport_descriptors>
++  <transport_descriptor><transport_id>large_shm</transport_id><type>SHM</type><segment_size>2097152</segment_size></transport_descriptor>
++ </transport_descriptors>
++ <participant profile_name="concept_qa" is_default_profile="true"><rtps>
++  <userTransports><transport_id>large_shm</transport_id></userTransports><useBuiltinTransports>false</useBuiltinTransports>
++ </rtps></participant>
++</profiles>
+--- /dev/null
++++ b/concept/config/vehicle-fastdds.xml
+@@ -0,0 +1,23 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
++  <transport_descriptors>
++    <transport_descriptor>
++      <transport_id>concept_camera_shm</transport_id>
++      <type>SHM</type>
++      <segment_size>2097152</segment_size>
++    </transport_descriptor>
++    <transport_descriptor>
++      <transport_id>concept_network</transport_id>
++      <type>UDPv4</type>
++    </transport_descriptor>
++  </transport_descriptors>
++  <participant profile_name="concept_vehicle" is_default_profile="true">
++    <rtps>
++      <userTransports>
++        <transport_id>concept_camera_shm</transport_id>
++        <transport_id>concept_network</transport_id>
++      </userTransports>
++      <useBuiltinTransports>false</useBuiltinTransports>
++    </rtps>
++  </participant>
++</profiles>
+--- /dev/null
++++ b/concept/launch/concept.launch.py
+@@ -0,0 +1,22 @@
++"""Start Concept in the vehicle or isolated replay mode."""
++from launch import LaunchDescription
++from launch.actions import DeclareLaunchArgument, OpaqueFunction
++
++from concept.bringup import build, share
++
++
++def generate_launch_description():
++    defaults = {
++        'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
++        'target_speed_mps': '', 'max_auto_speed_mps': '', 'planning_hz': '15.0',
++        'weights': '', 'calibration': 'auto', 'device': 'cuda',
++        'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
++        'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
++        'receiver_interval_sec': '0.1', 'sender_timeout_sec': '0.01',
++        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '60',
++        'pub_downscale_factor': '3.0',
++        'config_common_path': share('vehicle', 'config', 'zedx', 'common.yaml'),
++        'config_camera_path': share('vehicle', 'config', 'zedx', 'zedx.yaml'),
++    }
++    return LaunchDescription([DeclareLaunchArgument(k, default_value=v) for k, v in defaults.items()]
++                             + [OpaqueFunction(function=build)])
+--- /dev/null
++++ b/concept/package.xml
+@@ -0,0 +1,33 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept</name>
++  <version>6.27.5</version>
++  <description>Vehicle bringup</description>
++  <maintainer email="maintainers@users.noreply.github.com">Sophia AI Formula</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <exec_depend>launch_ros</exec_depend>
++  <exec_depend>launchers</exec_depend>
++  <exec_depend>ament_index_python</exec_depend>
++  <exec_depend>rclpy</exec_depend>
++  <exec_depend>concept_drive</exec_depend>
++  <exec_depend>concept_vehicle_state</exec_depend>
++  <exec_depend>concept_control_gate</exec_depend>
++  <exec_depend>concept_yolop</exec_depend>
++  <exec_depend>concept_panel</exec_depend>
++  <exec_depend>concept_visualization</exec_depend>
++  <exec_depend>motor_controller</exec_depend>
++  <exec_depend>vehicle</exec_depend>
++  <exec_depend>python3-yaml</exec_depend>
++  <exec_depend>xacro</exec_depend>
++  <exec_depend>robot_state_publisher</exec_depend>
++  <exec_depend>joint_state_publisher</exec_depend>
++  <exec_depend>joy</exec_depend>
++  <exec_depend>ros2launch</exec_depend>
++  <exec_depend>can_msgs</exec_depend>
++  <exec_depend>ros2_socketcan</exec_depend>
++  <exec_depend>odometry_publisher</exec_depend>
++  <exec_depend>rear_potentiometer</exec_depend>
++  <exec_depend>rviz2</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept/resource/concept
+@@ -0,0 +1 @@
++
+--- /dev/null
++++ b/concept/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept
++[install]
++install_scripts=$base/lib/concept
+--- /dev/null
++++ b/concept/setup.py
+@@ -0,0 +1,14 @@
++from setuptools import setup
++from glob import glob
++
++name = 'concept'
++setup(
++    name=name, version='6.27.5', packages=[name],
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++        ('share/' + name + '/launch', glob('launch/*')),
++        ('share/' + name + '/config', glob('config/*.xml')),
++    ],
++    entry_points={'console_scripts': ['live = concept.live:main', 'replay_sink = concept.replay_sink:main']},
++)

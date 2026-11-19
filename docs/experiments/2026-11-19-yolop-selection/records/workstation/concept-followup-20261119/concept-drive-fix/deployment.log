@@ -1,0 +1,105 @@
+Activated Concept desktop overlay /home/control/aiformula_runtime/concept-drive-fix-20261119-1603
+2026-11-19T16:16:03+09:00
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'mode':
+        no description given
+        (default: 'vehicle')
+
+    'onboard_camera':
+        no description given
+        (default: 'auto')
+
+    'panel':
+        no description given
+        (default: 'true')
+
+    'rviz':
+        no description given
+        (default: 'true')
+
+    'target_speed_mps':
+        no description given
+        (default: '')
+
+    'max_auto_speed_mps':
+        no description given
+        (default: '')
+
+    'planning_hz':
+        no description given
+        (default: '15.0')
+
+    'weights':
+        no description given
+        (default: '')
+
+    'calibration':
+        no description given
+        (default: 'auto')
+
+    'device':
+        no description given
+        (default: 'cuda')
+
+    'camera_info_topic':
+        no description given
+        (default: '/aiformula_sensing/zed_node/left/camera_info')
+
+    'can_interface':
+        no description given
+        (default: 'can0')
+
+    'can_ready_timeout_sec':
+        no description given
+        (default: '10')
+
+    'enable_can_fd':
+        no description given
+        (default: 'false')
+
+    'receiver_interval_sec':
+        no description given
+        (default: '0.1')
+
+    'sender_timeout_sec':
+        no description given
+        (default: '0.01')
+
+    'use_sim_time':
+        no description given
+        (default: 'false')
+
+    'grab_resolution':
+        no description given
+        (default: 'HD1080')
+
+    'grab_frame_rate':
+        no description given
+        (default: '60')
+
+    'pub_downscale_factor':
+        no description given
+        (default: '3.0')
+
+    'config_common_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml')
+
+    'config_camera_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml')
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Concept
+Comment=Launch the Concept panel and RViz
+Exec="/home/control/.local/bin/concept-live"
+Icon=applications-engineering
+Terminal=true
+total 12
+drwxrwxr-x  2 control control 4096 11月 19 14:20 .
+drwx------ 33 control control 4096 11月 19 14:20 ..
+-rw-------  1 control control  447 11月 19 14:20 honda-ground.json
+b0ff8367a0c56a48f264ae89818620e4b92d5148aef99f99fe25ebaeb3d71f15  /home/control/concept_v6275_ws/activate_concept.bash
+2026-11-19T16:16:06+09:00

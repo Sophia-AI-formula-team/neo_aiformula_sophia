@@ -1,0 +1,14 @@
+2026-11-19T16:42:12+09:00
+USER         PID    PPID    PGID                  STARTED COMMAND
+control    72270   58457   72270 Thu Nov 19 16:09:06 2026 /home/control/aiformula_runtime/2026-11-19-yolop-selection/foxy-env/bin/python3 /home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/run_vehicle.py --profile A4_lite --live
+control    82948   82897   82897 Thu Nov 19 16:34:19 2026 /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch concept concept.launch.py
+control    83076   82948   82897 Thu Nov 19 16:34:23 2026 /home/control/concept_v6275_ws/venv/bin/python3 /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_drive/lib/concept_drive/drive --ros-args --params-file /tmp/launch_params__zj4ntl3 --params-file /tmp/launch_params_lbjsoif5
+  82897   58457   82897 Thu Nov 19 16:34:18 2026 /usr/bin/python3 /opt/ros/foxy/bin/ros2 run concept live
+  82948   82897   82897 Thu Nov 19 16:34:19 2026 /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch concept concept.launch.py
+ROS_LOCALHOST_ONLY=0
+lrwx------ 1 control control 64 11月 19 16:09 17 -> /dev/nvhost-ctrl
+lrwx------ 1 control control 64 11月 19 16:09 19 -> /dev/nvhost-ctrl
+lrwx------ 1 control control 64 11月 19 16:09 20 -> anon_inode:nvhost-ga10b-fd20
+lrwx------ 1 control control 64 11月 19 16:09 23 -> anon_inode:nvhost-17000000.ga10b-fd23
+lrwx------ 1 control control 64 11月 19 16:42 24 -> anon_inode:nvhost-17000000.ga10b-fd24
+lrwx------ 1 control control 64 11月 19 16:09 25 -> anon_inode:nvhost-17000000.ga10b-fd25

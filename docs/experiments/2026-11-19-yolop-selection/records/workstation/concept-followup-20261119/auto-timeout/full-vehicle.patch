@@ -1,0 +1,354 @@
+diff --git a/vehicle_concept/src/concept/concept/bringup.py b/vehicle_concept/src/concept/concept/bringup.py
+index 9d616b3..8f00cd9 100644
+--- a/vehicle_concept/src/concept/concept/bringup.py
++++ b/vehicle_concept/src/concept/concept/bringup.py
+@@ -2,10 +2,13 @@
+ import runpy
+ import tempfile
+ import time
++
++import yaml
+ from pathlib import Path
+ 
+ from ament_index_python.packages import get_package_share_directory
+-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, SetEnvironmentVariable
++from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
++                            SetEnvironmentVariable, SetLaunchConfiguration)
+ from launch.event_handlers import OnShutdown
+ from launch.launch_description_sources import PythonLaunchDescriptionSource
+ from launch.substitutions import LaunchConfiguration as LC
+@@ -51,6 +54,19 @@ def check_ownership(context):
+     return []
+ 
+ 
++def zed_actions(context, native, directory):
++    # The wrapper separately caps acquisition and image publication. At 15 Hz
++    # a 60 Hz grab alone still delivers old images to the planning pipeline.
++    original = Path(LC('config_common_path').perform(context))
++    config = yaml.safe_load(original.read_text(encoding='utf-8'))
++    general = config['/**']['ros__parameters']['general']
++    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
++    overlay = Path(directory, 'zed-common.yaml')
++    overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
++    return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
++                                *native['create_zed_node'](context)])
++
++
+ def sensor_actions(context):
+     import xacro
+ 
+@@ -72,7 +88,7 @@ def sensor_actions(context):
+              parameters=[{'robot_description': ParameterValue(description, value_type=str)}]),
+         Node(package='joint_state_publisher', executable='joint_state_publisher', namespace='/aiformula_sensing',
+              arguments=[str(urdf)]),
+-        *native['create_zed_node'](context),
++        zed_actions(context, native, temporary.name),
+         include('launchers', 'vectornav.launch.py'),
+         include('odometry_publisher', 'gyro_odometry_publisher.launch.py', use_rviz='false',
+                 imu_topic='/aiformula_sensing/vectornav/imu'),
+@@ -122,6 +138,19 @@ def build(context):
+         ('/semantic_drive/motor_session', '/concept/internal/unused_motor_session'),
+         ('/semantic_drive/map_status', '/concept/internal/unused_motor_map_status'),
+     ]
++    direct = LC('onboard_camera').perform(context)
++    if direct not in ('auto', 'true', 'false'):
++        raise ValueError('onboard_camera must be auto, true or false')
++    direct = vehicle if direct == 'auto' else direct == 'true'
++    vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
++                  camera_info_topic=LC('camera_info_topic'))
++    driving = dict(onboard_camera=direct,
++                   target_speed_mps=float(LC('target_speed_mps').perform(context)),
++                   planning_hz=float(LC('planning_hz').perform(context)))
++    if direct:
++        driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
++    else:
++        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision))
+     actions.extend([
+         Node(package='motor_controller', executable='motor_controller', name='motor_controller', namespace='/concept/hardware',
+              parameters=[share('vehicle','config','wheel.yaml'), share('motor_controller','config','motor_controller.yaml'), buttons],
+@@ -131,13 +160,9 @@ def build(context):
+              parameters=[buttons, {'max_auto_speed_mps': float(LC('max_auto_speed_mps').perform(context)),
+                                   'can_sender_node': '/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver'}],
+              remappings=[] if vehicle else [(physical, '/concept/replay/reference_signal')]),
+-        include('concept_yolop', 'concept_yolop.launch.py', weights=LC('weights'),
+-                calibration=calibration, device=LC('device'),
+-                camera_info_topic=LC('camera_info_topic')),
+         Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
+              additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
+-             parameters=[{'target_speed_mps': float(LC('target_speed_mps').perform(context)),
+-                          'planning_hz': float(LC('planning_hz').perform(context))}]),
++             parameters=[driving]),
+         Node(package='concept_visualization', executable='visualization', output='screen'),
+     ])
+     if LC('panel').perform(context).lower() in ('true', '1'):
+diff --git a/vehicle_concept/src/concept/launch/concept.launch.py b/vehicle_concept/src/concept/launch/concept.launch.py
+index 07d7b56..1496d83 100644
+--- a/vehicle_concept/src/concept/launch/concept.launch.py
++++ b/vehicle_concept/src/concept/launch/concept.launch.py
+@@ -7,13 +7,13 @@ from concept.bringup import build, share
+ 
+ def generate_launch_description():
+     defaults = {
+-        'mode': 'vehicle', 'panel': 'true', 'rviz': 'true',
++        'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
+         'target_speed_mps': '1.0', 'max_auto_speed_mps': '1.0', 'planning_hz': '15.0',
+         'weights': '', 'calibration': 'auto', 'device': 'cuda',
+         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
+         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
+         'receiver_interval_sec': '0.1', 'sender_timeout_sec': '0.01',
+-        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '15',
++        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '60',
+         'pub_downscale_factor': '3.0',
+         'config_common_path': share('vehicle', 'config', 'zedx', 'common.yaml'),
+         'config_camera_path': share('vehicle', 'config', 'zedx', 'zedx.yaml'),
+diff --git a/vehicle_concept/src/concept/package.xml b/vehicle_concept/src/concept/package.xml
+index ce198d0..e58f215 100644
+--- a/vehicle_concept/src/concept/package.xml
++++ b/vehicle_concept/src/concept/package.xml
+@@ -18,6 +18,7 @@
+   <exec_depend>concept_visualization</exec_depend>
+   <exec_depend>motor_controller</exec_depend>
+   <exec_depend>vehicle</exec_depend>
++  <exec_depend>python3-yaml</exec_depend>
+   <exec_depend>xacro</exec_depend>
+   <exec_depend>robot_state_publisher</exec_depend>
+   <exec_depend>joint_state_publisher</exec_depend>
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index c329244..2c185f6 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -16,7 +16,7 @@ from rclpy.node import Node
+ from std_msgs.msg import String
+ from std_srvs.srv import Trigger
+ 
+-from concept_yolop.frame_codec import parse_frame_header, decode_frame_data
++from concept_yolop.frame_codec import decode_frame_data, parse_frame_header, validate_pixels, validated_detections
+ from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
+ from .core import Drive
+ from .lap_map import encode_map
+@@ -50,7 +50,9 @@ class DriverNode(Node):
+         self.decisions = self.create_publisher(String, '/concept/decision', 1)
+         self.create_subscription(String, '/concept/vehicle_state', self.state, 10, callback_group=self.telemetry)
+         self.create_subscription(String, '/concept/gate/status', self.gate, 1, callback_group=self.telemetry)
+-        self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
++        self.onboard_camera = self.declare_parameter('onboard_camera', False).value
++        if not self.onboard_camera:
++            self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
+         self.create_service(Trigger, '~/restart', self.restart)
+         # The default mutually exclusive group keeps the snapshot consistent
+         # with one completed frame, while feedback still uses its own group.
+@@ -129,7 +131,14 @@ class DriverNode(Node):
+         except (KeyError, TypeError, ValueError):
+             return
+ 
++    def camera_frame(self, stamp, frame_id, profile, bgr, road, lane, det):
++        ns = stamp.sec * 1_000_000_000 + stamp.nanosec
++        self.process_frame(local=(ns, frame_id, profile, dict(det, bgr=bgr, road=road, lane=lane)))
++
+     def frame(self, message):
++        self.process_frame(message=message)
++
++    def process_frame(self, message=None, local=None):
+         now = lambda: self.get_clock().now().nanoseconds
+         tic = time.monotonic()
+         decision = dict(schema='concept.decision.v1', session=self.session, frame_id='base_footprint',
+@@ -138,7 +147,10 @@ class DriverNode(Node):
+                         whitebox_index=None, command=None, feasible_count=0, candidates=[], selected_path=[],
+                         road_rows=[], objects=[], tracks=[], lines=[], edges={}, map=None, map_semantics=None)
+         try:
+-            packet, ns, optical_frame, profile = parse_frame_header(message.data)
++            if local is None:
++                packet, ns, optical_frame, profile = parse_frame_header(message.data)
++            else:
++                ns, optical_frame, profile, f = local
+             capture = ns / 1e9
+             decision.update(stamp=stamp(ns), geometry_profile=profile)
+             age = (now() - ns) / 1e9
+@@ -163,13 +175,17 @@ class DriverNode(Node):
+                 sample = self.feedback.at(capture, MAX_STATE_AGE)
+                 limit = self.limit
+             pace = min(self.target, limit) if limit is not None else self.target
+-            f = decode_frame_data(packet)
++            if local is None:
++                f = decode_frame_data(packet)
++                det = {k:f[k] for k in ('boxes','labels','scores')}
++            else:
++                validate_pixels(f['bgr'], f['road'], f['lane'])
++                det = validated_detections(f)
+             self.driver.set_pace(pace)
+             decision.update(effective_speed_mps=pace, sensor_age_s=capture-sample['t'])
+             if self.first_ns is None:
+                 self.first_ns = ns
+             native = native_sensor(sample, (ns-self.first_ns)/1e9)
+-            det = {k:f[k] for k in ('boxes','labels','scores')}
+             try:
+                 result = self.driver.step(f['bgr'], f['road'], f['lane'], det, native)
+             except Exception:
+@@ -211,12 +227,21 @@ def main(args=None):
+     node = DriverNode()
+     executor = MultiThreadedExecutor(num_threads=2)
+     executor.add_node(node)
++    camera = None
+     try:
++        if node.onboard_camera:
++            from concept_yolop.node import CameraNode
++            # Planning, map snapshots and resets share one mutually exclusive group.
++            # Wheel and gyro callbacks use the second worker during inference/planning.
++            camera = CameraNode(node.camera_frame, node.default_callback_group)
++            executor.add_node(camera)
+         executor.spin()
+     except KeyboardInterrupt:
+         pass
+     finally:
+         executor.shutdown()
++        if camera is not None:
++            camera.destroy_node()
+         node.destroy_node()
+         if rclpy.ok():
+             rclpy.shutdown()
+diff --git a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+index 5bdbf79..254505c 100644
+--- a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++++ b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+@@ -58,14 +58,18 @@ def main():
+     sensor = dict(row['sensor'], gyro=-row['sensor']['gyro'], valid=True)
+     image = cv2.imread(str(root / '00000_rgb.png'))
+ 
+-    def send_input(profile, sec):
++    def send_input(profile, sec, direct=False):
+         clock.publish(Clock(clock=Time(sec=sec)))
+         until(lambda: driver.get_clock().now().nanoseconds == sec * 10**9)
+         state.publish(String(data=json.dumps(dict(sensor, t=float(sec)))))
+         until(lambda: any(s['t'] == float(sec) for s in driver.feedback.samples))
+         with np.load(root / '00000_perception.npz') as d:
+-            wire = encode_frame(sec, 0, 'camera', image, d['raw'], d['lane'], d, profile)
+-        camera.publish(String(data=wire))
++            if direct:
++                driver.camera_frame(Time(sec=sec), 'camera', profile, image, d['raw'], d['lane'],
++                                    {key: d[key] for key in ('boxes', 'scores', 'labels')})
++            else:
++                wire = encode_frame(sec, 0, 'camera', image, d['raw'], d['lane'], d, profile)
++                camera.publish(String(data=wire))
+         until(lambda: bool(decisions))
+ 
+     def gate_status(paused, limit):
+@@ -106,8 +110,17 @@ def main():
+         np.testing.assert_allclose(
+             [command.twist.linear.x, command.twist.angular.z],
+             [result['command']['linear_x_mps'], result['command']['angular_z_radps']])
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 13, direct=True)
++        until(lambda: len(commands) == 3)
++        assert commands[-1].header.stamp.sec == 13
++        for key in ('status', 'selected_index', 'command', 'feasible_count', 'selected_path', 'candidates'):
++            assert decisions[0][key] == result[key], key
+         print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
+-              'unverified shadow and Honda command publication.')
++              'unverified shadow, Honda commands and identical direct-frame choices.')
+     finally:
+         peer.destroy_node()
+         driver.destroy_node()
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py b/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
+index 997a719..cd2a78d 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/frame_codec.py
+@@ -50,12 +50,16 @@ def _image(encoded, channels):
+     return image
+ 
+ 
+-def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
+-    if geometry_profile not in PROFILES:
+-        raise ValueError("Invalid camera geometry profile")
++def validate_pixels(bgr, road, lane):
+     if (bgr.shape != (H, W, 3) or bgr.dtype != np.uint8 or road.shape != (H, W)
+             or lane.shape != (H, W) or road.dtype != np.bool_ or lane.dtype != np.bool_):
+         raise ValueError('Expected canonical BGR and boolean road/lane masks')
++
++
++def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
++    if geometry_profile not in PROFILES:
++        raise ValueError("Invalid camera geometry profile")
++    validate_pixels(bgr, road, lane)
+     return json.dumps({
+         'schema': SCHEMA, 'model_sha256': SHA256, 'geometry_profile': geometry_profile,
+         'stamp': {'sec': int(sec), 'nanosec': int(nanosec)}, 'frame_id': frame_id,
+@@ -84,23 +88,28 @@ def parse_frame_header(payload):
+     return obj, sec * 1000000000 + ns, obj['frame_id'], obj['geometry_profile']
+ 
+ 
+-def decode_frame_data(obj):
+-    """Unpack detections and pixels from a header-validated wire object."""
+-    boxes = np.asarray(obj['boxes'], dtype=np.float32)
++def validated_detections(det):
++    boxes = np.asarray(det['boxes'], dtype=np.float32)
+     if boxes.shape == (0,):
+         boxes = boxes.reshape(0, 4)
+-    scores = np.asarray(obj['scores'], dtype=np.float32)
+-    labels = np.asarray(obj['labels'])
++    scores = np.asarray(det['scores'], dtype=np.float32)
++    labels = np.asarray(det['labels'])
+     n = len(scores)
+     if (boxes.shape != (n, 4) or labels.shape != (n,) or scores.shape != (n,) or n > 100
+             or not np.all(np.isfinite(boxes)) or not np.all(np.isfinite(scores))
+             or np.any((scores < 0) | (scores > 1))
+             or (n and (not np.issubdtype(labels.dtype, np.integer) or not np.isin(labels, [1,3,10,91]).all()))):
+         raise ValueError('Invalid B1.4 detections')
++    return dict(boxes=boxes, scores=scores, labels=labels.astype(np.int64, copy=False))
++
++
++def decode_frame_data(obj):
++    """Unpack detections and pixels from a header-validated wire object."""
++    det = validated_detections(obj)
+     return dict(geometry_profile=obj['geometry_profile'], stamp_ns=obj['stamp']['sec'] * 1000000000 + obj['stamp']['nanosec'],
+                 frame_id=obj['frame_id'],
+                 bgr=_image(obj['bgr_png'], 3), road=_image(obj['road_png'], 1),
+-                lane=_image(obj['lane_png'], 1), boxes=boxes, scores=scores, labels=labels.astype(np.int64))
++                lane=_image(obj['lane_png'], 1), **det)
+ 
+ 
+ def decode_frame(payload):
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/node.py b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+index 9faab57..c51fd29 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/node.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+@@ -34,8 +34,9 @@ def draw_overlay(image, road, lane, det):
+ 
+ 
+ class CameraNode(Node):
+-    def __init__(self):
++    def __init__(self, frame_consumer=None, image_group=None):
+         super().__init__('concept_yolop')
++        self.frame_consumer = frame_consumer
+         for name, default in [('weights', str(default_path())), ('device', 'cuda'),
+                               ('camera_info_topic', '/aiformula_sensing/zed_node/left/camera_info'),
+                               ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
+@@ -59,8 +60,8 @@ class CameraNode(Node):
+         if path:
+             self.calibration = load_projection(path)
+             self.info_subscription = self.create_subscription(
+-                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos)
+-        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos)
++                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos, callback_group=image_group)
++        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos, callback_group=image_group)
+ 
+     def on_info(self, msg):
+         self.info = msg
+@@ -82,9 +83,12 @@ class CameraNode(Node):
+             if matched:
+                 road, lane, det = self.calibration.restrict_predictions(road, lane, det)
+             stamp = msg.header.stamp
+-            wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
+-                                self.calibration.profile if matched else UNVERIFIED)
+-            self.frames.publish(String(data=wire))
++            profile = self.calibration.profile if matched else UNVERIFIED
++            if self.frame_consumer is not None:
++                self.frame_consumer(stamp, msg.header.frame_id, profile, bgr, road, lane, det)
++            if self.frame_consumer is None or self.frames.get_subscription_count():
++                wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det, profile)
++                self.frames.publish(String(data=wire))
+             display = self.overlay.get_subscription_count()
+             record = self.compressed_overlay.get_subscription_count()
+             if display or record:

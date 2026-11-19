@@ -1,0 +1,671 @@
+{
+  "wheel_range": [
+    -487,
+    487
+  ],
+  "window_evidence": [
+    {
+      "t": "2026-11-19T16:35:44.634+09:00",
+      "recorded": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 333,
+        "rightRpm": 268,
+        "t": 1795073744.6295857,
+        "gyro_t": 1795073744.6174972
+      },
+      "old_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 331,
+        "rightRpm": 267,
+        "t": 1795073744.6326091,
+        "gyro_t": 1795073744.6174972
+      },
+      "new_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 331,
+        "rightRpm": 267,
+        "t": 1795073744.6326091,
+        "gyro_t": 1795073744.6174972
+      }
+    },
+    {
+      "t": "2026-11-19T16:35:44.682+09:00",
+      "recorded": {
+        "valid": false,
+        "reason": "unsupported_can_rpm_range",
+        "leftRpm": null,
+        "rightRpm": null,
+        "t": null,
+        "gyro_t": null
+      },
+      "old_from_raw": {
+        "valid": false,
+        "reason": "unsupported_can_rpm_range",
+        "leftRpm": null,
+        "rightRpm": null,
+        "t": null,
+        "gyro_t": null
+      },
+      "new_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 363,
+        "rightRpm": 276,
+        "t": 1795073744.6815412,
+        "gyro_t": 1795073744.6674004
+      }
+    },
+    {
+      "t": "2026-11-19T16:35:44.733+09:00",
+      "recorded": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 316,
+        "rightRpm": 276,
+        "t": 1795073744.731612,
+        "gyro_t": 1795073744.7182643
+      },
+      "old_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 316,
+        "rightRpm": 279,
+        "t": 1795073744.7316632,
+        "gyro_t": 1795073744.7182643
+      },
+      "new_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 316,
+        "rightRpm": 279,
+        "t": 1795073744.7316632,
+        "gyro_t": 1795073744.7182643
+      }
+    },
+    {
+      "t": "2026-11-19T16:35:44.782+09:00",
+      "recorded": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 318,
+        "rightRpm": 289,
+        "t": 1795073744.7795665,
+        "gyro_t": 1795073744.768569
+      },
+      "old_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 318,
+        "rightRpm": 289,
+        "t": 1795073744.7795665,
+        "gyro_t": 1795073744.768569
+      },
+      "new_from_raw": {
+        "valid": true,
+        "reason": "ok",
+        "leftRpm": 318,
+        "rightRpm": 289,
+        "t": 1795073744.7795665,
+        "gyro_t": 1795073744.768569
+      }
+    }
+  ],
+  "all_state_report_reason_agreement": {
+    "n": 2111,
+    "matched": 2027
+  },
+  "timeseries": {
+    "recorded": [
+      {
+        "image_arrival": "2026-11-19T16:35:44.148+09:00",
+        "capture": "2026-11-19T16:35:43.896+09:00",
+        "delta_ms": 16.97,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.444+09:00",
+        "capture": "2026-11-19T16:35:44.229+09:00",
+        "delta_ms": 0.35,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.729+09:00",
+        "capture": "2026-11-19T16:35:44.513+09:00",
+        "delta_ms": null,
+        "has_causal_feedback": false,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.871+09:00",
+        "capture": "2026-11-19T16:35:44.679+09:00",
+        "delta_ms": null,
+        "has_causal_feedback": false,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.009+09:00",
+        "capture": "2026-11-19T16:35:44.813+09:00",
+        "delta_ms": 33.62,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.184+09:00",
+        "capture": "2026-11-19T16:35:44.963+09:00",
+        "delta_ms": 31.52,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.335+09:00",
+        "capture": "2026-11-19T16:35:45.129+09:00",
+        "delta_ms": 0.02,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.499+09:00",
+        "capture": "2026-11-19T16:35:45.279+09:00",
+        "delta_ms": 48.94,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.637+09:00",
+        "capture": "2026-11-19T16:35:45.446+09:00",
+        "delta_ms": 15.61,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.786+09:00",
+        "capture": "2026-11-19T16:35:45.579+09:00",
+        "delta_ms": 1.72,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.954+09:00",
+        "capture": "2026-11-19T16:35:45.746+09:00",
+        "delta_ms": 15.39,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.109+09:00",
+        "capture": "2026-11-19T16:35:45.896+09:00",
+        "delta_ms": 20.31,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.259+09:00",
+        "capture": "2026-11-19T16:35:46.046+09:00",
+        "delta_ms": 34.18,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.413+09:00",
+        "capture": "2026-11-19T16:35:46.213+09:00",
+        "delta_ms": 85.75,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.553+09:00",
+        "capture": "2026-11-19T16:35:46.363+09:00",
+        "delta_ms": 35.91,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      }
+    ],
+    "reconstructed_old": [
+      {
+        "image_arrival": "2026-11-19T16:35:44.148+09:00",
+        "capture": "2026-11-19T16:35:43.896+09:00",
+        "delta_ms": 21.11,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.444+09:00",
+        "capture": "2026-11-19T16:35:44.229+09:00",
+        "delta_ms": 0.35,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.729+09:00",
+        "capture": "2026-11-19T16:35:44.513+09:00",
+        "delta_ms": null,
+        "has_causal_feedback": false,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.871+09:00",
+        "capture": "2026-11-19T16:35:44.679+09:00",
+        "delta_ms": null,
+        "has_causal_feedback": false,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.009+09:00",
+        "capture": "2026-11-19T16:35:44.813+09:00",
+        "delta_ms": 33.62,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.184+09:00",
+        "capture": "2026-11-19T16:35:44.963+09:00",
+        "delta_ms": 31.52,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.335+09:00",
+        "capture": "2026-11-19T16:35:45.129+09:00",
+        "delta_ms": 49.14,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.499+09:00",
+        "capture": "2026-11-19T16:35:45.279+09:00",
+        "delta_ms": 48.94,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.637+09:00",
+        "capture": "2026-11-19T16:35:45.446+09:00",
+        "delta_ms": 15.61,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.786+09:00",
+        "capture": "2026-11-19T16:35:45.579+09:00",
+        "delta_ms": 48.79,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.954+09:00",
+        "capture": "2026-11-19T16:35:45.746+09:00",
+        "delta_ms": 15.39,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.109+09:00",
+        "capture": "2026-11-19T16:35:45.896+09:00",
+        "delta_ms": 20.31,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.259+09:00",
+        "capture": "2026-11-19T16:35:46.046+09:00",
+        "delta_ms": 10.06,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.413+09:00",
+        "capture": "2026-11-19T16:35:46.213+09:00",
+        "delta_ms": 85.75,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.553+09:00",
+        "capture": "2026-11-19T16:35:46.363+09:00",
+        "delta_ms": 35.91,
+        "has_causal_feedback": true,
+        "continuity_locked": true,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      }
+    ],
+    "fixed_counterfactual": [
+      {
+        "image_arrival": "2026-11-19T16:35:44.148+09:00",
+        "capture": "2026-11-19T16:35:43.896+09:00",
+        "delta_ms": 16.97,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.444+09:00",
+        "capture": "2026-11-19T16:35:44.229+09:00",
+        "delta_ms": 0.35,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.729+09:00",
+        "capture": "2026-11-19T16:35:44.513+09:00",
+        "delta_ms": 33.44,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.871+09:00",
+        "capture": "2026-11-19T16:35:44.679+09:00",
+        "delta_ms": 50.14,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.009+09:00",
+        "capture": "2026-11-19T16:35:44.813+09:00",
+        "delta_ms": 33.62,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.184+09:00",
+        "capture": "2026-11-19T16:35:44.963+09:00",
+        "delta_ms": 31.52,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.335+09:00",
+        "capture": "2026-11-19T16:35:45.129+09:00",
+        "delta_ms": 0.02,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.499+09:00",
+        "capture": "2026-11-19T16:35:45.279+09:00",
+        "delta_ms": 48.94,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.637+09:00",
+        "capture": "2026-11-19T16:35:45.446+09:00",
+        "delta_ms": 15.61,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.786+09:00",
+        "capture": "2026-11-19T16:35:45.579+09:00",
+        "delta_ms": 1.72,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.954+09:00",
+        "capture": "2026-11-19T16:35:45.746+09:00",
+        "delta_ms": 15.39,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.109+09:00",
+        "capture": "2026-11-19T16:35:45.896+09:00",
+        "delta_ms": 20.31,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.259+09:00",
+        "capture": "2026-11-19T16:35:46.046+09:00",
+        "delta_ms": 34.18,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.413+09:00",
+        "capture": "2026-11-19T16:35:46.213+09:00",
+        "delta_ms": 85.75,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.553+09:00",
+        "capture": "2026-11-19T16:35:46.363+09:00",
+        "delta_ms": 35.91,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      }
+    ],
+    "reconstructed_new": [
+      {
+        "image_arrival": "2026-11-19T16:35:44.148+09:00",
+        "capture": "2026-11-19T16:35:43.896+09:00",
+        "delta_ms": 21.11,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.444+09:00",
+        "capture": "2026-11-19T16:35:44.229+09:00",
+        "delta_ms": 0.35,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "ok",
+        "observed_reason": "feasible"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.729+09:00",
+        "capture": "2026-11-19T16:35:44.513+09:00",
+        "delta_ms": 33.44,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:44.871+09:00",
+        "capture": "2026-11-19T16:35:44.679+09:00",
+        "delta_ms": 47.12,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "no recent wheel and gyro measurement at image capture"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.009+09:00",
+        "capture": "2026-11-19T16:35:44.813+09:00",
+        "delta_ms": 33.62,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.184+09:00",
+        "capture": "2026-11-19T16:35:44.963+09:00",
+        "delta_ms": 31.52,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.335+09:00",
+        "capture": "2026-11-19T16:35:45.129+09:00",
+        "delta_ms": 49.14,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.499+09:00",
+        "capture": "2026-11-19T16:35:45.279+09:00",
+        "delta_ms": 48.94,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.637+09:00",
+        "capture": "2026-11-19T16:35:45.446+09:00",
+        "delta_ms": 15.61,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.786+09:00",
+        "capture": "2026-11-19T16:35:45.579+09:00",
+        "delta_ms": 48.79,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:45.954+09:00",
+        "capture": "2026-11-19T16:35:45.746+09:00",
+        "delta_ms": 15.39,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.109+09:00",
+        "capture": "2026-11-19T16:35:45.896+09:00",
+        "delta_ms": 20.31,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.259+09:00",
+        "capture": "2026-11-19T16:35:46.046+09:00",
+        "delta_ms": 10.06,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.413+09:00",
+        "capture": "2026-11-19T16:35:46.213+09:00",
+        "delta_ms": 85.75,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      },
+      {
+        "image_arrival": "2026-11-19T16:35:46.553+09:00",
+        "capture": "2026-11-19T16:35:46.363+09:00",
+        "delta_ms": 35.91,
+        "has_causal_feedback": true,
+        "continuity_locked": false,
+        "observed_status": "invalid",
+        "observed_reason": "image gap over 0.5 s; pause the gate and restart the driver"
+      }
+    ]
+  },
+  "method": "All variants start at the same recorded successful step immediately before the fault. Captured receipts from bag approximate callback times. Original accepted state stream is preserved in fixed_counterfactual except one invalid RPM sample. Simulated lock only tests elapsed capture time and original causal feedback age/clearing policy."
+}

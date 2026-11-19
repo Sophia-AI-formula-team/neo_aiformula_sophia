@@ -1,0 +1,702 @@
+--- a/workspace/src/aiformula/launchers/README.md
++++ b/workspace/src/aiformula/launchers/README.md
+@@ -22,21 +22,3 @@
+ 
+ - `zedx_camera.launch.py`
+   - Output: `Image (raw / undostorted), Imu`
+-
+-### Deployed A3 V14 vehicle launch
+-
+-`allnodes.launch.py` starts A3 V14 by default through `yolop_a3.launch.py`,
+-reusing its existing camera and lane publisher. The default camera is
+-`SN48797506` at nHD; its intrinsic calibration is included in the `vehicle`
+-package. The motor controller also receives the selected gamepad button layout.
+-
+-The A3 launcher expects the separately deployed runtime at
+-`/home/control/aiformula_runtime/yolop_a3_v14_20261012`, including `run_a3.py`,
+-the Python environment, ROS adapter and V14 checkpoint. Its standalone
+-`deployment_root` argument can select another prepared runtime. The startup
+-guard rejects duplicate publishers on the perception output topics.
+-
+-The archived detector is opt-in with
+-`launch_yolop_a3:=false launch_legacy_road_detector:=true`; it requires the
+-archived source configured by `legacy_yolop_path` and its weights. Enabling
+-both detectors is rejected. `launch_rviz:=false` disables the RViz startup.
+--- /dev/null
++++ b/workspace/src/aiformula/launchers/config/gamepad/dualshock4_BKUP.yaml
+@@ -0,0 +1,42 @@
++/**:
++  ros__parameters:
++    axis_linear:
++      x: 1  # L-Stick Vertical
++    scale_linear:
++      x: 2.0 # [m/s]  
++    scale_linear_turbo:
++      x: 2.1 # [m/s]
++
++    axis_angular:
++      yaw: 3  # R-Stick Horizontal
++    scale_angular:
++      yaw: 0.7 # [rad/s]
++
++    enable_button: 6        # L2
++    enable_turbo_button: 4  # L1
++
++
++# Button List ===============================================
++#  0: Cross
++#  1: Circle
++#  2: Triangle
++#  3: Square
++#  4: L1
++#  5: R1
++#  6: L2
++#  7: R2
++#  8: SHARE
++#  9: OPTION
++# 10: PS
++# 11: L3
++# 12: R3
++
++# Axis List =================================================
++#  0: L-Stick Horizontal (Left: 1.0, Right: -1.0)
++#  1: L-Stick Vertical   (Up  : 1.0, Down : -1.0)
++#  2: L2 Trigger         (Natural: 1.0, Full Throttle: -1.0)
++#  3: R-Stick Horizontal (Left: 1.0, Right: -1.0)
++#  4: R-Stick Vertical   (Up  : 1.0, Down : -1.0)
++#  5: R2 Trigger         (Natural: 1.0, Full Throttle: -1.0)
++#  6: Cross-key          (Left: 1.0, Right: -1.0)
++#  7: Cross-key          (Up  : 1.0, Down : -1.0)
+--- /dev/null
++++ b/workspace/src/aiformula/launchers/config/semantic_vehicle_staged.yaml
+@@ -0,0 +1,10 @@
++# Source-only staging. No allnodes integration and no live motor output.
++camera_params_file: /home/workspace/src/aiformula/vehicle/config/zedx/camera_params/SN48797506/intrinsic_nHD.yaml
++camera_frame_id: zed_left_camera_optical_frame
++expected_frame_id: zed_left_camera_optical_frame
++camera_name: zedx
++lane_mask_topic: /aiformula_perception/road_detector/mask_image
++a3_detections_topic: /aiformula_perception/yolop_a3/detections
++odom_topic: /aiformula_sensing/gyro_odometry_publisher/odom
++shadow_output_topic: /semantic_drive/shadow_cmd_vel
++use_sim_time: false
+--- a/workspace/src/aiformula/launchers/launch/allnodes.launch.py
++++ b/workspace/src/aiformula/launchers/launch/allnodes.launch.py
+@@ -266,6 +266,8 @@
+ 
+ 
+ def generate_launch_description():
++    _, topic_names = get_frame_ids_and_topic_names()
++    lane_point_prefix = LaunchConfiguration("lane_point_topic_prefix")
+     launchers_dir = get_package_share_directory("launchers")
+     vehicle_dir = get_package_share_directory("vehicle")
+     motor_controller_dir = get_package_share_directory("motor_controller")
+@@ -273,7 +275,12 @@
+     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
+ 
+     launch_args = (
+-        DeclareLaunchArgument("launch_yolop_a3", default_value="true",
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
++        DeclareLaunchArgument("launch_yolop_a3", default_value="false",
+                               description="Start A3 V14 on the existing lane/object topics."),
+         DeclareLaunchArgument(
+             "launch_legacy_road_detector",
+@@ -315,6 +322,7 @@
+                 ".yaml",
+             ],
+         ),
++        DeclareLaunchArgument("motor_cmd_topic", default_value="/aiformula_control/game_pad/cmd_vel"),
+         DeclareLaunchArgument("can_interface", default_value="can0"),
+         DeclareLaunchArgument("can_ready_timeout_sec", default_value="120.0"),
+         DeclareLaunchArgument("receiver_interval_sec", default_value="0.1"),
+@@ -459,7 +467,7 @@
+                 LaunchConfiguration("button_layout_config"),
+         ],
+         remappings=[
+-            ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),
++            ("sub_speed_command", LaunchConfiguration("motor_cmd_topic")),
+             ("pub_can", "/aiformula_control/motor_controller/reference_signal"),
+         ],
+     )
+@@ -485,13 +493,24 @@
+             OpaqueFunction(function=create_lane_line_publisher_node),
+             Node(
+                 package="lane_points",
+-                executable="lane_0215",
++                executable="lane_0927oa",
+                 output="screen",
++                remappings=[
++                    (f"lane_line_{side}", topic_names["perception"]["lane_lines"][side])
++                    for side in ("left", "right", "center")
++                ] + [
++                    (f"/original_processed_point_{label}", [lane_point_prefix, label])
++                    for label in "abc"
++                ] + [("/lane_stop_flag", "/point_flag")],
+             ),
+             Node(
+                 package="kalman_filter",
+                 executable="withoutkalman_0312",
+                 output="screen",
++                remappings=[
++                    (f"/processed_point_{label}", [lane_point_prefix, label])
++                    for label in "abc"
++                ],
+             ),
+             joy_node,
+             joy_remap_node,
+--- /dev/null
++++ b/workspace/src/aiformula/launchers/launch/allnodes_2.launch.py
+@@ -0,0 +1,510 @@
++import os
++import os.path as osp
++import time
++from pathlib import Path
++from typing import Tuple
++
++from ament_index_python.packages import get_package_share_directory
++from launch import LaunchContext, LaunchDescription
++from launch.actions import (
++    DeclareLaunchArgument,
++    EmitEvent,
++    IncludeLaunchDescription,
++    OpaqueFunction,
++    RegisterEventHandler,
++    SetEnvironmentVariable,
++    TimerAction,
++)
++from launch.conditions import IfCondition
++from launch.event_handlers import OnProcessStart
++from launch.events import matches_action
++from launch.launch_description_sources import PythonLaunchDescriptionSource
++from launch.logging import get_logger
++from launch.substitutions import EnvironmentVariable, LaunchConfiguration
++from launch_ros.actions import LifecycleNode, Node
++from launch_ros.event_handlers import OnStateTransition
++from launch_ros.events.lifecycle import ChangeState
++from lifecycle_msgs.msg import Transition
++
++from common_python.launch_util import check_zedx_available_fps, get_frame_ids_and_topic_names
++from vehicle.vehicle_util import get_zed_intrinsic_param_path
++
++
++def wait_for_can_interface(context: LaunchContext) -> Tuple:
++    interface = LaunchConfiguration("can_interface").perform(context)
++    timeout_sec = float(LaunchConfiguration("can_ready_timeout_sec").perform(context))
++    operstate_path = Path("/sys/class/net") / interface / "operstate"
++    carrier_path = Path("/sys/class/net") / interface / "carrier"
++    logger = get_logger("allnodes.can_ready")
++    deadline = time.monotonic() + timeout_sec
++
++    logger.info(f"Waiting up to {timeout_sec:.1f}s for CAN interface '{interface}'")
++    while time.monotonic() < deadline:
++        try:
++            operstate = operstate_path.read_text(encoding="ascii").strip()
++            carrier = carrier_path.read_text(encoding="ascii").strip()
++        except OSError:
++            operstate = "missing"
++            carrier = "0"
++
++        if operstate == "up" and carrier == "1":
++            logger.info(f"CAN interface '{interface}' is ready")
++            return ()
++        time.sleep(0.5)
++
++    raise RuntimeError(
++        f"CAN interface '{interface}' did not become ready within {timeout_sec:.1f}s "
++        f"(operstate={operstate}, carrier={carrier})"
++    )
++
++
++def create_zed_node(context: LaunchContext) -> Tuple[Node]:
++    _, topic_names = get_frame_ids_and_topic_names()
++    grab_resolution = LaunchConfiguration("grab_resolution").perform(context)
++    grab_frame_rate = LaunchConfiguration("grab_frame_rate").perform(context)
++    pub_downscale_factor = LaunchConfiguration("pub_downscale_factor").perform(context)
++    is_valid_fps = check_zedx_available_fps(grab_resolution, grab_frame_rate)
++
++    return (
++        Node(
++            package="zed_wrapper",
++            executable="zed_wrapper",
++            name="zed_node",
++            namespace="/aiformula_sensing",
++            output="screen",
++            condition=IfCondition("true" if is_valid_fps else "false"),
++            parameters=[
++                LaunchConfiguration("config_common_path"),
++                LaunchConfiguration("config_camera_path"),
++                {
++                    "use_sim_time": LaunchConfiguration("use_sim_time"),
++                    "general.grab_resolution": LaunchConfiguration("grab_resolution"),
++                    "general.grab_frame_rate": int(grab_frame_rate),
++                    "general.pub_downscale_factor": float(pub_downscale_factor),
++                },
++            ],
++            remappings=[
++                ("~/left/image_rect_color", topic_names["sensing"]["zedx"]["left_image"]["undistorted"]),
++                ("~/right/image_rect_color", topic_names["sensing"]["zedx"]["right_image"]["undistorted"]),
++                ("~/imu/data", topic_names["sensing"]["zedx"]["imu"]),
++            ],
++        ),
++    )
++
++
++def create_road_detector_node(context: LaunchContext) -> Tuple[Node]:
++    if LaunchConfiguration("launch_legacy_road_detector").perform(context).lower() not in ("true", "1", "yes"):
++        return ()
++    if LaunchConfiguration("launch_yolop_a3").perform(context).lower() in ("true", "1", "yes"):
++        raise RuntimeError("Select only one detector: set launch_yolop_a3:=false before enabling legacy.")
++    _, topic_names = get_frame_ids_and_topic_names()
++    road_detector_dir = get_package_share_directory("road_detector")
++
++    return (
++        Node(
++            package="road_detector",
++            executable="road_detector",
++            name="road_detector_legacy",
++            namespace="/aiformula_perception",
++            output="screen",
++            additional_env={
++                "PYTHONPATH": [
++                    LaunchConfiguration("legacy_yolop_path"),
++                    os.pathsep,
++                    EnvironmentVariable("PYTHONPATH", default_value=""),
++                ],
++            },
++            parameters=[
++                osp.join(road_detector_dir, "config", "normalization.yaml"),
++                {
++                    "weight_path": LaunchConfiguration("weight_path"),
++                    "use_architecture": LaunchConfiguration("use_architecture"),
++                },
++            ],
++            remappings=[
++                ("sub_image", topic_names["sensing"]["zedx"]["left_image"]["undistorted"]),
++                ("pub_mask_image", topic_names["perception"]["mask_image"]),
++                ("pub_annotated_mask_image", topic_names["visualization"]["annotated_mask_image"]),
++            ],
++        ),
++    )
++
++
++def create_lane_line_publisher_node(context: LaunchContext) -> Tuple[Node]:
++    frame_ids, topic_names = get_frame_ids_and_topic_names()
++    lane_line_dir = get_package_share_directory("lane_line_publisher")
++    camera_sn = LaunchConfiguration("camera_sn").perform(context)
++    camera_resolution = LaunchConfiguration("camera_resolution").perform(context)
++
++    return (
++        Node(
++            package="lane_line_publisher",
++            executable="lane_line_publisher",
++            name="lane_line_publisher",
++            output="screen",
++            emulate_tty=True,
++            parameters=[
++                osp.join(lane_line_dir, "config", "lane_line_publisher.yaml"),
++                get_zed_intrinsic_param_path(camera_sn, camera_resolution),
++                {
++                    "vehicle_frame_id": frame_ids["base_footprint"],
++                    "camera_frame_id": LaunchConfiguration("camera_frame_id"),
++                    "camera_name": "zedx",
++                    "debug": LaunchConfiguration("lane_debug"),
++                },
++            ],
++            remappings=[
++                ("mask_image", topic_names["perception"]["mask_image"]),
++                ("annotated_mask_image", topic_names["perception"]["annotated_mask_image"]),
++                ("dynamic_roi_image", "/aiformula_perception/lane_line_publisher/dynamic_roi_image"),
++                ("linear_fit_image", "/aiformula_perception/lane_line_publisher/linear_fit_image"),
++                ("vehicle_fit_image", "/aiformula_perception/lane_line_publisher/vehicle_fit_image"),
++                ("lane_lines/left", topic_names["perception"]["lane_lines"]["left"]),
++                ("lane_lines/right", topic_names["perception"]["lane_lines"]["right"]),
++                ("lane_lines/center", topic_names["perception"]["lane_lines"]["center"]),
++                ("tf", "/tf"),
++                ("tf_static", "/tf_static"),
++            ],
++        ),
++    )
++
++
++def create_socket_can_receiver():
++    node = LifecycleNode(
++        package="ros2_socketcan",
++        executable="socket_can_receiver_node_exe",
++        name="socket_can_receiver",
++        namespace="/aiformula_sensing",
++        output="screen",
++        parameters=[
++            {
++                "interface": LaunchConfiguration("can_interface"),
++                "enable_can_fd": LaunchConfiguration("enable_can_fd"),
++                "interval_sec": LaunchConfiguration("receiver_interval_sec"),
++                "filters": "0:0",
++                "use_bus_time": False,
++            }
++        ],
++        remappings=[("from_can_bus", "/aiformula_sensing/vehicle_info")],
++    )
++    configure = RegisterEventHandler(
++        event_handler=OnProcessStart(
++            target_action=node,
++            on_start=[
++                EmitEvent(
++                    event=ChangeState(
++                        lifecycle_node_matcher=matches_action(node),
++                        transition_id=Transition.TRANSITION_CONFIGURE,
++                    ),
++                ),
++            ],
++        )
++    )
++    activate = RegisterEventHandler(
++        event_handler=OnStateTransition(
++            target_lifecycle_node=node,
++            start_state="configuring",
++            goal_state="inactive",
++            entities=[
++                EmitEvent(
++                    event=ChangeState(
++                        lifecycle_node_matcher=matches_action(node),
++                        transition_id=Transition.TRANSITION_ACTIVATE,
++                    ),
++                ),
++            ],
++        )
++    )
++    return node, configure, activate
++
++
++def create_socket_can_sender():
++    node = LifecycleNode(
++        package="ros2_socketcan",
++        executable="socket_can_sender_node_exe",
++        name="socket_can_sender",
++        namespace="/aiformula_control",
++        output="screen",
++        parameters=[
++            {
++                "interface": LaunchConfiguration("can_interface"),
++                "enable_can_fd": LaunchConfiguration("enable_can_fd"),
++                "timeout_sec": LaunchConfiguration("sender_timeout_sec"),
++            }
++        ],
++        remappings=[("to_can_bus", "/aiformula_control/motor_controller/reference_signal")],
++    )
++    configure = RegisterEventHandler(
++        event_handler=OnProcessStart(
++            target_action=node,
++            on_start=[
++                EmitEvent(
++                    event=ChangeState(
++                        lifecycle_node_matcher=matches_action(node),
++                        transition_id=Transition.TRANSITION_CONFIGURE,
++                    ),
++                ),
++            ],
++        )
++    )
++    activate = RegisterEventHandler(
++        event_handler=OnStateTransition(
++            target_lifecycle_node=node,
++            start_state="configuring",
++            goal_state="inactive",
++            entities=[
++                EmitEvent(
++                    event=ChangeState(
++                        lifecycle_node_matcher=matches_action(node),
++                        transition_id=Transition.TRANSITION_ACTIVATE,
++                    ),
++                ),
++            ],
++        )
++    )
++    return node, configure, activate
++
++
++def generate_launch_description():
++    launchers_dir = get_package_share_directory("launchers")
++    vehicle_dir = get_package_share_directory("vehicle")
++    motor_controller_dir = get_package_share_directory("motor_controller")
++    odometry_publisher_dir = get_package_share_directory("odometry_publisher")
++    rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
++
++    launch_args = (
++        DeclareLaunchArgument("launch_yolop_a3", default_value="false",
++                              description="Start A3 V14 on the existing lane/object topics."),
++        DeclareLaunchArgument(
++            "launch_legacy_road_detector",
++            default_value="false",
++            description="Enable the archived lane-only detector instead of a separately launched YOLOP detector.",
++        ),
++        DeclareLaunchArgument(
++            "legacy_yolop_path",
++            default_value=(
++                "/home/workspace/src/aiformula/perception/road_detector/"
++                "road_detector/yolop_legacy_20261005"
++            ),
++        ),
++        DeclareLaunchArgument(
++            "weight_path",
++            default_value="/home/workspace/src/aiformula/perception/road_detector/weights/123.pth",
++        ),
++        DeclareLaunchArgument("use_architecture", default_value="0"),
++        DeclareLaunchArgument("camera_sn", default_value="SN48797506"),
++        DeclareLaunchArgument("camera_resolution", default_value="nHD"),
++        DeclareLaunchArgument("camera_frame_id", default_value="zed_left_camera_optical_frame"),
++        DeclareLaunchArgument("grab_resolution", default_value="HD1080"),
++        DeclareLaunchArgument("grab_frame_rate", default_value="15"),
++        DeclareLaunchArgument("pub_downscale_factor", default_value="3.0"),
++        DeclareLaunchArgument("use_sim_time", default_value="false"),
++        DeclareLaunchArgument(
++            "odometry_imu_topic",
++            default_value="/aiformula_sensing/vectornav/imu",
++        ),
++        DeclareLaunchArgument("vehicle_name", default_value="ai_car1"),
++        DeclareLaunchArgument("use_joint_state_publisher", default_value="true"),
++        DeclareLaunchArgument("lane_debug", default_value="true"),
++        DeclareLaunchArgument("game_pad", default_value="dualshock4"),
++        DeclareLaunchArgument(
++            "button_layout_config",
++            default_value=[
++                osp.join(launchers_dir, "config", "gamepad", ""),
++                LaunchConfiguration("game_pad"),
++                ".yaml",
++            ],
++        ),
++        DeclareLaunchArgument("can_interface", default_value="can0"),
++        DeclareLaunchArgument("can_ready_timeout_sec", default_value="120.0"),
++        DeclareLaunchArgument("receiver_interval_sec", default_value="0.1"),
++        DeclareLaunchArgument("sender_timeout_sec", default_value="0.01"),
++        DeclareLaunchArgument("enable_can_fd", default_value="false"),
++        DeclareLaunchArgument("launch_rviz", default_value="true"),
++        DeclareLaunchArgument("launch_image_view", default_value="false"),
++        DeclareLaunchArgument(
++            "image_view_topic",
++            default_value="/aiformula_perception/lane_line_publisher/vehicle_fit_image",
++        ),
++        DeclareLaunchArgument(
++            "config_common_path",
++            default_value=osp.join(vehicle_dir, "config", "zedx", "common.yaml"),
++        ),
++        DeclareLaunchArgument(
++            "config_camera_path",
++            default_value=osp.join(vehicle_dir, "config", "zedx", "zedx.yaml"),
++        ),
++    )
++
++    rviz_on_ready = TimerAction(
++        period=12.0,
++        actions=[
++            Node(
++                package="rviz2",
++                executable="rviz2",
++                arguments=[
++                    "-d",
++                    "/home/workspace/src/aiformula/perception/lane_line_publisher/rviz/0629llp.rviz",
++                ],
++                output="both",
++                additional_env={
++                    "DISPLAY": ":0",
++                    "XAUTHORITY": "/home/control/.Xauthority",
++                    "QT_FONT_DPI": "120",
++                    "QT_SCALE_FACTOR": "1",
++                },
++                condition=IfCondition(LaunchConfiguration("launch_rviz")),
++            ),
++            Node(
++                package="rqt_image_view",
++                executable="rqt_image_view",
++                arguments=[LaunchConfiguration("image_view_topic")],
++                output="both",
++                additional_env={
++                    "DISPLAY": ":0",
++                    "XAUTHORITY": "/home/control/.Xauthority",
++                },
++                condition=IfCondition(LaunchConfiguration("launch_image_view")),
++            ),
++        ],
++    )
++
++    vehicle_description = IncludeLaunchDescription(
++        PythonLaunchDescriptionSource(
++            osp.join(vehicle_dir, "launch", "extrinsic_tfstatic_broadcaster.launch.py")
++        ),
++        launch_arguments={
++            "vehicle_name": LaunchConfiguration("vehicle_name"),
++            "use_sim_time": LaunchConfiguration("use_sim_time"),
++            "use_joint_state_publisher": LaunchConfiguration("use_joint_state_publisher"),
++            "use_gui": "false",
++        }.items(),
++    )
++
++    vectornav = IncludeLaunchDescription(
++        PythonLaunchDescriptionSource(
++            osp.join(launchers_dir, "launch", "vectornav.launch.py")
++        ),
++    )
++
++    gyro_odometry_publisher = IncludeLaunchDescription(
++        PythonLaunchDescriptionSource(
++            osp.join(odometry_publisher_dir, "launch", "gyro_odometry_publisher.launch.py")
++        ),
++        launch_arguments={
++            "use_rviz": "false",
++            "imu_topic": LaunchConfiguration("odometry_imu_topic"),
++        }.items(),
++    )
++
++    rear_potentiometer = IncludeLaunchDescription(
++        PythonLaunchDescriptionSource(
++            osp.join(rear_potentiometer_dir, "launch", "rear_potentiometer.launch.py")
++        ),
++    )
++
++    joy_node = Node(
++        package="joy",
++        executable="joy_node",
++        name="joy_node",
++        namespace="/aiformula_control",
++        parameters=[osp.join(launchers_dir, "config", "joy.yaml")],
++        remappings=[("joy", "/aiformula_control/joy_node/joy")],
++    )
++
++    joy_remap_node = Node(
++        package="launchers",
++        executable="l2_throttle_joy_remap.py",
++        name="l2_throttle_joy_remap",
++        namespace="/aiformula_control",
++        parameters=[
++            {
++                "forward_axis": 2,
++                "reverse_axis": 5,
++                "target_axis": 1,
++                "enable_button": 6,
++                "mode_switch_axis": 7,
++                "mode_switch_threshold": 0.5,
++                "deadband": 0.01,
++            }
++        ],
++        remappings=[
++            ("joy_in", "/aiformula_control/joy_node/joy"),
++            ("joy_out", "/aiformula_control/joy_node/joy_l2_throttle"),
++        ],
++    )
++
++    teleop_node = Node(
++        package="teleop_twist_joy",
++        executable="teleop_node",
++        name="teleop_node",
++        namespace="/aiformula_control",
++        parameters=[LaunchConfiguration("button_layout_config")],
++        remappings=[
++            ("joy", "/aiformula_control/joy_node/joy_l2_throttle"),
++            ("cmd_vel", "/aiformula_control/game_pad/cmd_vel"),
++        ],
++    )
++
++    motor_controller = Node(
++        package="motor_controller",
++        executable="motor_controller",
++        name="motor_controller",
++        namespace="/aiformula_control",
++        output="screen",
++        emulate_tty=True,
++        parameters=[
++            osp.join(vehicle_dir, "config", "wheel.yaml"),
++            osp.join(motor_controller_dir, "config", "motor_controller.yaml"),
++                LaunchConfiguration("button_layout_config"),
++        ],
++        remappings=[
++            ("sub_speed_command", "/aiformula_control/game_pad/cmd_vel"),
++            ("pub_can", "/aiformula_control/motor_controller/reference_signal"),
++        ],
++    )
++
++    can_receiver, can_receiver_configure, can_receiver_activate = create_socket_can_receiver()
++    can_sender, can_sender_configure, can_sender_activate = create_socket_can_sender()
++
++    return LaunchDescription(
++        [
++            SetEnvironmentVariable(name="RCUTILS_COLORIZED_OUTPUT", value="1"),
++            SetEnvironmentVariable(name="LD_PRELOAD", value="/lib/aarch64-linux-gnu/libgomp.so.1"),
++            *launch_args,
++            OpaqueFunction(function=wait_for_can_interface),
++            vehicle_description,
++            OpaqueFunction(function=create_zed_node),
++            vectornav,
++            OpaqueFunction(function=create_road_detector_node),
++            IncludeLaunchDescription(
++                PythonLaunchDescriptionSource(osp.join(launchers_dir, "launch", "yolop_a3.launch.py")),
++                launch_arguments={"start_camera": "false", "start_lane_publisher": "false", "shadow": "false"}.items(),
++                condition=IfCondition(LaunchConfiguration("launch_yolop_a3")),
++            ),
++            OpaqueFunction(function=create_lane_line_publisher_node),
++            Node(
++                package="lane_points",
++                executable="lane_0927oa",
++                output="screen",
++            ),
++            Node(
++                package="kalman_filter",
++                executable="withoutkalman_0312",
++                output="screen",
++            ),
++            joy_node,
++            joy_remap_node,
++            teleop_node,
++            motor_controller,
++            can_receiver,
++            can_receiver_configure,
++            can_receiver_activate,
++            can_sender,
++            can_sender_configure,
++            can_sender_activate,
++            gyro_odometry_publisher,
++            rear_potentiometer,
++            rviz_on_ready,
++        ]
++    )
+--- a/workspace/src/aiformula/launchers/launch/semantic_vehicle.launch.py
++++ b/workspace/src/aiformula/launchers/launch/semantic_vehicle.launch.py
+@@ -10,7 +10,6 @@
+ def generate_launch_description():
+     params = {
+         'use_sim_time': False,
+-        'checkpoint_path': '~/.ros/aiformula/topo_map/checkpoint.json',
+         'traffic_policy': 'stop_wait',
+         'enable_traffic_control': True,
+         'enable_signal_approach': False,
+--- /dev/null
++++ b/workspace/src/aiformula/launchers/launch/semantic_vehicle_staged.launch.py
+@@ -0,0 +1,26 @@
++"""Vehicle source wiring for later build; separate from allnodes."""
++from pathlib import Path
++
++from launch import LaunchDescription
++from launch.actions import IncludeLaunchDescription
++from launch.launch_description_sources import PythonLaunchDescriptionSource
++from launch_ros.actions import Node
++import yaml
++
++
++def generate_launch_description():
++    directory = Path(__file__).resolve().parent
++    config = yaml.safe_load((directory.parent / "config/semantic_vehicle_staged.yaml").read_text())
++    argument_names = ["camera_params_file", "camera_frame_id", "expected_frame_id", "camera_name",
++                      "lane_mask_topic", "odom_topic", "shadow_output_topic", "use_sim_time"]
++    arguments = {name: str(config[name]).lower() if isinstance(config[name], bool) else str(config[name])
++                 for name in argument_names}
++    return LaunchDescription([
++        IncludeLaunchDescription(PythonLaunchDescriptionSource(str(directory / "semantic_shadow.launch.py")),
++                                 launch_arguments=arguments.items()),
++        Node(package="semantic_vehicle_wiring", executable="a3_signal_capture",
++             name="a3_signal_capture", namespace="/semantic_drive", output="screen",
++             parameters=[{"input_topic": config["a3_detections_topic"],
++                          "expected_frame_id": config["expected_frame_id"],
++                          "use_sim_time": config["use_sim_time"]}]),
++    ])

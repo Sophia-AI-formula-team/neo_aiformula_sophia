@@ -1,0 +1,61 @@
+1795073661.4390483 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-19-16-34-21-431213-control-desktop-82948
+1795073661.4395306 [INFO] [launch]: Default logging verbosity is set to INFO
+1795073663.4987268 [INFO] [allnodes.can_ready]: Waiting up to 10.0s for CAN interface 'can0'
+1795073663.4997921 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795073663.7893558 [INFO] [gyro_odometry_publisher-6]: process started with pid [82986]
+1795073663.7899270 [INFO] [rear_potentiometer-7]: process started with pid [82988]
+1795073663.7916169 [INFO] [robot_state_publisher-1]: process started with pid [82976]
+1795073663.7919409 [INFO] [joint_state_publisher-2]: process started with pid [82978]
+1795073663.7921009 [INFO] [zed_wrapper-3]: process started with pid [82980]
+1795073663.7922361 [INFO] [vectornav-4]: process started with pid [82982]
+1795073663.7923656 [INFO] [vn_sensor_msgs-5]: process started with pid [82984]
+1795073663.7925193 [INFO] [joy_node-8]: process started with pid [82990]
+1795073663.7926464 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [82992]
+1795073663.7927673 [INFO] [socket_can_receiver_node_exe-10]: process started with pid [82994]
+1795073663.7928903 [INFO] [socket_can_sender_node_exe-11]: process started with pid [82996]
+1795073663.7930064 [INFO] [motor_controller-12]: process started with pid [82998]
+1795073663.7931228 [INFO] [concept_vehicle_state-13]: process started with pid [83072]
+1795073663.7932363 [INFO] [concept_control_gate-14]: process started with pid [83074]
+1795073663.7933512 [INFO] [drive-15]: process started with pid [83076]
+1795073663.7934623 [INFO] [visualization-16]: process started with pid [83078]
+1795073663.7935700 [INFO] [panel-17]: process started with pid [83080]
+1795073663.7936800 [INFO] [rviz2-18]: process started with pid [83082]
+1795073663.7973392 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795073663.7975376 [robot_state_publisher-1] Link base_link had 4 children
+1795073663.7976310 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795073663.7977145 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795073663.7977927 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795073663.7978675 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795073663.7979393 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795073663.7980094 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795073663.7980766 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795073663.7981441 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795073663.7982087 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795073663.7982745 [robot_state_publisher-1] [INFO] [1795073663.747813162] [aiformula_sensing.robot_state_publisher]: got segment base_footprint
+1795073663.7983420 [robot_state_publisher-1] [INFO] [1795073663.748007373] [aiformula_sensing.robot_state_publisher]: got segment base_link
+1795073663.7984083 [robot_state_publisher-1] [INFO] [1795073663.748023150] [aiformula_sensing.robot_state_publisher]: got segment caster_back_link
+1795073663.7986636 [robot_state_publisher-1] [INFO] [1795073663.748031310] [aiformula_sensing.robot_state_publisher]: got segment wheel_left_link
+1795073663.7988737 [robot_state_publisher-1] [INFO] [1795073663.748038126] [aiformula_sensing.robot_state_publisher]: got segment wheel_right_link
+1795073663.7990794 [robot_state_publisher-1] [INFO] [1795073663.748044462] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_center
+1795073663.7992933 [robot_state_publisher-1] [INFO] [1795073663.748050510] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_link
+1795073663.7995152 [robot_state_publisher-1] [INFO] [1795073663.748056334] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_frame
+1795073663.7997124 [robot_state_publisher-1] [INFO] [1795073663.748062639] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_optical_frame
+1795073663.8015749 [robot_state_publisher-1] [INFO] [1795073663.748068751] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_frame
+1795073663.8018558 [robot_state_publisher-1] [INFO] [1795073663.748074863] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_optical_frame
+1795073663.8034177 [vectornav-4] [INFO] [1795073663.752607082] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795073663.8801880 [vectornav-4] [INFO] [1795073663.879442919] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud
+1795073663.8805318 [vectornav-4] [INFO] [1795073663.879574858] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795073663.8806307 [vectornav-4] [INFO] [1795073663.879588586] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795073663.8807194 [vectornav-4] [INFO] [1795073663.879596843] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795073663.8807907 [vectornav-4] [INFO] [1795073663.879604043] [aiformula_sensing.vectornav]: Serial Number : 100095497
+1795073663.8808577 [vectornav-4] [INFO] [1795073663.879611819] [aiformula_sensing.vectornav]: User Tag : ""
+1795073663.9799974 [vectornav-4] [INFO] [1795073663.979227555] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795073663.9803605 [vectornav-4] [INFO] [1795073663.979367974] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795073663.9859679 [vectornav-4] [INFO] [1795073663.985182299] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795073663.9930313 [vectornav-4] [INFO] [1795073663.992246538] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795073664.4248309 [joy_node-8] [INFO] [1795073664.424032584] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795073664.4256158 [joy_node-8] [INFO] [1795073664.424293709] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795073666.8197095 [rviz2-18] [INFO] [1795073666.818960024] [rviz2]: Stereo is NOT SUPPORTED
+1795073666.8205888 [rviz2-18] [INFO] [1795073666.819270846] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+1795073667.1244628 [rviz2-18] [INFO] [1795073667.123853874] [rviz2]: Stereo is NOT SUPPORTED
+1795073668.7738476 [rviz2-18] [INFO] [1795073668.771905530] [rviz2]: Stereo is NOT SUPPORTED

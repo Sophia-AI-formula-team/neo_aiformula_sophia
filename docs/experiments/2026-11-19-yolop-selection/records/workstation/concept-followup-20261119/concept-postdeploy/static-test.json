@@ -1,0 +1,96 @@
+{
+  "percentiles": "median,p95,max",
+  "timing_ms": {
+    "capture_to_driver": [
+      140.63,
+      153.01,
+      164.93
+    ],
+    "driver_ms": [
+      99.37,
+      120.57,
+      241.47
+    ],
+    "decision_age_ms": [
+      238.71,
+      270.12,
+      381.4
+    ],
+    "command_age_ms": [
+      239.34,
+      270.65,
+      381.94
+    ]
+  },
+  "decisions": {
+    "ok checked_reverse_release": 8,
+    "ok feasible": 149,
+    "ok executing_prior_contingency": 65,
+    "ok executing_checked_reverse_release": 6,
+    "ok recovery_unknown_road": 1,
+    "ok recovery_no_checked_motion": 1,
+    "late decision exceeded 0.5 s from acquisition": 1,
+    "invalid image gap over 0.5 s; pause the gate and restart the driver": 6
+  },
+  "cmd": 230,
+  "positive": 148,
+  "valid_states": 1121,
+  "right_source": [
+    "can_0x711_low_byte_vectornav_ros_z"
+  ],
+  "joy": 1113,
+  "auto_windows": [
+    {
+      "secs": 22.02,
+      "cmd": 110,
+      "stale_intervals": 8,
+      "worst_interval_ms": 598.61,
+      "modes": {
+        "auto": 219
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 206,
+        "zero_requested": 7,
+        "waiting_fresh_auto": 4
+      },
+      "positive_status": 113
+    },
+    {
+      "secs": 22.03,
+      "cmd": 107,
+      "stale_intervals": 9,
+      "worst_interval_ms": 586.76,
+      "modes": {
+        "auto": 219
+      },
+      "reasons": {
+        "waiting_new_auto": 1,
+        "auto_command_received": 208,
+        "zero_requested": 4,
+        "waiting_fresh_auto": 6
+      },
+      "positive_status": 165
+    }
+  ],
+  "deliberate_stream_loss": {
+    "before": [
+      1795070477.9339695,
+      "auto",
+      "auto_command_received",
+      0.25
+    ],
+    "suspend_at": 1795070477.9645216,
+    "resume_process_at": 1795070479.3240774,
+    "after": [
+      1795070479.9321177,
+      "paused",
+      "auto_timeout",
+      0.0
+    ],
+    "nonzero_after_500ms": 0,
+    "motor_samples_after_500ms": 75
+  },
+  "expiry_gap_count": 18,
+  "max_last_capture_to_next_receipt_ms": 598.613488
+}

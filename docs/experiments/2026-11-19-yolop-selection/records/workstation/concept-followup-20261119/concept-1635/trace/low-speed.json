@@ -1,0 +1,327 @@
+{
+  "bag": "concept_20261119_163533_c54bf42b0c2d4e38bf8b6542e36b5975",
+  "span": [
+    "2026-11-19T16:35:34.430+09:00",
+    "2026-11-19T16:37:20.104+09:00"
+  ],
+  "planner_reverse": [
+    [
+      [
+        -0.2,
+        "ok",
+        "checked_slow_reverse"
+      ],
+      21
+    ],
+    [
+      [
+        -0.2,
+        "late",
+        "decision exceeded 0.5 s from acquisition"
+      ],
+      1
+    ]
+  ],
+  "planning_status": {
+    "ok feasible": 73,
+    "invalid no recent wheel and gyro measurement at image capture": 5,
+    "ok no_feasible_trajectory": 14,
+    "invalid image gap over 0.5 s; pause the gate and restart the driver": 233,
+    "ok checked_slow_reverse": 21,
+    "late decision exceeded 0.5 s from acquisition": 1,
+    "ok recovery_no_checked_motion": 89,
+    "ok executing_prior_contingency": 1,
+    "ok checked_reverse_release": 1,
+    "ok recovery_unknown_road": 1,
+    "ok executing_checked_reverse_release": 9
+  },
+  "exact_longitudinal": {
+    "0.000": 3974,
+    "4.000": 81,
+    "3.200": 110,
+    "1.487": 6,
+    "1.750": 388,
+    "2.115": 5,
+    "2.423": 19,
+    "2.526": 2,
+    "2.551": 2,
+    "2.577": 7,
+    "2.603": 5,
+    "2.397": 14,
+    "2.013": 6,
+    "1.885": 3,
+    "0.436": 2,
+    "1.641": 2,
+    "1.962": 2,
+    "2.038": 10,
+    "2.090": 3,
+    "2.141": 7,
+    "2.167": 3,
+    "2.269": 3,
+    "2.500": 5,
+    "2.628": 7,
+    "2.654": 1,
+    "2.680": 3,
+    "2.705": 10,
+    "2.756": 8,
+    "2.808": 2,
+    "2.859": 2,
+    "2.885": 1,
+    "2.936": 3,
+    "2.962": 17,
+    "2.910": 1,
+    "2.731": 3,
+    "2.346": 21,
+    "2.372": 22,
+    "2.295": 9,
+    "2.064": 4,
+    "1.910": 2,
+    "0.872": 3,
+    "1.859": 2,
+    "1.936": 2,
+    "1.808": 3,
+    "1.756": 8,
+    "1.782": 1,
+    "1.385": 3,
+    "0.487": 1,
+    "1.077": 1,
+    "1.718": 6,
+    "1.833": 2,
+    "2.474": 8,
+    "2.782": 7,
+    "2.321": 9,
+    "1.987": 8,
+    "2.192": 4,
+    "2.244": 1,
+    "2.449": 20,
+    "2.218": 3,
+    "0.538": 2,
+    "1.564": 2,
+    "0.795": 1,
+    "-1.936": 1,
+    "-3.500": 41,
+    "-3.013": 1,
+    "-2.885": 2,
+    "-2.808": 1,
+    "-2.526": 1,
+    "-1.910": 1,
+    "-1.750": 7,
+    "-1.410": 1,
+    "-2.038": 1,
+    "-2.141": 1,
+    "2.200": 29,
+    "1.000": 67,
+    "-0.200": 28,
+    "0.641": 2,
+    "0.820": 1,
+    "0.923": 2,
+    "0.949": 3,
+    "1.128": 1,
+    "1.436": 2,
+    "1.692": 2,
+    "1.744": 3,
+    "1.667": 1,
+    "1.282": 4,
+    "1.461": 1,
+    "3.321": 2,
+    "3.500": 13,
+    "3.192": 3,
+    "3.218": 3,
+    "3.167": 1,
+    "2.987": 1,
+    "1.513": 1,
+    "0.615": 1,
+    "1.308": 1,
+    "1.333": 2,
+    "1.256": 2,
+    "1.102": 1,
+    "0.667": 2,
+    "0.590": 1,
+    "0.333": 1,
+    "0.308": 1,
+    "0.231": 1,
+    "0.128": 1,
+    "1.154": 10,
+    "1.231": 4,
+    "1.179": 7,
+    "1.205": 2,
+    "0.410": 1,
+    "0.102": 1
+  },
+  "yaw_only": 0,
+  "opposed_rpm_words": 39,
+  "both_rpm_negative": 146,
+  "max_motor_yaw_rps": 1.5493550300598145,
+  "auto_speed": {
+    "forward >0.5": 66,
+    "zero longitudinal": 122,
+    "reverse <=0.21": 21
+  },
+  "motor_requests": {
+    "zero longitudinal": 3974,
+    "forward >0.5": 1070,
+    "forward 0.21–0.5": 7,
+    "reverse >0.5": 58,
+    "reverse <=0.21": 28,
+    "forward <=0.21": 2
+  },
+  "motor_nonzero_frames": 2274,
+  "negative_motor_frames": 185,
+  "raw_wheel_frames": 9232,
+  "nonzero_higher_byte_frames": 1627,
+  "top_higher_byte_patterns": [
+    {
+      "hex": "2cffffff2effffff",
+      "count": 10,
+      "interpreted_as_int32_le": [
+        -212,
+        -210
+      ]
+    },
+    {
+      "hex": "4bffffff4dffffff",
+      "count": 9,
+      "interpreted_as_int32_le": [
+        -181,
+        -179
+      ]
+    },
+    {
+      "hex": "2bffffff2effffff",
+      "count": 9,
+      "interpreted_as_int32_le": [
+        -213,
+        -210
+      ]
+    },
+    {
+      "hex": "4bffffff4effffff",
+      "count": 7,
+      "interpreted_as_int32_le": [
+        -181,
+        -178
+      ]
+    },
+    {
+      "hex": "4affffff4dffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -182,
+        -179
+      ]
+    },
+    {
+      "hex": "2effffff30ffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -210,
+        -208
+      ]
+    },
+    {
+      "hex": "2effffff2fffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -210,
+        -209
+      ]
+    },
+    {
+      "hex": "2bffffff2dffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -213,
+        -211
+      ]
+    },
+    {
+      "hex": "3801000025010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        312,
+        293
+      ]
+    },
+    {
+      "hex": "3801000031010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        312,
+        305
+      ]
+    },
+    {
+      "hex": "c300000000010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        195,
+        256
+      ]
+    },
+    {
+      "hex": "240100003e010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        292,
+        318
+      ]
+    },
+    {
+      "hex": "1f01000032010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        287,
+        306
+      ]
+    },
+    {
+      "hex": "c600000001010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        198,
+        257
+      ]
+    },
+    {
+      "hex": "c600000002010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        198,
+        258
+      ]
+    },
+    {
+      "hex": "c700000002010000",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        199,
+        258
+      ]
+    }
+  ],
+  "paired_feedback": {
+    "zero longitudinal": {
+      "both_rpm_zero": 1151,
+      "invalid": 2,
+      "rpm_nonzero": 243
+    },
+    "forward >0.5": {
+      "rpm_nonzero": 102,
+      "both_rpm_zero": 2
+    },
+    "reverse >0.5": {
+      "rpm_nonzero": 15,
+      "both_rpm_zero": 2
+    }
+  },
+  "gate": {
+    "paused manual_released": 241,
+    "paused operator_pause": 27,
+    "auto waiting_new_auto": 26,
+    "auto auto_command_received": 146,
+    "auto waiting_fresh_auto": 212,
+    "paused invalid_vehicle_state": 116,
+    "manual manual_takeover": 181,
+    "paused auto_timeout": 107
+  }
+}

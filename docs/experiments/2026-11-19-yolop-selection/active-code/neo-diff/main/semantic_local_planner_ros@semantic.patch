@@ -1,0 +1,263 @@
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/semantic_local_planner_ros/map_assist.py
+@@ -26,7 +26,7 @@
+ from semantic_planner_core.route_fusion import build_fused_route, build_odom_reference
+ from semantic_planner_core.anchored_topology import anchored_graph
+ from semantic_planner_core.traffic_route import OfficialToOdom, TopologyGraph
+-from semantic_planner_core.traffic_light_filter import TrafficLightFilter
++from semantic_planner_core.traffic_light_filter import NON_RED_STATES, TrafficLightFilter
+ from semantic_planner_core.smooth_detour import SmoothDetourTracker, build_smooth_detour
+ 
+ 
+@@ -93,6 +93,7 @@
+             "enable_traffic_control": False,
+             "traffic_light_topic": "/map_assist/traffic_light_input",
+             "traffic_stop_flag_topic": "/flag_stop",
++            "traffic_stop_flag_timeout_sec": 0.0,
+             "traffic_vote_window_sec": 0.5,
+             "traffic_vote_min_samples": 3,
+             "traffic_red_rearm_sec": 2.0,
+@@ -163,6 +164,7 @@
+         self.light_filter = TrafficLightFilter(
+             window_sec=self.p["traffic_vote_window_sec"],
+             min_samples=self.p["traffic_vote_min_samples"],
++            unknown_is_non_red=True,
+         )
+         self.traffic_light_raw = "unknown"
+         self.traffic_light = "unknown"
+@@ -173,7 +175,6 @@
+         self.stop_committed = False
+         self.traffic_event_consumed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.last_red_observed_at = -math.inf
+         self.detour_green_seen = False
+@@ -268,7 +269,8 @@
+         ):
+             if not math.isfinite(float(self.p[name])) or self.p[name] <= 0:
+                 raise ValueError(f"{name} must be finite and positive")
+-        for name in ("smooth_window_m", "max_detour_gap_m", "max_closure_gap_m", "progress_tolerance_m", "resume_delay_sec", "detour_trigger_margin_m"):
++        for name in ("smooth_window_m", "max_detour_gap_m", "max_closure_gap_m", "progress_tolerance_m", "resume_delay_sec", "detour_trigger_margin_m",
++                     "traffic_stop_flag_timeout_sec"):
+             if not math.isfinite(float(self.p[name])) or self.p[name] < 0:
+                 raise ValueError(f"{name} must be finite and nonnegative")
+         if (not math.isfinite(self.p["alignment_ambiguity_margin_m"])
+@@ -318,7 +320,6 @@
+         # A completed bypass must not suppress a red event after map reset.
+         self.traffic_event_consumed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.last_red_observed_at = -math.inf
+         self.detour_green_seen = False
+@@ -385,7 +386,9 @@
+ 
+     def _on_light_state(self, msg: String) -> None:
+         state = str(msg.data).strip().lower()
+-        self.traffic_light_raw = state if state in ("red", "green") else "unknown"
++        if state not in ("red", "unknown", *NON_RED_STATES):
++            return
++        self.traffic_light_raw = state
+         if not self.p["enable_traffic_control"]:
+             return
+         now = time.monotonic()
+@@ -406,12 +409,21 @@
+             self.traffic_mode = "prepare"
+             self.traffic_reason = "red_preview_unconfirmed"
+             self.red_preview_unconfirmed = True
+-            self.red_preview_green_seen = False
+-        elif self.red_preview_unconfirmed and self.traffic_light_raw == "green":
+-            self.red_preview_green_seen = True
+         self.light_filter.add(self.traffic_light_raw, now)
+         self._update_light_vote(now)
+         self._publish_velocity_stop_if_needed(now)
++
++    @property
++    def stop_flag(self):
++        timeout = self.p["traffic_stop_flag_timeout_sec"]
++        if timeout and time.monotonic() - self._stop_flag_time > timeout:
++            return None
++        return self._stop_flag
++
++    @stop_flag.setter
++    def stop_flag(self, value):
++        self._stop_flag = value
++        self._stop_flag_time = time.monotonic()
+ 
+     def _on_traffic_stop_flag(self, msg: Bool) -> None:
+         self.stop_flag = bool(msg.data)
+@@ -431,6 +443,12 @@
+         if not self.p["enable_traffic_control"]:
+             return
+         self.traffic_light = self.light_filter.evaluate(now)
++        # A detector frame with no confirmed red can vote to resume. A
++        # newer red or an expired observation window cannot release a stop.
++        non_red = (
++            self.traffic_light_raw != "red"
++            and self.traffic_light in (*NON_RED_STATES, "not_red")
++        )
+         if self.traffic_light == "red":
+             self.red_last_confirmed_at = now
+         if self.traffic_mode == "detour":
+@@ -439,18 +457,19 @@
+                 self.detour_next_red_pending = False
+             elif (self.detour_green_seen or self.detour_signal_rearmed) and self.traffic_light == "red":
+                 self.detour_next_red_pending = True
+-        if self.traffic_light == "green":
++        if non_red:
+             self.traffic_event_consumed = False
+         elif self.traffic_light == "red" and self.traffic_mode == "prepare":
+             self.red_preview_unconfirmed = False
+         if self.traffic_light == "red" and self.traffic_mode == "normal" and not self.traffic_event_consumed:
+             self.traffic_mode = "prepare"
+             self.traffic_reason = "red_prepare"
+-        elif self.traffic_light == "green" and self.traffic_mode in ("prepare", "wait"):
+-            # Do not cancel a just-received raw red using only older green
+-            # votes; a green observation after that red may still cancel.
+-            if not self.red_preview_unconfirmed or self.red_preview_green_seen:
+-                self._resume_vision("green_resume")
++        elif self.traffic_mode in ("prepare", "wait") and non_red:
++            reason = {
++                "green": "green_resume",
++                "off": "red_off_resume",
++            }.get(self.traffic_light, "non_red_resume")
++            self._resume_vision(reason)
+         if self.reference is not None:
+             return
+         # First lap only: the distance flag controls the red-light stop.
+@@ -471,15 +490,14 @@
+             self.visual_motion_ready = False
+             if self.avoidance_active is not True:
+                 self.last_cmd_time = -math.inf
+-        # Unknown/missing detections never release an already confirmed red.
+-        # A committed detour finishes even if its light subsequently turns green.
++        # Missing messages cannot cast a non-red vote. A committed detour
++        # finishes even if its light subsequently changes.
+ 
+     def _resume_vision(self, reason: str) -> None:
+         self.traffic_mode = "normal"
+         self.traffic_reason = reason
+         self.stop_committed = False
+         self.red_preview_unconfirmed = False
+-        self.red_preview_green_seen = False
+         self.red_last_confirmed_at = -math.inf
+         self.detour_green_seen = False
+         self.detour_signal_rearmed = False
+@@ -803,6 +821,11 @@
+                                    "red_wait_spline_" + self.smooth_plan_reason)
+             return
+         due = self._auto_turn_due()
++        if not due and self.stop_flag is True:
++            # A valid detour at the stop position takes priority over the
++            # straight-line red fallback after successful map matching.
++            due = True
++            self.auto_trigger_reason = "stop_point_with_feasible_detour"
+         if self.red_preview_unconfirmed:
+             self.traffic_reason = "red_preview_spline_ready"
+             return
+@@ -813,9 +836,7 @@
+                 self.traffic_reason = "red_prepare_spline_ready"
+             return
+         if not due:
+-            if self.stop_flag is True or self.auto_stop_latched:
+-                # The stop point arrived before a turn was committed. Do not
+-                # drive through the red while waiting for a later radius limit.
++            if self.auto_stop_latched:
+                 self._auto_red_hold("red_wait_stop_point_before_turn")
+             else:
+                 self.traffic_mode = "prepare"
+@@ -833,6 +854,8 @@
+                                    "red_wait_spline_" + initial.reason)
+             return
+         self.detour_tracker = tracker
++        self.auto_stop_latched = False
++        self.stop_committed = False
+         self.traffic_mode = "detour"
+         self.detour_green_seen = False
+         self.detour_signal_rearmed = False
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_auto_turn.py
+@@ -42,6 +42,50 @@
+         self.h.confirm_light('green')
+         self.assertEqual(self.node.traffic_mode, 'normal')
+         self.assertIsNone(self.node.smooth_path)
++
++    def test_confirmed_off_releases_first_lap_wait(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.assertEqual(self.node.traffic_reason, "red_wait_first_lap")
++        self.node._on_light_state(fixtures.DataMessage("off"))
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.confirm_light("off", refresh_points=False)
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "red_off_resume")
++        self.node._on_controller_cmd(self.h.command())
++        self.h.assert_stopped()
++
++    def test_confirmed_yellow_releases_red_wait(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.confirm_light("yellow")
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "non_red_resume")
++
++    def test_off_does_not_cancel_a_committed_detour(self):
++        self.node.p["detour_trigger_margin_m"] = 100.0
++        self.h.confirm_light("red")
++        self.node._tick()
++        self.assertEqual(self.node.traffic_mode, "detour")
++        self.h.confirm_light("off")
++        self.assertEqual(self.node.traffic_mode, "detour")
++
++    def test_silence_and_one_unknown_frame_hold_but_fresh_unknown_votes_release(self):
++        self.node.reference = None
++        self.h.confirm_light("red", stop_flag=True)
++        self.h.advance(0.6)
++        self.node._tick()
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.node._on_light_state(fixtures.DataMessage("unknown"))
++        self.assertEqual(self.node.traffic_mode, "wait")
++        self.h.advance(0.11)
++        for _ in range(6):
++            self.node._on_light_state(fixtures.DataMessage("unknown"))
++            self.h.advance(0.11)
++        self.assertEqual(self.node.traffic_light, "not_red")
++        self.assertEqual(self.node.traffic_mode, "normal")
++        self.assertEqual(self.node.traffic_reason, "non_red_resume")
+ 
+     def test_margin_triggers_turn_without_flag_stop(self):
+         self.case.red_far()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_ubs_map_assist.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_local_planner_ros/tests/test_ubs_map_assist.py
+@@ -127,16 +127,24 @@
+         self.assertTrue(self.node.detour_path_pub.messages[-1].poses)
+         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
+         self.node._tick()
+-        self.assertEqual(self.node.traffic_mode, 'wait')
+-        self.assertEqual(self.node.traffic_reason, 'red_wait_stop_point_before_turn')
+-        self.node.p['detour_trigger_margin_m'] = 100.0
+-        self.node._tick()
+-        self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
++        self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
++        self.assertEqual(self.node.auto_trigger_reason, 'stop_point_with_feasible_detour')
++        self.assertFalse(self.node.stop_committed)
+         self.assertTrue(self.node.detour_motion_ready)
++        self.h.confirm_light('red', stop_flag=True)
++        self.node._tick()
++        self.assertEqual(self.node.traffic_mode, 'detour', self.node.traffic_reason)
+         for label in 'abc':
+             point = self.node.point_pubs[label].messages[-1]
+             self.assertGreater(point.x, 0.0)
+             self.assertLess(abs(math.degrees(math.atan2(point.y, point.x))), 65.0)
++
++    def test_expired_pixel_flag_is_unknown_and_cannot_reopen_red_hold(self):
++        self.node.p['traffic_stop_flag_timeout_sec'] = .5
++        self.h.confirm_light('red', stop_flag=True)
++        self.assertIsNone(self.node.stop_flag)
++        self.assertEqual(self.node.traffic_mode, 'wait')
++        self.h.assert_stopped()
+ 
+     def test_no_distance_topic_and_infeasible_radius_hold_safely(self):
+         self.h.confirm_light('red')

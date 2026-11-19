@@ -1,0 +1,527 @@
+--- a/vehicle_concept/src/concept_panel/concept_panel/lap_map.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/lap_map.py
+@@ -35,7 +35,7 @@
+ class MapCanvas(W.QWidget):
+     def __init__(self):
+         super().__init__()
+-        self.setMinimumSize(520, 350)
++        self.setMinimumSize(210, 160)
+         self.data = self.raster = None
+ 
+     def set_map(self, data):
+@@ -131,33 +131,50 @@
+         painter.restore()
+ 
+ 
+-class LapMapDialog(W.QDialog):
++class LapMapPanel(W.QFrame):
+     def __init__(self, parent):
+         super().__init__(parent)
+-        self.setWindowTitle('Concept · 累计赛道地图')
+-        self.resize(870, 650)
++        self.setObjectName('card')
+         self.key = None
+         shell = W.QVBoxLayout(self)
++        shell.setContentsMargins(14, 9, 14, 9)
+         self.paper = W.QWidget()
++        self.paper.setStyleSheet('background: white')
+         layout = W.QVBoxLayout(self.paper)
+-        self.summary = W.QLabel('从本次驾驶会话开始累计 · 起点朝向为上')
++        layout.setContentsMargins(0, 0, 0, 0)
++        heading = W.QLabel('累计赛道地图')
++        heading.setObjectName('heading')
++        layout.addWidget(heading)
++        self.summary = W.QLabel('起点朝向为上')
++        self.summary.setWordWrap(True)
+         layout.addWidget(self.summary)
+         self.canvas = MapCanvas()
+         layout.addWidget(self.canvas, 1)
+-        layout.addWidget(W.QLabel(
++        legend = W.QLabel(
+             '<span style="color:#3d84b0">■ 本车道</span>　<span style="color:#3f9c84">■ 邻道</span>　'
+-            '<span style="color:#ed841f">━ 橙色标线（虚线保留空档）</span>　'
+-            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span>'))
+-        layout.addWidget(W.QLabel('黄点为起点 · 深色三角为车辆 · 紫点为观测到的场内开口'))
++            '<span style="color:#ed841f">━ 标线</span>　'
++            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span><br>'
++            '黄点为起点 · 三角为车辆 · 紫点为场内开口')
++        legend.setWordWrap(True)
++        layout.addWidget(legend)
+         shell.addWidget(self.paper, 1)
+         footer = W.QHBoxLayout()
+         self.connection = W.QLabel('等待地图服务')
++        self.connection.setWordWrap(True)
+         footer.addWidget(self.connection, 1)
+         self.save_button = W.QPushButton('保存 PNG…')
+         self.save_button.setEnabled(False)
+         self.save_button.clicked.connect(self.save)
+         footer.addWidget(self.save_button)
+         shell.addLayout(footer)
++
++    def clear_map(self):
++        self.key = None
++        self.canvas.data = self.canvas.raster = None
++        self.canvas.update()
++        self.summary.setText('起点朝向为上')
++        self.connection.setText('等待第一帧有效地图')
++        self.save_button.setEnabled(False)
+ 
+     def show_map(self, message):
+         data = unpack_snapshot(message)
+@@ -176,7 +193,13 @@
+         if path:
+             if not path.lower().endswith('.png'):
+                 path += '.png'
+-            if self.paper.grab().save(path, 'PNG'):
++            # Keep text and map details readable when the embedded panel is narrow.
++            scale = max(1., 800 / self.paper.width())
++            pixmap = QtGui.QPixmap(math.ceil(self.paper.width() * scale),
++                                   math.ceil(self.paper.height() * scale))
++            pixmap.setDevicePixelRatio(scale)
++            self.paper.render(pixmap)
++            if pixmap.save(path, 'PNG'):
+                 self.connection.setText('已保存 ' + path)
+             else:
+                 W.QMessageBox.warning(self, '地图未保存', '无法写入这个 PNG 文件。')
+--- a/vehicle_concept/src/concept_panel/concept_panel/main.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/main.py
+@@ -55,42 +55,51 @@
+ 
+ 
+ class LapMapUpdates:
+-    def __init__(self, node, dialog):
++    def __init__(self, node, panel):
+         from std_srvs.srv import Trigger
+ 
+-        self.dialog = dialog
++        self.panel = panel
+         self.client = node.create_client(Trigger, '/concept/drive/lap_map')
+         self.request = Trigger.Request
+         self.pending = None
+         self.sent_at = float('-inf')
++
++    def reset(self):
++        if self.pending is not None:
++            self.pending.cancel()
++            self.pending = None
++        self.sent_at = float('-inf')
++        self.panel.clear_map()
+ 
+     def refresh(self, steady):
+         if self.pending is not None:
+             if self.pending.done():
+                 try:
+                     response = self.pending.result()
+-                    if self.dialog.isVisible():
++                    if self.panel.isVisible():
+                         if response.success:
+-                            self.dialog.show_map(response.message)
++                            self.panel.show_map(response.message)
++                        elif response.message == '等待第一帧有效地图':
++                            self.panel.clear_map()
+                         else:
+-                            self.dialog.connection.setText(response.message)
++                            self.panel.connection.setText(response.message)
+                 except (TypeError, ValueError, KeyError, RuntimeError):
+-                    self.dialog.connection.setText('地图读取失败 · 保留上次地图')
++                    self.panel.connection.setText('地图读取失败 · 保留上次地图')
+                 self.pending = None
+             elif steady-self.sent_at > 3.:
+                 self.pending.cancel()
+                 self.pending = None
+-                self.dialog.connection.setText('地图服务超时 · 保留上次地图')
+-        if self.pending is not None or not self.dialog.isVisible() or steady-self.sent_at < 1.:
++                self.panel.connection.setText('地图服务超时 · 保留上次地图')
++        if self.pending is not None or not self.panel.isVisible() or steady-self.sent_at < 1.:
+             return
+         self.sent_at = steady
+         if not self.client.service_is_ready():
+-            self.dialog.connection.setText('未连接地图服务 · 保留上次地图')
++            self.panel.connection.setText('未连接地图服务')
+             return
+         try:
+             self.pending = self.client.call_async(self.request())
+         except RuntimeError:
+-            self.dialog.connection.setText('地图请求失败 · 保留上次地图')
++            self.panel.connection.setText('地图请求失败')
+ 
+ 
+ def image_from_ros(msg):
+@@ -108,7 +117,7 @@
+ 
+ class Controller:
+     def __init__(self, node, window):
+-        from rcl_interfaces.srv import SetParameters
++        from rcl_interfaces.srv import GetParameters, SetParameters
+         from rclpy.qos import qos_profile_sensor_data
+         from sensor_msgs.msg import Image
+         from std_msgs.msg import String
+@@ -126,6 +135,10 @@
+             ('target','/concept/drive/set_parameters',SetParameters),('limit','/concept/gate/set_parameters',SetParameters)]:
+             self.clients[key]=(node.create_client(kind,path),kind)
+         self.clients['disable']=self.clients['enable']
++        self.read_clients = {key: node.create_client(GetParameters, path + '/get_parameters') for key, path
++                             in (('target', '/concept/drive'), ('limit', '/concept/gate'))}
++        self.read_requests = {}
++        self.next_read = 0.
+         node.create_subscription(String,'/concept/gate/status',lambda m:self.message('门控',m),1)
+         node.create_subscription(String,'/concept/decision',lambda m:self.message('决策',m),1)
+         node.create_subscription(Image,'/concept/view/camera',self.camera,qos_profile_sensor_data)
+@@ -174,7 +187,7 @@
+             if self.future is not None:
+                 self.future.cancel()
+             self.finish('之前的操作已被中断，以门控回读为准')
+-        self.pending=Action(command,value)
++        self.pending=Action(command, value, image_gap=self.window.image_gap())
+         self.window.busy=True
+         self.issue()
+ 
+@@ -213,8 +226,13 @@
+             if key in ('target','limit'):
+                 ok=len(reply.results)==1 and reply.results[0].successful
+                 why=reply.results[0].reason if reply.results else '缺少参数结果'
++                if ok:
++                    self.window.confirmed_speeds[key] = self.pending.value
++                    self.next_read = 0.
+             else:
+                 ok,why=reply.success,reply.message
++            if key == 'restart' and ok:
++                self.lap_map.reset()
+             next_key=self.pending.completed(ok)
+             text=LABELS[key]+('已确认' if ok else '未执行')+(' · '+why if why else '')
+             if next_key:
+@@ -225,11 +243,36 @@
+         except Exception as exc:
+             self.finish('响应无效 · '+str(exc))
+ 
++    def read_speeds(self, steady):
++        from rcl_interfaces.msg import ParameterType
++        from rcl_interfaces.srv import GetParameters
++        if not self.window.settings_dialog.isVisible():
++            return
++        for key, (future, started) in list(self.read_requests.items()):
++            if future.done():
++                try:
++                    values = future.result().values
++                    if len(values) == 1 and values[0].type == ParameterType.PARAMETER_DOUBLE:
++                        self.window.parameter_reads[key] = (started, values[0].double_value)
++                except (RuntimeError, AttributeError):
++                    pass
++                del self.read_requests[key]
++            elif steady - started >= 2.:
++                future.cancel()
++                del self.read_requests[key]
++        if steady >= self.next_read:
++            self.next_read = steady + .75
++            for key, client in self.read_clients.items():
++                if key not in self.read_requests and client.service_is_ready():
++                    name = 'target_speed_mps' if key == 'target' else 'max_auto_speed_mps'
++                    self.read_requests[key] = (client.call_async(GetParameters.Request(names=[name])), steady)
++
+     def update(self):
+         self.recording.refresh()
+         self.poll()
+         now=self.ros()
+         steady=time.monotonic()
++        self.read_speeds(steady)
+         self.lap_map.refresh(steady)
+         age=self.window.gate.age(now,steady)
+         live=age is not None and age<=.5
+--- a/vehicle_concept/src/concept_panel/concept_panel/model.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/model.py
+@@ -44,9 +44,15 @@
+ 
+ 
+ class Action:
+-    """A restart has two distinct acknowledgements. Timeout never advances the sequence."""
+-    def __init__(self, command, value=None):
+-        self.steps = deque(['pause', 'restart'] if command == 'restart' else [command])
++    """Advance through control services only after successful acknowledgements."""
++    def __init__(self, command, value=None, image_gap=False):
++        if command == 'resume' and image_gap:
++            steps = ['pause', 'restart', 'resume']
++        elif command == 'restart':
++            steps = ['pause', 'restart']
++        else:
++            steps = [command]
++        self.steps = deque(steps)
+         self.value = value
+ 
+     def completed(self, ok):
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -1,16 +1,20 @@
+ from datetime import datetime
+ import math
+ 
+-from .lap_map import LapMapDialog
++from .lap_map import LapMapPanel
+ 
+ from .model import Feed, Journal
+ from .qt import QtCore, QtGui, QtWidgets as W
+ 
+ MODE = {'disabled':'输出禁用', 'paused':'自动已暂停', 'manual':'手柄接管', 'auto':'自动驾驶', 'estop':'软件急停'}
+-STATUS = {'ok':'有效', 'invalid':'无效', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
++STATUS = {'ok':'有效', 'invalid':'无效', 'blocked':'输出受阻', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
+ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','output_disabled':'电机输出已禁用',
+          'operator_pause':'操作员已暂停','manual_takeover':'手柄已接管','manual_released':'手柄已松开，等待继续',
+          'joy_timeout':'手柄数据超时','graph_conflict':'控制链存在冲突','motor_timeout':'电机转换输出超时',
++         'waiting_fresh_auto':'当前指令已到期，零输出等待新帧',
++         'image gap over 0.5 s; pause the gate and restart the driver':'图像采集间隔超过 0.5 秒',
++         'planning gap over 0.5 s after missing synchronized wheel/gyro feedback':'图像已到达，轮速与陀螺反馈未配对，规划中断超过 0.5 秒',
++         'planning gap over 0.5 s between completed frames':'图像已到达，两次完成规划的间隔超过 0.5 秒',
+          'vehicle_state_timeout':'车辆状态超时','speed_limit_changed':'速度上限已更改，等待继续',
+          'auto_timeout':'自动指令超时','auto_speed_limit':'自动指令超过速度上限',
+          'waiting_new_auto':'等待恢复后的新指令','auto_command_received':'已收到新的自动指令','feasible':'已选择可行轨迹',
+@@ -22,6 +26,7 @@
+          'recovery_unknown_road':'后方路界未知',
+          'recovery_no_checked_motion':'前后暂时都没有通过检查的方案',
+          'camera geometry has no validated driving profile':'相机安装标定尚未通过',
++         'Honda mount projection active; ground error unmeasured':'本田安装参数投影已启用 · 地面误差未实测',
+          'reverse wheel-feedback sign unverified':'轮速反馈尚未确认能识别倒车方向',
+          'decision exceeded 0.5 s from acquisition':'拍摄到出指令超过 0.5 秒'}
+ 
+@@ -189,7 +194,9 @@
+ 
+         camera, cam = card()
+         cam.setContentsMargins(14, 9, 14, 9)
+-        columns.addWidget(camera, 7)
++        columns.addWidget(camera, 5)
++        self.lap_map = LapMapPanel(self)
++        columns.addWidget(self.lap_map, 4)
+         columns.addWidget(self.decision_surface, 3)
+         bar = W.QHBoxLayout()
+         bar.addWidget(label('摄像头与规划叠图','heading'))
+@@ -248,12 +255,6 @@
+             toolbar.addWidget(button)
+         toolbar.addStretch()
+ 
+-        self.lap_map = LapMapDialog(self)
+-        self.map_button = W.QPushButton('累计赛道地图…')
+-        self.map_button.setEnabled(not self.offline)
+-        self.map_button.clicked.connect(self.lap_map.show)
+-        toolbar.addWidget(self.map_button)
+-
+         self.settings_dialog = W.QDialog(self)
+         self.settings_dialog.setWindowTitle('Concept · 速度设置')
+         self.settings_dialog.setMinimumWidth(420)
+@@ -266,6 +267,9 @@
+         toolbar.addWidget(settings_button)
+         self.spins={}
+         self.readbacks={}
++        self.edited_speeds = set()
++        self.confirmed_speeds = {}
++        self.parameter_reads = {}
+         for key,text,maximum in [('target','目标速度',6.),('limit','自动驾驶限速',5.)]:
+             line=W.QHBoxLayout()
+             field=label(text)
+@@ -275,10 +279,12 @@
+             spin.setRange(.05,maximum)
+             spin.setSingleStep(.1)
+             spin.setSuffix(' m/s')
+-            spin.setValue(1.)
++            spin.setValue(4.)
++            spin.valueChanged.connect(lambda value, key=key: self.edited_speeds.add(key))
++            spin.lineEdit().textEdited.connect(lambda text, key=key: self.edited_speeds.add(key))
+             line.addWidget(spin)
+             self.spins[key]=spin
+-            btn=W.QPushButton('应用')
++            btn=W.QPushButton('保存')
+             btn.clicked.connect(lambda checked=False,key=key:self.request(key))
+             self.buttons[key]=btn
+             line.addWidget(btn)
+@@ -293,9 +299,16 @@
+         self.spins['limit'].setToolTip(limit_tip)
+         self.buttons['limit'].setToolTip(limit_tip)
+         settings.addWidget(label('修改限速后，需手动继续自动驾驶。','muted'))
++        self.speed_feedback = label('', 'muted')
++        self.speed_feedback.setWordWrap(True)
++        settings.addWidget(self.speed_feedback)
+         self.action_feedback=label('','muted')
+         self.action_feedback.setWordWrap(True)
+         stack.addWidget(self.action_feedback)
++        self.gap_notice = label('', 'muted')
++        self.gap_notice.setWordWrap(True)
++        self.gap_notice.hide()
++        stack.addWidget(self.gap_notice)
+ 
+         metrics=W.QHBoxLayout()
+         self.metrics={}
+@@ -330,6 +343,20 @@
+         if self.dispatch is not None:
+             self.dispatch(key,self.spins[key].value() if key in self.spins else None)
+ 
++    def show_speed(self, key, value):
++        self.readbacks[key].setText('当前 '+number(value, 2))
++        spin = self.spins[key]
++        spin.setEnabled(not self.busy and not self.offline)
++        if value is None:
++            return
++        if self.confirmed_speeds.get(key) == value:
++            self.confirmed_speeds.pop(key)
++            self.edited_speeds.discard(key)
++        if key not in self.edited_speeds:
++            previous = spin.blockSignals(True)
++            spin.setValue(value)
++            spin.blockSignals(previous)
++
+     def request_bag(self):
+         if self.bag_action and not self.offline:
+             self.bag_action()
+@@ -374,6 +401,8 @@
+         description = ''
+         if age is not None and age > 1.:
+             action, detail = '决策已过期', '超过 1 秒没有收到新鲜决策'
++        elif status == 'blocked':
++            action = '控制输出受阻'
+         elif status in ('invalid', 'late'):
+             action = '决策无效' if status == 'invalid' else '决策超时'
+         elif status in ('ok', 'shadow') and speed is not None and yaw is not None:
+@@ -390,6 +419,13 @@
+             description = f'请求速度 {speed:.2f} m/s   ·   {steer}'
+             if decision.get('selected_index') is not None:
+                 description += f"   ·   候选 #{decision['selected_index']}"
++            elif decision.get('selected_path'):
++                description += '   ·   恢复路线'
++            elif 'selected_path' in decision:
++                description += '   ·   当前无选中路径'
++            planner_reason = decision.get('planner_reason')
++            if planner_reason and planner_reason != decision.get('reason'):
++                detail += ' · ' + reason(planner_reason)
+         else:
+             action = '等待决策'
+         self.action.setText('规划 · ' + action)
+@@ -434,12 +470,22 @@
+         self.metrics['cmd'].setText(number(g.get('linear_mps')))
+         self.metrics['legal'].setText(f"{d['feasible_count']} / {len(d.get('candidates',[]))}" if 'feasible_count' in d else '—')
+         self.metrics['lag'].setText(number(da*1000,0) if da is not None else '—')
+-        self.readbacks['target'].setText('当前 '+number(d.get('target_speed_mps'),1))
+-        self.readbacks['limit'].setText('当前 '+number(g.get('max_auto_speed_mps'),1))
++        for key, feed, value in (('target', self.decision, d.get('target_speed_mps')),
++                                 ('limit', self.gate, g.get('max_auto_speed_mps'))):
++            if key in self.parameter_reads:
++                receipt, actual = self.parameter_reads[key]
++                if steady - receipt <= 2. and (value is None or receipt >= feed.received):
++                    value = actual
++            self.show_speed(key, value)
+         effective = d.get('effective_speed_mps') if live else None
+         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
+                           if effective is not None else '规划按目标和限速中较低的值计算。')
+         self.action_feedback.setText(self.pending_text)
++        self.speed_feedback.setText(self.pending_text)
++        if self.image_gap():
++            gap = self.decision.value.get('gap_reason') or 'image gap over 0.5 s; pause the gate and restart the driver'
++            self.gap_notice.setText(reason(gap) + '。点继续自动驾驶会先清空累计地图并重启规划。')
++        self.gap_notice.setVisible(self.image_gap())
+         for key,button in self.buttons.items():
+             ok=live and not self.busy and not self.offline
+             if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
+@@ -447,3 +493,6 @@
+             if key=='disable': ok=not self.offline
+             if key=='pause': ok=not self.offline
+             button.setEnabled(bool(ok))
++
++    def image_gap(self):
++        return self.decision.value.get('image_gap_reset_required') is True
+--- a/vehicle_concept/src/concept_panel/test/test_panel.py
++++ b/vehicle_concept/src/concept_panel/test/test_panel.py
+@@ -41,6 +41,17 @@
+     w.gate.put(dict(mode='auto',output_enabled=True,linear_mps=.87),10.,20.)
+     w.refresh(10.,20.)
+     assert w.connection.text()=='门控在线' and w.metrics['cmd'].text()=='0.87'
++    w.show()
++    w.gate.put(dict(mode='paused', output_enabled=True, paused=True, linear_mps=0.),10.,20.)
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True),10.,20.)
++    w.refresh(10.,20.)
++    assert w.buttons['resume'].text()=='继续自动驾驶'
++    assert w.buttons['resume'].isEnabled() and w.gap_notice.isVisible()
++    assert '图像采集间隔' in w.gap_notice.text()
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True,
++                        gap_reason='planning gap over 0.5 s after missing synchronized wheel/gyro feedback'),10.,20.)
++    w.refresh(10.,20.)
++    assert '轮速与陀螺反馈未配对' in w.gap_notice.text()
+     w.refresh(10.,20.6)
+     assert w.connection.text()=='门控失联' and w.metrics['cmd'].text()=='—'
+     assert not w.buttons['enable'].isEnabled()
+@@ -138,3 +149,81 @@
+     controller.deadline=0
+     controller.poll()
+     assert controller.pending is None and '超时' in controller.window.pending_text
++
++
++def test_embedded_map_resets_on_restart_ack_and_discards_old_snapshot(monkeypatch, tmp_path):
++    import base64
++    from concurrent.futures import Future
++    import json
++    import zlib
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.main import Controller, LapMapUpdates
++    from concept_panel.qt import QtGui, QtWidgets
++    from concept_panel.window import Window
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    window = Window()
++    window.show()
++    app.processEvents()
++    panel = window.lap_map
++    assert panel.isVisible() and panel.window() is window
++    empty = base64.b64encode(zlib.compress(b'')).decode('ascii')
++    snapshot = dict(schema='concept.lap-map.v1', session='old', stamp=1, cell_m=.1, distance_m=0.,
++                    road=empty, lines=empty, track=empty, pose=[0., 0., 0.],
++                    static=[], moving=[], openings=[])
++    panel.show_map(json.dumps(snapshot))
++    path = tmp_path / 'map.png'
++    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args: (str(path), 'PNG'))
++    panel.save_button.click()
++    assert QtGui.QImage(str(path)).width() >= 800
++
++    updates = LapMapUpdates.__new__(LapMapUpdates)
++    updates.panel = panel
++    old_response = Future()
++    old_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.pending = old_response
++    updates.sent_at = 0.
++    new_response = Future()
++    updates.client = SimpleNamespace(service_is_ready=lambda: True, call_async=lambda _: new_response)
++    updates.request = object
++    controller = Controller.__new__(Controller)
++    controller.window, controller.lap_map = window, updates
++    for success in (False, True):
++        controller.pending = Action('restart')
++        controller.pending.completed(True)  # pause acknowledged
++        controller.future = Future()
++        controller.future.set_result(SimpleNamespace(success=success, message=''))
++        controller.poll()
++        assert panel.save_button.isEnabled() == (not success)
++    assert panel.canvas.raster is None and panel.canvas.data is None and panel.key is None
++    updates.refresh(.1)
++    assert panel.key is None and updates.pending is new_response
++    snapshot.update(session='new', stamp=2)
++    new_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.refresh(.2)
++    assert panel.key == ('new', 2) and panel.save_button.isEnabled()
++    window.close()
++
++
++def test_speed_fields_follow_readbacks_without_discarding_edits(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w = Window()
++    spin = w.spins['target']
++    assert spin.value() == w.spins['limit'].value() == 4.
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.25
++    spin.setValue(2.75)
++    w.busy = True
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.75 and not spin.isEnabled()
++    w.confirmed_speeds['target'] = 2.75
++    w.busy = False
++    w.show_speed('target', 2.75)
++    w.show_speed('target', 3.)
++    assert spin.isEnabled() and spin.value() == 3.
++    assert w.readbacks['target'].text() == '当前 3.00'
++    w.close()
++    assert app

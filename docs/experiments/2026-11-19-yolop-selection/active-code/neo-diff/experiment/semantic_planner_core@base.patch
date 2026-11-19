@@ -1,0 +1,3017 @@
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/package.xml
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/package.xml
+@@ -1,7 +1,7 @@
+ <?xml version="1.0"?>
+ <package format="3">
+   <name>semantic_planner_core</name>
+-  <version>0.4.5</version>
++  <version>0.2.0</version>
+   <description>Pure Python semantic costmap and local primitive planning core.</description>
+   <maintainer email="user@example.com">ROS2 Light Avoidance</maintainer>
+   <license>MIT</license>
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/geometric_alignment.py
++++ /dev/null
+@@ -1,583 +0,0 @@
+-"""Geometric-basis hypotheses followed by continuous point-to-curve fitting.
+-
+-Only current-lap outer-curve samples and official node coordinates are used.
+-The hash verifies a third point of a basis triangle; all remaining nodes then
+-vote for that similarity hypothesis. This is a bounded, specialised geometric
+-hashing search, not an exhaustive registration or a junction detector.
+-"""
+-from __future__ import annotations
+-
+-import math
+-import time
+-from itertools import combinations
+-
+-import numpy as np
+-
+-from . import route_fusion as rf
+-
+-
+-MAX_SEEDS = 64
+-MAX_ITERATIONS = 60
+-MAX_SECONDS = 12.0
+-VERSION = "geometric_seam_v3"
+-MIN_BRANCH_ANGLE_DEG = 80.0
+-MAX_BRANCH_ANGLE_DEG = 95.0
+-BRANCH_ANGLE_EXEMPT_EDGES = frozenset({("10000000001", "10000000005")})
+-BRANCH_TANGENT_WINDOW_M = 2.0
+-
+-
+-def _loss(distances, transition):
+-    """The same radial Huber objective is used in every fitting stage."""
+-    distances = np.asarray(distances)
+-    return np.where(distances <= transition, distances * distances,
+-                    2.0 * transition * distances - transition * transition)
+-
+-
+-def _design(points):
+-    result = np.zeros((len(points), 2, 4))
+-    result[:, 0, 0], result[:, 0, 1] = points[:, 0], -points[:, 1]
+-    result[:, 1, 0], result[:, 1, 1] = points[:, 1], points[:, 0]
+-    result[:, 0, 2], result[:, 1, 3] = 1.0, 1.0
+-    return result
+-
+-
+-class CurveProblem:
+-    def __init__(self, reference, official, node_search_m, transition):
+-        self.reference = reference
+-        self.ids = list(official.node_ids[:-1])
+-        self.points = np.asarray(official.points[:-1], dtype=float)
+-        self.centre = self.points.mean(axis=0)
+-        self.radius = float(np.sqrt(np.mean(np.sum((self.points - self.centre) ** 2, axis=1))))
+-        if self.radius < 1e-8:
+-            raise ValueError("degenerate_outer_node_constellation")
+-        self.normalised = (self.points - self.centre) / self.radius
+-        self.design = _design(self.normalised)
+-        self.data = rf._projection_data(reference)
+-        self.search = node_search_m
+-        self.transition = max(transition, 1e-6)
+-
+-    def parameters(self, scale, angle, translation):
+-        a, b = scale * math.cos(angle), scale * math.sin(angle)
+-        x, y = self.centre
+-        return np.asarray([a * self.radius, b * self.radius,
+-                           a * x - b * y + translation[0],
+-                           b * x + a * y + translation[1]])
+-
+-    def transform(self, parameters):
+-        a, b, x, y = parameters
+-        scale = math.hypot(a, b) / self.radius
+-        angle = math.atan2(b, a)
+-        cx, cy = self.centre
+-        translation = (x - (a * cx - b * cy) / self.radius,
+-                       y - (b * cx + a * cy) / self.radius)
+-        return scale, angle, translation
+-
+-    def valid_order(self, progress, scale, direction):
+-        return rf._progress_gaps(dict(zip(self.ids, progress)),
+-                                 rf._route_order(self.ids, direction),
+-                                 dict(zip(self.ids, self.points)), scale,
+-                                 self.reference.length_m, self.reference.spacing_m,
+-                                 self.search) is not None
+-
+-    def project(self, parameters, direction):
+-        scale, angle, translation = self.transform(parameters)
+-        if not rf._MIN_MAP_TO_ODOM_SCALE <= scale <= rf._MAX_MAP_TO_ODOM_SCALE:
+-            return None
+-        predicted = self.design @ parameters
+-        starts, vectors, square, lengths, cumulative = self.data
+-        fraction = np.einsum("nki,ki->nk", predicted[:, None, :] - starts, vectors) / square
+-        clipped = np.clip(fraction, 0.0, 1.0)
+-        projected = starts + clipped[:, :, None] * vectors
+-        residual = predicted[:, None, :] - projected
+-        distances_sq = np.sum(residual * residual, axis=2)
+-        indices = np.argmin(distances_sq, axis=1)
+-        row = np.arange(len(self.ids))
+-        positions = projected[row, indices]
+-        progress = (cumulative[indices] + clipped[row, indices] * lengths[indices]) % self.reference.length_m
+-        distances = np.sqrt(distances_sq[row, indices])
+-        if not self.valid_order(progress, scale, direction):
+-            joint = rf._joint_project_nodes(
+-                self.reference, self.points, scale, angle, translation, self.data,
+-                direction, self.search, self.transition, candidate_count=8,
+-                node_only=True)
+-            if joint is None:
+-                return None
+-            positions, progress, distances = joint
+-            # Recover each selected segment for its continuous projection Jacobian.
+-            arc_distance = np.abs((progress[:, None] - cumulative + self.reference.length_m / 2.0)
+-                                  % self.reference.length_m - self.reference.length_m / 2.0)
+-            containing = (progress[:, None] - cumulative) % self.reference.length_m
+-            arc_distance = np.where(containing <= lengths + 1e-8, 0.0, arc_distance)
+-            indices = np.argmin(arc_distance, axis=1)
+-        errors = predicted - positions
+-        tangent = vectors[indices] / lengths[indices, None]
+-        raw_fraction = np.einsum("ni,ni->n", predicted - starts[indices], vectors[indices]) / square[indices]
+-        interior = (raw_fraction > 1e-8) & (raw_fraction < 1.0 - 1e-8)
+-        projector = np.tile(np.eye(2), (len(self.ids), 1, 1))
+-        projector[interior] -= tangent[interior, :, None] * tangent[interior, None, :]
+-        jacobian = projector @ self.design
+-        objective = float(np.mean(_loss(distances, self.transition)))
+-        return positions, progress, distances, errors, jacobian, objective
+-
+-    def candidate(self, parameters, direction, projected):
+-        scale, angle, translation = self.transform(parameters)
+-        result = rf._candidate_from_projection(
+-            self.reference, self.ids, self.points, scale, angle, translation,
+-            direction, self.search, self.transition, *projected[:3])
+-        if result is not None:
+-            result["score"] = math.sqrt(max(0.0, projected[5]))
+-            result["objective_m2"] = projected[5]
+-        return result
+-
+-
+-class PointHash:
+-    """Spatial lookup for a third point predicted in a geometric pair basis."""
+-    def __init__(self, points, cell):
+-        self.points = points
+-        self.cell = cell
+-        self.bins = {}
+-        for index, point in enumerate(points):
+-            self.bins.setdefault(tuple(np.floor(point / cell).astype(int)), []).append(index)
+-
+-    def supports(self, point, radius):
+-        key = np.floor(point / self.cell).astype(int)
+-        reach = int(math.ceil(radius / self.cell))
+-        for dx in range(-reach, reach + 1):
+-            for dy in range(-reach, reach + 1):
+-                indices = self.bins.get((key[0] + dx, key[1] + dy), ())
+-                if indices and np.any(np.sum((self.points[list(indices)] - point) ** 2, axis=1) <= radius ** 2):
+-                    return True
+-        return False
+-
+-
+-def geometric_seeds(problem, deadline, limit=MAX_SEEDS):
+-    """Pair-defined similarities, hashed triangle support, then all-node votes."""
+-    step = max(2.0, problem.reference.length_m / 120.0)
+-    curve, _ = rf._coarse_curve(problem.reference, step)
+-    curve_radius = float(np.sqrt(np.mean(np.sum((curve - curve.mean(axis=0)) ** 2, axis=1))))
+-    scale_centre = curve_radius / problem.radius
+-    pairs = sorted(combinations(range(len(problem.ids)), 2),
+-                   key=lambda pair: -float(np.sum((problem.points[pair[1]] - problem.points[pair[0]]) ** 2)))[:3]
+-    lookup = PointHash(curve, step)
+-    target_a, target_b = np.where(~np.eye(len(curve), dtype=bool))
+-    target_delta = curve[target_b] - curve[target_a]
+-    target_distance = np.linalg.norm(target_delta, axis=1)
+-    raw = []
+-    enumerated = 0
+-    # This limits hypothesis generation, not accepted scale. It replaces the
+-    # old 0.70..1.30 radius-ratio seed grid with a wider pair-induced search.
+-    for first, second in pairs:
+-        delta = problem.points[second] - problem.points[first]
+-        distance = float(np.linalg.norm(delta))
+-        if distance < 1e-8:
+-            continue
+-        scale = target_distance / distance
+-        valid = ((scale >= max(rf._MIN_MAP_TO_ODOM_SCALE, 0.55 * scale_centre))
+-                 & (scale <= min(rf._MAX_MAP_TO_ODOM_SCALE, 1.8 * scale_centre)))
+-        selected = np.flatnonzero(valid)
+-        for offset in range(0, len(selected), 256):
+-            if time.monotonic() > deadline:
+-                return [], {"search_budget_exhausted": True, "pair_hypotheses": enumerated}
+-            indices = selected[offset:offset + 256]
+-            a = (target_delta[indices, 0] * delta[0] + target_delta[indices, 1] * delta[1]) / (distance * distance)
+-            b = (target_delta[indices, 1] * delta[0] - target_delta[indices, 0] * delta[1]) / (distance * distance)
+-            tx = curve[target_a[indices], 0] - a * problem.points[first, 0] + b * problem.points[first, 1]
+-            ty = curve[target_a[indices], 1] - b * problem.points[first, 0] - a * problem.points[first, 1]
+-            predicted = np.stack((a[:, None] * problem.points[:, 0] - b[:, None] * problem.points[:, 1] + tx[:, None],
+-                                  b[:, None] * problem.points[:, 0] + a[:, None] * problem.points[:, 1] + ty[:, None]), axis=2)
+-            nearest_sq = np.min(np.sum((predicted[:, :, None, :] - curve) ** 2, axis=3), axis=2)
+-            scores = np.mean(_loss(np.sqrt(nearest_sq), problem.transition), axis=1)
+-            enumerated += len(indices)
+-            for k in range(len(indices)):
+-                raw.append((float(scores[k]), float(a[k]), float(b[k]), float(tx[k]), float(ty[k]), first, second))
+-    raw.sort(key=lambda item: item[:5])
+-    seeds, clouds = [], []
+-    verified = 0
+-    for score, a, b, tx, ty, first, second in raw:
+-        if time.monotonic() > deadline:
+-            return seeds, {"search_budget_exhausted": True, "pair_hypotheses": enumerated}
+-        delta = problem.points[second] - problem.points[first]
+-        areas = np.abs(delta[0] * (problem.points[:, 1] - problem.points[first, 1])
+-                       - delta[1] * (problem.points[:, 0] - problem.points[first, 0]))
+-        third = int(np.argmax(areas))
+-        if areas[third] < 1e-8:
+-            continue
+-        cloud = np.column_stack((a * problem.points[:, 0] - b * problem.points[:, 1] + tx,
+-                                 b * problem.points[:, 0] + a * problem.points[:, 1] + ty))
+-        if not lookup.supports(cloud[third], max(2.0 * step, problem.search)):
+-            continue
+-        verified += 1
+-        # Seed spacing only manages compute. Final ambiguity compares every
+-        # refined result by mapped positions, never by this coarse grouping.
+-        if any(np.sqrt(np.mean(np.sum((cloud - previous) ** 2, axis=1))) < 1.5 * step for previous in clouds):
+-            continue
+-        clouds.append(cloud)
+-        seeds.append(problem.parameters(math.hypot(a, b), math.atan2(b, a), (tx, ty)))
+-        if len(seeds) >= limit:
+-            break
+-    return seeds, {"search_budget_exhausted": False, "pair_hypotheses": enumerated,
+-                   "triangle_verified_hypotheses": verified, "seed_count": len(seeds),
+-                   "coarse_spacing_m": step, "seed_radius_ratio_range": [0.55, 1.8]}
+-
+-
+-def refine(problem, initial, direction, deadline, max_iterations=MAX_ITERATIONS):
+-    """Monotone robust LM on continuous segment distance, with ordered lookup."""
+-    parameters = np.asarray(initial, dtype=float).copy()
+-    current = problem.project(parameters, direction)
+-    if current is None:
+-        return None
+-    damping = 1e-4
+-    history = [current[5]]
+-    converged, termination = False, "iteration_budget"
+-    last_step = None
+-    iteration = 0
+-    for iteration in range(1, max_iterations + 1):
+-        if time.monotonic() > deadline:
+-            termination = "time_budget"
+-            break
+-        distances, errors, jacobian = current[2], current[3], current[4]
+-        weights = np.minimum(1.0, problem.transition / np.maximum(distances, 1e-12))
+-        j = (jacobian * np.sqrt(weights)[:, None, None]).reshape((-1, 4))
+-        r = (errors * np.sqrt(weights)[:, None]).reshape(-1)
+-        gradient = j.T @ r / len(problem.ids)
+-        if float(np.linalg.norm(gradient, ord=np.inf)) < 1e-7:
+-            converged, termination = True, "gradient"
+-            break
+-        hessian = j.T @ j / len(problem.ids)
+-        accepted = False
+-        for _ in range(12):
+-            step = np.linalg.solve(hessian + damping * np.diag(np.maximum(np.diag(hessian), 1e-3)), -gradient)
+-            trial = problem.project(parameters + step, direction)
+-            if trial is not None and trial[5] < current[5] - 1e-14:
+-                last_step = float(np.max(np.linalg.norm(problem.design @ step, axis=1)))
+-                parameters += step
+-                improvement = current[5] - trial[5]
+-                current = trial
+-                history.append(current[5])
+-                damping = max(1e-9, damping / 3.0)
+-                accepted = True
+-                if last_step < 1e-5 and improvement < 1e-9:
+-                    converged, termination = True, "step_and_objective"
+-                break
+-            damping *= 10.0
+-        if converged:
+-            break
+-        if not accepted:
+-            # A rejected step is not proof of convergence at a segment switch.
+-            termination = "no_descent"
+-            break
+-    result = problem.candidate(parameters, direction, current)
+-    if result is not None:
+-        result.update(converged=converged, termination=termination,
+-                      iterations=iteration, last_step_m=last_step,
+-                      objective_history=history, candidate_source="geometric_basis_refined")
+-    return result
+-
+-
+-def _transform_spread(first, second, points):
+-    return max(math.dist(rf._mapped_point(first, point), rf._mapped_point(second, point))
+-               for point in points)
+-
+-
+-def _summary(candidate, best, comparison):
+-    return {"score_m": candidate["score"], "rmse_m": candidate["node_rmse_m"],
+-            "direction": candidate["direction"], "scale_map_to_odom": candidate["scale_map_to_odom"],
+-            "rotation_map_to_odom_rad": candidate["rotation_map_to_odom_rad"],
+-            "translation_map_to_odom": list(candidate["translation_map_to_odom"]),
+-            "source": candidate.get("candidate_source"), "converged": candidate.get("converged"),
+-            "iterations": candidate.get("iterations"), "termination": candidate.get("termination"),
+-            "global_disagreement_m": _transform_spread(best, candidate, comparison),
+-            "node_positions_odom": {key: value.tolist() for key, value in candidate["node_positions"].items()},
+-            "node_progress_m": dict(candidate["node_progress"])}
+-
+-
+-def angle_in_range(angle, minimum, maximum):
+-    return minimum - 1e-9 <= angle <= maximum + 1e-9
+-
+-
+-def _pure_closure_segments(reference):
+-    """Find complete untrusted runs caused solely by the closure gap."""
+-    cached = getattr(reference, "_pure_closure_segments", None)
+-    if cached is not None:
+-        return cached
+-    n = len(reference.points)
+-    bad = [not (reference.trusted[i] and reference.trusted[(i + 1) % n])
+-           for i in range(n)]
+-    pure = set()
+-    if any(bad) and not all(bad):
+-        anchor = bad.index(False)
+-        position = 1
+-        while position < n:
+-            index = (anchor + position) % n
+-            if not bad[index]:
+-                position += 1
+-                continue
+-            run = []
+-            while position < n and bad[(anchor + position) % n]:
+-                run.append((anchor + position) % n)
+-                position += 1
+-            endpoints = set(run) | {(i + 1) % n for i in run}
+-            if (any(reference.closure_mask[i] for i in endpoints)
+-                    and not any(reference.excluded_mask[i] for i in endpoints)):
+-                pure.update(run)
+-    reference._pure_closure_segments = pure
+-    return pure
+-
+-
+-def _branch_tangent(reference, progress, window):
+-    """Use a full tangent, or a contiguous trusted side of a pure seam.
+-
+-    OA and other excluded data are never admitted through the seam fallback.
+-    The candidate itself and its chosen side must be trusted.
+-    """
+-    if reference._interval_trusted(progress - window, progress + window):
+-        before = reference.point_at(progress - window)
+-        after = reference.point_at(progress + window)
+-        return np.asarray(after[:2]) - np.asarray(before[:2]), "two_sided"
+-    if not hasattr(reference, "closure_mask") or not hasattr(reference, "excluded_mask"):
+-        return None, None
+-    if not reference.point_at(progress)[2]:
+-        return None, None
+-    start, end = progress - window, progress + window
+-    seam_seen = False
+-    size = len(reference.points)
+-    pure_segments = _pure_closure_segments(reference)
+-    for index in range(size):
+-        following = (index + 1) % size
+-        if reference.trusted[index] and reference.trusted[following]:
+-            continue
+-        begin, finish = reference.cumulative_m[index:index + 2]
+-        first_lap = math.ceil((start - finish) / reference.length_m)
+-        last_lap = math.floor((end - begin) / reference.length_m)
+-        if first_lap > last_lap:
+-            continue
+-        if index not in pure_segments:
+-            return None, None
+-        seam_seen = True
+-    if not seam_seen:
+-        return None, None
+-    # _interval_trusted treats a segment touching an endpoint as intersecting.
+-    # Probe just inside the chosen side, never the gap, to avoid rejecting a
+-    # trusted candidate that lies exactly at the boundary.
+-    epsilon = min(reference.spacing_m * 0.05, window * 0.01)
+-    if reference._interval_trusted(progress + epsilon, progress + window):
+-        before = np.asarray(reference.point_at(progress + epsilon)[:2])
+-        return np.asarray(reference.point_at(progress + window)[:2]) - before, "seam_forward"
+-    if reference._interval_trusted(progress - window, progress - epsilon):
+-        after = np.asarray(reference.point_at(progress - epsilon)[:2])
+-        return after - np.asarray(reference.point_at(progress - window)[:2]), "seam_backward"
+-    return None, None
+-
+-
+-def branch_angles(candidate, reference, branch_connections):
+-    """Evaluate every provided official inner chord against the local tangent.
+-
+-    A missing/untrusted full tangent interval yields None, never an implicit
+-    pass. The chord only approximates the local branch direction.
+-    """
+-    result = []
+-    for ident, neighbours in branch_connections.items():
+-        neighbours = [(inner, point) for inner, point in neighbours
+-                      if (ident, inner) not in BRANCH_ANGLE_EXEMPT_EDGES]
+-        if not neighbours:
+-            continue
+-        progress = candidate["node_progress"][ident]
+-        window = BRANCH_TANGENT_WINDOW_M
+-        tangent, tangent_source = _branch_tangent(reference, progress, window)
+-        if tangent is None:
+-            return None
+-        # Normalize direction to official outer-way order, independent of
+-        # whether this lap was driven in the reverse direction.
+-        tangent = candidate["direction"] * tangent
+-        point = np.asarray(candidate["node_positions"][ident])
+-        for neighbour, official_point in neighbours:
+-            branch = point - np.asarray(rf._mapped_point(candidate, official_point))
+-            denom = float(np.linalg.norm(tangent) * np.linalg.norm(branch))
+-            if not math.isfinite(denom) or denom <= 1e-9:
+-                return None
+-            cosine = max(-1.0, min(1.0, float(np.dot(tangent, branch)) / denom))
+-            result.append({"outer_node_id": ident, "inner_node_id": neighbour,
+-                           "angle_deg": math.degrees(math.acos(cosine)),
+-                           "tangent_source": tangent_source})
+-    return result or None
+-
+-
+-def match_outer_nodes(reference, official, node_search_m, feature_window_m,
+-                      max_rmse_m, ambiguity_margin_m, closure_gap,
+-                      comparison_points=(), ambiguity_position_m=1.0, branch_connections=None,
+-                      branch_angle_min_deg=MIN_BRANCH_ANGLE_DEG, branch_angle_max_deg=MAX_BRANCH_ANGLE_DEG):
+-    start = time.monotonic()
+-    deadline = start + MAX_SECONDS
+-    problem = CurveProblem(reference, official, node_search_m, feature_window_m)
+-    if not isinstance(branch_connections, dict) or not branch_connections:
+-        return {"available": False, "reason": "branch_connections_missing", "matching_method": VERSION}, {}, "branch_connections_missing"
+-    try:
+-        cleaned_connections = {}
+-        for ident, neighbours in branch_connections.items():
+-            if ident not in problem.ids or not isinstance(neighbours, (tuple, list)) or not neighbours:
+-                raise ValueError("invalid outer branch")
+-            cleaned_connections[ident] = []
+-            for neighbour, point in neighbours:
+-                if not isinstance(neighbour, str) or not neighbour or neighbour in problem.ids or len(point) != 2 or not all(math.isfinite(float(v)) for v in point):
+-                    raise ValueError("invalid inner branch")
+-                cleaned_connections[ident].append((neighbour, tuple(float(v) for v in point)))
+-        branch_connections = cleaned_connections
+-    except (TypeError, ValueError, OverflowError):
+-        return {"available": False, "reason": "branch_connections_invalid", "matching_method": VERSION}, {}, "branch_connections_invalid"
+-    area = rf._signed_area(problem.points)
+-    track_area = rf._signed_area(np.asarray(reference.points))
+-    if abs(area) < 1e-8 or abs(track_area) < 1e-8:
+-        return None, {}, "closed_loop_orientation_ambiguous"
+-    direction = 1 if area * track_area > 0.0 else -1
+-    seeds, diagnostics = geometric_seeds(problem, deadline)
+-    refined = []
+-    for initial in seeds:
+-        for candidate_direction in (direction, -direction):
+-            if time.monotonic() > deadline:
+-                diagnostics["search_budget_exhausted"] = True
+-                break
+-            candidate = refine(problem, initial, candidate_direction, deadline)
+-            if candidate is not None:
+-                refined.append(candidate)
+-                if candidate["termination"] == "time_budget":
+-                    diagnostics["search_budget_exhausted"] = True
+-                    break
+-        if diagnostics["search_budget_exhausted"]:
+-            break
+-    if not refined:
+-        diagnostics.update(available=False, reason="solver_budget_exhausted" if diagnostics["search_budget_exhausted"] else "no_geometric_candidate",
+-                           matching_method=VERSION, search_exhaustive=False, solver_elapsed_sec=time.monotonic()-start)
+-        return diagnostics, {}, diagnostics["reason"]
+-    refined.sort(key=lambda item: (item["score"], not item["converged"]))
+-    def eligible(candidate):
+-        return (candidate["node_rmse_m"] <= max_rmse_m
+-                and candidate["node_max_distance_m"] <= node_search_m
+-                and candidate["edge_angle_max_rad"] <= math.radians(60.0))
+-    quality_candidates = [item for item in refined if eligible(item)]
+-    angular_pass, angular_unknown = [], []
+-    for candidate in refined:
+-        if time.monotonic() > deadline:
+-            diagnostics["search_budget_exhausted"] = True
+-            break
+-        if not eligible(candidate):
+-            continue
+-        angles = branch_angles(candidate, reference, branch_connections)
+-        if angles is None:
+-            angular_unknown.append(candidate)
+-        else:
+-            candidate["branch_angles"] = angles
+-            if all(angle_in_range(item["angle_deg"], branch_angle_min_deg, branch_angle_max_deg) for item in angles):
+-                angular_pass.append(candidate)
+-    if not angular_pass:
+-        if diagnostics["search_budget_exhausted"]:
+-            reason = "solver_budget_exhausted"
+-        elif angular_unknown:
+-            reason = "branch_angle_unavailable"
+-        elif not quality_candidates and all(item["node_rmse_m"] > max_rmse_m for item in refined):
+-            # Do not report an angle rejection when no candidate even reached
+-            # the angle check because all exceeded the requested fit error.
+-            reason = "rmse_exceeds_limit"
+-        elif not quality_candidates:
+-            reason = "geometry_limits_no_candidate"
+-        else:
+-            reason = "branch_angle_no_candidate"
+-        diagnostics.update(available=False, reason=reason, matching_method=VERSION,
+-                           branch_angle_threshold_deg=branch_angle_min_deg,
+-                           branch_angle_max_deg=branch_angle_max_deg,
+-                           branch_angle_exempt_edges=[list(x) for x in sorted(BRANCH_ANGLE_EXEMPT_EDGES)],
+-                           branch_angle_unknown_count=len(angular_unknown),
+-                           geometry_eligible_count=len(quality_candidates), search_exhaustive=False,
+-                           solver_elapsed_sec=time.monotonic()-start)
+-        return diagnostics, {}, reason
+-    # refined is already ordered by the original point-to-curve objective.
+-    best = angular_pass[0]
+-    points = list(problem.points) + list(comparison_points)
+-    near = [item for item in angular_pass if item["score"] <= best["score"] + ambiguity_margin_m + 1e-12]
+-    global_alternative = next((item for item in near if item is not best and
+-                               (item["direction"] != best["direction"] or
+-                                _transform_spread(best, item, points) > ambiguity_position_m)), None)
+-    # Evaluate local correspondence precision without reclassifying a fixed
+-    # transform probe as an independently converged global placement.
+-    local_probes = []
+-    for index, identifier in enumerate(problem.ids):
+-        if time.monotonic() > deadline:
+-            diagnostics["search_budget_exhausted"] = True
+-            break
+-        joint = rf._joint_project_nodes(reference, problem.points, best["scale_map_to_odom"],
+-                                       best["rotation_map_to_odom_rad"], best["translation_map_to_odom"],
+-                                       problem.data, best["direction"], node_search_m, feature_window_m,
+-                                       candidate_count=8, forbidden_node=index,
+-                                       forbidden_progress=best["node_progress"][identifier],
+-                                       forbidden_radius_m=ambiguity_position_m, node_only=True)
+-        if joint is None:
+-            continue
+-        candidate = rf._candidate_from_projection(reference, problem.ids, problem.points,
+-                                                   best["scale_map_to_odom"], best["rotation_map_to_odom_rad"],
+-                                                   best["translation_map_to_odom"], best["direction"],
+-                                                   node_search_m, feature_window_m, *joint)
+-        if candidate is not None:
+-            candidate["score"] = rf._huber_rms(joint[2], feature_window_m)
+-            candidate["candidate_source"] = "fixed_transform_probe"
+-            local_probes.append(candidate)
+-    near_local = [item for item in local_probes if eligible(item) and item["score"] <= best["score"] + ambiguity_margin_m + 1e-12]
+-    local_alternative = next((item for item in sorted(near_local, key=lambda item: item["score"])
+-                              if rf._candidate_disagreement(best, item, comparison_points) > ambiguity_position_m), None)
+-    # This release follows the requested lowest-score selection. It requires
+-    # the selected candidate to converge; other competitive unfinished seeds
+-    # are reported separately rather than treated as an ambiguity rejection.
+-    unresolved = [best] if not best["converged"] else []
+-    unknown_better = [item for item in angular_unknown if item["score"] < best["score"] - 1e-12]
+-    alternative = global_alternative or local_alternative
+-    alignment = rf._to_alignment(best, reference, closure_gap, official, alternative,
+-                                 max_rmse_m, ambiguity_margin_m, node_search_m)
+-    quality = eligible(best)
+-    if not quality:
+-        reason = alignment["reason"]
+-    elif diagnostics["search_budget_exhausted"]:
+-        reason = "solver_budget_exhausted"
+-    elif unresolved:
+-        reason = "solver_not_converged"
+-    elif unknown_better:
+-        reason = "branch_angle_unavailable"
+-    else:
+-        reason = "accepted"
+-    envelope = {}
+-    for identifier in problem.ids:
+-        envelope[identifier] = max([0.0] + [rf._phase_distance(item["node_progress"][identifier], best["node_progress"][identifier], reference.length_m)
+-                                             for item in near + near_local])
+-    diagnostic_candidates = [best]
+-    for candidate in [global_alternative, local_alternative] + near + refined:
+-        if candidate is not None and all(candidate is not item for item in diagnostic_candidates):
+-            diagnostic_candidates.append(candidate)
+-        if len(diagnostic_candidates) >= 6:
+-            break
+-    alignment.update(diagnostics)
+-    alignment.update(available=reason == "accepted", reason=reason, matching_method=VERSION,
+-                     objective="radial_huber_point_to_curve_rms", search_exhaustive=False,
+-                     solver_elapsed_sec=time.monotonic()-start, solver_max_seconds=MAX_SECONDS,
+-                     best_converged=best["converged"], best_iterations=best["iterations"],
+-                     best_termination=best["termination"], best_last_step_m=best["last_step_m"],
+-                     best_objective_monotone=all(b <= a + 1e-12 for a, b in zip(best["objective_history"], best["objective_history"][1:])),
+-                     unresolved_candidate_count=len(unresolved),
+-                     convergence_check_scope="selected_candidate_only",
+-                     competitive_nonconverged_count=sum(not item["converged"] for item in near),
+-                     branch_angle_threshold_deg=branch_angle_min_deg,
+-                     branch_angle_max_deg=branch_angle_max_deg,
+-                     branch_angle_exempt_edges=[list(x) for x in sorted(BRANCH_ANGLE_EXEMPT_EDGES)],
+-                     branch_angle_vector="inner_to_outer_vs_odom_tangent_along_official_way_order",
+-                     branch_tangent_window_m=BRANCH_TANGENT_WINDOW_M,
+-                     branch_angles=best["branch_angles"],
+-                     branch_angle_pass_count=len(angular_pass),
+-                     branch_angle_unknown_count=len(angular_unknown),
+-                     branch_angle_unknown_better_count=len(unknown_better),
+-                     candidate_gap_enforced=False,
+-                     selection_policy="lowest_point_curve_score_after_branch_angle_screen",
+-                     branch_angle_assumption="official junction-to-interior chord approximates local branch direction; field validation required",
+-                     global_transform_available=quality and not diagnostics["search_budget_exhausted"] and not unresolved and global_alternative is None,
+-                     node_correspondence_available=quality and not diagnostics["search_budget_exhausted"] and not unresolved and global_alternative is None and local_alternative is None,
+-                     node_progress_spread_m=envelope, uncertainty_kind="sampled_candidate_envelope_not_probability",
+-                     candidate_count=len(refined)+len(local_probes), comparison_point_count=len(comparison_points),
+-                     same_transform_alternatives_checked=True, ambiguity_position_m=ambiguity_position_m,
+-                     alternative_node_spread_m=rf._candidate_disagreement(best, alternative, comparison_points) if alternative is not None else None,
+-                     diagnostic_candidates=[_summary(item, best, points) for item in diagnostic_candidates])
+-    return alignment, dict(best["node_progress"]), reason
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/rough_route.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/rough_route.py
+@@ -21,7 +21,6 @@
+     y: float
+     yaw: float
+     excluded: bool = False
+-    closure: bool = False
+ 
+ 
+ class RouteReference:
+@@ -53,21 +52,19 @@
+             if clean and math.hypot(sample.x - clean[-1].x, sample.y - clean[-1].y) < 1e-8:
+                 previous = clean[-1]
+                 clean[-1] = RouteSample(previous.x, previous.y, sample.yaw,
+-                                        previous.excluded or sample.excluded,
+-                                        previous.closure or sample.closure)
++                                        previous.excluded or sample.excluded)
+             else:
+                 clean.append(sample)
+         if len(clean) > 1 and math.hypot(clean[-1].x - clean[0].x, clean[-1].y - clean[0].y) < 1e-8:
+             first = clean[0]
+             clean[0] = RouteSample(first.x, first.y, first.yaw,
+-                                   first.excluded or clean[-1].excluded,
+-                                   first.closure or clean[-1].closure)
++                                   first.excluded or clean[-1].excluded)
+             clean.pop()
+         if len(clean) < 3:
+             raise ValueError("A closed reference needs at least three distinct samples")
+ 
+         raw = [(sample.x, sample.y) for sample in clean]
+-        good = [not (sample.excluded or sample.closure) for sample in clean]
++        good = [not sample.excluded for sample in clean]
+         self._straighten_short_exclusions(raw, good, max_detour_gap_m)
+         raw_cumulative = self._cumulative(raw)
+         raw_length = raw_cumulative[-1]
+@@ -77,8 +74,6 @@
+         step = raw_length / count
+         points = []
+         trusted = []
+-        closure_mask = []
+-        excluded_mask = []
+         for index in range(count):
+             distance = index * step
+             segment = min(bisect_right(raw_cumulative, distance) - 1, len(raw) - 1)
+@@ -88,8 +83,6 @@
+             points.append((raw[segment][0] + fraction * (raw[following][0] - raw[segment][0]),
+                            raw[segment][1] + fraction * (raw[following][1] - raw[segment][1])))
+             trusted.append(good[segment] and good[following])
+-            closure_mask.append(clean[segment].closure or clean[following].closure)
+-            excluded_mask.append(clean[segment].excluded or clean[following].excluded)
+ 
+         # A local circular average treats the lap seam just like any other
+         # section. Keep sharp corners and all exclusion boundaries unchanged.
+@@ -113,8 +106,6 @@
+                 )
+         self.points: List[Tuple[float, float]] = smoothed
+         self.trusted: List[bool] = trusted
+-        self.closure_mask: List[bool] = closure_mask
+-        self.excluded_mask: List[bool] = excluded_mask
+         self.cumulative_m = self._cumulative(self.points)
+         self.length_m = self.cumulative_m[-1]
+         # Keep modulo/projection well-defined even for a degenerate result of
+@@ -172,8 +163,7 @@
+                 self.trusted[index] and self.trusted[following])
+ 
+     def match(self, x: float, y: float, previous_s: Optional[float], travel_delta: float,
+-              search_window_m: float, max_distance_m: float,
+-              yaw: Optional[float] = None, max_heading_error_rad: float = math.pi) -> Optional[float]:
++              search_window_m: float, max_distance_m: float) -> Optional[float]:
+         """Project near predicted progress; never fall back to global nearest.
+ 
+         Initialise ``previous_s`` to zero (or one lap length) at the confirmed
+@@ -187,10 +177,6 @@
+             return None
+         if travel_delta < 0.0 or search_window_m < 0.0 or max_distance_m < 0.0:
+             return None
+-        if (yaw is not None and (not math.isfinite(yaw) or
+-                not math.isfinite(max_heading_error_rad) or
+-                not 0.0 <= max_heading_error_rad <= math.pi)):
+-            return None
+         predicted = previous_s + travel_delta
+         lower, upper = predicted - search_window_m, predicted + search_window_m
+         best = None
+@@ -201,13 +187,6 @@
+             length = finish - begin
+             if length <= 1e-10:
+                 continue
+-            # The vehicle must travel in approximately the recorded direction
+-            # on observed sections. A synthetic gap has no trustworthy heading:
+-            # it may still be crossed for progress, never used for steering.
+-            if yaw is not None and self.trusted[index] and self.trusted[(index + 1) % len(self.points)]:
+-                heading = math.atan2(end[1] - start[1], end[0] - start[0])
+-                if abs(_wrap(heading - yaw)) > max_heading_error_rad:
+-                    continue
+             first_lap = math.ceil((lower - finish) / self.length_m)
+             last_lap = math.floor((upper - begin) / self.length_m)
+             for lap in range(first_lap, last_lap + 1):
+@@ -243,12 +222,11 @@
+ 
+     def direction_candidates(self, x: float, y: float, yaw: float, s: float,
+                              lookahead_m: float, progress_tolerance_m: float) -> List[float]:
+-        """Relative route chord bearings in a short trusted progress band.
+-
+-        Use the matched route location as the chord origin rather than the
+-        vehicle, so a neighbouring lane does not cause cross-lane pull. The
+-        angle remains a preview bearing, comparable with the visual target.
+-        Paths crossing an excluded section are discarded.
++        """Vehicle-relative bearings to trusted targets in a short progress band.
++
++        Bearings originate at the actual vehicle position, so a lateral offset
++        also produces a gentle return direction. Candidates behind the vehicle
++        and paths crossing an excluded section are discarded.
+         """
+         if not all(math.isfinite(value) for value in
+                    (x, y, yaw, s, lookahead_m, progress_tolerance_m)):
+@@ -259,9 +237,6 @@
+         maximum = lookahead_m + progress_tolerance_m
+         if minimum > maximum or maximum >= self.length_m * 0.5:
+             return []
+-        start_x, start_y, start_trusted = self.point_at(s)
+-        if not start_trusted:
+-            return []
+         steps = min(30, max(1, int(math.ceil((maximum - minimum) / self.spacing_m))))
+         candidates = []
+         for index in range(steps + 1):
+@@ -269,7 +244,7 @@
+             target_x, target_y, trusted = self.point_at(target_s)
+             if not trusted or not self._interval_trusted(s, target_s):
+                 continue
+-            dx, dy = target_x - start_x, target_y - start_y
++            dx, dy = target_x - x, target_y - y
+             if math.hypot(dx, dy) < 1e-8:
+                 continue
+             angle = _wrap(math.atan2(dy, dx) - yaw)
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/route_fusion.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/route_fusion.py
+@@ -1,9 +1,9 @@
+-"""Fuse a measured odometry lap with sparse official outer-node geometry.
+-
+-The official closed way is an ordered constellation of outer junctions.
+-Node-to-node chords and relative angles constrain alignment; they are not the
+-driven lane centreline or equal arc-length samples. The measured odometry route
+-remains the metric navigation reference.
++"""Fuse a measured lap with sparse outer-loop shape, in odometry metres.
++
++The official map supplies ordered turn features and edge directions. It never
++supplies the size of the driven route: measured node spacing and local curves
++remain the metric reference. An ambiguous fit or an unobserved corner produces
++an explicitly unavailable odom-only drawing, not a usable fused navigation map.
+ """
+ from __future__ import annotations
+ 
+@@ -16,11 +16,10 @@
+ 
+ from .rough_route import RouteReference, RouteSample
+ from .rough_topology import OfficialRoute
++from .topology_alignment import fit_loop_alignment
+ 
+ 
+ Point = Tuple[float, float]
+-_MIN_MAP_TO_ODOM_SCALE = 0.05
+-_MAX_MAP_TO_ODOM_SCALE = 20.0
+ 
+ 
+ @dataclass
+@@ -32,44 +31,21 @@
+     node_progress: Dict[str, float]
+ 
+ 
+-def build_odom_reference(samples, spacing_m: float = 0.2,
+-                         smooth_window_m: float = 1.0) -> RouteReference:
+-    """Build the lap reference with all excluded gaps straight and untrusted."""
+-    samples = list(samples)
+-    if len(samples) < 3:
+-        raise ValueError("A closed reference needs at least three samples")
+-    # A finite maximum larger than the entire recorded lap makes the existing
+-    # gap straightener cover every excluded run without changing trust labels.
+-    coordinates = [(sample.x, sample.y) for sample in samples]
+-    if not all(math.isfinite(value) for point in coordinates for value in point):
+-        raise ValueError("Route samples must be finite")
+-    # The final segment is an interpolation back to the first sample. When
+-    # that gap is larger than ordinary sampling, it has not been observed and
+-    # must not be used for steering or as a trusted topo correspondence.
+-    if math.dist(coordinates[0], coordinates[-1]) > max(2.0 * spacing_m, 1e-6):
+-        last = samples[-1]
+-        samples[-1] = RouteSample(last.x, last.y, last.yaw, excluded=last.excluded, closure=True)
+-    total = math.fsum(math.dist(first, second) for first, second in
+-                      zip(coordinates, coordinates[1:] + coordinates[:1]))
+-    if not math.isfinite(total):
+-        raise ValueError("Recorded route length must be finite")
+-    return RouteReference(samples, spacing_m, smooth_window_m,
+-                          max(total + spacing_m, spacing_m))
+-
+-
+ def _wrap(angle: float) -> float:
+     return (angle + math.pi) % (2.0 * math.pi) - math.pi
+ 
+ 
+-def _signed_area(points: np.ndarray) -> float:
+-    following = np.roll(points, -1, axis=0)
+-    return 0.5 * float(np.sum(points[:, 0] * following[:, 1]
+-                              - following[:, 0] * points[:, 1]))
+-
+-
+-def _fit_trace(reference: RouteReference, max_gap_m: float,
+-               max_closure_gap_m: float = 4.0) -> Tuple[List[Point], Optional[str]]:
+-    """Reject excessive excluded coverage before matching the outer nodes."""
++def _turn(before: Point, centre: Point, after: Point) -> float:
++    return _wrap(math.atan2(after[1] - centre[1], after[0] - centre[0])
++                 - math.atan2(centre[1] - before[1], centre[0] - before[0]))
++
++
++def _fit_trace(reference: RouteReference, max_gap_m: float) -> Tuple[List[Point], Optional[str]]:
++    """Only short, bounded gaps may be bridged for initial shape matching.
++
++    Real excluded observations never steer the fit. The returned bridge is
++    used for correspondence only; the reference's trust mask remains intact.
++    """
+     points = list(reference.points)
+     trusted = reference.trusted
+     if all(trusted):
+@@ -91,12 +67,9 @@
+         for previous, current in zip(indices, indices[1:]):
+             distances.append(distances[-1] + math.dist(points[previous], points[current]))
+         total += distances[-1]
+-        # An exclusion touching OA/invalid data is never treated as a pure
+-        # closure seam, even when the two runs meet at the lap boundary.
+-        pure_seam = (any(reference.closure_mask[i] for i in indices)
+-                     and not any(reference.excluded_mask[i] for i in indices))
+-        limit = max_closure_gap_m if pure_seam else max_gap_m
+-        if distances[-1] > limit + 2.0 * reference.spacing_m + 1e-8:
++        # Resampling marks either endpoint of an excluded segment untrusted.
++        # Two sample spacings account only for this conservative mask growth.
++        if distances[-1] > max_gap_m + 2.0 * reference.spacing_m + 1e-8:
+             return points, "excluded_gap_too_long"
+         start, end = points[indices[0]], points[indices[-1]]
+         for index, distance in zip(indices[1:-1], distances[1:-1]):
+@@ -108,601 +81,122 @@
+     return points, None
+ 
+ 
+-def _projection_data(reference: RouteReference):
+-    points = np.asarray(reference.points, dtype=float)
+-    following = np.roll(points, -1, axis=0)
+-    vectors = following - points
+-    lengths_sq = np.einsum("ij,ij->i", vectors, vectors)
+-    trusted = np.asarray(reference.trusted, dtype=bool)
+-    valid = trusted & np.roll(trusted, -1) & (lengths_sq > 1e-12)
+-    indices = np.flatnonzero(valid)
+-    if len(indices) == 0:
+-        raise ValueError("no_trusted_route_for_node_alignment")
+-    return (points[indices], vectors[indices], lengths_sq[indices],
+-            np.sqrt(lengths_sq[indices]),
+-            np.asarray(reference.cumulative_m[:-1], dtype=float)[indices])
+-
+-
+-def _project_point(point: np.ndarray, reference: RouteReference, data):
+-    starts, vectors, lengths_sq, lengths, cumulative = data
+-    offsets = point - starts
+-    fractions = np.einsum("ij,ij->i", offsets, vectors) / lengths_sq
+-    fractions = np.clip(fractions, 0.0, 1.0)
+-    projected = starts + fractions[:, None] * vectors
+-    residuals = point - projected
+-    distances_sq = np.einsum("ij,ij->i", residuals, residuals)
+-    best = int(np.argmin(distances_sq))
+-    progress = (cumulative[best] + fractions[best] * lengths[best]) % reference.length_m
+-    return projected[best], float(progress), math.sqrt(max(0.0, float(distances_sq[best])))
+-
+-
+-def _project_nodes(reference: RouteReference, map_points: np.ndarray, scale: float,
+-                   rotation: float, translation: Point, data):
+-    cosine, sine = math.cos(rotation), math.sin(rotation)
+-    matrix = np.asarray([[cosine, -sine], [sine, cosine]], dtype=float)
+-    transformed = scale * (map_points @ matrix.T) + np.asarray(translation, dtype=float)
+-    projected, progress, distances = [], [], []
+-    for point in transformed:
+-        location, along, distance = _project_point(point, reference, data)
+-        projected.append(location)
+-        progress.append(along)
+-        distances.append(distance)
+-    return (np.asarray(projected, dtype=float), np.asarray(progress, dtype=float),
+-            np.asarray(distances, dtype=float))
+-
+-
+-def _joint_project_nodes(reference: RouteReference, map_points: np.ndarray, scale: float,
+-                         rotation: float, translation: Point, data, direction: int,
+-                         node_search_m: float, feature_window_m: float,
+-                         candidate_count: int = 6, forbidden_node: Optional[int] = None,
+-                         forbidden_progress: float = 0.0, forbidden_radius_m: float = 0.0,
+-                         node_only: bool = False):
+-    """Choose cyclically ordered node projections jointly from several options.
+-
+-    Only trusted route segments generate observations. The optimiser keeps
+-    separated alternatives along the route and applies the same chord/angle
+-    checks to the entire group. It never treats a chord as travelled distance.
++def _node_anchors(reference: RouteReference, official: OfficialRoute, alignment: dict,
++                  search_m: float, window_m: float) -> Tuple[Dict[str, float], Optional[str]]:
++    """Refine phase seeds to measured signed turns, not official edge lengths."""
++    count = len(official.node_ids) - 1
++    direction, phase = alignment["direction"], alignment["phase_fraction"]
++    result = {}
++    # A seed may drift within a segment when individual official lengths differ.
++    # The finite search neighbourhood prevents jumps to a distant similar bend.
++    search = min(search_m, reference.length_m * 0.10)
++    window = min(window_m, reference.length_m / (4.0 * count))
++    step = min(reference.spacing_m / 2.0, max(window / 12.0, 0.02))
++    for index, identifier in enumerate(official.node_ids[:-1]):
++        expected = direction * _turn(official.points[(index - 1) % count],
++                                     official.points[index], official.points[(index + 1) % count])
++        # A node on a straight is not identifiable from this sensor combination.
++        if abs(expected) < math.radians(8.0):
++            return {}, "node_has_no_observable_turn"
++        fraction = official._cumulative_m[index] / official.chord_length_m
++        seed = (direction * (fraction - phase)) % 1.0 * reference.length_m
++        candidates = []
++        offsets = max(1, int(math.ceil(search / step)))
++        for offset in range(-offsets, offsets + 1):
++            distance = seed + search * offset / offsets
++            if not reference._interval_trusted(distance - window, distance + window):
++                continue
++            before = reference.point_at(distance - window)[:2]
++            centre = reference.point_at(distance)[:2]
++            after = reference.point_at(distance + window)[:2]
++            if min(math.dist(before, centre), math.dist(centre, after)) < window * 0.2:
++                continue
++            observed = _turn(before, centre, after)
++            if observed * expected <= 0.0 or abs(observed) < max(0.10, abs(expected) * 0.25):
++                continue
++            # Corner strength matters most. A weak phase preference breaks ties
++            # on rounded features without treating normalized distance as truth.
++            cost = (observed - expected) ** 2 + 0.015 * ((distance - seed) / max(search, step)) ** 2
++            candidates.append((cost, distance % reference.length_m, observed))
++        if not candidates:
++            return {}, "node_turn_unobserved_or_excluded"
++        _, progress, observed = min(candidates)
++        if abs(observed - expected) > math.radians(60.0):
++            return {}, "node_turn_inconsistent"
++        result[identifier] = progress
++
++    # All turns must appear exactly once in official travel order. In
++    # particular, two nodes cannot collapse to the same detected corner.
++    ids = official.node_ids[:-1]
++    ordered = ids if direction == 1 else [ids[0]] + list(reversed(ids[1:]))
++    gaps = [(result[ordered[(i + 1) % count]] - result[identifier]) % reference.length_m
++            for i, identifier in enumerate(ordered)]
++    if (abs(sum(gaps) - reference.length_m) > reference.spacing_m
++            or min(gaps) < max(reference.spacing_m * 2.0, window)):
++        return {}, "node_order_or_separation_invalid"
++    return result, None
++
++
++def _shape_displacements(reference: RouteReference, official: OfficialRoute, alignment: dict,
++                         anchors: Dict[str, float], weight: float, maximum: float) -> Dict[str, Point]:
++    """Small least-squares direction corrections with measured length anchors.
++
++    Official edge lengths are never used. The desired edge vector has the
++    measured chord length. A stronger longitudinal constraint keeps each
++    measured segment's size; positional anchors prevent translation or drift.
+     """
+-    starts, vectors, lengths_sq, lengths, cumulative = data
+-    c, s = math.cos(rotation), math.sin(rotation)
+-    matrix = np.asarray([[c, -s], [s, c]], dtype=float)
+-    transformed = scale * (map_points @ matrix.T) + np.asarray(translation, dtype=float)
+-    options = []
+-    separation = max(2.0 * reference.spacing_m, min(1.0, 0.25 * node_search_m))
+-    for node_index, point in enumerate(transformed):
+-        fractions = np.clip(np.einsum("ij,ij->i", point - starts, vectors) / lengths_sq, 0.0, 1.0)
+-        projected = starts + fractions[:, None] * vectors
+-        delta = point - projected
+-        distances_sq = np.einsum("ij,ij->i", delta, delta)
+-        progress = (cumulative + fractions * lengths) % reference.length_m
+-        selected = []
+-        for index in np.argsort(distances_sq):
+-            along = float(progress[index])
+-            if (node_index == forbidden_node
+-                    and _phase_distance(along, forbidden_progress, reference.length_m) <= forbidden_radius_m):
+-                continue
+-            if any(_phase_distance(along, item[1], reference.length_m) < separation
+-                   for item in selected):
+-                continue
+-            selected.append((projected[index], along,
+-                             math.sqrt(max(0.0, float(distances_sq[index])))))
+-            if len(selected) >= candidate_count:
+-                break
+-        if not selected:
+-            return None
+-        options.append(selected)
+-
+-    n = len(map_points)
+-    order = list(range(n)) if direction > 0 else [0] + list(range(n - 1, 0, -1))
+-
+-    def huber_square(value, transition):
+-        value, transition = abs(float(value)), max(float(transition), 1e-6)
+-        return value * value if value <= transition else 2.0 * transition * value - transition * transition
+-
+-    def edge_cost(from_id, to_id, first, second):
+-        if node_only:
+-            return 0.0
+-        expected = transformed[to_id] - transformed[from_id]
+-        observed = second[0] - first[0]
+-        expected_length = math.hypot(float(expected[0]), float(expected[1]))
+-        observed_length = math.hypot(float(observed[0]), float(observed[1]))
+-        if min(expected_length, observed_length) <= 1e-6:
+-            return math.inf
+-        error = _wrap(math.atan2(observed[1], observed[0])
+-                      - math.atan2(expected[1], expected[0]))
+-        length_error = observed_length - expected_length
+-        return ((0.2 * feature_window_m * error) ** 2
+-                + 0.01 * huber_square(length_error, max(node_search_m, feature_window_m)))
+-
+-    def minimum_gap(from_id, to_id):
+-        chord = scale * math.dist(map_points[to_id], map_points[from_id])
+-        return max(2.0 * reference.spacing_m, chord - 2.0 * node_search_m)
+-
+-    # Edge costs depend on two options, not on which initial node was chosen.
+-    # Cache them once so the cyclic dynamic program does not repeat the work.
+-    edge_tables = []
+-    minimum_gaps = []
+-    for index, from_id in enumerate(order):
+-        to_id = order[(index + 1) % n]
+-        minimum_gaps.append(minimum_gap(from_id, to_id))
+-        edge_tables.append([[edge_cost(from_id, to_id, first, second)
+-                             for second in options[to_id]] for first in options[from_id]])
+-
+-    winner = None
+-    for first_index, first in enumerate(options[order[0]]):
+-        # Each state stores the chosen candidate indices and unwrapped progress.
+-        states = [(huber_square(first[2], feature_window_m), [first_index], 0.0, first_index)]
+-        for index in range(1, n):
+-            current_id = order[index]
+-            gap_min = minimum_gaps[index - 1]
+-            next_states = []
+-            for current_index, current in enumerate(options[current_id]):
+-                along = (current[1] - first[1]) % reference.length_m
+-                best = None
+-                for cost, chosen, previous_along, previous_index in states:
+-                    if along - previous_along < gap_min - 1e-6:
+-                        continue
+-                    value = (cost + huber_square(current[2], feature_window_m)
+-                             + edge_tables[index - 1][previous_index][current_index])
+-                    if best is None or value < best[0]:
+-                        best = (value, chosen + [current_index], along, current_index)
+-                if best is not None and math.isfinite(best[0]):
+-                    next_states.append(best)
+-            states = next_states
+-            if not states:
+-                break
+-        for cost, chosen, along, last_index in states:
+-            if len(chosen) != n or reference.length_m - along < minimum_gaps[-1] - 1e-6:
+-                continue
+-            total = cost + edge_tables[-1][last_index][first_index]
+-            if math.isfinite(total) and (winner is None or total < winner[0]):
+-                winner = (total, chosen)
+-    if winner is None:
+-        return None
+-    selected = [None] * n
+-    for index, option_index in zip(order, winner[1]):
+-        selected[index] = options[index][option_index]
+-    return (np.asarray([item[0] for item in selected], dtype=float),
+-            np.asarray([item[1] for item in selected], dtype=float),
+-            np.asarray([item[2] for item in selected], dtype=float))
+-
+-
+-def _coarse_curve(reference: RouteReference, step_m: float):
+-    count = max(48, int(math.ceil(reference.length_m / step_m)))
+-    progress, points = [], []
+-    # Sample from a canonical physical location so moving the recording seam
+-    # does not shift the coarse search grid around the same closed lap.
+-    trusted_indices = [index for index, good in enumerate(reference.trusted) if good]
+-    if not trusted_indices:
+-        raise ValueError("insufficient_trusted_route_for_node_alignment")
+-    anchor_index = min(trusted_indices, key=lambda index: reference.points[index])
+-    anchor_progress = reference.cumulative_m[anchor_index]
+-    for index in range(count):
+-        distance = (anchor_progress + reference.length_m * index / count) % reference.length_m
+-        x, y, trusted = reference.point_at(distance)
+-        if trusted:
+-            progress.append(distance)
+-            points.append((x, y))
+-    if len(points) < 12:
+-        raise ValueError("insufficient_trusted_route_for_node_alignment")
+-    return np.asarray(points, dtype=float), np.asarray(progress, dtype=float)
+-
+-
+-def _route_order(node_ids: List[str], direction: int) -> List[str]:
+-    if direction > 0:
+-        return list(node_ids)
+-    return [node_ids[0]] + list(reversed(node_ids[1:]))
+-
+-
+-def _progress_gaps(progress_by_id: Dict[str, float], ordered_ids: List[str],
+-                   map_points_by_id: Dict[str, Point], scale: float,
+-                   route_length: float, spacing_m: float,
+-                   node_search_m: float) -> Optional[List[float]]:
+-    gaps = []
+-    for index, current in enumerate(ordered_ids):
+-        following = ordered_ids[(index + 1) % len(ordered_ids)]
+-        gap = (progress_by_id[following] - progress_by_id[current]) % route_length
+-        chord = scale * math.dist(map_points_by_id[current], map_points_by_id[following])
+-        minimum = max(2.0 * spacing_m, chord - 2.0 * node_search_m)
+-        if gap < minimum - 1e-6:
+-            return None
+-        gaps.append(gap)
+-    if abs(math.fsum(gaps) - route_length) > max(1e-6, 2.0 * spacing_m):
+-        return None
+-    return gaps
+-
+-
+-def _huber_rms(values: np.ndarray, transition: float) -> float:
+-    transition = max(float(transition), 1e-6)
+-    absolute = np.abs(values)
+-    loss = np.where(absolute <= transition, absolute * absolute,
+-                    2.0 * transition * absolute - transition * transition)
+-    return math.sqrt(max(0.0, float(np.mean(loss))))
+-
+-
+-def _edge_shape_errors(node_ids: List[str], direction: int,
+-                       points_by_id: Dict[str, Point],
+-                       projected_by_id: Dict[str, np.ndarray],
+-                       scale: float, rotation: float):
+-    ordered = _route_order(node_ids, direction)
+-    cosine, sine = math.cos(rotation), math.sin(rotation)
+-    errors, length_errors = [], []
+-    for index, current in enumerate(ordered):
+-        following = ordered[(index + 1) % len(ordered)]
+-        map_delta = np.asarray(points_by_id[following]) - np.asarray(points_by_id[current])
+-        expected = scale * np.asarray([
+-            cosine * map_delta[0] - sine * map_delta[1],
+-            sine * map_delta[0] + cosine * map_delta[1],
+-        ])
+-        measured = projected_by_id[following] - projected_by_id[current]
+-        expected_length = float(np.linalg.norm(expected))
+-        measured_length = float(np.linalg.norm(measured))
+-        if min(expected_length, measured_length) <= 1e-6:
+-            return None, None
+-        angle_error = abs(_wrap(math.atan2(measured[1], measured[0])
+-                                - math.atan2(expected[1], expected[0])))
+-        errors.append(angle_error)
+-        length_errors.append(measured_length - expected_length)
+-    return np.asarray(errors, dtype=float), np.asarray(length_errors, dtype=float)
+-
+-
+-def _candidate_metrics(reference: RouteReference, node_ids: List[str],
+-                       map_points: np.ndarray, scale: float, rotation: float,
+-                       translation: Point, direction: int, coarse_points: np.ndarray,
+-                       coarse_progress: np.ndarray, node_search_m: float,
+-                       feature_window_m: float, allow_unordered: bool = False):
+-    cosine, sine = math.cos(rotation), math.sin(rotation)
+-    matrix = np.asarray([[cosine, -sine], [sine, cosine]], dtype=float)
+-    transformed = scale * (map_points @ matrix.T) + np.asarray(translation, dtype=float)
+-    offsets = transformed[:, None, :] - coarse_points[None, :, :]
+-    distances_sq = np.einsum("ijk,ijk->ij", offsets, offsets)
+-    nearest = np.argmin(distances_sq, axis=1)
+-    projected = coarse_points[nearest]
+-    progress = coarse_progress[nearest]
+-    distances = np.sqrt(np.maximum(0.0, distances_sq[np.arange(len(nearest)), nearest]))
+-    progress_by_id = dict(zip(node_ids, [float(value) for value in progress]))
+-    points_by_id = dict(zip(node_ids, [tuple(point) for point in map_points]))
+-    projected_by_id = dict(zip(node_ids, [point for point in projected]))
+-    ordered = _route_order(node_ids, direction)
+-    if allow_unordered:
+-        gaps = None
+-        angle_errors = np.zeros(len(node_ids), dtype=float)
+-        length_errors = np.zeros(len(node_ids), dtype=float)
+-    else:
+-        gaps = _progress_gaps(progress_by_id, ordered, points_by_id, scale,
+-                              reference.length_m, reference.spacing_m, node_search_m)
+-        if gaps is None:
+-            return None
+-        angle_errors, length_errors = _edge_shape_errors(
+-            node_ids, direction, points_by_id, projected_by_id, scale, rotation)
+-        if angle_errors is None:
+-            return None
+-    node_rmse = math.sqrt(float(np.mean(distances * distances)))
+-    node_score = _huber_rms(distances, feature_window_m)
+-    angle_rmse = math.sqrt(float(np.mean(angle_errors * angle_errors)))
+-    length_score = _huber_rms(length_errors, max(node_search_m, feature_window_m))
+-    # The coarse pass may have selected a wrong nearest segment. Keep its
+-    # transform as a seed; the joint ordered pass chooses the associations.
+-    score = (node_score if allow_unordered else
+-             node_score + 0.2 * feature_window_m * angle_rmse + 0.1 * length_score)
+-    return {
+-        "scale_map_to_odom": float(scale),
+-        "rotation_map_to_odom_rad": float(rotation),
+-        "translation_map_to_odom": (float(translation[0]), float(translation[1])),
+-        "direction": int(direction),
+-        "node_ids": list(node_ids),
+-        "node_progress": progress_by_id,
+-        "node_positions": {identifier: np.asarray(projected_by_id[identifier], dtype=float)
+-                           for identifier in node_ids},
+-        "node_distances": {identifier: float(distance)
+-                           for identifier, distance in zip(node_ids, distances)},
+-        "node_rmse_m": node_rmse,
+-        "node_max_distance_m": float(np.max(distances)),
+-        "edge_angle_rmse_rad": angle_rmse,
+-        "edge_angle_max_rad": float(np.max(angle_errors)),
+-        "edge_chord_rmse_m": math.sqrt(float(np.mean(length_errors * length_errors))),
+-        "score": float(score),
+-        "phase_progress_m": float(progress_by_id[node_ids[0]]),
+-        "progress_gaps_m": gaps,
+-    }
+-
+-
+-def _fit_similarity(map_points: np.ndarray, odom_points: np.ndarray,
+-                    weights: np.ndarray):
+-    weight_sum = float(np.sum(weights))
+-    if weight_sum <= 1e-12:
+-        raise ValueError("no_weighted_node_correspondences")
+-    map_mean = np.sum(map_points * weights[:, None], axis=0) / weight_sum
+-    odom_mean = np.sum(odom_points * weights[:, None], axis=0) / weight_sum
+-    map_centred = map_points - map_mean
+-    odom_centred = odom_points - odom_mean
+-    dot = float(np.sum(weights * np.einsum("ij,ij->i", map_centred, odom_centred)))
+-    cross = float(np.sum(weights * (map_centred[:, 0] * odom_centred[:, 1]
+-                                    - map_centred[:, 1] * odom_centred[:, 0])))
+-    denominator = float(np.sum(weights * np.einsum("ij,ij->i", map_centred, map_centred)))
+-    magnitude = math.hypot(dot, cross)
+-    if denominator <= 1e-10 or magnitude <= 1e-10:
+-        raise ValueError("degenerate_outer_node_constellation")
+-    rotation = math.atan2(cross, dot)
+-    scale = magnitude / denominator
+-    cosine, sine = math.cos(rotation), math.sin(rotation)
+-    rotated_mean = np.asarray([cosine * map_mean[0] - sine * map_mean[1],
+-                               sine * map_mean[0] + cosine * map_mean[1]])
+-    translation = odom_mean - scale * rotated_mean
+-    return float(scale), rotation, (float(translation[0]), float(translation[1]))
+-
+-
+-def _refine_candidate(reference: RouteReference, node_ids: List[str],
+-                      map_points: np.ndarray, seed: dict, direction: int,
+-                      node_search_m: float, feature_window_m: float):
+-    data = _projection_data(reference)
+-    scale = seed["scale_map_to_odom"]
+-    rotation = seed["rotation_map_to_odom_rad"]
+-    translation = seed["translation_map_to_odom"]
+-    points_by_id = dict(zip(node_ids, [tuple(point) for point in map_points]))
+-    for _ in range(15):
+-        joint = _joint_project_nodes(reference, map_points, scale, rotation, translation,
+-                                     data, direction, node_search_m, feature_window_m)
+-        if joint is None:
+-            return None
+-        projected, progress, distances = joint
+-        progress_by_id = dict(zip(node_ids, [float(value) for value in progress]))
+-        ordered = _route_order(node_ids, direction)
+-        if _progress_gaps(progress_by_id, ordered, points_by_id, scale,
+-                          reference.length_m, reference.spacing_m, node_search_m) is None:
+-            return None
+-        transition = max(feature_window_m, 0.05)
+-        weights = np.ones(len(distances), dtype=float)
+-        large = distances > transition
+-        weights[large] = transition / distances[large]
+-        try:
+-            new_scale, new_rotation, new_translation = _fit_similarity(
+-                map_points, projected, weights)
+-        except ValueError:
+-            return None
+-        if not _MIN_MAP_TO_ODOM_SCALE <= new_scale <= _MAX_MAP_TO_ODOM_SCALE:
+-            return None
+-        centre = np.mean(map_points, axis=0)
+-        old_centre = (scale * np.asarray([math.cos(rotation) * centre[0] - math.sin(rotation) * centre[1],
+-                                          math.sin(rotation) * centre[0] + math.cos(rotation) * centre[1]])
+-                      + np.asarray(translation))
+-        new_centre = (new_scale * np.asarray([math.cos(new_rotation) * centre[0] - math.sin(new_rotation) * centre[1],
+-                                              math.sin(new_rotation) * centre[0] + math.cos(new_rotation) * centre[1]])
+-                      + np.asarray(new_translation))
+-        change = (abs(_wrap(new_rotation - rotation))
+-                  + abs(math.log(new_scale / scale))
+-                  + float(np.linalg.norm(new_centre - old_centre)))
+-        scale, rotation, translation = new_scale, new_rotation, new_translation
+-        if change < 1e-5:
+-            break
+-
+-    joint = _joint_project_nodes(reference, map_points, scale, rotation, translation,
+-                                 data, direction, node_search_m, feature_window_m)
+-    if joint is None:
+-        return None
+-    projected, progress, distances = joint
+-    return _candidate_from_projection(reference, node_ids, map_points, scale, rotation,
+-                                      translation, direction, node_search_m, feature_window_m,
+-                                      projected, progress, distances)
+-
+-
+-def _candidate_from_projection(reference: RouteReference, node_ids: List[str],
+-                               map_points: np.ndarray, scale: float, rotation: float,
+-                               translation: Point, direction: int, node_search_m: float,
+-                               feature_window_m: float, projected: np.ndarray,
+-                               progress: np.ndarray, distances: np.ndarray):
+-    points_by_id = dict(zip(node_ids, [tuple(point) for point in map_points]))
+-    progress_by_id = dict(zip(node_ids, [float(value) for value in progress]))
+-    ordered = _route_order(node_ids, direction)
+-    if _progress_gaps(progress_by_id, ordered, points_by_id, scale,
+-                      reference.length_m, reference.spacing_m, node_search_m) is None:
+-        return None
+-    projected_by_id = dict(zip(node_ids, [point for point in projected]))
+-    angle_errors, length_errors = _edge_shape_errors(
+-        node_ids, direction, points_by_id, projected_by_id, scale, rotation)
+-    if angle_errors is None:
+-        return None
+-    node_rmse = math.sqrt(float(np.mean(distances * distances)))
+-    node_score = _huber_rms(distances, feature_window_m)
+-    angle_rmse = math.sqrt(float(np.mean(angle_errors * angle_errors)))
+-    length_score = _huber_rms(length_errors, max(node_search_m, feature_window_m))
+-    score = node_score + 0.2 * feature_window_m * angle_rmse + 0.1 * length_score
+-    return {
+-        "scale_map_to_odom": float(scale),
+-        "rotation_map_to_odom_rad": float(rotation),
+-        "translation_map_to_odom": (float(translation[0]), float(translation[1])),
+-        "direction": int(direction),
+-        "node_ids": list(node_ids),
+-        "node_progress": progress_by_id,
+-        "node_positions": {identifier: np.asarray(projected_by_id[identifier], dtype=float)
+-                           for identifier in node_ids},
+-        "node_distances": {identifier: float(distance)
+-                           for identifier, distance in zip(node_ids, distances)},
+-        "node_rmse_m": node_rmse,
+-        "node_max_distance_m": float(np.max(distances)),
+-        "edge_angle_rmse_rad": angle_rmse,
+-        "edge_angle_max_rad": float(np.max(angle_errors)),
+-        "edge_chord_rmse_m": math.sqrt(float(np.mean(length_errors * length_errors))),
+-        "score": float(score),
+-        "phase_progress_m": float(progress_by_id[node_ids[0]]),
+-    }
+-
+-
+-def _phase_distance(first: float, second: float, length: float) -> float:
+-    return abs((first - second + 0.5 * length) % length - 0.5 * length)
+-
+-
+-def _same_basin(first: dict, second: dict, route_length: float,
+-                node_search_m: float) -> bool:
+-    if first["direction"] != second["direction"]:
+-        return False
+-    phase_close = _phase_distance(first["phase_progress_m"],
+-                                  second["phase_progress_m"], route_length)
+-    rotation_close = abs(_wrap(first["rotation_map_to_odom_rad"]
+-                               - second["rotation_map_to_odom_rad"])) < math.radians(12.0)
+-    # Raw translation depends on the arbitrary origin and units of map_points.
+-    # Compare the resulting node associations in the odom frame instead.
+-    node_ids = first["node_ids"]
+-    node_delta_rms = math.sqrt(math.fsum(
+-        math.dist(first["node_positions"][identifier],
+-                  second["node_positions"][identifier]) ** 2
+-        for identifier in node_ids
+-    ) / len(node_ids))
+-    positions_close = node_delta_rms < max(2.0 * node_search_m, 4.0)
+-    scale_close = abs(first["scale_map_to_odom"] / second["scale_map_to_odom"] - 1.0) < 0.15
+-    return phase_close < max(2.0 * node_search_m, 4.0) and rotation_close and positions_close and scale_close
+-
+-
+-def _mapped_point(candidate: dict, point: Point) -> Point:
+-    angle = candidate["rotation_map_to_odom_rad"]
+-    scale = candidate["scale_map_to_odom"]
+-    tx, ty = candidate["translation_map_to_odom"]
+-    c, s = math.cos(angle), math.sin(angle)
+-    return (scale * (c * point[0] - s * point[1]) + tx,
+-            scale * (s * point[0] + c * point[1]) + ty)
+-
+-
+-def _candidate_disagreement(first: dict, second: dict, comparison_points) -> float:
+-    distances = [math.dist(first["node_positions"][identifier],
+-                           second["node_positions"][identifier])
+-                 for identifier in first["node_ids"]]
+-    distances.extend(math.dist(_mapped_point(first, point), _mapped_point(second, point))
+-                     for point in comparison_points)
+-    return max(distances, default=0.0)
+-
+-
+-def _to_alignment(candidate: dict, reference: RouteReference, closure_gap: float,
+-                  official: OfficialRoute, alternative: Optional[dict],
+-                  max_rmse_m: float, ambiguity_margin_m: float,
+-                  node_search_m: float):
+-    map_to_odom_scale = candidate["scale_map_to_odom"]
+-    map_to_odom_rotation = candidate["rotation_map_to_odom_rad"]
+-    tx, ty = candidate["translation_map_to_odom"]
+-    odom_to_map_scale = 1.0 / map_to_odom_scale
+-    inverse_cosine, inverse_sine = math.cos(map_to_odom_rotation), math.sin(map_to_odom_rotation)
+-    inverse_tx = inverse_cosine * tx + inverse_sine * ty
+-    inverse_ty = -inverse_sine * tx + inverse_cosine * ty
+-    node_zero_progress = candidate["node_progress"][official.node_ids[0]]
+-    phase = (-candidate["direction"] * node_zero_progress / reference.length_m) % 1.0
+-    gap = (max(0.0, alternative["score"] - candidate["score"])
+-           if alternative is not None else None)
+-    reason = "accepted"
+-    if candidate["node_rmse_m"] > max_rmse_m:
+-        reason = "rmse_exceeds_limit"
+-    elif candidate["node_max_distance_m"] > node_search_m:
+-        reason = "node_offset_exceeds_search"
+-    elif candidate["edge_angle_max_rad"] > math.radians(60.0):
+-        reason = "outer_edge_direction_inconsistent"
+-    elif alternative is not None and gap <= ambiguity_margin_m + 1e-12:
+-        reason = "ambiguous_correspondence"
+-    return {
+-        "scale": odom_to_map_scale,
+-        "rotation_rad": _wrap(-map_to_odom_rotation),
+-        "translation_x": -odom_to_map_scale * inverse_tx,
+-        "translation_y": -odom_to_map_scale * inverse_ty,
+-        "rmse_m": candidate["node_rmse_m"],
+-        "phase_fraction": phase,
+-        "direction": candidate["direction"],
+-        "available": reason == "accepted",
+-        "reason": reason,
+-        "alternative_rmse_m": alternative["node_rmse_m"] if alternative is not None else None,
+-        "alternative_phase_fraction": (
+-            (-alternative["direction"] * alternative["node_progress"][official.node_ids[0]]
+-             / reference.length_m) % 1.0 if alternative is not None else None
+-        ),
+-        "alternative_direction": alternative["direction"] if alternative is not None else None,
+-        "ambiguity_gap_m": gap,
+-        "closure_gap_m": closure_gap,
+-        "recorded_closed_length_m": reference.length_m,
+-        "official_chord_length_m": official.chord_length_m,
+-        "sample_count": len(official.node_ids) - 1,
+-        "transform_direction": "recorded_odom_to_official_xy",
+-        "matching_method": "ordered_outer_nodes_to_curve",
+-        "matching_scale_map_to_odom": map_to_odom_scale,
+-        "node_max_distance_m": candidate["node_max_distance_m"],
+-        "edge_angle_rmse_deg": math.degrees(candidate["edge_angle_rmse_rad"]),
+-        "edge_angle_max_deg": math.degrees(candidate["edge_angle_max_rad"]),
+-        "edge_chord_rmse_m": candidate["edge_chord_rmse_m"],
+-        "ambiguity_margin_m": ambiguity_margin_m,
+-        "field_validation_required": True,
+-        "assumption": "outer topo nodes lie near the recorded loop; node chords constrain direction, not travelled arc length",
+-    }
+-
+-
+-def _match_outer_nodes(reference: RouteReference, official: OfficialRoute,
+-                       node_search_m: float, feature_window_m: float,
+-                       max_rmse_m: float, ambiguity_margin_m: float,
+-                       closure_gap: float, comparison_points=(),
+-                       ambiguity_position_m: float = 1.0, branch_connections=None,
+-                       branch_angle_min_deg=80.0, branch_angle_max_deg=95.0):
+-    from .geometric_alignment import match_outer_nodes
+-    return match_outer_nodes(reference, official, node_search_m, feature_window_m,
+-                             max_rmse_m, ambiguity_margin_m, closure_gap,
+-                             comparison_points, ambiguity_position_m, branch_connections,
+-                             branch_angle_min_deg, branch_angle_max_deg)
+-
+-
+-def _shape_displacements(reference: RouteReference, official: OfficialRoute, alignment: dict,
+-                         anchors: Dict[str, float], weight: float, maximum: float,
+-                         direction: int = 1) -> Dict[str, Point]:
+-    """Apply small edge-direction corrections while retaining measured chords."""
+     ids = sorted(anchors, key=anchors.get)
+     count = len(ids)
+     measured = np.asarray([reference.point_at(anchors[identifier])[:2] for identifier in ids])
+-    official_order = official.node_ids[:-1]
+-    official_by_id = dict(zip(official_order, official.points[:-1]))
+-    for index, identifier in enumerate(ids):
+-        expected = official_order[(official_order.index(identifier) + direction) % count]
+-        if ids[(index + 1) % count] != expected:
+-            raise ValueError("node_order_or_separation_invalid")
++    official_by_id = dict(zip(official.node_ids[:-1], official.points[:-1]))
+     rows, targets = [], []
+     for index in range(count * 2):
+         row = np.zeros(count * 2)
+         row[index] = 1.0
+         rows.append(row)
+         targets.append(0.0)
++    # A similarity fit over unequal normalized segment lengths can invent a
++    # small rotation. Re-estimate orientation from the measured node-to-node
++    # *unit* directions after turn matching, so official lengths have no vote.
+     direction_pairs = []
+     for index, identifier in enumerate(ids):
+-        following = ids[(index + 1) % count]
+-        measured_edge = (measured[index + 1] - measured[index]
+-                         if index < count - 1 else measured[0] - measured[index])
+-        official_edge = np.asarray(official_by_id[following]) - np.asarray(official_by_id[identifier])
++        following = (index + 1) % count
++        measured_edge = measured[following] - measured[index]
++        official_edge = np.asarray(official_by_id[ids[following]]) - np.asarray(official_by_id[identifier])
+         length = float(np.linalg.norm(measured_edge))
+-        official_length = float(np.linalg.norm(official_edge))
+-        if (not math.isfinite(length) or length <= max(1e-6, reference.spacing_m)
+-                or official_length <= 1e-6):
++        if not math.isfinite(length) or length <= max(1e-6, reference.spacing_m):
+             raise ValueError("degenerate_measured_node_chord")
+-        direction_pairs.append((measured_edge / length, official_edge / official_length))
++        direction_pairs.append((measured_edge / length, official_edge / np.linalg.norm(official_edge)))
+     a = sum(float(np.dot(first, second)) for first, second in direction_pairs)
+-    b = sum(float(first[0] * second[1] - first[1] * second[0])
+-            for first, second in direction_pairs)
++    b = sum(float(first[0] * second[1] - first[1] * second[0]) for first, second in direction_pairs)
+     if math.hypot(a, b) < 0.5 * count:
+         raise ValueError("inconsistent_measured_edge_directions")
+     node_rotation = math.atan2(b, a)
+     alignment["node_rotation_rad"] = node_rotation
+-    cosine, sine = math.cos(node_rotation), math.sin(node_rotation)
++    c, s = math.cos(node_rotation), math.sin(node_rotation)
+     strength = math.sqrt(weight / max(1.0 - weight, 1e-9))
+     for index, identifier in enumerate(ids):
+-        following = ids[(index + 1) % count]
++        following = (index + 1) % count
+         ox, oy = official_by_id[identifier]
+-        nx, ny = official_by_id[following]
++        nx, ny = official_by_id[ids[following]]
+         norm = math.hypot(nx - ox, ny - oy)
+-        desired_direction = np.asarray([(cosine * (nx - ox) + sine * (ny - oy)) / norm,
+-                                        (-sine * (nx - ox) + cosine * (ny - oy)) / norm])
+-        measured_edge = (measured[index + 1] - measured[index]
+-                         if index < count - 1 else measured[0] - measured[index])
++        desired_direction = np.asarray([(c * (nx - ox) + s * (ny - oy)) / norm,
++                                        (-s * (nx - ox) + c * (ny - oy)) / norm])
++        measured_edge = measured[following] - measured[index]
+         length = float(np.linalg.norm(measured_edge))
+         residual = length * desired_direction - measured_edge
+-        following_index = (index + 1) % count
+         for axis in range(2):
+             row = np.zeros(count * 2)
+-            row[following_index * 2 + axis] = strength
++            row[following * 2 + axis] = strength
+             row[index * 2 + axis] = -strength
+             rows.append(row)
+             targets.append(strength * float(residual[axis]))
++        # Stronger than the shape term: approximately preserve measured chord
++        # length, while allowing a small lateral correction of the outline.
+         row = np.zeros(count * 2)
+-        row[following_index * 2:following_index * 2 + 2] = strength * 4.0 * measured_edge / length
+-        row[index * 2:index * 2 + 2] = -strength * 4.0 * measured_edge / length
++        measured_direction = measured_edge / length
++        row[following * 2:following * 2 + 2] = strength * 4.0 * measured_direction
++        row[index * 2:index * 2 + 2] = -strength * 4.0 * measured_direction
+         rows.append(row)
+         targets.append(0.0)
+     delta = np.linalg.lstsq(np.asarray(rows), np.asarray(targets), rcond=None)[0].reshape((-1, 2))
+@@ -711,8 +205,7 @@
+     largest = max(float(np.linalg.norm(value)) for value in delta)
+     if largest > maximum:
+         delta *= maximum / largest
+-    return {identifier: (float(value[0]), float(value[1]))
+-            for identifier, value in zip(ids, delta)}
++    return {identifier: (float(value[0]), float(value[1])) for identifier, value in zip(ids, delta)}
+ 
+ 
+ def build_fused_route(
+@@ -721,87 +214,70 @@
+     max_rmse_m: float = 3.0, ambiguity_margin_m: float = 0.3,
+     node_search_m: float = 4.0, feature_window_m: float = 2.0,
+     shape_weight: float = 0.25, max_displacement_m: float = 0.75,
+-    comparison_points=None, ambiguity_position_m: float = 1.0, branch_connections=None,
+-    branch_angle_min_deg=80.0, branch_angle_max_deg=95.0,
+-    max_closure_gap_m=4.0,
+ ) -> FusionResult:
+-    """Register ordered outer topo nodes to the measured closed Odom curve.
+-
+-    The registration searches cyclic start phase and travel direction using
+-    the node constellation. Odom arc length is not equated with summed topo
+-    chord lengths. Topo coordinates may be scaled into the Odom frame, while
+-    the returned driving route keeps the measured Odom scale and curvature.
++    """Match turns, fuse the outer shape, then smooth in the odometry frame.
++
++    Uniform official-map scale/translation cannot change the result. Different
++    official segment lengths only affect initial correspondence seeds; each
++    accepted node is relocated using a local observed-turn search. Arbitrarily
++    wrong topology or large local scale errors are rejected rather than guessed.
++
++    ``alignment`` retains the original odom-to-official similarity transform,
++    but its quality distances are in normalized odometry metres. Consumers must
++    use ``node_positions``/``node_progress`` for final junctions, not global lap
++    fractions or the similarity transform's original node locations.
+     """
+-    for name, value in (("spacing_m", spacing_m), ("smooth_window_m", smooth_window_m),
+-                        ("max_detour_gap_m", max_detour_gap_m),
+-                        ("node_search_m", node_search_m), ("feature_window_m", feature_window_m),
++    for name, value in (("node_search_m", node_search_m), ("feature_window_m", feature_window_m),
+                         ("max_displacement_m", max_displacement_m), ("shape_weight", shape_weight),
+-                        ("max_rmse_m", max_rmse_m), ("ambiguity_margin_m", ambiguity_margin_m),
+-                        ("ambiguity_position_m", ambiguity_position_m)):
++                        ("max_rmse_m", max_rmse_m), ("ambiguity_margin_m", ambiguity_margin_m)):
+         if isinstance(value, bool) or not math.isfinite(value) or value < 0.0:
+             raise ValueError(f"{name} must be finite and nonnegative")
+-    if min(spacing_m, node_search_m, feature_window_m, ambiguity_position_m) <= 0.0 or shape_weight >= 1.0:
++    if min(node_search_m, feature_window_m) <= 0.0 or shape_weight >= 1.0:
+         raise ValueError("Positive feature windows and shape_weight < 1 are required")
+-    if (isinstance(branch_angle_min_deg, bool) or isinstance(branch_angle_max_deg, bool)
+-            or not math.isfinite(branch_angle_min_deg) or not math.isfinite(branch_angle_max_deg)
+-            or not 0.0 <= branch_angle_min_deg <= branch_angle_max_deg <= 180.0):
+-        raise ValueError("Branch-angle range must be finite and within 0..180 degrees")
+-    try:
+-        comparison_points = [] if comparison_points is None else list(comparison_points)
+-        comparison_points = [tuple(float(value) for value in point) for point in comparison_points]
+-        if any(len(point) != 2 or not all(math.isfinite(value) for value in point)
+-               for point in comparison_points):
+-            raise ValueError("Comparison points must be finite pairs")
+-    except (TypeError, ValueError, OverflowError) as exc:
+-        raise ValueError("Comparison points must be finite pairs") from exc
+     if len(set(official.node_ids[:-1])) != len(official.node_ids) - 1:
+         raise ValueError("Fusion requires an outer loop without repeated interior nodes")
+     samples = list(samples)
+-    closure_gap = (math.dist((samples[0].x, samples[0].y),
+-                             (samples[-1].x, samples[-1].y)) if len(samples) > 1 else math.inf)
+-    prepared = build_odom_reference(samples, spacing_m, 0.0)
++    # Preparation has no final smoothing. It removes repeats, bridges only
++    # permitted short gaps and creates a uniform turn-feature sampling grid.
++    prepared = RouteReference(samples, spacing_m, 0.0, max_detour_gap_m)
+     base_status = {"available": False, "mode": "odom_only", "metric_source": "odometry",
+                    "recorded_length_m": prepared.length_m,
+                    "official_size_used": False, "field_validation_required": True}
+ 
+-    fitted_samples = None
+-
+     def fallback(reason, alignment=None):
+-        source = fitted_samples if fitted_samples is not None else samples
+-        reference = build_odom_reference(source, spacing_m, smooth_window_m)
++        reference = RouteReference(samples, spacing_m, smooth_window_m, max_detour_gap_m)
+         return FusionResult(reference, alignment,
+                             {**base_status, "reason": reason, "final_length_m": reference.length_m}, {}, {})
+ 
+-    if not math.isfinite(max_closure_gap_m) or max_closure_gap_m < 0.0:
+-        raise ValueError("max_closure_gap_m must be finite and nonnegative")
+-    fitted_points, coverage_reason = _fit_trace(prepared, max_detour_gap_m, max_closure_gap_m)
+-    if coverage_reason:
+-        return fallback(coverage_reason)
+-    if any(math.dist(fitted, current) > 1e-8
+-           for fitted, current in zip(fitted_points, prepared.points)):
+-        # Keep the fitted exclusion gaps as untrusted. Rebuild cumulative
+-        # distance on the straightened trace before projection and smoothing.
+-        fitted_samples = [RouteSample(x, y, 0.0, excluded=excluded, closure=closure)
+-                          for (x, y), excluded, closure in zip(
+-                              fitted_points, prepared.excluded_mask, prepared.closure_mask)]
+-        prepared = RouteReference(fitted_samples, spacing_m, 0.0, 0.0)
++    fit_points, reason = _fit_trace(prepared, max_detour_gap_m)
++    if reason:
++        return fallback(reason)
++    origin = official.points[0]
++    normalization = prepared.length_m / official.chord_length_m
++    normalized = [((x - origin[0]) * normalization, (y - origin[1]) * normalization)
++                  for x, y in official.points]
+     try:
+-        alignment, anchors, reason = _match_outer_nodes(
+-            prepared, official, node_search_m, feature_window_m,
+-            max_rmse_m, ambiguity_margin_m, closure_gap, comparison_points,
+-            ambiguity_position_m,
+-            branch_connections,
+-            branch_angle_min_deg, branch_angle_max_deg,
+-        )
+-    except (ValueError, OverflowError, np.linalg.LinAlgError) as exc:
+-        return fallback("node_alignment_failed: " + str(exc))
+-    if alignment is None or not alignment.get("available"):
++        normalized_fit = fit_loop_alignment(fit_points, normalized, sample_count=128,
++                                            max_rmse_m=max_rmse_m, min_scale=0.1, max_scale=10.0,
++                                            ambiguity_margin_m=ambiguity_margin_m)
++    except (ValueError, OverflowError) as exc:
++        return fallback("alignment_failed: " + str(exc))
++    alignment = {**normalized_fit,
++                 "scale": normalized_fit["scale"] / normalization,
++                 "translation_x": normalized_fit["translation_x"] / normalization + origin[0],
++                 "translation_y": normalized_fit["translation_y"] / normalization + origin[1],
++                 "official_chord_length_m": official.chord_length_m,
++                 "normalization_official_to_odom": normalization,
++                 "error_units": "odom_metres",
++                 "assumption": "similar outer shape; turn features refine local node correspondence"}
++    if not alignment["available"]:
++        return fallback(alignment["reason"], alignment)
++    anchors, reason = _node_anchors(prepared, official, alignment, node_search_m, feature_window_m)
++    if reason:
+         return fallback(reason, alignment)
+     try:
+-        displacements = _shape_displacements(
+-            prepared, official, alignment, anchors, shape_weight,
+-            max_displacement_m, direction=int(alignment["direction"]),
+-        )
++        displacements = _shape_displacements(prepared, official, alignment, anchors,
++                                             shape_weight, max_displacement_m)
+     except (ValueError, np.linalg.LinAlgError) as exc:
+         return fallback("shape_fusion_failed: " + str(exc), alignment)
+     ordered = sorted(anchors, key=anchors.get)
+@@ -812,9 +288,8 @@
+         right_index = (left_index + 1) % len(ordered)
+         left, right = progress[left_index], progress[right_index]
+         span = (right - left) % prepared.length_m
+-        if span <= 1e-9:
+-            return (0.0, 0.0)
+         fraction = ((distance - left) % prepared.length_m) / span
++        # Zero derivative at observed nodes avoids adding small heading kinks.
+         fraction = fraction * fraction * (3.0 - 2.0 * fraction)
+         first, second = displacements[ordered[left_index]], displacements[ordered[right_index]]
+         return (first[0] + fraction * (second[0] - first[0]),
+@@ -823,17 +298,9 @@
+     deformed = []
+     for index, (x, y) in enumerate(prepared.points):
+         dx, dy = displacement_at(prepared.cumulative_m[index])
+-        deformed.append(RouteSample(x + dx, y + dy, 0.0,
+-                                    excluded=prepared.excluded_mask[index],
+-                                    closure=prepared.closure_mask[index]))
+-    if any(sample.excluded or sample.closure for sample in deformed):
+-        # Interpolating shape displacements can bend an excluded straight gap.
+-        # Straighten it again after deformation without marking it trusted.
+-        deformed_points = [(sample.x, sample.y) for sample in deformed]
+-        trusted = [not (sample.excluded or sample.closure) for sample in deformed]
+-        RouteReference._straighten_short_exclusions(deformed_points, trusted, math.inf)
+-        deformed = [RouteSample(x, y, 0.0, excluded=sample.excluded, closure=sample.closure)
+-                    for (x, y), sample in zip(deformed_points, deformed)]
++        deformed.append(RouteSample(x + dx, y + dy, 0.0, excluded=not prepared.trusted[index]))
++    # This is the sole final smoothing, after shape fusion. Do not straighten
++    # exclusions again: they have already been processed, and stay untrusted.
+     reference = RouteReference(deformed, spacing_m, smooth_window_m, 0.0)
+     deformed_cumulative = RouteReference._cumulative([(sample.x, sample.y) for sample in deformed])
+     node_positions, node_progress = {}, {}
+@@ -841,39 +308,39 @@
+         edge = min(bisect_right(prepared.cumulative_m, distance) - 1, len(prepared.points) - 1)
+         fraction = ((distance - prepared.cumulative_m[edge])
+                     / (prepared.cumulative_m[edge + 1] - prepared.cumulative_m[edge]))
+-        before_smoothing_s = (deformed_cumulative[edge]
+-                              + fraction * (deformed_cumulative[edge + 1] - deformed_cumulative[edge]))
++        before_smoothing_s = deformed_cumulative[edge] + fraction * (deformed_cumulative[edge + 1] - deformed_cumulative[edge])
++        # RouteReference samples raw arc length uniformly, then smooths those
++        # points without reordering them. Map through their preserved indices
++        # to account for every earlier shortening, including at the lap seam.
+         source_step = deformed_cumulative[-1] / len(reference.points)
+         output_index = min(int(before_smoothing_s / source_step), len(reference.points) - 1)
+         output_fraction = (before_smoothing_s - output_index * source_step) / source_step
+-        expected_s = (reference.cumulative_m[output_index]
+-                      + output_fraction * (reference.cumulative_m[output_index + 1]
+-                                           - reference.cumulative_m[output_index]))
++        expected_s = (reference.cumulative_m[output_index] + output_fraction
++                      * (reference.cumulative_m[output_index + 1] - reference.cumulative_m[output_index]))
+         x, y = prepared.point_at(distance)[:2]
+         dx, dy = displacements[identifier]
++        # Project the node onto the actual final curve in a bounded local
++        # neighbourhood; smoothing changes lengths, so the old fraction is not
++        # the node's final progress. No global nearest-node jump is permitted.
+         position = ordered.index(identifier)
+         before_gap = (distance - progress[position - 1]) % prepared.length_m
+         after_gap = (progress[(position + 1) % len(progress)] - distance) % prepared.length_m
+-        local_window = min(smooth_window_m + 2.0 * spacing_m,
+-                           0.25 * min(before_gap, after_gap))
+-        matched = reference.match(
+-            x + dx, y + dy, expected_s, 0.0, local_window,
+-            max_displacement_m + smooth_window_m + 2.0 * spacing_m,
+-        )
++        local_window = min(smooth_window_m + 2.0 * spacing_m, 0.25 * min(before_gap, after_gap))
++        matched = reference.match(x + dx, y + dy, expected_s, 0.0, local_window,
++                                  max_displacement_m + smooth_window_m + 2.0 * spacing_m)
+         if matched is None or not reference.point_at(matched)[2]:
+             return fallback("final_node_projection_unavailable", alignment)
+         node_progress[identifier] = matched % reference.length_m
+         node_positions[identifier] = reference.point_at(matched)[:2]
+     final_ids = sorted(node_progress, key=node_progress.get)
+-    if any(final_ids[(final_ids.index(identifier) + 1) % len(final_ids)]
+-           != ordered[(index + 1) % len(ordered)]
+-           for index, identifier in enumerate(ordered)):
++    # The seam may move slightly, so compare cyclic order rather than first ID.
++    if any(final_ids[(final_ids.index(identifier) + 1) % len(final_ids)] != ordered[(i + 1) % len(ordered)]
++           for i, identifier in enumerate(ordered)):
+         return fallback("final_node_order_invalid", alignment)
+     maximum = max(math.hypot(*value) for value in displacements.values())
+     status = {**base_status, "available": True, "mode": "fused", "reason": "accepted",
+               "final_length_m": reference.length_m, "node_count": len(node_positions),
+               "max_node_displacement_m": maximum, "shape_weight": shape_weight,
+               "direction": alignment["direction"],
+-              "node_source": alignment["matching_method"],
+-              "matching_method": alignment["matching_method"]}
++              "node_source": "observed_turns_then_projection_onto_final_reference"}
+     return FusionResult(reference, alignment, status, node_positions, node_progress)
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/smooth_detour.py
++++ /dev/null
+@@ -1,293 +0,0 @@
+-"""Cubic clamped uniform B-spline turns and ordered open-path tracking.
+-
+-The official graph only supplies junction chords; neither these curves nor a
+-curvature limit establishes that a curve stays on the road or avoids obstacles.
+-All inputs and output points use metres in the same continuous odom frame.
+-"""
+-from bisect import bisect_right
+-from dataclasses import dataclass
+-import math
+-from typing import List, Optional, Sequence, Tuple
+-
+-Point = Tuple[float, float]
+-EPS = 1e-7
+-
+-
+-def _distance(a: Point, b: Point) -> float:
+-    return math.hypot(b[0] - a[0], b[1] - a[1])
+-
+-
+-def _unit(a: Point, b: Point) -> Point:
+-    distance = _distance(a, b)
+-    if distance < EPS:
+-        raise ValueError('duplicate_route_points')
+-    return ((b[0] - a[0]) / distance, (b[1] - a[1]) / distance)
+-
+-
+-def _angle_diff(a: float, b: float) -> float:
+-    return math.atan2(math.sin(a - b), math.cos(a - b))
+-
+-
+-def _bspline_point(controls: Sequence[Point], t: float) -> Point:
+-    """Evaluate a six-control cubic uniform B-spline, clamped at each end."""
+-    if t >= 1.0:
+-        return controls[-1]
+-    knots = (0., 0., 0., 0., 1. / 3., 2. / 3., 1., 1., 1., 1.)
+-    k = max(3, min(5, bisect_right(knots, max(0., t)) - 1))
+-    work = [list(controls[k - 3 + j]) for j in range(4)]
+-    for level in range(1, 4):
+-        for j in range(3, level - 1, -1):
+-            i = k - 3 + j
+-            denominator = knots[i + 4 - level] - knots[i]
+-            alpha = (t - knots[i]) / denominator if denominator > EPS else 0.0
+-            for axis in (0, 1):
+-                work[j][axis] = (1.0 - alpha) * work[j - 1][axis] + alpha * work[j][axis]
+-    return (work[3][0], work[3][1])
+-
+-
+-def _curvature(a: Point, b: Point, c: Point) -> float:
+-    ab, bc, ac = _distance(a, b), _distance(b, c), _distance(a, c)
+-    if min(ab, bc, ac) < EPS:
+-        return 0.0
+-    cross = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+-    return 2.0 * abs(cross) / (ab * bc * ac)
+-
+-
+-def _turn(start: Point, initial: Point, end: Point, final: Point,
+-          spacing: float, tangent_factor: float) -> List[Point]:
+-    chord = _distance(start, end)
+-    if chord < EPS:
+-        raise ValueError('turn_has_zero_length')
+-    handle = chord * tangent_factor
+-    controls = [start,
+-                (start[0] + initial[0] * handle, start[1] + initial[1] * handle),
+-                (start[0] + initial[0] * handle * 2, start[1] + initial[1] * handle * 2),
+-                (end[0] - final[0] * handle * 2, end[1] - final[1] * handle * 2),
+-                (end[0] - final[0] * handle, end[1] - final[1] * handle), end]
+-    polygon = sum(_distance(a, b) for a, b in zip(controls, controls[1:]))
+-    count = max(35, int(math.ceil(polygon / spacing)) * 2)
+-    return [_bspline_point(controls, i / count) for i in range(count + 1)]
+-
+-
+-def _append_line(points: List[Point], end: Point, spacing: float) -> None:
+-    length = _distance(points[-1], end)
+-    if length < EPS:
+-        return
+-    start = points[-1]
+-    count = max(1, int(math.ceil(length / spacing)))
+-    points.extend((start[0] + (end[0] - start[0]) * i / count,
+-                   start[1] + (end[1] - start[1]) * i / count)
+-                  for i in range(1, count + 1))
+-
+-
+-def _append_curve(points: List[Point], curve: Sequence[Point]) -> None:
+-    if _distance(points[-1], curve[0]) > 0.001:
+-        raise ValueError('curve_not_connected')
+-    for point in curve[1:]:
+-        if _distance(points[-1], point) > EPS:
+-            points.append(point)
+-
+-
+-def _reference_tangent(reference, progress: float) -> Point:
+-    a = reference.point_at(progress - 0.3)
+-    b = reference.point_at(progress + 0.3)
+-    if not a[2] or not b[2]:
+-        raise ValueError('untrusted_exit_reference')
+-    return _unit(a[:2], b[:2])
+-
+-
+-@dataclass
+-class SmoothPath:
+-    points: List[Point]
+-    cumulative_m: List[float]
+-    join_progress_m: float
+-    max_curvature: float
+-    trim_m: float
+-
+-
+-def build_smooth_detour(reference, route: Sequence[Point], exit_progress: float,
+-                        pose: Tuple[float, float, float], min_radius_m: float,
+-                        max_trim_m: float, spacing_m: float = 0.15,
+-                        post_exit_m: float = 6.0) -> SmoothPath:
+-    """Connect the current pose to all topo chords, then to the outer reference.
+-
+-    Junction offsets and the six-control B-spline handles are searched within
+-    bounded limits. Every spline is sampled for its geometric curvature. A
+-    ValueError means no candidate passed; it must not be silently overridden.
+-    The radius is a *configuration assumption*, not a measured vehicle limit.
+-    """
+-    if (len(route) < 3 or len(pose) != 3 or
+-            not all(math.isfinite(v) for v in pose + (exit_progress, min_radius_m,
+-                                                       max_trim_m, spacing_m, post_exit_m)) or
+-            min(min_radius_m, max_trim_m, spacing_m, post_exit_m) <= 0.0):
+-        raise ValueError('invalid_smooth_parameters')
+-    route = [(float(p[0]), float(p[1])) for p in route]
+-    if not all(math.isfinite(v) for p in route for v in p):
+-        raise ValueError('invalid_topology_coordinates')
+-    lengths = [_distance(a, b) for a, b in zip(route, route[1:])]
+-    if min(lengths) < 1.0:
+-        raise ValueError('topology_edge_too_short')
+-    max_trim = min(max_trim_m, min(lengths) * 0.45)
+-    # Prefer a broad turn and search downwards only when required by the graph.
+-    trims = [max_trim * ratio for ratio in (1.0, 0.85, 0.7, 0.55)]
+-    pose_xy = (pose[0], pose[1])
+-    initial = (math.cos(pose[2]), math.sin(pose[2]))
+-    last_reason = 'no_curvature_feasible_spline'
+-    for trim in trims:
+-        if trim < max(1.0, min_radius_m * 0.5):
+-            continue
+-        try:
+-            directions = [_unit(a, b) for a, b in zip(route, route[1:])]
+-            entry_end = (route[0][0] + trim * directions[0][0],
+-                         route[0][1] + trim * directions[0][1])
+-            if ((entry_end[0] - pose_xy[0]) * initial[0] +
+-                    (entry_end[1] - pose_xy[1]) * initial[1]) <= 0.3:
+-                raise ValueError('entry_is_behind_vehicle')
+-            exit_point = reference.point_at(exit_progress + trim)
+-            if not exit_point[2] or not reference._interval_trusted(exit_progress, exit_progress + trim + post_exit_m):
+-                raise ValueError('untrusted_exit_reference')
+-            exit_xy = exit_point[:2]
+-            exit_heading = _reference_tangent(reference, exit_progress + trim)
+-            for factor in (0.18, 0.12, 0.24, 0.09, 0.30):
+-                points = [pose_xy]
+-                _append_curve(points, _turn(pose_xy, initial, entry_end, directions[0], spacing_m, factor))
+-                for index in range(1, len(route) - 1):
+-                    before, after = directions[index - 1], directions[index]
+-                    turn_start = (route[index][0] - trim * before[0], route[index][1] - trim * before[1])
+-                    turn_end = (route[index][0] + trim * after[0], route[index][1] + trim * after[1])
+-                    _append_line(points, turn_start, spacing_m)
+-                    _append_curve(points, _turn(turn_start, before, turn_end, after, spacing_m, factor))
+-                before = directions[-1]
+-                exit_start = (route[-1][0] - trim * before[0], route[-1][1] - trim * before[1])
+-                _append_line(points, exit_start, spacing_m)
+-                _append_curve(points, _turn(exit_start, before, exit_xy, exit_heading, spacing_m, factor))
+-                # Complete the return curve first, then follow the learned
+-                # outer reference for two metres before handing back to vision.
+-                join_index = None
+-                steps = max(1, int(math.ceil(post_exit_m / spacing_m)))
+-                for i in range(1, steps + 1):
+-                    target = reference.point_at(exit_progress + trim + post_exit_m * i / steps)
+-                    if not target[2]:
+-                        raise ValueError('untrusted_exit_reference')
+-                    if _distance(points[-1], target[:2]) > EPS:
+-                        points.append(target[:2])
+-                    if join_index is None and post_exit_m * i / steps >= 2.0:
+-                        join_index = len(points) - 1
+-                if join_index is None:
+-                    raise ValueError('insufficient_exit_stabilization')
+-                # Reject cusps and excessive curvature on the complete sampled
+-                # route, including the straight/curve and curve/outer joins.
+-                maximum = max(_curvature(a, b, c) for a, b, c in zip(points, points[1:], points[2:]))
+-                if not math.isfinite(maximum) or maximum > 1.0 / min_radius_m + 1e-3:
+-                    continue
+-                if any(_distance(a, b) < EPS for a, b in zip(points, points[1:])):
+-                    continue
+-                cumulative = [0.0]
+-                for a, b in zip(points, points[1:]):
+-                    cumulative.append(cumulative[-1] + _distance(a, b))
+-                return SmoothPath(points, cumulative, cumulative[join_index], maximum, trim)
+-        except ValueError as exc:
+-            last_reason = str(exc)
+-    raise ValueError(last_reason)
+-
+-
+-@dataclass
+-class SmoothResult:
+-    points: List[Point]
+-    done: bool
+-    reason: str
+-    progress_m: float
+-    segment_index: int
+-
+-    @property
+-    def available(self) -> bool:
+-        return not self.done and len(self.points) == 3
+-
+-
+-class SmoothDetourTracker:
+-    """Project locally onto one ordered path; publish three vehicle-frame points."""
+-    def __init__(self, path: SmoothPath, max_cross_track_m: float,
+-                 lookahead_m: float, spacing_m: float, max_target_angle_deg: float,
+-                 finish_tolerance_m: float = 0.7):
+-        if not all(math.isfinite(v) and v > 0.0 for v in
+-                   (max_cross_track_m, lookahead_m, spacing_m, max_target_angle_deg, finish_tolerance_m)):
+-            raise ValueError('invalid_tracker_limits')
+-        if max_target_angle_deg >= 90.0:
+-            raise ValueError('target_angle_must_be_less_than_90')
+-        self.path = path
+-        self.points = path.points
+-        self.progress_m = 0.0
+-        self.segment_index = 0
+-        self.started = False
+-        self.last_pose = None
+-        self.max_cross_track_m = max_cross_track_m
+-        self.lookahead_m = lookahead_m
+-        self.spacing_m = spacing_m
+-        self.max_target_angle = math.radians(max_target_angle_deg)
+-        self.finish_tolerance_m = finish_tolerance_m
+-
+-    def _point_at(self, progress: float) -> Point:
+-        s = max(0.0, min(progress, self.path.cumulative_m[-1]))
+-        index = min(bisect_right(self.path.cumulative_m, s) - 1, len(self.points) - 2)
+-        a, b = self.points[index:index + 2]
+-        length = self.path.cumulative_m[index + 1] - self.path.cumulative_m[index]
+-        f = (s - self.path.cumulative_m[index]) / length if length > EPS else 0.0
+-        return (a[0] + f * (b[0] - a[0]), a[1] + f * (b[1] - a[1]))
+-
+-    def update(self, x: float, y: float, yaw: float) -> SmoothResult:
+-        def unavailable(reason):
+-            return SmoothResult([], False, reason, self.progress_m, self.segment_index)
+-        if not all(math.isfinite(v) for v in (x, y, yaw)):
+-            return unavailable('invalid_pose')
+-        displacement = _distance((x, y), self.last_pose) if self.last_pose else 0.0
+-        lower = max(0.0, self.progress_m - 0.5)
+-        upper = min(self.path.cumulative_m[-1], self.progress_m + max(3.0, displacement * 2 + 1.0))
+-        best = None
+-        for index in range(max(0, bisect_right(self.path.cumulative_m, lower) - 1), len(self.points) - 1):
+-            start_s, end_s = self.path.cumulative_m[index:index + 2]
+-            if start_s > upper:
+-                break
+-            a, b = self.points[index:index + 2]
+-            length = end_s - start_s
+-            direction = math.atan2(b[1] - a[1], b[0] - a[0])
+-            if abs(_angle_diff(direction, yaw)) > math.radians(80.0):
+-                continue
+-            fraction = ((x - a[0]) * (b[0] - a[0]) + (y - a[1]) * (b[1] - a[1])) / (length * length)
+-            lo = max(0., (lower - start_s) / length)
+-            hi = min(1., (upper - start_s) / length)
+-            if lo > hi:
+-                continue
+-            fraction = max(lo, min(hi, fraction))
+-            candidate = (a[0] + fraction * (b[0] - a[0]), a[1] + fraction * (b[1] - a[1]))
+-            distance = _distance((x, y), candidate)
+-            progress = start_s + fraction * length
+-            key = (distance, abs(progress - self.progress_m))
+-            if best is None or key < best[0]:
+-                best = (key, progress, index)
+-        if best is None or best[0][0] > self.max_cross_track_m:
+-            return unavailable('cross_track_or_heading_exceeded')
+-        progress, index = max(self.progress_m, best[1]), best[2]
+-        if progress >= self.path.join_progress_m:
+-            here = self._point_at(progress)
+-            ahead = self._point_at(min(progress + 0.5, self.path.cumulative_m[-1]))
+-            heading = math.atan2(ahead[1] - here[1], ahead[0] - here[0])
+-            if (best[0][0] <= self.finish_tolerance_m and
+-                    abs(_angle_diff(heading, yaw)) <= math.radians(20.0)):
+-                self.progress_m, self.segment_index = progress, index
+-                return SmoothResult([], True, 'done', progress, index)
+-        if progress + self.lookahead_m + 2.0 * self.spacing_m > self.path.cumulative_m[-1]:
+-            return unavailable('insufficient_forward_route')
+-        c, s = math.cos(yaw), math.sin(yaw)
+-        targets = []
+-        for offset in (self.lookahead_m, self.lookahead_m + self.spacing_m,
+-                       self.lookahead_m + 2.0 * self.spacing_m):
+-            px, py = self._point_at(progress + offset)
+-            dx, dy = px - x, py - y
+-            target = (c * dx + s * dy, -s * dx + c * dy)
+-            if target[0] <= EPS or abs(math.atan2(target[1], target[0])) > self.max_target_angle:
+-                return unavailable('target_angle_exceeded')
+-            targets.append(target)
+-        self.started = True
+-        self.last_pose = (x, y)
+-        self.progress_m, self.segment_index = progress, index
+-        return SmoothResult(targets, False, 'tracking', progress, index)
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_light_filter.py
+@@ -5,21 +5,17 @@
+ from typing import Deque, Dict, Optional, Tuple
+ 
+ 
+-NON_RED_STATES = ("green", "yellow", "off")
+-
+-
+ class TrafficLightFilter:
+     """Require a strict majority of real messages in a sliding time window.
+ 
+     The caller supplies monotonic arrival times, not image/ROS timestamps.  The
+     first decision waits for a complete observation window.  A message gap
+-    longer than the window starts that observation period again. Callers
+-    can count explicit detector ``unknown`` frames as non-red. Silence and
+-    invalid observations never provide non-red votes.
++    longer than the window starts that observation period again.  ``unknown``
++    results count in the denominator but never release a stop by themselves;
++    retaining a red-light stop belongs to the calling state machine.
+     """
+ 
+-    def __init__(self, window_sec: float = 0.5, min_samples: int = 3,
+-                 *, unknown_is_non_red: bool = False):
++    def __init__(self, window_sec: float = 0.5, min_samples: int = 3):
+         try:
+             window_sec = float(window_sec)
+         except (TypeError, ValueError, OverflowError):
+@@ -30,7 +26,6 @@
+             raise ValueError("min_samples must be an integer of at least 2")
+         self.window_sec = window_sec
+         self.min_samples = min_samples
+-        self.unknown_is_non_red = unknown_is_non_red
+         self._samples: Deque[Tuple[float, str]] = deque()
+         self._started_at: Optional[float] = None
+         self._last_message_at: Optional[float] = None
+@@ -48,9 +43,9 @@
+         now = self._advance(now)
+         if self._started_at is None:
+             self._started_at = now
+-        state = state.strip().lower() if isinstance(state, str) else ""
+-        if state not in ("red", "unknown", *NON_RED_STATES):
+-            state = "invalid"
++        state = state.strip().lower() if isinstance(state, str) else "unknown"
++        if state not in ("red", "green"):
++            state = "unknown"
+         self._samples.append((now, state))
+         self._last_message_at = now
+         return self._decision(self._snapshot(now))
+@@ -84,10 +79,7 @@
+ 
+     def _snapshot(self, now: float) -> Dict[str, object]:
+         red_count = sum(state == "red" for _, state in self._samples)
+-        non_red = {
+-            state: sum(sample == state for _, sample in self._samples)
+-            for state in NON_RED_STATES
+-        }
++        green_count = sum(state == "green" for _, state in self._samples)
+         count = len(self._samples)
+         ready = (self._started_at is not None
+                  and now - self._started_at >= self.window_sec
+@@ -98,25 +90,19 @@
+             "ready": ready,
+             "sample_count": count,
+             "red_count": red_count,
+-            **{state + "_count": votes for state, votes in non_red.items()},
+-            "unknown_count": count - red_count - sum(non_red.values()),
+-            "reported_unknown_count": sum(state == "unknown" for _, state in self._samples),
++            "green_count": green_count,
++            "unknown_count": count - red_count - green_count,
+             "last_message_age_sec": (None if self._last_message_at is None
+                                      else now - self._last_message_at),
+         }
+ 
+-    def _decision(self, snapshot: Dict[str, object]) -> str:
++    @staticmethod
++    def _decision(snapshot: Dict[str, object]) -> str:
+         if not snapshot["ready"]:
+             return "unknown"
+         count = snapshot["sample_count"]
+         if 2 * snapshot["red_count"] > count:
+             return "red"
+-        non_red_votes = 0
+-        for state in NON_RED_STATES:
+-            votes = snapshot[state + "_count"]
+-            if 2 * votes > count:
+-                return state
+-            non_red_votes += votes
+-        if self.unknown_is_non_red:
+-            non_red_votes += snapshot["reported_unknown_count"]
+-        return "not_red" if 2 * non_red_votes > count else "unknown"
++        if 2 * snapshot["green_count"] > count:
++            return "green"
++        return "unknown"
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_route.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/semantic_planner_core/traffic_route.py
+@@ -122,8 +122,7 @@
+ 
+     def alternative_route(self, start_id: str, blocked_next_id: str,
+                           require_internal: bool = True,
+-                          outer_node_ids: Optional[Sequence[str]] = None,
+-                          require_first_internal: bool = False) -> Optional[OpenTopoRoute]:
++                          outer_node_ids: Optional[Sequence[str]] = None) -> Optional[OpenTopoRoute]:
+         """Remove the blocked edge both ways and find a short open bypass.
+ 
+         With ``require_internal``, a bypass must visit a node outside the
+@@ -131,8 +130,6 @@
+         outer route is supplied, with any remaining bypass as fallback. The
+         graph is unchanged. Positive-length Dijkstra search retains visited
+         nodes in its state so a spur-and-return cannot fake an internal bypass.
+-        When requested, the first edge must lead to an internal node, preventing
+-        a return along the already travelled outer edge at the entry junction.
+         This intentionally targets the small supplied topological graph.
+         """
+         if start_id not in self.nodes or blocked_next_id not in self.adjacency[start_id]:
+@@ -144,8 +141,6 @@
+             raise ValueError("Outer route contains an unknown node")
+         if require_internal and not outer:
+             raise ValueError("An outer route is required to identify internal nodes")
+-        if require_first_internal and not outer:
+-            raise ValueError("An outer route is required to identify the first internal edge")
+         blocked = frozenset((start_id, blocked_next_id))
+ 
+         def search(needs_internal: bool) -> Optional[List[str]]:
+@@ -163,8 +158,6 @@
+                         return list(path)
+                     continue
+                 for neighbour, distance in self.adjacency[current].items():
+-                    if require_first_internal and len(path) == 1 and neighbour in outer:
+-                        continue
+                     if neighbour in visited or frozenset((current, neighbour)) == blocked:
+                         continue
+                     next_visited = visited | {neighbour}
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/setup.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/setup.py
+@@ -4,7 +4,7 @@
+ 
+ setup(
+     name=package_name,
+-    version="0.4.5",
++    version="0.2.0",
+     packages=find_packages(exclude=["tests"]),
+     data_files=[
+         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/fusion_test_fixtures.py
++++ /dev/null
+@@ -1,70 +0,0 @@
+-"""Synthetic fusion inputs; no previously recorded course data are loaded.
+-
+-The single-branch helper isolates legacy numerical tests. The official-graph
+-fixture builds a hypothetical smooth loop with branch-normal tangents so the
+-real 80..95 degree rule can be tested with every supplied branch.
+-"""
+-import math
+-
+-
+-def single_synthetic_branch(official):
+-    ids, points = official.node_ids[:-1], official.points[:-1]
+-    p, prev, nxt = points[0], points[-1], points[1]
+-    a, b = (p[0] - prev[0], p[1] - prev[1]), (nxt[0] - p[0], nxt[1] - p[1])
+-    la, lb = math.hypot(*a), math.hypot(*b)
+-    if min(la, lb) <= 1e-8:
+-        raise ValueError('Synthetic fixture needs nonzero edges')
+-    tx, ty = a[0] / la + b[0] / lb, a[1] / la + b[1] / lb
+-    norm = math.hypot(tx, ty)
+-    if norm <= 1e-8:
+-        raise ValueError('Synthetic fixture cannot use a U-turn vertex')
+-    area = sum(points[i][0] * points[(i + 1) % len(points)][1] -
+-               points[i][1] * points[(i + 1) % len(points)][0] for i in range(len(points)))
+-    side = 1.0 if area >= 0.0 else -1.0
+-    inner = (p[0] - side * ty / norm * 3.0, p[1] + side * tx / norm * 3.0)
+-    return {ids[0]: [('test_inner_' + ids[0], inner)]}
+-
+-
+-def official_graph_branches(official, graph):
+-    outer = set(official.node_ids[:-1])
+-    return {key: [(neighbour, graph.nodes[neighbour]) for neighbour in graph.adjacency[key]
+-                  if neighbour not in outer]
+-            for key in official.node_ids[:-1]
+-            if any(neighbour not in outer for neighbour in graph.adjacency[key])}
+-
+-
+-def hypothetical_smooth_lap(official, graph, spacing=0.30):
+-    """Generate an artificial loop through the official nodes, not a real map."""
+-    ids, points = official.node_ids[:-1], official.points[:-1]
+-    branches = official_graph_branches(official, graph)
+-
+-    def unit(x, y):
+-        length = math.hypot(x, y)
+-        if length <= 1e-8:
+-            raise ValueError('Synthetic tangent has zero length')
+-        return (x / length, y / length)
+-
+-    tangents = []
+-    for index, identifier in enumerate(ids):
+-        p, prev, nxt = points[index], points[index - 1], points[(index + 1) % len(points)]
+-        approx = unit(nxt[0] - prev[0], nxt[1] - prev[1])
+-        if identifier.endswith('01') or identifier not in branches:
+-            tangent = approx
+-        else:
+-            inner = branches[identifier][0][1]
+-            tangent = unit(-(p[1] - inner[1]), p[0] - inner[0])
+-            if tangent[0] * approx[0] + tangent[1] * approx[1] < 0:
+-                tangent = (-tangent[0], -tangent[1])
+-        tangents.append(tangent)
+-    result = []
+-    for index, p in enumerate(points):
+-        q = points[(index + 1) % len(points)]
+-        length = math.dist(p, q)
+-        count = max(2, math.ceil(length / spacing))
+-        for step in range(count):
+-            t = step / count
+-            t2, t3 = t * t, t * t * t
+-            a, b, c, d = 2*t3 - 3*t2 + 1, t3 - 2*t2 + t, -2*t3 + 3*t2, t3 - t2
+-            result.append((a*p[0] + b*length*tangents[index][0] + c*q[0] + d*length*tangents[(index+1)%len(points)][0],
+-                           a*p[1] + b*length*tangents[index][1] + c*q[1] + d*length*tangents[(index+1)%len(points)][1]))
+-    return result
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_branch_angle.py
++++ /dev/null
+@@ -1,97 +0,0 @@
+-"""Current-lap branch-angle screening; no external road observations."""
+-import math
+-import unittest
+-
+-import numpy as np
+-import test_route_fusion as fixtures
+-from semantic_planner_core.geometric_alignment import angle_in_range, branch_angles
+-from semantic_planner_core.rough_route import RouteReference
+-from semantic_planner_core.route_fusion import build_fused_route
+-
+-
+-class BranchAngleTests(unittest.TestCase):
+-    def test_angle_uses_official_inner_chord_and_odom_tangent(self):
+-        class Ref:
+-            def _interval_trusted(self, a, b):
+-                return True
+-            def point_at(self, s):
+-                return (s, 0., True)
+-        candidate = {'node_progress': {'a': 10.}, 'node_positions': {'a': np.array([10., 0.])},
+-                     'direction': 1,
+-                     'scale_map_to_odom': 1., 'rotation_map_to_odom_rad': 0.,
+-                     'translation_map_to_odom': (0., 0.)}
+-        angles=branch_angles(candidate, Ref(), {'a':[('p',(10., 5.)),('q',(15., 5.))]})
+-        self.assertEqual([item['inner_node_id'] for item in angles], ['p', 'q'])
+-        self.assertAlmostEqual(angles[0]['angle_deg'], 90.)
+-        self.assertAlmostEqual(angles[1]['angle_deg'], 135.)
+-
+-    def test_inclusive_directed_80_to_95_degree_limits(self):
+-        for value in (80., 90., 95.):
+-            self.assertTrue(angle_in_range(value, 80., 95.))
+-        for value in (79.9, 95.1, 100.):
+-            self.assertFalse(angle_in_range(value, 80., 95.))
+-
+-    def test_reverse_driving_normalizes_to_official_way_direction(self):
+-        class Ref:
+-            def __init__(self, sign): self.sign=sign
+-            def _interval_trusted(self, a, b): return True
+-            def point_at(self, s): return (self.sign*s, 0., True)
+-        common={'node_progress': {'a':10.}, 'node_positions': {'a':np.array([10.,0.])},
+-                'scale_map_to_odom':1., 'rotation_map_to_odom_rad':0., 'translation_map_to_odom':(0.,0.)}
+-        inner=(10.-5.*math.cos(math.radians(85.)),-5.*math.sin(math.radians(85.)))
+-        a=branch_angles(dict(common,direction=1), Ref(1), {'a':[('p',inner)]})
+-        b=branch_angles(dict(common,direction=-1), Ref(-1), {'a':[('p',inner)]})
+-        self.assertAlmostEqual(a[0]['angle_deg'],b[0]['angle_deg'])
+-        self.assertAlmostEqual(a[0]['angle_deg'],85.)
+-
+-    def test_100_degree_direction_is_not_folded_to_80(self):
+-        class Ref:
+-            def _interval_trusted(self,a,b):return True
+-            def point_at(self,s):return (s,0.,True)
+-        c={'node_progress':{'a':10.},'node_positions':{'a':np.array([10.,0.])},'direction':1,
+-           'scale_map_to_odom':1.,'rotation_map_to_odom_rad':0.,'translation_map_to_odom':(0.,0.)}
+-        inner=(10.-5.*math.cos(math.radians(100.)),-5.*math.sin(math.radians(100.)))
+-        measured=branch_angles(c,Ref(),{'a':[('p',inner)]})[0]['angle_deg']
+-        self.assertAlmostEqual(measured,100.)
+-        self.assertFalse(angle_in_range(measured,80.,95.))
+-
+-    def test_exempt_only_05_to_01_and_keep_other_branches(self):
+-        class Ref:
+-            def _interval_trusted(self, a, b): return True
+-            def point_at(self, s): return (s, 0., True)
+-        n1='10000000001'; n2='10000000002'; i5='10000000005'; i6='10000000006'
+-        c={'node_progress':{n1:10.,n2:20.},'node_positions':{n1:np.array([10.,0.]),n2:np.array([20.,0.])},
+-           'direction':1,'scale_map_to_odom':1.,'rotation_map_to_odom_rad':0.,'translation_map_to_odom':(0.,0.)}
+-        result=branch_angles(c,Ref(),{n1:[(i5,(10.,5.)),(i6,(10.,-5.))],n2:[(i5,(20.,5.))]})
+-        self.assertEqual([(x['outer_node_id'],x['inner_node_id']) for x in result],[(n1,i6),(n2,i5)])
+-
+-    def test_any_untrusted_interior_of_window_blocks_angle(self):
+-        class Ref:
+-            def _interval_trusted(self, a, b):
+-                self.assertion=(a,b)
+-                return False
+-            def point_at(self, s):
+-                raise AssertionError('Must not use a window containing excluded odometry')
+-        ref=Ref()
+-        c={'node_progress': {'a':10.}}
+-        self.assertIsNone(branch_angles(c, ref, {'a':[('p',(10.,5.))]}))
+-        self.assertEqual(ref.assertion,(8.,12.))
+-
+-    def test_missing_official_topology_does_not_guess_nearest_interior(self):
+-        points=[(0,0),(30,0),(30,7),(12,7),(12,25),(0,25)]
+-        result=build_fused_route(fixtures.record(points),fixtures.route(points),comparison_points=[(10,10)])
+-        self.assertFalse(result.status['available'])
+-        self.assertEqual(result.status['reason'],'branch_connections_missing')
+-        self.assertEqual(result.node_positions,{})
+-        self.assertGreater(result.reference.length_m,0.)
+-
+-    def test_malformed_topology_returns_odom_only(self):
+-        points=[(0,0),(30,0),(30,7),(12,7),(12,25),(0,25)]
+-        result=build_fused_route(fixtures.record(points),fixtures.route(points),
+-                                 branch_connections={'unknown':[('inside',(1,2))]})
+-        self.assertFalse(result.status['available'])
+-        self.assertEqual(result.status['reason'],'branch_connections_invalid')
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_geometric_alignment.py
++++ /dev/null
+@@ -1,120 +0,0 @@
+-"""Geometric hypotheses and point-to-curve registration regressions."""
+-import math
+-import time
+-import unittest
+-from unittest.mock import patch
+-
+-import numpy as np
+-
+-import test_route_fusion as fixtures
+-from semantic_planner_core.geometric_alignment import (
+-    CurveProblem, PointHash, geometric_seeds, refine,
+-)
+-from semantic_planner_core.rough_route import RouteReference
+-from semantic_planner_core.route_fusion import build_fused_route as production_fuse
+-
+-
+-def build_fused_route(samples, official, **options):
+-    # Node (8, 0) lies on the synthetic horizontal segment: the supplied
+-    # branch points into that synthetic loop and is perpendicular to it.
+-    if official.points[0] == (8, 0):
+-        options.setdefault('branch_connections', {official.node_ids[0]: [('test_inner', (8., 3.))]})
+-        return production_fuse(samples, official, **options)
+-    return fixtures.build_fused_route(samples, official, **options)
+-
+-
+-class GeometricAlignmentTests(unittest.TestCase):
+-    # The mapped points lie on straight sides, not at the track's corners.
+-    outline = [(0, 0), (30, 0), (30, 7), (12, 7), (12, 25), (0, 25)]
+-    nodes = [(8, 0), (30, 3), (20, 7), (12, 19), (7, 25), (0, 8)]
+-
+-    def test_hash_checks_actual_distance_across_cell_boundaries(self):
+-        lookup = PointHash(np.asarray([(0.99, 0.0), (-2.0, 1.0)]), 1.0)
+-        self.assertTrue(lookup.supports(np.asarray((1.01, 0.0)), 0.03))
+-        self.assertFalse(lookup.supports(np.asarray((1.01, 0.0)), 0.01))
+-        self.assertFalse(lookup.supports(np.asarray((10.0, 10.0)), 0.5))
+-
+-    def test_pair_and_triangle_hypotheses_create_diverse_candidates(self):
+-        reference = RouteReference(fixtures.record(self.outline, step=0.2),
+-                                   spacing_m=0.2, smooth_window_m=0.0)
+-        problem = CurveProblem(reference, fixtures.route(self.nodes), 4.0, 2.0)
+-        seeds, diagnostics = geometric_seeds(problem, time.monotonic() + 20.0)
+-        self.assertFalse(diagnostics["search_budget_exhausted"])
+-        self.assertGreater(diagnostics["pair_hypotheses"], 100)
+-        self.assertGreaterEqual(diagnostics["triangle_verified_hypotheses"], len(seeds))
+-        self.assertGreater(len(seeds), 2)
+-        self.assertLessEqual(len(seeds), 64)
+-        clouds = [problem.design @ seed for seed in seeds]
+-        self.assertGreater(max(float(np.linalg.norm(clouds[0] - cloud)) for cloud in clouds[1:]), 5.0)
+-
+-    def test_refinement_uses_monotone_point_curve_objective(self):
+-        reference = RouteReference(fixtures.record(self.outline, step=0.2),
+-                                   spacing_m=0.2, smooth_window_m=0.0)
+-        problem = CurveProblem(reference, fixtures.route(self.nodes), 4.0, 2.0)
+-        seed = problem.parameters(1.01, 0.04, (0.4, -0.2))
+-        candidate = refine(problem, seed, 1, time.monotonic() + 20.0)
+-        self.assertIsNotNone(candidate)
+-        history = candidate["objective_history"]
+-        self.assertGreater(len(history), 1)
+-        self.assertTrue(all(after <= before + 1e-12 for before, after in zip(history, history[1:])))
+-        self.assertLess(history[-1], history[0])
+-        self.assertTrue(candidate["converged"], candidate["termination"])
+-
+-    def test_nodes_on_straights_match_under_transform_start_and_direction(self):
+-        for angle, scale, shift, reverse in ((0.0, 1.0, 23, False),
+-                                             (0.61, 1.2, 183, False),
+-                                             (-1.25, 0.8, 61, True)):
+-            with self.subTest(angle=angle, scale=scale, shift=shift, reverse=reverse):
+-                c, s = math.cos(angle), math.sin(angle)
+-                def transform(point):
+-                    x, y = point
+-                    return (scale * (c*x-s*y) + 101.0, scale * (s*x+c*y) - 52.0)
+-                measured = [transform(point) for point in self.outline]
+-                samples = fixtures.record(measured, step=0.18, reverse=reverse, shift=shift)
+-                result = build_fused_route(samples, fixtures.route(self.nodes), shape_weight=0.0)
+-                self.assertTrue(result.status["available"], result.status)
+-                self.assertTrue(result.alignment["best_converged"])
+-                self.assertTrue(result.alignment["best_objective_monotone"])
+-                self.assertEqual(result.alignment["direction"], -1 if reverse else 1)
+-                self.assertLess(result.alignment["rmse_m"], 0.05)
+-                self.assertFalse(result.alignment["search_exhaustive"])
+-                for index, point in enumerate(self.nodes):
+-                    self.assertLess(math.dist(result.node_positions[str(index)], transform(point)), 0.2)
+-
+-    def test_symmetric_curve_reports_ambiguity_when_lowest_score_is_selected(self):
+-        square = [(0, 0), (20, 0), (20, 20), (0, 20)]
+-        result = build_fused_route(fixtures.record(square), fixtures.route(square))
+-        # Current policy intentionally picks the lowest eligible score even
+-        # when alternatives are equally good; ambiguity remains observable.
+-        self.assertTrue(result.status["available"])
+-        self.assertFalse(result.alignment["candidate_gap_enforced"])
+-        self.assertFalse(result.alignment["global_transform_available"])
+-        self.assertFalse(result.alignment["node_correspondence_available"])
+-        self.assertGreater(result.alignment["alternative_node_spread_m"], 10.0)
+-
+-    def test_expired_search_returns_odom_reference_only(self):
+-        with patch("semantic_planner_core.geometric_alignment.MAX_SECONDS", 0.0):
+-            result = build_fused_route(fixtures.record(self.outline), fixtures.route(self.nodes))
+-        self.assertFalse(result.status["available"])
+-        self.assertEqual(result.status["reason"], "solver_budget_exhausted")
+-        self.assertTrue(result.alignment["search_budget_exhausted"])
+-        self.assertGreater(result.reference.length_m, 0.0)
+-        self.assertEqual(result.node_positions, {})
+-
+-    def test_low_iteration_budget_cannot_silently_accept_unfinished_candidates(self):
+-        with patch("semantic_planner_core.geometric_alignment.MAX_ITERATIONS", 1):
+-            # Default argument binding needs an explicit wrapper for this budget.
+-            import semantic_planner_core.geometric_alignment as alignment
+-            original = alignment.refine
+-            def truncated(problem, seed, direction, deadline):
+-                return original(problem, seed, direction, deadline, max_iterations=1)
+-            with patch.object(alignment, "refine", side_effect=truncated):
+-                result = build_fused_route(fixtures.record(self.outline), fixtures.route(self.nodes))
+-        self.assertFalse(result.status["available"])
+-        self.assertEqual(result.status["reason"], "solver_not_converged")
+-        self.assertGreater(result.alignment["unresolved_candidate_count"], 0)
+-        self.assertEqual(result.node_positions, {})
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_joint_alignment.py
++++ /dev/null
+@@ -1,133 +0,0 @@
+-"""Joint correspondence and odometry fallback regressions."""
+-import math
+-import unittest
+-from pathlib import Path
+-
+-import numpy as np
+-
+-import test_route_fusion as fixtures
+-from semantic_planner_core.rough_route import RouteReference, RouteSample
+-from semantic_planner_core.rough_topology import OfficialRoute
+-from semantic_planner_core.traffic_route import TopologyGraph
+-from semantic_planner_core.route_fusion import (
+-    _candidate_disagreement, _joint_project_nodes, _project_nodes,
+-    _projection_data, build_odom_reference,
+-)
+-from test_route_fusion import build_fused_route
+-from fusion_test_fixtures import official_graph_branches
+-
+-
+-class JointAlignmentTests(unittest.TestCase):
+-    def test_joint_assignment_can_use_a_non_nearest_ordered_candidate(self):
+-        reference = RouteReference(fixtures.record([(0, 0), (10, 0), (10, 10), (0, 10)]),
+-                                   spacing_m=0.2, smooth_window_m=0.0, max_detour_gap_m=0.0)
+-        points = np.asarray([(3.0, 0.0), (2.8, 0.0), (10.0, 10.0), (0.0, 10.0)])
+-        data = _projection_data(reference)
+-        nearest = _project_nodes(reference, points, 1.0, 0.0, (0.0, 0.0), data)
+-        joint = _joint_project_nodes(reference, points, 1.0, 0.0, (0.0, 0.0), data, 1, 4.0, 2.0)
+-        self.assertGreater(nearest[1][0], nearest[1][1])
+-        self.assertIsNotNone(joint)
+-        self.assertLess(joint[1][0], joint[1][1])
+-        self.assertGreater(max(joint[2]), 0.5)
+-        alternative = _joint_project_nodes(reference, points, 1.0, 0.0, (0.0, 0.0),
+-                                            data, 1, 4.0, 2.0, forbidden_node=0,
+-                                            forbidden_progress=joint[1][0], forbidden_radius_m=0.5)
+-        self.assertIsNotNone(alternative)
+-        self.assertGreater(abs(alternative[1][0] - joint[1][0]), 0.5)
+-
+-    def test_inner_node_disagreement_is_not_hidden_by_equal_outer_projections(self):
+-        positions = {"a": np.asarray((0.0, 0.0)), "b": np.asarray((10.0, 0.0))}
+-        first = {"node_ids": ["a", "b"], "node_positions": positions,
+-                 "scale_map_to_odom": 1.0, "rotation_map_to_odom_rad": 0.0,
+-                 "translation_map_to_odom": (0.0, 0.0)}
+-        second = dict(first, rotation_map_to_odom_rad=math.pi / 2.0)
+-        self.assertEqual(_candidate_disagreement(first, second, []), 0.0)
+-        self.assertGreater(_candidate_disagreement(first, second, [(8.0, 4.0)]), 1.0)
+-
+-    def test_symmetric_loop_selected_lowest_still_reports_not_unique(self):
+-        outline = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
+-        result = build_fused_route(fixtures.record(outline, step=0.25), fixtures.route(outline),
+-                                   comparison_points=[(5.0, 8.0)])
+-        self.assertTrue(result.status["available"], result.status)
+-        self.assertFalse(result.alignment["candidate_gap_enforced"])
+-        self.assertFalse(result.alignment["global_transform_available"])
+-        self.assertFalse(result.alignment["node_correspondence_available"])
+-        self.assertIsNotNone(result.alignment["alternative_node_spread_m"])
+-
+-    def test_official_nodes_and_synthetic_rounded_track_report_ambiguity(self):
+-        source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
+-        official = OfficialRoute.from_osm(source)
+-        graph = TopologyGraph.from_osm(source)
+-        inner = [point for identifier, point in graph.nodes.items()
+-                 if identifier not in official.node_ids and graph.adjacency[identifier]]
+-        points = []
+-        for index in range(1200):
+-            angle = math.pi + 2.0 * math.pi * index / 1200.0
+-            c, s = math.cos(angle), math.sin(angle)
+-            points.append((41.0 + 41.0 * math.copysign(abs(c) ** 0.4, c),
+-                           -0.7 + 32.5 * math.copysign(abs(s) ** 0.4, s)))
+-        points = points[225:] + points[:225]
+-        samples = [RouteSample(x, y, math.atan2(points[(i + 1) % len(points)][1] - y,
+-                                                 points[(i + 1) % len(points)][0] - x))
+-                   for i, (x, y) in enumerate(points)]
+-        result = build_fused_route(samples, official, max_rmse_m=3.2, comparison_points=inner,
+-                                   branch_connections=official_graph_branches(official, graph))
+-        self.assertTrue(result.status["available"], result.status)
+-        self.assertFalse(result.alignment["candidate_gap_enforced"])
+-        self.assertFalse(result.alignment["global_transform_available"])
+-        self.assertFalse(result.alignment["node_correspondence_available"])
+-        self.assertGreater(result.alignment["alternative_node_spread_m"], 10.0)
+-
+-    def test_different_start_and_reverse_still_search_expected_direction(self):
+-        outline = [(0, 0), (80, 0), (90, 20), (42, 28), (18, 45), (0, 25)]
+-        angle = 0.57
+-        c, s = math.cos(angle), math.sin(angle)
+-        observed = [(c * x - s * y + 19, s * x + c * y - 7) for x, y in outline]
+-        outcomes = []
+-        for reverse, shift in ((False, 12), (False, 184), (True, 73)):
+-            with self.subTest(reverse=reverse, shift=shift):
+-                result = build_fused_route(fixtures.record(observed, step=0.35, reverse=reverse, shift=shift),
+-                                           fixtures.route(outline), comparison_points=[(20, 8), (12, 12)])
+-                self.assertIsNotNone(result.alignment, result.status)
+-                self.assertEqual(result.alignment["direction"], -1 if reverse else 1)
+-                self.assertAlmostEqual(result.alignment["rotation_rad"], -angle, delta=0.03)
+-                self.assertLess(result.alignment["rmse_m"], 0.5)
+-                self.assertIn(result.status["reason"],
+-                              ("accepted", "global_transform_ambiguous", "node_position_uncertain"))
+-                outcomes.append(result.status["reason"])
+-        self.assertEqual(len(set(outcomes)), 1, outcomes)
+-
+-    def test_long_avoidance_gap_is_drawn_as_a_line_but_never_trusted(self):
+-        samples = []
+-        for point in fixtures.record(fixtures.RouteFusionTests.outline, step=0.1):
+-            u = (point.x - 10.0) / 8.0
+-            if abs(point.y) < 1e-9 and 0.0 < u < 1.0:
+-                samples.append(RouteSample(point.x, 0.7 * math.sin(math.pi * u), point.yaw, True))
+-            else:
+-                samples.append(point)
+-        reference = build_odom_reference(samples)
+-        gap = [(point, trusted) for point, trusted in zip(reference.points, reference.trusted)
+-               if 10.5 < point[0] < 17.5 and abs(point[1]) < 1.0]
+-        self.assertGreater(len(gap), 10)
+-        self.assertTrue(all(not trusted for _, trusted in gap))
+-        self.assertLess(max(abs(point[1]) for point, _ in gap), 0.02)
+-
+-    def test_invalid_gap_and_comparison_parameters_are_rejected(self):
+-        outline = fixtures.RouteFusionTests.outline
+-        samples = fixtures.record(outline)
+-        for options in ({"max_detour_gap_m": math.nan}, {"max_detour_gap_m": -1.0},
+-                        {"ambiguity_position_m": 0.0}, {"comparison_points": [1.0]}):
+-            with self.subTest(options=options), self.assertRaises(ValueError):
+-                build_fused_route(samples, fixtures.route(outline), **options)
+-
+-    def test_unobserved_large_closure_gap_is_not_trusted(self):
+-        samples = [RouteSample(0, 0, 0), RouteSample(10, 0, 0),
+-                   RouteSample(10, 10, 0), RouteSample(0, 10, 0),
+-                   RouteSample(0, 1, 0)]
+-        reference = build_odom_reference(samples, spacing_m=0.2, smooth_window_m=0.0)
+-        self.assertTrue(reference.point_at(5.0)[2])
+-        self.assertFalse(reference.point_at(reference.length_m - 0.3)[2])
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_official_fusion_synthetic.py
++++ /dev/null
+@@ -1,51 +0,0 @@
+-"""End-to-end matching with the actual official graph and a synthetic lap.
+-
+-The generated loop is not a survey, a replay, or a prior map. This checks
+-software behavior only and cannot confirm field junction positions.
+-"""
+-import math
+-from pathlib import Path
+-import unittest
+-
+-from fusion_test_fixtures import hypothetical_smooth_lap, official_graph_branches
+-from semantic_planner_core.rough_route import RouteSample
+-from semantic_planner_core.rough_topology import OfficialRoute
+-from semantic_planner_core.route_fusion import build_fused_route
+-from semantic_planner_core.traffic_route import TopologyGraph
+-
+-
+-class OfficialGraphFusionTests(unittest.TestCase):
+-    def test_full_graph_branches_at_multiple_start_poses_and_directions(self):
+-        path = Path(__file__).parents[2] / 'semantic_local_planner_ros/config/aiformula_topomap.osm'
+-        official = OfficialRoute.from_osm(path)
+-        graph = TopologyGraph.from_osm(path)
+-        branches = official_graph_branches(official, graph)
+-        self.assertEqual(len(branches), 5)
+-        comparison = [graph.nodes[key] for key in graph.nodes
+-                      if key not in official.node_ids and graph.adjacency[key]]
+-        raw = hypothetical_smooth_lap(official, graph)
+-        angle, scale = 0.47, 1.12
+-        c, s = math.cos(angle), math.sin(angle)
+-        measured = [(scale * (c*x - s*y) + 11.0, scale * (s*x + c*y) - 7.0) for x, y in raw]
+-        for reverse, shift in ((False, 0), (False, 137), (True, 253)):
+-            with self.subTest(reverse=reverse, shift=shift):
+-                points = list(reversed(measured)) if reverse else list(measured)
+-                points = points[shift:] + points[:shift]
+-                samples = [RouteSample(x, y, math.atan2(points[(i+1) % len(points)][1] - y,
+-                                                        points[(i+1) % len(points)][0] - x))
+-                           for i, (x, y) in enumerate(points)]
+-                result = build_fused_route(samples, official, max_rmse_m=3.2,
+-                                           branch_connections=branches, comparison_points=comparison)
+-                self.assertTrue(result.status['available'], result.status)
+-                self.assertEqual(result.alignment['direction'], -1 if reverse else 1)
+-                self.assertFalse(result.alignment['candidate_gap_enforced'])
+-                self.assertEqual(len(result.alignment['branch_angles']), 4)
+-                self.assertTrue(all(80.0 <= angle['angle_deg'] <= 95.0
+-                                    for angle in result.alignment['branch_angles']))
+-                for identifier, (x, y) in zip(official.node_ids[:-1], official.points[:-1]):
+-                    expected = (scale * (c*x - s*y) + 11.0, scale * (s*x + c*y) - 7.0)
+-                    self.assertLess(math.dist(result.node_positions[identifier], expected), 0.3)
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_rough_route.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_rough_route.py
+@@ -77,21 +77,11 @@
+                                    smooth.points[-1][1] - smooth.points[0][1]), 0.15)
+         self.assertEqual(smooth.point_at(0), smooth.point_at(smooth.length_m))
+ 
+-    def test_adjacent_lane_keeps_recorded_direction_without_cross_lane_pull(self):
++    def test_actual_position_produces_return_bearing(self):
+         route = RouteReference(rectangle(), smooth_window_m=0.0)
+-        for offset in (-1.5, 0.0, 1.5):
+-            angles = route.direction_candidates(2.0, offset, 0.0, 2.0, 2.0, 0.0)
+-            self.assertEqual(len(angles), 1)
+-            self.assertAlmostEqual(angles[0], 0.0)
+-
+-    def test_heading_limit_rejects_opposing_route_direction(self):
+-        route = RouteReference(rectangle(), smooth_window_m=0.0)
+-        forward = route.match(2.0, 1.6, 2.0, 0.0, 1.0, 2.5,
+-                              yaw=0.0, max_heading_error_rad=math.radians(75.0))
+-        backward = route.match(2.0, 1.6, 2.0, 0.0, 1.0, 2.5,
+-                               yaw=math.pi, max_heading_error_rad=math.radians(75.0))
+-        self.assertIsNotNone(forward)
+-        self.assertIsNone(backward)
++        angles = route.direction_candidates(2.0, 0.5, 0.0, 2.0, 2.0, 0.0)
++        self.assertEqual(len(angles), 1)
++        self.assertAlmostEqual(angles[0], math.atan2(-0.5, 2.0))
+ 
+     def test_large_smoothing_window_on_three_points_keeps_usable_loop(self):
+         route = RouteReference(
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_route_fusion.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_route_fusion.py
+@@ -8,18 +8,7 @@
+ 
+ from semantic_planner_core.rough_route import RouteReference, RouteSample
+ from semantic_planner_core.rough_topology import OfficialRoute
+-from semantic_planner_core.route_fusion import build_fused_route as production_fuse, _shape_displacements
+-from fusion_test_fixtures import single_synthetic_branch
+-
+-
+-def build_fused_route(samples, official, **options):
+-    """Supply one synthetic branch for legacy numerical-geometry fixtures.
+-
+-    The real supplied graph and all its branches are tested separately; this
+-    single branch does not represent a measured junction or race-course map.
+-    """
+-    options.setdefault('branch_connections', single_synthetic_branch(official))
+-    return production_fuse(samples, official, **options)
++from semantic_planner_core.route_fusion import build_fused_route, _shape_displacements
+ 
+ 
+ def route(points):
+@@ -104,13 +93,14 @@
+             for identifier, actual in result.node_positions.items():
+                 self.assertLess(math.dist(actual, measured[int(identifier)]), 0.3)
+ 
+-    def test_symmetric_selection_reports_ambiguity_and_bad_fit_is_rejected(self):
++    def test_symmetric_or_bad_shapes_do_not_produce_navigation_map(self):
+         square = [(0.0, 0.0), (20.0, 0.0), (20.0, 20.0), (0.0, 20.0)]
+         result = build_fused_route(record(square), route(square))
+-        self.assertTrue(result.status["available"])
+-        self.assertFalse(result.alignment["candidate_gap_enforced"])
+-        self.assertFalse(result.alignment["global_transform_available"])
+-        self.assertFalse(result.alignment["node_correspondence_available"])
++        self.assertFalse(result.status["available"])
++        self.assertEqual(result.status["reason"], "ambiguous_correspondence")
++        self.assertEqual(result.status["mode"], "odom_only")
++        self.assertEqual(result.node_positions, {})
++        self.assertEqual(result.node_progress, {})
+         distorted = list(self.outline)
+         distorted[1] = (45.0, -12.0)
+         bad = build_fused_route(record(distorted), route(self.outline), max_rmse_m=0.1)
+@@ -132,8 +122,7 @@
+         samples = record(self.outline, excluded=lambda x, y: x > 29.8 and y < 0.4)
+         result = build_fused_route(samples, route(self.outline))
+         self.assertFalse(result.status["available"])
+-        self.assertIn(result.status["reason"],
+-                      ("node_turn_unobserved_or_excluded", "final_node_projection_unavailable"))
++        self.assertEqual(result.status["reason"], "node_turn_unobserved_or_excluded")
+         self.assertEqual(result.node_positions, {})
+ 
+     def test_long_excluded_gap_cannot_dominate_shape_fit(self):
+@@ -160,7 +149,7 @@
+         self.assertGreater(abs(result.node_progress["1"] - naive), 0.3)
+         self.assertLess(math.dist(result.node_positions["1"], self.outline[1]), 0.2)
+ 
+-    def test_synthetic_polygon_with_official_node_coordinates_in_both_directions(self):
++    def test_actual_official_map_nodes_are_observable_in_both_directions(self):
+         source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
+         official = OfficialRoute.from_osm(source)
+         for reverse in (False, True):
+@@ -170,7 +159,7 @@
+             for identifier, expected in zip(official.node_ids[:-1], official.points[:-1]):
+                 self.assertLess(math.dist(result.node_positions[identifier], expected), 0.3)
+ 
+-    def test_synthetic_polygon_official_coordinates_preserve_odom_scale(self):
++    def test_actual_official_uniform_scale_is_not_a_quality_gate_or_route_scale(self):
+         source = Path(__file__).parents[2] / "semantic_local_planner_ros" / "config" / "aiformula_topomap.osm"
+         official = OfficialRoute.from_osm(source)
+         samples = record(official.points[:-1], shift=135)
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_route_fusion_regressions_20261115.py
++++ /dev/null
+@@ -1,79 +0,0 @@
+-"""Regression checks for coordinate-invariant matching and excluded gaps."""
+-
+-import math
+-import unittest
+-from unittest.mock import patch
+-
+-from semantic_planner_core.rough_route import RouteSample
+-import test_route_fusion as fixtures
+-from test_route_fusion import build_fused_route
+-
+-
+-class FusionRegressionTests(unittest.TestCase):
+-    def test_equivalent_map_coordinates_keep_the_same_match(self):
+-        outline = fixtures.RouteFusionTests.outline
+-        measured = [(1.2 * x + 21.0, 1.2 * y - 37.0) for x, y in outline]
+-        samples = fixtures.record(measured)
+-        baseline = build_fused_route(samples, fixtures.route(outline))
+-        rebased = build_fused_route(
+-            samples, fixtures.route([(0.08 * x + 25.0, 0.08 * y - 19.0) for x, y in outline]))
+-        self.assertTrue(baseline.status["available"], baseline.status)
+-        self.assertTrue(rebased.status["available"], rebased.status)
+-        for identifier, point in baseline.node_positions.items():
+-            self.assertLess(math.dist(point, rebased.node_positions[identifier]), 0.01)
+-
+-    @staticmethod
+-    def samples_with_excluded_detour():
+-        samples = []
+-        for sample in fixtures.record(fixtures.RouteFusionTests.outline, step=0.05):
+-            fraction = (sample.x - 13.0) / 1.9
+-            if abs(sample.y) < 1e-7 and 0.0 < fraction < 1.0:
+-                samples.append(RouteSample(sample.x, 0.35 * math.sin(math.pi * fraction),
+-                                           sample.yaw, excluded=True))
+-            else:
+-                samples.append(sample)
+-        return samples
+-
+-    def assert_gap_is_straight_and_untrusted(self, reference):
+-        size = len(reference.points)
+-        first = next(index for index, (x, y) in enumerate(reference.points)
+-                     if 12.5 < x < 15.5 and abs(y) < 1.0 and not reference.trusted[index])
+-        while not reference.trusted[(first - 1) % size]:
+-            first = (first - 1) % size
+-        last = first
+-        while not reference.trusted[(last + 1) % size]:
+-            last = (last + 1) % size
+-        start = reference.points[(first - 1) % size]
+-        end = reference.points[(last + 1) % size]
+-        dx, dy = end[0] - start[0], end[1] - start[1]
+-        length = math.hypot(dx, dy)
+-        self.assertGreater(length, 1.0)
+-        deviations = []
+-        index = first
+-        while True:
+-            self.assertFalse(reference.trusted[index])
+-            x, y = reference.points[index]
+-            deviations.append(abs(dx * (y - start[1]) - dy * (x - start[0])) / length)
+-            if index == last:
+-                break
+-            index = (index + 1) % size
+-        self.assertLess(max(deviations), 0.01)
+-
+-    def test_excluded_detour_is_straight_in_fused_reference(self):
+-        result = build_fused_route(self.samples_with_excluded_detour(),
+-                                   fixtures.route(fixtures.RouteFusionTests.outline))
+-        self.assertTrue(result.status["available"], result.status)
+-        self.assert_gap_is_straight_and_untrusted(result.reference)
+-
+-    def test_excluded_detour_is_straight_in_fallback_reference(self):
+-        with patch("semantic_planner_core.route_fusion._match_outer_nodes",
+-                   return_value=(None, {}, "matching_unavailable")):
+-            result = build_fused_route(self.samples_with_excluded_detour(),
+-                                       fixtures.route(fixtures.RouteFusionTests.outline))
+-        self.assertFalse(result.status["available"])
+-        self.assertEqual(result.status["reason"], "matching_unavailable")
+-        self.assert_gap_is_straight_and_untrusted(result.reference)
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_seam.py
++++ /dev/null
+@@ -1,42 +0,0 @@
+-"""Regression checks for the closure seam, separate from OA exclusions."""
+-import math
+-import unittest
+-
+-from semantic_planner_core.geometric_alignment import _branch_tangent
+-from semantic_planner_core.rough_route import RouteSample
+-from semantic_planner_core.route_fusion import build_odom_reference, _fit_trace
+-
+-
+-def lap(excluded_near_seam=False):
+-    # 40m square, deliberately leave the final 1m unobserved.
+-    points = []
+-    for x in range(11):
+-        points.append((float(x), 0.0))
+-    for y in range(1, 11):
+-        points.append((10.0, float(y)))
+-    for x in range(9, -1, -1):
+-        points.append((float(x), 10.0))
+-    for y in range(9, 0, -1):
+-        points.append((0.0, float(y)))
+-    return [RouteSample(x, y, 0.0, excluded=(excluded_near_seam and i == 0))
+-            for i, (x, y) in enumerate(points)]
+-
+-
+-class SeamTests(unittest.TestCase):
+-    def test_only_pure_seam_gets_separate_gap_limit(self):
+-        seam = build_odom_reference(lap(), 0.2, 0.0)
+-        self.assertEqual(_fit_trace(seam, 0.1, 3.0)[1], None)
+-        oa = build_odom_reference(lap(True), 0.2, 0.0)
+-        self.assertEqual(_fit_trace(oa, 0.1, 3.0)[1], 'excluded_gap_too_long')
+-
+-    def test_one_sided_tangent_never_uses_oa(self):
+-        seam = build_odom_reference(lap(), 0.2, 0.0)
+-        tangent, source = _branch_tangent(seam, 1.0, 2.0)
+-        self.assertIsNotNone(tangent)
+-        self.assertEqual(source, 'seam_forward')
+-        oa = build_odom_reference(lap(True), 0.2, 0.0)
+-        self.assertEqual(_branch_tangent(oa, 1.0, 2.0), (None, None))
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_smooth_detour.py
++++ /dev/null
+@@ -1,75 +0,0 @@
+-"""Geometric regression tests; these are not vehicle or road-boundary tests."""
+-import math
+-import unittest
+-
+-from semantic_planner_core.rough_route import RouteReference, RouteSample
+-from semantic_planner_core.smooth_detour import SmoothDetourTracker, build_smooth_detour
+-
+-
+-class SmoothDetourTests(unittest.TestCase):
+-    def setUp(self):
+-        self.reference = RouteReference([
+-            RouteSample(-20, 0, 0), RouteSample(40, 0, 0),
+-            RouteSample(40, 50, 0), RouteSample(-20, 50, 0),
+-        ], 0.2, 0.0)
+-        self.route = [(0., 0.), (0., 30.), (40., 30.)]
+-
+-    def build(self, pose=(-12., 0., 0.), radius=4.):
+-        return build_smooth_detour(self.reference, self.route, 90.0, pose, radius, 12.0)
+-
+-    def test_ubs_limits_curvature_through_entry_inside_and_exit(self):
+-        path = self.build()
+-        self.assertLessEqual(path.max_curvature, 1.0 / 4.0 + 0.001)
+-        self.assertAlmostEqual(path.points[0][0], -12.0)
+-        self.assertAlmostEqual(path.points[0][1], 0.0)
+-        # The handoff is 2 m after the exit curve returns to the outer route.
+-        join = min(range(len(path.cumulative_m)), key=lambda i: abs(path.cumulative_m[i] - path.join_progress_m))
+-        expected = self.reference.point_at(90.0 + path.trim_m + 2.0)
+-        self.assertLess(math.dist(path.points[join], expected[:2]), 0.2)
+-        a, b = path.points[join - 1], path.points[join + 1]
+-        self.assertLess(abs(math.atan2(b[1] - a[1], b[0] - a[0]) - math.pi / 2), 0.05)
+-
+-    def test_exit_requires_heading_alignment_before_switching_to_vision(self):
+-        path = self.build()
+-        tracker = SmoothDetourTracker(path, 2.0, 1.5, 0.5, 65.0)
+-        tracker.progress_m = path.join_progress_m - 1.0
+-        point = tracker._point_at(path.join_progress_m + 0.05)
+-        # At the main-line rejoin, a 30-degree heading mismatch must not finish.
+-        result = tracker.update(point[0], point[1], math.pi / 2 - math.radians(30.0))
+-        self.assertFalse(result.done)
+-        result = tracker.update(point[0], point[1], math.pi / 2)
+-        self.assertTrue(result.done)
+-
+-    def test_ordered_tracker_completes_and_keeps_targets_in_front(self):
+-        path = self.build()
+-        tracker = SmoothDetourTracker(path, 2.0, 1.5, 0.5, 65.0)
+-        self.assertTrue(tracker.update(-12.0, 0.0, 0.0).available)
+-        complete = False
+-        for index, point in enumerate(path.points[1:-1], 1):
+-            following = path.points[index + 1]
+-            yaw = math.atan2(following[1] - point[1], following[0] - point[0])
+-            result = tracker.update(point[0], point[1], yaw)
+-            if result.done:
+-                complete = True
+-                self.assertGreaterEqual(result.progress_m, path.join_progress_m)
+-                break
+-            self.assertTrue(result.available, result.reason)
+-            for x, y in result.points:
+-                self.assertGreater(x, 0.0)
+-                self.assertLessEqual(abs(math.degrees(math.atan2(y, x))), 65.0)
+-        self.assertTrue(complete)
+-
+-    def test_impossibly_large_vehicle_radius_does_not_return_a_route(self):
+-        with self.assertRaisesRegex(ValueError, 'no_curvature_feasible_spline'):
+-            self.build(radius=100.)
+-
+-    def test_off_path_or_backward_pose_does_not_get_moving_targets(self):
+-        path = self.build()
+-        tracker = SmoothDetourTracker(path, 2.0, 1.5, 0.5, 65.0)
+-        self.assertFalse(tracker.update(-12., 4., 0.).available)
+-        self.assertFalse(tracker.update(-12., 0., math.pi).available)
+-        self.assertTrue(tracker.update(-12., 0., 0.).available)
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()
+--- a/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py
++++ b/workspace/src/aiformula/perception/semantic_planning_system/semantic_planner_core/tests/test_traffic_light_filter.py
+@@ -55,25 +55,6 @@
+                 for index, state in enumerate(states):
+                     vote.add(state, index * 0.1)
+                 self.assertEqual(vote.evaluate(0.5), expected)
+-
+-    def test_observed_non_red_states_vote_together_but_unknown_does_not(self):
+-        vote = TrafficLightFilter()
+-        for index, state in enumerate(("green", "off", "yellow", "red", "unknown")):
+-            vote.add(state, index * 0.1)
+-        self.assertEqual(vote.evaluate(0.5), "not_red")
+-        counts = vote.snapshot(0.5)
+-        self.assertEqual(counts["unknown_count"], 1)
+-        self.assertEqual(counts["yellow_count"], 1)
+-        self.assertEqual(counts["off_count"], 1)
+-
+-    def test_only_explicit_unknown_observations_can_vote_to_resume(self):
+-        for state, expected in (("unknown", "not_red"), ("invalid", "unknown")):
+-            vote = TrafficLightFilter(unknown_is_non_red=True)
+-            self.assertEqual(vote.evaluate(0.0), "unknown")
+-            for index in range(7):
+-                vote.add(state, index * 0.1)
+-            self.assertEqual(vote.evaluate(0.6 + 1e-6), expected)
+-            self.assertEqual(vote.evaluate(1.2), "unknown")
+ 
+     def test_sliding_window_changes_red_to_green(self):
+         vote = TrafficLightFilter()
+@@ -133,7 +114,7 @@
+     def test_invalid_colors_become_unknown_and_strings_are_normalized(self):
+         vote = TrafficLightFilter()
+         for state, now in ((" RED ", 0.0), ("Red", 0.1), (None, 0.2),
+-                           ("blue", 0.3), ("", 0.4)):
++                           ("yellow", 0.3), ("", 0.4)):
+             vote.add(state, now)
+         status = vote.snapshot(0.5)
+         self.assertEqual(status["red_count"], 2)

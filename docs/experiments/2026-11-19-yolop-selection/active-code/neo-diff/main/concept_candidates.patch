@@ -1,0 +1,1634 @@
+--- /dev/null
++++ b/concept_candidates/concept_candidates/backtrack_forward617.py
+@@ -0,0 +1,270 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/backtrack_forward617.py. """
++
++import numpy as np
++from concept_feasibility.response61515 import physical_motor_enabled
++
++from concept_road.compare61513 import Guided
++
++from concept_candidates.curve_progress import ReferenceObservation
++
++from concept_feasibility.geometry61514 import road_clearance, path_obstacle_clearance
++
++from concept_feasibility.reverse_model617 import step as advance_reverse
++
++from concept_feasibility.response61515 import MODEL
++
++def checked_retreat(obs,reverse_seconds,stop_age,horizon,previous_yaw=0.,reverse_steer=0.):
++    steps = int(np.ceil(max(horizon, reverse_seconds + .5) / .05))
++    controls = np.empty((steps, 2))
++    # Keep the scalar frozen dynamics and every 50 ms pose. The footprint
++    # kernel is pointwise and can check the full history in one call.
++    history = np.zeros((steps + 1, 5))
++    z = x = angle = travel = turn = 0.
++    v, w, age = obs.speed, obs.yaw, stop_age
++    max_speed = abs(v)
++    release_from = reverse_steer if reverse_seconds > 0 else previous_yaw
++    release_tick = int(round(reverse_seconds / .05))
++    for i in range(steps):
++        q = -.2 if (i + .5) * .05 < reverse_seconds else 0.
++        release_step = max(0, i - release_tick)
++        steer = reverse_steer if q < 0 else np.sign(release_from) * max(
++            0., abs(release_from) - 1.8 * (obs.dt + (release_step // 4) * .2))
++        controls[i] = q, steer
++        ov, ow = v, w
++        v, w, age = map(float, advance_reverse(v, w, q, steer, .05, age))
++        mid = angle + .25 * (ow + w) * .05
++        z += (ov + v) * .5 * np.cos(mid) * .05
++        x += (ov + v) * .5 * np.sin(mid) * .05
++        angle += (ow + w) * .5 * .05
++        travel += (abs(ov) + abs(v)) * .5 * .05
++        turn += (abs(ow) + abs(w)) * .5 * .05
++        history[i + 1] = z, x, angle, travel, turn
++        max_speed = max(max_speed, abs(v))
++
++    depth, lateral, heading, distance, rotation = history.T
++    road_gap, road_lower, supported = road_clearance(obs.road, depth, lateral, heading, 1.)
++    lower = float((road_lower - .04 * distance - .08 * rotation * 1.16).min())
++    known = bool(supported.all())
++    obstacle_gap = obstacle_lower = 100.
++    if len(obs.objects):
++        times = np.arange(steps + 1) * .05
++        states = list(zip(depth[:, None], lateral[:, None], heading[:, None], times,
++                          distance[:, None], rotation[:, None]))
++        gaps, margins = path_obstacle_clearance(obs.objects, states)
++        obstacle_gap, obstacle_lower = float(gaps[0]), float(margins[0])
++    # Inferred startup road may remain populated after historical rear cells
++    # disappear. It can never authorize another powered reverse interval.
++    observed_rear = reverse_seconds == 0 or getattr(obs, 'rear_observed_limit', None) is not None
++    valid = lower >= 0 and obstacle_lower > 0 and known and observed_rear and abs(v) < .04 and max_speed <= .3
++    return dict(valid=bool(valid), controls=controls, path=history[4::4, :2].tolist(), road_lower=lower,
++                obstacle_lower=obstacle_lower, geometric=min(float(road_gap.min()), obstacle_gap), known=known,
++                maximum_speed=max_speed, travel_m=travel, checked_seconds=steps*.05,
++                end_z=z, end_x=x, end_heading=angle)
++
++def opening_target(obs):
++    """Current observed and remembered openings rank checked reverse actions."""
++    ahead=[o for o in obs.objects if o[0]>.5 and o[0]<=obs.road[-1,0]]
++    if not ahead:return None
++    nearest=min(ahead,key=lambda item:item[0]);depth=float(nearest[0])
++    left=float(np.interp(depth,obs.road[:,0],obs.road[:,1]))+.38+float(np.interp(depth,obs.road[:,0],obs.road[:,3]))
++    right=float(np.interp(depth,obs.road[:,0],obs.road[:,2]))-.38-float(np.interp(depth,obs.road[:,0],obs.road[:,4]))
++    openings=[(left,right)] if right>left else []
++    for obj in ahead:
++        if abs(obj[0]-depth)>obj[4]+nearest[4]:continue
++        lo,hi=obj[1]-obj[4]-.38-obj[5],obj[1]+obj[4]+.38+obj[5]
++        parts=[]
++        for a,b in openings:
++            if lo>a:parts.append((a,min(b,lo)))
++            if hi<b:parts.append((max(a,hi),b))
++        openings=[(a,b) for a,b in parts if b>a]
++    if not openings:return None
++    a,b=max(openings,key=lambda pair:pair[1]-pair[0])
++    return depth,(a+b)*.5
++
++class BacktrackSteer:
++    def __init__(self,base):
++        self.base=base;self.last={};self.command=np.zeros(2);self.pending=None
++        self.budget=None;self.used=0.;self.previous_speed=0.;self.zero_age=0.
++        self.brake_until=0.;self.time=0.;self.phase='forward';self.reserved=None
++        self.pose=np.zeros(3);self.previous_yaw=0.;self.entry=None
++        self.event_travel=self.event_turn=0.
++
++    def reserved_release(self):
++        if self.reserved is None:return False
++        record=self.reserved;offset=int(round((self.time-record['issued_at'])/.05))
++        if record.get('release_at') is None:
++            if offset not in record['release_controls']:return False
++            record['release_at']=offset
++        controls=record['release_controls'][record['release_at']]
++        if offset>=len(controls):return False
++        self.command=controls[offset].copy();self.phase='release'
++        self.last=dict(reason='executing_checked_reverse_release',candidates=0,feasible=0,path=[],
++            contingency_execution=True,recovery='Previously checked early release; original deadline retained',
++            audit=dict(selected=None,table=[],paths=[],recovery_release=True),
++            contingency=dict(issued_at=record['issued_at'],selected=0,mode='checked_early_reverse_release',
++                brake_at=record['issued_at']+record['release_at']*.05,
++                stop_at=record['issued_at']+len(controls)*.05,consumed_steps=offset,remaining_steps=len(controls)-offset))
++        return True
++
++    def step(self,obs):
++        self.time+=obs.dt;self.pending=None
++        distance=(self.previous_speed+obs.speed)*.5*obs.dt
++        rotation=(self.previous_yaw+obs.yaw)*.5*obs.dt
++        middle=self.pose[2]+rotation*.5
++        self.pose[:2]+=distance*np.array([np.cos(middle),np.sin(middle)]);self.pose[2]+=rotation
++        if self.entry is not None:
++            self.event_travel+=(abs(self.previous_speed)+abs(obs.speed))*.5*obs.dt
++            self.event_turn+=(abs(self.previous_yaw)+abs(obs.yaw))*.5*obs.dt
++        self.previous_yaw=obs.yaw
++        self.used+=(max(0.,-self.previous_speed)+max(0.,-obs.speed))*.5*obs.dt if self.budget is not None else 0.
++        self.previous_speed=obs.speed
++        self.zero_age=self.zero_age+obs.dt if self.command[0]==0 else 0.
++        if len(obs.road)<3 or (self.phase!='forward' and getattr(obs,'rear_observed_limit',None) is None):
++            if self.phase=='forward':
++                self.base.command=self.command.copy()
++                self.command=self.base.step(obs)
++                self.last=self.base.last
++                return self.command.copy()
++            # Loss of rear evidence prohibits further reverse.  Once the
++            # measured vehicle has stopped and the checked braking interval is
++            # over, independently check a forward plan using current evidence.
++            # A verified forward command does not depend on seeing behind.
++            if (len(obs.road)>=3 and self.phase=='release' and abs(obs.speed)<.04
++                    and self.time>=self.brake_until):
++                forward=(ReferenceObservation(obs.road,obs.objects,max(0.,obs.speed),obs.yaw,obs.dt,obs.heading,
++                         getattr(obs,'guidance',None),obs.reference) if hasattr(obs,'reference') else
++                         Guided(obs.road,obs.objects,max(0.,obs.speed),obs.yaw,obs.dt,obs.heading,
++                                getattr(obs,'guidance',None)))
++                self.base.command=self.command.copy()
++                candidate=self.base.step(forward)
++                a=self.base.last.get('audit',{});selected=a.get('selected');table=np.asarray(a.get('table',[]))
++                usable=(selected is not None and len(table)>selected and table[selected,6]>0
++                        and candidate[0]>0 and not self.base.last.get('contingency_execution')
++                        and np.allclose(candidate[:2],table[selected,:2],atol=1e-5,rtol=0))
++                if usable:
++                    self.phase='forward';self.reserved=None;self.command=candidate.copy();self.last=self.base.last
++                    self.last['audit']['resume_after_rear_loss']='Stopped; new forward plan independently checked on current road'
++                    return self.command.copy()
++            if self.reserved_release():return self.command.copy()
++            self.command=np.array([0.,0.])
++            self.last=dict(reason='recovery_unknown_road',candidates=0,feasible=0,path=[],
++                recovery='No observed rear corridor; release',audit=dict(selected=None,table=[],paths=[]))
++            return self.command.copy()
++        original=obs
++        # Forward proposals are evaluated for the stopped state during retreat.
++        # They are never issued until the calibrated release interval completes.
++        forward=ReferenceObservation(obs.road,obs.objects,max(0.,obs.speed),obs.yaw,obs.dt,obs.heading,getattr(obs,'guidance',None),obs.reference) if hasattr(obs,'reference') else Guided(obs.road,obs.objects,max(0.,obs.speed),obs.yaw,obs.dt,obs.heading,getattr(obs,'guidance',None))
++        self.base.command=self.command.copy()
++        normal=self.base.step(forward);forward_count=self.base.last.get('feasible_forward',0)
++        self.last=self.base.last
++        table=np.asarray(self.last['audit']['table'])
++        nominal=np.asarray(self.last['audit'].get('nominal_feasible',[]),bool)
++        continuous=(table[:,0]>0)&nominal if len(table) and len(nominal)==len(table) else np.zeros(len(table),bool)
++        eligible=((table[:,0]>0)&(table[:,6]>0)) if len(table) else np.zeros(0,bool)
++        if self.phase!='forward' and eligible.any():
++            # A checked short forward-and-stop profile can be a sensible way
++            # out of a moving-obstacle encounter.  Prefer continuing paths when
++            # available, but do not keep reversing solely because every legal
++            # forward alternative includes a checked stop.
++            choices=continuous if continuous.any() else eligible
++            pick=int(np.argmax(np.where(choices,table[:,7],-np.inf)))
++            pending=self.base.pending
++            if pending['retimed'][pick]:controls=pending['profile_controls'][pick]
++            elif pending['brake_ok'][pick]:controls=pending['brake_controls'][pick]
++            else:controls=pending['escape_controls'][pick]
++            normal=controls[0].copy();self.base.command=normal.copy()
++            self.last['audit']['selected']=pick
++            self.last['audit']['recovery_exit']='Use a checked forward option after measured stop; prefer continuous when available'
++            self.last['path']=self.last['audit']['paths'][pick];self.last['target']=self.last['path'][-1]
++            self.last['margin']=float(table[pick,5])
++        if self.phase=='forward' and (forward_count or abs(obs.speed)>=.04 or self.base.last.get('contingency_execution')):
++            if forward_count:
++                self.reserved=None
++                if self.entry is not None:
++                    progress=float((self.pose[:2]-self.entry[:2])@np.array([np.cos(self.entry[2]),np.sin(self.entry[2])]))
++                    error=.06+.04*self.event_travel+.08*self.event_turn*1.16
++                    if progress>error:self.budget=None;self.used=0.;self.entry=None
++            self.command=normal;return self.command.copy()
++        if self.budget is None and abs(obs.speed)<.04:
++            # Fixed at entry. Newly transported history cannot refresh this
++            # retreat distance indefinitely. The rear bumper is 0.88m behind.
++            rear=getattr(obs,'rear_observed_limit',None)
++            self.budget=max(0.,-float(rear)-.88) if rear is not None else 0.
++            self.used=0.
++            self.entry=self.pose.copy();self.entry[2]+=float(np.interp(0.,obs.road[:,0],obs.heading))
++            self.event_travel=self.event_turn=0.
++        horizon=float(self.last['audit'].get('horizon',5.))
++        want_forward=bool(eligible.any()) if self.phase!='forward' else forward_count>0
++        reversing=(not want_forward and self.budget is not None and self.used<self.budget and obs.speed<.04)
++        if reversing:
++            stop=MODEL['stop'];stop_distance=.3*stop['delay']+.3**2/(2*stop['deceleration'])
++            remaining=max(0.,self.budget-self.used-stop_distance)
++            duration=min(1.,np.floor(remaining/.3/.2)*.2)
++            slew=getattr(self.base,'p',{}).get('slew',1.8);limit=min(.18,slew*obs.dt/2.)
++            candidates=[]
++            for steer in ([0.] if physical_motor_enabled() else [-limit,0.,limit]):
++                if abs(steer-self.command[1])>slew*obs.dt+1e-8:continue
++                candidate=checked_retreat(original,duration,self.zero_age,horizon,self.command[1],steer)
++                valid=duration>=.2 and candidate['valid'] and self.used+candidate['travel_m']<=self.budget
++                releases={}
++                # Every possible next control-period release is a different motion.
++                for cutoff in range(0,int(round(duration/.2))+1):
++                    if not valid:break
++                    branch=checked_retreat(original,cutoff*.2,self.zero_age,horizon,self.command[1],steer)
++                    if not branch['valid']:valid=False;break
++                    releases[cutoff*4]=branch['controls']
++                if valid:
++                    candidate['release_controls']=releases;candidate['reverse_steer']=steer;candidates.append(candidate)
++            reversing=bool(candidates)
++            if reversing:
++                opening=opening_target(original)
++                def cost(candidate):
++                    if opening is None:return abs(candidate['reverse_steer'])
++                    depth,target=opening
++                    projected=candidate['end_x']+(depth-candidate['end_z'])*np.tan(candidate['end_heading'])
++                    return abs(projected-target)
++                check=min(candidates,key=cost)
++        if not reversing:
++            if self.phase!='forward' and abs(obs.speed)<.04 and self.time>=self.brake_until and want_forward:
++                self.phase='forward';self.reserved=None;self.command=normal;return normal.copy()
++            check=checked_retreat(original,0.,self.zero_age,horizon,self.command[1])
++            check['release_controls']={i:check['controls'] for i in range(0,len(check['controls']),4)}
++        if not check['valid']:
++            self.command=np.array([0.,0.]);self.last=dict(reason='recovery_no_checked_motion',candidates=0,feasible=0,
++                path=[],recovery='Unknown rear or occupied swept path; holding release',
++                audit=dict(selected=None,table=[],paths=[],recovery_failed=dict(road=check['road_lower'],obstacle=check['obstacle_lower'],known=check['known'])))
++            return self.command.copy()
++        if reversing:
++            self.phase='retreat'
++            stop=MODEL['stop'];self.brake_until=self.time+stop['delay']+.3/stop['deceleration']
++        else:self.phase='release'
++        self.command=check['controls'][0].copy();self.pending=check
++        # One explicitly checked recovery action; do not manufacture 75 unique
++        # reverse motions from the one calibrated command.
++        row=[*self.command,check['path'][-1][1],check['geometric'],0.,min(check['road_lower'],check['obstacle_lower']),1.,0.,0.,0.,0.,0.]
++        self.last=dict(reason='checked_slow_reverse' if reversing else 'checked_reverse_release',candidates=1,feasible=1,
++            feasible_forward=forward_count,path=check['path'],target=check['path'][-1],target_meaning='predicted endpoint',
++            recovery=dict(phase=self.phase,remaining_historical_distance_m=max(0.,self.budget-self.used) if self.budget is not None else 0.,
++                budget_fixed_at_entry=True,maximum_body_speed_mps=.3,forward_proposals_assume_stationary=obs.speed<0),
++            audit=dict(selected=0,table=[row],paths=[check['path']],previous_command=self.base.last['audit'].get('previous_command',[0,0]),
++                columns=['speed','yaw','target_x','geometric_clearance','sigma','robust_clearance','feasible','score','progress_score','heading_penalty','smooth_penalty','margin_penalty'],
++                road_lower=[check['road_lower']],obstacle_lower=[check['obstacle_lower']],
++                schedule=['reverse_1s_then_stop_and_wait' if reversing else 'release_and_wait'],
++                obstacle_risk_limit=.022750131948179195,recovery_action=True,
++                profile_checked_seconds=check['checked_seconds'],forward_candidate_count=75,
++                rule='Recovery only with no forward choice; three bounded steering choices checked through full stop and wait; visible opening ranks valid actions'))
++        return self.command.copy()
++
++    def commit(self,index):
++        if self.pending is None:
++            if (self.last.get('audit',{}).get('recovery_release') or
++                    self.last.get('reason') in ('recovery_unknown_road','recovery_no_checked_motion')):
++                return
++            self.base.commit(index);self.last=self.base.last;return
++        if index!=0:raise ValueError('Only checked recovery action0 exists')
++        controls=self.pending['controls'];self.reserved=dict(issued_at=self.time,controls=controls.copy(),
++            release_controls=self.pending['release_controls'],release_at=None)
++        self.last['contingency']=dict(issued_at=self.time,selected=0,mode='slow_reverse_then_stop',
++            brake_at=self.time+float(np.sum(controls[:,0]<0))*.05,
++            stop_at=self.time+len(controls)*.05,controls_005s=controls.tolist(),
++            lower_m=min(self.pending['road_lower'],self.pending['obstacle_lower']))
+--- /dev/null
++++ b/concept_candidates/concept_candidates/belief61515.py
+@@ -0,0 +1,136 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/belief61515.py. """
++
++import numpy as np
++
++try:
++    from . import trajectory_batch as batch
++except ImportError:
++    batch = None
++
++from concept_road.vision import FOCAL, CX, CY, HEIGHT
++
++from concept_feasibility.response61515 import advance
++
++from concept_feasibility.geometry61514 import road_clearance, obstacle_clearance, path_obstacle_clearance
++
++class CameraBelief:
++    def __init__(self, objects, count):
++        self.objects = objects
++        self.p = np.asarray([np.tile(o[6:22].reshape(4, 4), (count, 1, 1)) for o in objects])
++        self.updates = np.zeros(count, int)
++
++    def advance(self, dt, time, z, x, heading, observe):
++        if len(self.objects) == 0:
++            return self.p
++        f = np.eye(4); f[:2, 2:] = np.eye(2)*dt
++        q = np.block([[np.eye(2)*dt**3/3, np.eye(2)*dt**2/2], [np.eye(2)*dt**2/2, np.eye(2)*dt]])*.12**2
++        intensity = np.asarray([o[24] if len(o)>24 else .12 for o in self.objects])
++        self.p = f@self.p@f.T+q*(intensity[:,None,None,None]/.12)**2
++        if not observe:
++            return self.p
++        c, s = np.cos(heading), np.sin(heading)
++        projected = []
++        for o in self.objects:
++            dz, dx = o[0]+o[2]*time-z, o[1]+o[3]*time-x
++            forward, lateral = dz*c+dx*s, dx*c-dz*s
++            safe = np.maximum(forward, .01)
++            u, v = CX+FOCAL*lateral/safe, CY+HEIGHT*FOCAL/safe
++            halfwidth = o[4]*FOCAL/safe
++            projected.append((forward, lateral, u, v, halfwidth))
++        for i, (o, projection) in enumerate(zip(self.objects, projected)):
++            # Age and confirmation count are observed tracker metadata.
++            if len(o) < 24 or o[22] > 1e-6 or o[23] < 3:
++                continue
++            forward, lateral, u, v, halfwidth = projection
++            covariance = self.p[i, :, :2, :2]
++            fvar = covariance[:,0,0]*c*c+2*covariance[:,0,1]*c*s+covariance[:,1,1]*s*s
++            lvar = covariance[:,0,0]*s*s-2*covariance[:,0,1]*c*s+covariance[:,1,1]*c*c
++            pad_z, pad_x = 2*np.sqrt(np.maximum(0., fvar)), 2*np.sqrt(np.maximum(0., lvar))
++            safe_z = np.maximum(.1, forward-pad_z)
++            pad_u = FOCAL*(pad_x/safe_z+abs(lateral)*pad_z/safe_z**2)
++            bottom = CY+HEIGHT*FOCAL/safe_z
++            visible = ((forward-pad_z > 1.05) & (forward+pad_z < 12) &
++                       (u-halfwidth-pad_u > 2) & (u+halfwidth+pad_u < 638) & (bottom < 357))
++            for j, (other_z, other_x, other_u, other_v, other_width) in enumerate(projected):
++                if i != j:
++                    visible &= ~((other_z > .1) & (other_z < forward) & (abs(other_u-u) < other_width+halfwidth))
++            for k in np.flatnonzero(visible):
++                dzdv = -forward[k]**2/(HEIGHT*FOCAL)
++                jacobian = np.array([[0., dzdv], [forward[k]/FOCAL, lateral[k]/forward[k]*dzdv]])
++                measurement = jacobian@np.diag([9., 9.])@jacobian.T+np.eye(2)*.04**2
++                # Repeated images share calibration/segmentation bias. A .07m
++                # floor prevents optimistic collapse from correlated views.
++                measurement += np.eye(2)*.07**2
++                rotation = np.array([[c[k], -s[k]], [s[k], c[k]]])
++                measurement = rotation@measurement@rotation.T
++                p = self.p[i, k]
++                gain = p[:, :2]@np.linalg.inv(p[:2, :2]+measurement)
++                h = np.zeros((2, 4)); h[:, :2] = np.eye(2)
++                residual = np.eye(4)-gain@h
++                self.p[i, k] = residual@p@residual.T+gain@measurement@gain.T
++                self.updates[k] += 1
++        return self.p
++
++def braking_branch(obs, commands, first_yaw, stop_age, uncertainty=1., coast_seconds=.2, details=False, control_sequence=None, coast_sequence=None):
++    """Execute one interval, then model observation loss and coast-to-stop.
++
++    No hypothetical future measurement may shrink this branch's obstacles.
++    It is a model-based contingency, not a physical safety certificate.
++    """
++    if batch is not None:
++        return batch.braking(obs,commands,first_yaw,stop_age,uncertainty,coast_seconds,details,control_sequence,coast_sequence)
++    n = len(commands)
++    z, x, angle, travel, turn = [np.zeros(n) for _ in range(5)]
++    speed, yaw = np.full(n, obs.speed), np.full(n, obs.yaw)
++    zero_age = np.where(commands == 0., stop_age, 0.)
++    _, road_now, known_now = road_clearance(obs.road, z, x, angle, uncertainty)
++    _, obstacle_now = obstacle_clearance(obs.objects, z, x, angle, 0., uncertainty)
++    valid = (road_now >= 0.) & (obstacle_now > 0.) & known_now
++    stopped = np.zeros(n, bool)
++    minimum = np.minimum(road_now, obstacle_now)
++    paths, controls = [], []
++    obstacle_states=[(z.copy(),x.copy(),angle.copy(),0.,travel.copy(),turn.copy())]
++    obstacle_active=[np.ones(n,bool)]
++    coast_steps = int(round(coast_seconds/.05))
++    if coast_sequence is not None:
++        coast_steps = coast_sequence.shape[1]
++    last_drive = np.full(n,coast_steps-1)
++    if control_sequence is not None:
++        last_drive = np.max(np.where(abs(control_sequence[:,:,0])>1e-8,np.arange(control_sequence.shape[1]),-1),axis=1)
++    for step in range(104):
++        dt = .05
++        future = (step+1)*dt
++        drive = commands if step < coast_steps else np.zeros(n)
++        steer = first_yaw if step < coast_steps else first_yaw*.65**((step-coast_steps)//4+1)
++        if coast_sequence is not None:
++            if step < coast_steps:
++                drive,steer = coast_sequence[:,step,:].T
++            else:
++                steer = coast_sequence[:,-1,1]*.65**((step-coast_steps)//4+1)
++        if control_sequence is not None:
++            drive, steer = control_sequence[:, min(step, control_sequence.shape[1]-1), :].T
++        controls.append(np.c_[drive, steer])
++        old_speed, old_yaw = speed.copy(), yaw.copy()
++        speed, yaw, zero_age = advance(speed, yaw, drive, steer, dt, zero_age)
++        mid = angle+.25*(old_yaw+yaw)*dt
++        z += .5*(speed+old_speed)*np.cos(mid)*dt
++        x += .5*(speed+old_speed)*np.sin(mid)*dt
++        angle += .5*(yaw+old_yaw)*dt
++        travel += .5*(abs(speed)+abs(old_speed))*dt
++        turn += .5*(abs(yaw)+abs(old_yaw))*dt
++        _, road, known = road_clearance(obs.road, z, x, angle, uncertainty)
++        road -= uncertainty*(.04*travel+.08*turn*1.16)
++        obstacle_states.append((z.copy(),x.copy(),angle.copy(),future,travel.copy(),turn.copy()))
++        obstacle_active.append(~stopped)
++        valid &= stopped | ((road >= 0.) & known)
++        minimum = np.minimum(minimum, np.where(stopped, 100., road))
++        paths.append(np.c_[z.copy(), x.copy()])
++        stopped |= (step > last_drive) & (abs(drive)<1e-8) & (speed < .04)
++        if stopped.all():
++            break
++    _,obstacle=path_obstacle_clearance(obs.objects,obstacle_states,np.asarray(obstacle_active))
++    valid &= obstacle>0.
++    minimum=np.minimum(minimum,obstacle)
++    if details:
++        return valid & stopped, minimum, np.asarray(paths).transpose(1,0,2), np.asarray(controls).transpose(1,0,2)
++    return valid & stopped, minimum
+--- /dev/null
++++ b/concept_candidates/concept_candidates/candidate_merge.py
+@@ -0,0 +1,21 @@
++"""Identify identical forward requests before evaluating their motion."""
++import numpy as np
++
++
++def distinct_requests(targets, commands):
++    """Return first source slots and a dense index that restores every original slot."""
++    target_bits = np.ascontiguousarray(targets, dtype=np.float64).view(np.uint64)
++    speed_bits = np.ascontiguousarray(commands, dtype=np.float64).view(np.uint64)
++    if target_bits.ndim != 1 or speed_bits.shape != target_bits.shape:
++        raise ValueError('Expected one lateral target per speed')
++    seen = {}
++    representatives, inverse = [], []
++    for slot, (x, speed) in enumerate(zip(target_bits, speed_bits)):
++        key = int(x), int(speed)
++        index = seen.get(key)
++        if index is None:
++            index = len(representatives)
++            seen[key] = index
++            representatives.append(slot)
++        inverse.append(index)
++    return np.asarray(representatives, dtype=np.intp), np.asarray(inverse, dtype=np.intp)
+--- /dev/null
++++ b/concept_candidates/concept_candidates/continuity_road617.py
+@@ -0,0 +1,27 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/continuity_road617.py. """
++
++import numpy as np
++
++from concept_candidates.curve_road617 import RoadAwareCurvePlanner, preview_reason
++
++class RoadAwareContinuityPlanner(RoadAwareCurvePlanner):
++    def step(self,obs):
++        output=super().step(obs);a=self.last['audit'];selected=a.get('selected')
++        a['preview_reasons']=[preview_reason(o,obs.road) for o in obs.objects] if len(obs.road) else []
++        if selected is None or self.pending is None or not a.get('schedule'):
++            return output
++        table=np.asarray(a['table']);nominal=np.asarray(a['nominal_feasible'],bool)
++        choices=nominal & (table[:,0]>0) & (table[:,6]>0)
++        before=int(selected);after=before
++        if a['schedule'][before]=='drive_2s_then_stop_and_wait' and choices.any():
++            after=int(np.argmax(np.where(choices,table[:,7],-np.inf)))
++            pending=self.pending
++            controls=pending['brake_controls' if pending['brake_ok'][after] else 'escape_controls'][after]
++            self.command=controls[0].copy()
++            self.last['path']=a['paths'][after];self.last['target'][1]=float(table[after,2])
++            self.last['margin']=float(table[after,5]);self.last['recovery']='not_needed'
++            a['selected']=after
++        a['continuity_rank']=dict(original_selected=before,selected=after,nominal_forward=int(choices.sum()),
++            rule='When a continuing forward trajectory is feasible, rank those before a drive-then-stop profile; no hard gate changes',
++            safety_mask_changed=False,trained_network=False)
++        return self.command.copy()
+--- /dev/null
++++ b/concept_candidates/concept_candidates/curve_profile.py
+@@ -0,0 +1,61 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v616_decision/curve_profile.py. """
++
++import numpy as np
++
++try:
++    from . import trajectory_batch as batch
++except ImportError:
++    batch = None
++
++from concept_feasibility.response61515 import advance
++
++from concept_candidates.curve_progress import increment
++
++from concept_feasibility.geometry61514 import road_clearance, obstacle_clearance, path_obstacle_clearance
++
++def evaluate_profile(obs,sequence,horizon,stop_age,uncertainty=1.):
++    if batch is not None:
++        return batch.profile(obs,np.asarray(sequence),horizon,stop_age,uncertainty)
++    sequence=np.asarray(sequence);n=sequence.shape[0];dt=.05
++    nominal_steps=int(round(horizon/dt));steps=max(nominal_steps,sequence.shape[1])
++    z,x,heading,travel,turn,progress=[np.zeros(n) for _ in range(6)]
++    speed,yaw=np.full(n,obs.speed),np.full(n,obs.yaw)
++    zero_age=np.where(sequence[:,0,0]==0,stop_age,0.)
++    geometric,road_lower,known=road_clearance(obs.road,z,x,heading,uncertainty)
++    obj_gap,obstacle_lower=obstacle_clearance(obs.objects,z,x,heading,0.,uncertainty)
++    geometric=np.minimum(geometric,obj_gap)
++    states=[(z.copy(),x.copy(),heading.copy(),0.,travel.copy(),turn.copy())]
++    paths=[];controls=[];finite=np.ones(n,bool);terminal=None;heading_integral=np.zeros(n);reference_steps=np.zeros(n,int)
++    for i in range(steps):
++        if i<sequence.shape[1]:drive,steer=sequence[:,i,:].T
++        else:
++            drive=np.zeros(n);steer=sequence[:,-1,1]*.65**((i-sequence.shape[1])//4+1)
++        controls.append(np.c_[drive,steer])
++        old_z,old_x,old_speed,old_yaw=z.copy(),x.copy(),speed.copy(),yaw.copy()
++        speed,yaw,zero_age=advance(speed,yaw,drive,steer,dt,zero_age)
++        mid=heading+.25*(old_yaw+yaw)*dt
++        x+=(old_speed+speed)*.5*np.sin(mid)*dt;z+=(old_speed+speed)*.5*np.cos(mid)*dt
++        heading+=(old_yaw+yaw)*.5*dt
++        travel+=(abs(old_speed)+abs(speed))*.5*dt;turn+=(abs(old_yaw)+abs(yaw))*.5*dt
++        finite &= np.isfinite(speed)&np.isfinite(yaw)
++        if i<nominal_steps:
++            direction=np.interp((old_z+z)*.5,obs.road[:,0],obs.heading)
++            delta=(z-old_z)*np.cos(direction)+(x-old_x)*np.sin(direction)
++            delta,used=increment(obs,old_z,old_x,z,x,delta)
++            progress+=delta;reference_steps+=used
++            heading_integral+=(old_speed+speed)*.5*(mid-direction)**2*dt
++            if (i+1)%4==0 or i+1==nominal_steps:paths.append(np.c_[z.copy(),x.copy()])
++        if i+1==nominal_steps:terminal=dict(z=z.copy(),x=x.copy(),heading=heading.copy(),speed=speed.copy())
++        rg,rl,k=road_clearance(obs.road,z,x,heading,uncertainty)
++        rl-=uncertainty*(.04*travel+.08*turn*1.16)
++        geometric=np.minimum(geometric,rg);road_lower=np.minimum(road_lower,rl);known &= k
++        states.append((z.copy(),x.copy(),heading.copy(),(i+1)*dt,travel.copy(),turn.copy()))
++    object_gap,obstacle_lower=path_obstacle_clearance(obs.objects,states)
++    geometric=np.minimum(geometric,object_gap)
++    # An explicit stopping profile must actually reach the same stopped
++    # threshold as the existing backup, not end while still driving.
++    valid=(road_lower>=0)&(obstacle_lower>0)&known&finite&(speed<.04)&(abs(controls[-1][:,0])<1e-8)
++    return dict(valid=valid,road_lower=road_lower,obstacle_lower=obstacle_lower,evidence=known,
++        dynamics=finite,geometric=geometric,road_progress=progress,heading_integral=heading_integral,reference_steps=reference_steps,**terminal,
++        paths=np.asarray(paths).transpose(1,0,2),controls=np.asarray(controls).transpose(1,0,2),
++        checked_seconds=steps*dt)
+--- /dev/null
++++ b/concept_candidates/concept_candidates/curve_progress.py
+@@ -0,0 +1,114 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v616_decision/curve_progress.py. """
++
++from dataclasses import dataclass
++
++import numpy as np
++
++from concept_road.compare61513 import Guided
++
++@dataclass(frozen=True)
++class ReferenceObservation(Guided):
++    reference:object=None
++
++def build_reference(evidence):
++    material=evidence.get('material_evidence',{})
++    edges=material.get('physical_edges',[])
++    left=[e for e in edges if e['side']==-1];right=[e for e in edges if e['side']==1]
++    pair=None;source=None
++    if left and right:
++        pair=[left[0],right[0]];source='observed_material_outer_edges'
++    else:
++        lane=evidence.get('current_lane');tracks=evidence.get('tracks',[])
++        if lane and lane['score']>.45:
++            pair=[tracks[lane['left']],tracks[lane['right']]];source='supported_current_lane_markings'
++    if pair is None:return None
++    lo=max(r['zmin'] for r in pair);hi=min(r['zmax'] for r in pair)
++    if hi<=lo:return None
++    coef=np.mean([r['coef'] for r in pair],axis=0)
++    z=np.linspace(lo,hi,int(np.ceil((hi-lo)/.08))+1)
++    x=np.polynomial.polynomial.polyval(z,coef)
++    sigma=max(float(r.get('residual',r.get('error',.045))) for r in pair)
++    return dict(points=np.c_[z,x],source=source,coef=coef,sigma=sigma,support=[lo,hi],
++        rule='Observed span only; no projection-clamping credit at either endpoint; not a tracking target')
++
++try:
++    from . import _progress
++except ImportError:  # Unbuilt source checkout.
++    _progress = None
++
++
++def _segments(reference):
++    segments = reference.get('_segments')
++    if segments is None:
++        points = np.asarray(reference['points'], dtype=float)
++        edges = np.diff(points, axis=0)
++        lengths = np.linalg.norm(edges, axis=1)
++        segments = points, edges, lengths, np.r_[0., np.cumsum(lengths)]
++        reference['_segments'] = segments
++    return segments
++
++
++def project(reference, z, x):
++    if _progress is None:
++        return reference_project(reference, z, x)
++    last = reference.get('_last_projection')
++    if last is not None and np.array_equal(z, last[0]) and np.array_equal(x, last[1]):
++        return last[2]
++    result = _progress.project(*_segments(reference), z, x, reference['coef'], reference['sigma'])
++    reference['_last_projection'] = (z.copy(), x.copy(), result)
++    return result
++
++
++def reference_project(reference,z,x):
++    points=np.asarray(reference['points']);edge=np.diff(points,axis=0);length=np.linalg.norm(edge,axis=1)
++    query=np.c_[z,x];relative=query[:,None,:]-points[:-1][None,:,:]
++    fraction=np.sum(relative*edge[None,:,:],axis=2)/np.maximum(length**2,1e-12)
++    bounded=np.clip(fraction,0.,1.)
++    nearest=points[:-1][None,:,:]+bounded[:,:,None]*edge[None,:,:]
++    distance=np.sum((query[:,None,:]-nearest)**2,axis=2);index=np.argmin(distance,axis=1)
++    i=np.arange(len(query));part=bounded[i,index]
++    arc=np.r_[0.,np.cumsum(length)]
++    value=arc[index]+part*length[index]
++    supported=~(((index==0)&(fraction[i,index]<=0))|((index==len(length)-1)&(fraction[i,index]>=1)))
++    prior=np.c_[np.full(len(query),np.inf),distance[:,:-1]]
++    following=np.c_[distance[:,1:],np.full(len(query),np.inf)]
++    local_min=(distance<=prior)&(distance<=following)
++    all_arc=arc[:-1][None,:]+bounded*length[None,:]
++    separated=abs(all_arc-value[:,None])>.16
++    indistinguishable=np.sqrt(distance)<=np.sqrt(distance[i,index])[:,None]+reference['sigma']
++    supported &= ~np.any(local_min&separated&indistinguishable,axis=1)
++    # A nearest point can become ill-conditioned near the centre of curvature.
++    # Its existing boundary-fit error must not span the Frenet singularity.
++    zref=nearest[i,index,0];a,b,c=reference['coef']
++    slope=b+2*c*zref;curvature=2*c/(1+slope*slope)**1.5
++    normal=np.c_[-slope,np.ones(len(slope))]/np.sqrt(1+slope*slope)[:,None]
++    offset=np.sum((query-nearest[i,index])*normal,axis=1)
++    jacobian=1-curvature*offset
++    supported &= jacobian>abs(curvature)*reference['sigma']
++    return value,supported
++
++def increment(obs,old_z,old_x,z,x,default):
++    reference=getattr(obs,'reference',None)
++    if reference is None:return default,np.zeros_like(default,bool)
++    before,a=project(reference,old_z,old_x);after,b=project(reference,z,x)
++    return supported_increment(reference,before,after,a,b,old_x,x,default)
++
++
++def supported_increment(reference,before,after,a,b,old_x,x,default):
++    valid=a&b
++    points, _, _, arc = _segments(reference)
++    u0=np.interp(before,arc,points[:,0]);u1=np.interp(after,arc,points[:,0])
++    constant,linear,quadratic=reference['coef']
++    stationary=-linear/(2*quadratic) if quadratic!=0 else 0.
++    u=np.clip(stationary,np.minimum(u0,u1),np.maximum(u0,u1))
++    f=constant+linear*u+quadratic*u*u
++    slope=linear+2*quadratic*u
++    # G(u)=0.5*((u-zq)^2+(f(u)-xq)^2). Strict convexity over the
++    # intervening reference rules out switching closest-point branches.
++    # Its second derivative is quadratic in u and affine in xq, so this
++    # checks its exact interval minimum and both car-segment endpoints.
++    lower=np.minimum(1+slope*slope+2*quadratic*(f-old_x),
++                     1+slope*slope+2*quadratic*(f-x))
++    continuous=lower>abs(2*quadratic)*reference['sigma']
++    valid &= continuous
++    return np.where(valid,after-before,default),valid
+--- /dev/null
++++ b/concept_candidates/concept_candidates/curve_road617.py
+@@ -0,0 +1,381 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/curve_road617.py. """
++
++import numpy as np
++
++try:
++    from . import trajectory_batch as batch
++except ImportError:
++    batch = None
++
++from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
++
++from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
++from .field_controls import forward_ceiling, forward_steering
++
++from concept_candidates.candidate_merge import distinct_requests
++from concept_candidates.curve_progress import increment
++
++from concept_candidates.curve_profile import evaluate_profile
++
++from concept_candidates.belief61515 import CameraBelief, braking_branch
++
++from concept_feasibility.geometry61514 import road_clearance, obstacle_clearance, path_obstacle_clearance
++
++def preview_reason(row, road):
++    """Explain whether this locally observed object extends the preview.
++
++    Safety checks still consider every object. For a recently confirmed object
++    whose stationary mode dominates, bound its likely position using its
++    stationary covariance and compare that interval with the observed road.
++    The 2-sigma term matches the existing per-time obstacle-risk scale.
++    """
++    z=float(row[0])
++    if not .2 < z <= road[-1,0]-.4:return 'outside_observed_depth'
++    stationary=len(row)>35 and row[23]>=3 and row[25]>.5
++    if not stationary:return 'near_unconfirmed_or_moving' if z<9. else 'far_unconfirmed_or_moving'
++    lateral=float(row[27]);variance=float(row[35])
++    if not np.isfinite([lateral,variance]).all() or variance<0:return 'uncertain_static'
++    margin=float(row[4])+BODY_HALF_WIDTH+2*np.sqrt(variance)
++    left=float(np.interp(z,road[:,0],road[:,1])-np.interp(z,road[:,0],road[:,3]))
++    col=4 if road.shape[1]>4 else 3
++    right=float(np.interp(z,road[:,0],road[:,2])+np.interp(z,road[:,0],road[:,col]))
++    return 'static_overlaps_road' if lateral+margin>=left and lateral-margin<=right else 'static_outside_road'
++
++class RoadAwareCurvePlanner:
++    def __init__(self, parameters=None):
++        self.p = {**DEFAULT_PARAMETERS, **(parameters or {})}
++        if batch is not None:
++            batch.warm_pace(self.p['pace'])
++        self.command = np.zeros(2)
++        self.stop_age = 0.
++        self.last = {}
++        self.time = 0.
++        self.reserved = None
++        self.pending = None
++        self.current_observation = None
++        self.reset_candidate_evaluation()
++
++    def reset_candidate_evaluation(self):
++        self.candidate_evaluation = dict(mode='exact', batches=0, input_count=0, evaluated_count=0)
++
++    def no_observation(self):
++        self.last = dict(reason='unobserved_road', candidates=0, feasible=0,
++                         audit=dict(selected=None, table=[], paths=[]))
++        if self.resume_contingency():
++            return self.command.copy()
++        self.command = np.array([0., self.command[1]*.65])
++        self.last = dict(reason='unobserved_road', candidates=0, feasible=0,
++                         recovery='reverse_unavailable_unknown_rear_and_unvalidated_response',
++                         audit=dict(selected=None, table=[], paths=[]))
++        return self.command.copy()
++
++    def target_points(self, obs, look):
++        road, p = obs.road, self.p
++        lo, hi = [float(np.interp(look, road[:, 0], road[:, k])) for k in (1, 2)]
++        guidance = getattr(obs, 'guidance', None)
++        if guidance is not None and len(guidance) >= 3 and guidance[0, 0] <= look <= guidance[-1, 0]:
++            a, b = [float(np.interp(look, guidance[:, 0], guidance[:, k])) for k in (1, 2)]
++            lo, hi = max(lo, a), min(hi, b)
++        # Body geometry and boundary uncertainty are distinct from obstacle gap.
++        right_column = 4 if road.shape[1] > 4 else 3
++        left_inset = BODY_HALF_WIDTH+p['uncertainty']*np.interp(look, road[:, 0], road[:, 3])
++        right_inset = BODY_HALF_WIDTH+p['uncertainty']*np.interp(look, road[:, 0], road[:, right_column])
++        lo, hi = lo+left_inset, hi-right_inset
++        if lo > hi:
++            return None
++        targets = np.linspace(lo, hi, 9).tolist()+[float(np.clip(0., lo, hi))]
++        openings = [(lo, hi)]
++        for row in obs.objects:
++            oz, ox, vz, vx, radius, noise = row[:6]
++            if abs(oz-look) > 2.:
++                continue
++            at = ox+vx*oz/max(obs.speed, 1.)
++            margin = radius+BODY_HALF_WIDTH+p['uncertainty']*noise
++            newer = []
++            for a, b in openings:
++                if at-margin > a:
++                    newer.append((a, min(b, at-margin)))
++                if at+margin < b:
++                    newer.append((max(a, at+margin), b))
++            openings = [q for q in newer if q[1] > q[0]]
++        extra = [(a+b)/2 for a, b in sorted(openings, key=lambda q: q[1]-q[0], reverse=True)[:5]]
++        return np.sort(targets+extra+[targets[-1]]*(5-len(extra)))
++
++    def step(self, obs):
++        if not isinstance(obs, Observation):
++            raise TypeError('Only local sensor Observation accepted')
++        self.time += obs.dt
++        self.current_observation = obs
++        self.pending = None
++        road, p = np.asarray(obs.road), self.p
++        self.stop_age = self.stop_age+obs.dt if self.command[0] == 0 else 0.
++        if len(road) < 3:
++            return self.no_observation()
++        if not np.all(np.isfinite(road)) or np.any(np.diff(road[:, 0]) <= 0):
++            raise ValueError('Invalid local road')
++        near_objects = [o[0] for o in obs.objects if preview_reason(o,road) in ('near_unconfirmed_or_moving','uncertain_static','static_overlaps_road')]
++        look = max(3., 1.5+p['lookahead']*max(1., obs.speed))
++        if near_objects:
++            look = max(look, min(near_objects)+1.)
++        look = float(min(look, road[-1, 0]-.4))
++        targets = self.target_points(obs, look)
++        if targets is None:
++            return self.no_observation()
++        physical = physical_motor_enabled()
++        ceiling = forward_ceiling(obs.speed, obs.dt, p['pace']) if physical else p['pace']
++        speeds = np.array([0., .25, .55, .8, 1.]) * ceiling
++        commands = np.tile(speeds, len(targets))
++        targets = np.repeat(targets, len(speeds))
++        # The whole batch shares the same vehicle state, observations, parameters
++        # and lookahead. A request is identified by its two float64 input values.
++        full_targets, full_commands = targets, commands
++        representatives, inverse = distinct_requests(targets, commands)
++        targets, commands = targets[representatives], commands[representatives]
++        count = len(commands)
++        evaluation = self.candidate_evaluation
++        evaluation['batches'] += 1
++        evaluation['input_count'] += len(full_commands)
++        evaluation['evaluated_count'] += count
++        # End along the observed road direction. A near-zero lateral endpoint
++        # may need an initial right bend followed by a left bend around a cone.
++        slope = np.full(count,np.tan(np.interp(look,road[:,0],obs.heading)))
++        aa, bb = (slope*look-2*targets)/look**3, (3*targets-slope*look)/look**2
++        x, z, heading = np.zeros(count), np.zeros(count), np.zeros(count)
++        speed, yaw = np.full(count, max(0., obs.speed)), np.full(count, obs.yaw)
++        travel, turn = np.zeros(count), np.zeros(count)
++        road_progress = np.zeros(count)
++        heading_integral = np.zeros(count)
++        reference_steps = np.zeros(count,int)
++        camera_belief = CameraBelief(obs.objects, count)
++        previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
++        last_yaw = np.full(count, previous[1])
++        zero_age = np.where(commands == 0, self.stop_age, 0.)
++        horizon = float(np.clip((look+2.)/max(obs.speed, 1.2), 2., 5.))
++        interval, substep = .2, .05
++        steps = int(np.ceil(horizon/interval))
++        horizon = steps*interval
++        yaw_limit = p.get('yaw_limit', 1.55)
++        if batch is not None:
++            state, nominal_controls, geometric, road_lower, evidence, obstacle_lower, road_progress, reference_steps, heading_integral = batch.driven_path(
++                obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p)
++            first=nominal_controls[0,:,1].copy()
++            paths=state[4::4,:,:2]
++            z,x,heading,speed,yaw=state[-1,:,:5].T.copy()
++        else:
++            road_gap, road_lower, evidence = road_clearance(road, z, x, heading, p['uncertainty'])
++            object_gap, obstacle_lower = obstacle_clearance(obs.objects, z, x, heading, 0., p['uncertainty'])
++            geometric = np.minimum(road_gap, object_gap)
++            paths, first, nominal_controls = [], None, []
++            obstacle_states=[(z.copy(),x.copy(),heading.copy(),0.,travel.copy(),turn.copy())]
++            # Replan short manoeuvres; the independent loss-of-observation branch
++            # still checks all the way to a stop, using the actual covariance.
++            for step in range(steps):
++                pursuit = z+np.clip(1.+.7*speed, 1.2, 3.)
++                q = np.minimum(pursuit, look)
++                reference = aa*q**3+bb*q**2+np.maximum(pursuit-look, 0)*slope
++                dz, dx = pursuit-z, reference-x
++                lateral = dx*np.cos(heading)-dz*np.sin(heading)
++                desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
++                command_dt = obs.dt if step == 0 else interval
++                if physical:
++                    command_yaw = forward_steering(desired, commands, speed, last_yaw, command_dt)
++                else:
++                    command_yaw = inverse_yaw(desired, commands,
++                        lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
++                        upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
++                        current_yaw=yaw,dt=command_dt)
++                last_yaw = command_yaw
++                if first is None:
++                    first = command_yaw.copy()
++                for sub in range(4):
++                    nominal_controls.append(np.c_[commands,command_yaw])
++                    old_speed, old_yaw = speed.copy(), yaw.copy()
++                    old_z, old_x = z.copy(), x.copy()
++                    speed, yaw, zero_age = advance(speed, yaw, commands, command_yaw, substep, zero_age)
++                    mid_heading = heading+.25*(old_yaw+yaw)*substep
++                    x += (old_speed+speed)*.5*np.sin(mid_heading)*substep
++                    z += (old_speed+speed)*.5*np.cos(mid_heading)*substep
++                    heading += (old_yaw+yaw)*.5*substep
++                    # Reward travel along locally observed road direction, not the
++                    # vehicle-forward axis. No map, GT station or new weight.
++                    local_direction = np.interp((old_z+z)*.5, road[:,0], obs.heading)
++                    delta=(z-old_z)*np.cos(local_direction)+(x-old_x)*np.sin(local_direction)
++                    delta,used=increment(obs,old_z,old_x,z,x,delta)
++                    road_progress += delta;reference_steps += used
++                    heading_integral += (old_speed+speed)*.5*(mid_heading-local_direction)**2*substep
++                    travel += (abs(old_speed)+abs(speed))*.5*substep
++                    turn += (abs(old_yaw)+abs(yaw))*.5*substep
++                    road_gap, road_bound, known = road_clearance(road, z, x, heading, p['uncertainty'])
++                    # Today's road evidence must survive its future transport into
++                    # the blind near field. Same odometry budget as surface memory;
++                    # this is extra FUTURE travel/turn, not a second current erosion.
++                    future_transport = .04*travel+.08*turn*1.16
++                    road_bound -= p['uncertainty']*future_transport
++                    future = step*interval+(sub+1)*substep
++                    obstacle_states.append((z.copy(),x.copy(),heading.copy(),future,travel.copy(),turn.copy()))
++                    geometric = np.minimum(geometric, road_gap)
++                    road_lower = np.minimum(road_lower, road_bound)
++                    evidence &= known
++                paths.append(np.c_[z.copy(), x.copy()])
++            object_gap,obstacle_lower=path_obstacle_clearance(obs.objects,obstacle_states)
++            geometric=np.minimum(geometric,object_gap)
++        dynamics = np.isfinite(speed) & np.isfinite(yaw) & (abs(first) <= yaw_limit+1e-9)
++        # Single mask consumed by whitebox selection AND the learned interface.
++        conditional = (road_lower >= 0.) & (obstacle_lower > 0.) & evidence & dynamics
++        brake_ok, brake_lower, brake_paths, brake_controls = braking_branch(obs, commands, first, self.stop_age, p['uncertainty'], details=True)
++        # Reuse the actual nominal steering sequence through the two-second
++        # manoeuvre, then brake. Holding the first steering command is a
++        # different trajectory and blocked otherwise executable turning paths.
++        escape_ok, escape_lower, escape_paths, escape_controls = braking_branch(obs, commands, first, self.stop_age, p['uncertainty'], coast_seconds=2., details=True,
++            coast_sequence=np.asarray(nominal_controls).transpose(1,0,2)[:,:40])
++        feasible = conditional & (brake_ok | escape_ok)
++        nominal_feasible = feasible.copy()
++        profile = evaluate_profile(obs,escape_controls,horizon,self.stop_age,p['uncertainty'])
++        retimed = (~feasible)&profile['valid']&escape_ok&(commands>0)
++        # Same initial action and geometry slot; replace only an unexecutable
++        # constant-drive schedule with its explicitly checked drive/stop schedule.
++        path_array = np.asarray(paths).transpose(1,0,2)
++        path_array[retimed] = profile['paths'][retimed]
++        for original,key in [(road_lower,'road_lower'),(obstacle_lower,'obstacle_lower'),
++            (geometric,'geometric'),(evidence,'evidence'),(dynamics,'dynamics'),
++            (z,'z'),(x,'x'),(heading,'heading'),(speed,'speed'),(road_progress,'road_progress'),(heading_integral,'heading_integral'),(reference_steps,'reference_steps')]:
++            original[retimed] = profile[key][retimed]
++        conditional[retimed] = True
++        feasible[retimed] = True
++        robust = np.minimum(road_lower, obstacle_lower)
++        sigma = (geometric-robust)/p['uncertainty']
++        progress = road_progress/horizon
++        road_heading = np.interp(z, road[:, 0], obs.heading)
++        terminal_heading_cost = .8*speed*(heading-road_heading)**2
++        heading_cost = .8*heading_integral/horizon
++        smooth_cost = p['smoothness']*((first-previous[1])**2+.15*first**2)
++        # Bounded secondary preference: tiny legal margins cannot create infinite stop cost.
++        # It only ranks; a trained selector may choose ANY candidate in the mask.
++        risk_cost = .35*np.clip((.5-robust)/.5, 0., 1.)**2
++        scores = progress-heading_cost-smooth_cost-risk_cost
++        profile_valid = profile['valid']
++        profile_controls = profile['controls']
++        profile_lower = np.minimum(profile['road_lower'], profile['obstacle_lower'])
++        camera_updates = camera_belief.updates
++        if count < len(full_commands):
++            # Restore first-in-order ties, hard masks, fallback controls and H12
++            # features for all 75 original IDs before any selection or commit.
++            (first, geometric, sigma, robust, feasible, scores, progress,
++             heading_cost, smooth_cost, risk_cost, path_array, reference_steps,
++             terminal_heading_cost, road_lower, obstacle_lower, escape_lower,
++             brake_lower, brake_controls, escape_controls, profile_controls,
++             profile_lower, camera_updates, nominal_feasible, retimed, conditional,
++             brake_ok, escape_ok, profile_valid, evidence, dynamics) = (
++                values[inverse] for values in (
++                    first, geometric, sigma, robust, feasible, scores, progress,
++                    heading_cost, smooth_cost, risk_cost, path_array, reference_steps,
++                    terminal_heading_cost, road_lower, obstacle_lower, escape_lower,
++                    brake_lower, brake_controls, escape_controls, profile_controls,
++                    profile_lower, camera_updates, nominal_feasible, retimed, conditional,
++                    brake_ok, escape_ok, profile_valid, evidence, dynamics))
++        targets, commands = full_targets, full_commands
++        count = len(commands)
++        self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower,
++                            brake_controls=brake_controls, escape_ok=escape_ok,
++                            escape_lower=escape_lower, escape_controls=escape_controls,
++                            escape_duration=horizon, retimed=retimed,
++                            profile_controls=profile_controls, profile_lower=profile_lower)
++        pick = int(np.argmax(np.where(feasible, scores, -np.inf))) if feasible.any() else None
++        table = np.c_[commands, first, targets, geometric, sigma, robust, feasible, scores,
++                      progress, heading_cost, smooth_cost, risk_cost]
++        if pick is None:
++            self.command = np.array([0., previous[1]*.65])
++        else:
++            self.command = np.array([commands[pick], first[pick]])
++        self.last = dict(reason='feasible' if pick is not None else 'no_feasible_trajectory', candidates=count,
++                         feasible=int(feasible.sum()), feasible_forward=int(np.sum(feasible & (commands > 0))),
++                         margin=None if pick is None else float(robust[pick]),
++                         target=[look, 0. if pick is None else float(targets[pick])],
++                         path=[] if pick is None else path_array[pick].round(4).tolist(),
++                         recovery=('not_needed' if pick is not None and commands[pick] > 0 else
++                                   'selected_deceleration' if np.any(feasible & (commands > 0)) else
++                                   'no_forward_candidate_reverse_unavailable_unknown_rear_and_unvalidated_response'),
++                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile_valid.tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Only infeasible constant-drive schedules may use the existing two-second drive then complete stop; checked through original horizon and complete stop, including wait; same75 slots',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
++                                    constraint_interval=substep, horizon=horizon, threshold=0.,
++                                    uncertainty_scale=p['uncertainty'], previous_command=previous.tolist(),
++                                    columns=['speed', 'yaw', 'target_x', 'geometric_clearance', 'sigma', 'robust_clearance',
++                                             'feasible', 'score', 'progress_score', 'heading_penalty', 'smooth_penalty', 'margin_penalty'],
++                                    table=table.round(6).tolist(), paths=path_array.round(4).tolist(),
++                                    conditional_path_feasible=conditional.tolist(),
++                                    no_observation_brake_feasible=brake_ok.tolist(),
++                                    no_observation_pass_then_stop_feasible=escape_ok.tolist(),
++                                    pass_then_stop_lower=escape_lower.round(6).tolist(),
++                                    brake_lower=brake_lower.round(6).tolist(),
++                                    expected_camera_updates=camera_updates.tolist(),
++                                    road_lower=road_lower.round(6).tolist(), obstacle_lower=obstacle_lower.round(6).tolist(),
++                                    evidence_ok=evidence.tolist(), dynamics_ok=dynamics.tolist(),
++                                    rejected=dict(road=int((road_lower < 0).sum()), obstacle=int((obstacle_lower <= 0).sum()),
++                                                  unobserved=int((~evidence).sum()), loss_of_camera_contingency=int((~(brake_ok|escape_ok)).sum()), dynamics=int((~dynamics).sum())),
++                                    unique_commands=int(len(np.unique(table[:, :2].round(6), axis=0))),
++                                    rule='Rank feasible only; empty feasible set has no selected candidate',
++                                    obstacle_risk_limit=0.022750131948179195,
++                                    obstacle_risk_rule='Sum of mode-weighted correlated-Gaussian rectangle conditional-supremum upper bounds at each predicted time; not a lap failure probability',
++                                    geometric_limit='Full body at 0.05 s intervals; continuous-time between-step collision is not formally certified'))
++        if pick is None:
++            self.resume_contingency()
++        return self.command.copy()
++
++    def commit(self, index):
++        if index is None or self.pending is None:
++            return
++        p = self.pending
++        immediate = bool(p['brake_ok'][index])
++        mode = 'immediate_stop' if immediate else 'pass_then_stop'
++        controls = p['brake_controls' if immediate else 'escape_controls'][index].copy()
++        lower = float(p['brake_lower' if immediate else 'escape_lower'][index])
++        if p['retimed'][index]:
++            mode = 'drive_then_stop_profile'
++            controls = p['profile_controls'][index].copy()
++            lower = float(p['profile_lower'][index])
++        powered = np.flatnonzero(abs(controls[:,0])>1e-8)
++        brake_delay = (int(powered[-1])+1)*.05 if len(powered) else 0.
++        # Called after the whitebox/learned selector's actual final choice.
++        self.reserved = dict(issued_at=self.time, index=int(index), mode=mode, controls=controls,
++                             brake_at=self.time+brake_delay, stop_at=self.time+len(controls)*.05)
++        self.last['contingency'] = dict(issued_at=self.time, selected=int(index), mode=mode,
++                                       brake_at=self.reserved['brake_at'], stop_at=self.reserved['stop_at'],
++                                       plan_end_at=self.reserved['stop_at'], stop_at_meaning='end of checked controls, including waiting; not measured first standstill',
++                                       lower_m=lower, controls_005s=controls.tolist())
++
++    def resume_contingency(self):
++        if self.reserved is None or self.current_observation is None:
++            return False
++        reserve, obs = self.reserved, self.current_observation
++        offset = int(round((self.time-reserve['issued_at'])/.05))
++        if offset >= len(reserve['controls']) or len(obs.road)<3:
++            self.reserved = None
++            return False
++        tail = reserve['controls'][offset:]
++        if physical_motor_enabled() and tail[0,0] > 0.:
++            drive, steer = tail[0]
++            previous = physical_applied_command()[1]
++            if (drive > forward_ceiling(obs.speed, obs.dt, self.p['pace']) + 1e-9 or
++                    abs(steer-float(forward_steering(steer, drive, obs.speed, previous, obs.dt))) > 1e-8):
++                self.reserved = None
++                return False
++        if reserve['mode']=='drive_then_stop_profile':
++            checked=evaluate_profile(obs,tail[None,:,:],len(tail)*.05,self.stop_age,self.p['uncertainty'])
++            valid=checked['valid'];lower=np.minimum(checked['road_lower'],checked['obstacle_lower'])
++            paths=checked['paths'];controls=checked['controls']
++        else:
++            valid, lower, paths, controls = braking_branch(obs, tail[:1,0], tail[:1,1], self.stop_age,
++                                                       self.p['uncertainty'], details=True,
++                                                       control_sequence=tail[None,:,:], coast_seconds=0.)
++        if not valid[0]:
++            self.last['contingency_rejected'] = dict(reason='remaining_plan_failed_current_evidence', lower_m=float(lower[0]))
++            self.reserved = None
++            return False
++        self.command = tail[0].copy()
++        if not self.last or 'audit' not in self.last:
++            self.last = dict(audit=dict(selected=None,table=[],paths=[]))
++        self.last.update(reason='executing_prior_contingency', contingency_execution=True,
++                         recovery='previously_checked_pass_then_stop', path=paths[0].round(4).tolist(),
++                         contingency=dict(issued_at=reserve['issued_at'], selected=reserve['index'], mode=reserve['mode'],
++                                          brake_at=reserve['brake_at'], stop_at=reserve['stop_at'],
++                                          consumed_steps=offset, remaining_steps=len(tail), rechecked_lower_m=float(lower[0])))
++        return True
+--- /dev/null
++++ b/concept_candidates/concept_candidates/field_controls.py
+@@ -0,0 +1,49 @@
++"""Field candidate limits, applied before any path or braking branch is evaluated."""
++import numpy as np
++
++from concept_feasibility.response61515 import motor_steering, physical_applied_command
++
++# Initial commissioning limits. The turn ceiling is below the ±0.7 rad/s
++# manual plateaus recorded by VectorNav on 2026-11-19.
++FORWARD_ACCEL = 1.0             # m/s², command ramp
++TRACKING_HEADROOM = .5          # m/s ahead of measured wheel speed
++MAX_YAW = .65                   # body rad/s
++LATERAL_ACCEL = 1.0             # m/s²
++DIFFERENTIAL_SLEW = 1.5         # rad/s² at the legacy differential input
++HALF_TREAD = .30                # metres
++WHEEL_SPEED_FRACTION = .5       # |turn wheel speed| / straight wheel speed
++
++
++def forward_ceiling(measured, dt, pace):
++    applied = max(0., physical_applied_command()[0])
++    return min(pace, applied + FORWARD_ACCEL * min(dt, .2),
++               max(0., measured) + TRACKING_HEADROOM)
++
++
++def forward_steering(desired, drive, measured, previous, dt):
++    """Choose a real motor input whose actual wheel differential rises smoothly.
++
++    The stock inverse sigmoid has disjoint fitted branches at zero. Project
++    in its differential coordinates, then map back to the unchanged converter.
++    All inputs/outputs at the planner boundary are clockwise-positive.
++    """
++    drive = np.asarray(drive, dtype=float)
++    limit = np.minimum(MAX_YAW, LATERAL_ACCEL / np.maximum(.01, np.maximum(measured, drive)))
++    ros = -np.clip(desired, -limit, limit)
++    requested = motor_steering(ros, physical=True)
++    # A small request below the fitted branch's intercept can invert the
++    # wheel differential. Select straight for an unrepresentable request.
++    requested = np.where(requested * ros > 0., requested, 0.)
++    last = motor_steering(-np.asarray(previous, dtype=float), physical=True)
++    delta = DIFFERENTIAL_SLEW * min(dt, .2)
++    wheel_limit = drive * WHEEL_SPEED_FRACTION / HALF_TREAD
++    raw = np.clip(np.clip(requested, last-delta, last+delta), -wheel_limit, wheel_limit)
++    # Additionally respect the body-yaw ceiling when speed changes.
++    raw = np.clip(raw, motor_steering(-limit, physical=True), motor_steering(limit, physical=True))
++    pos = raw >= 0
++    L = np.where(pos, 1.53908994, 1.68283261)
++    k = np.where(pos, 3.15496243, 2.91627673)
++    offset = np.where(pos, 3.36664054, -3.22124235)
++    bias = np.where(pos, -.0621119, 1.6954783)
++    command = L / (1. + np.exp(-k*(raw-offset))) - bias
++    return np.where((drive > 0.) & (np.abs(raw) > 1e-9), -command, 0.)
+--- /dev/null
++++ b/concept_candidates/concept_candidates/planner625.py
+@@ -0,0 +1,24 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v625_boundary/planner625.py. """
++
++from dataclasses import replace
++
++from concept_road.onboard625 import HALF_TRACK, HALF_TREAD
++
++from concept_candidates.continuity_road617 import RoadAwareContinuityPlanner
++
++from concept_road.v3_model import BODY_HALF_WIDTH
++
++class MarkedPlanner(RoadAwareContinuityPlanner):
++    def target_points(self,obs,look):
++        # The parent insets targets for the body; use the inside edge of the
++        # outside tyre here. Its full body rectangle still checks every cone.
++        adjustment=BODY_HALF_WIDTH-(HALF_TRACK-HALF_TREAD)
++        virtual=obs.road.copy()
++        virtual[:,1]-=adjustment
++        virtual[:,2]+=adjustment
++        guidance=getattr(obs,'guidance',None)
++        if guidance is not None:
++            guidance=guidance.copy()
++            guidance[:,1]-=adjustment
++            guidance[:,2]+=adjustment
++        return super().target_points(replace(obs,road=virtual,guidance=guidance),look)
+--- /dev/null
++++ b/concept_candidates/concept_candidates/ranked_builder617.py
+@@ -0,0 +1,69 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/ranked_builder617.py. """
++
++import numpy as np
++
++from concept_candidates.ranker617 import observation_features
++
++class RankedBuilder:
++    def __init__(self,planner):
++        self.planner=planner;self.table=None;self.baseline=None;self.fallback=None
++        self.network_allowed=False;self.features=None
++
++    def prepare(self,obs):
++        self.planner.base.reset_candidate_evaluation()
++        self.fallback=self.planner.step(obs).copy();last=self.planner.last;audit=last['audit']
++        # Recovery can replace the forward audit after trying one or more forward
++        # batches. Report the work performed in this decision in either case.
++        audit['candidate_evaluation'] = self.planner.base.candidate_evaluation.copy()
++        table=np.asarray(audit.get('table',[]),float);self.baseline=audit.get('selected')
++        self.table=table if len(table) else None;self.features=None
++        if self.table is None:
++            if self.baseline is not None:raise ValueError('Empty table has a selected candidate')
++            self.network_allowed=False
++            return None,np.zeros(0,bool),None
++        if self.table.shape not in ((1,12),(75,12)):raise ValueError('Unexpected candidate table')
++        allowed=self.table[:,6]>0
++        if self.baseline is None:
++            if allowed.any():
++                raise ValueError('Missing selection with checked candidates')
++            self.network_allowed=False
++            return None,allowed,None
++        if not 0<=self.baseline<len(table) or not allowed[self.baseline]:
++            raise ValueError('Baseline must be in the checked set')
++        self.network_allowed=(self.table.shape==(75,12) and self.planner.phase=='forward'
++            and self.planner.entry is None and self.planner.pending is None
++            and self.planner.base.pending is not None and not last.get('contingency_execution')
++            and not audit.get('recovery_exit') and not audit.get('resume_after_rear_loss'))
++        if self.network_allowed:
++            candidate,objects,road,feature_mask=observation_features(obs,audit)
++            if not np.array_equal(feature_mask,allowed):raise AssertionError('Feature mask differs from checked set')
++            self.features=(candidate,objects,road)
++            return self.features,allowed,self.baseline
++        # Recovery, release and active escape stay under their own checked owner.
++        owned=np.zeros(len(table),bool);owned[self.baseline]=True
++        return None,owned,self.baseline
++
++    def command(self,index):
++        if self.baseline is None:
++            if index is not None:raise ValueError('Cannot select from an empty set')
++            self.planner.commit(None);return self.fallback.copy()
++        if index is None or not 0<=int(index)<len(self.table) or not self.table[int(index),6]>0:
++            raise ValueError('Selection is not a checked candidate')
++        index=int(index)
++        if not self.network_allowed and index!=self.baseline:
++            raise ValueError('Recovery or contingency owns this action')
++        control=self.fallback.copy()
++        if index!=self.baseline:
++            pending=self.planner.base.pending
++            if pending['retimed'][index]:sequence=pending['profile_controls'][index]
++            elif pending['brake_ok'][index]:sequence=pending['brake_controls'][index]
++            else:sequence=pending['escape_controls'][index]
++            control=np.asarray(sequence[0],float).copy()
++            if not np.allclose(control,self.table[index,:2],atol=1e-5,rtol=0):
++                raise ValueError('Candidate command differs from its checked control sequence')
++            self.planner.command=control.copy();self.planner.base.command=control.copy()
++            last=self.planner.last;audit=last['audit'];audit['selected']=index
++            last['path']=audit['paths'][index];last['target']=last['path'][-1]
++            last['margin']=float(self.table[index,5])
++        self.planner.commit(index)
++        return control
+--- /dev/null
++++ b/concept_candidates/concept_candidates/ranker617.py
+@@ -0,0 +1,50 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/ranker617.py. """
++
++import numpy as np
++
++DEPTHS=(1.,3.,5.,8.,10.)
++
++CANDIDATE_FEATURES=24
++
++ROAD_CONTEXT_FEATURES=35
++
++def observation_features(obs,audit):
++    table=np.asarray(audit['table'],float)
++    objects=np.asarray(obs.objects,float).reshape(-1,77)
++    road=np.asarray(obs.road,float)
++    if table.size==0:return np.empty((0,CANDIDATE_FEATURES),np.float32),objects.astype(np.float32),np.zeros(ROAD_CONTEXT_FEATURES,np.float32),np.zeros(0,bool)
++    if table.shape!=(75,12) or road.ndim!=2 or road.shape[1]<5 or len(road)<3:
++        raise ValueError('Unexpected live candidate or road format')
++    paths=np.asarray(audit['paths'],float)
++    if paths.ndim!=3 or paths.shape[0]!=75 or paths.shape[2]!=2:raise ValueError('Expected 75 predicted paths')
++    index=np.linspace(0,paths.shape[1]-1,5).round().astype(int)
++    samples=paths[:,index,:]/np.array([12.,6.]);nominal=np.asarray(audit['nominal_feasible'],bool)
++    if len(nominal)!=75:raise ValueError('Missing continuous-path classification')
++    schedules=audit['schedule'];retimed=np.array([x.startswith('drive_') and x.endswith('s_then_stop_and_wait') for x in schedules],float)
++    drive_seconds=np.array([float(x.split('_')[1][:-1]) if flag else 0. for x,flag in zip(schedules,retimed)])
++    candidate=np.c_[table[:,0]/4.,table[:,1]/1.55,table[:,2]/6.,table[:,3]/5.,table[:,4]/5.,table[:,5]/5.,
++        table[:,8]/4.,np.asarray(audit['road_lower'])/5.,np.asarray(audit['obstacle_lower'])/5.,nominal,retimed,drive_seconds/5.,
++        samples.reshape(75,10),np.full(75,audit['horizon']/5.),np.full(75,audit['profile_checked_seconds']/8.)]
++    context=[]
++    for z in DEPTHS:
++        present=road[0,0]<=z<=road[-1,0]
++        if present:context.extend([np.interp(z,road[:,0],road[:,1])/6.,np.interp(z,road[:,0],road[:,2])/6.,
++            np.interp(z,road[:,0],obs.heading)/np.pi,np.interp(z,road[:,0],road[:,3])/2.,np.interp(z,road[:,0],road[:,4])/2.,1.])
++        else:context.extend([0.]*6)
++    previous=audit['previous_command'];context.extend([obs.speed/4.,obs.yaw,obs.dt/.2,previous[0]/4.,previous[1]/1.55])
++    factors=np.ones(77);factors[:6]=[12.,6.,3.,3.,.5,3.]
++    state_scale=np.array([12.,6.,3.,3.]);factors[6:22]=np.outer(state_scale,state_scale).ravel()
++    factors[22:25]=[5.,10.,1.];factors[26:30]=state_scale;factors[30:46]=np.outer(state_scale,state_scale).ravel()
++    factors[46:50]=state_scale;factors[50:66]=np.outer(state_scale,state_scale).ravel()
++    object_features=objects/factors
++    if candidate.shape!=(75,CANDIDATE_FEATURES) or len(context)!=ROAD_CONTEXT_FEATURES:raise AssertionError('Feature schema changed')
++    if not np.isfinite(candidate).all() or not np.isfinite(object_features).all() or not np.isfinite(context).all():raise ValueError('Non-finite sensor-derived features')
++    return np.clip(candidate,-10,10).astype(np.float32),np.clip(object_features,-10,10).astype(np.float32),np.clip(context,-10,10).astype(np.float32),table[:,6].astype(bool)
++
++def choose(values,allowed):
++    allowed=np.asarray(allowed,bool);values=np.asarray(values)
++    if values.shape!=allowed.shape or values.ndim!=1:raise ValueError('Value and mask shape mismatch')
++    choices=np.flatnonzero(allowed)
++    if not len(choices):return None
++    if not np.isfinite(values[choices]).all():raise ValueError('Non-finite value for a feasible candidate')
++    return int(choices[np.argmax(values[choices])])
+--- /dev/null
++++ b/concept_candidates/concept_candidates/rear_reference617.py
+@@ -0,0 +1,9 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/rear_reference617.py. """
++
++from dataclasses import dataclass
++
++from concept_road.rear_road import RecoveryObservation
++
++@dataclass(frozen=True)
++class RecoveryReference(RecoveryObservation):
++    reference: object = None
+--- /dev/null
++++ b/concept_candidates/concept_candidates/trajectory_batch.py
+@@ -0,0 +1,176 @@
++"""Run the same 50 ms integration and checks on whole control sequences."""
++import numpy as np
++
++from concept_feasibility import _motion
++from concept_feasibility.geometry import road_clearance
++from concept_feasibility.geometry61514 import RISK_LIMIT
++from concept_feasibility.path_risk import array_clearance
++from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
++from .curve_progress import project, supported_increment
++from .field_controls import forward_steering
++
++DT = .05
++def motor_parameters():
++    return (np.asarray(MODEL['speed']), forward_yaw_model(), MODEL['stop']['delay'],
++            MODEL['stop']['deceleration'])
++
++
++def warm_pace(pace):
++    parameters=tuple(MODEL['yaw'])
++    physical=physical_motor_enabled()
++    for speed in np.asarray([.25,.55,.8,1.])*pace:
++        response_intervals(float(speed if physical else np.float32(speed)), parameters, physical)
++
++
++def initial_state(obs, commands, stop_age, *, forward=False):
++    state = np.zeros((len(commands),8))
++    state[:,3] = max(0., obs.speed) if forward else obs.speed
++    state[:,4] = obs.yaw
++    state[:,7] = np.where(commands==0., stop_age, 0.)
++    return state
++
++
++def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters):
++    n=len(commands)
++    state=np.empty((steps*4+1,n,8))
++    controls=np.empty((steps*4,n,2))
++    state[0]=initial_state(obs,commands,age,forward=True)
++    limit=parameters.get('yaw_limit',1.55)
++    last=np.full(n,previous[1])
++    for k in range(steps):
++        t=4*k
++        z,x,heading,speed,yaw=state[t,:,:5].T
++        pursuit=z+np.clip(1.+.7*speed,1.2,3.)
++        q=np.minimum(pursuit,look)
++        reference=aa*q**3+bb*q**2+np.maximum(pursuit-look,0)*slope
++        dz,dx=pursuit-z,reference-x
++        lateral=dx*np.cos(heading)-dz*np.sin(heading)
++        desired=parameters['steer_gain']*np.maximum(speed,.5)*2*lateral/(dz*dz+dx*dx+.01)-parameters['yaw_damping']*yaw
++        dt=obs.dt if k==0 else .2
++        lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
++        if physical_motor_enabled():
++            last=forward_steering(desired,commands,speed,last,dt)
++        else:
++            last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
++        controls[t:t+4,:,0]=commands;controls[t:t+4,:,1]=last
++        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*motor_parameters(),physical_motor_enabled())[1:]
++    # The frozen simulator's nominal horizon uses this particular evaluation order.
++    ticks=np.arange(steps*4)
++    times=np.r_[0.,(ticks//4)*.2+(ticks%4+1)*DT]
++    g,margin,known,obs_margin=clearance(obs,state,times,parameters['uncertainty'])
++    progress,used,heading_cost=progress_over(obs,state)
++    return state, controls, g,margin,known,obs_margin,progress,used,heading_cost
++
++
++def distinct_histories(state,columns,enabled=None):
++    """Index bit-identical trajectories; every original slot receives its exact result."""
++    histories=np.ascontiguousarray(state[:,:,columns].transpose(1,0,2))
++    masks=None if enabled is None else np.ascontiguousarray(enabled.T)
++    registry={}; representatives=[]; inverse=[]
++    for i,history in enumerate(histories):
++        key=history.tobytes()
++        if masks is not None:
++            key=(key,masks[i].tobytes())
++        group=registry.get(key)
++        if group is None:
++            group=len(representatives)
++            registry[key]=group
++            representatives.append(i)
++        inverse.append(group)
++    return representatives,np.asarray(inverse)
++
++
++def progress_over(obs,state):
++    take,restore=distinct_histories(state,(0,1,2,3,4))
++    if len(take)<state.shape[1]:
++        state=state[:,take]
++    rows, count = state.shape[:2]
++    z,x,h,v,yaw=(state[:,:,i] for i in range(5))
++    direction=np.interp((z[:-1]+z[1:])*.5,obs.road[:,0],obs.heading)
++    fallback=(z[1:]-z[:-1])*np.cos(direction)+(x[1:]-x[:-1])*np.sin(direction)
++    reference=getattr(obs,'reference',None)
++    if reference is None:
++        delta=fallback
++        used=np.zeros_like(delta,bool)
++    else:
++        arc,seen=project(reference,z.ravel(),x.ravel())
++        arc,seen=arc.reshape(rows,count),seen.reshape(rows,count)
++        delta,used=supported_increment(reference,arc[:-1],arc[1:],seen[:-1],seen[1:],x[:-1],x[1:],fallback)
++    mid=h[:-1]+.25*(yaw[:-1]+yaw[1:])*DT
++    error=(v[:-1]+v[1:])*.5*(mid-direction)**2*DT
++    # The frozen loop adds time steps in order for each candidate.
++    return (np.add.accumulate(delta,axis=0)[-1][restore],np.sum(used,axis=0)[restore],
++            np.add.accumulate(error,axis=0)[-1][restore])
++
++
++def clearance(obs,state,times,uncertainty,enabled=None):
++    take,restore=distinct_histories(state,(0,1,2,5,6),enabled)
++    if len(take)<state.shape[1]:
++        state=state[:,take]
++        if enabled is not None:enabled=enabled[:,take]
++    shape=state.shape[:2]
++    z,x,heading,travel,turn=(state[:,:,i] for i in (0,1,2,5,6))
++    gap,lower,known=road_clearance(obs.road,z.ravel(),x.ravel(),heading.ravel(),uncertainty)
++    gap=gap.reshape(shape)
++    lower=lower.reshape(shape)-uncertainty*(.04*travel+.08*turn*1.16)
++    known=known.reshape(shape)
++    obj_gap,obj_lower=array_clearance(obs.objects,z,x,heading,travel,turn,times,enabled,RISK_LIMIT)
++    if enabled is not None:
++        lower=np.where(enabled,lower,100.)
++        known=~enabled | known
++    return (np.minimum(gap.min(axis=0),obj_gap)[restore],lower.min(axis=0)[restore],
++            known.all(axis=0)[restore],obj_lower[restore])
++
++
++def braking(obs,commands,first,stop_age,uncertainty,coast_seconds,details,control_sequence,coast_sequence):
++    n=len(commands)
++    coast=int(round(coast_seconds/DT)) if coast_sequence is None else coast_sequence.shape[1]
++    ticks=np.arange(104)
++    controls=np.zeros((104,n,2))
++    if control_sequence is not None:
++        controls[:]=control_sequence[:,np.minimum(ticks,control_sequence.shape[1]-1)].transpose(1,0,2)
++        last=np.max(np.where(abs(control_sequence[:,:,0])>1e-8,
++                             np.arange(control_sequence.shape[1]),-1),axis=1)
++    else:
++        last=np.full(n,coast-1)
++        cruise= min(coast,104)
++        if coast_sequence is None:
++            controls[:cruise,:,0]=commands
++            controls[:cruise,:,1]=first
++            endpoint=first
++        else:
++            controls[:cruise]=coast_sequence[:,:cruise].transpose(1,0,2)
++            endpoint=coast_sequence[:,-1,1]
++        controls[cruise:,:,1]=endpoint*.65**(((ticks[cruise:]-coast)//4+1)[:,None])
++    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
++    stopped=np.logical_or.accumulate((ticks[:,None]>last)&(abs(controls[:,:,0])<1e-8)&(states[1:,:,3]<.04),axis=0)
++    all_stopped=np.flatnonzero(stopped.all(axis=1))
++    nt=int(all_stopped[0])+1 if len(all_stopped) else len(controls)
++    states,controls,stopped=states[:nt+1],controls[:nt],stopped[:nt]
++    # The step at which a candidate first stops is checked, as is the initial pose.
++    enabled=np.vstack((np.ones((2,n),bool),~stopped[:-1]))
++    _,road,known,obstacle=clearance(obs,states,np.arange(nt+1)*DT,uncertainty,enabled)
++    valid=known&(road>=0.)&(obstacle>0.)&stopped[-1]
++    if details:
++        return valid,np.minimum(road,obstacle),states[1:,:,:2].transpose(1,0,2),controls.transpose(1,0,2)
++    return valid,np.minimum(road,obstacle)
++
++
++def profile(obs,sequence,horizon,stop_age,uncertainty):
++    n,original=sequence.shape[:2]
++    nominal=int(round(horizon/DT)); nt=max(nominal,original)
++    controls=np.zeros((nt,n,2))
++    controls[:original]=sequence.transpose(1,0,2)
++    ticks=np.arange(nt-original)
++    controls[original:,:,1]=sequence[:,-1,1]*.65**((ticks//4+1)[:,None])
++    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
++    geometric,road,known,obstacle=clearance(obs,state,np.arange(nt+1)*DT,uncertainty)
++    progress,used,cost=progress_over(obs,state[:nominal+1])
++    finite=np.isfinite(state[1:,:,3:5]).all(axis=(0,2))
++    valid=(road>=0)&(obstacle>0)&known&finite&(state[-1,:,3]<.04)&(abs(controls[-1,:,0])<1e-8)
++    path_steps=np.unique(np.r_[np.arange(4,nominal+1,4),nominal])
++    z,x,heading,speed=state[nominal,:,:4].T
++    return dict(valid=valid,road_lower=road,obstacle_lower=obstacle,evidence=known,dynamics=finite,
++                geometric=geometric,road_progress=progress,heading_integral=cost,reference_steps=used,
++                z=z.copy(),x=x.copy(),heading=heading.copy(),speed=speed.copy(),
++                paths=state[path_steps,:,:2].transpose(1,0,2),controls=controls.transpose(1,0,2),checked_seconds=nt*DT)
+--- /dev/null
++++ b/concept_candidates/package.xml
+@@ -0,0 +1,15 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_candidates</name>
++  <version>6.26.0</version>
++  <description>V6.26 forward trajectories, contingencies and reverse recovery.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <build_depend>cython3</build_depend>
++  <build_depend>python3-dev</build_depend>
++  <exec_depend>concept_feasibility</exec_depend>
++  <exec_depend>concept_road</exec_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_candidates/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_candidates
++[install]
++install_scripts=$base/lib/concept_candidates
+--- /dev/null
++++ b/concept_candidates/setup.py
+@@ -0,0 +1,28 @@
++from setuptools import Extension, setup
++from Cython.Distutils import build_ext
++import os
++
++name = 'concept_candidates'
++setup(
++    name=name,
++    version='6.26.0',
++    packages=[name],
++    cmdclass={'build_ext': build_ext},
++    options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
++    ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
++                   extra_compile_args=['/O2', '/fp:strict', '/openmp'] if os.name == 'nt' else ['-O3', '-ffp-contract=off', '-fopenmp'],
++                   extra_link_args=[] if os.name == 'nt' else ['-fopenmp'])
++        for module in ['_progress']],
++
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++    ],
++    package_data={name: []},
++    install_requires=['setuptools'],
++    zip_safe=False,
++    maintainer='Sophia AI Formula Team',
++    maintainer_email='maintainers@example.invalid',
++    description='V6.26 forward trajectories, contingencies and reverse recovery.',
++    license='AGPL-3.0-only',
++)
+--- /dev/null
++++ b/concept_candidates/test/test_compiled_progress.py
+@@ -0,0 +1,19 @@
++import numpy as np
++import pytest
++
++from concept_candidates.curve_progress import project, reference_project
++
++
++def test_projection_agrees_at_visible_ends_and_ambiguous_curve_points():
++    pytest.importorskip('concept_candidates._progress')
++    coef=np.array([.21,-.35,.096])
++    stations=np.linspace(.2,9.3,115)
++    points=np.c_[stations,np.polynomial.polynomial.polyval(stations,coef)]
++    ref=dict(points=points,coef=coef,sigma=.28)
++    rng=np.random.default_rng(626)
++    z=np.r_[rng.uniform(-1.,13.,1200),points[:,0]]
++    x=np.r_[rng.uniform(-4.,8.,1200),points[:,1]]
++    value,valid=project(ref,z,x)
++    reference,known=reference_project(ref,z,x)
++    np.testing.assert_allclose(value,reference,rtol=0,atol=1e-12)
++    np.testing.assert_array_equal(valid,known)
+--- /dev/null
++++ b/concept_candidates/test/test_distinct_histories.py
+@@ -0,0 +1,14 @@
++import numpy as np
++import pytest
++
++
++def test_only_bit_identical_histories_share_checks_and_slots_restore_in_original_order():
++    batch = pytest.importorskip('concept_candidates.trajectory_batch')
++    state = np.zeros((6,5,8))
++    state[2,1,0] = np.nextafter(0.,1.)
++    state[3,3,6] = .01
++    enabled = np.ones((6,5),bool)
++    enabled[4,4] = False
++    take,restore = batch.distinct_histories(state,(0,1,2,5,6),enabled)
++    assert take == [0,1,3,4]
++    np.testing.assert_array_equal(restore,[0,1,0,2,3])
+--- /dev/null
++++ b/concept_candidates/test/test_distinct_requests.py
+@@ -0,0 +1,19 @@
++import numpy as np
++
++from concept_candidates.candidate_merge import distinct_requests
++
++
++def test_stable_original_ids_and_no_approximate_merging():
++    low, higher = .5, np.nextafter(.5, 1.)
++    targets = [1., 1., 1.001, 1., 0., -0., 1., 1.]
++    speeds = [low, low, low, higher, low, low, 0., .001]
++    representatives, inverse = distinct_requests(targets, speeds)
++    assert representatives.tolist() == [0, 2, 3, 4, 5, 6, 7]
++    assert representatives[inverse].tolist() == [0, 0, 2, 3, 4, 5, 6, 7]
++
++
++def test_empty_and_already_distinct_batches():
++    reps, inverse = distinct_requests([], [])
++    assert reps.size == inverse.size == 0
++    reps, inverse = distinct_requests([1., 0., -1.], [0., 0., 0.])
++    assert reps.tolist() == inverse.tolist() == [0, 1, 2]
+--- /dev/null
++++ b/concept_candidates/test/test_field_controls.py
+@@ -0,0 +1,46 @@
++import numpy as np
++
++from concept_candidates.field_controls import (
++    DIFFERENTIAL_SLEW, MAX_YAW, forward_ceiling, forward_steering)
++from concept_feasibility.response61515 import can_command, motor_profile, motor_steering
++
++
++def test_field_ramp_uses_applied_zero_and_cannot_wind_up_while_stalled():
++    applied = 0.
++    for expected in (.2, .4, .5, .5):
++        with motor_profile(True, (applied, 0.)):
++            applied = forward_ceiling(0., .2, 4.)
++        np.testing.assert_allclose(applied, expected)
++    with motor_profile(True):
++        assert forward_ceiling(3., .49, 4.) == .2
++    with motor_profile(True, (3.9, .1)):
++        assert forward_ceiling(3.9, .2, 4.) == 4.
++        assert forward_ceiling(1.2, .2, 1.3) == 1.3
++
++
++def test_field_launch_checks_both_real_wheels_and_turn_slew():
++    drive = np.array([.2, .2, .2])
++    desired = np.array([-1.55, 0., 1.55])
++    previous = np.zeros_like(drive)
++    u = forward_steering(desired, drive, 0., previous, .2)
++    raw = motor_steering(-u, physical=True)
++    assert (abs(raw) <= DIFFERENTIAL_SLEW * .2 + 1e-10).all()
++    right, left = can_command(drive, u, physical=True)
++    assert np.all(right > 0) and np.all(left > 0)
++    assert np.allclose(u[1], 0.)
++    assert (right[0] > left[0]) and (right[2] < left[2])
++    assert np.max(np.abs(u)) < MAX_YAW
++
++
++def test_field_turn_speed_cap_and_unrepresentable_request():
++    for speed in (.05, .2, .5, 1., 4.):
++        q = np.full(3, speed)
++        desired = np.array([-.06211189553141594, .001, 0.])
++        assert np.all(forward_steering(desired, q, speed, np.zeros(3), .2) == 0.)
++        for sign in (-1., 1.):
++            last = np.zeros(3)
++            for _ in range(20):
++                last = forward_steering(np.full(3, sign*2.), q, speed, last, .2)
++            assert np.all(np.abs(last) <= min(.65, 1./speed) + 1e-8)
++            assert np.all(last*sign >= 0)
++            assert np.all(forward_steering(last, np.zeros(3), speed, last, .2) == 0.)
+--- /dev/null
++++ b/concept_candidates/test/test_reverse_sweep.py
+@@ -0,0 +1,39 @@
++from types import SimpleNamespace
++
++import numpy as np
++
++from concept_candidates.backtrack_forward617 import checked_retreat
++from concept_feasibility.response61515 import features, MODEL, motor_profile
++from concept_feasibility.reverse_model617 import DATA, step
++
++
++def test_recovery_checks_all_release_ticks_and_requires_supported_rear():
++    obs = SimpleNamespace(road=np.array([[-3., -2., 2., .04], [10., -2., 2., .04]]),
++                          objects=[], speed=0., yaw=0., dt=.2, rear_observed_limit=-3.)
++    for duration in (0., .2, .4, .6, .8, 1.):
++        result = checked_retreat(obs, duration, .3, 4.2, -.1, .18)
++        assert result['valid']
++        assert len(result['path']) == 21
++        controls = result['controls']
++        ticks = round(duration/.05)
++        np.testing.assert_array_equal(controls[:ticks, 0], -.2)
++        np.testing.assert_array_equal(controls[ticks:, 0], 0.)
++    obs.road[0, 0] = -.08
++    assert not checked_retreat(obs, 1., .3, 4.2)['known']
++    obs.road[0, 0] = -3.
++    obs.rear_observed_limit = None
++    assert not checked_retreat(obs, 1., .3, 4.2)['valid']
++    assert checked_retreat(obs, 0., .3, 4.2)['valid']
++
++
++def test_retreat_cache_separates_motor_profiles():
++    speed, yaw, dt = -.1, .13, .05
++    for physical in (False, True, False):
++        basis = features(-.2, 0., *MODEL['yaw'][4:6], physical=physical)
++        expected = []
++        for model, initial in (('v', speed), ('w', yaw)):
++            tau, *gains = DATA['models'][model]
++            target = float(basis @ np.asarray(gains))
++            expected.append(target + (initial - target) * np.exp(-dt/tau))
++        with motor_profile(physical):
++            np.testing.assert_array_equal(step(speed, yaw, -.2, 0., dt, .3), expected + [0.])

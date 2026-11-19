@@ -1,0 +1,178 @@
+{
+  "bag": "concept_20261119_152225_865b26d670364242a182cd669932eec1",
+  "span": [
+    "2026-11-19T15:22:26.866+09:00",
+    "2026-11-19T15:24:25.691+09:00"
+  ],
+  "planner_reverse": [],
+  "planning_status": {
+    "invalid image gap over 0.5 s; pause the gate and restart the driver": 1189
+  },
+  "auto_speed": {},
+  "motor_requests": {
+    "zero longitudinal": 4960,
+    "forward <=0.21": 6,
+    "forward 0.21–0.5": 12,
+    "forward >0.5": 655,
+    "reverse 0.21–0.5": 1,
+    "reverse >0.5": 49
+  },
+  "motor_nonzero_frames": 1425,
+  "negative_motor_frames": 138,
+  "raw_wheel_frames": 3258,
+  "nonzero_higher_byte_frames": 201,
+  "top_higher_byte_patterns": [
+    {
+      "hex": "bbffffffbdffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -69,
+        -67
+      ]
+    },
+    {
+      "hex": "bbffffffbbffffff",
+      "count": 4,
+      "interpreted_as_int32_le": [
+        -69,
+        -69
+      ]
+    },
+    {
+      "hex": "beffffffbbffffff",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        -66,
+        -69
+      ]
+    },
+    {
+      "hex": "bdffffffbeffffff",
+      "count": 3,
+      "interpreted_as_int32_le": [
+        -67,
+        -66
+      ]
+    },
+    {
+      "hex": "cbffffffcbffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -53,
+        -53
+      ]
+    },
+    {
+      "hex": "bbffffffbeffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -69,
+        -66
+      ]
+    },
+    {
+      "hex": "bfffffffbeffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -65,
+        -66
+      ]
+    },
+    {
+      "hex": "bcffffffbcffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -68,
+        -68
+      ]
+    },
+    {
+      "hex": "bcffffffbdffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -68,
+        -67
+      ]
+    },
+    {
+      "hex": "baffffffbdffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -70,
+        -67
+      ]
+    },
+    {
+      "hex": "baffffffbbffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -70,
+        -69
+      ]
+    },
+    {
+      "hex": "beffffffbdffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -66,
+        -67
+      ]
+    },
+    {
+      "hex": "b9ffffffbeffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -71,
+        -66
+      ]
+    },
+    {
+      "hex": "beffffffbfffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -66,
+        -65
+      ]
+    },
+    {
+      "hex": "bcffffffbfffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -68,
+        -65
+      ]
+    },
+    {
+      "hex": "bfffffffc1ffffff",
+      "count": 2,
+      "interpreted_as_int32_le": [
+        -65,
+        -63
+      ]
+    }
+  ],
+  "paired_feedback": {
+    "zero longitudinal": {
+      "both_rpm_zero": 1939,
+      "rpm_nonzero": 21,
+      "invalid": 19
+    },
+    "forward >0.5": {
+      "both_rpm_zero": 3,
+      "rpm_nonzero": 28
+    },
+    "reverse >0.5": {
+      "rpm_nonzero": 7,
+      "both_rpm_zero": 3,
+      "invalid": 1
+    }
+  },
+  "gate": {
+    "paused operator_pause": 142,
+    "auto waiting_new_auto": 579,
+    "manual manual_takeover": 121,
+    "paused manual_released": 280,
+    "paused joy_timeout": 13,
+    "manual joy_timeout": 34
+  }
+}

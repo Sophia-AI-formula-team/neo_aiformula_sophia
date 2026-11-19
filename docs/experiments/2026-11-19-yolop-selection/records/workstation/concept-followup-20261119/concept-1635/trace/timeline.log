@@ -1,0 +1,9 @@
+2026-11-19T16:41:24+09:00
+2026-11-19T16:43:37+09:00 Downloaded 16:34 launch log and 16:35 bag metadata, with 105.7s gate, decision, sensor and command summaries from read-only SQLite. No raw video or full bag copied.
+2026-11-19T16:45:02+09:00 Classified 14 no-feasible decisions, 233 persistent time-gap frames and 89 recovery holds; validated current UI projection/axes, exported compact control trace and report.
+2026-11-19T16:48:50+09:00
+2026-11-19T16:52:42+09:00 First replay showed 0.2 -> 0.4 -> 0.5 m/s followed by invalid vehicle state in the recorded 1s stationary clip; original CAN interval later measured up to 200.35 ms.
+2026-11-19T16:55:18+09:00 Two 7s steady-input resume windows ran from the original bag with zero measured wheels, followed by a deliberate image dropout and a verified zero hold.
+2026-11-19T16:56:43+09:00 Repeated two resume windows from 99 independently archived raw sensor messages and five projected field captures in DDS domain 207.
+2026-11-19T16:56:58.434+09:00 Latched auto_timeout 497.8ms after deliberate loss. All 37 later motor requests and 75 later CAN frames were zero after 700ms.
+2026-11-19T16:57:11+09:00 Verified no remaining processes for localhost domain 207.

@@ -1,0 +1,35 @@
+2026-11-19T16:12:09+09:00
+Starting >>> concept_control_gate
+Starting >>> concept_panel
+Finished <<< concept_panel [3.01s]
+Finished <<< concept_control_gate [3.05s]
+Starting >>> concept_drive
+[4.073s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+- concept_obstacles
+- concept_ranker
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+- /home/control/concept_v6275_ws/install/concept_obstacles
+- /home/control/concept_v6275_ws/install/concept_ranker
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road concept_obstacles concept_ranker
+Finished <<< concept_drive [2.88s]
+Starting >>> concept
+[6.955s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+- concept_visualization
+- concept_obstacles
+- concept_ranker
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+- /home/control/aiformula_runtime/concept-field-20261119/install/concept_visualization
+- /home/control/concept_v6275_ws/install/concept_obstacles
+- /home/control/concept_v6275_ws/install/concept_ranker
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road concept_visualization concept_obstacles concept_ranker
+Finished <<< concept [2.57s]
+
+Summary: 4 packages finished [9.08s]
+/home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_panel/lib/python3.8/site-packages/concept_panel/window.py /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_control_gate/lib/python3.8/site-packages/concept_control_gate/speed_setting.py /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_drive/lib/python3.8/site-packages/concept_drive/node.py
+2026-11-19T16:12:21+09:00

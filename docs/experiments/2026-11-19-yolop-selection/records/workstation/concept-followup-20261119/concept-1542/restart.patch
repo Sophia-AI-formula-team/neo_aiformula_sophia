@@ -1,0 +1,151 @@
+diff --git a/vehicle_concept/src/concept/launch/concept.launch.py b/vehicle_concept/src/concept/launch/concept.launch.py
+index 1496d83..0c82a16 100644
+--- a/vehicle_concept/src/concept/launch/concept.launch.py
++++ b/vehicle_concept/src/concept/launch/concept.launch.py
+@@ -8,7 +8,7 @@ from concept.bringup import build, share
+ def generate_launch_description():
+     defaults = {
+         'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
+-        'target_speed_mps': '1.0', 'max_auto_speed_mps': '1.0', 'planning_hz': '15.0',
++        'target_speed_mps': '4.0', 'max_auto_speed_mps': '4.0', 'planning_hz': '15.0',
+         'weights': '', 'calibration': 'auto', 'device': 'cuda',
+         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
+         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index f129bb6..5d0f4af 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -2,7 +2,7 @@
+ import json
+ import math
+ import time
+-from threading import Lock
++from threading import Event, Lock
+ from uuid import uuid4
+ 
+ import cv2
+@@ -44,6 +44,9 @@ class DriverNode(Node):
+         self.feedback = Feedback()
+         self.lock = Lock()
+         self.telemetry = MutuallyExclusiveCallbackGroup()
++        self.restart_services = MutuallyExclusiveCallbackGroup()
++        self.restart_requested = Event()
++        self.planning_state = Lock()
+         self.reset_driver()
+         self.output = self.create_publisher(TwistStamped, '/concept/auto_cmd', 1)
+         self.decisions = self.create_publisher(String, '/concept/decision', 1)
+@@ -53,7 +56,7 @@ class DriverNode(Node):
+         self.add_on_set_parameters_callback(self.update_parameters)
+         if not self.onboard_camera:
+             self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
+-        self.create_service(Trigger, '~/restart', self.restart)
++        self.create_service(Trigger, '~/restart', self.restart, callback_group=self.restart_services)
+         # The default mutually exclusive group keeps the snapshot consistent
+         # with one completed frame, while feedback still uses its own group.
+         self.create_service(Trigger, '~/lap_map', self.lap_map)
+@@ -71,17 +74,25 @@ class DriverNode(Node):
+             self.feedback.samples.clear()
+ 
+     def restart(self, _, response):
+-        with self.lock:
+-            if self.gate_driving:
+-                response.success = False
+-                response.message = 'Pause the active physical gate before clearing driver memory.'
++        self.restart_requested.set()
++        try:
++            with self.planning_state:
++                with self.lock:
++                    if self.gate_driving:
++                        response.message = 'Pause the active physical gate before clearing driver memory.'
++                        return response
++                self.reset_driver()
++                response.success = True
++                response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
+                 return response
+-        self.reset_driver()
+-        response.success = True
+-        response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
+-        return response
++        finally:
++            self.restart_requested.clear()
+ 
+     def lap_map(self, _, response):
++        with self.planning_state:
++            return self.map_snapshot(response)
++
++    def map_snapshot(self, response):
+         if self.last_ns is None:
+             response.message = '等待第一帧有效地图'
+             return response
+@@ -140,6 +151,13 @@ class DriverNode(Node):
+         self.process_frame(message=message)
+ 
+     def process_frame(self, message=None, local=None):
++        if self.restart_requested.is_set():
++            return
++        with self.planning_state:
++            if not self.restart_requested.is_set():
++                self.plan_frame(message, local)
++
++    def plan_frame(self, message, local):
+         now = lambda: self.get_clock().now().nanoseconds
+         tic = time.monotonic()
+         decision = dict(schema='concept.decision.v1', session=self.session, frame_id='base_footprint',
+@@ -227,14 +245,14 @@ class DriverNode(Node):
+ def main(args=None):
+     rclpy.init(args=args)
+     node = DriverNode()
+-    executor = MultiThreadedExecutor(num_threads=2)
++    executor = MultiThreadedExecutor(num_threads=3)
+     executor.add_node(node)
+     camera = None
+     try:
+         if node.onboard_camera:
+             from concept_yolop.node import CameraNode
+             # Planning, map snapshots and resets share one mutually exclusive group.
+-            # Wheel and gyro callbacks use the second worker during inference/planning.
++            # Telemetry and restart can run while a frame owns planning state.
+             camera = CameraNode(node.camera_frame, node.default_callback_group)
+             executor.add_node(camera)
+         executor.spin()
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/window.py b/vehicle_concept/src/concept_panel/concept_panel/window.py
+index 80797ac..83f8c8e 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -294,6 +294,10 @@ class Window(W.QWidget):
+         self.action_feedback=label('','muted')
+         self.action_feedback.setWordWrap(True)
+         stack.addWidget(self.action_feedback)
++        self.gap_notice = label('图像断档已锁定。点继续自动驾驶会先清空累计地图并重启规划。', 'muted')
++        self.gap_notice.setWordWrap(True)
++        self.gap_notice.hide()
++        stack.addWidget(self.gap_notice)
+ 
+         metrics=W.QHBoxLayout()
+         self.metrics={}
+@@ -445,7 +449,7 @@ class Window(W.QWidget):
+         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
+                           if effective is not None else '规划按目标和限速中较低的值计算。')
+         self.action_feedback.setText(self.pending_text)
+-        self.buttons['resume'].setText('清空累计地图并继续' if self.image_gap() else '继续自动驾驶')
++        self.gap_notice.setVisible(self.image_gap())
+         for key,button in self.buttons.items():
+             ok=live and not self.busy and not self.offline
+             if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
+diff --git a/vehicle_concept/src/concept_panel/test/test_panel.py b/vehicle_concept/src/concept_panel/test/test_panel.py
+index ba53afc..71f698a 100644
+--- a/vehicle_concept/src/concept_panel/test/test_panel.py
++++ b/vehicle_concept/src/concept_panel/test/test_panel.py
+@@ -41,6 +41,12 @@ def test_offline_qt_render_flags_and_bgr_with_stride(monkeypatch):
+     w.gate.put(dict(mode='auto',output_enabled=True,linear_mps=.87),10.,20.)
+     w.refresh(10.,20.)
+     assert w.connection.text()=='门控在线' and w.metrics['cmd'].text()=='0.87'
++    w.show()
++    w.gate.put(dict(mode='paused', output_enabled=True, paused=True, linear_mps=0.),10.,20.)
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True),10.,20.)
++    w.refresh(10.,20.)
++    assert w.buttons['resume'].text()=='继续自动驾驶'
++    assert w.buttons['resume'].isEnabled() and w.gap_notice.isVisible()
+     w.refresh(10.,20.6)
+     assert w.connection.text()=='门控失联' and w.metrics['cmd'].text()=='—'
+     assert not w.buttons['enable'].isEnabled()

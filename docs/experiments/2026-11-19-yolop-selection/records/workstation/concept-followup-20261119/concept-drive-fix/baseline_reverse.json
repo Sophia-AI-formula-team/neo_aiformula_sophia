@@ -1,0 +1,46 @@
+{
+  "models": {
+    "v": [
+      0.29999974965897236,
+      0.4954505272157453,
+      -0.6012181604734168,
+      0.28601247301438854
+    ],
+    "w": [
+      0.046380744485121306,
+      0.01042860999707415,
+      -0.05503200277004831,
+      -0.06424571183636385
+    ]
+  },
+  "feature_knot_source": "response61515.MODEL yaw features",
+  "action_speed": -0.2,
+  "steer_min": -0.18,
+  "steer_max": 0.18,
+  "source_fit_sha256": "70695ac9110c81211542844657b6c702b3ad0dc240b62f0b68108816b35adabd",
+  "validation_sha256": "ed61b00da4f22df6d9edf23d2806868b308e37131addc61347fec853946bc4c3",
+  "validation": {
+    "status": "duration_complete",
+    "no_body_violation": true,
+    "no_wheel_violation": true,
+    "actual_peak_reverse_mps": 0.220690832,
+    "one_step_errors": {
+      "v": {
+        "rmse": 3.651014407897352e-08,
+        "max_abs": 1.0355760321489882e-07
+      },
+      "w": {
+        "rmse": 0.0007466103174113341,
+        "max_abs": 0.0023542288821520457
+      },
+      "proxy_minus_body_q_minus_02": {
+        "n": 24,
+        "rmse": 0.00999755471731275,
+        "max_abs": 0.023891969489006237
+      }
+    },
+    "samples": 24,
+    "scope": "Independent pulse sequence; prior speed/yaw measured at each step; no closed-loop recovery validation"
+  },
+  "scope": "Installed simulator only; low-speed fixed reverse commands. Not yet validated in obstacle recovery or on real car."
+}

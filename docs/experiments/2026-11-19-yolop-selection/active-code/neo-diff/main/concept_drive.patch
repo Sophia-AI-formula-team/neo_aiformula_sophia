@@ -1,0 +1,2085 @@
+--- /dev/null
++++ b/concept_drive/PROVENANCE.json
+@@ -0,0 +1,57 @@
++{
++  "archive_name": "V6.26.zip",
++  "sha256": "4dc3ebf3838e0b12af8d42e1d009d91fe8632b2fb4d35a4cfb2d761e424647bb",
++  "sources": {
++    "accepted/assembled-driver.py": "1b569d0eca1b9fa6083a6cffb82bd4f849d396c9abc1bccf16d8b135d996858f",
++    "experiments/v614_driving/geometry.py": "aa990e4c34f86b53a4e2a49ea2c2671171d25678291ef607735967b5b26ef2c1",
++    "experiments/v615_recovery/association61519.py": "0d182a4b4291f724ca65a60a8b05f904188919c6fa83dd9cb8bd6fd352c5f9c7",
++    "experiments/v615_recovery/belief61515.py": "38f3664db51c5187bda13654aa72892cc1d7f7263ce83cf6663413e2dd9df8dd",
++    "experiments/v615_recovery/compare61513.py": "8ceb6cab901608dcae0d9dbda25ced11d6c8af5641935e42bfce2594a814e037",
++    "experiments/v615_recovery/geometry61514.py": "263dffaf92c29e4330ae2458a9252875b636677ef1bb6e6e327a0de5561abb1c",
++    "experiments/v615_recovery/response61515.json": "44769d169febe90ce6acf418d049d098c6ce2a8be535ca6bed039836806dc700",
++    "experiments/v615_recovery/response61515.py": "01e4e42bd05f263ced740352d02078c29e0c340ad53374892df7062864ecf851",
++    "experiments/v615_recovery/road615.py": "67aee80e78e48d70066fa9d373afb4875da203269fbc53c36b98dd54aade8827",
++    "experiments/v615_recovery/road61524.py": "fb498381694069d3f990f12435a7cf735561adbd599396f65e6a8b7cbcdece69",
++    "experiments/v615_recovery/road61527.py": "35b5fa75d5012b24ca709526005a9e2e8340940e33b589ee3f649cde07914065",
++    "experiments/v615_recovery/road6157.py": "3f32a9e434965c2acf5a17e10d11744f42341288bef6eb5fb99cf77d5ff06f35",
++    "experiments/v615_recovery/silhouette615.py": "7ae9b3412e6870621538adf27bee3b6ad31a18ae40621b62c2d2cfcfb80fbc1d",
++    "experiments/v616_decision/curve_profile.py": "b097e4bbe98e7cf01a514bbe25faf36f9129ec0c726652f9a1d13eeacfc8249a",
++    "experiments/v616_decision/curve_progress.py": "08d928583e9e67256ac6e8dd7fb4b877b6b69db2bce300435fb1e334eab7d56a",
++    "experiments/v616_decision/rear_memory.py": "3e7c6482f43d8ba9c8ec5bbe3a92f04f91a5579d641d8cf974a87a56dce8189b",
++    "experiments/v616_decision/rear_road.py": "ec5381c0f22754fc7926e37d8af7ed0944b7b154deed9129f7f3666f4605bf4e",
++    "experiments/v616_decision/reverse_response.json": "09a621409b22c141fc1fd1a52252b9de80747db7b37106c082b6fe4c3aa336b9",
++    "experiments/v616_decision/reverse_response.py": "d929975fc77c255765748224153de1a3382ae1a311a0c0235397b792223a3182",
++    "experiments/v617_regression/backtrack_forward617.py": "48683cfef8ce73deae9f2b2d24dd6185c39892552b2d9008d3ad14118d11467c",
++    "experiments/v617_regression/clipped617.py": "fbbfb70c37b61d5afd4e1a2f9104f6c102dfaa59cc418a550718942fd25af2f8",
++    "experiments/v617_regression/continuity_road617.py": "320491a28812570422f5f6d142ed4812067c8eaf9ef35d1ba1435f3cd7b38bc2",
++    "experiments/v617_regression/curve_road617.py": "dd276d55ee78f5b12fc9421098fc6d99b57a7225ef9ea9cfeb286f002c373537",
++    "experiments/v617_regression/map_semantics618.py": "aaff2c1c34c25b5044e0c8af1712e2aad5e71a4179f06f6a7347b1c35cc3a4fa",
++    "experiments/v617_regression/obstacles617.py": "4cc354d42d8bebb6df0bc3a51c736ac4fbb0578a03db761f225a4596358d4aea",
++    "experiments/v617_regression/ranked_builder617.py": "768771793724bbef959a648f19718ad6d19af35b923847b1faff3a7138ff2f55",
++    "experiments/v617_regression/ranker617.py": "2b09c977557908aef8269baa0a7d0c3e1bdb774eff0112bbcb75ea91257ddfe7",
++    "experiments/v617_regression/rear_reference617.py": "78359e21f364dd42eb1cfca2820500ad3c766507bb6a15bd476fca2bcfc19bea",
++    "experiments/v617_regression/reverse_model617.json": "9339db85936dd29a35c19f0485b49b902b6b41b608da153d6ba6faa4440e599d",
++    "experiments/v617_regression/reverse_model617.py": "bb5458ab2f765f47ec12c43952cb87ba3bf341f37ec6f068d249c17063b15512",
++    "experiments/v617_regression/runtime_map.py": "af7b45cc3ff44868b99077075294e63ba070f3141f3d0a5d6d494de0adce82c6",
++    "experiments/v617_regression/trajectory624.py": "196242d54212b9052d50c25f7cee4088171bc0b867de2505a8941f171605b6e2",
++    "experiments/v617_regression/whole_lap621.py": "028a0988d596c9e8332e89becc7c80e8137817ea1344958dee350e01abaf117b",
++    "experiments/v6251_junction/limits6251.py": "6c2dae784dc115f2be5408de5c2d5424d6bd4251d363b4f10d086416c330f4fe",
++    "experiments/v625_boundary/onboard625.py": "bbd5470fa8537a27291c4e827cd0097dd20532f7f6beefd2384b89d8960d93d4",
++    "experiments/v625_boundary/planner625.py": "259147248b49f629ba767f8ca94931a7d29b9e32f663fe9e7ec3f3d980378ba7",
++    "experiments/v626_time/model-h12.json": "e87f84dd1a1e3ef4a7df21ca9b879f9e7b142573501937e1985e74632aec0df6",
++    "experiments/v626_time/sensor626.py": "ef9ccbb70544175b604285fb8442cf7109d6ef0319c1251d8c62dc08e61fda1a",
++    "experiments/v67_road/material.py": "e64253eebab7540908ec45b953865f4f60ce4007ddcdb9290e5a466d96c70a63",
++    "experiments/v67_road/road.py": "5fc8f2ed1586065f70292718c1650afef4df381c950a2ce3ded5a2f386a7115c",
++    "research/learned_racing/unity_laps/v34_road.py": "0cde5b3aa24152a5e4e53b0c65eea34701b56ab93e0d81aa84fbb2c2f21e9c77",
++    "research/learned_racing/unity_laps/v3_evidence/plant_fit.json": "c4700f5682f003821c8445630ba80693bc6a62654b5e736813c7faa4581afdee",
++    "research/learned_racing/unity_laps/v3_model.py": "e19106e39f0cbcc67220cdb9fe2a5c58df55dc9f34e81d1fa8ede7081f9bb6fb",
++    "research/learned_racing/unity_laps/vision.py": "345d7be45c99dc656453b3eec0979df4657ab8d683f260f4d49831a9b53f6d7e"
++  },
++  "adaptations": [
++    "Importable package namespaces. No simulator, training, referee or server imports.",
++    "geometry.road_clearance is bound to onboard625.tread_clearance before dependent imports in the freeze; the package binds the alias directly.",
++    "TrajectorySelector uses the sensor626 encoder only at its call site; sensor626 calls the V6.24 encoder.",
++    "Python 3.8 compatibility for rear_observed_limit annotation and strict zip object/track count check.",
++    "Drive.step transcribes the accepted guided / free-lane / map-semantics / V6.17.12 + V6.26 H12 configuration."
++  ]
++}
+--- /dev/null
++++ b/concept_drive/README.md
+@@ -0,0 +1,54 @@
++# V6.26 驾驶节点
++
++输入是一张相机图、这张图的路面与标线掩码、检测框，以及拍摄时已经测到的两轮转速和陀螺。程序从零积累路面和障碍记忆。整个驱动在一个 Python 进程内工作。组件各自有 ROS 包，可以分别维护和测试，图像在进程间只传一次。
++
++|包|负责的工作|
++|---|---|
++|concept_road|用标线、路面颜色和当前车道路面掩码恢复道路横截面。结合车轮与陀螺保存刚从镜头下方消失的路面。路口仍需找到沿赛道的边缘。|
++|concept_obstacles|把同一个桶的嵌套检测框合并，结合图像和车辆运动，跟踪位置、速度及误差。|
++|concept_feasibility|使用前进与倒车响应拟合，沿预测路径检查轮胎、路边、感知误差、障碍和减速可行性。|
++|concept_candidates|生成候选动作、检查继续前进和失去下一帧时的后续动作，保存当选控制序列。恢复过程有独立的检查和执行逻辑。|
++|concept_ranker|给白盒允许的前进候选加减分。四个宽度为12的网络输出平均分数修正，参与训练的输入与权重随包保存。|
++|concept_drive|V6.27.2 按新图像触发规划，每秒最多请求 15 次。白盒、排序和恢复完成后，向物理指令门发送带采集时间的候选控制。车端验收要求每秒至少 5 条新指令。|
++
++## 启动和操作
++
++使用本田投影或实车标定投影时，前进和倒车候选按车上 `motor_controller` 的直行换算预测左右轮指令。规划的零纵向释放动作在实车输出为两轴全零。手柄仍可原地转向。车身速度和制动的响应系数源自 Unity，实车低速起步阈值仍需实测。
++
++在 `/concept/decision` 的 JSON 中查看 `candidate_evaluation`。一次常规前进决策会显示 `mode=exact`、候选总数 `input_count` 和实际模拟数 `evaluated_count`。例如总数 75、实际模拟 55 表示有 20 个目标与速度均相同的重复请求共享了结果。所有 75 个编号仍参加原有的筛选和排序。没有执行前进搜索的决策会显示 0 次。
++
++在已经构建并 source 的 ROS 2 工作区运行。完整的相机、状态和指令门由整机启动入口管理。
++
++~~~bash
++ros2 run concept_drive drive
++ros2 param set /concept/drive target_speed_mps 2.0
++ros2 service call /concept/drive/restart std_srvs/srv/Trigger '{}'
++~~~
++
++先暂停物理指令门，再重启驾驶。服务清空车道、障碍、回退计划、里程图和旧轮速，等待下一张图及对应的新测量。车载 GUI 可以用变化的 session ID 清空显示。驾驶器收到物理门正在执行自动输出的状态时，会拒绝清掉记忆。目标速度可在 (0,6] m/s 内调整；收到门的速度上限后，参与规划的速度取两者中较小的值。冻结训练验收的目标是 3.4 m/s。更换速度后，路线经过相同检查，圈速需要单独实测。
++
++## 接口
++
++- 相机使用 /concept/perception/frame，类型为 std_msgs/String。载荷是 concept.perception.v1，含 ROS stamp、光学 frame_id、geometry_profile、模型 SHA-256、无损的 640×360 BGR、路面和标线掩码、原检测框/类别/分数。编解码来自 concept_yolop。
++- 车辆反馈使用 /concept/vehicle_state，类型为 std_msgs/String。t 为 ROS 采样秒数，leftRpm、rightRpm 为轮转速，wheelRadius 单位米，gyro 为 ROS 左转正的 rad/s。驱动选图像采集之前最近的一次有效样本，允许最大间隔 0.15 秒。相邻采样均值用于短时坐标变换，内部转弯按右转为正。
++- /concept/auto_cmd 为 geometry_msgs/TwistStamped，header.stamp 是图像采集时间，frame_id 为 base_footprint；linear.x 单位 m/s，angular.z 按 ROS 左转为正。驱动没有 CAN 和电机发布器。输出由物理门独立裁决。
++- /concept/decision 为 std_msgs/String，载荷为 concept.decision.v1。stamp 是图像采集时间，emitted_stamp 是发布时刻，capture_age_s 含推理、调度与规划延迟，sensor_age_s 是图像与轮速的时间差，processing_ms 仅计驾驶节点处理时间。target_speed_mps 与 effective_speed_mps 分别表示用户设定值和本帧实际采用的规划上限。
++- selected_index 是最终候选；whitebox_index 是加神经网络分数之前的选择。每条 candidates 含 index、allowed、selectable、score、speed_mps、yaw_right_radps、clearance_m、path。allowed 表示该动作通过原白盒；selectable 表示当前控制阶段允许排序器或恢复逻辑选择该动作。受控恢复可独占某条已检查动作。没有候选时保留冻结驱动给出的控制和原因，两个索引可为空。
++- road_rows 每行为 [前距,最左横距,最右横距,左侧误差,右侧误差]。selected_path、每条 path、lines[].points、edges.left/right 使用 [前距,右距] 米。lines[].kind 区分实线、虚线和证据不足。地图原点是本次驾驶开始位置，map.pose 为 [前距,右距,右偏航角]。map.parts 按 ego、adjacent 和 ego_mask 分层；map.changed 每行为 [前格,右格,本车道次数,相邻车道次数,本车道路面掩码次数,相对时间]，每格 0.2 m。map_semantics.changed_markings 给出相同格坐标和线型。map.static、map.dynamic、map.now 是冻结的静态位置估计、动态观测范围和当前观察。objects 保留规划器数值矩阵，tracks 提供人能读的 id / position / velocity / error_m 等。
++- status 可能为 ok、blocked、invalid 或 late。blocked 表示运行时条件拦截输出，仍显示规划结果。图像超过 0.5 秒、时间异常、没有相应反馈或标定不匹配时，物理门收不到此帧的新控制。超过 0.5 秒的图像中断、更换相机/几何配置或规划计算中断后需要暂停并重启，以免沿用失效的历史。经过验证的有符号 0x711 轮速允许实车发送倒车指令。旧版无方向反馈仍会触发倒车互锁。
++
++车端可采用本田安装位姿、现场光心高度 0.55 m 和实时 ZED 左相机 CameraInfo.P 投影。驾驶节点接受该配置 `honda-v1.4.0-ground`，在图像和反馈时效满足条件时向 `/concept/auto_cmd` 发布规划指令。冻结投影的焦距为 254.391622 像素，主点为 (330.01302,181.14964)，相机高 0.655 m。几何配置 unverified-resize 会触发输出互锁。calibrated-v626 能产生候选控制，frozen-unity-v626 仅在 ROS 使用仿真时钟时能产生候选控制。签发几何凭据的方式见 concept_yolop。物理上车还需单独验证动态响应、制动、通信延迟与轮速方向。
++
++## 同帧核验
++
++移动桶外圈的第一张归档图生成了 75 条轨迹，56 条通过白盒。白盒选第 42 条，网络为第 32 条的白盒分数 1.767989 加到 3.062521。最终控制为前进 1.87 m/s、向左转 0.196781084 rad/s。第 5 张图白盒负责控制，索引为空。test/data/moving-lap-start 保留这五张连续原图、同步识别与原始传感数据。参考决定仅供比较。
++
++~~~bash
++python3 -m pytest -q vehicle_concept/src/concept_drive/test
++python3 vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++python3 vehicle_concept/src/concept_drive/tools/replay_acceptance.py /path/to/eval-moving-lap/eval-moving-lap
++~~~
++
++最后一个命令接受多个包含 decisions.jsonl 和 frames/ 的原始档案，逐帧从 RGB、掩码、检测、测得的轮速和陀螺重建驾驶状态。完整档案的路径、分数、候选和控制差异见 REPLAY.json；它统计历史 Unity 驾驶记录的重放。四项旧正式验收为外圈移动桶整圈、双桶短段、混合短段、连续障碍短段。内圈整圈属于另存的诊断场。1,079帧中没有倒车帧。可用 ros_roundtrip.py 在开发机本地独立 DDS 域发送存档帧并验证真实 ROS 消息、重启、限速和未标定相机的影子输出。仿真时钟在这项联通测试中按帧推进，不能由此推算车载实时帧率。
++
++PROVENANCE.json 列出冻结压缩包和各模块原始文件的 SHA-256，登记为 Foxy/Python 3.8 调整的兼容语法、原动态绑定与新包导入的对应关系。
+--- /dev/null
++++ b/concept_drive/REPLAY.json
+@@ -0,0 +1,99 @@
++{
++  "protocol": "stream every archived onboard frame in chronological order",
++  "numeric_atol": 1e-05,
++  "software": {
++    "python": "3.13.13",
++    "numpy": "2.4.4",
++    "opencv": "4.13.0",
++    "scipy": "1.17.1"
++  },
++  "archives": [
++    {
++      "run": "eval-inner-check",
++      "frames": 339,
++      "ranks": 339,
++      "reversing_frames": 0,
++      "max_abs_error": {
++        "control": 0.0,
++        "road": 0.0,
++        "objects": 0.0,
++        "path": 0.0,
++        "score": 0.0
++      },
++      "first_difference": null
++    },
++    {
++      "run": "eval-mixed",
++      "frames": 233,
++      "ranks": 233,
++      "reversing_frames": 0,
++      "max_abs_error": {
++        "control": 0.0,
++        "road": 0.0,
++        "objects": 0.0,
++        "path": 0.0,
++        "score": 0.0
++      },
++      "first_difference": null
++    },
++    {
++      "run": "eval-moving-lap",
++      "frames": 363,
++      "ranks": 362,
++      "reversing_frames": 0,
++      "max_abs_error": {
++        "control": 0.0,
++        "road": 0.0,
++        "objects": 0.0,
++        "path": 0.0,
++        "score": 0.0
++      },
++      "first_difference": null
++    },
++    {
++      "run": "eval-parallel",
++      "frames": 48,
++      "ranks": 48,
++      "reversing_frames": 0,
++      "max_abs_error": {
++        "control": 0.0,
++        "road": 0.0,
++        "objects": 0.0,
++        "path": 0.0,
++        "score": 0.0
++      },
++      "first_difference": null
++    },
++    {
++      "run": "eval-sequence",
++      "frames": 96,
++      "ranks": 96,
++      "reversing_frames": 0,
++      "max_abs_error": {
++        "control": 0.0,
++        "road": 0.0,
++        "objects": 0.0,
++        "path": 0.0,
++        "score": 0.0
++      },
++      "first_difference": null
++    }
++  ],
++  "foxy": {
++    "os": "Ubuntu 20.04 x86_64",
++    "python": "3.8.10",
++    "numpy": "1.24.4",
++    "opencv": "4.12.0",
++    "scipy": "1.10.1",
++    "fixture_frames": 5,
++    "dds": [
++      "stamped signed Twist",
++      "matched frozen index",
++      "restart while engaged rejected",
++      "paused gate restart",
++      "gate maximum honored",
++      "unverified camera shadow"
++    ]
++  },
++  "reverse_frames": 0
++}
+--- /dev/null
++++ b/concept_drive/concept_drive/core.py
+@@ -0,0 +1,108 @@
++"""Accept one synchronized perception result and advance the frozen V6.26 driver once.
++
++All geometry here uses metres forward/right. Sensor gyro and output yaw in this
++module are clockwise-positive; the ROS adapter performs the two sign conversions.
++"""
++from pathlib import Path
++
++import numpy as np
++
++from concept_candidates.backtrack_forward617 import BacktrackSteer
++from concept_candidates.curve_progress import build_reference
++from concept_candidates.planner625 import MarkedPlanner
++from concept_candidates.ranked_builder617 import RankedBuilder
++from concept_candidates.rear_reference617 import RecoveryReference
++from concept_obstacles.obstacles617 import Occupancy617, instances
++from concept_ranker import trajectory624
++from concept_road.limits6251 import JunctionLimits, observed_direction
++from concept_road.map_semantics618 import SemanticMap
++from concept_road.rear_road import RearRoad
++from concept_road.runtime_map import RuntimeMap, lane_sections
++from concept_road.vision import CX, CY, FOCAL, HEIGHT
++
++
++class Drive:
++    def __init__(self, pace=3.4):
++        self.observer = RearRoad()
++        self.tracker = Occupancy617()
++        self.mapper = RuntimeMap()
++        self.semantics = SemanticMap((FOCAL, CX, CY, HEIGHT))
++        self.limits = JunctionLimits()
++        self.planner = MarkedPlanner(dict(pace=pace, uncertainty=1., yaw_limit=1.55))
++        self.builder = RankedBuilder(BacktrackSteer(self.planner))
++        weights = Path(trajectory624.__file__).with_name('model-h12.json')
++        self.ranker = trajectory624.TrajectorySelector(weights, pace)
++        self.set_pace(pace)
++        self.previous_time = None
++        self.previous_motion = None
++        self.observed_openings = []
++
++    def set_pace(self, pace):
++        if not np.isfinite(pace) or not 0. < pace <= 6.:
++            raise ValueError('target speed must be greater than zero and at most 6 m/s')
++        self.planner.p['pace'] = float(pace)
++        self.ranker.pace = float(pace)
++
++    def step(self, image, raw, lane, det, sensor):
++        if image.shape != (360, 640, 3) or image.dtype != np.uint8:
++            raise ValueError('B1.4 requires a 640x360 BGR image')
++        if raw.shape != image.shape[:2] or lane.shape != raw.shape:
++            raise ValueError('road and line masks must match BGR')
++        dt = .2 if self.previous_time is None else float(sensor['t'] - self.previous_time)
++        if not np.isfinite(dt) or dt <= 0:
++            raise ValueError('capture time must strictly advance')
++        speed = (sensor['leftRpm'] + sensor['rightRpm']) * np.pi * sensor['wheelRadius'] / 60
++        yaw = sensor['gyro']
++        motion_speed, motion_yaw = speed, yaw
++        if self.previous_motion is not None:
++            motion_speed = .5 * (self.previous_motion[0] + speed)
++            motion_yaw = .5 * (self.previous_motion[1] + yaw)
++        boxes = det['boxes'][(det['labels'] == 91) & (det['scores'] >= .5)].tolist()
++        road, _, heading = self.observer.read(image, raw, lane, boxes, motion_speed, motion_yaw, dt)
++        evidence = self.observer.last
++        field_ground = sensor.get('field_ground_projection', False)
++        measurements = []
++        groups = instances(det, image.shape, image, field_ground=field_ground, measurements=measurements)
++        objects = self.tracker.update(groups, motion_speed, motion_yaw, dt,
++                                      minimum_body_z=float(road[0, 0]) if len(road) else None, image=image)
++        parts = lane_sections(evidence, raw, (FOCAL, CX, CY, HEIGHT))
++        snapshot = self.mapper.update(sensor, parts, objects, self.tracker.last)
++        semantic = self.semantics.update(image, raw, lane, boxes, evidence, snapshot)
++        guidance = np.asarray(evidence.get('lane_geometry_rows', [])).reshape(-1, 4)
++        road, edges = self.limits.update(road, evidence['tracks'], semantic['lines'], motion_speed, motion_yaw, dt)
++        heading, reference = observed_direction(road, heading, evidence['tracks'], edges)
++        evidence['circuit_edges'] = edges
++        if set(edges['edges']) == {'left', 'right'}:
++            guidance = np.empty((0, 4))
++        obs = RecoveryReference(road, objects, speed, yaw, dt, heading, guidance,
++                                evidence['rear_history']['observed_limit_m'],
++                                reference=reference if reference is not None else build_reference(evidence))
++        features, allowed, baseline = self.builder.prepare(obs)
++        pick, ranking = baseline, None
++        if self.builder.network_allowed:
++            pick, ranking = self.ranker.rank(features, allowed, baseline, self.builder.planner.last['audit'], obs)
++        control = self.builder.command(pick)
++        self.previous_time = sensor['t']
++        self.previous_motion = (speed, yaw)
++        self.observed_openings = [item['position'] for item in semantic['junctions']]
++        detail = self.builder.planner.last
++        audit = detail['audit']
++        table = audit.get('table', [])
++        paths = audit.get('paths', [])
++        scores = ranking['final_scores'] if ranking else [row[7] for row in table]
++        candidates = [
++            dict(index=i, allowed=bool(row[6]), selectable=bool(allowed[i]), path=paths[i],
++                 speed_mps=row[0], yaw_right_radps=row[1], clearance_m=row[5], score=scores[i])
++            for i, row in enumerate(table)
++        ]
++        return dict(selected_index=None if pick is None else int(pick),
++                    whitebox_index=None if baseline is None else int(baseline), command_native=control.tolist(),
++                    selected_path=paths[pick] if pick is not None and len(paths) else detail.get('path', []),
++                    candidate_evaluation=audit['candidate_evaluation'],
++                    candidates=candidates, feasible_count=sum(c['allowed'] for c in candidates),
++                    reason=detail.get('reason', ''), recovery=detail.get('recovery', ''),
++                    ranking_active=ranking is not None, road_rows=road.tolist(), heading=heading.tolist(),
++                    **({'obstacle_measurements': measurements} if field_ground else {}),
++                    objects=objects.tolist(), tracks=self.tracker.last['tracks'], speed_estimate_mps=float(speed),
++                    rejected=audit.get('rejected', {}), edges=edges['edges'], lines=semantic['lines'],
++                    map=snapshot, map_semantics={k: semantic[k] for k in ('changed_markings','changed_gaps','changed_repairs')})
+--- /dev/null
++++ b/concept_drive/concept_drive/lap_map.py
+@@ -0,0 +1,42 @@
++"""Compact read-only snapshot in the odometry frame at driver startup."""
++
++import base64
++from itertools import chain
++import json
++import zlib
++
++import numpy as np
++
++from concept_road.map_semantics618 import marking_kind
++from concept_road.runtime_map import CELL
++
++
++def grid_rows(mapper, semantics):
++    for (z, x), (ego, adjacent, _, _) in mapper.cells.items():
++        if ego or adjacent:
++            kind = 1 if ego >= adjacent else 2
++        else:
++            kind = {'ego': 1, 'adjacent': 2}.get(semantics.repairs.get((z, x)), 3)
++        yield z, x, kind
++    for (z, x), kind in semantics.repairs.items():
++        if (z, x) not in mapper.cells:
++            yield z, x, 2 if kind == 'adjacent' else 1
++
++
++def pack_rows(rows, dtype):
++    values = np.fromiter(chain.from_iterable(rows), dtype=dtype)
++    return base64.b64encode(zlib.compress(values.tobytes(), 1)).decode('ascii')
++
++
++def encode_map(driver, session, stamp):
++    mapper, semantics = driver.mapper, driver.semantics
++    labels = {'solid': 1, 'dashed': 2, 'unclassified': 3}
++    return json.dumps({
++        'schema': 'concept.lap-map.v1', 'session': session, 'stamp': stamp,
++        'cell_m': CELL, 'pose': mapper.pose.tolist(), 'distance_m': mapper.distance,
++        'road': pack_rows(grid_rows(mapper, semantics), '<i4'),
++        'lines': pack_rows(((z, x, labels[marking_kind(v)]) for (z, x), v in semantics.markings.items()), '<i4'),
++        'track': pack_rows(((t, z, x) for t, z, x, _ in mapper.path), '<f4'),
++        'static': list(mapper.static.values()), 'moving': list(mapper.dynamic.values()),
++        'openings': driver.observed_openings,
++    }, separators=(',', ':'), allow_nan=False)
+--- /dev/null
++++ b/concept_drive/concept_drive/node.py
+@@ -0,0 +1,323 @@
++"""Sensor-only V6.26 decision node. Physical output belongs to /concept/gate."""
++import gc
++import json
++import math
++import time
++from threading import Event, Lock
++from uuid import uuid4
++
++import cv2
++import numpy as np
++from geometry_msgs.msg import TwistStamped
++import rclpy
++from rcl_interfaces.msg import SetParametersResult
++from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
++from rclpy.executors import MultiThreadedExecutor
++from rclpy.node import Node
++from std_msgs.msg import String
++from std_srvs.srv import Trigger
++
++from concept_feasibility.response61515 import motor_profile
++from concept_control_gate.speed_setting import SpeedSetting
++from concept_yolop.frame_codec import decode_frame_data, parse_frame_header, validate_pixels, validated_detections
++from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
++from .core import Drive
++from .lap_map import encode_map
++from .transport import Feedback, native_sensor, ros_command, stamp
++
++CAPTURE_JITTER_NS = 10_000_000
++MAX_CAPTURE_AGE = .5
++MAX_STATE_AGE = .15
++
++
++class DriverNode(Node):
++    def __init__(self):
++        super().__init__('drive', namespace='/concept')
++        cv2.setNumThreads(1)
++        # OpenCV builds the Lab conversion tables on first use. Do this before
++        # accepting images, without creating road observations or a command.
++        cv2.cvtColor(np.zeros((1, 1, 3), np.uint8), cv2.COLOR_BGR2LAB)
++        self.speed_setting = SpeedSetting(self, 'target_speed_mps', 6.)
++        self.target = self.speed_setting.initial
++        hz = self.declare_parameter('planning_hz', 15.0).value
++        if not math.isfinite(hz) or not 5. <= hz <= 15.:
++            raise ValueError('planning_hz must be in [5, 15]')
++        self.period_ns = round(1e9 / hz)
++        self.limit = None
++        self.gate_driving = False
++        self.applied_command = (0., 0.)
++        self.applied_stamp = -math.inf
++        self.feedback = Feedback()
++        self.lock = Lock()
++        self.telemetry = MutuallyExclusiveCallbackGroup()
++        self.planning_callbacks = MutuallyExclusiveCallbackGroup()
++        self.restart_services = MutuallyExclusiveCallbackGroup()
++        self.restart_requested = Event()
++        self.speed_update_requested = Event()
++        self.planning_state = Lock()
++        self.reset_driver()
++        self.output = self.create_publisher(TwistStamped, '/concept/auto_cmd', 1)
++        self.decisions = self.create_publisher(String, '/concept/decision', 1)
++        self.create_subscription(String, '/concept/vehicle_state', self.state, 10, callback_group=self.telemetry)
++        self.create_subscription(String, '/concept/gate/status', self.gate, 1, callback_group=self.telemetry)
++        self.onboard_camera = self.declare_parameter('onboard_camera', False).value
++        self.add_on_set_parameters_callback(self.update_parameters)
++        if not self.onboard_camera:
++            self.create_subscription(String, '/concept/perception/frame', self.frame, 1, callback_group=self.planning_callbacks)
++        self.create_service(Trigger, '~/restart', self.restart, callback_group=self.restart_services)
++        # Leave the default group available for the built-in ROS parameter services.
++        self.create_service(Trigger, '~/lap_map', self.lap_map, callback_group=self.planning_callbacks)
++
++    def reset_driver(self):
++        self.driver = Drive(self.target)
++        self.session = uuid4().hex
++        self.first_ns = self.last_ns = self.next_ns = None
++        self.last_input_ns = None
++        self.feedback_missed = False
++        self.rate_skipped_total = 0
++        self.locked_reason = None
++        self.image_gap = False
++        self.camera_key = None
++        self.cached_lap_map = None
++        with self.lock:
++            self.feedback.samples.clear()
++
++    def restart(self, _, response):
++        self.restart_requested.set()
++        try:
++            with self.planning_state:
++                with self.lock:
++                    if self.gate_driving:
++                        response.message = 'Pause the active physical gate before clearing driver memory.'
++                        return response
++                self.reset_driver()
++                response.success = True
++                response.message = 'Cleared driver, timing and map. Awaiting fresh synchronized sensors.'
++                return response
++        finally:
++            self.restart_requested.clear()
++
++    def lap_map(self, _, response):
++        with self.planning_state:
++            return self.map_snapshot(response)
++
++    def map_snapshot(self, response):
++        if self.last_ns is None:
++            response.message = '等待第一帧有效地图'
++            return response
++        if self.driver.mapper.t != self.driver.previous_time:
++            response.message = '最新规划未完成，保留上次地图'
++            return response
++        now = time.monotonic()
++        if self.cached_lap_map is None or (
++                self.cached_lap_map[0] != self.last_ns and now-self.cached_lap_map[1] >= 1.):
++            try:
++                message = encode_map(self.driver, self.session, stamp(self.last_ns))
++            except (ValueError, TypeError, OverflowError) as exc:
++                self.get_logger().warning('Could not export lap map: %s' % exc)
++                response.message = '地图读取失败 · 保留上次地图'
++                return response
++            self.cached_lap_map = (self.last_ns, now, message)
++        response.success = True
++        response.message = self.cached_lap_map[2]
++        return response
++
++    def update_parameters(self, parameters):
++        for p in parameters:
++            if p.name in ('planning_hz','onboard_camera','speed_settings_directory'):
++                return SetParametersResult(successful=False, reason='Set %s when launching the driver' % p.name)
++        for p in parameters:
++            if p.name == 'target_speed_mps':
++                self.speed_update_requested.set()
++                try:
++                    with self.planning_state:
++                        self.speed_setting.save(p.value)
++                        self.target = p.value
++                except (OSError, ValueError) as exc:
++                    return SetParametersResult(successful=False, reason=str(exc))
++                finally:
++                    self.speed_update_requested.clear()
++        return SetParametersResult(successful=True)
++
++    def state(self, message):
++        try:
++            sample = json.loads(message.data)
++            with self.lock:
++                self.feedback.add(sample)
++        except (KeyError, TypeError, ValueError):
++            with self.lock:
++                self.feedback.samples.clear()
++
++    def gate(self, message):
++        try:
++            data = json.loads(message.data)
++            limit = float(data['max_auto_speed_mps'])
++            if math.isfinite(limit) and 0. < limit <= 6.:
++                with self.lock:
++                    self.limit = limit
++                    self.applied_command = (0., 0.)
++                    self.applied_stamp = -math.inf
++                    if data.get('mode') == 'auto' and data.get('output_enabled') and not data.get('paused'):
++                        applied = (float(data.get('linear_mps', 0.)), -float(data.get('yaw_rps', 0.)))
++                        applied_stamp = float(data.get('t', -math.inf))
++                        if all(map(math.isfinite, (*applied, applied_stamp))):
++                            self.applied_command = applied
++                            self.applied_stamp = applied_stamp
++                    self.gate_driving = data.get('output_enabled') is True and data.get('paused') is False
++        except (KeyError, TypeError, ValueError):
++            return
++
++    def camera_frame(self, stamp, frame_id, profile, bgr, road, lane, det, timing_ms=None):
++        ns = stamp.sec * 1_000_000_000 + stamp.nanosec
++        self.process_frame(local=(ns, frame_id, profile, dict(det, bgr=bgr, road=road, lane=lane), timing_ms))
++
++    def frame(self, message):
++        self.process_frame(message=message)
++
++    def process_frame(self, message=None, local=None):
++        if self.restart_requested.is_set() or self.speed_update_requested.is_set():
++            return
++        with self.planning_state:
++            if not self.restart_requested.is_set() and not self.speed_update_requested.is_set():
++                self.plan_frame(message, local)
++
++    def plan_frame(self, message, local):
++        now = lambda: self.get_clock().now().nanoseconds
++        tic = time.monotonic()
++        decision = dict(schema='concept.decision.v1', session=self.session, frame_id='base_footprint',
++                        status='waiting', reason='', stamp=None, capture_age_s=None, sensor_age_s=None,
++                        target_speed_mps=self.target, effective_speed_mps=None, selected_index=None,
++                        whitebox_index=None, command=None, feasible_count=0, candidates=[], selected_path=[],
++                        road_rows=[], objects=[], tracks=[], lines=[], edges={}, map=None, map_semantics=None)
++        try:
++            if local is None:
++                packet, ns, optical_frame, profile = parse_frame_header(message.data)
++            else:
++                ns, optical_frame, profile, f, timing_ms = local
++                if timing_ms is not None:
++                    decision['camera_timing_ms'] = timing_ms
++            capture = ns / 1e9
++            decision.update(stamp=stamp(ns), geometry_profile=profile)
++            age = (now() - ns) / 1e9
++            if not 0 <= age <= MAX_CAPTURE_AGE:
++                raise ValueError('image is stale or its stamp is in the future')
++            if self.locked_reason:
++                raise ValueError(self.locked_reason)
++            camera_key = (optical_frame, profile)
++            if self.camera_key is not None and camera_key != self.camera_key:
++                self.locked_reason = 'camera or projection changed; pause and restart before reusing road memory'
++                raise ValueError(self.locked_reason)
++            previous_input = self.last_input_ns
++            if previous_input is None or ns > previous_input:
++                self.last_input_ns = ns
++            if self.last_ns is not None:
++                if ns <= self.last_ns:
++                    raise ValueError('duplicate or out-of-order image')
++                if ns < self.next_ns - CAPTURE_JITTER_NS:
++                    self.rate_skipped_total += 1
++                    return
++                if ns - self.last_ns > 500_000_000:
++                    self.image_gap = True
++                    if previous_input is None or ns - previous_input > 500_000_000:
++                        self.locked_reason = 'image gap over 0.5 s; pause the gate and restart the driver'
++                    elif self.feedback_missed:
++                        self.locked_reason = 'planning gap over 0.5 s after missing synchronized wheel/gyro feedback'
++                    else:
++                        self.locked_reason = 'planning gap over 0.5 s between completed frames'
++                    raise ValueError(self.locked_reason)
++            with self.lock:
++                try:
++                    sample = self.feedback.at(capture, MAX_STATE_AGE)
++                except ValueError:
++                    self.feedback_missed = True
++                    raise
++                limit = self.limit
++                gate_age = now() * 1e-9 - self.applied_stamp
++                applied = self.applied_command if 0. <= gate_age <= .3 else (0., 0.)
++            pace = min(self.target, limit) if limit is not None else self.target
++            if local is None:
++                f = decode_frame_data(packet)
++                det = {k:f[k] for k in ('boxes','labels','scores')}
++            else:
++                validate_pixels(f['bgr'], f['road'], f['lane'])
++                det = validated_detections(f)
++            self.driver.set_pace(pace)
++            decision.update(effective_speed_mps=pace, sensor_age_s=capture-sample['t'])
++            if self.first_ns is None:
++                self.first_ns = ns
++            native = native_sensor(sample, (ns-self.first_ns)/1e9)
++            try:
++                physical = profile in (HONDA, CALIBRATED)
++                native['field_ground_projection'] = physical
++                with motor_profile(physical, applied):
++                    result = self.driver.step(f['bgr'], f['road'], f['lane'], det, native)
++            except Exception:
++                # A failure after partially updating temporal maps requires a common new epoch.
++                self.locked_reason = 'incomplete planner step; pause the gate and restart the driver'
++                raise
++            self.camera_key = camera_key
++            self.last_ns = ns
++            self.feedback_missed = False
++            periods = (ns - self.first_ns + CAPTURE_JITTER_NS) // self.period_ns + 1
++            self.next_ns = self.first_ns + periods * self.period_ns
++            cmd = ros_command(result.pop('command_native'), physical=physical)
++            decision.update(result, command=cmd, status='ok', planner_reason=result.get('reason', ''))
++            if profile not in (CALIBRATED, HONDA) and not (
++                    profile == UNITY and self.get_parameter('use_sim_time').value):
++                decision.update(status='blocked', reason='camera geometry has no validated driving profile')
++            elif (cmd['linear_x_mps'] < 0 and sample.get('rpm_encoding') != 'signed_le_int32'
++                  and not (profile == UNITY and self.get_parameter('use_sim_time').value)):
++                decision.update(status='blocked', reason='reverse wheel-feedback sign unverified')
++            elif not 0 <= (now() - ns) / 1e9 <= MAX_CAPTURE_AGE:
++                decision.update(status='late', reason='decision exceeded 0.5 s from acquisition')
++            else:
++                output = TwistStamped()
++                output.header.frame_id = 'base_footprint'
++                output.header.stamp.sec, output.header.stamp.nanosec = divmod(ns, 1_000_000_000)
++                output.twist.linear.x = cmd['linear_x_mps']
++                output.twist.angular.z = cmd['angular_z_radps']
++                self.output.publish(output)
++        except Exception as exc:
++            decision.update(status='invalid', reason=str(exc), image_gap_reset_required=self.image_gap)
++            if self.image_gap:
++                decision['gap_reason'] = self.locked_reason
++        emitted = now()
++        decision.update(emitted_stamp=stamp(emitted), processing_ms=(time.monotonic()-tic)*1000.,
++                        rate_skipped_total=self.rate_skipped_total, planning_hz=1e9/self.period_ns)
++        if decision['stamp'] is not None:
++            decision['capture_age_s'] = (emitted-ns)/1e9
++        self.decisions.publish(String(data=json.dumps(decision, allow_nan=False, separators=(',', ':'))))
++
++
++def main(args=None):
++    rclpy.init(args=args)
++    node = DriverNode()
++    executor = MultiThreadedExecutor(num_threads=3)
++    executor.add_node(node)
++    camera = None
++    try:
++        if node.onboard_camera:
++            from concept_yolop.node import CameraNode
++            # Planning, map snapshots and resets share one mutually exclusive group.
++            # Telemetry and restart can run while a frame owns planning state.
++            def on_image(*frame):
++                node.camera_frame(*frame, timing_ms=camera.frame_timing_ms)
++            camera = CameraNode(on_image, node.planning_callbacks)
++            executor.add_node(camera)
++            # Torch and the ROS graph live for the process lifetime. Repeated
++            # full-heap scans of these objects stalled planning on the Jetson.
++            # Future frame data and every subsequently created driver remain
++            # in the normal cyclic collector, including across panel resets.
++            gc.collect()
++            gc.freeze()
++        executor.spin()
++    except KeyboardInterrupt:
++        pass
++    finally:
++        executor.shutdown()
++        if camera is not None:
++            gc.unfreeze()
++            camera.destroy_node()
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
+--- /dev/null
++++ b/concept_drive/concept_drive/transport.py
+@@ -0,0 +1,45 @@
++"""ROS-independent time, unit and sign conversions at the driver boundary."""
++from collections import deque
++import math
++
++
++class Feedback:
++    def __init__(self):
++        self.samples = deque(maxlen=128)
++
++    def add(self, sample):
++        if not sample.get('valid', True):
++            self.samples.clear()
++            return
++        if not all(math.isfinite(sample[k]) for k in ('t','leftRpm','rightRpm','gyro','wheelRadius')):
++            raise ValueError('non-finite wheel feedback')
++        if sample['wheelRadius'] <= 0 or not sample['source']:
++            raise ValueError('invalid wheel radius or feedback source')
++        if not self.samples or sample['t'] > self.samples[-1]['t']:
++            self.samples.append(sample)
++
++    def at(self, capture, max_age):
++        sample = next((s for s in reversed(self.samples) if s['t'] <= capture), None)
++        if sample is None or capture - sample['t'] > max_age:
++            raise ValueError('no recent wheel and gyro measurement at image capture')
++        return sample
++
++
++def native_sensor(sample, relative_capture):
++    return dict(t=relative_capture, leftRpm=sample['leftRpm'], rightRpm=sample['rightRpm'],
++                gyro=-sample['gyro'], wheelRadius=sample['wheelRadius'], source=sample['source'])
++
++
++def ros_command(native, *, physical=False):
++    speed, steer = map(float, native)
++    if not math.isfinite(speed) or not math.isfinite(steer):
++        raise ValueError('non-finite planner command')
++    # In the checked rollout a zero-drive action brakes: its residual steering
++    # contributes no powered yaw. The real differential drive would pivot.
++    yaw = 0. if physical and speed == 0. else -steer
++    return dict(linear_x_mps=speed, angular_z_radps=yaw)
++
++
++def stamp(ns):
++    sec, nanosec = divmod(int(ns), 1_000_000_000)
++    return dict(sec=sec, nanosec=nanosec)
+--- /dev/null
++++ b/concept_drive/package.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_drive</name>
++  <version>6.27.5</version>
++  <description>Synchronized sensor-only ROS adapter for V6.26 decisions.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <exec_depend>concept_candidates</exec_depend>
++  <exec_depend>concept_control_gate</exec_depend>
++  <exec_depend>concept_feasibility</exec_depend>
++  <exec_depend>concept_obstacles</exec_depend>
++  <exec_depend>concept_ranker</exec_depend>
++  <exec_depend>concept_road</exec_depend>
++  <exec_depend>concept_yolop</exec_depend>
++  <exec_depend>geometry_msgs</exec_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <exec_depend>python3-opencv</exec_depend>
++  <exec_depend>rcl_interfaces</exec_depend>
++  <exec_depend>rclpy</exec_depend>
++  <exec_depend>std_msgs</exec_depend>
++  <exec_depend>std_srvs</exec_depend>
++  <test_depend>python3-pytest</test_depend>
++  <test_depend>rosgraph_msgs</test_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_drive/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_drive
++[install]
++install_scripts=$base/lib/concept_drive
+--- /dev/null
++++ b/concept_drive/setup.py
+@@ -0,0 +1,20 @@
++from setuptools import setup
++
++name = 'concept_drive'
++setup(
++    name=name,
++    version='6.27.5',
++    packages=[name],
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++    ],
++    package_data={name: []},
++    install_requires=['setuptools'],
++    zip_safe=False,
++    maintainer='Sophia AI Formula Team',
++    maintainer_email='maintainers@example.invalid',
++    description='Synchronized sensor-only ROS adapter for V6.26 decisions.',
++    license='AGPL-3.0-only',
++    entry_points={'console_scripts': ['drive = concept_drive.node:main']},
++)
+--- /dev/null
++++ b/concept_drive/test/data/moving-lap-start/expected.json
+@@ -0,0 +1,857 @@
++[
++  {
++    "frame": 0,
++    "sensor": {
++      "t": 0.0,
++      "leftRpm": 0.0,
++      "rightRpm": 0.0,
++      "gyro": -2.134294e-06,
++      "wheelRadius": 0.127,
++      "source": "Unity motor-plant RPM proxy and ideal raw gyro"
++    },
++    "control": [
++      1.87,
++      -0.19678108394145966
++    ],
++    "selected": 32,
++    "baseline": 42,
++    "allowed": [
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      false,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false
++    ],
++    "score": [
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.2391882303301704,
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.2416375768156245,
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.243427523743162,
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.258163971722095,
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.289817590596559,
++      -0.3231772199868969,
++      1.63621026210029,
++      1.8435419981081602,
++      2.4456653500822005,
++      4.354133118333085,
++      -0.3231772199868969,
++      1.4924295757884845,
++      3.0625212692948383,
++      2.477393921768134,
++      4.454219700217383,
++      -0.3231772199868969,
++      1.1452222283618485,
++      3.0255047302500104,
++      2.450068589076092,
++      2.930339098314824,
++      -0.3231772199868969,
++      0.7959944176548139,
++      2.555517337511207,
++      2.005725476379018,
++      2.5881518020966547,
++      -0.3231772199868969,
++      0.5892948191157343,
++      0.7488140244231407,
++      1.4929422880542602,
++      1.8478350152136258,
++      -0.3231772199868969,
++      0.25410368458429655,
++      0.2609032075529879,
++      0.4992714769719513,
++      1.161808337901784,
++      -0.3231772199868969,
++      0.25410368458429655,
++      0.2609032075529879,
++      0.4992714769719513,
++      1.161808337901784,
++      -0.3231772199868969,
++      0.25410368458429655,
++      0.2609032075529879,
++      0.4992714769719513,
++      1.161808337901784,
++      -0.3231772199868969,
++      0.25410368458429655,
++      0.2609032075529879,
++      0.4992714769719513,
++      1.161808337901784,
++      -0.3231772199868969,
++      0.25410368458429655,
++      0.2609032075529878,
++      0.4992714769719513,
++      1.161808337901784
++    ]
++  },
++  {
++    "frame": 1,
++    "sensor": {
++      "t": 0.199999988,
++      "leftRpm": 76.21359,
++      "rightRpm": 86.79559,
++      "gyro": -0.057122454,
++      "wheelRadius": 0.127,
++      "source": "Unity motor-plant RPM proxy and ideal raw gyro"
++    },
++    "control": [
++      1.87,
++      0.012679681181907654
++    ],
++    "selected": 37,
++    "baseline": 42,
++    "allowed": [
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false
++    ],
++    "score": [
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.743449946568084,
++      4.2833779088589505,
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.746332490552251,
++      4.291542769322778,
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.746332490552251,
++      4.291542769322778,
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.7520982539760714,
++      4.307365857190641,
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.7810231524358024,
++      4.345961509540793,
++      -0.49362358357765274,
++      1.3578451118575263,
++      1.4331872176578442,
++      3.828690966528784,
++      4.432921769746343,
++      -0.49362358357765274,
++      1.2833243107053451,
++      1.4331872176578442,
++      3.918190117939339,
++      4.5453933815499585,
++      -0.49362358357765274,
++      1.1322064223063724,
++      2.78883164211911,
++      3.860978299871255,
++      4.533851710564194,
++      -0.49362358357765274,
++      0.9914699047464715,
++      2.4603387316550642,
++      1.6997980696251531,
++      2.185750925947302,
++      -0.49362358357765274,
++      0.7594575884244752,
++      0.49144494381200426,
++      1.4364540584145298,
++      1.9463186399486168,
++      -0.49362358357765274,
++      0.4486734237617013,
++      0.3627721354192375,
++      0.801222495289897,
++      1.6029294611924167,
++      -0.49362358357765274,
++      0.4486734237617013,
++      0.3627721354192375,
++      0.801222495289897,
++      1.6029294611924167,
++      -0.49362358357765274,
++      0.4486734237617013,
++      0.3627721354192375,
++      0.801222495289897,
++      1.6029294611924167,
++      -0.49362358357765274,
++      0.4486734237617013,
++      0.3627721354192375,
++      0.801222495289897,
++      1.6029294611924167,
++      -0.49362358357765274,
++      0.39032233539576805,
++      0.36277213541923725,
++      0.8012224952898972,
++      1.6029294611924167
++    ]
++  },
++  {
++    "frame": 2,
++    "sensor": {
++      "t": 0.399999976,
++      "leftRpm": 121.131653,
++      "rightRpm": 123.8736,
++      "gyro": -0.0354251638,
++      "wheelRadius": 0.127,
++      "source": "Unity motor-plant RPM proxy and ideal raw gyro"
++    },
++    "control": [
++      0.85,
++      -0.30152228474617004
++    ],
++    "selected": 1,
++    "baseline": 36,
++    "allowed": [
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false,
++      true,
++      true,
++      true,
++      false,
++      false
++    ],
++    "score": [
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.779706836836352,
++      4.319853918765142,
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.7813438342282524,
++      4.3241424389728715,
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.7841192691634493,
++      4.332163865876112,
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.789754163364,
++      4.345542746022263,
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.8010503992376443,
++      4.371087517321452,
++      -0.46217824105101146,
++      1.1655242284973772,
++      1.0843967070068827,
++      3.864525982154213,
++      4.436334184425214,
++      -0.46217824105101146,
++      1.1167947765035353,
++      1.0843967070068827,
++      3.9346468556218905,
++      4.548277214634821,
++      -0.46217824105101146,
++      0.8626290490284737,
++      0.8005088498773116,
++      3.890147630729121,
++      4.56306482108233,
++      -0.46217824105101146,
++      0.9177810897514662,
++      0.7156134545467663,
++      3.711821108220365,
++      4.256306550290912,
++      -0.46217824105101146,
++      0.5057651268803989,
++      0.2771522497841765,
++      0.9637081777663432,
++      1.8264252165698753,
++      -0.46217824105101146,
++      0.3864086971972649,
++      0.2771522497841765,
++      0.9637081777663432,
++      1.8264252165698753,
++      -0.46217824105101146,
++      0.3864086971972649,
++      0.2771522497841765,
++      0.9637081777663432,
++      1.8264252165698753,
++      -0.46217824105101146,
++      0.3864086971972649,
++      0.2771522497841765,
++      0.9637081777663432,
++      1.8264252165698753,
++      -0.46217824105101146,
++      0.3864086971972649,
++      0.2771522497841765,
++      0.9637081777663432,
++      1.8264252165698753,
++      -0.46217824105101146,
++      0.2758591916509313,
++      0.22273850411653706,
++      0.7170656464787999,
++      1.5039066890948267
++    ]
++  },
++  {
++    "frame": 3,
++    "sensor": {
++      "t": 0.599999964,
++      "leftRpm": 99.7513351,
++      "rightRpm": 113.551262,
++      "gyro": -0.144436136,
++      "wheelRadius": 0.127,
++      "source": "Unity motor-plant RPM proxy and ideal raw gyro"
++    },
++    "control": [
++      0.85,
++      -0.30152228474617004
++    ],
++    "selected": 1,
++    "baseline": 31,
++    "allowed": [
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false,
++      true,
++      true,
++      false,
++      false,
++      false
++    ],
++    "score": [
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.9358867130731996,
++      3.7309512243410117,
++      4.260141846023377,
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.93625682694153,
++      3.7340068338434644,
++      4.268699389628122,
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.9385586560043473,
++      3.7522111386467714,
++      4.310270545514776,
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.9419019725216353,
++      3.7705413964446466,
++      4.342608613936112,
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.9490510806403267,
++      3.794077004738857,
++      4.342608613936112,
++      -0.31832897887652734,
++      1.2040247521966485,
++      2.9873446456762345,
++      3.849886818749579,
++      4.422687728751939,
++      -0.31832897887652734,
++      1.1221056643444403,
++      2.92384783693723,
++      3.935322372811097,
++      4.5718318701574585,
++      -0.31832897887652734,
++      0.9166849487655273,
++      2.702845956909835,
++      3.857997439648564,
++      4.528398232090378,
++      -0.31832897887652734,
++      0.7163598102590558,
++      2.220587042944432,
++      3.367690537828836,
++      3.992240623903695,
++      -0.31832897887652734,
++      0.3744576226835378,
++      0.48268997530853286,
++      0.9163849239397821,
++      1.7656149176718134,
++      -0.31832897887652734,
++      0.3744576226835378,
++      0.48268997530853286,
++      0.9163849239397821,
++      1.7656149176718134,
++      -0.31832897887652734,
++      0.3744576226835378,
++      0.48268997530853286,
++      0.9163849239397821,
++      1.7656149176718134,
++      -0.31832897887652734,
++      0.3744576226835378,
++      0.48268997530853286,
++      0.9163849239397821,
++      1.7656149176718134,
++      -0.31832897887652734,
++      0.3744576226835378,
++      0.48268997530853286,
++      0.9163849239397821,
++      1.7656149176718134,
++      -0.31832897887652734,
++      0.24165270453799803,
++      0.2767027083741498,
++      0.6817140607056114,
++      1.7656149176718134
++    ]
++  },
++  {
++    "frame": 4,
++    "sensor": {
++      "t": 0.799999952,
++      "leftRpm": 91.61299,
++      "rightRpm": 105.412918,
++      "gyro": -0.145899087,
++      "wheelRadius": 0.127,
++      "source": "Unity motor-plant RPM proxy and ideal raw gyro"
++    },
++    "control": [
++      0.0,
++      -0.19598948508501055
++    ],
++    "selected": null,
++    "baseline": null,
++    "allowed": [
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false,
++      false
++    ],
++    "score": [
++      -0.267148,
++      0.771026,
++      1.582776,
++      2.33199,
++      2.850422,
++      -0.267148,
++      0.771026,
++      1.584432,
++      2.338422,
++      2.867672,
++      -0.267148,
++      0.771026,
++      1.586502,
++      2.351198,
++      2.89373,
++      -0.267148,
++      0.771026,
++      1.600114,
++      2.395703,
++      2.953574,
++      -0.267148,
++      0.771026,
++      1.615039,
++      2.395703,
++      2.967732,
++      -0.267148,
++      0.77091,
++      1.678398,
++      2.487015,
++      3.057927,
++      -0.267148,
++      0.795043,
++      1.715576,
++      2.567361,
++      3.204277,
++      -0.267148,
++      0.802942,
++      1.716113,
++      2.503204,
++      3.148272,
++      -0.267148,
++      0.786169,
++      1.677242,
++      2.282114,
++      2.86404,
++      -0.267148,
++      0.759644,
++      1.415381,
++      2.008187,
++      2.591954,
++      -0.267148,
++      0.759644,
++      1.415381,
++      2.008187,
++      2.591954,
++      -0.267148,
++      0.759644,
++      1.415381,
++      2.008187,
++      2.591954,
++      -0.267148,
++      0.759644,
++      1.415381,
++      2.008187,
++      2.591954,
++      -0.267148,
++      0.759644,
++      1.415381,
++      2.008187,
++      2.591954,
++      -0.267148,
++      0.725854,
++      1.272724,
++      1.909961,
++      2.490811
++    ]
++  }
++]
+--- /dev/null
++++ b/concept_drive/test/test_exact_candidates.py
+@@ -0,0 +1,48 @@
++import json
++from pathlib import Path
++from unittest.mock import patch
++
++import cv2
++import numpy as np
++
++from concept_drive.core import Drive
++
++
++def test_native_selection_and_every_slot_against_evaluating_each_request(monkeypatch):
++    # Old laboratory settings cannot turn on near-target or cross-speed merging.
++    monkeypatch.setenv('AIFORMULA_CANDIDATE_MERGE', 'tolerance')
++    monkeypatch.setenv('AIFORMULA_CANDIDATE_TOL_M', '1')
++    monkeypatch.setenv('AIFORMULA_CANDIDATE_TOL_MPS', '1')
++    path = Path(__file__).parent / 'data' / 'moving-lap-start'
++    rows = json.loads((path / 'expected.json').read_text())
++    baseline, production = Drive(3.4), Drive(3.4)
++    cv2.setNumThreads(1)
++
++    def every_slot(targets, commands):
++        slots = np.arange(len(commands))
++        return slots, slots
++
++    for row in rows:
++        frame = path / ('%05d' % row['frame'])
++        image = cv2.imread(str(frame) + '_rgb.png')
++        with np.load(str(frame) + '_perception.npz') as det:
++            args = image, det['raw'], det['lane'], det, row['sensor']
++            with patch('concept_candidates.curve_road617.distinct_requests', every_slot):
++                all_slots = baseline.step(*args)
++            reused = production.step(*args)
++        baseline_counts = all_slots.pop('candidate_evaluation')
++        counts = reused.pop('candidate_evaluation')
++        assert baseline_counts['evaluated_count'] == baseline_counts['input_count'] == 75
++        assert counts == dict(mode='exact', batches=1, input_count=75,
++                              evaluated_count=[55, 60, 60, 55, 55][row['frame']])
++        assert reused['selected_index'] == row['selected']
++        assert reused == all_slots
++        old_audit = dict(baseline.builder.planner.last['audit'])
++        audit = dict(production.builder.planner.last['audit'])
++        assert audit.pop('candidate_evaluation') == counts
++        old_audit.pop('candidate_evaluation')
++        assert audit == old_audit
++        old_pending, pending = baseline.planner.pending, production.planner.pending
++        assert pending.keys() == old_pending.keys()
++        for key in pending:
++            np.testing.assert_array_equal(pending[key], old_pending[key])
+--- /dev/null
++++ b/concept_drive/test/test_frozen_driver.py
+@@ -0,0 +1,79 @@
++from hashlib import sha256
++import json
++from pathlib import Path
++
++import cv2
++import numpy as np
++import pytest
++
++from concept_drive.core import Drive
++from concept_drive.transport import Feedback, native_sensor, ros_command
++
++
++def test_five_archived_frames_through_real_perception_wire():
++    from concept_yolop.frame_codec import decode_frame, encode_frame
++
++    path = Path(__file__).parent / 'data' / 'moving-lap-start'
++    ref = json.loads((path / 'expected.json').read_text())
++    driver = Drive(3.4)
++    cv2.setNumThreads(1)
++    for row in ref:
++        prefix = path / ('%05d' % row['frame'])
++        image = cv2.imread(str(prefix) + '_rgb.png', cv2.IMREAD_COLOR)
++        ns = round(row['sensor']['t'] * 1e9)
++        sec, nano = divmod(ns, 1_000_000_000)
++        with np.load(str(prefix) + '_perception.npz') as det:
++            wire = encode_frame(sec, nano, 'camera', image, det['raw'], det['lane'], det, 'frozen-unity-v626')
++        f = decode_frame(wire)
++        sensor = dict(row['sensor'], gyro=-row['sensor']['gyro'])
++        result = driver.step(f['bgr'], f['road'], f['lane'], f, native_sensor(sensor, f['stamp_ns']/1e9))
++        assert (result['whitebox_index'], result['selected_index']) == (row['baseline'], row['selected'])
++        assert [c['allowed'] for c in result['candidates']] == row['allowed']
++        np.testing.assert_allclose([c['score'] for c in result['candidates']], row['score'], atol=1e-5, rtol=0)
++        cmd = ros_command(result['command_native'])
++        np.testing.assert_allclose([cmd['linear_x_mps'], -cmd['angular_z_radps']], row['control'], atol=1e-5, rtol=0)
++        json.dumps(result, allow_nan=False)
++
++
++@pytest.mark.parametrize("speed,steer,expected_yaw", [
++    (0., .55, 0.), (0., -.17, 0.), (0., 0., 0.),
++    (-.2, 0., 0.), (-.2, .12, -.12), (1., -.4, .4),
++])
++def test_physical_release_matches_unpowered_planner_action(speed, steer, expected_yaw):
++    assert ros_command((speed, steer), physical=True) == dict(
++        linear_x_mps=speed, angular_z_radps=expected_yaw)
++    assert ros_command((speed, steer))['angular_z_radps'] == -steer
++
++
++def test_physical_release_rejects_invalid_steering():
++    with pytest.raises(ValueError, match='non-finite'):
++        ros_command((0., float('nan')), physical=True)
++
++
++def test_feedback_only_consumes_causal_valid_measurements():
++    feedback = Feedback()
++    for t in [4.0, 4.15]:
++        feedback.add(dict(t=t, gyro=.4, leftRpm=4., rightRpm=5., wheelRadius=.127, source='test'))
++    assert feedback.at(4.1,.15)['t'] == 4.
++    with pytest.raises(ValueError):
++        feedback.at(4.4,.15)
++    feedback.add(dict(valid=False))
++    with pytest.raises(ValueError):
++        feedback.at(4.16,.15)
++
++def test_installed_model_files_match_freeze_bytes():
++    import concept_feasibility
++    import concept_ranker
++    import concept_road
++
++    sources = json.loads((Path(__file__).resolve().parents[1] / 'PROVENANCE.json').read_text())['sources']
++    originals = {
++        'experiments/v626_time/model-h12.json': (concept_ranker, 'model-h12.json'),
++        'experiments/v615_recovery/response61515.json': (concept_feasibility, 'response61515.json'),
++        'experiments/v616_decision/reverse_response.json': (concept_feasibility, 'reverse_response.json'),
++        'experiments/v617_regression/reverse_model617.json': (concept_feasibility, 'reverse_model617.json'),
++        'research/learned_racing/unity_laps/v3_evidence/plant_fit.json': (concept_road, 'v3_evidence/plant_fit.json'),
++    }
++    for source, (module, relpath) in originals.items():
++        path = Path(module.__file__).resolve().parent / relpath
++        assert sha256(path.read_bytes()).hexdigest() == sources[source], str(path)
+--- /dev/null
++++ b/concept_drive/tools/replay_acceptance.py
+@@ -0,0 +1,82 @@
++"""Stream archived RGB, masks, detections and measured wheel/gyro through the installable driver.
++
++Pass one or more run directories containing frames/ and decisions.jsonl. The recorded
++decisions and positions are only compared after step() and never enter the driver.
++"""
++import argparse
++import json
++from pathlib import Path
++
++import cv2
++import numpy as np
++
++from concept_drive.core import Drive
++
++
++def replay(directory, limit):
++    engine = Drive()
++    frames = 0
++    reverses = 0
++    ranked = 0
++    requested = 0
++    evaluated = 0
++    first_failure = None
++    maxima = dict(control=0., road=0., objects=0., path=0., score=0.,
++                  candidate_paths=0., candidate_table=0.)
++    with (directory / 'decisions.jsonl').open(encoding='utf-8') as stream:
++        for line in stream:
++            row = json.loads(line)
++            i = row['frame']
++            if limit is not None and i >= limit:
++                break
++            prefix = directory / 'frames' / f'{i:05d}'
++            image = cv2.imread(str(prefix) + '_rgb.png', cv2.IMREAD_COLOR)
++            detfile = Path(str(prefix) + '_perception.npz')
++            if image is None or not detfile.exists():
++                raise FileNotFoundError(f'Incomplete stream at frame {i}. All intervening frames are required.')
++            old = row['decision']
++            with np.load(detfile) as det:
++                new = engine.step(image, det['raw'], det['lane'], det, old['sensor'])
++            audit = old['audit']
++            current_audit = engine.builder.planner.last['audit']
++            evaluation = new['candidate_evaluation']
++            requested += evaluation['input_count']
++            evaluated += evaluation['evaluated_count']
++            checks = dict(pick=new['selected_index'] == audit.get('selected'),
++                          exact=evaluation['mode'] == 'exact',
++                          whitebox=new['whitebox_index'] == audit.get('whiteboxSelected', audit.get('selected')),
++                          allowed=np.array_equal([c['allowed'] for c in new['candidates']],
++                                                 [bool(c[6]) for c in audit.get('table', [])]))
++            for key, current, expected in (
++                ('control', new['command_native'], row['control']), ('road', new['road_rows'], old['road']),
++                ('objects', new['objects'], old['objects']), ('path', new['selected_path'], old['path']),
++                ('candidate_paths', current_audit.get('paths', []), audit.get('paths', [])),
++                ('candidate_table', current_audit.get('table', []), audit.get('table', [])),
++                ('score', [c['score'] for c in new['candidates']],
++                 old['wholeLap']['final_scores'] if old.get('wholeLap') else [c[7] for c in audit.get('table', [])])):
++                a, b = np.asarray(current), np.asarray(expected)
++                err = float(np.max(np.abs(a-b), initial=0.)) if a.shape == b.shape else None
++                checks[key] = err is not None and err <= 1e-5
++                if err is not None:
++                    maxima[key] = max(maxima[key], err)
++            if not all(checks.values()) and first_failure is None:
++                first_failure = dict(frame=i, different=[key for key in checks if not checks[key]])
++            ranked += int(new['ranking_active'])
++            reverses += int(new['command_native'][0] < 0)
++            frames += 1
++    if not frames:
++        raise ValueError(f'No comparable frames in {directory}')
++    return dict(run=directory.name, frames=frames, ranks=ranked, reversing_frames=reverses,
++                candidate_requests=requested, simulated_candidates=evaluated,
++                max_abs_error=maxima, first_difference=first_failure)
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('runs', type=Path, nargs='+')
++    parser.add_argument('--limit', type=int)
++    args = parser.parse_args()
++    cv2.setNumThreads(1)
++    results = [replay(run, args.limit) for run in args.runs]
++    print(json.dumps(results, indent=2))
++    raise SystemExit(any(row['first_difference'] for row in results))
+--- /dev/null
++++ b/concept_drive/tools/ros_roundtrip.py
+@@ -0,0 +1,196 @@
++"""ROS 2 smoke test with the actual DDS graph and the archived starting image.
++
++Run from a sourced colcon workspace on a development computer. This test sends
++only simulated camera/feedback and receives command proposals on a local domain.
++"""
++import json
++import os
++from pathlib import Path
++import time
++
++import cv2
++import numpy as np
++import rclpy
++from builtin_interfaces.msg import Time
++from geometry_msgs.msg import TwistStamped
++from rclpy.executors import SingleThreadedExecutor
++from rclpy.node import Node
++from rosgraph_msgs.msg import Clock
++from std_msgs.msg import String
++from std_srvs.srv import Trigger
++
++from concept_drive.node import DriverNode
++from concept_yolop.frame_codec import encode_frame
++from concept_yolop.geometry import HONDA
++
++
++def main():
++    os.environ['ROS_LOCALHOST_ONLY'] = '1'
++    os.environ.setdefault('ROS_DOMAIN_ID', '172')
++    if os.environ['ROS_DOMAIN_ID'] == '0':
++        raise ValueError('Select a dedicated local test domain')
++    # The archived starting frame and expected action were recorded at 3.4 m/s.
++    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=true', '-p', 'target_speed_mps:=3.4'])
++    driver = DriverNode()
++    peer = Node('concept_driver_replay_probe')
++    executor = SingleThreadedExecutor()
++    executor.add_node(peer)
++    executor.add_node(driver)
++
++    def until(condition):
++        deadline = time.monotonic() + 15.
++        while not condition():
++            if time.monotonic() > deadline:
++                raise TimeoutError('DDS delivery or subscription discovery timed out')
++            executor.spin_once(timeout_sec=.03)
++
++    clock = peer.create_publisher(Clock, '/clock', 10)
++    state = peer.create_publisher(String, '/concept/vehicle_state', 10)
++    camera = peer.create_publisher(String, '/concept/perception/frame', 10)
++    gate = peer.create_publisher(String, '/concept/gate/status', 10)
++    decisions, commands = [], []
++    peer.create_subscription(String, '/concept/decision', lambda m: decisions.append(json.loads(m.data)), 10)
++    peer.create_subscription(TwistStamped, '/concept/auto_cmd', commands.append, 10)
++    restart = peer.create_client(Trigger, '/concept/drive/restart')
++    until(lambda: all(p.get_subscription_count() for p in (camera, state, clock, gate, driver.decisions, driver.output)))
++    assert restart.wait_for_service(timeout_sec=2.)
++    root = Path(__file__).resolve().parents[1] / 'test/data/moving-lap-start'
++    row = json.loads((root / 'expected.json').read_text())[0]
++    sensor = dict(row['sensor'], gyro=-row['sensor']['gyro'], valid=True)
++    image = cv2.imread(str(root / '00000_rgb.png'))
++
++    def send_input(profile, sec, direct=False):
++        clock.publish(Clock(clock=Time(sec=sec)))
++        until(lambda: driver.get_clock().now().nanoseconds == sec * 10**9)
++        state.publish(String(data=json.dumps(dict(sensor, t=float(sec)))))
++        until(lambda: any(s['t'] == float(sec) for s in driver.feedback.samples))
++        with np.load(root / '00000_perception.npz') as d:
++            if direct:
++                driver.camera_frame(Time(sec=sec), 'camera', profile, image, d['raw'], d['lane'],
++                                    {key: d[key] for key in ('boxes', 'scores', 'labels')})
++            else:
++                wire = encode_frame(sec, 0, 'camera', image, d['raw'], d['lane'], d, profile)
++                camera.publish(String(data=wire))
++        until(lambda: bool(decisions))
++
++    def gate_status(paused, limit):
++        gate.publish(String(data=json.dumps(dict(output_enabled=True, paused=paused, max_auto_speed_mps=limit))))
++        until(lambda: driver.limit == limit and driver.gate_driving == (not paused))
++
++    try:
++        send_input('frozen-unity-v626', 10)
++        assert decisions[0]['status'] == 'ok' and decisions[0]['selected_index'] == row['selected']
++        until(lambda: len(commands) == 1)
++        command = commands[0]
++        assert command.header.stamp.sec == 10 and command.header.frame_id == 'base_footprint'
++        np.testing.assert_allclose([command.twist.linear.x, -command.twist.angular.z], row['control'], atol=1e-5)
++        initial = decisions.pop()['session']
++        gate_status(False, 1.)
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert not req.result().success
++        gate_status(True, 1.)
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input('unverified-resize', 11)
++        assert decisions[0]['session'] != initial and decisions[0]['status'] == 'blocked'
++        assert decisions[0]['effective_speed_mps'] == 1. and len(commands) == 1
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 12)
++        result = decisions[0]
++        assert result['geometry_profile'] == HONDA and result['status'] == 'ok'
++        until(lambda: len(commands) == 2)
++        command = commands[-1]
++        assert command.header.frame_id == 'base_footprint'
++        assert (command.header.stamp.sec, command.header.stamp.nanosec) == (12, 0)
++        assert command.twist.linear.x > 0
++        np.testing.assert_allclose(
++            [command.twist.linear.x, command.twist.angular.z],
++            [result['command']['linear_x_mps'], result['command']['angular_z_radps']])
++        decisions.clear()
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        send_input(HONDA, 13, direct=True)
++        until(lambda: len(commands) == 3)
++        assert commands[-1].header.stamp.sec == 13
++        for key in ('status', 'selected_index', 'command', 'feasible_count', 'selected_path', 'candidates'):
++            assert decisions[0][key] == result[key], key
++        decisions.clear()
++        send_input(HONDA, 14)
++        assert decisions[0]['status'] == 'invalid'
++        assert decisions[0]['image_gap_reset_required'] is True
++        assert decisions[0]['gap_reason'].startswith('image gap')
++        assert len(commands) == 3
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        decisions.clear()
++        send_input(HONDA, 15)
++        until(lambda: len(commands) == 4)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 15
++        def follow_reverse_plan(*_args):
++            return {'command_native': [-.2, 0.], 'reason': 'checked_slow_reverse'}
++
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        driver.driver.step = follow_reverse_plan
++        decisions.clear()
++        sensor['rpm_encoding'] = 'signed_le_int32'
++        sensor['leftRpm'] = sensor['rightRpm'] = -10
++        send_input(HONDA, 16, direct=True)
++        until(lambda: len(commands) == 5)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 16
++        assert commands[-1].twist.linear.x == -.2
++
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        driver.driver.step = follow_reverse_plan
++        decisions.clear()
++        sensor['rpm_encoding'] = 'forward_only_uint8'
++        sensor['leftRpm'] = sensor['rightRpm'] = 0
++        send_input(HONDA, 17, direct=True)
++        assert decisions[0]['status'] == 'blocked' and len(commands) == 5
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        driver.driver.step = lambda *_: dict(command_native=[0., .55], reason='checked_reverse_release')
++        decisions.clear()
++        sensor['rpm_encoding'] = 'signed_le_int32'
++        send_input(HONDA, 18, direct=True)
++        until(lambda: len(commands) == 6)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 18
++        assert commands[-1].twist.linear.x == commands[-1].twist.angular.z == 0.
++        assert decisions[0]['command'] == dict(linear_x_mps=0., angular_z_radps=0.)
++        for nanosec in (200_000_000, 400_000_000, 600_000_000):
++            decisions.clear()
++            t = Time(sec=18, nanosec=nanosec)
++            clock.publish(Clock(clock=t))
++            until(lambda: driver.get_clock().now().nanoseconds == 18_000_000_000 + nanosec)
++            # Fresh images keep arriving, but the last wheel/gyro pair is at 18.0.
++            driver.camera_frame(t, 'camera', HONDA, image, None, None, {})
++            until(lambda: bool(decisions))
++            if nanosec <= 400_000_000:
++                assert decisions[0]['reason'] == 'no recent wheel and gyro measurement at image capture'
++        assert decisions[0]['image_gap_reset_required'] is True
++        assert decisions[0]['gap_reason'] == 'planning gap over 0.5 s after missing synchronized wheel/gyro feedback'
++        assert len(commands) == 6
++        print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
++              'projection interlock, Honda direct-frame parity, image-gap restart and signed reverse publication and full-zero braking.')
++    finally:
++        peer.destroy_node()
++        driver.destroy_node()
++        rclpy.shutdown()
++
++
++if __name__ == '__main__':
++    main()

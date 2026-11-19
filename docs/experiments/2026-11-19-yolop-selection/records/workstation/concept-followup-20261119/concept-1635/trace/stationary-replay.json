@@ -1,0 +1,134 @@
+{
+  "version": "recorded stationary sensors and five captured Honda frames, real-clock shifted, no plant dynamics and no detector rerun",
+  "bag": "concept_20261119_163533_c54bf42b0c2d4e38bf8b6542e36b5975",
+  "source_segment": "2026-11-19T16:36:36.680+09:00",
+  "raw_messages_per_2s": {
+    "/aiformula_control/joy_node/joy_l2_throttle": 39,
+    "/aiformula_sensing/vectornav/imu": 40,
+    "/aiformula_sensing/vehicle_info": 20
+  },
+  "loop_frames": 5,
+  "windows": [
+    {
+      "start": "2026-11-19T16:56:43.216+09:00",
+      "end": "2026-11-19T16:56:50.222+09:00",
+      "first_positive": [
+        {
+          "t": "2026-11-19T16:56:43.433+09:00",
+          "v": 0.2,
+          "omega": 0.062208589357279895
+        },
+        {
+          "t": "2026-11-19T16:56:43.614+09:00",
+          "v": 0.4,
+          "omega": 0.06236100961547988
+        },
+        {
+          "t": "2026-11-19T16:56:43.814+09:00",
+          "v": 0.5,
+          "omega": 0.06263192394382386
+        }
+      ],
+      "peak_v": 0.5,
+      "peak_abs_yaw": 0.06263192394382386,
+      "nonzero_motor": 340,
+      "can_frames": 701,
+      "nonzero_can": 679,
+      "first_nonzero_can": "2026-11-19T16:56:43.442+09:00",
+      "gate_modes": {
+        "auto": 63
+      },
+      "min_v": 0.0,
+      "state_reasons": {
+        "ok": 140
+      },
+      "gate_reasons": {
+        "auto_command_received": 63
+      },
+      "proposal_count": 34,
+      "state_count": 140,
+      "stationary_valid": 140
+    },
+    {
+      "start": "2026-11-19T16:56:50.928+09:00",
+      "end": "2026-11-19T16:56:57.934+09:00",
+      "first_positive": [
+        {
+          "t": "2026-11-19T16:56:51.256+09:00",
+          "v": 0.2,
+          "omega": 0.062208589357279895
+        },
+        {
+          "t": "2026-11-19T16:56:51.575+09:00",
+          "v": 0.4,
+          "omega": 0.06236100961547988
+        },
+        {
+          "t": "2026-11-19T16:56:52.075+09:00",
+          "v": 0.5,
+          "omega": 0.06263192394382386
+        }
+      ],
+      "peak_v": 0.5,
+      "peak_abs_yaw": 0.06263192394382386,
+      "nonzero_motor": 335,
+      "can_frames": 701,
+      "nonzero_can": 668,
+      "first_nonzero_can": "2026-11-19T16:56:51.262+09:00",
+      "gate_modes": {
+        "auto": 63
+      },
+      "min_v": 0.0,
+      "state_reasons": {
+        "ok": 140
+      },
+      "gate_reasons": {
+        "auto_command_received": 63
+      },
+      "proposal_count": 36,
+      "state_count": 140,
+      "stationary_valid": 140
+    }
+  ],
+  "loss": {
+    "start": "2026-11-19T16:56:57.936+09:00",
+    "first_timeout": "2026-11-19T16:56:58.434+09:00",
+    "timeout_observed_ms": 497.8,
+    "last_nonzero_motor": "2026-11-19T16:56:58.334+09:00",
+    "can_after_700ms": 75,
+    "before": {
+      "output_enabled": true,
+      "paused": false,
+      "manual_held": false,
+      "estop": false,
+      "mode": "auto",
+      "reason": "auto_command_received",
+      "t": 1795075017.833332,
+      "max_auto_speed_mps": 4.0,
+      "linear_mps": 0.5,
+      "yaw_rps": 0.06263192394382386,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": true
+    },
+    "last_gate": {
+      "output_enabled": true,
+      "paused": true,
+      "manual_held": false,
+      "estop": false,
+      "mode": "paused",
+      "reason": "auto_timeout",
+      "t": 1795075019.3339176,
+      "max_auto_speed_mps": 4.0,
+      "linear_mps": 0.0,
+      "yaw_rps": 0.0,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": false
+    },
+    "internal_after_700ms": 37,
+    "nonzero_after_700ms": 0,
+    "can_nonzero_after_700ms": 0
+  },
+  "decisions": {
+    "feasible": 77
+  }
+}

@@ -1,0 +1,43 @@
+1795066825.5931330 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-19-14-40-25-584400-control-desktop-44179
+1795066825.5936031 [INFO] [launch]: Default logging verbosity is set to INFO
+1795066825.8515408 [INFO] [socket_can_receiver_node_exe-1]: process started with pid [44206]
+1795066825.8520761 [INFO] [vectornav-2]: process started with pid [44208]
+1795066825.8523133 [INFO] [vn_sensor_msgs-3]: process started with pid [44210]
+1795066825.8524945 [INFO] [concept_vehicle_state-4]: process started with pid [44212]
+1795066825.8526518 [INFO] [zed_wrapper-5]: process started with pid [44214]
+1795066825.8527951 [INFO] [concept_yolop_node-6]: process started with pid [44216]
+1795066825.8529248 [INFO] [drive-7]: process started with pid [44218]
+1795066825.9252017 [vectornav-2] [INFO] [1795066825.924913577] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795066825.9977272 [vectornav-2] [INFO] [1795066825.997222502] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud
+1795066825.9980109 [vectornav-2] [INFO] [1795066825.997316933] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795066825.9981122 [vectornav-2] [INFO] [1795066825.997328869] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795066825.9981923 [vectornav-2] [INFO] [1795066825.997337092] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795066825.9982603 [vectornav-2] [INFO] [1795066825.997344388] [aiformula_sensing.vectornav]: Serial Number : 100095497
+1795066825.9983230 [vectornav-2] [INFO] [1795066825.997351396] [aiformula_sensing.vectornav]: User Tag : ""
+1795066826.0975554 [vectornav-2] [INFO] [1795066826.097056667] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795066826.0981550 [vectornav-2] [INFO] [1795066826.097178649] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795066826.1022558 [vectornav-2] [INFO] [1795066826.102033646] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795066826.1082709 [vectornav-2] [INFO] [1795066826.108039537] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795066836.2952001 [vectornav-2] [INFO] [1795066836.293265414] [rclcpp]: signal_handler(signal_value=2)
+1795066836.2959085 [vn_sensor_msgs-3] [INFO] [1795066836.293261670] [rclcpp]: signal_handler(signal_value=2)
+1795066836.3126116 [concept_vehicle_state-4] Traceback (most recent call last):
+1795066836.3127723 [concept_vehicle_state-4]   File "/home/control/concept_v6275_ws/install/concept_vehicle_state/lib/concept_vehicle_state/concept_vehicle_state", line 11, in <module>
+1795066836.3128586 [concept_vehicle_state-4]     load_entry_point('concept-vehicle-state', 'console_scripts', 'concept_vehicle_state')()
+1795066836.3129306 [concept_vehicle_state-4]   File "/home/control/concept_v6275_ws/build/concept_vehicle_state/concept_vehicle_state/node.py", line 52, in main
+1795066836.3129966 [concept_vehicle_state-4]     rclpy.spin(node)
+1795066836.3130596 [concept_vehicle_state-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+1795066836.3131466 [concept_vehicle_state-4]     executor.spin_once()
+1795066836.3132098 [concept_vehicle_state-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+1795066836.3132713 [concept_vehicle_state-4]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+1795066836.3133307 [concept_vehicle_state-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+1795066836.3133900 [concept_vehicle_state-4]     return next(self._cb_iter)
+1795066836.3134482 [concept_vehicle_state-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+1795066836.3135059 [concept_vehicle_state-4]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+1795066836.3135638 [concept_vehicle_state-4] KeyboardInterrupt
+1795066836.3236635 [INFO] [vn_sensor_msgs-3]: process has finished cleanly [pid 44210]
+1795066836.3344619 [INFO] [vectornav-2]: process has finished cleanly [pid 44208]
+1795066836.3862200 [ERROR] [concept_vehicle_state-4]: process has died [pid 44212, exit code -2, cmd '/home/control/concept_v6275_ws/install/concept_vehicle_state/lib/concept_vehicle_state/concept_vehicle_state --ros-args'].
+1795066836.5277467 [INFO] [drive-7]: process has finished cleanly [pid 44218]
+1795066836.5608952 [ERROR] [socket_can_receiver_node_exe-1]: process has died [pid 44206, exit code -6, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_4w50ni4s -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795066836.9819462 [ERROR] [concept_yolop_node-6]: process has died [pid 44216, exit code -2, cmd '/home/control/aiformula_runtime/concept-field-20261119/install/concept_yolop/lib/concept_yolop/concept_yolop_node --ros-args --params-file /tmp/launch_params_1u7cp76v'].
+1795066838.6523297 [INFO] [zed_wrapper-5]: process has finished cleanly [pid 44214]

@@ -1,0 +1,959 @@
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/geometry.py
+@@ -0,0 +1,17 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v614_driving/geometry.py. """
++
++import numpy as np
++from concept_road.onboard625 import HALF_TRACK, HALF_TREAD, tread_clearance
++
++try:
++    from . import _tread
++except ImportError:  # Unbuilt source checkout.
++    _tread = None
++
++_OFFSETS = np.concatenate([side + np.linspace(-HALF_TREAD, HALF_TREAD, 5) for side in (-HALF_TRACK, HALF_TRACK)])
++
++
++def road_clearance(road, z, x, heading, uncertainty_scale=1.):
++    if _tread is None or np.ndim(z) != 1 or np.shape(z) != np.shape(x) or np.shape(x) != np.shape(heading):
++        return tread_clearance(road, z, x, heading, uncertainty_scale)
++    return _tread.clearance(road, z, x, heading, uncertainty_scale, _OFFSETS)
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/geometry61514.py
+@@ -0,0 +1,140 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/geometry61514.py. """
++
++import numpy as np
++
++from scipy.special import ndtr
++
++from concept_feasibility.geometry import road_clearance
++
++from concept_road.v3_model import BODY_HALF_WIDTH, BODY_FRONT, BODY_REAR
++
++try:
++    from .path_risk import path_clearance as compiled_path_clearance
++except ImportError:
++    compiled_path_clearance = None
++
++RISK_LIMIT=float(ndtr(-2.))
++
++def rectangle_upper(z,x,sz,sx,rho,r):
++    """Analytic upper bound with covariance; no integration grid parameter.
++
++    P(A and B) <= P(A) sup_{a in A} P(B|a), and the symmetric expression.
++    A Gaussian interval probability is maximized when its conditional mean is
++    nearest the interval midpoint. That mean is linear in the conditioning
++    coordinate, so its supremum on the entire interval is available exactly.
++    Nested collision rectangles preserve monotonicity for the margin search.
++    """
++    a,b=-BODY_REAR-r,BODY_FRONT+r
++    w=BODY_HALF_WIDTH+r
++    pa=np.maximum(0.,ndtr((b-z)/sz)-ndtr((a-z)/sz))
++    pb=np.maximum(0.,ndtr((w-x)/sx)-ndtr((-w-x)/sx))
++    residual=np.maximum(0.,1-rho*rho)
++    slope_x=rho*sx/sz
++    m0,m1=x+slope_x*(a-z),x+slope_x*(b-z)
++    closest_x=np.clip(np.zeros_like(m0),np.minimum(m0,m1),np.maximum(m0,m1))
++    sigma_x=sx*np.sqrt(residual)
++    sup_x=np.maximum(0.,ndtr((w-closest_x)/np.maximum(sigma_x,1e-12))-ndtr((-w-closest_x)/np.maximum(sigma_x,1e-12)))
++    slope_z=rho*sz/sx
++    n0,n1=z+slope_z*(-w-x),z+slope_z*(w-x)
++    closest_z=np.clip((a+b)*.5,np.minimum(n0,n1),np.maximum(n0,n1))
++    sigma_z=sz*np.sqrt(residual)
++    sup_z=np.maximum(0.,ndtr((b-closest_z)/np.maximum(sigma_z,1e-12))-ndtr((a-closest_z)/np.maximum(sigma_z,1e-12)))
++    # At singular or nearly singular covariance retain the old marginal upper
++    # bound. A point mass on an interval endpoint must not become a half mass.
++    conditional=np.minimum(pa*sup_x,pb*sup_z)
++    bound=np.where(residual<=1e-12,np.minimum(pa,pb),np.minimum(np.minimum(pa,pb),conditional))
++    return np.where((b>=a)&(w>=0),bound,0.)
++
++def _components(objects,z,x,heading,time,future_travel=None,future_turn=None):
++    c,s=np.cos(heading),np.sin(heading)
++    parts=[]
++    for row in objects:
++        if len(row)<69:raise ValueError('Two-model obstacle schema required')
++        probability=row[25]*np.exp(-row[68]*time)
++        for weight,state,p,intensity,static in [
++            (probability,row[26:30],row[30:46].reshape(4,4),row[67],True),
++            (1-probability,row[46:50],row[50:66].reshape(4,4),row[66],False)]:
++            f=np.c_[np.eye(2),np.eye(2)*time]
++            process = np.eye(2)*intensity**2 if static or len(row)<73 else row[69:73].reshape(2,2)
++            covariance=f@p@f.T+process*(time if static else time**3/3)
++            dz,dx=state[0]+state[2]*time-z,state[1]+state[3]*time-x
++            if static and time>0:
++                if len(row)<77 or future_travel is None or future_turn is None:
++                    raise ValueError('Static forecast requires the same cumulative ego-motion budget as the tracker')
++                future_radius=row[75]+future_travel  # triangle-inequality bound along candidate
++                budget=.01*(row[73]+future_travel)+.02*(row[74]+future_turn)*future_radius
++                extra=np.maximum(0.,budget**2-row[76]**2)
++                covariance=np.broadcast_to(covariance,(len(z),2,2)).copy()
++                covariance[:,0,0]+=extra;covariance[:,1,1]+=extra
++            along,side=dz*c+dx*s,dx*c-dz*s
++            vz=c*c*covariance[...,0,0]+2*c*s*covariance[...,0,1]+s*s*covariance[...,1,1]
++            vx=s*s*covariance[...,0,0]-2*c*s*covariance[...,0,1]+c*c*covariance[...,1,1]
++            cross=c*s*(covariance[...,1,1]-covariance[...,0,0])+(c*c-s*s)*covariance[...,0,1]
++            sz,sx=np.sqrt(np.maximum(vz,1e-12)),np.sqrt(np.maximum(vx,1e-12))
++            rho=np.clip(cross/(sz*sx),-1.,1.)
++            parts.append((weight,along,side,sz,sx,row[4]+.07,rho))
++    return parts
++
++def _risk(parts,inflation):
++    risk=np.zeros_like(np.asarray(inflation,float))
++    for weight,z,x,sz,sx,radius,rho in parts:
++        risk+=weight*rectangle_upper(z,x,sz,sx,rho,radius+inflation)
++    return np.minimum(risk,1.)
++
++def obstacle_clearance(objects,z,x,heading,future_time,uncertainty_scale=1.,covariances=None,future_travel=None,future_turn=None):
++    if not len(objects):return np.full(len(z),100.),np.full(len(z),100.)
++    if any(len(o)<69 for o in objects):
++        raise ValueError('Two-model obstacle schema required')
++    if uncertainty_scale!=1.:raise ValueError('Risk model uses explicit probabilities, not an extra multiplier')
++    c,s=np.cos(heading),np.sin(heading);geometric=np.full(len(z),100.)
++    for row in objects:
++        dz,dx=row[0]+row[2]*future_time-z,row[1]+row[3]*future_time-x
++        along,side=dz*c+dx*s,dx*c-dz*s
++        gap=np.hypot(along-np.clip(along,-BODY_REAR,BODY_FRONT),side-np.clip(side,-BODY_HALF_WIDTH,BODY_HALF_WIDTH))-row[4]
++        geometric=np.minimum(geometric,gap)
++    parts=_components(objects,z,x,heading,future_time,future_travel,future_turn)
++    # Meter-valued diagnostic: extra enlargement of collision rectangle before
++    # the bound reaches the risk limit. A negative value rejects the candidate.
++    lower,upper=np.full(len(z),-8.),np.full(len(z),12.)
++    for _ in range(20):
++        middle=(lower+upper)*.5
++        exceeds=_risk(parts,middle)>RISK_LIMIT
++        upper=np.where(exceeds,middle,upper);lower=np.where(exceeds,lower,middle)
++    return geometric,lower
++
++def path_obstacle_clearance(objects,states,active=None):
++    """Same discrete minimum as separate 20-iteration searches at every time.
++
++    Each candidate has one shared inflation threshold. Requiring that threshold
++    at ALL checked times is equivalent to taking their minimum. Object/mode
++    summation order and finite bisection resolution remain exactly unchanged.
++    """
++    count=len(states[0][0]);times=len(states)
++    if not len(objects):return np.full(count,100.),np.full(count,100.)
++    if compiled_path_clearance is not None:
++        return compiled_path_clearance(objects, states, active, RISK_LIMIT)
++    active=np.ones((times,count),bool) if active is None else np.asarray(active,bool)
++    at_times=[_components(objects,z,x,h,t,travel,turn) for z,x,h,t,travel,turn in states]
++    parts=[]
++    for index in range(len(at_times[0])):
++        modes=[item[index] for item in at_times]
++        parts.append((np.array([m[0] for m in modes])[:,None],
++                      *[np.stack([m[k] for m in modes]) for k in range(1,5)],modes[0][5],
++                      np.stack([m[6] for m in modes])))
++    geometric=np.full(count,100.)
++    for (z,x,h,t,travel,turn),enabled in zip(states,active):
++        c,s=np.cos(h),np.sin(h)
++        for row in objects:
++            dz,dx=row[0]+row[2]*t-z,row[1]+row[3]*t-x
++            along,side=dz*c+dx*s,dx*c-dz*s
++            gap=np.hypot(along-np.clip(along,-BODY_REAR,BODY_FRONT),side-np.clip(side,-BODY_HALF_WIDTH,BODY_HALF_WIDTH))-row[4]
++            geometric=np.minimum(geometric,np.where(enabled,gap,100.))
++    lower,upper=np.full(count,-8.),np.full(count,12.)
++    for _ in range(20):
++        middle=(lower+upper)*.5
++        risk=np.zeros((times,count))
++        for weight,z,x,sz,sx,radius,rho in parts:
++            risk+=weight*rectangle_upper(z,x,sz,sx,rho,radius+middle)
++        exceeds=np.any(active & (np.minimum(risk,1.)>RISK_LIMIT),axis=0)
++        upper=np.where(exceeds,middle,upper);lower=np.where(exceeds,lower,middle)
++    return geometric,lower
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/path_risk.py
+@@ -0,0 +1,43 @@
++"""Pack whole path histories in one array; each candidate keeps its own twenty bisections."""
++import numpy as np
++from concept_road.v3_model import BODY_HALF_WIDTH, BODY_FRONT, BODY_REAR
++from . import _risk
++
++
++def path_clearance(objects, states, active, limit):
++    arrays = [np.stack([row[i] for row in states]) for i in (0, 1, 2, 4, 5)]
++    t = np.array([row[3] for row in states])
++    return array_clearance(objects, *arrays, t, active, limit)
++
++
++def array_clearance(objects, z, x, heading, travel, turn, t, active, limit):
++    nt, count = z.shape
++    if not len(objects):
++        return np.full(count, 100.), np.full(count, 100.)
++    enabled = np.ones((nt, count), dtype=bool) if active is None else np.asarray(active, dtype=bool)
++    if enabled.shape != (nt,count):
++        raise ValueError('invalid active trajectory mask')
++    # Covariance of each observed motion model at each future time is shared
++    # by all 75 trajectories. Candidate-dependent rotations and motion error
++    # budgets are evaluated in native worker-local memory.
++    tf=np.zeros((nt,2,4));tf[:,0,0]=tf[:,1,1]=1.;tf[:,0,2]=tf[:,1,3]=t
++    centers=np.empty((nt,len(objects),3))
++    models=np.empty((nt,2*len(objects),12))
++    for i,row in enumerate(objects):
++        if len(row)<69:raise ValueError('two-mode obstacle state required')
++        centers[:,i,0]=row[0]+row[2]*t;centers[:,i,1]=row[1]+row[3]*t;centers[:,i,2]=row[4]
++        stationary=row[25]*np.exp(-row[68]*t)
++        for mode,weight,state,p,intensity in [(0,stationary,row[26:30],row[30:46],row[67]),
++                                                (1,1-stationary,row[46:50],row[50:66],row[66])]:
++            process=np.eye(2)*intensity**2 if mode==0 or len(row)<73 else row[69:73].reshape(2,2)
++            times=t if mode==0 else t**3/3
++            cov=tf@p.reshape(4,4)@np.swapaxes(tf,1,2)+process*times[:,None,None]
++            out=models[:,2*i+mode];out[:,0]=weight;out[:,1]=state[0]+state[2]*t;out[:,2]=state[1]+state[3]*t
++            out[:,3]=cov[:,0,0];out[:,4]=cov[:,0,1];out[:,5]=cov[:,1,1];out[:,6]=row[4]+.07
++            out[:,7]=0.
++            if mode==0 and np.any(t>0):
++                if len(row)<77:raise ValueError('static forecast requires measured motion budget')
++                out[:,7]=t>0
++                out[:,8]=row[73];out[:,9]=row[74];out[:,10]=row[75];out[:,11]=row[76]**2
++    return _risk.path(models,centers,z,x,heading,travel,turn,np.ascontiguousarray(enabled,dtype=np.uint8),limit,
++                      BODY_FRONT,BODY_REAR,BODY_HALF_WIDTH,4)
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/response61515.json
+@@ -0,0 +1,241 @@
++{
++  "speed": [
++    0.29999971945510495,
++    1.024018104446096,
++    -0.10536643593356589,
++    0.014197785966249713,
++    -0.2920397878130866,
++    1.4999963321308156
++  ],
++  "yaw": [
++    0.10301512022063196,
++    0.004368888664795847,
++    -0.07998168318363277,
++    -0.05839305445248353,
++    -0.42307737346798074,
++    1.513938470705889
++  ],
++  "stop": {
++    "deceleration": 2.0232268547975254,
++    "delay": 0.03444060660279021
++  },
++  "version": "V6.15.15",
++  "parameter_order": [
++    "tau_s",
++    "common_gain_per_100_CAN",
++    "negative_hinge_gain",
++    "positive_hinge_gain",
++    "ratio_hinge",
++    "ratio_saturation"
++  ],
++  "training": "Command + wheel RPM proxy + gyro only. Known Archived1030 CAN conversion; response coefficients and saturation fitted from recordings.",
++  "physical_scope": "Installed Unity simulator only; no hardware validation",
++  "sources": [
++    {
++      "path": ".runtime\\v615_recovery\\develop04\\201_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "8d22897e3bb898ce8103bc2cefa7426ae3867c222952c5b60f7f297faa5aebaf",
++      "duplicate": false,
++      "frames": 42
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop04\\208_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "a837a7d54af11525d58ad6fd29cb806c9d137001bb0812ed4996c11b68b8e46f",
++      "duplicate": false,
++      "frames": 76
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop04\\210_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "31fbd624faa2fb7675f7404b28e62d01d5de0e188c662eecff99966bb7bee937",
++      "duplicate": false,
++      "frames": 82
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop04\\s2026112588_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "50df644c57c2896757286c223377899098fa0ff7a951177810280765329b611d",
++      "duplicate": false,
++      "frames": 343
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop04\\s2026112607_V6.15.3_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "efb89b52e7e5abaeb99b1dd8262be73a5a45d895574b1f3b8643a47213ac51bf",
++      "duplicate": false,
++      "frames": 343
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop05\\201_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "3407bb3d5b4af5e300835839c7d8a76ec947040c19d5b5dfa662502dee5ecad2",
++      "duplicate": false,
++      "frames": 43
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop05\\208_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "b0c0566d05bcf939bb491e29897aface35ef7e9f2882a3c1064faf05b2890752",
++      "duplicate": false,
++      "frames": 76
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop05\\210_V6.15.4_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "4371c6622c04a1141f77e4d31d4162dece7a259aefd2c75a04c24448b6a69fd3",
++      "duplicate": false,
++      "frames": 47
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop06\\201_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "3407bb3d5b4af5e300835839c7d8a76ec947040c19d5b5dfa662502dee5ecad2",
++      "duplicate": true,
++      "frames": 43
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop06\\208_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "2d7daea8a61964120ec4f67b6534aa15037407a558bfe14add848d930ba944f5",
++      "duplicate": false,
++      "frames": 68
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop06\\210_V6.15.5_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "4371c6622c04a1141f77e4d31d4162dece7a259aefd2c75a04c24448b6a69fd3",
++      "duplicate": true,
++      "frames": 47
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss04\\continuous_clear\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "c53dc48ba3806509924d193cb79f269e1ce7569e9eec9f86ddd54383c6527377",
++      "duplicate": false,
++      "frames": 80
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss04\\continuous_one\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "fc3e3ddbd1e606beff18cda6e100c1d6a6bd5332bf4d7288bc8ade73d2cb2c87",
++      "duplicate": false,
++      "frames": 86
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss04\\continuous_ten\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "7ee6231b38673395d8fe5a3d1f396e5718bdeafeff4d669891666de483e4606c",
++      "duplicate": false,
++      "frames": 94
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss04\\continuous_three\\208_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "6cb0f75975b6065c72273dade81ccd0f9588e40548ccd8f69b2050bc326fd86d",
++      "duplicate": false,
++      "frames": 85
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss04\\moving_ten\\210_V6.15.10_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "f63b5be9f2f9afd4eb9115f3a48b58b88067d8d0b379bf0c6eccb9380ee7d9c4",
++      "duplicate": false,
++      "frames": 72
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss05\\continuous_clear\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "ea680cb524c875bed7a1633a172c392d8e84973f5ac9e86ac180e138d8a029b5",
++      "duplicate": false,
++      "frames": 85
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss05\\continuous_one\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "ea680cb524c875bed7a1633a172c392d8e84973f5ac9e86ac180e138d8a029b5",
++      "duplicate": true,
++      "frames": 85
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss05\\continuous_ten\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "214498f0aad7bb780098e99421e9663ef6410228aff479d83b548771f9ea607d",
++      "duplicate": false,
++      "frames": 90
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss05\\continuous_three\\208_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "dacd622d8a73df98752da09c023ce343a272f7df7e681d6653758cb9c2e1f42f",
++      "duplicate": false,
++      "frames": 85
++    },
++    {
++      "path": ".runtime\\v615_recovery\\loss05\\moving_ten\\210_V6.15.12_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "e77ff7e11de5e791fcf984dc5132d2e64ba536d5fa55d6f76151815ea4393103",
++      "duplicate": false,
++      "frames": 69
++    }
++  ],
++  "heldout_sources": [
++    {
++      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211108_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "a92cf4d57b887769d9040195b4421a3024d93a5922a735b5d363c849a848d460",
++      "duplicate": false,
++      "frames": 347
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211824_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "f3411f18b23581bd5ef9df568f16ace8fbefb54518edcbcdd81bf3fc0b5fab57",
++      "duplicate": false,
++      "frames": 347
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611211932_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "4ffdf234876f3aff9a7103b8bfee039cb6d9b51dddc7a20d60ce7097df795a8d",
++      "duplicate": false,
++      "frames": 346
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611212988_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "46582edb9ef80bf0383b766ab4c6dc06b3b829af82f3f8880d8f14a784cb068e",
++      "duplicate": false,
++      "frames": 350
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_laps\\s1611213833_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "3a8cd0dbb818f0ed9b32f5749603f72fa0027503eaacd67419d8e5882fa95061",
++      "duplicate": false,
++      "frames": 351
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_obstacles\\201_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "1220a1feb0db75132423a6cc24d629e558d5e4c78cc7ed3620def23df52cfa9d",
++      "duplicate": false,
++      "frames": 43
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_obstacles\\208_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "541740c39875435097e327ab7d47e335fa302e4605d84194e07de1c650985749",
++      "duplicate": false,
++      "frames": 92
++    },
++    {
++      "path": ".runtime\\v615_recovery\\develop11_obstacles\\210_V6.15.14_whitebox_B1.4-road-aligned-research\\decisions.jsonl",
++      "sensor_command_sha256": "ed2b1286ec7cd0a06592037982946956d9bedb1fd3309b9f7c13a7c6f5b3764b",
++      "duplicate": false,
++      "frames": 70
++    }
++  ],
++  "train_transitions": 1848,
++  "heldout_runs": 8,
++  "fits": [
++    {
++      "name": "speed",
++      "cost": 4.58033803307778e-10,
++      "success": true,
++      "parameters": [
++        0.29999971945510495,
++        1.024018104446096,
++        -0.10536643593356589,
++        0.014197785966249713,
++        -0.2920397878130866,
++        1.4999963321308156
++      ]
++    },
++    {
++      "name": "yaw",
++      "cost": 0.0707027717548791,
++      "success": true,
++      "parameters": [
++        0.10301512022063196,
++        0.004368888664795847,
++        -0.07998168318363277,
++        -0.05839305445248353,
++        -0.42307737346798074,
++        1.513938470705889
++      ]
++    }
++  ]
++}
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/response61515.py
+@@ -0,0 +1,205 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/response61515.py. """
++
++import json
++
++from contextlib import contextmanager
++from contextvars import ContextVar
++from functools import lru_cache
++
++from pathlib import Path
++
++import numpy as np
++
++PATH=Path(__file__).with_suffix('.json')
++
++MODEL=json.loads(PATH.read_bytes()) if PATH.exists() else None
++
++try:
++    from . import _motion
++except ImportError:  # Unbuilt source checkout.
++    _motion = None
++
++_SPEED = np.asarray(MODEL['speed']) if MODEL else None
++_YAW = np.asarray(MODEL['yaw']) if MODEL else None
++# 16:35:33 manual forward segments, wheel feedback and VectorNav gyro.
++# Fit 17 x 0.6 s windows; separate 25-window error 0.112 rad/s.
++FIELD_YAW_TAU_S = .525
++_FIELD_YAW = np.r_[FIELD_YAW_TAU_S, _YAW[1:]] if MODEL else None
++
++def forward_yaw_model():
++    return _FIELD_YAW if physical_motor_enabled() else _YAW
++
++
++# Each driver callback selects its converter. Historical replay uses the
++# Archived1030 transfer, while field rollouts use the actual car's transfer.
++_physical_motor = ContextVar('physical_motor', default=False)
++physical_motor_enabled = _physical_motor.get
++_applied = ContextVar('physical_applied_command', default=(0., 0.))
++physical_applied_command = _applied.get
++
++
++@contextmanager
++def motor_profile(physical, applied=(0., 0.)):
++    token = _physical_motor.set(physical)
++    applied_token = _applied.set(applied)
++    try:
++        yield
++    finally:
++        _applied.reset(applied_token)
++        _physical_motor.reset(token)
++
++
++def motor_steering(w, physical=False):
++    """Stock converter's differential input for a ROS body-yaw request."""
++    pos=w>=0
++    limit=np.where(pos,1.53908994,1.68283261)
++    gain=np.where(pos,3.15496243,2.91627673)
++    offset=np.where(pos,3.36664054,-3.22124235)
++    bias=np.where(pos,-.0621119,1.6954783)
++    bounded=np.clip(w,-bias+1e-6,limit-bias-1e-6)
++    log_term=np.log(limit/(bounded+bias)-1)
++    if physical:
++        # Concept releases zero both axes before the real motor conversion.
++        # The installed motor bypasses its asymmetric steering fits at zero.
++        ros=offset-(1./gain)*log_term
++        ros=np.where(abs(w)<=1e-9, 0., ros)
++    else:
++        ros=offset-log_term/gain
++    return ros
++
++
++def can_command(speed_command,yaw_command,physical=False):
++    """Right/left RPM targets under the selected motor conversion."""
++    dtype=float if physical else np.float32
++    v,w=np.broadcast_arrays(np.asarray(speed_command,dtype=dtype).astype(float),
++                            -np.asarray(yaw_command,dtype=dtype).astype(float))
++    ros=motor_steering(w,physical)
++    if physical:
++        ros=np.where(v==0.,0.,ros)
++        v=np.where((abs(v)<=1e-9) & (abs(w)<=1e-9), 0., v)
++    right,left=v/.127+.6/.254*ros,v/.127-.6/.254*ros
++    right=np.sign(right)*(abs(right)/.834+2.76)
++    left=np.sign(left)*(abs(left)/.844+2.81)
++    if physical:
++        return np.rint(right*(60/(2*np.pi))*1.1),np.rint(left*(60/(2*np.pi))*1.1)
++    factor=60/(2*np.pi)*1.1
++    return np.rint(right*factor),np.rint(left*factor)
++
++def features(speed_command,yaw_command,knot,saturation,physical=None):
++    if physical is None:
++        physical=physical_motor_enabled()
++    right,left=can_command(speed_command,yaw_command,physical)
++    common=(right+left)*.5
++    ratio=np.divide(right-left,common,out=np.zeros_like(common),where=abs(common)>1)
++    offset=np.clip(ratio,-saturation,saturation)-knot
++    return np.stack([common/100,common/100*np.minimum(offset,0),
++                     common/100*np.maximum(offset,0)],axis=-1)
++
++def target(speed_command,yaw_command,parameters,physical=None):
++    # tau, three gains, hinge location, saturation. Units are stored in JSON.
++    return features(speed_command,yaw_command,parameters[4],parameters[5],physical)@np.asarray(parameters[1:4])
++
++@lru_cache(maxsize=32)
++def reachable_commands(speed_command,physical=False):
++    """All intervals of constant integer CAN, derived from encoding boundaries.
++
++    This is the actuator's finite reachable set, not additional road paths or
++    an arbitrary denser steering grid. ArchivedYaw has a real discontinuity at
++    zero; the strongest turn need not be the largest absolute input command.
++    """
++    v=float(speed_command if physical else np.float32(speed_command));points=[-1.55,0.,1.55]
++    if physical:
++        points.extend([-1e-9,1e-9])
++    probes=np.array([-1.55,-1e-7,0.,1e-7,1.55])
++    extrema=can_command(v,probes,physical)
++    for side,(gain,deadband,direction) in enumerate([(.834,2.76,1),(.844,2.81,-1)]):
++        # CAN changes at n+.5, or when the wheel angular input crosses zero.
++        extrema_side=extrema[side]
++        cuts=np.arange(np.floor(extrema_side.min())-1,np.ceil(extrema_side.max())+1)+.5
++        shaft=cuts/(60/(2*np.pi)*1.1)
++        shaft=shaft[abs(shaft)>=deadband]
++        wheel=np.r_[np.sign(shaft)*(abs(shaft)-deadband)*gain,0.]
++        archived=(wheel-v/.127)/(direction*.6/.254)
++        for limit,k,offset,bias,positive in [(1.53908994,3.15496243,3.36664054,-.0621119,True),
++                                            (1.68283261,2.91627673,-3.22124235,1.6954783,False)]:
++            ros=limit/(1+np.exp(np.clip(-k*(archived-offset),-700,700)))-bias
++            u=-ros
++            valid=(ros>=0 if positive else ros<0)&(u>=-1.55)&(u<=1.55)
++            points.extend(u[valid].tolist())
++    cuts=np.unique(points)
++    candidates=np.r_[cuts,(cuts[:-1]+cuts[1:])*.5].astype(np.float32).astype(float)
++    # Adjacent float32 values also cover endpoint rounding without assuming
++    # that a mathematical half-integer remains exact after the Unity cast.
++    f=candidates.astype(np.float32)
++    candidates=np.unique(np.r_[candidates,np.nextafter(f,np.float32(-np.inf)),np.nextafter(f,np.float32(np.inf))])
++    candidates=candidates[(candidates>=-1.55)&(candidates<=1.55)]
++    # Keep representatives in every interval, including disjoint intervals
++    # producing the same CAN. Slew constraints can exclude one but not another.
++    order=np.lexsort((candidates,abs(candidates)))
++    return candidates[order]
++
++@lru_cache(maxsize=32)
++def reachable_response(speed,parameters,physical=False):
++    commands=reachable_commands(speed,physical)
++    return commands,target(speed,commands,parameters,physical)
++
++@lru_cache(maxsize=32)
++def response_intervals(speed,parameters,physical=False):
++    commands,values=reachable_response(speed,parameters,physical)
++    order=np.argsort(commands)
++    commands,values=commands[order],values[order]
++    starts=np.r_[0,np.flatnonzero(values[1:]!=values[:-1])+1,len(values)].astype(np.int64)
++    groups=np.repeat(np.arange(len(starts)-1,dtype=np.int64),np.diff(starts))
++    return commands,values[starts[:-1]],order.astype(np.int64),groups,starts,int(np.searchsorted(commands,0.))
++
++
++def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt=.2):
++    if MODEL is None:raise RuntimeError('Fit response61515.json before use')
++    desired,q,lower,upper=np.broadcast_arrays(desired,speed_command,lower,upper)
++    if np.any(lower>upper):raise ValueError('Empty steering command interval')
++    if current_yaw is not None:
++        decay=np.exp(-dt/MODEL['yaw'][0])
++        desired=(desired-decay*np.asarray(current_yaw))/(1-decay)
++    flat_d,flat_q=desired.ravel(),q.ravel();result=np.clip(np.zeros(flat_d.shape),lower.ravel(),upper.ravel())
++    if _motion is not None:
++        lo_flat, hi_flat = lower.ravel(), upper.ravel()
++        endpoints = target(np.concatenate((flat_q, flat_q)), np.concatenate((lo_flat, hi_flat)), MODEL['yaw'])
++        all_lo, all_hi = np.split(endpoints, 2)
++    physical=physical_motor_enabled()
++    for speed in np.unique(flat_q[flat_q>0]):
++        active=flat_q==speed;lo,hi=lower.ravel()[active],upper.ravel()[active]
++        model_speed=float(speed if physical else np.float32(speed))
++        commands,reachable=reachable_response(model_speed,tuple(MODEL['yaw']),physical)
++        if _motion is not None:
++            intervals=response_intervals(model_speed,tuple(MODEL['yaw']),physical)
++            result[active] = _motion.closest(*intervals, flat_d[active], lo, hi,
++                                             all_lo[active], all_hi[active])
++            continue
++        proposals=np.broadcast_to(commands[:,None],(len(commands),len(lo)))
++        proposals=np.vstack([proposals,lo,hi])
++        predictions=np.vstack([np.broadcast_to(reachable[:,None],(len(commands),len(lo))),
++                                target(speed,lo,MODEL['yaw']),target(speed,hi,MODEL['yaw'])])
++        legal=(proposals>=lo)&(proposals<=hi)
++        errors=np.where(legal,abs(predictions-flat_d[active]),np.inf)
++        result[active]=np.take_along_axis(proposals,np.argmin(errors,axis=0)[None,:],axis=0)[0]
++    return result.reshape(q.shape)
++
++def advance(speed,yaw,speed_command,yaw_command,dt,zero_age):
++    if MODEL is None:raise RuntimeError('Fit response61515.json before use')
++    speed,yaw,q,u=np.broadcast_arrays(speed,yaw,speed_command,yaw_command)
++    pv,pw=MODEL['speed'],forward_yaw_model();brake=MODEL['stop']
++    if _motion is not None and speed.ndim == 1:
++        age = np.broadcast_to(zero_age, q.shape)
++        return _motion.advance(np.asarray(speed, float), np.asarray(yaw, float), np.asarray(q, float),
++                               np.asarray(u, float), dt, np.asarray(age, float), _SPEED, pw,
++                               brake['delay'], brake['deceleration'], physical_motor_enabled())
++    velocity_target=np.maximum(0,target(q,u,pv))
++    positive=velocity_target+(speed-velocity_target)*np.exp(-dt/pv[0])
++    active=np.maximum(0,zero_age+dt-brake['delay'])-np.maximum(0,zero_age-brake['delay'])
++    stopped=np.maximum(0,speed-brake['deceleration']*active)
++    next_speed=np.where(q>0,positive,stopped)
++    turn_target=u if physical_motor_enabled() else target(q,u,pw)
++    driven=turn_target+(yaw-turn_target)*np.exp(-dt/pw[0])
++    released=yaw*np.clip(next_speed/np.maximum(speed,1e-8),0,1)
++    next_yaw=np.where(q>0,driven,np.where(speed>1e-8,released,0))
++    return next_speed,next_yaw,np.where(q>0,0,zero_age+dt)
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/reverse_model617.json
+@@ -0,0 +1,46 @@
++{
++  "models": {
++    "v": [
++      0.29999974965897236,
++      0.4954505272157453,
++      -0.6012181604734168,
++      0.28601247301438854
++    ],
++    "w": [
++      0.046380744485121306,
++      0.01042860999707415,
++      -0.05503200277004831,
++      -0.06424571183636385
++    ]
++  },
++  "feature_knot_source": "response61515.MODEL yaw features",
++  "action_speed": -0.2,
++  "steer_min": -0.18,
++  "steer_max": 0.18,
++  "source_fit_sha256": "70695ac9110c81211542844657b6c702b3ad0dc240b62f0b68108816b35adabd",
++  "validation_sha256": "ed61b00da4f22df6d9edf23d2806868b308e37131addc61347fec853946bc4c3",
++  "validation": {
++    "status": "duration_complete",
++    "no_body_violation": true,
++    "no_wheel_violation": true,
++    "actual_peak_reverse_mps": 0.220690832,
++    "one_step_errors": {
++      "v": {
++        "rmse": 3.651014407897352e-08,
++        "max_abs": 1.0355760321489882e-07
++      },
++      "w": {
++        "rmse": 0.0007466103174113341,
++        "max_abs": 0.0023542288821520457
++      },
++      "proxy_minus_body_q_minus_02": {
++        "n": 24,
++        "rmse": 0.00999755471731275,
++        "max_abs": 0.023891969489006237
++      }
++    },
++    "samples": 24,
++    "scope": "Independent pulse sequence; prior speed/yaw measured at each step; no closed-loop recovery validation"
++  },
++  "scope": "Installed simulator only; low-speed fixed reverse commands. Not yet validated in obstacle recovery or on real car."
++}
+\ No newline at end of file
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/reverse_model617.py
+@@ -0,0 +1,30 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/reverse_model617.py. """
++
++from functools import lru_cache
++import json
++
++from pathlib import Path
++
++import numpy as np
++
++from concept_feasibility.response61515 import features, MODEL, physical_motor_enabled
++
++from concept_feasibility.reverse_response import step as original
++
++DATA=json.loads(Path(__file__).with_suffix('.json').read_bytes())
++
++@lru_cache(maxsize=32)
++def _reverse_targets(drive, steer, dt, physical):
++    # A powered interval holds one checked speed and steering request.
++    # Its fitted targets and decay factors are independent of vehicle state.
++    f = features(drive, steer, MODEL['yaw'][4], MODEL['yaw'][5], physical=physical)
++    v, w = DATA['models']['v'], DATA['models']['w']
++    return float(f @ np.asarray(v[1:])), float(f @ np.asarray(w[1:])), np.exp(-dt/v[0]), np.exp(-dt/w[0])
++
++
++def step(speed,yaw,drive,steer,dt,zero_age):
++    if drive>=0:return original(speed,yaw,drive,steer,dt,zero_age)
++    if drive!=DATA['action_speed'] or not DATA['steer_min']-1e-8<=steer<=DATA['steer_max']+1e-8:
++        raise ValueError('Reverse action outside validated simulator range')
++    vtarget, wtarget, vdecay, wdecay = _reverse_targets(drive, steer, dt, physical_motor_enabled())
++    return vtarget + (speed-vtarget)*vdecay, wtarget + (yaw-wtarget)*wdecay, 0.
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/reverse_response.json
+@@ -0,0 +1,21 @@
++{
++  "speed_tau": 0.2999998747272463,
++  "speed_target": -0.20464492207958027,
++  "yaw_tau": 0.005050612305862482,
++  "yaw_target": 0.02243159422926764,
++  "action": [
++    -0.2,
++    0.0
++  ],
++  "scope": "Installed Unity plant; fixed low-speed straight-command reverse only; no hardware claim",
++  "source": ".runtime\\v616_decision\\reverse_probe01",
++  "sensor_sha256": "c441128677b78ce06c41fb60fbd807b7ad39b35de0af041724df6ee686f2451c",
++  "transition_samples": 8,
++  "training_rmse": {
++    "speed": 1.337133274680456e-08,
++    "yaw": 0.0005576871775629641
++  },
++  "steady_body_speed_mean": -0.19699815442857144,
++  "independent_heldout": false,
++  "allowed_body_speed_mps": 0.3
++}
+\ No newline at end of file
+--- /dev/null
++++ b/concept_feasibility/concept_feasibility/reverse_response.py
+@@ -0,0 +1,25 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v616_decision/reverse_response.py. """
++
++import json
++
++from pathlib import Path
++
++import numpy as np
++
++from concept_feasibility.response61515 import advance, MODEL
++
++MODEL_PATH=Path(__file__).with_suffix('.json')
++
++def step(speed,yaw,drive,steer,dt,zero_age):
++    if drive>0:return advance(speed,yaw,drive,steer,dt,zero_age)
++    if drive==0:
++        brake=MODEL['stop']
++        active=max(0.,zero_age+dt-brake['delay'])-max(0.,zero_age-brake['delay'])
++        velocity=np.sign(speed)*max(0.,abs(speed)-brake['deceleration']*active)
++        gyro=yaw*min(1.,abs(velocity)/max(abs(speed),1e-8)) if abs(speed)>1e-8 else 0.
++        return velocity,gyro,zero_age+dt
++    if drive!=-.2 or steer!=0:raise ValueError('Uncalibrated reverse action')
++    model=json.loads(MODEL_PATH.read_bytes())
++    velocity=model['speed_target']+(speed-model['speed_target'])*np.exp(-dt/model['speed_tau'])
++    gyro=model['yaw_target']+(yaw-model['yaw_target'])*np.exp(-dt/model['yaw_tau'])
++    return velocity,gyro,0.
+--- /dev/null
++++ b/concept_feasibility/package.xml
+@@ -0,0 +1,16 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_feasibility</name>
++  <version>6.26.0</version>
++  <description>V6.26 tyre, response and obstacle clearance checks.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <build_depend>cython3</build_depend>
++  <build_depend>python3-scipy</build_depend>
++  <build_depend>python3-dev</build_depend>
++  <exec_depend>concept_road</exec_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <exec_depend>python3-scipy</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_feasibility/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_feasibility
++[install]
++install_scripts=$base/lib/concept_feasibility
+--- /dev/null
++++ b/concept_feasibility/setup.py
+@@ -0,0 +1,28 @@
++from setuptools import Extension, setup
++from Cython.Distutils import build_ext
++import os
++
++name = 'concept_feasibility'
++setup(
++    name=name,
++    version='6.26.0',
++    packages=[name],
++    cmdclass={'build_ext': build_ext},
++    options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
++    ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
++                   extra_compile_args=['/O2', '/fp:strict', '/openmp'] if os.name == 'nt' else ['-O3', '-ffp-contract=off', '-fopenmp'],
++                   extra_link_args=[] if os.name == 'nt' else ['-fopenmp'])
++        for module in ['_motion', '_tread', '_risk']],
++
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++    ],
++    package_data={name: ['response61515.json', 'reverse_model617.json', 'reverse_response.json']},
++    install_requires=['setuptools'],
++    zip_safe=False,
++    maintainer='Sophia AI Formula Team',
++    maintainer_email='maintainers@example.invalid',
++    description='V6.26 tyre, response and obstacle clearance checks.',
++    license='AGPL-3.0-only',
++)
+--- /dev/null
++++ b/concept_feasibility/test/test_native_equivalence.py
+@@ -0,0 +1,102 @@
++import numpy as np
++import pytest
++
++from concept_feasibility import geometry61514, response61515
++from concept_feasibility.geometry import road_clearance
++from concept_road.onboard625 import tread_clearance
++
++
++@pytest.mark.parametrize('physical', [False, True])
++def test_native_integer_steering_search_matches_all_representatives_and_endpoints(monkeypatch, physical):
++    with response61515.motor_profile(physical):
++        check_integer_steering_search(monkeypatch)
++
++
++def check_integer_steering_search(monkeypatch):
++    module = pytest.importorskip('concept_feasibility._motion')
++    rng = np.random.default_rng(626)
++    for pace in (.2,1.,2.4,3.4,5.99):
++        speed = rng.choice(np.array([0.,.25,.55,.8,1.])*pace, 300)
++        lower = rng.uniform(-1.55,1.54,len(speed))
++        upper = rng.uniform(lower,1.55)
++        desired = rng.uniform(-6.,6.,len(speed))
++        current = rng.uniform(-2.,2.,len(speed))
++        # Exercise degenerate intervals, zero yaw, and equal-response ties.
++        lower[::6] = upper[::6]
++        desired[::7] = 0.
++        monkeypatch.setattr(response61515, '_motion', None)
++        expected = response61515.inverse_yaw(desired,speed,lower,upper,current)
++        monkeypatch.setattr(response61515, '_motion', module)
++        np.testing.assert_array_equal(response61515.inverse_yaw(desired,speed,lower,upper,current),expected)
++
++
++def test_field_motor_exact_straight_and_zero_drive_release():
++    speed = np.array([-.2, .2, -.2, .2, 0., 0.])
++    steer = np.array([0., 0., 1e-9, -1e-9, .55, -.17])
++    right, left = response61515.can_command(speed, steer, physical=True)
++    for wheel in (right, left):
++        np.testing.assert_array_equal(wheel, [-49, 49, -49, 49, 0, 0])
++    legacy = response61515.can_command(speed, steer)
++    assert legacy[0][0] != right[0] and legacy[1][0] != left[0]
++
++
++def test_field_native_rollouts_match_reference_at_the_steering_discontinuity(monkeypatch):
++    module = pytest.importorskip('concept_feasibility._motion')
++    speed = np.array([1., .8, .2, .2, .2, .2])
++    steer = np.array([0., 1e-9, -1e-9, 1.1e-9, -1.1e-9, .17])
++    stopped = np.zeros_like(speed)
++    model = response61515.MODEL
++
++    with response61515.motor_profile(True):
++        monkeypatch.setattr(response61515, '_motion', None)
++        expected = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
++        monkeypatch.setattr(response61515, '_motion', module)
++        calculated = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
++        np.testing.assert_allclose(calculated, expected, rtol=0, atol=1e-12)
++        controls = np.stack((speed,steer), axis=-1)[None]
++        state = module.integrate(np.zeros((len(speed),8)), controls, .05,
++                                 np.array(model['speed']), response61515.forward_yaw_model(),
++                                 model['stop']['delay'], model['stop']['deceleration'],True)
++        np.testing.assert_allclose(state[1,:,3:5].T, expected[:2], rtol=0, atol=1e-12)
++        np.testing.assert_array_equal(
++            response61515.inverse_yaw(stopped,speed,0.,0.), stopped)
++    assert not response61515.physical_motor_enabled()
++
++
++def test_compiled_tyre_contacts_include_exact_road_end_and_inner_paint():
++    pytest.importorskip('concept_feasibility._tread')
++    station = np.linspace(-1.,13.,71)
++    road = np.c_[station, -1.+.045*station**2, 2.+.015*station, np.full(71,.03), np.full(71,.05)]
++    z=np.linspace(-1.1,13.1,501)
++    x=np.interp(z,station,road[:,1])+.3-.055
++    yaw=np.linspace(-.1,.1,len(z))
++    for got,ref in zip(road_clearance(road,z,x,yaw),tread_clearance(road,z,x,yaw)):
++        np.testing.assert_allclose(got,ref,rtol=0,atol=1e-12)
++
++
++def test_native_mixed_obstacle_search_includes_masked_times_and_singular_covariance(monkeypatch):
++    pytest.importorskip('concept_feasibility._risk')
++    rng = np.random.default_rng(626)
++    n,ticks=16,14
++    states=[]
++    for i in range(ticks):
++        z=rng.uniform(0,5,n)+i*.1
++        x=rng.uniform(-3,3,n)
++        h=rng.uniform(-.4, .4,n)
++        states.append((z,x,h,i*.05,np.full(n,i*.1),np.full(n,i*.02)))
++    active = rng.uniform(size=(ticks,n))>.3
++    objects=np.zeros((3,77))
++    for i,row in enumerate(objects):
++        row[:5]=[1.6+i,.15-i*.3,-.32,.6,.14]
++        row[25]=.1+i*.3
++        row[26:30]=row[46:50]=row[:4]
++        row[30:46]=np.diag([.0,.015,.03,.10]).ravel()
++        row[50:66]=np.diag([.015,.18,.05,.29]).ravel()
++        row[66:69]=[.3,.1,.04]
++        row[69:73]=[.05,.02,.02,.2]
++        row[75]=3.
++    fast=geometry61514.path_obstacle_clearance(objects,states,active)
++    monkeypatch.setattr(geometry61514,'compiled_path_clearance',None)
++    expected=geometry61514.path_obstacle_clearance(objects,states,active)
++    np.testing.assert_allclose(fast[0],expected[0],rtol=0,atol=1e-12)
++    np.testing.assert_array_equal(fast[1],expected[1])

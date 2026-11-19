@@ -1,0 +1,57 @@
+2026-11-19T16:23:23+09:00
+    PID STAT COMMAND
+  72270 SLsl+ /home/control/aiformula_runtime/2026-11-19-yolop-selection/foxy-env/bin/python3 /home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/run_vehicle.py --profile A4_lite --live
+#!/usr/bin/env bash
+set -e
+
+usage() {
+    printf '%s\n' 'Usage: semantic [6.0|5.5] [ROS launch arguments]' \
+        'Run without arguments to choose the minimum turn radius interactively.'
+}
+
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    6.0|inner) lane=inner; shift ;;
+    5.5|outer) lane=outer; shift ;;
+    '')
+        if [[ ! -t 0 ]]; then usage >&2; exit 2; fi
+        printf '%s\n' 'Semantic MapAssist 0.4.5' '1. 6.0 m' '2. 5.5 m' 'q. 退出'
+        read -r -p '选择: ' choice || exit 0
+        case "$choice" in
+            1|6.0|inner) lane=inner ;;
+            2|5.5|outer) lane=outer ;;
+            q|Q) exit 0 ;;
+            *) usage >&2; exit 2 ;;
+        esac
+        ;;
+    *) usage >&2; exit 2 ;;
+esac
+
+workspace="$HOME/semantic_045_ws"
+source "$workspace/activate_semantic.bash"
+exec ros2 launch "$workspace/commissioning/semantic_045_commissioning.launch.py" "lane:=$lane" "$@"
+#!/usr/bin/env bash
+set -e
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+exec ros2 run obsticle_avoidence oa_2 "$@"
+#!/usr/bin/env bash
+set -e
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+exec ros2 run trajectory_follower lya_follower_connected_omegat_global "$@"
+#!/usr/bin/python3
+# EASY-INSTALL-ENTRY-SCRIPT: 'obsticle-avoidence==0.0.0','console_scripts','oa_2'
+__requires__ = 'obsticle-avoidence==0.0.0'
+import re
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
+    sys.exit(
+        load_entry_point('obsticle-avoidence==0.0.0', 'console_scripts', 'oa_2')()
+    )
+/home/workspace/install/obsticle_avoidence/lib/obsticle_avoidence/oa_2
+/home/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2.py
+/home/workspace/src/aiformula/perception/obsticle_avoidence/b_spline_oa_2.py

@@ -1,0 +1,31 @@
+2026-11-19T16:40:58+09:00 Allnodes updated through its installed symlink
+Backup directory /home/control/aiformula_runtime/allnodes-lane0927oa-20261119.fcSShh
+c6cc358af1812abdb5f6abe133f850647e0a10de172b933766a00ad67ea9ed56  /home/control/aiformula_runtime/allnodes-lane0927oa-20261119.fcSShh/allnodes.launch.py.before
+5c54613a75f8b90a9f49224ff24df49cc00d47c3c4df1c8814afbf7ed32f1530  /home/workspace/install/launchers/share/launchers/launch/allnodes.launch.py
+--- a/workspace/src/aiformula/launchers/launch/allnodes.launch.py
++++ b/workspace/src/aiformula/launchers/launch/allnodes.launch.py
+@@ -266,6 +266,7 @@
+ 
+ 
+ def generate_launch_description():
++    _, topic_names = get_frame_ids_and_topic_names()
+     launchers_dir = get_package_share_directory("launchers")
+     vehicle_dir = get_package_share_directory("vehicle")
+     motor_controller_dir = get_package_share_directory("motor_controller")
+@@ -486,8 +487,15 @@
+             OpaqueFunction(function=create_lane_line_publisher_node),
+             Node(
+                 package="lane_points",
+-                executable="lane_0215",
++                executable="lane_0927oa",
+                 output="screen",
++                remappings=[
++                    (f"lane_line_{side}", topic_names["perception"]["lane_lines"][side])
++                    for side in ("left", "right", "center")
++                ] + [
++                    (f"/original_processed_point_{label}", f"/processed_point_{label}")
++                    for label in "abc"
++                ] + [("/lane_stop_flag", "/point_flag")],
+             ),
+             Node(
+                 package="kalman_filter",

@@ -1,0 +1,109 @@
+{
+  "category": "concept",
+  "session": "concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa",
+  "vehicle_directory": "/home/control/rosbags/concept/concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa",
+  "directory": "bag/concept/concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa",
+  "start_jst": "2026-11-19T14:46:14.461574949+09:00",
+  "end_jst": "2026-11-19T14:46:34.641444725+09:00",
+  "messages": 12090,
+  "topic_count": 11,
+  "classification": "Concept 面板专用录包目录和场次 ID。录到 170 条决策、164 条自动指令。",
+  "quick_check": "ok",
+  "files": [
+    {
+      "file": "concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa_0.db3",
+      "bytes": 21909504,
+      "sha256": "469946c8385c6311172ec0ee88a7be4aa64dc3024a376c32c2b5c2a11f6bc60d"
+    },
+    {
+      "file": "concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa_0.db3-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "file": "concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa_0.db3-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "metadata.yaml",
+      "bytes": 3994,
+      "sha256": "14f8eebb2d1b2de1c9d15b01aca814add607ca6fb8f9fcf0cf88e60e3e75e0d2"
+    }
+  ],
+  "topics": [
+    {
+      "name": "/aiformula_control/joy_node/joy_l2_throttle",
+      "type": "sensor_msgs/msg/Joy",
+      "messages": 382
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/imu",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 391
+    },
+    {
+      "name": "/aiformula_sensing/vehicle_info",
+      "type": "can_msgs/msg/Frame",
+      "messages": 7461
+    },
+    {
+      "name": "/concept/auto_cmd",
+      "type": "geometry_msgs/msg/TwistStamped",
+      "messages": 164
+    },
+    {
+      "name": "/concept/decision",
+      "type": "std_msgs/msg/String",
+      "messages": 170
+    },
+    {
+      "name": "/concept/gate/estop",
+      "type": "std_msgs/msg/Bool",
+      "messages": 0
+    },
+    {
+      "name": "/concept/gate/status",
+      "type": "std_msgs/msg/String",
+      "messages": 195
+    },
+    {
+      "name": "/concept/internal/motor_can",
+      "type": "can_msgs/msg/Frame",
+      "messages": 1815
+    },
+    {
+      "name": "/concept/internal/motor_cmd",
+      "type": "geometry_msgs/msg/Twist",
+      "messages": 930
+    },
+    {
+      "name": "/concept/perception/overlay/compressed",
+      "type": "sensor_msgs/msg/CompressedImage",
+      "messages": 189
+    },
+    {
+      "name": "/concept/vehicle_state",
+      "type": "std_msgs/msg/String",
+      "messages": 393
+    }
+  ],
+  "observations": {
+    "gate": {
+      "mode": {
+        "paused": 177,
+        "auto": 18
+      },
+      "reason": {
+        "auto_timeout": 157,
+        "output_enabled": 20,
+        "waiting_new_auto": 14,
+        "auto_command_received": 4
+      }
+    }
+  },
+  "asset": "bag-concept-concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa.tar.gz",
+  "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/bag-concept-concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa.tar.gz",
+  "archive_bytes": 6969656,
+  "archive_sha256": "0e96a7eb46d2ee83f3fc917681915af6599eabf41cf2ac11e59c4a8c16645cb1"
+}

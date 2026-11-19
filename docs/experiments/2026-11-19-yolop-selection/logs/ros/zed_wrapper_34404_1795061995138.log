@@ -1,0 +1,147 @@
+[INFO] [1795061995.163711501] [aiformula_sensing.zed_node]: ********************************
+[INFO] [1795061995.165136760] [aiformula_sensing.zed_node]:       ZED Camera Component 
+[INFO] [1795061995.165622664] [aiformula_sensing.zed_node]: ********************************
+[INFO] [1795061995.166008398] [aiformula_sensing.zed_node]:  * namespace: /aiformula_sensing
+[INFO] [1795061995.166344782] [aiformula_sensing.zed_node]:  * node name: zed_node
+[INFO] [1795061995.166661293] [aiformula_sensing.zed_node]: ********************************
+[INFO] [1795061995.217135440] [aiformula_sensing.zed_node]: *** DEBUG parameters ***
+[INFO] [1795061995.217307201] [aiformula_sensing.zed_node]:  * SDK Verbose: 0
+[INFO] [1795061995.217353542] [aiformula_sensing.zed_node]:  * Debug Common: FALSE
+[INFO] [1795061995.217373544] [aiformula_sensing.zed_node]:  * Debug Simulation: FALSE
+[INFO] [1795061995.217392970] [aiformula_sensing.zed_node]:  * Debug Video/Depth: FALSE
+[INFO] [1795061995.217408555] [aiformula_sensing.zed_node]:  * Debug Control settings: FALSE
+[INFO] [1795061995.217422092] [aiformula_sensing.zed_node]:  * Debug Point Cloud: FALSE
+[INFO] [1795061995.217434670] [aiformula_sensing.zed_node]:  * Debug GNSS: FALSE
+[INFO] [1795061995.217450479] [aiformula_sensing.zed_node]:  * Debug Positional Tracking: FALSE
+[INFO] [1795061995.217463952] [aiformula_sensing.zed_node]:  * Debug sensors: FALSE
+[INFO] [1795061995.217476050] [aiformula_sensing.zed_node]:  * Debug Mapping: FALSE
+[INFO] [1795061995.217488371] [aiformula_sensing.zed_node]:  * Debug Object Detection: FALSE
+[INFO] [1795061995.217503924] [aiformula_sensing.zed_node]:  * Debug Body Tracking: FALSE
+[INFO] [1795061995.217516694] [aiformula_sensing.zed_node]:  * Debug Streaming: FALSE
+[INFO] [1795061995.217529079] [aiformula_sensing.zed_node]:  * Debug ROI: FALSE
+[INFO] [1795061995.217540760] [aiformula_sensing.zed_node]:  * Debug Advanced: FALSE
+[INFO] [1795061995.217581116] [aiformula_sensing.zed_node]: *** GENERAL parameters ***
+[INFO] [1795061995.217641666] [aiformula_sensing.zed_node]:  * Camera model: zedx - ZED X
+[INFO] [1795061995.217670501] [aiformula_sensing.zed_node]:  * Camera name: zed
+[INFO] [1795061995.217691911] [aiformula_sensing.zed_node]:  * Camera SN: 0
+[INFO] [1795061995.217709736] [aiformula_sensing.zed_node]:  * Camera timeout [sec]: 5
+[INFO] [1795061995.217725578] [aiformula_sensing.zed_node]:  * Camera reconnection temptatives: 5
+[INFO] [1795061995.217745420] [aiformula_sensing.zed_node]:  * Camera framerate: 15
+[INFO] [1795061995.217760781] [aiformula_sensing.zed_node]:  * GPU ID: -1
+[INFO] [1795061995.217788560] [aiformula_sensing.zed_node]:  * Camera resolution: HD1080
+[INFO] [1795061995.217809554] [aiformula_sensing.zed_node]:  * Publishing resolution: CUSTOM
+[INFO] [1795061995.217857143] [aiformula_sensing.zed_node]:  * Publishing downscale factor: 3
+[INFO] [1795061995.217877241] [aiformula_sensing.zed_node]:  * OpenCV custom calibration: 
+[INFO] [1795061995.217893882] [aiformula_sensing.zed_node]:  * Camera self calibration: TRUE
+[INFO] [1795061995.217910300] [aiformula_sensing.zed_node]:  * Camera flip: FALSE
+[INFO] [1795061995.217938527] [aiformula_sensing.zed_node]:  * [DYN] Publish framerate [Hz]:  15
+[INFO] [1795061995.217953504] [aiformula_sensing.zed_node]: *** VIDEO parameters ***
+[INFO] [1795061995.217970786] [aiformula_sensing.zed_node]:  * [DYN] Saturation: 4
+[INFO] [1795061995.217986564] [aiformula_sensing.zed_node]:  * [DYN] Sharpness: 4
+[INFO] [1795061995.218002117] [aiformula_sensing.zed_node]:  * [DYN] Gamma: 8
+[INFO] [1795061995.218021287] [aiformula_sensing.zed_node]:  * [DYN] Auto Exposure/Gain: TRUE
+[INFO] [1795061995.218037352] [aiformula_sensing.zed_node]:  * [DYN] Exposure: 80
+[INFO] [1795061995.218051786] [aiformula_sensing.zed_node]:  * [DYN] Gain: 80
+[INFO] [1795061995.218065931] [aiformula_sensing.zed_node]:  * [DYN] Auto White Balance: TRUE
+[INFO] [1795061995.218084877] [aiformula_sensing.zed_node]:  * [DYN] White Balance Temperature: 42
+[INFO] [1795061995.218100495] [aiformula_sensing.zed_node]:  * [DYN] ZED X Exposure time: 16000
+[INFO] [1795061995.218187607] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Exp. time range min: 28
+[INFO] [1795061995.218207481] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Exp. time range max: 30000
+[WARN] [1795061995.218220634] [aiformula_sensing.zed_node]: The values of 'video.auto_exposure_time_range_max' is clamped to max(30000,'general.grab_frame_rate'x1000): 30000
+[INFO] [1795061995.218238172] [aiformula_sensing.zed_node]:  * [DYN] ZED X Exposure comp.: 50
+[INFO] [1795061995.218254142] [aiformula_sensing.zed_node]:  * [DYN] ZED X Analog Gain: 1255
+[INFO] [1795061995.218273312] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Analog Gain range min: 1000
+[INFO] [1795061995.218292801] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Analog Gain range max: 16000
+[INFO] [1795061995.218309827] [aiformula_sensing.zed_node]:  * [DYN] ZED X Digital Gain: 1
+[INFO] [1795061995.218326245] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Digital Gain range min: 1
+[INFO] [1795061995.218342502] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Digital Gain range max: 256
+[INFO] [1795061995.218361032] [aiformula_sensing.zed_node]:  * [DYN] ZED X Auto Digital Gain range max: 50
+[INFO] [1795061995.218372681] [aiformula_sensing.zed_node]: *** DEPTH parameters ***
+[INFO] [1795061995.218397260] [aiformula_sensing.zed_node]:  * Depth mode: NONE - DEPTH DISABLED
+[INFO] [1795061995.218414349] [aiformula_sensing.zed_node]: *** SENSORS STACK parameters ***
+[INFO] [1795061995.218431695] [aiformula_sensing.zed_node]:  * Broadcast IMU TF [not for ZED]: TRUE
+[INFO] [1795061995.218450801] [aiformula_sensing.zed_node]:  * Sensors Camera Sync: FALSE
+[INFO] [1795061995.218471987] [aiformula_sensing.zed_node]:  * Sensors publishing rate: 200 Hz
+[INFO] [1795061995.218486036] [aiformula_sensing.zed_node]: *** Streaming Server parameters ***
+[INFO] [1795061995.218501206] [aiformula_sensing.zed_node]:  * Streaming Server enabled: FALSE
+[INFO] [1795061995.218516535] [aiformula_sensing.zed_node]:  * Stream codec: H264
+[INFO] [1795061995.218534777] [aiformula_sensing.zed_node]:  * Stream port:30000
+[INFO] [1795061995.218552475] [aiformula_sensing.zed_node]:  * Stream bitrate: 12500
+[INFO] [1795061995.218568444] [aiformula_sensing.zed_node]:  * Stream GOP size: -1
+[INFO] [1795061995.218583134] [aiformula_sensing.zed_node]:  * Stream Chunk size: 16084
+[INFO] [1795061995.218600960] [aiformula_sensing.zed_node]:  * Adaptive bitrate: FALSE
+[INFO] [1795061995.218617153] [aiformula_sensing.zed_node]:  * Target frame rate:0
+[INFO] [1795061995.218628642] [aiformula_sensing.zed_node]: *** Advanced parameters ***
+[INFO] [1795061995.218644740] [aiformula_sensing.zed_node]:  * Thread sched. policy: SCHED_BATCH
+[INFO] [1795061995.218714571] [aiformula_sensing.zed_node]: *** SERVICES ***
+[INFO] [1795061995.220396303] [aiformula_sensing.zed_node]:  * '/aiformula_sensing/zed_node/enable_streaming'
+[INFO] [1795061995.221762548] [aiformula_sensing.zed_node]:  * '/aiformula_sensing/zed_node/start_svo_rec'
+[INFO] [1795061995.222562531] [aiformula_sensing.zed_node]:  * '/aiformula_sensing/zed_node/stop_svo_rec'
+[INFO] [1795061995.223328109] [aiformula_sensing.zed_node]:  * '/aiformula_sensing/zed_node/set_roi'
+[INFO] [1795061995.224001743] [aiformula_sensing.zed_node]:  * '/aiformula_sensing/zed_node/reset_roi'
+[INFO] [1795061995.224029938] [aiformula_sensing.zed_node]: ***** STARTING CAMERA *****
+[INFO] [1795061995.224057429] [aiformula_sensing.zed_node]: ZED SDK Version: 4.1.4 - Build 93785_853f2635
+[INFO] [1795061995.231351197] [aiformula_sensing.zed_node]: *** CAMERA OPENING ***
+[INFO] [1795061995.231395553] [aiformula_sensing.zed_node]: Disable async recovery for GMSL2 cameras
+[INFO] [1795061999.662555316] [aiformula_sensing.zed_node]: ZED SDK running on GPU #0
+[INFO] [1795061999.662666175] [aiformula_sensing.zed_node]:  * Camera Model  -> ZED X
+[INFO] [1795061999.662685761] [aiformula_sensing.zed_node]:  * Serial Number -> 48797506
+[INFO] [1795061999.662707171] [aiformula_sensing.zed_node]:  * Focal Lenght -> 2.21487 mm
+[INFO] [1795061999.662729733] [aiformula_sensing.zed_node]:  * Input	 -> GMSL input type
+[INFO] [1795061999.662809421] [aiformula_sensing.zed_node]:  * Camera FW Version  -> 2001
+[INFO] [1795061999.662825934] [aiformula_sensing.zed_node]:  * Sensors FW Version -> 1000
+[INFO] [1795061999.662839952] [aiformula_sensing.zed_node]:  * Camera grab frame size -> 1920x1080
+[INFO] [1795061999.662850737] [aiformula_sensing.zed_node]:  * Publishing frame size  -> 640x360
+[INFO] [1795061999.662874099] [aiformula_sensing.zed_node]: *** TF FRAMES ***
+[INFO] [1795061999.662885940] [aiformula_sensing.zed_node]:  * Map			-> map
+[INFO] [1795061999.662898581] [aiformula_sensing.zed_node]:  * Odometry		-> odom
+[INFO] [1795061999.662908278] [aiformula_sensing.zed_node]:  * Base			-> 
+[INFO] [1795061999.662917079] [aiformula_sensing.zed_node]:  * Camera			-> zed_camera_center
+[INFO] [1795061999.662925272] [aiformula_sensing.zed_node]:  * Left			-> zed_left_camera_frame
+[INFO] [1795061999.662932825] [aiformula_sensing.zed_node]:  * Left Optical		-> zed_left_camera_optical_frame
+[INFO] [1795061999.662960059] [aiformula_sensing.zed_node]:  * RGB			-> zed_left_camera_frame
+[INFO] [1795061999.662979069] [aiformula_sensing.zed_node]:  * RGB Optical		-> zed_left_camera_optical_frame
+[INFO] [1795061999.662988286] [aiformula_sensing.zed_node]:  * Right			-> zed_right_camera_frame
+[INFO] [1795061999.662996543] [aiformula_sensing.zed_node]:  * Right Optical		-> zed_right_camera_optical_frame
+[INFO] [1795061999.663004608] [aiformula_sensing.zed_node]:  * IMU			-> zed_imu_link
+[INFO] [1795061999.663049540] [aiformula_sensing.zed_node]: *** PUBLISHED TOPICS ***
+[INFO] [1795061999.668289250] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb/image_rect_color
+[INFO] [1795061999.668339911] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb/camera_info
+[INFO] [1795061999.670847643] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_gray/image_rect_gray
+[INFO] [1795061999.670884255] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_gray/camera_info
+[INFO] [1795061999.672192766] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_raw/image_raw_color
+[INFO] [1795061999.672232866] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_raw/camera_info
+[INFO] [1795061999.673514719] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_raw_gray/image_raw_gray
+[INFO] [1795061999.673552323] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/rgb_raw_gray/camera_info
+[INFO] [1795061999.682331577] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left/image_rect_color
+[INFO] [1795061999.682407041] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left/camera_info
+[INFO] [1795061999.684802122] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_gray/image_rect_gray
+[INFO] [1795061999.684861904] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_gray/camera_info
+[INFO] [1795061999.686507760] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_raw/image_raw_color
+[INFO] [1795061999.686541299] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_raw/camera_info
+[INFO] [1795061999.688252634] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_raw_gray/image_raw_gray
+[INFO] [1795061999.688293630] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_raw_gray/camera_info
+[INFO] [1795061999.690035591] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right/image_rect_color
+[INFO] [1795061999.690068106] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right/camera_info
+[INFO] [1795061999.692063405] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_gray/image_rect_gray
+[INFO] [1795061999.692144789] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_gray/camera_info
+[INFO] [1795061999.693953029] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_raw/image_raw_color
+[INFO] [1795061999.693994441] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_raw/camera_info
+[INFO] [1795061999.695997484] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_raw_gray/image_raw_gray
+[INFO] [1795061999.696033775] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/right_raw_gray/camera_info
+[INFO] [1795061999.697029424] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/stereo/image_rect_color
+[INFO] [1795061999.698039282] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/stereo_raw/image_raw_color
+[INFO] [1795061999.699372660] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/imu
+[INFO] [1795061999.700360276] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/imu/data_raw
+[INFO] [1795061999.701518597] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/temperature/imu
+[INFO] [1795061999.702795521] [aiformula_sensing.zed_node]: Advertised on topic: /aiformula_sensing/zed_node/left_cam_imu_transform
+[INFO] [1795061999.702852391] [aiformula_sensing.zed_node]: Camera-IMU Translation: 
+ 0 -0.035649 -0.000147
+[INFO] [1795061999.702925742] [aiformula_sensing.zed_node]: Camera-IMU Rotation:
+FFFFE7C96010
+0.999940 -0.010457 -0.003251
+0.010465 0.999943 0.002221
+0.003227 -0.002254 0.999992
+
+[INFO] [1795061999.702965970] [aiformula_sensing.zed_node]: *** Subscribers ***
+[INFO] [1795062016.065637091] [rclcpp]: signal_handler(signal_value=2)

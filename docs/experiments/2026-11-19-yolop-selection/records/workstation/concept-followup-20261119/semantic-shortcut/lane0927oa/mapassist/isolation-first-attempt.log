@@ -1,0 +1,21 @@
+2026-11-19T16:43:23+09:00 Running actual lane and commissioning actions in localhost ROS domain 198
+[INFO] [launch]: All log files can be found below /home/control/aiformula_runtime/mapassist-lane0927oa-20261119.48jV4I/ros-log/2026-11-19-16-43-24-941979-control-desktop-87186
+[INFO] [launch]: Default logging verbosity is set to INFO
+Formal launch arguments verified: {'motor_cmd_topic': '/semantic_drive/map_assist_045/diagnostic_cmd_vel', 'launch_yolop_a3': 'false', 'lane_point_topic_prefix': '/original_processed_point_'} {'lane': 'outer', 'lane_point_topic_prefix': '/original_processed_point_', 'vehicle_output': 'true', 'start_lya': 'false'}
+[INFO] [lane_0927oa-1]: process started with pid [87232]
+[INFO] [python3-2]: process started with pid [87234]
+[INFO] [map_assist-3]: process started with pid [87239]
+[INFO] [python3-4]: process started with pid [87244]
+[INFO] [python3-5]: process started with pid [87250]
+[INFO] [motor_gate_session-6]: process started with pid [87254]
+[python3-2] [WARN] [1795074209.436930718] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074210.420308547] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074211.420243200] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074212.420249595] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074213.420268051] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074214.420286344] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[map_assist-3] [INFO] [1795074214.971767679] [map_assist]: Map assist: first lap learns in RAM; points use metres, x forward/y left. Initial avoidance state: False; unknown waits for a real False flag. Official map: /home/control/semantic_045_ws/install/semantic_local_planner_ros/share/semantic_local_planner_ros/config/aiformula_topomap.osm
+[python3-2] [WARN] [1795074215.420268026] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074216.420318345] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+[python3-2] [WARN] [1795074217.420288563] [a3_pixel_stop_position]: No fresh pixel-stop output: {"threshold": 600, "latest_pixels": null, "age_ms": null, "counts": {}, "detections_publishers": 0, "flag_publishers": 1}
+2026-11-19T16:43:37+09:00 Isolated launch stopped

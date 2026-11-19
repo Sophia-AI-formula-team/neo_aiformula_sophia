@@ -1,0 +1,494 @@
+{
+  "bag": "concept_20261119_155042_08cc6de57f204cddaa7b09c365577ebb",
+  "gate": {
+    "('paused', 'manual_released', True, True, False, False)": 9,
+    "('paused', 'operator_pause', True, True, False, False)": 2,
+    "('auto', 'waiting_new_auto', True, False, False, False)": 3,
+    "('auto', 'auto_command_received', True, False, False, False)": 80,
+    "('auto', 'waiting_fresh_auto', True, False, False, False)": 12,
+    "('paused', 'auto_timeout', True, True, False, False)": 42
+  },
+  "gate_transitions": [
+    [
+      "2026-11-19T15:50:43.188+09:00",
+      [
+        "paused",
+        "manual_released",
+        true,
+        true,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:44.087+09:00",
+      [
+        "paused",
+        "operator_pause",
+        true,
+        true,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:44.287+09:00",
+      [
+        "auto",
+        "waiting_new_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:44.586+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:46.387+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:46.488+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:46.590+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:46.686+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:49.186+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:49.287+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:49.387+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:49.588+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:52.387+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:52.588+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:52.687+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:52.790+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:53.187+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:53.316+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:53.487+09:00",
+      [
+        "auto",
+        "waiting_fresh_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T15:50:53.787+09:00",
+      [
+        "paused",
+        "auto_timeout",
+        true,
+        true,
+        false,
+        false
+      ]
+    ]
+  ],
+  "range": [
+    "2026-11-19T15:50:43.118+09:00",
+    "2026-11-19T15:50:57.960+09:00"
+  ],
+  "decisions": {
+    "('invalid', 'image gap over 0.5 s; pause the gate and restart the driver', 'honda-v1.4.0-ground')": 10,
+    "('invalid', 'no recent wheel and gyro measurement at image capture', 'honda-v1.4.0-ground')": 1,
+    "('ok', 'feasible', 'honda-v1.4.0-ground')": 38,
+    "('ok', 'no_feasible_trajectory', 'honda-v1.4.0-ground')": 2,
+    "('shadow', 'reverse wheel-feedback sign unverified', 'honda-v1.4.0-ground')": 13
+  },
+  "auto_cmd": 40,
+  "positive": 34,
+  "nonzero": 36,
+  "auto_speed_mps": {
+    "min": 0.0,
+    "median": 1.0,
+    "p95": 1.0,
+    "max": 1.0
+  },
+  "gate_limits": {
+    "4.0": 148
+  },
+  "auto_capture_to_bag_ms": {
+    "min": 222.929335,
+    "median": 263.483162,
+    "p95": 394.689881,
+    "max": 417.629374
+  },
+  "auto_gap_ms": {
+    "min": 162.70502,
+    "median": 219.963352,
+    "p95": 368.005256,
+    "max": 371.997033
+  },
+  "feedback": {
+    "(True, 'ok')": 278
+  },
+  "wheels": {
+    "(0, 0)": 114,
+    "(0, 30)": 1,
+    "(32, 45)": 1,
+    "(39, 58)": 1,
+    "(44, 49)": 1,
+    "(54, 53)": 1,
+    "(54, 62)": 1,
+    "(59, 82)": 1,
+    "(64, 73)": 1,
+    "(72, 76)": 1,
+    "(75, 83)": 1,
+    "(75, 88)": 1,
+    "(78, 91)": 1,
+    "(82, 94)": 1,
+    "(83, 96)": 1,
+    "(84, 98)": 1,
+    "(84, 99)": 1,
+    "(88, 101)": 2,
+    "(90, 104)": 1,
+    "(88, 102)": 1,
+    "(86, 101)": 1,
+    "(75, 93)": 1,
+    "(67, 84)": 1,
+    "(62, 71)": 1,
+    "(55, 64)": 1,
+    "(41, 57)": 1,
+    "(34, 44)": 1,
+    "(27, 36)": 1,
+    "(28, 35)": 1,
+    "(28, 32)": 1,
+    "(33, 40)": 1,
+    "(39, 61)": 1,
+    "(44, 54)": 1,
+    "(48, 68)": 1,
+    "(52, 57)": 1,
+    "(54, 77)": 1,
+    "(57, 69)": 1,
+    "(61, 75)": 1,
+    "(61, 76)": 1,
+    "(57, 74)": 1,
+    "(65, 78)": 1,
+    "(69, 81)": 1,
+    "(71, 85)": 1,
+    "(74, 90)": 1,
+    "(80, 94)": 2,
+    "(80, 97)": 1,
+    "(82, 100)": 2,
+    "(83, 102)": 1,
+    "(84, 103)": 1,
+    "(86, 104)": 2,
+    "(87, 105)": 1,
+    "(88, 107)": 2,
+    "(87, 107)": 5,
+    "(88, 106)": 2,
+    "(86, 106)": 4,
+    "(86, 107)": 4,
+    "(85, 105)": 4,
+    "(84, 104)": 1,
+    "(85, 104)": 3,
+    "(85, 107)": 2,
+    "(84, 105)": 1,
+    "(83, 103)": 1,
+    "(79, 97)": 3,
+    "(78, 96)": 1,
+    "(76, 93)": 1,
+    "(76, 90)": 1,
+    "(79, 86)": 2,
+    "(81, 86)": 1,
+    "(82, 86)": 1,
+    "(82, 95)": 1,
+    "(86, 96)": 1,
+    "(95, 97)": 1,
+    "(95, 100)": 1,
+    "(96, 106)": 1,
+    "(94, 104)": 1,
+    "(95, 105)": 1,
+    "(92, 104)": 1,
+    "(92, 105)": 1,
+    "(91, 102)": 1,
+    "(87, 99)": 1,
+    "(82, 93)": 1,
+    "(80, 92)": 1,
+    "(79, 91)": 1,
+    "(74, 86)": 1,
+    "(73, 84)": 1,
+    "(72, 85)": 1,
+    "(72, 88)": 1,
+    "(74, 88)": 1,
+    "(75, 90)": 1,
+    "(76, 92)": 3,
+    "(77, 94)": 2,
+    "(77, 96)": 1,
+    "(78, 95)": 1,
+    "(78, 97)": 2,
+    "(79, 98)": 5,
+    "(79, 99)": 3,
+    "(78, 99)": 3,
+    "(79, 100)": 2,
+    "(80, 99)": 2,
+    "(82, 101)": 2,
+    "(85, 106)": 1,
+    "(87, 106)": 4,
+    "(88, 108)": 3,
+    "(89, 108)": 1,
+    "(84, 101)": 1,
+    "(81, 98)": 1,
+    "(79, 94)": 1,
+    "(76, 88)": 1,
+    "(80, 84)": 1,
+    "(81, 84)": 1,
+    "(79, 84)": 1,
+    "(81, 78)": 1,
+    "(78, 73)": 1,
+    "(71, 68)": 1,
+    "(64, 63)": 1,
+    "(55, 57)": 1,
+    "(44, 43)": 1,
+    "(36, 34)": 1,
+    "(28, 31)": 1,
+    "(25, 23)": 1
+  },
+  "joy": 273,
+  "joy_pressed": {
+    "[]": 273
+  },
+  "joy_age_ms": {
+    "min": 0.817049,
+    "median": 1.159287,
+    "p95": 6.411886,
+    "max": 46.438226
+  },
+  "motor_cmd": 714,
+  "motor_nonzero": 351,
+  "motor_can": {
+    "('0x210', '0000000000000000')": 715,
+    "('0x210', 'e20000001f000000')": 409,
+    "('0x210', '720000008effffff')": 22,
+    "('0x210', '6c00000094ffffff')": 20,
+    "('0x210', 'df00000022000000')": 21,
+    "('0x210', 'e3000000e2ffffff')": 114,
+    "('0x210', 'c3000000dbffffff')": 41,
+    "('0x210', '5b000000a4000000')": 22,
+    "('0x210', 'd700000029000000')": 22,
+    "('0x210', '3d0000009a000000')": 22
+  },
+  "motor_command_pulses": [
+    {
+      "start": "2026-11-19T15:50:44.546+09:00",
+      "samples": 63,
+      "until_zero_ms": 1320.504332
+    },
+    {
+      "start": "2026-11-19T15:50:45.888+09:00",
+      "samples": 21,
+      "until_zero_ms": 438.47334
+    },
+    {
+      "start": "2026-11-19T15:50:46.447+09:00",
+      "samples": 6,
+      "until_zero_ms": 120.946053
+    },
+    {
+      "start": "2026-11-19T15:50:46.686+09:00",
+      "samples": 44,
+      "until_zero_ms": 900.645117
+    },
+    {
+      "start": "2026-11-19T15:50:47.606+09:00",
+      "samples": 75,
+      "until_zero_ms": 1560.152681
+    },
+    {
+      "start": "2026-11-19T15:50:49.286+09:00",
+      "samples": 4,
+      "until_zero_ms": 80.525988
+    },
+    {
+      "start": "2026-11-19T15:50:49.506+09:00",
+      "samples": 138,
+      "until_zero_ms": 2860.507094
+    }
+  ],
+  "before_timeout": [
+    {
+      "last_active": "2026-11-19T15:50:53.387+09:00",
+      "first_paused": "2026-11-19T15:50:53.787+09:00",
+      "cmd_arrival": "2026-11-19T15:50:53.212+09:00",
+      "last_capture": "2026-11-19T15:50:52.915+09:00",
+      "last_capture_expires": "2026-11-19T15:50:53.415+09:00",
+      "following_cmd_arrival": null
+    }
+  ],
+  "successful_decision_ms": {
+    "driver_processing": {
+      "min": 88.80736300125136,
+      "median": 114.35922600139747,
+      "p95": 247.03408300047158,
+      "max": 264.8757660026604
+    },
+    "capture_to_driver_callback": {
+      "min": 132.2326749978166,
+      "median": 149.52720400151014,
+      "p95": 160.41408399725316,
+      "max": 162.3425239999051
+    }
+  },
+  "uncovered_capture_expiry_intervals": 10,
+  "final_can_topic_recorded": false,
+  "planner_reasons": {
+    "image gap over 0.5 s; pause the gate and restart the driver": 10,
+    "no recent wheel and gyro measurement at image capture": 1,
+    "feasible": 38,
+    "no_feasible_trajectory": 2,
+    "checked_slow_reverse": 13
+  },
+  "positive_by_gate_mode": {
+    "auto": 67
+  },
+  "hardware_working_samples": {
+    "valid": 278,
+    "nonzero": 164
+  }
+}

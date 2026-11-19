@@ -1,0 +1,144 @@
+WARN `--no-project` was provided, but no project was found
+WARN Failed to find base Python executable: failed to read symbolic link `/usr/bin/python3.14`: Invalid argument (os error 22)
+Downloading cython (3.3MiB)
+ Downloaded cython
+Installed 2 packages in 149ms
+running build_ext
+warning: concept_feasibility/_motion.pyx:6:54: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:10:109: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:44:94: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:77:92: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+Compiling concept_feasibility/_motion.pyx because it changed.
+[1/1] Cythonizing concept_feasibility/_motion.pyx
+building 'concept_feasibility._motion' extension
+gcc -fno-strict-overflow -Wsign-compare -DDYNAMIC_ANNOTATIONS_ENABLED=1 -DNDEBUG -fexceptions -fcf-protection -fexceptions -fcf-protection -fexceptions -fcf-protection -O3 -fPIC -I/home/nanato/.cache/uv/builds-v0/.tmp8iCof0/include -I/usr/include/python3.14 -c build/temp.linux-x86_64-cpython-314/concept_feasibility/_motion.c -o build/temp.linux-x86_64-cpython-314/build/temp.linux-x86_64-cpython-314/concept_feasibility/_motion.o -O3 -ffp-contract=off -fopenmp
+gcc -shared build/temp.linux-x86_64-cpython-314/build/temp.linux-x86_64-cpython-314/concept_feasibility/_motion.o -L/usr/lib64 -o /tmp/concept-control-1635.ObRGkeWr/concept_feasibility/concept_feasibility/_motion.cpython-314-x86_64-linux-gnu.so -fopenmp
+warning: concept_feasibility/_tread.pyx:29:57: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+Compiling concept_feasibility/_tread.pyx because it changed.
+[1/1] Cythonizing concept_feasibility/_tread.pyx
+building 'concept_feasibility._tread' extension
+gcc -fno-strict-overflow -Wsign-compare -DDYNAMIC_ANNOTATIONS_ENABLED=1 -DNDEBUG -fexceptions -fcf-protection -fexceptions -fcf-protection -fexceptions -fcf-protection -O3 -fPIC -I/home/nanato/.cache/uv/builds-v0/.tmp8iCof0/include -I/usr/include/python3.14 -c build/temp.linux-x86_64-cpython-314/concept_feasibility/_tread.c -o build/temp.linux-x86_64-cpython-314/build/temp.linux-x86_64-cpython-314/concept_feasibility/_tread.o -O3 -ffp-contract=off -fopenmp
+gcc -shared build/temp.linux-x86_64-cpython-314/build/temp.linux-x86_64-cpython-314/concept_feasibility/_tread.o -L/usr/lib64 -o /tmp/concept-control-1635.ObRGkeWr/concept_feasibility/concept_feasibility/_tread.cpython-314-x86_64-linux-gnu.so -fopenmp
+warning: concept_feasibility/_risk.pyx:10:56: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:25:70: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:45:91: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:73:103: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:106:112: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:141:120: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+         const double[:,:] heading,const double[:,:] travel,const double[:,:] turn,const unsigned char[:,::1] enabled,
+         double limit,double front,double rear,double width,int workers):
+    cdef Py_ssize_t nt=z.shape[0],n=z.shape[1],m=models.shape[1],i
+    if models.shape[0]!=nt or models.shape[2]!=12 or centers.shape[0]!=nt or centers.shape[1]*2!=m or centers.shape[2]!=3 or workers<1:
+        raise ValueError('invalid shared forecast geometry')
+    for item in (x,heading,travel,turn,enabled):
+                 ^
+------------------------------------------------------------
+concept_feasibility/_risk.pyx:176:17: C struct/union member cannot be a memory view
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+         const double[:,:] heading,const double[:,:] travel,const double[:,:] turn,const unsigned char[:,::1] enabled,
+         double limit,double front,double rear,double width,int workers):
+    cdef Py_ssize_t nt=z.shape[0],n=z.shape[1],m=models.shape[1],i
+    if models.shape[0]!=nt or models.shape[2]!=12 or centers.shape[0]!=nt or centers.shape[1]*2!=m or centers.shape[2]!=3 or workers<1:
+        raise ValueError('invalid shared forecast geometry')
+    for item in (x,heading,travel,turn,enabled):
+                 ^
+------------------------------------------------------------
+concept_feasibility/_risk.pyx:176:17: C struct/union member cannot be a memory view
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+         const double[:,:] heading,const double[:,:] travel,const double[:,:] turn,const unsigned char[:,::1] enabled,
+         double limit,double front,double rear,double width,int workers):
+    cdef Py_ssize_t nt=z.shape[0],n=z.shape[1],m=models.shape[1],i
+    if models.shape[0]!=nt or models.shape[2]!=12 or centers.shape[0]!=nt or centers.shape[1]*2!=m or centers.shape[2]!=3 or workers<1:
+        raise ValueError('invalid shared forecast geometry')
+    for item in (x,heading,travel,turn,enabled):
+                 ^
+------------------------------------------------------------
+concept_feasibility/_risk.pyx:176:17: C struct/union member cannot be a memory view
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+         const double[:,:] heading,const double[:,:] travel,const double[:,:] turn,const unsigned char[:,::1] enabled,
+         double limit,double front,double rear,double width,int workers):
+    cdef Py_ssize_t nt=z.shape[0],n=z.shape[1],m=models.shape[1],i
+    if models.shape[0]!=nt or models.shape[2]!=12 or centers.shape[0]!=nt or centers.shape[1]*2!=m or centers.shape[2]!=3 or workers<1:
+        raise ValueError('invalid shared forecast geometry')
+    for item in (x,heading,travel,turn,enabled):
+                 ^
+------------------------------------------------------------
+concept_feasibility/_risk.pyx:176:17: C struct/union member cannot be a memory view
+
+Error compiling Cython file:
+------------------------------------------------------------
+...
+         const double[:,:] heading,const double[:,:] travel,const double[:,:] turn,const unsigned char[:,::1] enabled,
+         double limit,double front,double rear,double width,int workers):
+    cdef Py_ssize_t nt=z.shape[0],n=z.shape[1],m=models.shape[1],i
+    if models.shape[0]!=nt or models.shape[2]!=12 or centers.shape[0]!=nt or centers.shape[1]*2!=m or centers.shape[2]!=3 or workers<1:
+        raise ValueError('invalid shared forecast geometry')
+    for item in (x,heading,travel,turn,enabled):
+                 ^
+------------------------------------------------------------
+concept_feasibility/_risk.pyx:176:17: C struct/union member cannot be a memory view
+Compiling concept_feasibility/_risk.pyx because it changed.
+[1/1] Cythonizing concept_feasibility/_risk.pyx
+Traceback (most recent call last):
+  File "/tmp/concept-control-1635.ObRGkeWr/concept_feasibility/setup.py", line 6, in <module>
+    setup(
+    ~~~~~^
+        name=name,
+        ^^^^^^^^^^
+    ...<19 lines>...
+        license='AGPL-3.0-only',
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/__init__.py", line 117, in setup
+    return distutils.core.setup(**attrs)  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/core.py", line 168, in setup
+    return run_commands(dist)
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/core.py", line 184, in run_commands
+    dist.run_commands()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/dist.py", line 1028, in run_commands
+    self.run_command(cmd)
+    ~~~~~~~~~~~~~~~~^^^^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/dist.py", line 1106, in run_command
+    super().run_command(command)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/dist.py", line 1047, in run_command
+    cmd_obj.run()
+    ~~~~~~~~~~~^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/command/build_ext.py", line 382, in run
+    self.build_extensions()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/command/build_ext.py", line 498, in build_extensions
+    self._build_extensions_serial()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/setuptools/_distutils/command/build_ext.py", line 524, in _build_extensions_serial
+    self.build_extension(ext)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/Cython/Distutils/build_ext.py", line 135, in build_extension
+    new_ext = cythonize(
+              ~~~~~~~~~^
+        ext,force=self.force, quiet=self.verbose == 0, **options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )[0]
+    ^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/Cython/Build/Dependencies.py", line 1154, in cythonize
+    cythonize_one(*args)
+    ~~~~~~~~~~~~~^^^^^^^
+  File "/home/nanato/.cache/uv/archive-v0/qKoErJuUfG7F5AaW/lib/python3.14/site-packages/Cython/Build/Dependencies.py", line 1265, in cythonize_one
+    raise CompileError(None, pyx_file)
+Cython.Compiler.Errors.CompileError: concept_feasibility/_risk.pyx

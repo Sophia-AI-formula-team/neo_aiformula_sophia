@@ -1,0 +1,28 @@
+restart None
+{
+  "stats": {
+    "('2634d3962dbd4fdb988b0fd74ab57d2e', 'invalid', 'image gap over 0.5 s; pause the gate and restart the driver')": 209
+  },
+  "transitions": [
+    [
+      1795070790.6658547,
+      "2634d3962dbd4fdb988b0fd74ab57d2e",
+      "invalid",
+      "image gap over 0.5 s; pause the gate and restart the driver"
+    ]
+  ],
+  "final_gate": {
+    "output_enabled": true,
+    "paused": true,
+    "manual_held": false,
+    "estop": false,
+    "mode": "paused",
+    "reason": "manual_released",
+    "t": 1795070810.688747,
+    "max_auto_speed_mps": 4.0,
+    "linear_mps": 0.0,
+    "yaw_rps": 0.0,
+    "manual_yaw_limit_rps": 1.0,
+    "auto_fresh": false
+  }
+}

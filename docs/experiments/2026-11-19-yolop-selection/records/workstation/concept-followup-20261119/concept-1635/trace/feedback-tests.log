@@ -1,0 +1,8 @@
+..........                                                               [100%]
+10 passed in 0.66 seconds
+Traceback (most recent call last):
+  File "concept_drive/tools/ros_roundtrip.py", line 196, in <module>
+    main()
+  File "concept_drive/tools/ros_roundtrip.py", line 82, in main
+    assert decisions[0]['status'] == 'ok' and decisions[0]['selected_index'] == row['selected']
+AssertionError

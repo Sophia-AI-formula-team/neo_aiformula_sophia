@@ -1,0 +1,110 @@
+1795049844.1783485 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-19-09-57-24-172114-control-desktop-9163
+1795049844.1788130 [INFO] [launch]: Default logging verbosity is set to INFO
+1795049844.3120558 [INFO] [allnodes.can_ready]: Waiting up to 120.0s for CAN interface 'can0'
+1795049844.3208194 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795049844.6540127 [INFO] [lane_line_publisher-6]: process started with pid [9185]
+1795049844.6547775 [INFO] [motor_controller-12]: process started with pid [9197]
+1795049844.6551435 [INFO] [gyro_odometry_publisher-15]: process started with pid [9203]
+1795049844.6553996 [INFO] [rear_potentiometer-16]: process started with pid [9207]
+1795049844.6565344 [INFO] [robot_state_publisher-1]: process started with pid [9175]
+1795049844.6567876 [INFO] [joint_state_publisher-2]: process started with pid [9177]
+1795049844.6569467 [INFO] [zed_wrapper-3]: process started with pid [9179]
+1795049844.6570802 [INFO] [vectornav-4]: process started with pid [9181]
+1795049844.6572089 [INFO] [vn_sensor_msgs-5]: process started with pid [9183]
+1795049844.6573510 [INFO] [lane_0215-7]: process started with pid [9187]
+1795049844.6574707 [INFO] [withoutkalman_0312-8]: process started with pid [9189]
+1795049844.6575861 [INFO] [joy_node-9]: process started with pid [9191]
+1795049844.6576991 [INFO] [l2_throttle_joy_remap.py-10]: process started with pid [9193]
+1795049844.6578104 [INFO] [teleop_node-11]: process started with pid [9195]
+1795049844.6579351 [INFO] [socket_can_receiver_node_exe-13]: process started with pid [9199]
+1795049844.6580517 [INFO] [socket_can_sender_node_exe-14]: process started with pid [9201]
+1795049844.7153788 [teleop_node-11] [0m[INFO] [1795049844.714355648] [TeleopTwistJoy]: Teleop enable button 6.[0m
+1795049844.7157500 [teleop_node-11] [0m[INFO] [1795049844.714466208] [TeleopTwistJoy]: Turbo on button 4.[0m
+1795049844.7158623 [teleop_node-11] [0m[INFO] [1795049844.714475136] [TeleopTwistJoy]: Linear axis x on 1 at scale 3.500000.[0m
+1795049844.7159390 [teleop_node-11] [0m[INFO] [1795049844.714485887] [TeleopTwistJoy]: Turbo for linear axis x is scale 3.600000.[0m
+1795049844.7160118 [teleop_node-11] [0m[INFO] [1795049844.714491199] [TeleopTwistJoy]: Angular axis yaw on 3 at scale 0.700000.[0m
+1795049844.7160797 [teleop_node-11] [0m[INFO] [1795049844.714497503] [TeleopTwistJoy]: Turbo for angular axis yaw is scale 1.000000.[0m
+1795049844.7343240 [vectornav-4] [0m[INFO] [1795049844.733478218] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY[0m
+1795049844.7636395 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795049844.7664611 [robot_state_publisher-1] Link base_link had 4 children
+1795049844.7678847 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795049844.7705805 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795049844.7716894 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795049844.7721531 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795049844.7724478 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795049844.7726998 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795049844.7729259 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795049844.7731447 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795049844.7734306 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795049844.8225334 [vectornav-4] [0m[INFO] [1795049844.821786929] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud[0m
+1795049844.8229117 [vectornav-4] [0m[INFO] [1795049844.821898352] [aiformula_sensing.vectornav]: Model: VN-200T-CR[0m
+1795049844.8230371 [vectornav-4] [0m[INFO] [1795049844.821911376] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0[0m
+1795049844.8231261 [vectornav-4] [0m[INFO] [1795049844.821919472] [aiformula_sensing.vectornav]: Hardware Version : 3[0m
+1795049844.8232205 [vectornav-4] [0m[INFO] [1795049844.821934224] [aiformula_sensing.vectornav]: Serial Number : 100095497[0m
+1795049844.8233235 [vectornav-4] [0m[INFO] [1795049844.821941584] [aiformula_sensing.vectornav]: User Tag : ""[0m
+1795049844.8815591 [vectornav-4] [0m[INFO] [1795049844.880844895] [aiformula_sensing.vectornav]: GPS Mode       : 0[0m
+1795049844.8819032 [vectornav-4] [0m[INFO] [1795049844.880954398] [aiformula_sensing.vectornav]: GPS PPS Source : 0[0m
+1795049844.9079924 [vectornav-4] [0m[INFO] [1795049844.907393806] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)[0m
+1795049844.9164317 [vectornav-4] [0m[INFO] [1795049844.912672612] [aiformula_sensing.vectornav]: Reconnect Timeout : 500[0m
+1795049856.6681726 [INFO] [rviz2-17]: process started with pid [9696]
+1795049857.8490181 [rviz2-17] [0m[INFO] [1795049857.848452735] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795049857.8497212 [rviz2-17] [0m[INFO] [1795049857.848664317] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)[0m
+1795049857.9076326 [rviz2-17] [0m[INFO] [1795049857.907113170] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795049858.2120469 [rviz2-17] [0m[INFO] [1795049858.211531034] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795049858.2563379 [rviz2-17] [0m[INFO] [1795049858.255882462] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795049858.2903526 [rviz2-17] [0m[INFO] [1795049858.289871667] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795050191.6080022 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795050197.1122262 [ERROR] [rviz2-17]: process[rviz2-17] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1132448 [ERROR] [rear_potentiometer-16]: process[rear_potentiometer-16] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1139348 [ERROR] [gyro_odometry_publisher-15]: process[gyro_odometry_publisher-15] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1145890 [ERROR] [socket_can_sender_node_exe-14]: process[socket_can_sender_node_exe-14] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1152527 [ERROR] [socket_can_receiver_node_exe-13]: process[socket_can_receiver_node_exe-13] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1158767 [ERROR] [motor_controller-12]: process[motor_controller-12] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1164873 [ERROR] [teleop_node-11]: process[teleop_node-11] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1170902 [ERROR] [l2_throttle_joy_remap.py-10]: process[l2_throttle_joy_remap.py-10] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1177011 [ERROR] [joy_node-9]: process[joy_node-9] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1183126 [ERROR] [withoutkalman_0312-8]: process[withoutkalman_0312-8] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1189229 [ERROR] [lane_0215-7]: process[lane_0215-7] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1195507 [ERROR] [lane_line_publisher-6]: process[lane_line_publisher-6] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1201546 [ERROR] [vn_sensor_msgs-5]: process[vn_sensor_msgs-5] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1207709 [ERROR] [vectornav-4]: process[vectornav-4] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1213810 [ERROR] [zed_wrapper-3]: process[zed_wrapper-3] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1220074 [ERROR] [joint_state_publisher-2]: process[joint_state_publisher-2] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1226079 [ERROR] [robot_state_publisher-1]: process[robot_state_publisher-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795050197.1231568 [INFO] [rviz2-17]: sending signal 'SIGTERM' to process[rviz2-17]
+1795050197.1285346 [INFO] [rear_potentiometer-16]: sending signal 'SIGTERM' to process[rear_potentiometer-16]
+1795050197.1312754 [INFO] [gyro_odometry_publisher-15]: sending signal 'SIGTERM' to process[gyro_odometry_publisher-15]
+1795050197.1340201 [INFO] [socket_can_sender_node_exe-14]: sending signal 'SIGTERM' to process[socket_can_sender_node_exe-14]
+1795050197.1375322 [INFO] [socket_can_receiver_node_exe-13]: sending signal 'SIGTERM' to process[socket_can_receiver_node_exe-13]
+1795050197.1404467 [ERROR] [gyro_odometry_publisher-15]: process has died [pid 9203, exit code -15, cmd '/home/workspace/install/odometry_publisher/lib/odometry_publisher/gyro_odometry_publisher --ros-args -r __node:=gyro_odometry_publisher -r __ns:=/aiformula_sensing --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/wheel.yaml --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/gyro_odometry_publisher.yaml --params-file /tmp/launch_params_4luq0z5y -r sub_imu:=/aiformula_sensing/vectornav/imu -r sub_can:=/aiformula_sensing/vehicle_info -r pub_odometry:=/aiformula_sensing/gyro_odometry_publisher/odom'].
+1795050197.1423330 [INFO] [motor_controller-12]: sending signal 'SIGTERM' to process[motor_controller-12]
+1795050197.1456442 [ERROR] [socket_can_sender_node_exe-14]: process has died [pid 9201, exit code -15, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_sender_node_exe --ros-args -r __node:=socket_can_sender -r __ns:=/aiformula_control --params-file /tmp/launch_params_57ab9_1m -r to_can_bus:=/aiformula_control/motor_controller/reference_signal'].
+1795050197.1460137 [ERROR] [rear_potentiometer-16]: process has died [pid 9207, exit code -15, cmd '/home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info'].
+1795050197.1472857 [INFO] [teleop_node-11]: sending signal 'SIGTERM' to process[teleop_node-11]
+1795050197.1495123 [ERROR] [socket_can_receiver_node_exe-13]: process has died [pid 9199, exit code -15, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_8vfm5djc -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795050197.1503263 [ERROR] [rviz2-17]: process has died [pid 9696, exit code -15, cmd '/opt/ros/foxy/lib/rviz2/rviz2 -d /home/workspace/src/aiformula/perception/lane_line_publisher/rviz/0629llp.rviz --ros-args'].
+1795050197.1525915 [INFO] [l2_throttle_joy_remap.py-10]: sending signal 'SIGTERM' to process[l2_throttle_joy_remap.py-10]
+1795050197.1546021 [ERROR] [motor_controller-12]: process has died [pid 9197, exit code -15, cmd '/home/workspace/install/motor_controller/lib/motor_controller/motor_controller --ros-args -r __node:=motor_controller -r __ns:=/aiformula_control --params-file /home/workspace/install/vehicle/share/vehicle/config/wheel.yaml --params-file /home/workspace/install/motor_controller/share/motor_controller/config/motor_controller.yaml --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r sub_speed_command:=/aiformula_control/game_pad/cmd_vel -r pub_can:=/aiformula_control/motor_controller/reference_signal'].
+1795050197.1549020 [ERROR] [teleop_node-11]: process has died [pid 9195, exit code -15, cmd '/opt/ros/foxy/lib/teleop_twist_joy/teleop_node --ros-args -r __node:=teleop_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r joy:=/aiformula_control/joy_node/joy_l2_throttle -r cmd_vel:=/aiformula_control/game_pad/cmd_vel'].
+1795050197.1563618 [INFO] [joy_node-9]: sending signal 'SIGTERM' to process[joy_node-9]
+1795050197.1590223 [INFO] [withoutkalman_0312-8]: sending signal 'SIGTERM' to process[withoutkalman_0312-8]
+1795050197.1622632 [INFO] [lane_0215-7]: sending signal 'SIGTERM' to process[lane_0215-7]
+1795050197.1634643 [ERROR] [l2_throttle_joy_remap.py-10]: process has died [pid 9193, exit code -15, cmd '/home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_zjqyy_5_ -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle'].
+1795050197.1650620 [INFO] [lane_line_publisher-6]: sending signal 'SIGTERM' to process[lane_line_publisher-6]
+1795050197.1681414 [INFO] [vn_sensor_msgs-5]: sending signal 'SIGTERM' to process[vn_sensor_msgs-5]
+1795050197.1713269 [INFO] [vectornav-4]: sending signal 'SIGTERM' to process[vectornav-4]
+1795050197.1721978 [ERROR] [withoutkalman_0312-8]: process has died [pid 9189, exit code -15, cmd '/home/workspace/install/kalman_filter/lib/kalman_filter/withoutkalman_0312 --ros-args'].
+1795050197.1747947 [INFO] [zed_wrapper-3]: sending signal 'SIGTERM' to process[zed_wrapper-3]
+1795050197.1759455 [ERROR] [lane_0215-7]: process has died [pid 9187, exit code -15, cmd '/home/workspace/install/lane_points/lib/lane_points/lane_0215 --ros-args'].
+1795050197.1783669 [INFO] [joint_state_publisher-2]: sending signal 'SIGTERM' to process[joint_state_publisher-2]
+1795050197.1790447 [ERROR] [lane_line_publisher-6]: process has died [pid 9185, exit code -15, cmd '/home/workspace/install/lane_line_publisher/lib/lane_line_publisher/lane_line_publisher --ros-args -r __node:=lane_line_publisher --params-file /home/workspace/install/lane_line_publisher/share/lane_line_publisher/config/lane_line_publisher.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/camera_params/SN48797506/intrinsic_nHD.yaml --params-file /tmp/launch_params_ue843dn2 -r mask_image:=/aiformula_perception/road_detector/mask_image -r annotated_mask_image:=/aiformula_perception/lane_line_publisher/annotated_mask_image -r dynamic_roi_image:=/aiformula_perception/lane_line_publisher/dynamic_roi_image -r linear_fit_image:=/aiformula_perception/lane_line_publisher/linear_fit_image -r vehicle_fit_image:=/aiformula_perception/lane_line_publisher/vehicle_fit_image -r lane_lines/left:=/aiformula_perception/lane_line_publisher/lane_lines/left -r lane_lines/right:=/aiformula_perception/lane_line_publisher/lane_lines/right -r lane_lines/center:=/aiformula_perception/lane_line_publisher/lane_lines/center -r tf:=/tf -r tf_static:=/tf_static'].
+1795050197.1793394 [ERROR] [vn_sensor_msgs-5]: process has died [pid 9183, exit code -15, cmd '/home/workspace/install/vectornav/lib/vectornav/vn_sensor_msgs --ros-args -r __node:=vn_sensor_msgs -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml -r vectornav/imu:=/aiformula_sensing/vectornav/imu'].
+1795050197.1817009 [INFO] [robot_state_publisher-1]: sending signal 'SIGTERM' to process[robot_state_publisher-1]
+1795050197.1819794 [ERROR] [vectornav-4]: process has died [pid 9181, exit code -15, cmd '/home/workspace/install/vectornav/lib/vectornav/vectornav --ros-args -r __node:=vectornav -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml'].
+1795050197.1837263 [joy_node-9] [0m[INFO] [1795050197.166355705] [aiformula_control.joy_node]: Unknown event type 256[0m
+1795050197.1844583 [ERROR] [joint_state_publisher-2]: process has died [pid 9177, exit code -15, cmd '/opt/ros/foxy/lib/joint_state_publisher/joint_state_publisher /home/workspace/install/vehicle/share/vehicle/xacro/ai_car1.urdf --ros-args --log-level WARN --ros-args -r __node:=joint_state_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_23ej5t3h'].
+1795050197.1858535 [ERROR] [robot_state_publisher-1]: process has died [pid 9175, exit code -15, cmd '/opt/ros/foxy/lib/robot_state_publisher/robot_state_publisher --ros-args --log-level WARN --ros-args -r __node:=robot_state_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_zwvfioli'].
+1795050197.2189758 [ERROR] [zed_wrapper-3]: process has died [pid 9179, exit code -15, cmd '/home/workspace/install/zed_wrapper/lib/zed_wrapper/zed_wrapper --ros-args -r __node:=zed_node -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml --params-file /tmp/launch_params_89ne7nop -r ~/left/image_rect_color:=/aiformula_sensing/zed_node/left_image/undistorted -r ~/right/image_rect_color:=/aiformula_sensing/zed_node/right_image/undistorted -r ~/imu/data:=/aiformula_sensing/zed_node/imu'].
+1795050202.1149929 [ERROR] [joy_node-9]: process[joy_node-9] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1795050202.1169941 [INFO] [joy_node-9]: sending signal 'SIGKILL' to process[joy_node-9]
+1795050202.1238303 [ERROR] [joy_node-9]: process has died [pid 9191, exit code -9, cmd '/opt/ros/foxy/lib/joy/joy_node --ros-args -r __node:=joy_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/joy.yaml -r joy:=/aiformula_control/joy_node/joy'].

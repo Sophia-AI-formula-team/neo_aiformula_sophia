@@ -1,0 +1,8 @@
+2026-11-19T16:03:48+09:00 inspect camera timing, configuration and capture transport
+2026-11-19T16:06:21+09:00 Real-image workstation benchmark confirmed identical display pixels and removed full-frame float64 blend; cached rectification changed pixels on OpenCV 5 and was discarded. Added direct-camera stage timings to decisions.
+2026-11-19T16:07:27+09:00 Begin isolated Jetson B1.4 six-image CUDA exact-output A/B, no ROS graph.
+2026-11-19T16:07:51+09:00 Isolated B1.4 GPU A/B completed, all archived pixels and detections matched.
+2026-11-19T16:08:29+09:00 Selected bit-identical bool mask copy on GPU to trim two int64 transfers, retained original argmax; 7 geometry and serialization tests passed locally.
+2026-11-19T16:09:38+09:00 Start fix and restart tests for field speed persistence and UI readback.
+2026-11-19T16:12:35+09:00 Implemented per-node atomic speed storage, launch precedence, camera group separation, live readback and confirmation in tuning dialog; speed persistence and gate regression tests passed.
+2026-11-19T16:13:28+09:00 Jetson offscreen Qt + persistence tests: 12 passed in 0.70 s, motor path untouched.

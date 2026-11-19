@@ -1,0 +1,77 @@
+1795067768.2895470 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-19-14-56-08-282192-control-desktop-49320
+1795067768.2900095 [INFO] [launch]: Default logging verbosity is set to INFO
+1795067768.6109874 [INFO] [socket_can_receiver_node_exe-1]: process started with pid [49346]
+1795067768.6115553 [INFO] [vectornav-2]: process started with pid [49348]
+1795067768.6117182 [INFO] [vn_sensor_msgs-3]: process started with pid [49350]
+1795067768.6118491 [INFO] [zed_wrapper-4]: process started with pid [49352]
+1795067768.6119685 [INFO] [joy_node-5]: process started with pid [49354]
+1795067768.6120858 [INFO] [l2_throttle_joy_remap.py-6]: process started with pid [49356]
+1795067768.6122003 [INFO] [replay_sink-7]: process started with pid [49358]
+1795067768.6123104 [INFO] [motor_controller-8]: process started with pid [49360]
+1795067768.6124210 [INFO] [concept_vehicle_state-9]: process started with pid [49362]
+1795067768.6125252 [INFO] [concept_control_gate-10]: process started with pid [49364]
+1795067768.6126311 [INFO] [python3-11]: process started with pid [49366]
+1795067768.6127357 [INFO] [drive-12]: process started with pid [49378]
+1795067768.6128395 [INFO] [visualization-13]: process started with pid [49390]
+1795067768.6788194 [vectornav-2] [INFO] [1795067768.678220678] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795067768.7491856 [vectornav-2] [INFO] [1795067768.748616565] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud
+1795067768.7494750 [vectornav-2] [INFO] [1795067768.748715253] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795067768.7495849 [vectornav-2] [INFO] [1795067768.748729141] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795067768.7496657 [vectornav-2] [INFO] [1795067768.748738100] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795067768.7497358 [vectornav-2] [INFO] [1795067768.748744980] [aiformula_sensing.vectornav]: Serial Number : 100095497
+1795067768.7498024 [vectornav-2] [INFO] [1795067768.748751732] [aiformula_sensing.vectornav]: User Tag : ""
+1795067768.8501387 [vectornav-2] [INFO] [1795067768.849373961] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795067768.8505278 [vectornav-2] [INFO] [1795067768.849504713] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795067768.8823826 [vectornav-2] [INFO] [1795067768.876377635] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795067768.8889065 [vectornav-2] [INFO] [1795067768.882374078] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795067769.2328086 [joy_node-5] [INFO] [1795067769.232052088] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795067769.2336504 [joy_node-5] [INFO] [1795067769.232338902] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795067776.3000281 [python3-11] [WARN] [1795067776.299373313] [concept_yolop]: Waiting for matching ZED CameraInfo: topic=/aiformula_sensing/zed_node/left_image/undistorted image=zed_left_camera_optical_frame info=missing
+1795067797.8913717 [joy_node-5] [INFO] [1795067797.890136349] [rclcpp]: signal_handler(signal_value=2)
+1795067797.8933823 [python3-11] 
+1795067797.8938429 [vn_sensor_msgs-3] [INFO] [1795067797.890444987] [rclcpp]: signal_handler(signal_value=2)
+1795067797.8941560 [vectornav-2] [INFO] [1795067797.893463848] [rclcpp]: signal_handler(signal_value=2)
+1795067797.9204226 [python3-11] /home/control/concept_v6275_ws/venv/lib/python3.8/site-packages/torch/_utils.py:776: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+1795067797.9207265 [python3-11]   return self.fget.__get__(instance, owner)()
+1795067797.9349337 [l2_throttle_joy_remap.py-6] Traceback (most recent call last):
+1795067797.9352608 [l2_throttle_joy_remap.py-6]   File "/home/control/concept_v6275_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 110, in <module>
+1795067797.9354110 [l2_throttle_joy_remap.py-6]     main()
+1795067797.9354963 [l2_throttle_joy_remap.py-6]   File "/home/control/concept_v6275_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 103, in main
+1795067797.9355698 [l2_throttle_joy_remap.py-6]     rclpy.spin(node)
+1795067797.9356365 [l2_throttle_joy_remap.py-6]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+1795067797.9357007 [l2_throttle_joy_remap.py-6]     executor.spin_once()
+1795067797.9357631 [l2_throttle_joy_remap.py-6]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+1795067797.9358251 [l2_throttle_joy_remap.py-6]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+1795067797.9358847 [l2_throttle_joy_remap.py-6]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+1795067797.9359465 [l2_throttle_joy_remap.py-6]     return next(self._cb_iter)
+1795067797.9360065 [l2_throttle_joy_remap.py-6]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+1795067797.9360652 [l2_throttle_joy_remap.py-6]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+1795067797.9361234 [l2_throttle_joy_remap.py-6] KeyboardInterrupt
+1795067797.9367943 [replay_sink-7] Traceback (most recent call last):
+1795067797.9369152 [replay_sink-7]   File "/home/control/aiformula_runtime/concept-field-20261119/install/concept/lib/concept/replay_sink", line 11, in <module>
+1795067797.9369919 [replay_sink-7]     load_entry_point('concept', 'console_scripts', 'replay_sink')()
+1795067797.9370596 [replay_sink-7]   File "/home/control/aiformula_runtime/concept-field-20261119/build/concept/concept/replay_sink.py", line 12, in main
+1795067797.9371250 [replay_sink-7]     rclpy.spin(node)
+1795067797.9371884 [replay_sink-7]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+1795067797.9372485 [replay_sink-7]     executor.spin_once()
+1795067797.9373069 [replay_sink-7]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+1795067797.9373660 [replay_sink-7]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+1795067797.9374254 [replay_sink-7]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+1795067797.9374850 [replay_sink-7]     return next(self._cb_iter)
+1795067797.9375448 [replay_sink-7]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+1795067797.9376040 [replay_sink-7]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+1795067797.9376602 [replay_sink-7] KeyboardInterrupt
+1795067797.9469655 [INFO] [vn_sensor_msgs-3]: process has finished cleanly [pid 49350]
+1795067797.9498708 [INFO] [vectornav-2]: process has finished cleanly [pid 49348]
+1795067798.0104744 [ERROR] [l2_throttle_joy_remap.py-6]: process has died [pid 49356, exit code -2, cmd '/home/control/concept_v6275_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle'].
+1795067798.0123601 [INFO] [joy_node-5]: process has finished cleanly [pid 49354]
+1795067798.0383832 [ERROR] [replay_sink-7]: process has died [pid 49358, exit code -2, cmd '/home/control/aiformula_runtime/concept-field-20261119/install/concept/lib/concept/replay_sink --ros-args --params-file /tmp/launch_params_ef7j7i0o'].
+1795067798.0519710 [ERROR] [concept_control_gate-10]: process has died [pid 49364, exit code -2, cmd '/home/control/concept_v6275_ws/install/concept_control_gate/lib/concept_control_gate/concept_control_gate --ros-args --params-file /tmp/launch_params_c2hwrafc --params-file /home/control/concept_v6275_ws/install/launchers/share/launchers/config/gamepad/dualshock4.yaml --params-file /tmp/launch_params_i10y504y -r /aiformula_control/motor_controller/reference_signal:=/concept/replay/reference_signal'].
+1795067798.0704193 [INFO] [motor_controller-8]: process has finished cleanly [pid 49360]
+1795067798.0734258 [ERROR] [concept_vehicle_state-9]: process has died [pid 49362, exit code -2, cmd '/home/control/concept_v6275_ws/install/concept_vehicle_state/lib/concept_vehicle_state/concept_vehicle_state --ros-args --params-file /tmp/launch_params_e8_zjel1'].
+1795067798.0940998 [ERROR] [visualization-13]: process has died [pid 49390, exit code -2, cmd '/home/control/aiformula_runtime/concept-field-20261119/install/concept_visualization/lib/concept_visualization/visualization --ros-args --params-file /tmp/launch_params_yaa8segu'].
+1795067798.1587956 [INFO] [drive-12]: process has finished cleanly [pid 49378]
+1795067798.1785390 [ERROR] [socket_can_receiver_node_exe-1]: process has died [pid 49346, exit code -6, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_nmkjjlvw -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795067798.9541090 [INFO] [python3-11]: process has finished cleanly [pid 49366]
+1795067799.4099934 [INFO] [zed_wrapper-4]: process has finished cleanly [pid 49352]
+1795067800.1645923 [INFO] [drive-12]: process started with pid [49911]

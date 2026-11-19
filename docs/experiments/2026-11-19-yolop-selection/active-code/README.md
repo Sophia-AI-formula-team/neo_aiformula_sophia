@@ -1,0 +1,30 @@
+# 2026-11-19 车机活动代码快照与 Neo 对比
+
+[下载压缩包](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/2026-11-19-vehicle-active-code.tar.gz) · [SHA-256](2026-11-19-vehicle-active-code.tar.gz.sha256) · [归档核验](archive-verification.json)
+
+车机副本在 `/media/control/OrinSSD2000/2026-11-19 Experiment Logs/active-code/`。本机内置 SSD 和 Extreme SSD 也各保存了一份相同内容的压缩包。包内保留了车道和目标识别、OA、轨迹跟踪、Allnodes、MapAssist 与 Concept 的源码、实际安装的节点、配置、桌面入口、依赖源码，以及 A3/A4/A4Light 启动所用的权重。ROS Foxy、ZED SDK、CUDA 和 Python 虚拟环境作为平台依赖记录在包内清单中。重复的较大文件按硬链接归档。
+
+## 活动包与 diff
+
+按车机 Allnodes、MapAssist、Concept 三个启动环境实际解析到的安装目录，核对了 60 个包版本及 152 个已安装可执行项。Allnodes 和 MapAssist 各解析到 45 个工作区包，Concept 解析到 57 个。同名包在不同安装层分别列出。
+
+| Neo 基线 | 相同 | 有差异 | 车机独有 | 差异文件数 |
+| --- | ---: | ---: | ---: | ---: |
+| `main` `d8277bd` | 37 | 11 | 12 | 333 |
+| `experiment/yolop-selection-20261119` `dbb95d9` | 38 | 10 | 12 | 344 |
+| `feat/concept-v626-live` `a9d7d7a` 的 Concept 相关包 | 2 | 11 | 0 | 49 |
+| `experiment/map-assist-auto-warm-detour-20261119` `8f58522` 的 MapAssist 相关包 | 2 | 7 | 0 | 83 |
+
+- [活动包、安装目录和源码来源](neo-diff/active-packages.tsv) · [车机包解析原始清单](vehicle-package-resolution.tsv) · [已安装可执行项](vehicle-ros-executables.tsv)
+- [与 main 的包级对比](neo-diff/main-packages.tsv) · [逐文件清单](neo-diff/main-changed-files.tsv) · [按包文本 diff](neo-diff/main/)
+- [与今日实验分支的包级对比](neo-diff/experiment-packages.tsv) · [逐文件清单](neo-diff/experiment-changed-files.tsv) · [按包文本 diff](neo-diff/experiment/)
+- [Concept 分支对比](neo-diff/concept-packages.tsv) · [MapAssist 专项分支对比](neo-diff/mapassist-experiment-packages.tsv) · [基线完整提交号](neo-diff/baselines.json)
+- [MapAssist 与桌面接线 diff](neo-diff/main-runtime-wiring.patch) · [接线来源及路径](neo-diff/main-runtime-wiring.tsv) · [LYA 源码与安装文件的差异](neo-diff/lya-source-vs-installed.patch)
+
+Allnodes 实际使用 `lane_0927oa`。MapAssist 正式入口读取原生 ABC 话题，通过单独的 OA 和 LYA 入口接管和跟踪。MapAssist 规划包按 semantic 安装层比较，Concept 的 drive 和 panel 按当天下午最后生效的覆盖层比较。LYA 的 `lya_follower_connected_omegat_global.py` 在安装目录与源码副本的增益不同，包级 diff 使用实际安装的实现。MapAssist 外部启动脚本在独立接线 diff 中列出。
+
+| 时间（JST） | 操作 |
+| --- | --- |
+| 17:24–17:27 | 核对车机挂载和安装层，抓取 Neo 基线，生成带实际节点和识别器资产的压缩包。 |
+| 17:28–17:32 | 续传到本机，核对 Ament 解析优先级，从整包重建包级与逐文件 diff。 |
+| 17:33–17:34 | 补齐 63 份符号链接链条的目标并复核三份包的 SHA-256、源码和节点。 |

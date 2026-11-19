@@ -1,0 +1,2696 @@
+--- a/workspace/src/aiformula/perception/road_detector/CHANGELOG.md
++++ /dev/null
+@@ -1,9 +0,0 @@
+-# Changelog
+-
+-## 0.0.1 — 2026-11-06
+-
+-- Restore the complete source image Header on the lane mask and annotated image
+-  after the 1027/1102 snapshot import. Both outputs preserve the acquisition stamp
+-  and camera frame, with independent deep copies of Header and Time.
+-- Keep the existing pixel conversion, inference and model assets unchanged.
+-- Retain the offline callback/output regression tests and run them in dedicated CI.
+--- a/workspace/src/aiformula/perception/road_detector/package.xml
++++ b/workspace/src/aiformula/perception/road_detector/package.xml
+@@ -2,7 +2,7 @@
+ <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+ <package format="3">
+   <name>road_detector</name>
+-  <version>0.0.1</version>
++  <version>0.0.0</version>
+   <description>TODO: Package description</description>
+   <maintainer email="masayaokada@jp.honda">masayaokada</maintainer>
+   <license>TODO: License declaration</license>
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/AGENTS.md
++++ /dev/null
+@@ -1,34 +0,0 @@
+-# A4 Deployment Maintainer Instructions
+-
+-Scope: this package only. Read README, context, handoff, TEMPORAL and the weight
+-manifest. Inspect Git status and preserve unrelated edits.
+-
+-- Current identity is A4 / 4.0.0 / tag a4, with unchanged V76 aligned step1024
+-  weights from a3-v76. Keep one shared encoder, one
+-  model-only checkpoint and independent lane/object outputs.
+-- No training loop, optimizer, teacher, dataset or second detector.
+-- Match serialized FP32 min640/max1152 resize, normalization, padding and
+-  native restoration. Do not substitute architecture defaults or V14 weights.
+-- Raw probability >=0.5 is the default; no closing, thickening or gap joining.
+-- Temporal history must be causal, previous RAW probability only. Never feed
+-  ground truth, future frames, recursively fused masks or an uncalibrated warp.
+-- Keep predict(image) explicitly single-frame. predict_frame requires calibrated
+-  metric geometry and capture time. Preserve observable reset/mode status.
+-- Preserve public fields, ROS topics/encodings and independent source Headers.
+-  cone_mask contains person/car/cone rectangles, not traffic lights.
+-- Cone colors/light states are HSV rules, not learned classes.
+-- Fail on missing/incompatible weights; no downloads or legacy fallback.
+-- Run verify_weights.py, package tests, source/export native-resolution parity
+-  for both heads, one-encoder checks, wheel install and CLI demos.
+-- Record exact hashes, input contract, evaluation scope and failed quality gates.
+-- Keep licenses, private data/paths/credentials and training state out of release.
+-- Do not alter sibling YOLOP/A2, launcher, controller or watchdog incidentally.
+-- Start ROS with all shadow remaps. Do not enable vehicle motion or duplicate
+-  publishers. Target-device timing, DDS and real calibration require their own tests.
+-- Explain publication versus activation: the model and temporal API are shipped,
+-  but real-camera temporal input integration is unfinished. The bundled ROS node
+-  is single-frame, unlike the calibrated Unity temporal demos. See MODE_GUIDE_ZH.md.
+-- Keep existing folder/distribution/Python/ROS names as compatibility interfaces;
+-  do not rename serialized source architecture or historical hashes to A4.
+-- Tags a3-v6/a3-v14/a3-v76/a4 are immutable; rollback the entire runtime and weight.
+-  Update manifest, verification, context and handoff together.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/DEPLOYMENT.md
++++ /dev/null
+@@ -1,183 +0,0 @@
+-# A4 Deployment Guide
+-
+-## Status And Environment
+-
+-This is the A4 package (version 4.0.0, tag a4), renamed from a3-v76 with identical
+-weights and inference behavior. First run it on isolated shadow
+-topics. Publication does not modify main launch wiring or start/stop any ROS node.
+-The bundled ROS wrapper runs single-frame inference and says so at startup.
+-For calibrated temporal inference use predict_frame and TEMPORAL.md.
+-
+-**Model/API publication is complete; real-camera temporal integration is not.**
+-Single-frame processes every video frame independently, as the V14 ROS node did,
+-but uses the new image-model weights. Unity temporal demos had accurate camera
+-poses; this image-only ROS wrapper does not receive that geometry. Starting it
+-does not reproduce the temporal demo effect. See [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md)
+-and [integration issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34).
+-Existing folder/Python/ROS names are retained as compatibility interfaces.
+-
+-Tested reference:Windows,x86-64,Python3.12.10,Torch2.11.0+cu130,
+-TorchVision0.26.0,RTX4070Ti. Package requires Python>=3.10,<3.14.
+-Stock ROS2 Foxy/Python3.8 is NOT compatible with this Python package.
+-Use a ROS/Python environment whose rclpy and cv_bridge match the interpreter.
+-
+-The dependency pins in pyproject.toml describe the desktop reference,not a
+-Jetson installation recipe. On Orin first select NVIDIA's matching
+-JetPack/PyTorch/TorchVision binaries and a compatible NumPy/cv_bridge stack.
+-Do not let pip replace the platform Torch or system OpenCV blindly.
+-See [JETSON.md](JETSON.md). Other version combinations are unverified.
+-
+-## Checkout And Install
+-
+-Use a clean dedicated deployment checkout. Fetch/check out the release tag,
+-then from the repository root:
+-
+-```sh
+-git fetch origin tag a4
+-git switch --detach a4
+-export A3="$PWD/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy"
+-python -c "import sys,torch,torchvision,cv2,numpy; print(sys.version); print(torch.__version__,torchvision.__version__,torch.cuda.is_available())"
+-python -m pip install --no-deps "$A3"
+-python "$A3/tools/verify_weights.py"
+-```
+-
+-Build tooling needs setuptools>=77 and wheel. For an offline installation,
+-preinstall those and add `--no-build-isolation`. This package does not install
+-CUDA,JetPack,ROS2,or a compatible platform Torch wheel for you.
+-Do not rename a different checkpoint to shared_best.pth;verify its checksum.
+-
+-Bundled SHA256:
+-```text
+-b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3
+-```
+-
+-The file is V76 aligned step 1024, including its frozen image model. It has one
+-architecture tag, an explicit input contract and one shared state dictionary. It contains
+-no optimizer/AMP/RNG state and cannot be used to resume the original training
+-trajectory. Training resume checkpoints remain in the separate training workspace.
+-
+-The default lane output is raw softmax foreground >=0.5. Closing and connected
+-component filtering are disabled. Do not enable the old morphology or change
+-min_size640/max_size1152 while claiming parity with the selected V76 model.
+-
+-## Offline Smoke
+-
+-```sh
+-python "$A3/tools/demo.py" --image /absolute/path/frame.jpg --output /absolute/path/new-a3-output --device cuda
+-python -m pytest "$A3/tests" -q
+-```
+-
+-The tests require pytest. They exercise the actual bundled model,mask contracts,
+-single encoder traversal,and a mocked ROS callback. They do NOT start DDS.
+-Check real distant lanes,dashes,zebra crossings,arrows,empty road views,small
+-colored cones,people and light states on your own held-out images as well.
+-
+-## ROS2 Build
+-
+-Use the same compatible Python environment for runtime and ROS wrapper. After
+-sourcing your installed ROS distribution,verify:
+-
+-```sh
+-python -c "import rclpy,cv_bridge; from yolop_a3_runtime import PerceptionModel; print(PerceptionModel.__module__)"
+-```
+-
+-Expected module:`yolop_a3_runtime.shared_runtime`.
+-Build only this wrapper in a separate overlay workspace,not inside the nested
+-road_detector package:
+-
+-```sh
+-mkdir -p "$HOME/a3_shadow_ws"
+-cd "$HOME/a3_shadow_ws"
+-colcon build --base-paths "$A3/ros2" --packages-select yolop_a3_perception
+-source install/setup.bash
+-```
+-
+-If an environment's colcon executable selects a different Python,resolve that
+-interpreter/ABI mismatch before running the node. Changing PYTHONPATH alone does
+-not repair an incompatible cv_bridge or rclpy binary.
+-
+-## Shadow Run
+-
+-Use all of these output remaps together so the existing vehicle consumers cannot
+-accidentally use the candidate:
+-
+-```sh
+-ros2 run yolop_a3_perception yolop_a3_node --ros-args \
+-  -p weights:="$A3/weights/shared_best.pth" -p device:=cuda \
+-  -r pub_mask_image:=/a3_shadow/lane_mask \
+-  -r pub_annotated_mask_image:=/a3_shadow/lane_overlay \
+-  -r /cone_mask:=/a3_shadow/obstacle_mask \
+-  -r /cone_bbox_image:=/a3_shadow/object_overlay \
+-  -r /red_pixels_count:=/a3_shadow/red_pixels_count \
+-  -r /traffic_light/state:=/a3_shadow/traffic_light_state \
+-  -r /aiformula_perception/yolop_a3/detections:=/a3_shadow/detections
+-```
+-
+-Default input:`/aiformula_sensing/zed_node/left_image/undistorted`.
+-Override it with `-p input_image_topic:=/your/image_topic`.
+-Input QoS is best-effort,keep-last,depth1. Image output publishers use depth1.
+-Use `ros2 topic info -v`,`ros2 topic hz` and image viewers to verify actual
+-publisher identity,QoS,source timestamps,frame IDs,dimensions and rate.
+-
+-## Topic Contract
+-
+-| Default topic | Type / encoding | Meaning |
+-|---|---|---|
+-| pub_mask_image | sensor_msgs/Image,mono8 | Lane-only 0/255 mask |
+-| pub_annotated_mask_image | sensor_msgs/Image,bgr8 | Lane overlay |
+-| /cone_mask | sensor_msgs/Image,mono8 | Filled person/car/cone rectangles,0/255 |
+-| /cone_bbox_image | sensor_msgs/Image,bgr8 | Object boxes on source RGB |
+-| /red_pixels_count | std_msgs/Int32 | Crop-derived red evidence count |
+-| /traffic_light/state | std_msgs/String | red,green,or unknown;red takes precedence |
+-| /aiformula_perception/yolop_a3/detections | std_msgs/String | JSON detections,color/state,timing,source header |
+-
+-All four output Image messages preserve the input header. Detection JSON includes
+-the source sec/nanosec and frame_id. Int32/String state topics have no ROS Header;
+-do not assume they independently encode freshness.
+-
+-Object class IDs follow COCO plus cone:person1,car3,traffic_light10,traffic_cone91.
+-This FCOS model has exactly those four classes; only1/3/91 fill cone_mask.
+-The avoidance consumers oa_neo*.py subscribe to cone_mask/cone_bbox_image and
+-apply their own ROI/pixel threshold (oa_neo.py defaults1000/500 enter/exit).
+-Whole-image mask area or a detected box does not prove avoidance activation.
+-
+-## Controlled Integration And Rollback
+-
+-Only after offline/shadow and target-device acceptance,with the vehicle stopped:
+-
+-1. Record the current deployment version,launch command,topics and weights.
+-2. Stop only the perception publisher being replaced;never run legacy/A2/A3 on
+-   the same live mask or light topics simultaneously.
+-3. Run A3 with its default object topics and explicitly remap
+-   `pub_mask_image:=/aiformula_perception/road_detector/mask_image`.
+-   This matches main's launchers/config/topic_list.yaml and lane_line_publisher.
+-4. Keep its debug overlay separate,for example
+-   `pub_annotated_mask_image:=/a3_debug/lane_overlay`;do not collide with the
+-   lane_line_publisher's own annotated image.
+-5. Verify there is exactly one intended publisher and inspect masks,source
+-   timestamps,TF/intrinsics,avoidance ROI and controlled light-state behavior
+-   before enabling any motion. No automatic controller switch is provided.
+-
+-To restore the previous A3 package, stop its node, then in the clean dedicated
+-deployment checkout:
+-
+-```sh
+-git fetch origin tag a3-v14
+-git switch --detach a3-v14
+-python -m pip install --no-deps --force-reinstall "$A3"
+-python "$A3/tools/verify_weights.py"
+-```
+-
+-Restart the previously recorded shadow command and verify publishers/freshness.
+-Roll back the entire runtime and weight together, not only shared_best.pth. The
+-v14 tag preserves the previous runtime, input contract and weight together.
+-Alternatively restart the recorded legacy/A2 command. No launch file needs
+-reverting because this publication changes none.
+-
+-## Failure Behavior
+-
+-Missing/incompatible weights fail startup. A callback error is logged and emits
+-no new result for that frame;it does NOT publish a fabricated empty mask or a
+-vehicle stop command. Downstream stale-data watchdog/fail-safe behavior must be
+-validated separately before live use. A stopped camera or dead inference process
+-must not leave the vehicle acting on indefinitely stale perception.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/JETSON.md
++++ /dev/null
+@@ -1,45 +0,0 @@
+-# A4 Jetson Orin Validation Boundary
+-
+-Target:Jetson AGX Orin. RAM,JetPack,power mode and ROS/Python versions must be
+-recorded on the target. No new Orin measurement or TensorRT engine is bundled.
+-
+-Use a PyTorch wheel compatible with the actual JetPack and a matching TorchVision
+-build with CUDA operators. NVIDIA's [Jetson PyTorch installation guide](https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html)
+-documents the JetPack-specific wheel requirement. Do not install the desktop
+-CUDA13.0 wheel pins over an existing Jetson environment.
+-
+-The package needs Python>=3.10,<3.14. Stock Foxy/Python3.8 cannot import this
+-package. Resolve that environment boundary explicitly;do not mix binary rclpy or
+-cv_bridge modules from a different interpreter. Preserve a platform-compatible
+-NumPy/OpenCV ABI and install this runtime with --no-deps only after preparing it.
+-Other than the recorded desktop versions,version combinations are unverified.
+-
+-Before running inference,verify CUDA and the TorchVision extension:
+-
+-```sh
+-python -c "import torch,torchvision; from torchvision.ops import nms; print(torch.__version__,torchvision.__version__); print(nms(torch.tensor([[0.,0.,2.,2.]],device='cuda'),torch.ones(1,device='cuda'),0.5))"
+-```
+-
+-Then run the checksum check,package tests,offline demo and isolated shadow node
+-from DEPLOYMENT.md. Tests use reduced-size CPU inputs for fast structural QA;
+-the deployment runtime still uses min_size640/max_size1152 unless deliberately
+-changed and revalidated. Do not silently reduce that size and reuse accuracy claims.
+-
+-Old A3 SSD/Faster R-CNN ONNX exports are incompatible with this FCOS checkpoint.
+-No ONNX or TensorRT artifact is provided here. A future export must include the
+-correct transform,shared features,lane decoder,FCOS and detection postprocessing,
+-and compare both outputs against this exact model. Do not reuse a desktop engine.
+-
+-Record module/RAM,JetPack,driver,Torch/TorchVision,power mode,temperatures and input
+-resolution. Measure sustained end-to-end median/p95/p99 latency,FPS,memory,
+-dropped frames and source timestamp age over a representative full bag.
+-The local RTX4070Ti diagnostic smoke is only packaging evidence. Exact cases and
+-environment are recorded in verification/runtime_smoke.json.
+-
+-Keep current FP32 behavior as the reference. FP16/INT8 or other optimizations
+-require target-device output/accuracy regression tests for lanes and objects.
+-No accelerator conversion or quantization has been validated in this package.
+-Temporal warping/gating is FP32; blindly calling half() is not supported.
+-Benchmark single-frame and calibrated temporal modes separately. The ROS wrapper
+-is image-only and reports single-frame; installing the weight does not supply
+-the calibrated motion needed by the temporal API.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/LICENSE
++++ /dev/null
+@@ -1,21 +0,0 @@
+-MIT License
+-
+-Copyright (c) 2021 Hust Visual Learning Team
+-
+-Permission is hereby granted, free of charge, to any person obtaining a copy
+-of this software and associated documentation files (the "Software"), to deal
+-in the Software without restriction, including without limitation the rights
+-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-copies of the Software, and to permit persons to whom the Software is
+-furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/MODE_GUIDE_ZH.md
++++ /dev/null
+@@ -1,48 +0,0 @@
+-# A4：当前实际运行什么
+-
+-## 版本关系
+-
+-对外版本名为 **A4**，软件版本 **4.0.0**，Git 标签 **a4**。
+-这是对之前发布的 a3-v76 重新命名，没有重新训练、替换权重或改变推理行为。
+-源 checkpoint 的 V76 标识、哈希和实验记录保留，用于追溯。
+-
+-## 单帧不是只识别一张
+-
+-单帧模式会持续处理视频，只是每帧都独立识别，不参考上一帧。
+-之前 V14 的 ROS 节点也是这样运行的。现在运行新权重中的单帧部分，
+-不是退回 V14，不是只处理第一帧，也不是切换到 CPU。
+-
+-| 入口 | 输入 | 当前行为 |
+-|---|---|---|
+-| `predict(image)` | 当前 RGB | 独立输出当前车道和物体 |
+-| 自带 ROS 节点 | 相机图像话题 | 调用 `predict(image)`，日志和 JSON 明确显示 `single_frame` |
+-| `predict_frame(...)` | 当前 RGB、序列 ID、采集时间、标定后的地面投影 | 对齐上一帧原始车道概率，再与当前预测融合 |
+-
+-时序增强只作用于车道。物体头仍识别当前图像，没有加入物体跟踪。
+-所有模式仍然是一套共享骨干、一份权重、车道与物体两类独立输出。
+-
+-## 为什么演示有增强，ROS 默认没有
+-
+-Unity 演示提供了准确的相机位姿和地面投影，因此可以把上一帧的车道预测
+-对齐到当前画面。实车移动后，上一帧与当前帧的位置不同，不能直接叠加。
+-
+-当前 ROS 节点只订阅图像，没有接入经过验证的相机标定、相机与车体的安装关系，
+-以及与图像采集时间同步的相机位姿。所以它没有调用时序接口。
+-**直接启动当前 ROS 节点，不能得到演示中的时序增强效果。**
+-
+-## 已完成与尚未完成
+-
+-- 已完成：模型、权重、时序模块、Python 接口、单帧 ROS 接口和部署文档的发布。
+-- 已验证：导出结果与训练端一致；时序输入、状态重置与两类输出的代码测试。
+-- 尚未完成：实车标定与同步位姿接入，以及接入后的时序效果和 AGX Orin 性能验证。
+-
+-因此，“模型包已发布”不等于“实车时序增强已经启用”。A4 改名不会改变这个状态。
+-下一步是[时序接入与 Orin 验证任务 #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34)，
+-不是继续训练或通过改名自动开启功能。输入矩阵和状态说明见 [TEMPORAL.md](TEMPORAL.md)。
+-
+-## 为什么目录和接口还带 A3
+-
+-`YOLOP_A3_Deploy`、`yolop-a3-runtime`、`yolop_a3_runtime`、`yolop_a3_perception`
+-及原 ROS 话题名称作为兼容接口保留，避免现有安装命令和调用方失效。
+-识别版本以文档、软件版本、权重清单和 Git 标签为准，当前均为 A4。
+-旧标签 `a3-v76`、`a3-v14`、`a3-v6` 不移动、不覆盖。
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/README.md
++++ /dev/null
+@@ -1,58 +0,0 @@
+-# YOLOP A4 Deployment
+-
+-Current release: **A4**, tag **a4**, package version **4.0.0**.
+-
+-**当前 ROS 节点逐帧独立识别，并未启用时序增强。** 这与之前 V14 的运行方式相同，
+-但使用的是本次新权重，不是退回 V14。时序模块和接口已发布，实车的标定与同步位姿
+-尚未接入；因此直接启动 ROS 节点不能复现 Unity 演示中的时序增强效果。
+-详见[单帧与时序模式说明](MODE_GUIDE_ZH.md)。
+-
+-A4 renames the previously published a3-v76 release without retraining, changing
+-weight bytes or enabling temporal inference. The existing YOLOP_A3_Deploy folder,
+-yolop-a3-runtime distribution, yolop_a3_runtime imports and ROS package/topic names
+-are retained to keep current installation and caller contracts intact.
+-
+-One MobileNetV3 Large encoder, one FCOS detector, one continuous-lane decoder,
+-one 49-parameter temporal gate, **one model-only weight file**.
+-Historical tags a3-v76, a3-v14 and a3-v6 remain immutable.
+-
+-## Choose The Input Mode
+-
+-| Entry | Inputs | Lane behavior |
+-|---|---|---|
+-| `predict(image)` | One uint8 BGR image | Exact frozen single-frame image model; clears temporal history |
+-| `predict_frame(image, ...)` | Image, sequence ID, capture time, calibrated metric ground-plane projection | Previous raw lane probability aligned into the current frame |
+-| Bundled ROS node | Image topic | Explicit **single-frame mode**; logs this at startup |
+-
+-The ROS node does not guess camera calibration or derive motion from timestamps.
+-To use A4 temporal fusion, integrate the documented Python frame contract with
+-your calibrated, timestamp-aligned geometry source. See [TEMPORAL.md](TEMPORAL.md).
+-Objects always use the current image; the temporal gate does not track objects.
+-
+-Single-frame means every video frame is processed independently, not that only
+-one image is processed. The Unity temporal comparisons had accurate camera poses;
+-the current ROS wrapper receives images only. The model and API are packaged,
+-but the real-camera temporal input integration is not complete ([issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34)).
+-
+-## Output Contract
+-
+-- Native-resolution lane mask, uint8 0/255; raw threshold 0.5, no morphology.
+-- Person/car/cone box mask, uint8 0/255; traffic lights are excluded from this mask.
+-- Boxes and JSON detections; person=1, car=3, traffic light=10, cone=91.
+-- Cone colors and light states use existing HSV rules, not learned subclasses.
+-- Separate lane/object/combined overlays and explicit `temporal_status`.
+-
+-Input resize is min side 640, max side 1152, then bottom/right padding to a
+-multiple of 32. A 1280x720 image becomes 1137x640, padded to 1152x640.
+-Do not use the architecture's old experimental 360/640 defaults.
+-
+-## Start Here
+-
+-1. [DEPLOYMENT.md](DEPLOYMENT.md): install, verification, ROS shadow topics, rollback.
+-2. [TEMPORAL.md](TEMPORAL.md): geometry, reset and streaming API.
+-3. [handoff.md](handoff.md): measured results and next-owner tasks.
+-4. [JETSON.md](JETSON.md): target-device environment and performance checks.
+-5. [weights/manifest.json](weights/manifest.json): exact source/export hashes.
+-
+-The wheel contains runtime code. Keep this package checkout for the weight,
+-verification tools and separate ROS overlay. No dataset or training code is shipped.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/TEMPORAL.md
++++ /dev/null
+@@ -1,86 +0,0 @@
+-# A4 Calibrated Temporal Input
+-
+-This interface is packaged, but the bundled image-only ROS node does not call it.
+-Unity comparisons supplied accurate camera geometry; real-camera integration
+-remains unfinished. A4 renames a3-v76 without enabling temporal inference.
+-See [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md) for the mode and release explanation.
+-
+-## Python API
+-
+-```python
+-from yolop_a3_runtime import PerceptionModel
+-
+-model = PerceptionModel("/absolute/path/weights/shared_best.pth", device="cuda")
+-output = model.predict_frame(
+-    bgr_image,                        # uint8 HxWx3, same undistorted camera
+-    sequence="left-camera/calib-01",   # change after stream/calibration/plane reset
+-    timestamp=capture_seconds,        # image capture time, not arrival time
+-    plane_to_image=projection,        # finite, invertible metric 3x3 matrix
+-)
+-print(output.temporal_status)
+-# Start a new recording or seek:
+-model.reset()
+-```
+-
+-One instance per camera stream, sequential calls only. Missing/invalid geometry
+-is an error in predict_frame. For intentionally independent images call
+-predict(image), which reports single_frame and clears history.
+-
+-Status values: warmup, aligned, sequence_reset, timestamp_reset, shape_reset,
+-single_frame. aligned means the calibrated warp was used; pixels outside its
+-valid ground projection retain their current probability. It is not a score
+-for calibration quality. Consecutive timestamps must satisfy 0 < dt <= 0.25 s;
+-otherwise the current image is returned without history fusion.
+-
+-## Meaning Of The Matrix
+-
+-Define one fixed ground-plane coordinate system in meters for the whole sequence.
+-For plane coordinates (X,Y), the matrix G must satisfy
+-
+-```text
+-G @ [X, Y, 1] = [u * Z_camera, v * Z_camera, Z_camera]
+-```
+-
+-u,v are native undistorted pixel-center coordinates: top-left pixel=(0,0).
+-Z_camera is positive optical-axis depth in meters. With calibrated intrinsics K
+-and plane-to-optical-camera rigid transform [R|t], G=K@[R[:,0],R[:,1],t].
+-The pose must describe the camera at the image's capture time, including its
+-extrinsic offset from the odometry origin. Do not pass a ROS quaternion, a
+-4x4 pose or a world-space Unity position directly.
+-
+-G is **not an arbitrary-scale homography**. Do not normalize G by G[2,2]:
+-the third row is used to reject invalid depths. The native frame dimensions,
+-image undistortion, intrinsics and calibration epoch must agree.
+-Supported projected depths use the audited 0.05 to 5000 meter clip interval.
+-
+-The current-to-previous sampling map is G_previous @ inverse(G_current).
+-It samples only the preceding raw probability and excludes out-of-image,
+-behind-camera and clipped points. The learned gate blends current/warped
+-probabilities pixel by pixel. It cannot recover lanes neither frame predicted.
+-The object head continues to run only on the current image.
+-
+-## Recorded Sequence Demo
+-
+-```sh
+-python "$A3/tools/demo_sequence.py" --manifest /absolute/path/clip.json \
+-  --output /absolute/path/new-v76-sequence --device cuda
+-```
+-
+-Manifest format (paths relative to the manifest):
+-```json
+-{"frames": [
+-  {"image": "frame000.png", "sequence": "left/calib-01", "timestamp": 0.0,
+-   "plane_to_image": [[514.0,636.0,843.0],[0.0,304.0,1023.0],[0.0,0.995,1.319]]}
+-]}
+-```
+-The numbers illustrate the schema, not your camera's calibration. Use measured
+-projections for actual data. The command writes separate lane/object masks,
+-combined overlays and metadata for every frame without overwriting an old run.
+-
+-## ROS Integration
+-
+-The bundled ROS wrapper intentionally accepts only images and logs single-frame
+-mode. No synchronized calibrated projection producer exists in this package.
+-Integrate the Python API in the node that already owns the calibrated camera pose,
+-or provide a separately reviewed synchronized adapter. Do not assume that merely
+-subscribing to odometry makes its axes, timing or ground plane correct.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/THIRD_PARTY_NOTICES.md
++++ /dev/null
+@@ -1,44 +0,0 @@
+-# Third-Party Notices
+-
+-The package retains the original YOLOP MIT license in LICENSE. The shared
+-MobileNet/FPN/FCOS architecture uses TorchVision. The inference model in
+-`yolop_a3_runtime/shared_fcos.py` uses its model components and detection
+-postprocessing under the following license. The former ROI adapter is removed.
+-
+-## TorchVision
+-
+-BSD 3-Clause License
+-
+-Copyright (c) Soumith Chintala 2016,
+-All rights reserved.
+-
+-Redistribution and use in source and binary forms, with or without
+-modification, are permitted provided that the following conditions are met:
+-
+-* Redistributions of source code must retain the above copyright notice, this
+-  list of conditions and the following disclaimer.
+-* Redistributions in binary form must reproduce the above copyright notice,
+-  this list of conditions and the following disclaimer in the documentation
+-  and/or other materials provided with the distribution.
+-* Neither the name of the copyright holder nor the names of its contributors
+-  may be used to endorse or promote products derived from this software
+-  without specific prior written permission.
+-
+-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-
+-## Training Assets
+-
+-Training data is not included in this inference package. Attributed COCO person
+-cutouts in the isolated Unity generator retain source/license records in
+-`YOLOP_A3/simulation/AsymmetricLaneGenerator/Assets/A3PeopleAttributed/sources.json`.
+-Those images use their individual CC-BY licenses; they are not relicensed by
+-the runtime's MIT license. Unity demonstrations may contain those cutouts.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/context.md
++++ /dev/null
+@@ -1,50 +0,0 @@
+-# A4 Context
+-
+-Release identity: A4 / 4.0.0 / tag a4. This is a naming clarification of a3-v76,
+-not a new training run. Weight bytes, numerical inference, source architecture
+-and provenance are unchanged. Legacy folder, distribution, Python and ROS names
+-remain compatible. See MODE_GUIDE_ZH.md for the actual deployment status.
+-
+-## Selected Source
+-
+-The selected snapshot is V76 aligned step 1024, built on the frozen V73 image model.
+-Architecture: `a3_shared_fcos_temporal_probability_v76`.
+-Source SHA256: `1fc29a6cd4bb5de3390570ce805adca5167303176cecdd867eddb6d36752f1ca`.
+-Export SHA256: `b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3`.
+-
+-The user selected this version as stable on 2026-11-06 and authorized publication
+-and merge. The source's automated direction gate remains recorded as failed
+-(gap improvement below 2 percentage points); export does not rewrite that history.
+-
+-## Runtime
+-
+-The shared MobileNetV3 Large features feed a multiscale lane decoder and a compact
+-four-class FCOS detector (width 32, depth 2). This intentionally replaces V14's
+-Faster R-CNN/RPN/ROI layout. Old checkpoints require the old tagged package;
+-there is no legacy checkpoint fallback in this version.
+-
+-The serialized input contract is min_size=640/max_size=1152, RGB [0,1] with
+-ImageNet normalization and bottom/right normalized-zero padding to 32.
+-Lane logits are resized to padded shape, cropped to resized content, then
+-bilinearly restored to native shape with align_corners=False before thresholding.
+-The temporal gate works on native floating probabilities, not binary masks.
+-The combined checkpoint has 341 tensors and 3,403,740 parameters (49 temporal).
+-
+-Each stream stores only the previous raw probability, capture timestamp and
+-metric plane projection. No labels, future images or stored lane map are inputs.
+-History is cleared by explicit reset or independent-image prediction and bypassed
+-on first frame, changed sequence/size or non-increasing/>0.25s capture time.
+-Object output is never temporally modified.
+-
+-## Integration Boundary
+-
+-The Python input/output API remains compatible through PerceptionModel;
+-SharedFPNPerception is only an import alias, not a second model.
+-predict_frame is a new explicit API. The bundled ROS image-only wrapper runs the
+-single-frame base and reports that fact. It does not fabricate motion.
+-Source Headers are independently copied into every image output.
+-
+-This release updates only the A3 deployment package and its handoff records.
+-Legacy road_detector, default launchers, A1/A2, motor/controller/watchdog and
+-source training/Unity projects remain unchanged.
+-MIT and TorchVision BSD-3-Clause notices are retained.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/handoff.md
++++ /dev/null
+@@ -1,84 +0,0 @@
+-# A4 Deployment Handoff
+-
+-## Release Decision
+-
+-The user renamed the selected V76 aligned step 1024 package to **A4**.
+-Release tag: **a4**; package version **4.0.0**. Identical prior model tag:
+-**a3-v76**; earlier model rollback tag: **a3-v14**. No retraining or weight change.
+-See weights/manifest.json for exact source/export hashes and input contract.
+-
+-This release contains the actual temporal module and its learned weights.
+-The existing ROS image-only node runs single-frame inference; enabling temporal
+-fusion requires the explicit calibrated frame API in TEMPORAL.md. No vehicle
+-launch or perception publisher has been switched by this publication.
+-
+-### Actual Deployment Status
+-
+-Model and temporal API publication is complete; real-camera temporal input
+-integration is not complete. Single-frame means each video frame is independently
+-processed, as in the previous V14 ROS node, using the new base weights rather than
+-V14. It does not mean only the first image is processed or that GPU is disabled.
+-The Unity temporal comparisons used accurate camera poses. The image-only ROS
+-node cannot reproduce their temporal enhancement until calibrated capture-time
+-geometry is integrated. The A4 rename does not enable that integration.
+-Chinese explanation: [MODE_GUIDE_ZH.md](MODE_GUIDE_ZH.md).
+-Next work: [issue #34](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/issues/34).
+-
+-## Measured Results
+-
+-900 held-out synthetic sequence frames: 4 spatial anchors, three lighting
+-conditions (midday, long shadow, soft dusk), dashed/solid/unmarked variants.
+-The same frames, unchanged native labels and raw threshold 0.5 were used.
+-
+-| Metric | Frozen single-frame parent | V76 aligned |
+-|---|---:|---:|
+-| Dashed-gap recall | 57.150% | 57.598% |
+-| Lane IoU on dashed scenes | 72.305% | 73.105% |
+-| Empty-scene false-pixel rate | 0.03418% | 0.03226% |
+-| Automated false joins | 0 | 0 |
+-
+-The image model and detector were frozen. The 49-parameter fusion improves
+-cleanup modestly, but the +0.448-point gap gain is below the experiment's
+-+2-point direction gate. The source flag remains false; user selection is
+-recorded separately. These sequence metrics must not be compared directly with
+-V14's older static splits or different gap definitions.
+-
+-Paired research-model latency on RTX 4070 Ti: single-frame median 21.63 ms,
+-temporal median 22.70 ms (+4.96%). This excludes ROS transport and overlay work.
+-Object raw outputs are unchanged relative to the V73 parent. This is not a new
+-per-class object-quality comparison against V14.
+-
+-## Packaging Verification
+-
+-- Before the A4 rename: all 40 package tests passed; after it: 41 passed,
+-  including release/manifest/Python/ROS version consistency.
+-- New unit/contract checks cover actual weights, one encoder traversal, independent
+-  outputs, native restoration, temporal resets, invalid metadata and ROS headers.
+-- The unchanged V76 model's 900-frame full-resolution source/export comparison
+-  remains in verification/runtime_smoke.json. The A4 rename did not rerun this
+-  experiment; exact weight and inference-source identity were checked instead.
+-- Wheel/install/CLI results: see verification/package_smoke.json.
+-- Sanitized experiment summary: verification/training_summary.json.
+-
+-The publication preserves the newer road_detector full-Header repair.
+-No ROS/DDS, Jetson or moving-vehicle run was performed in this release task.
+-
+-## Next Owner
+-
+-1. Install from the tag and verify the manifest checksum before inference.
+-2. Run the image demo and all shadow remaps in DEPLOYMENT.md; verify publisher
+-   count, encodings, original timestamps and frame IDs.
+-3. For temporal operation supply metric plane geometry at image capture time.
+-   Validate real-camera ground projection, optical axes, camera extrinsics and
+-   odometry synchronization. Do not normalize the projection matrix arbitrarily.
+-4. On AGX Orin measure sustained end-to-end timing and source timestamp age,
+-   memory and temperatures with representative input. FP32 is the reference.
+-5. Compare lanes and each object class on the same real footage before changing
+-   runtime precision or input size. Temporal object tracking is not implemented.
+-
+-## Rollback And Training
+-
+-Restore the entire a3-v14 runtime and weight together; do not rename a checkpoint.
+-The package is inference-only. Full optimizer/RNG/history checkpoints remain in
+-the separate training project. No training, resume configuration or private data
+-belongs in this deployment directory.
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/pyproject.toml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-[build-system]
+-requires = ["setuptools>=77", "wheel"]
+-build-backend = "setuptools.build_meta"
+-
+-[project]
+-name = "yolop-a3-runtime"
+-version = "4.0.0"
+-description = "A4 single-backbone lane segmentation and object detection"
+-requires-python = ">=3.10,<3.14"
+-license = "MIT AND BSD-3-Clause"
+-license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+-dependencies = ["numpy>=2.0", "opencv-python>=4.10", "torch==2.11.0", "torchvision==0.26.0"]
+-
+-[project.optional-dependencies]
+-test = ["pytest>=8"]
+-
+-[tool.setuptools.packages.find]
+-include = ["yolop_a3_runtime*"]
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/package.xml
++++ /dev/null
+@@ -1,14 +0,0 @@
+-<?xml version="1.0"?>
+-<package format="3">
+-  <name>yolop_a3_perception</name>
+-  <version>4.0.0</version>
+-  <description>A4 single-backbone lane and object perception</description>
+-  <maintainer email="skromosk@gmail.com">TsubashimoNanato</maintainer>
+-  <license>MIT</license>
+-  <buildtool_depend>ament_python</buildtool_depend>
+-  <exec_depend>rclpy</exec_depend>
+-  <exec_depend>sensor_msgs</exec_depend>
+-  <exec_depend>std_msgs</exec_depend>
+-  <exec_depend>cv_bridge</exec_depend>
+-  <export><build_type>ament_python</build_type></export>
+-</package>
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/resource/yolop_a3_perception
++++ /dev/null
+@@ -1 +0,0 @@
+-
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/setup.cfg
++++ /dev/null
+@@ -1,4 +0,0 @@
+-[develop]
+-script_dir=$base/lib/yolop_a3_perception
+-[install]
+-install_scripts=$base/lib/yolop_a3_perception
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/setup.py
++++ /dev/null
+@@ -1,7 +0,0 @@
+-from setuptools import find_packages, setup
+-
+-setup(name="yolop_a3_perception", version="4.0.0", packages=find_packages(),
+-      data_files=[("share/ament_index/resource_index/packages", ["resource/yolop_a3_perception"]),
+-                  ("share/yolop_a3_perception", ["package.xml"])],
+-      install_requires=["setuptools", "yolop-a3-runtime==4.0.0"],
+-      entry_points={"console_scripts": ["yolop_a3_node = yolop_a3_perception.node:main"]})
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/yolop_a3_perception/__init__.py
++++ /dev/null
+@@ -1 +0,0 @@
+-
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/ros2/yolop_a3_perception/yolop_a3_perception/node.py
++++ /dev/null
+@@ -1,67 +0,0 @@
+-import json
+-from copy import deepcopy
+-from pathlib import Path
+-
+-import rclpy
+-from cv_bridge import CvBridge
+-from rclpy.node import Node
+-from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+-from sensor_msgs.msg import Image
+-from std_msgs.msg import Int32, String
+-
+-from yolop_a3_runtime import PerceptionModel, ROS_TOPICS, RELEASE_NAME
+-
+-
+-class YolopA3Node(Node):
+-    def __init__(self):
+-        super().__init__("yolop_a3_perception")
+-        weights = Path(self.declare_parameter("weights", "weights/shared_best.pth").value).expanduser()
+-        device = str(self.declare_parameter("device", "auto").value)
+-        threshold = float(self.declare_parameter("score_threshold", .5).value)
+-        topic = str(self.declare_parameter("input_image_topic", ROS_TOPICS.input_image).value)
+-        self.model = PerceptionModel(weights, device=device, score_threshold=threshold)
+-        self.bridge = CvBridge()
+-        qos = QoSProfile(history=HistoryPolicy.KEEP_LAST, depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
+-        self.images = {
+-            "lane_overlay": (self.create_publisher(Image, ROS_TOPICS.lane_overlay, 1), "bgr8"),
+-            "lane_mask": (self.create_publisher(Image, ROS_TOPICS.lane_mask, 1), "mono8"),
+-            "object_overlay": (self.create_publisher(Image, ROS_TOPICS.object_overlay, 1), "bgr8"),
+-            "obstacle_mask": (self.create_publisher(Image, ROS_TOPICS.obstacle_mask, 1), "mono8"),
+-        }
+-        self.red = self.create_publisher(Int32, ROS_TOPICS.red_pixels_count, 1)
+-        self.light = self.create_publisher(String, ROS_TOPICS.traffic_light_state, 1)
+-        self.detections = self.create_publisher(String, ROS_TOPICS.detections_json, 1)
+-        self.subscription = self.create_subscription(Image, topic, self.receive, qos)
+-        self.get_logger().info(f"{RELEASE_NAME} single-frame mode; weights={weights}; input={topic}; "
+-                               "calibrated temporal input is available through Python predict_frame")
+-
+-    def receive(self, message):
+-        try:
+-            image = self.bridge.imgmsg_to_cv2(message, desired_encoding="bgr8")
+-            output = self.model.predict(image)
+-            for name, (publisher, encoding) in self.images.items():
+-                result = self.bridge.cv2_to_imgmsg(getattr(output, name), encoding=encoding)
+-                result.header = deepcopy(message.header)
+-                publisher.publish(result)
+-            self.red.publish(Int32(data=output.red_pixels_count))
+-            self.light.publish(String(data=output.traffic_light_state))
+-            payload = output.detections_payload()
+-            payload["header"] = dict(stamp=dict(sec=message.header.stamp.sec, nanosec=message.header.stamp.nanosec),
+-                                     frame_id=message.header.frame_id)
+-            self.detections.publish(String(data=json.dumps(payload)))
+-        except Exception as error:
+-            self.get_logger().error(f"perception callback failed: {error}")
+-
+-
+-def main(args=None):
+-    rclpy.init(args=args)
+-    node = None
+-    try:
+-        node = YolopA3Node()
+-        rclpy.spin(node)
+-    except KeyboardInterrupt:
+-        pass
+-    finally:
+-        if node is not None:
+-            node.destroy_node()
+-        rclpy.shutdown()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tests/test_ros_contract.py
++++ /dev/null
+@@ -1,105 +0,0 @@
+-"""ROS callback contract tests with stubs; not live DDS/ROS acceptance."""
+-import importlib.util
+-import json
+-from pathlib import Path
+-import sys
+-from types import ModuleType, SimpleNamespace
+-
+-import numpy as np
+-
+-ROOT = Path(__file__).resolve().parents[1]
+-sys.path.insert(0, str(ROOT))
+-from yolop_a3_runtime import PerceptionOutput
+-
+-
+-def load_node(monkeypatch, result):
+-    class Node:
+-        def __init__(self, name):
+-            self.publishers, self.errors, self.infos = {}, [], []
+-
+-        def declare_parameter(self, name, default):
+-            return SimpleNamespace(value=default)
+-
+-        def create_publisher(self, kind, topic, depth):
+-            messages = []
+-            self.publishers[topic] = messages
+-            return SimpleNamespace(publish=messages.append)
+-
+-        def create_subscription(self, kind, topic, callback, qos):
+-            return SimpleNamespace(topic=topic, callback=callback, qos=qos)
+-
+-        def get_logger(self):
+-            return SimpleNamespace(info=self.infos.append, error=self.errors.append)
+-
+-    class Bridge:
+-        def imgmsg_to_cv2(self, message, desired_encoding):
+-            assert desired_encoding == "bgr8"
+-            return message.pixels
+-
+-        def cv2_to_imgmsg(self, pixels, encoding):
+-            return SimpleNamespace(pixels=pixels, encoding=encoding, header=None)
+-
+-    definitions = {
+-        "rclpy": {},
+-        "rclpy.node": {"Node": Node},
+-        "rclpy.qos": {"HistoryPolicy": SimpleNamespace(KEEP_LAST=1),
+-                       "ReliabilityPolicy": SimpleNamespace(BEST_EFFORT=2),
+-                       "QoSProfile": SimpleNamespace},
+-        "cv_bridge": {"CvBridge": Bridge},
+-        "sensor_msgs": {},
+-        "sensor_msgs.msg": {"Image": SimpleNamespace},
+-        "std_msgs": {},
+-        "std_msgs.msg": {"Int32": SimpleNamespace, "String": SimpleNamespace},
+-    }
+-    for name, values in definitions.items():
+-        module = ModuleType(name)
+-        module.__dict__.update(values)
+-        monkeypatch.setitem(sys.modules, name, module)
+-    path = ROOT / "ros2/yolop_a3_perception/yolop_a3_perception/node.py"
+-    spec = importlib.util.spec_from_file_location("a3_ros_contract_test", path)
+-    module = importlib.util.module_from_spec(spec)
+-    spec.loader.exec_module(module)
+-    requested = []
+-
+-    def factory(weights, **options):
+-        requested.append((weights, options))
+-        return SimpleNamespace(predict=lambda image: result)
+-
+-    monkeypatch.setattr(module, "PerceptionModel", factory)
+-    return module.YolopA3Node(), requested
+-
+-
+-def test_callback_preserves_headers_encodings_and_all_seven_outputs(monkeypatch):
+-    image = np.zeros((20, 30, 3), np.uint8)
+-    mask = np.zeros((20, 30), np.uint8)
+-    output = PerceptionOutput(mask, image, mask, image, image, (), "unknown", 0, {"total": 1.})
+-    node, requested = load_node(monkeypatch, output)
+-    assert requested == [(Path("weights/shared_best.pth"), dict(device="auto", score_threshold=.5))]
+-    assert node.subscription.topic == "/aiformula_sensing/zed_node/left_image/undistorted"
+-    assert node.subscription.qos.depth == 1
+-    assert any("A4 single-frame mode" in text for text in node.infos)
+-    header = SimpleNamespace(stamp=SimpleNamespace(sec=123, nanosec=456), frame_id="zed_left")
+-    node.receive(SimpleNamespace(pixels=image, header=header))
+-    encodings = {"pub_mask_image": "mono8", "pub_annotated_mask_image": "bgr8",
+-                 "/cone_mask": "mono8", "/cone_bbox_image": "bgr8"}
+-    assert len(node.publishers) == 7
+-    assert all(len(messages) == 1 for messages in node.publishers.values())
+-    for topic, encoding in encodings.items():
+-        message = node.publishers[topic][0]
+-        assert message.header == header and message.header is not header
+-        assert message.header.stamp is not header.stamp and message.encoding == encoding
+-    headers = [node.publishers[topic][0].header for topic in encodings]
+-    assert len({id(value) for value in headers}) == 4
+-    payload = json.loads(node.publishers["/aiformula_perception/yolop_a3/detections"][0].data)
+-    assert payload["header"] == dict(stamp=dict(sec=123, nanosec=456), frame_id="zed_left")
+-    assert payload["temporal_status"] == "single_frame"
+-    assert node.publishers["/traffic_light/state"][0].data == "unknown"
+-    assert node.publishers["/red_pixels_count"][0].data == 0
+-    assert not node.errors
+-
+-
+-def test_callback_failure_is_reported_without_fabricating_new_detections(monkeypatch):
+-    node, _ = load_node(monkeypatch, None)
+-    node.receive(SimpleNamespace(pixels=np.zeros((20, 30, 3), np.uint8), header=None))
+-    assert len(node.errors) == 1 and "callback failed" in node.errors[0]
+-    assert all(not messages for messages in node.publishers.values())
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tests/test_runtime.py
++++ /dev/null
+@@ -1,165 +0,0 @@
+-import hashlib
+-import json
+-from pathlib import Path
+-import sys
+-
+-import numpy as np
+-import pytest
+-import torch
+-
+-ROOT = Path(__file__).resolve().parents[1]
+-sys.path.insert(0, str(ROOT))
+-from yolop_a3_runtime import PerceptionModel, SharedFPNPerception, Detection, ROS_TOPICS
+-from yolop_a3_runtime import RELEASE_NAME, __version__
+-from yolop_a3_runtime.outputs import render
+-from yolop_a3_runtime.color_semantics import classify_traffic_cone
+-from yolop_a3_runtime.temporal import ARCHITECTURE, INPUT_CONTRACT, load_model
+-from yolop_a3_runtime.lane_processing import LaneRuntimeConfig, postprocess_lane_probability
+-
+-
+-@pytest.fixture(scope="module")
+-def runtime():
+-    torch.set_num_threads(4)
+-    result = PerceptionModel(ROOT / "weights/shared_best.pth", device="cpu")
+-    result.model.base.detector.transform.min_size = (128,)
+-    result.model.base.detector.transform.max_size = 256
+-    return result
+-
+-
+-def test_public_entrypoint_is_current_shared_architecture(runtime):
+-    assert PerceptionModel is SharedFPNPerception
+-    assert runtime.model.base.detector.__class__.__name__ == "FCOS"
+-    assert "yolop_a3_runtime.model" not in sys.modules
+-    assert "yolop_a3_runtime.runtime" not in sys.modules
+-
+-
+-def test_single_encoder_visit_and_output_contract(runtime):
+-    calls = []
+-    hook = runtime.model.base.encoder[0].register_forward_hook(lambda *args: calls.append(1))
+-    image = np.zeros((90, 160, 3), np.uint8)
+-    before = image.copy()
+-    result = runtime.predict(image)
+-    hook.remove()
+-    assert calls == [1]
+-    assert np.array_equal(image, before)
+-    for mask in (result.lane_mask, result.obstacle_mask):
+-        assert mask.shape == (90, 160) and mask.dtype == np.uint8
+-        assert set(np.unique(mask)) <= {0, 255}
+-    assert result.combined_overlay.shape == image.shape
+-    assert result.traffic_light_state in {"red", "green", "unknown"}
+-    assert result.temporal_status == "single_frame"
+-    json.dumps(result.detections_payload(), allow_nan=False)
+-
+-
+-@pytest.mark.parametrize("image", [None, np.zeros((0, 5, 3), np.uint8),
+-                                    np.zeros((4, 5), np.uint8), np.zeros((4, 5, 3), np.float32)])
+-def test_invalid_input_rejected(runtime, image):
+-    with pytest.raises(ValueError):
+-        runtime.predict(image)
+-
+-
+-@pytest.mark.parametrize("threshold", [-.1, 1.1, float("nan")])
+-def test_invalid_threshold_rejected_before_loading_weights(threshold):
+-    with pytest.raises(ValueError):
+-        PerceptionModel("missing.pth", score_threshold=threshold)
+-
+-
+-def test_bundled_checkpoint_is_single_model_without_training_state():
+-    path = ROOT / "weights/shared_best.pth"
+-    manifest = json.loads((ROOT / "weights/manifest.json").read_text())
+-    assert hashlib.sha256(path.read_bytes()).hexdigest() == manifest["sha256"]
+-    payload = torch.load(path, map_location="cpu", weights_only=True)
+-    assert set(payload) == {"architecture", "model", "input_contract", "provenance"}
+-    assert payload["architecture"] == ARCHITECTURE
+-    assert payload["input_contract"] == INPUT_CONTRACT
+-    assert payload["provenance"]["step"] == 1024
+-    assert payload["provenance"]["arm"] == "aligned"
+-    assert payload["provenance"]["source_deployment_candidate"] is False
+-    assert list((ROOT / "weights").glob("*.pth")) == [path]
+-    assert not any("teacher" in name for name in payload["model"])
+-
+-
+-def test_a4_identity_preserves_selected_weight_and_public_interfaces():
+-    import ast
+-    import xml.etree.ElementTree as ET
+-    manifest = json.loads((ROOT / "weights/manifest.json").read_text())
+-    assert RELEASE_NAME == manifest["release"] == "A4"
+-    assert __version__ == manifest["package_version"] == "4.0.0"
+-    assert manifest["tag"] == "a4" and manifest["previous_tag"] == "a3-v76"
+-    assert manifest["sha256"] == "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3"
+-    assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
+-    ros = ROOT / "ros2/yolop_a3_perception"
+-    package = ET.parse(ros / "package.xml").getroot()
+-    assert package.findtext("name") == "yolop_a3_perception"
+-    assert package.findtext("version") == __version__
+-    tree = ast.parse((ros / "setup.py").read_text())
+-    setup = next(node for node in ast.walk(tree) if isinstance(node, ast.Call)
+-                 and isinstance(node.func, ast.Name) and node.func.id == "setup")
+-    assert next(ast.literal_eval(v.value) for v in setup.keywords if v.arg == "version") == __version__
+-    assert PerceptionModel is SharedFPNPerception
+-
+-
+-def test_wrong_architecture_fails_closed(tmp_path):
+-    path = tmp_path / "old.pth"
+-    torch.save(dict(architecture="obsolete_ssd", model={}), path)
+-    with pytest.raises(ValueError, match="shared MobileNet"):
+-        load_model(path)
+-
+-
+-@pytest.mark.parametrize("contract", [None, {}, dict(INPUT_CONTRACT, min_size=320),
+-                                     dict(INPUT_CONTRACT, threshold=.4)])
+-def test_changed_or_missing_input_contract_fails_before_model_load(tmp_path, contract):
+-    path = tmp_path / "wrong_contract.pth"
+-    torch.save(dict(architecture=ARCHITECTURE, input_contract=contract, model={}), path)
+-    with pytest.raises(ValueError, match="input contract"):
+-        load_model(path)
+-
+-
+-def test_default_lane_output_keeps_raw_pixels_and_gaps():
+-    probability = np.zeros((32, 32), np.float32)
+-    probability[4:14, 15] = .7
+-    probability[17:28, 15] = .7
+-    probability[1, 1] = .5
+-    expected = (probability >= .5).astype(np.uint8)
+-    config = LaneRuntimeConfig()
+-    assert not config.postprocess_enabled
+-    assert np.array_equal(postprocess_lane_probability(probability, config), expected)
+-
+-
+-def test_bundled_input_transform_is_native_not_square():
+-    model = load_model(ROOT / "weights/shared_best.pth")
+-    assert model.base.detector.transform.min_size == (640,)
+-    assert model.base.detector.transform.max_size == 1152
+-    assert model.base.detector.transform.size_divisible == 32
+-
+-
+-def test_obstacle_mask_uses_boxes_and_excludes_lights():
+-    image = np.zeros((40, 80, 3), np.uint8)
+-    boxes = [(1, (2, 2, 10, 10)), (3, (12, 2, 20, 10)),
+-             (91, (22, 2, 30, 10)), (10, (50, 2, 60, 10))]
+-    detections = [Detection(box, category, "target", .9, "target") for category, box in boxes]
+-    _, mask = render(image, detections)
+-    assert all(mask[5, x] == 255 for x in (5, 15, 25))
+-    assert mask[5, 55] == 0
+-    assert ROS_TOPICS.obstacle_mask == "/cone_mask"
+-    assert ROS_TOPICS.object_overlay == "/cone_bbox_image"
+-
+-
+-@pytest.mark.parametrize("color,label", [((0, 0, 160), "red"), ((0, 160, 160), "yellow"),
+-                                        ((0, 50, 0), "green"), ((160, 0, 0), "blue")])
+-def test_cone_body_color_survives_reflective_band(color, label):
+-    image = np.full((100, 80, 3), color, np.uint8)
+-    image[25:65] = 240
+-    assert classify_traffic_cone(image, (0, 0, 80, 100)).label == label
+-
+-
+-def test_white_cone_on_green_background():
+-    image = np.full((100, 80, 3), (0, 140, 0), np.uint8)
+-    image[:, 20:60] = 230
+-    assert classify_traffic_cone(image, (0, 0, 80, 100)).label == "white"
+-
+-
+-def test_empty_and_dark_cones_are_unknown():
+-    image = np.zeros((30, 30, 3), np.uint8)
+-    for box in ((0, 0, 30, 30), (2, 2, 2, 2)):
+-        assert classify_traffic_cone(image, box).label == "unknown"
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tests/test_temporal.py
++++ /dev/null
+@@ -1,94 +0,0 @@
+-"""Temporal state, geometry and public API checks without a ROS installation."""
+-import sys
+-from pathlib import Path
+-import numpy as np
+-import pytest
+-import torch
+-from torch import nn
+-
+-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+-from yolop_a3_runtime.temporal import TemporalPerception, ProbabilityFusion
+-from yolop_a3_runtime.geometry import sampling_grid, validate_matrix
+-
+-
+-class FixedBase(nn.Module):
+-    def forward(self, images, *, detect=True):
+-        image = images[0]
+-        return [image[:2]], [dict(scores=torch.tensor([.9]))] if detect else []
+-
+-
+-@pytest.fixture
+-def model():
+-    value = TemporalPerception()
+-    value.base = FixedBase()
+-    return value.eval()
+-
+-
+-@torch.inference_mode()
+-def test_raw_history_and_object_outputs(model):
+-    first = torch.rand(3, 12, 20)
+-    second = torch.rand_like(first)
+-    kwargs = dict(sequence="camera/calibration-1", plane_to_image=np.eye(3))
+-    lanes, objects = model.forward_frame(first, timestamp=0., **kwargs)
+-    assert torch.equal(lanes[0], first[:2]) and model.status == "warmup"
+-    lanes, following = model.forward_frame(second, timestamp=.1, **kwargs)
+-    assert model.status == "aligned"
+-    assert torch.equal(following[0]["scores"], objects[0]["scores"])
+-    assert torch.equal(model.previous, second[:2].softmax(0)[1][None, None])
+-    assert not torch.equal(lanes[0].softmax(0)[1], model.previous[0, 0])
+-    assert not model.previous.requires_grad
+-
+-
+-@pytest.mark.parametrize("change,status", [
+-    ({"sequence": "different"}, "sequence_reset"),
+-    ({"timestamp": 0.}, "timestamp_reset"),
+-    ({"timestamp": -.1}, "timestamp_reset"),
+-    ({"timestamp": .251}, "timestamp_reset"),
+-])
+-@torch.inference_mode()
+-def test_discontinuity_uses_exact_current_logits(model, change, status):
+-    image = torch.rand(3, 12, 20)
+-    kwargs = dict(sequence="a", timestamp=0., plane_to_image=np.eye(3))
+-    model.forward_frame(image, **kwargs)
+-    kwargs["timestamp"] = .1
+-    kwargs.update(change)
+-    lanes, _ = model.forward_frame(image, **kwargs)
+-    assert model.status == status and torch.equal(lanes[0], image[:2])
+-
+-
+-@torch.inference_mode()
+-def test_shape_reset_single_frame_and_explicit_reset(model):
+-    kwargs = dict(sequence="a", plane_to_image=np.eye(3))
+-    model.forward_frame(torch.rand(3, 12, 20), timestamp=0., **kwargs)
+-    image = torch.rand(3, 10, 20)
+-    lanes, _ = model.forward_frame(image, timestamp=.1, **kwargs)
+-    assert model.status == "shape_reset" and torch.equal(lanes[0], image[:2])
+-    model([image])
+-    assert model.previous is None and model.status == "single_frame"
+-    model.forward_frame(image, timestamp=.2, **kwargs)
+-    model.reset()
+-    assert model.previous is None and model.timestamp is None
+-
+-
+-@pytest.mark.parametrize("matrix", [None, [], np.zeros((3, 3)), np.full((3, 3), np.nan)])
+-def test_invalid_geometry_rejected(matrix):
+-    with pytest.raises(ValueError):
+-        validate_matrix(matrix)
+-
+-
+-@pytest.mark.parametrize("change", [{"sequence": ""}, {"timestamp": float("nan")}, {"plane_to_image": None}])
+-def test_invalid_frame_metadata_does_not_update_state(model, change):
+-    kwargs = dict(sequence="a", timestamp=0., plane_to_image=np.eye(3))
+-    kwargs.update(change)
+-    with pytest.raises(ValueError):
+-        model.forward_frame(torch.zeros(3, 12, 20), **kwargs)
+-    assert model.previous is None
+-
+-
+-def test_identity_warp_and_invalid_regions():
+-    image = torch.rand(1, 1, 12, 20)
+-    grid, valid = sampling_grid(np.eye(3), np.eye(3), 12, 20, device="cpu")
+-    result = ProbabilityFusion()(image, image, grid, valid)
+-    torch.testing.assert_close(result, image, atol=1e-7, rtol=1e-6)
+-    assert torch.equal(ProbabilityFusion()(image, image, grid, valid * 0), image)
+-    assert ProbabilityFusion()(image, enabled=False) is image
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tools/demo.py
++++ /dev/null
+@@ -1,41 +0,0 @@
+-"""Run one image through the public A4 entrypoint and save both task outputs."""
+-import argparse
+-import json
+-from pathlib import Path
+-import sys
+-
+-import cv2
+-
+-ROOT = Path(__file__).resolve().parents[1]
+-sys.path.insert(0, str(ROOT))
+-from yolop_a3_runtime import PerceptionModel, RELEASE_NAME
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("--image", type=Path, required=True)
+-    parser.add_argument("--output", type=Path, required=True)
+-    parser.add_argument("--weights", type=Path, default=ROOT / "weights/shared_best.pth")
+-    parser.add_argument("--device", default="auto", choices=("auto", "cpu", "cuda"))
+-    args = parser.parse_args()
+-    if args.output.exists():
+-        raise FileExistsError("Choose a new output directory; existing results are preserved")
+-    image = cv2.imread(str(args.image))
+-    if image is None:
+-        raise ValueError(f"Unreadable input image: {args.image}")
+-    result = PerceptionModel(args.weights, device=args.device).predict(image)
+-    args.output.mkdir(parents=True)
+-    for name, pixels in dict(rgb=image, lane_mask=result.lane_mask,
+-                             obstacle_mask=result.obstacle_mask,
+-                             lane_overlay=result.lane_overlay,
+-                             object_overlay=result.object_overlay,
+-                             combined_overlay=result.combined_overlay).items():
+-        if not cv2.imwrite(str(args.output / f"{name}.png"), pixels):
+-            raise OSError(f"Cannot write output image: {name}")
+-    (args.output / "detections.json").write_text(
+-        json.dumps(result.detections_payload(), indent=2), encoding="utf-8")
+-    print(f"{RELEASE_NAME} outputs saved: {args.output.resolve()}")
+-
+-
+-if __name__ == "__main__":
+-    main()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tools/demo_sequence.py
++++ /dev/null
+@@ -1,45 +0,0 @@
+-"""Run a calibrated recorded sequence through the public A4 frame API."""
+-import argparse
+-import json
+-from pathlib import Path
+-import sys
+-import cv2
+-
+-ROOT = Path(__file__).resolve().parents[1]
+-sys.path.insert(0, str(ROOT))
+-from yolop_a3_runtime import PerceptionModel, RELEASE_NAME
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('--manifest', type=Path, required=True)
+-    parser.add_argument('--output', type=Path, required=True)
+-    parser.add_argument('--weights', type=Path, default=ROOT / 'weights/shared_best.pth')
+-    parser.add_argument('--device', choices=('auto', 'cpu', 'cuda'), default='auto')
+-    args = parser.parse_args()
+-    if args.output.exists():
+-        raise FileExistsError('Choose a new output directory; existing results are preserved')
+-    frames = json.loads(args.manifest.read_text(encoding='utf-8'))['frames']
+-    if not isinstance(frames, list) or not frames:
+-        raise ValueError('frames must be a nonempty list in capture order')
+-    model = PerceptionModel(args.weights, device=args.device)
+-    args.output.mkdir(parents=True)
+-    metadata = []
+-    for number, frame in enumerate(frames):
+-        path = args.manifest.parent / frame['image']
+-        image = cv2.imread(str(path))
+-        if image is None:
+-            raise ValueError(f'Unreadable frame {number}: {path}')
+-        result = model.predict_frame(image, sequence=frame['sequence'], timestamp=frame['timestamp'],
+-                                     plane_to_image=frame['plane_to_image'])
+-        for name in ('lane_mask', 'obstacle_mask', 'combined_overlay'):
+-            destination = args.output / f'{number:06d}_{name}.png'
+-            if not cv2.imwrite(str(destination), getattr(result, name)):
+-                raise OSError(f'Cannot write {destination}')
+-        metadata.append(dict(frame=number, timestamp=frame['timestamp'], **result.detections_payload()))
+-    (args.output / 'results.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+-    print(f'{RELEASE_NAME} sequence: {len(frames)} frames -> {args.output.resolve()}')
+-
+-
+-if __name__ == '__main__':
+-    main()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/tools/verify_weights.py
++++ /dev/null
+@@ -1,46 +0,0 @@
+-"""Verify the bundled model checksum and inference-only checkpoint schema."""
+-import hashlib
+-import json
+-from pathlib import Path
+-import sys
+-
+-import torch
+-
+-ROOT = Path(__file__).resolve().parents[1]
+-sys.path.insert(0, str(ROOT))
+-from yolop_a3_runtime.temporal import ARCHITECTURE, INPUT_CONTRACT
+-from yolop_a3_runtime import RELEASE_NAME, __version__
+-
+-
+-def main():
+-    manifest = json.loads((ROOT / "weights/manifest.json").read_text(encoding="utf-8"))
+-    if manifest.get("release") != RELEASE_NAME or manifest.get("package_version") != __version__ or manifest.get("tag") != "a4":
+-        raise ValueError("A4 release metadata mismatch")
+-    path = ROOT / manifest["file"]
+-    digest = hashlib.sha256()
+-    with path.open("rb") as stream:
+-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+-            digest.update(chunk)
+-    checksum = digest.hexdigest()
+-    if checksum != manifest["sha256"]:
+-        raise ValueError("Checkpoint checksum mismatch")
+-    payload = torch.load(path, map_location="cpu", weights_only=True)
+-    if set(payload) != {"architecture", "model", "input_contract", "provenance"}:
+-        raise ValueError("Expected model-only checkpoint without training state")
+-    if payload["architecture"] != manifest["architecture"] or payload["architecture"] != ARCHITECTURE:
+-        raise ValueError("Architecture mismatch")
+-    if payload["input_contract"] != INPUT_CONTRACT or manifest["input_contract"] != INPUT_CONTRACT:
+-        raise ValueError("V76 input contract mismatch")
+-    if payload["provenance"] != manifest["provenance"]:
+-        raise ValueError("Provenance mismatch")
+-    if path.stat().st_size != manifest["bytes"] or len(payload["model"]) != manifest["tensors"]:
+-        raise ValueError("Checkpoint size or tensor count mismatch")
+-    if any(not torch.isfinite(value).all() for value in payload["model"].values()):
+-        raise ValueError("Nonfinite model tensor")
+-    print(json.dumps(dict(sha256=checksum, bytes=path.stat().st_size,
+-                          step=payload["provenance"]["step"], release=RELEASE_NAME,
+-                          version=__version__, tag=manifest["tag"], inference_only=True), indent=2))
+-
+-
+-if __name__ == "__main__":
+-    main()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/verification/package_smoke.json
++++ /dev/null
+@@ -1,22 +0,0 @@
+-{
+-  "passed": true,
+-  "release": "A4",
+-  "package_version": "4.0.0",
+-  "baseline_tests": 40,
+-  "package_tests": 41,
+-  "wheel": "yolop_a3_runtime-4.0.0-py3-none-any.whl",
+-  "wheel_sha256": "681a762d038b4d16b8c6e161123637c8f4ab13d423cbc03c8965c66b31bd156e",
+-  "isolated_install": true,
+-  "installed_native_cuda_smoke": true,
+-  "single_image_cli": true,
+-  "temporal_sequence_cli": true,
+-  "sequence_statuses": [
+-    "warmup",
+-    "aligned",
+-    "aligned"
+-  ],
+-  "source_checkout_weights_required": true,
+-  "ros_dds_run": false,
+-  "jetson_run": false,
+-  "vehicle_run": false
+-}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/verification/runtime_smoke.json
++++ /dev/null
+@@ -1,32 +0,0 @@
+-{
+-  "passed": true,
+-  "frames": 900,
+-  "native_shape": [
+-    720,
+-    1280
+-  ],
+-  "sequences": 36,
+-  "exact_lane_logits": true,
+-  "exact_object_boxes_labels_scores": true,
+-  "exact_previous_raw_probability": true,
+-  "one_encoder_per_frame": true,
+-  "public_adapter_checks": 3,
+-  "temporal_status_counts": {
+-    "warmup": 1,
+-    "aligned": 864,
+-    "sequence_reset": 35
+-  },
+-  "detected_class_counts_at_point5": {
+-    "10": 1067,
+-    "1": 910,
+-    "91": 2961,
+-    "3": 13
+-  },
+-  "device": "NVIDIA GeForce RTX 4070 Ti",
+-  "torch": "2.11.0+cu130",
+-  "elapsed_seconds": 73.70665269996971,
+-  "source_sha256": "1fc29a6cd4bb5de3390570ce805adca5167303176cecdd867eddb6d36752f1ca",
+-  "package_sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+-  "deterministic": true,
+-  "tf32": false
+-}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/verification/training_summary.json
++++ /dev/null
+@@ -1,209 +0,0 @@
+-{
+-  "direction_passed": false,
+-  "gates": {
+-    "gap_gain_at_least_two_pp": false,
+-    "beats_unaligned_gap": true,
+-    "native_iou_nonregression": true,
+-    "empty_below_limit": true,
+-    "empty_nonregression": true,
+-    "no_more_false_joins": true,
+-    "all_lighting_gap_nonregression": true,
+-    "image_object_weights_exact": true
+-  },
+-  "native_summary": {
+-    "single": {
+-      "original": {
+-        "tp": 5245655,
+-        "fp": 624324,
+-        "fn": 1384897,
+-        "gap_hit": 1170187,
+-        "gap_pixels": 2047581,
+-        "excluded_hit": 149786,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 4075468,
+-        "visible_pixels": 4582971,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.7911339810018834,
+-        "iou": 0.7230523305980695,
+-        "gap_recall": 0.5714972936357585,
+-        "visible_recall": 0.8892633184892508,
+-        "excluded_fp": 0.2095870553204827,
+-        "background_fp": 0.0023136011751263615
+-      },
+-      "solid": {
+-        "tp": 6021090,
+-        "fp": 252097,
+-        "fn": 609462,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 190397,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 6021090,
+-        "visible_pixels": 6630552,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.9080827659597572,
+-        "iou": 0.8748215984862805,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.9080827659597572,
+-        "excluded_fp": 0.2664117245393691,
+-        "background_fp": 0.0009342135100457942
+-      },
+-      "none": {
+-        "tp": 0,
+-        "fp": 94499,
+-        "fn": 0,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 91846,
+-        "excluded_pixels": 714675,
+-        "visible_hit": 0,
+-        "visible_pixels": 0,
+-        "samples": 300,
+-        "background_pixels": 276480000,
+-        "false_joins": 0,
+-        "recall": 0.0,
+-        "iou": 0.0,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.0,
+-        "excluded_fp": 0.12851435967397767,
+-        "background_fp": 0.00034179325810185186
+-      }
+-    },
+-    "unaligned": {
+-      "original": {
+-        "tp": 5242790,
+-        "fp": 622328,
+-        "fn": 1387762,
+-        "gap_hit": 1169004,
+-        "gap_pixels": 2047581,
+-        "excluded_hit": 149512,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 4073786,
+-        "visible_pixels": 4582971,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.7907018902800249,
+-        "iou": 0.7228562998422695,
+-        "gap_recall": 0.5709195387142194,
+-        "visible_recall": 0.8888963076571944,
+-        "excluded_fp": 0.20920366265923387,
+-        "background_fp": 0.002306204458124369
+-      },
+-      "solid": {
+-        "tp": 6018789,
+-        "fp": 251251,
+-        "fn": 611763,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 190098,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 6018789,
+-        "visible_pixels": 6630552,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.9077357360292174,
+-        "iou": 0.8745947827916608,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.9077357360292174,
+-        "excluded_fp": 0.2659933507958896,
+-        "background_fp": 0.0009310784285910417
+-      },
+-      "none": {
+-        "tp": 0,
+-        "fp": 94246,
+-        "fn": 0,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 91678,
+-        "excluded_pixels": 714675,
+-        "visible_hit": 0,
+-        "visible_pixels": 0,
+-        "samples": 300,
+-        "background_pixels": 276480000,
+-        "false_joins": 0,
+-        "recall": 0.0,
+-        "iou": 0.0,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.0,
+-        "excluded_fp": 0.12827928778815545,
+-        "background_fp": 0.00034087818287037035
+-      }
+-    },
+-    "aligned": {
+-      "original": {
+-        "tp": 5244242,
+-        "fp": 543005,
+-        "fn": 1386310,
+-        "gap_hit": 1179368,
+-        "gap_pixels": 2047581,
+-        "excluded_hit": 144172,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 4064874,
+-        "visible_pixels": 4582971,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.7909208765725689,
+-        "iou": 0.7310518338391958,
+-        "gap_recall": 0.5759811211375765,
+-        "visible_recall": 0.8869517175648722,
+-        "excluded_fp": 0.20173170349475003,
+-        "background_fp": 0.00201225166115589
+-      },
+-      "solid": {
+-        "tp": 6004750,
+-        "fp": 237628,
+-        "fn": 625802,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 184602,
+-        "excluded_pixels": 714672,
+-        "visible_hit": 6004750,
+-        "visible_pixels": 6630552,
+-        "samples": 300,
+-        "background_pixels": 269849448,
+-        "false_joins": 0,
+-        "recall": 0.9056184160836082,
+-        "iou": 0.8742854730074051,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.9056184160836082,
+-        "excluded_fp": 0.25830310967828596,
+-        "background_fp": 0.0008805947233214278
+-      },
+-      "none": {
+-        "tp": 0,
+-        "fp": 89204,
+-        "fn": 0,
+-        "gap_hit": 0,
+-        "gap_pixels": 0,
+-        "excluded_hit": 88054,
+-        "excluded_pixels": 714675,
+-        "visible_hit": 0,
+-        "visible_pixels": 0,
+-        "samples": 300,
+-        "background_pixels": 276480000,
+-        "false_joins": 0,
+-        "recall": 0.0,
+-        "iou": 0.0,
+-        "gap_recall": 0.0,
+-        "visible_recall": 0.0,
+-        "excluded_fp": 0.12320845139399028,
+-        "background_fp": 0.0003226417824074074
+-      }
+-    }
+-  },
+-  "gap_delta_by_light_pp": {
+-    "midday": 0.7979809063974552,
+-    "long_shadow": 0.22998185584977016,
+-    "soft_dusk": 0.3166999686828653
+-  },
+-  "parent_sha256": "5503f86bb0073ff3e760a4838ef25261f939725ae4726360a4078792f05cc5ec",
+-  "scope": "900 held-out synthetic native sequence frames; 36 clips; 4 spatial anchors; 3 lights; 3 road-marking configurations",
+-  "release_selection": "User selected stable release; experimental direction gate not overridden"
+-}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/weights/manifest.json
++++ /dev/null
+@@ -1,48 +0,0 @@
+-{
+-  "file": "weights/shared_best.pth",
+-  "release": "A4",
+-  "package_version": "4.0.0",
+-  "tag": "a4",
+-  "previous_tag": "a3-v76",
+-  "architecture": "a3_shared_fcos_temporal_probability_v76",
+-  "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+-  "bytes": 13916097,
+-  "tensors": 341,
+-  "input_contract": {
+-    "version": 2,
+-    "name": "a3_v76_native",
+-    "min_size": 640,
+-    "max_size": 1152,
+-    "width": 32,
+-    "depth": 2,
+-    "size_divisible": 32,
+-    "resize": "torch_bilinear",
+-    "input": "uint8_bgr",
+-    "padding": "bottom_right_zero_normalized",
+-    "normalize": "imagenet",
+-    "restore": "torch_logits_crop_resize_align_corners_false",
+-    "threshold": 0.5,
+-    "temporal": "previous_raw_probability",
+-    "max_gap_seconds": 0.25,
+-    "precision": "float32",
+-    "near": 0.05,
+-    "far": 5000.0
+-  },
+-  "provenance": {
+-    "source_sha256": "1fc29a6cd4bb5de3390570ce805adca5167303176cecdd867eddb6d36752f1ca",
+-    "step": 1024,
+-    "arm": "aligned",
+-    "parent_sha256": "5503f86bb0073ff3e760a4838ef25261f939725ae4726360a4078792f05cc5ec",
+-    "source_deployment_candidate": false,
+-    "release_selection": "user_selected_stable_2026-11-06",
+-    "direction_gate_passed": false
+-  },
+-  "parameters": 3403740,
+-  "temporal_parameters": 49,
+-  "classes": {
+-    "1": "person",
+-    "3": "car",
+-    "10": "traffic light",
+-    "91": "traffic cone"
+-  }
+-}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/__init__.py
++++ /dev/null
+@@ -1,13 +0,0 @@
+-"""A4 inference entrypoint; retain the published module name for existing callers."""
+-from .shared_runtime import TemporalPerceptionModel
+-from .contracts import ROS_TOPICS
+-from .outputs import Detection, PerceptionOutput
+-
+-RELEASE_NAME = "A4"
+-__version__ = "4.0.0"
+-
+-PerceptionModel = TemporalPerceptionModel
+-# Retain the published Python name for existing importers; no second model.
+-SharedFPNPerception = TemporalPerceptionModel
+-
+-__all__ = ["PerceptionModel", "TemporalPerceptionModel", "SharedFPNPerception", "Detection", "PerceptionOutput", "ROS_TOPICS"]
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/color_semantics.py
++++ /dev/null
+@@ -1,86 +0,0 @@
+-from __future__ import annotations
+-
+-from dataclasses import dataclass
+-
+-import cv2
+-import numpy as np
+-
+-
+-@dataclass(frozen=True)
+-class ColorEvidence:
+-    label: str
+-    pixel_count: int
+-    counts: dict[str, int]
+-
+-
+-def classify_traffic_light(
+-    image_bgr: np.ndarray,
+-    box_xyxy: tuple[float, float, float, float],
+-) -> ColorEvidence:
+-    crop = _box_crop(image_bgr, box_xyxy)
+-    counts = _hsv_counts(crop)
+-    candidates = {name: counts[name] for name in ("red", "yellow", "green")}
+-    label, pixel_count = max(candidates.items(), key=lambda item: item[1])
+-    minimum = max(3, int(crop.shape[0] * crop.shape[1] * 0.002))
+-    if pixel_count < minimum:
+-        return ColorEvidence("unknown", counts["red"], counts)
+-    return ColorEvidence(label, counts["red"], counts)
+-
+-
+-def classify_traffic_cone(
+-    image_bgr: np.ndarray,
+-    box_xyxy: tuple[float, float, float, float],
+-) -> ColorEvidence:
+-    crop = _box_crop(image_bgr, box_xyxy)
+-    if crop.size:
+-        height, width = crop.shape[:2]
+-        crop = crop[
+-            int(height * 0.15) : max(int(height * 0.85), 1),
+-            int(width * 0.35) : max(int(width * 0.65), 1),
+-        ]
+-
+-    counts = _hsv_counts(crop, minimum_value=35)
+-    candidates = {
+-        name: counts[name]
+-        for name in ("red", "orange", "yellow", "green", "blue")
+-    }
+-    label, pixel_count = max(candidates.items(), key=lambda item: item[1])
+-    # Reflective white bands are not the cone's body color.
+-    minimum = max(6, int(crop.shape[0] * crop.shape[1] * 0.12))
+-    if pixel_count < minimum:
+-        label = "white" if counts["white"] >= minimum else "unknown"
+-        pixel_count = counts["white"] if label == "white" else pixel_count
+-    return ColorEvidence(label, pixel_count, counts)
+-
+-
+-def _box_crop(
+-    image_bgr: np.ndarray,
+-    box_xyxy: tuple[float, float, float, float],
+-) -> np.ndarray:
+-    height, width = image_bgr.shape[:2]
+-    x1, y1, x2, y2 = box_xyxy
+-    left = min(max(int(np.floor(x1)), 0), width)
+-    top = min(max(int(np.floor(y1)), 0), height)
+-    right = min(max(int(np.ceil(x2)), 0), width)
+-    bottom = min(max(int(np.ceil(y2)), 0), height)
+-    if right <= left or bottom <= top:
+-        return np.empty((0, 0, 3), dtype=np.uint8)
+-    return image_bgr[top:bottom, left:right]
+-
+-
+-def _hsv_counts(crop_bgr: np.ndarray, *, minimum_value: int = 65) -> dict[str, int]:
+-    color_names = ("red", "orange", "yellow", "green", "blue", "white")
+-    if crop_bgr.size == 0:
+-        return {name: 0 for name in color_names}
+-
+-    hue, saturation, value = cv2.split(cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2HSV))
+-    vivid = (saturation >= 75) & (value >= minimum_value)
+-    masks = {
+-        "red": vivid & ((hue <= 9) | (hue >= 170)),
+-        "orange": vivid & (hue >= 10) & (hue <= 21),
+-        "yellow": vivid & (hue >= 22) & (hue <= 37),
+-        "green": vivid & (hue >= 38) & (hue <= 90),
+-        "blue": vivid & (hue >= 91) & (hue <= 135),
+-        "white": (saturation <= 45) & (value >= 150),
+-    }
+-    return {name: int(np.count_nonzero(mask)) for name, mask in masks.items()}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/contracts.py
++++ /dev/null
+@@ -1,24 +0,0 @@
+-from dataclasses import dataclass
+-
+-
+-@dataclass(frozen=True)
+-class RosTopics:
+-    input_image: str = "/aiformula_sensing/zed_node/left_image/undistorted"
+-    lane_overlay: str = "pub_annotated_mask_image"
+-    lane_mask: str = "pub_mask_image"
+-    object_overlay: str = "/cone_bbox_image"
+-    obstacle_mask: str = "/cone_mask"
+-    red_pixels_count: str = "/red_pixels_count"
+-    traffic_light_state: str = "/traffic_light/state"
+-    detections_json: str = "/aiformula_perception/yolop_a3/detections"
+-
+-
+-ROS_TOPICS = RosTopics()
+-
+-ROS_ENCODINGS = {
+-    "input_image": "bgr8",
+-    "lane_overlay": "bgr8",
+-    "lane_mask": "mono8",
+-    "object_overlay": "bgr8",
+-    "obstacle_mask": "mono8",
+-}
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/geometry.py
++++ /dev/null
+@@ -1,41 +0,0 @@
+-"""Current-to-previous ground-plane sampling in native pixel-center coordinates."""
+-from functools import lru_cache
+-import numpy as np
+-import torch
+-
+-
+-@lru_cache(maxsize=2)
+-def pixels(height, width, device):
+-    y, x = torch.meshgrid(torch.arange(height, device=device, dtype=torch.float32),
+-                          torch.arange(width, device=device, dtype=torch.float32), indexing='ij')
+-    return x, y
+-
+-
+-def validate_matrix(matrix):
+-    value = np.asarray(matrix, dtype=np.float64)
+-    if value.shape != (3, 3) or not np.isfinite(value).all() or abs(np.linalg.det(value)) < 1e-12:
+-        raise ValueError('Finite nonsingular 3x3 homography required')
+-    return value
+-
+-
+-def sampling_grid(previous_plane, current_plane, height, width, *, aligned=True, device='cuda', near=.05, far=5000.):
+-    if not 0 < near < far:
+-        raise ValueError('Positive increasing camera clip range required')
+-    previous, current = validate_matrix(previous_plane), validate_matrix(current_plane)
+-    transfer = previous @ np.linalg.inv(current) if aligned else np.eye(3)
+-    x, y = pixels(height, width, str(device))
+-    h = torch.as_tensor(transfer, dtype=torch.float32, device=device)
+-    denominator = h[2, 0] * x + h[2, 1] * y + h[2, 2]
+-    safe = denominator.abs() > 1e-7
+-    divisor = torch.where(safe, denominator, torch.ones_like(denominator))
+-    px = (h[0, 0] * x + h[0, 1] * y + h[0, 2]) / divisor
+-    py = (h[1, 0] * x + h[1, 1] * y + h[1, 2]) / divisor
+-    valid = safe & (px >= 0) & (px <= width - 1) & (py >= 0) & (py <= height - 1)
+-    for plane, xx, yy in ((current, x, y), (previous, px, py)):
+-        inverse = torch.as_tensor(np.linalg.inv(plane)[2], dtype=torch.float32, device=device)
+-        inverse_depth = inverse[0] * xx + inverse[1] * yy + inverse[2]
+-        # Valid positive ground depth; near/far bounds match the audited camera.
+-        valid &= (inverse_depth >= 1 / far) & (inverse_depth <= 1 / near)
+-    grid = torch.stack((2 * (px + .5) / width - 1, 2 * (py + .5) / height - 1), -1)
+-    grid = torch.where(valid[..., None], grid, torch.full_like(grid, 2.))
+-    return grid[None], valid[None, None].float()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/lane_processing.py
++++ /dev/null
+@@ -1,188 +0,0 @@
+-from __future__ import annotations
+-
+-from dataclasses import dataclass
+-
+-import cv2
+-import numpy as np
+-import torch
+-
+-
+-IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
+-IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
+-
+-
+-@dataclass(frozen=True)
+-class LaneRuntimeConfig:
+-    image_size: tuple[int, int] = (640, 640)
+-    prediction_threshold: float = 0.5
+-    postprocess_enabled: bool = False
+-    vertical_close: bool = True
+-    vertical_kernel: tuple[int, int] = (3, 11)
+-    component_filter: bool = True
+-    minimum_component_area: int = 60
+-    minimum_component_height: int = 24
+-    maximum_component_aspect_ratio: float = 1.8
+-    bottom_touch_margin: int = 48
+-
+-
+-def preprocess_lane_image(
+-    image_bgr: np.ndarray,
+-    config: LaneRuntimeConfig,
+-) -> tuple[
+-    torch.Tensor,
+-    tuple[tuple[int, int], tuple[tuple[float, float], tuple[float, float]]],
+-]:
+-    if not isinstance(image_bgr, np.ndarray) or image_bgr.ndim != 3 or image_bgr.shape[2] != 3:
+-        shape = getattr(image_bgr, "shape", None)
+-        raise ValueError(f"expected a BGR HxWx3 image, got shape {shape}")
+-    if image_bgr.shape[0] < 1 or image_bgr.shape[1] < 1:
+-        raise ValueError(f"expected a non-empty BGR image, got shape {image_bgr.shape}")
+-
+-    original_shape = image_bgr.shape[:2]
+-    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+-    letterboxed, ratio, pad = _letterbox(
+-        image_rgb,
+-        new_shape=config.image_size,
+-        scaleup=False,
+-    )
+-    normalized = letterboxed.astype(np.float32) / 255.0
+-    normalized = (normalized - IMAGENET_MEAN) / IMAGENET_STD
+-    tensor = torch.from_numpy(
+-        np.ascontiguousarray(normalized.transpose(2, 0, 1))
+-    ).unsqueeze(0)
+-    return tensor, (original_shape, (ratio, pad))
+-
+-
+-def lane_probability_from_logits(lane_logits: torch.Tensor) -> torch.Tensor:
+-    if lane_logits.ndim != 4:
+-        raise ValueError("lane logits must have shape [B, C, H, W]")
+-    if lane_logits.size(1) == 1:
+-        foreground_logits = lane_logits[:, 0]
+-    elif lane_logits.size(1) == 2:
+-        foreground_logits = lane_logits[:, 1] - lane_logits[:, 0]
+-    else:
+-        raise ValueError("lane logits must contain one or two channels")
+-    return torch.sigmoid(foreground_logits)
+-
+-
+-def restore_lane_map(
+-    array: np.ndarray | torch.Tensor,
+-    shape: tuple[tuple[int, int], tuple[tuple[float, float], tuple[float, float]]],
+-) -> np.ndarray:
+-    if isinstance(array, torch.Tensor):
+-        array = array.detach().cpu().numpy()
+-    if array.dtype == np.float16:
+-        array = array.astype(np.float32, copy=False)
+-
+-    (original_height, original_width), (_, pad) = shape
+-    pad_width, pad_height = (int(round(value)) for value in pad)
+-    cropped = array[
+-        pad_height : array.shape[0] - pad_height,
+-        pad_width : array.shape[1] - pad_width,
+-    ]
+-    if cropped.size == 0:
+-        raise ValueError(
+-            f"lane restoration produced an empty crop: array={array.shape}, shape={shape}"
+-        )
+-    return cv2.resize(
+-        cropped,
+-        (original_width, original_height),
+-        interpolation=cv2.INTER_LINEAR,
+-    )
+-
+-
+-def postprocess_lane_probability(
+-    probability: np.ndarray,
+-    config: LaneRuntimeConfig,
+-) -> np.ndarray:
+-    binary_mask = (probability >= config.prediction_threshold).astype(np.uint8)
+-    if not config.postprocess_enabled:
+-        return binary_mask
+-
+-    processed = binary_mask
+-    if config.vertical_close:
+-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, config.vertical_kernel)
+-        processed = cv2.morphologyEx(processed, cv2.MORPH_CLOSE, kernel)
+-    if not config.component_filter:
+-        return processed.astype(np.uint8)
+-    return _filter_lane_components(processed, config)
+-
+-
+-def overlay_lane_mask(
+-    image_bgr: np.ndarray,
+-    lane_mask: np.ndarray,
+-    *,
+-    color: tuple[int, int, int] = (0, 0, 255),
+-    alpha: float = 0.5,
+-) -> np.ndarray:
+-    overlay = image_bgr.copy()
+-    selected = lane_mask.astype(bool)
+-    if selected.any():
+-        color_array = np.array(color, dtype=np.float32)
+-        overlay[selected] = (
+-            overlay[selected].astype(np.float32) * (1.0 - alpha)
+-            + color_array * alpha
+-        )
+-    return overlay.astype(np.uint8)
+-
+-
+-def _letterbox(
+-    image: np.ndarray,
+-    *,
+-    new_shape: tuple[int, int],
+-    color: tuple[int, int, int] = (114, 114, 114),
+-    scaleup: bool,
+-) -> tuple[np.ndarray, tuple[float, float], tuple[float, float]]:
+-    shape = image.shape[:2]
+-    ratio_value = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+-    if not scaleup:
+-        ratio_value = min(ratio_value, 1.0)
+-    ratio = (ratio_value, ratio_value)
+-    resized_shape = (
+-        int(round(shape[1] * ratio_value)),
+-        int(round(shape[0] * ratio_value)),
+-    )
+-    pad_width = (new_shape[1] - resized_shape[0]) / 2
+-    pad_height = (new_shape[0] - resized_shape[1]) / 2
+-    if shape[::-1] != resized_shape:
+-        image = cv2.resize(image, resized_shape, interpolation=cv2.INTER_AREA)
+-    top, bottom = int(round(pad_height - 0.1)), int(round(pad_height + 0.1))
+-    left, right = int(round(pad_width - 0.1)), int(round(pad_width + 0.1))
+-    image = cv2.copyMakeBorder(
+-        image,
+-        top,
+-        bottom,
+-        left,
+-        right,
+-        cv2.BORDER_CONSTANT,
+-        value=color,
+-    )
+-    return image, ratio, (pad_width, pad_height)
+-
+-
+-def _filter_lane_components(
+-    binary_mask: np.ndarray,
+-    config: LaneRuntimeConfig,
+-) -> np.ndarray:
+-    filtered = np.zeros_like(binary_mask, dtype=np.uint8)
+-    component_count, labels, stats, _ = cv2.connectedComponentsWithStats(
+-        binary_mask.astype(np.uint8),
+-        connectivity=8,
+-    )
+-    for component_index in range(1, component_count):
+-        y = stats[component_index, cv2.CC_STAT_TOP]
+-        width = stats[component_index, cv2.CC_STAT_WIDTH]
+-        height = stats[component_index, cv2.CC_STAT_HEIGHT]
+-        area = stats[component_index, cv2.CC_STAT_AREA]
+-        aspect_ratio = width / max(height, 1)
+-        touches_bottom = (
+-            y + height >= binary_mask.shape[0] - config.bottom_touch_margin
+-        )
+-        keep = area >= config.minimum_component_area and (
+-            height >= config.minimum_component_height
+-            or aspect_ratio <= config.maximum_component_aspect_ratio
+-            or touches_bottom
+-        )
+-        if keep:
+-            filtered[labels == component_index] = 1
+-    return filtered
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/outputs.py
++++ /dev/null
+@@ -1,56 +0,0 @@
+-"""Independent lane and object outputs shared by Python and ROS callers."""
+-from dataclasses import asdict, dataclass
+-
+-import cv2
+-import numpy as np
+-
+-
+-@dataclass(frozen=True)
+-class Detection:
+-    box_xyxy: tuple
+-    class_id: int
+-    class_name: str
+-    score: float
+-    semantic_label: str
+-    color: str | None = None
+-    traffic_light_state: str | None = None
+-
+-    def to_dict(self):
+-        return asdict(self)
+-
+-
+-@dataclass(frozen=True)
+-class PerceptionOutput:
+-    lane_mask: np.ndarray
+-    lane_overlay: np.ndarray
+-    obstacle_mask: np.ndarray
+-    object_overlay: np.ndarray
+-    combined_overlay: np.ndarray
+-    detections: tuple
+-    traffic_light_state: str
+-    red_pixels_count: int
+-    timings_ms: dict
+-    temporal_status: str = "single_frame"
+-
+-    def detections_payload(self):
+-        return dict(detections=[item.to_dict() for item in self.detections],
+-                    traffic_light_state=self.traffic_light_state,
+-                    red_pixels_count=self.red_pixels_count, timings_ms=self.timings_ms,
+-                    temporal_status=self.temporal_status)
+-
+-
+-def render(image, detections):
+-    overlay = image.copy()
+-    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+-    for item in detections:
+-        left, top, right, bottom = (int(round(value)) for value in item.box_xyxy)
+-        color = (0, 255, 255) if item.class_id == 10 else (0, 165, 255)
+-        cv2.rectangle(overlay, (left, top), (right, bottom), color, 2)
+-        label = f"{item.semantic_label} {item.score:.2f}"
+-        cv2.putText(overlay, label, (max(0, left), max(16, top - 4)),
+-                    cv2.FONT_HERSHEY_SIMPLEX, .45, (0, 0, 0), 3, cv2.LINE_AA)
+-        cv2.putText(overlay, label, (max(0, left), max(16, top - 4)),
+-                    cv2.FONT_HERSHEY_SIMPLEX, .45, color, 1, cv2.LINE_AA)
+-        if item.class_id in {1, 3, 91}:
+-            cv2.rectangle(mask, (left, top), (right, bottom), 255, -1)
+-    return overlay, mask
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/shared_fcos.py
++++ /dev/null
+@@ -1,121 +0,0 @@
+-"""One MobileNet encoder, lane decoder and a replacement four-class FCOS head."""
+-from collections import OrderedDict
+-
+-import torch
+-from torch import nn
+-from torch.nn import functional as F
+-from torchvision.models import mobilenet_v3_large
+-from torchvision.models.detection import FCOS
+-from torchvision.models.detection.anchor_utils import AnchorGenerator
+-from torchvision.models.detection.fcos import FCOSHead
+-from torchvision.ops import FeaturePyramidNetwork
+-from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
+-from torchvision.ops.misc import FrozenBatchNorm2d
+-
+-LABELS = (1, 3, 10, 91)
+-FEATURE_LAYERS = (1, 3, 6, 12, 16)
+-ARCHITECTURE = "a3_shared_fcos_v22"
+-
+-
+-def lane_conv(in_channels, out_channels):
+-    return nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1, bias=False),
+-                         nn.GroupNorm(8, out_channels), nn.ReLU(inplace=True))
+-
+-
+-class LaneDecoder(nn.Module):
+-    def __init__(self):
+-        super().__init__()
+-        channels = (16, 24, 40, 112, 960)
+-        widths = (16, 32, 48, 64, 96)
+-        self.lateral = nn.ModuleList(nn.Conv2d(c, w, 1) for c, w in zip(channels, widths))
+-        self.fuse = nn.ModuleList(nn.Sequential(lane_conv(widths[i] + widths[i + 1], widths[i]),
+-                                                lane_conv(widths[i], widths[i])) for i in range(4))
+-        self.output = nn.Conv2d(widths[0], 2, 1)
+-
+-    def forward(self, features):
+-        skips = [layer(value) for layer, value in zip(self.lateral, features)]
+-        result = skips[-1]
+-        for index in range(3, -1, -1):
+-            result = F.interpolate(result, size=skips[index].shape[-2:], mode="bilinear", align_corners=False)
+-            result = self.fuse[index](torch.cat((result, skips[index]), 1))
+-        return self.output(result)
+-
+-
+-class ObjectPyramid(nn.Module):
+-    def __init__(self, width):
+-        super().__init__()
+-        self.out_channels = width
+-        self.fpn = FeaturePyramidNetwork([24, 40, 112, 960], width, extra_blocks=LastLevelMaxPool())
+-
+-    def forward(self, features):
+-        return self.fpn(OrderedDict((str(i), x) for i, x in enumerate(features[1:])))
+-
+-
+-class SharedPerception(nn.Module):
+-    def __init__(self, min_size=640, max_size=1152, width=32, depth=2):
+-        super().__init__()
+-        if min_size < 32 or max_size < min_size or width % 32 or depth < 1:
+-            raise ValueError("Invalid image size or FCOS width/depth")
+-        self.config = dict(min_size=min_size, max_size=max_size, width=width, depth=depth)
+-        self.encoder = mobilenet_v3_large(weights=None, norm_layer=FrozenBatchNorm2d).features
+-        self.lane_head = LaneDecoder()
+-        anchors = AnchorGenerator(((4,), (8,), (16,), (32,), (64,)), ((1.,),) * 5)
+-        self.detector = FCOS(ObjectPyramid(width), num_classes=4, anchor_generator=anchors,
+-                             head=FCOSHead(width, 1, 4, num_convs=depth),
+-                             min_size=min_size, max_size=max_size, score_thresh=.05,
+-                             nms_thresh=.5, detections_per_img=100, topk_candidates=200)
+-        self.register_buffer("label_map", torch.tensor(LABELS, dtype=torch.long))
+-
+-    def extract(self, tensor):
+-        features = []
+-        for index, layer in enumerate(self.encoder):
+-            tensor = layer(tensor)
+-            if index in FEATURE_LAYERS:
+-                features.append(tensor)
+-        return features
+-
+-    def raw_heads(self, normalized_tensor):
+-        features = self.extract(normalized_tensor)
+-        lane = self.lane_head(features)
+-        maps = list(self.detector.backbone(features).values())
+-        return lane, maps, self.detector.head(maps)
+-
+-    def restore_lanes(self, logits, batch, native):
+-        logits = F.interpolate(logits, size=batch.tensors.shape[-2:], mode="bilinear", align_corners=False)
+-        return [F.interpolate(value[None, :, :size[0], :size[1]], size=original,
+-                               mode="bilinear", align_corners=False)[0]
+-                for value, size, original in zip(logits, batch.image_sizes, native)]
+-
+-    def prepare(self, images):
+-        native = [image.shape[-2:] for image in images]
+-        batch, _ = self.detector.transform(images, None)
+-        return batch, native
+-
+-    def forward(self, images, *, detect=True):
+-        batch, native = self.prepare(images)
+-        features = self.extract(batch.tensors)
+-        lanes = self.restore_lanes(self.lane_head(features), batch, native)
+-        if not detect:
+-            return lanes, []
+-        maps = list(self.detector.backbone(features).values())
+-        outputs = self.detector.head(maps)
+-        anchors = self.detector.anchor_generator(batch, maps)
+-        sizes = [value.shape[-2] * value.shape[-1] for value in maps]
+-        split = {key: list(value.split(sizes, dim=1)) for key, value in outputs.items()}
+-        predictions = self.detector.postprocess_detections(
+-            split, [list(a.split(sizes)) for a in anchors], batch.image_sizes)
+-        for row in predictions:
+-            row["labels"] = self.label_map[row["labels"]]
+-        predictions = self.detector.transform.postprocess(predictions, batch.image_sizes, native)
+-        return lanes, predictions
+-
+-
+-class DenseExport(nn.Module):
+-    """Static normalized NCHW input; native-coordinate restoration stays in adapter."""
+-    def __init__(self, model):
+-        super().__init__()
+-        self.model = model
+-
+-    def forward(self, tensor):
+-        lane, _, outputs = self.model.raw_heads(tensor)
+-        return lane, outputs["cls_logits"], outputs["bbox_regression"], outputs["bbox_ctrness"]
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/shared_runtime.py
++++ /dev/null
+@@ -1,76 +0,0 @@
+-"""Inference-only adapter for the pretrained shared MobileNet architecture."""
+-import time
+-
+-import cv2
+-import numpy as np
+-import torch
+-
+-from .color_semantics import classify_traffic_cone, classify_traffic_light
+-from .lane_processing import LaneRuntimeConfig, overlay_lane_mask, postprocess_lane_probability
+-from .outputs import Detection, PerceptionOutput, render
+-from .temporal import load_model
+-
+-CATEGORIES = {1: "person", 3: "car", 10: "traffic light", 91: "traffic cone"}
+-
+-
+-class TemporalPerceptionModel:
+-    def __init__(self, weights, *, device="auto", score_threshold=.5, lane_config=None):
+-        if not 0 <= score_threshold <= 1:
+-            raise ValueError("score_threshold must be between 0 and 1")
+-        if device == "auto":
+-            device = "cuda" if torch.cuda.is_available() else "cpu"
+-        self.device = torch.device(device)
+-        self.model = load_model(weights, self.device)
+-        self.score_threshold = score_threshold
+-        self.lane_config = lane_config or LaneRuntimeConfig()
+-
+-    @torch.inference_mode()
+-    def predict(self, image):
+-        return self._predict(image)
+-
+-    @torch.inference_mode()
+-    def predict_frame(self, image, *, sequence, timestamp, plane_to_image):
+-        """Use metric ground-plane projection at this image's capture time."""
+-        return self._predict(image, dict(sequence=sequence, timestamp=timestamp,
+-                                         plane_to_image=plane_to_image))
+-
+-    def reset(self):
+-        self.model.reset()
+-
+-    def _predict(self, image, geometry=None):
+-        if not isinstance(image, np.ndarray) or image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3 or min(image.shape[:2]) < 1:
+-            raise ValueError("image must be nonempty uint8 H x W x 3 BGR")
+-        began = time.perf_counter()
+-        inputs = torch.from_numpy(cv2.cvtColor(image, cv2.COLOR_BGR2RGB).transpose(2, 0, 1).copy()).to(self.device).float() / 255
+-        if geometry is None:
+-            lanes, results = self.model([inputs])
+-        else:
+-            lanes, results = self.model.forward_frame(inputs, **geometry)
+-        probability = lanes[0].softmax(0)[1].cpu().numpy()
+-        lane = postprocess_lane_probability(probability, self.lane_config)
+-        detections, red_pixels = [], 0
+-        result = results[0]
+-        for box, label, score in zip(result["boxes"].cpu().tolist(), result["labels"].cpu().tolist(), result["scores"].cpu().tolist()):
+-            if score < self.score_threshold or label not in CATEGORIES:
+-                continue
+-            color, state = None, None
+-            name = CATEGORIES[label]
+-            semantic = name.replace(" ", "_")
+-            if label == 91:
+-                color = classify_traffic_cone(image, tuple(box)).label
+-                semantic = f"{color}_traffic_cone" if color != "unknown" else "traffic_cone"
+-            elif label == 10:
+-                evidence = classify_traffic_light(image, tuple(box))
+-                state = evidence.label
+-                red_pixels += evidence.pixel_count
+-                semantic = f"{state}_traffic_light"
+-            detections.append(Detection(tuple(box), label, name, score, semantic, color, state))
+-        detections = tuple(detections)
+-        states = {item.traffic_light_state for item in detections}
+-        state = "red" if "red" in states else "green" if "green" in states else "unknown"
+-        lane_overlay = overlay_lane_mask(image, lane)
+-        object_overlay, obstacle = render(image, detections)
+-        combined, _ = render(lane_overlay, detections)
+-        return PerceptionOutput(lane * 255, lane_overlay, obstacle, object_overlay, combined,
+-                                detections, state, red_pixels, {"total": (time.perf_counter()-began)*1000},
+-                                temporal_status=self.model.status)
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy/yolop_a3_runtime/temporal.py
++++ /dev/null
+@@ -1,99 +0,0 @@
+-"""Pointwise convex fusion of current and past floating lane probabilities."""
+-import math
+-import numpy as np
+-import torch
+-from torch import nn
+-from torch.nn import functional as F
+-from .geometry import sampling_grid, validate_matrix
+-from .shared_fcos import SharedPerception
+-
+-ARCHITECTURE = "a3_shared_fcos_temporal_probability_v76"
+-MODEL_CONFIG = dict(min_size=640, max_size=1152, width=32, depth=2)
+-INPUT_CONTRACT = dict(version=2, name="a3_v76_native", **MODEL_CONFIG,
+-                      size_divisible=32, resize="torch_bilinear", input="uint8_bgr",
+-                      padding="bottom_right_zero_normalized", normalize="imagenet",
+-                      restore="torch_logits_crop_resize_align_corners_false", threshold=.5,
+-                      temporal="previous_raw_probability", max_gap_seconds=.25,
+-                      precision="float32", near=.05, far=5000.)
+-
+-
+-class ProbabilityFusion(nn.Module):
+-    def __init__(self):
+-        super().__init__()
+-        self.gate = nn.Sequential(nn.Conv2d(4, 8, 1), nn.ReLU(), nn.Conv2d(8, 1, 1))
+-        nn.init.zeros_(self.gate[-1].weight)
+-        nn.init.constant_(self.gate[-1].bias, -4.)
+-
+-    def forward(self, current, previous=None, grid=None, valid=None, enabled=True):
+-        if not enabled or previous is None:
+-            return current
+-        if current.ndim != 4 or current.shape[1] != 1 or previous.shape != current.shape:
+-            raise ValueError('Matching B1HW probability tensors required')
+-        batch, _, height, width = current.shape
+-        if grid is None or grid.shape != (batch, height, width, 2) or valid is None or valid.shape != current.shape:
+-            raise ValueError('Matching BHW2 sampling grid and B1HW validity required')
+-        warped = F.grid_sample(previous.detach(), grid, mode='bilinear',
+-                               padding_mode='zeros', align_corners=False)
+-        inputs = torch.cat((current, warped, warped - current, valid), dim=1)
+-        weight = self.gate(inputs).sigmoid() * valid
+-        return current + weight * (warped - current)
+-
+-
+-class TemporalPerception(nn.Module):
+-    """One camera stream per instance; caller supplies capture-time geometry."""
+-    def __init__(self):
+-        super().__init__()
+-        self.base = SharedPerception(**MODEL_CONFIG)
+-        self.memory = ProbabilityFusion()
+-        self.reset()
+-
+-    def reset(self):
+-        self.previous = self.previous_plane = None
+-        self.sequence = self.timestamp = None
+-        self.status = "single_frame"
+-
+-    def forward(self, images, *, detect=True):
+-        # Mixing independent images into a stream must never reuse stale history.
+-        self.reset()
+-        return self.base(images, detect=detect)
+-
+-    def forward_frame(self, image, *, sequence, timestamp, plane_to_image, detect=True):
+-        if not isinstance(sequence, str) or not sequence:
+-            raise ValueError("sequence must identify a nonempty camera/calibration epoch")
+-        if not math.isfinite(timestamp):
+-            raise ValueError("Finite capture timestamp required")
+-        plane = validate_matrix(plane_to_image)
+-        status = "warmup"
+-        if self.previous is not None:
+-            if sequence != self.sequence:
+-                status = "sequence_reset"
+-            elif not 0 < timestamp - self.timestamp <= .25:
+-                status = "timestamp_reset"
+-            elif tuple(image.shape[-2:]) != tuple(self.previous.shape[-2:]):
+-                status = "shape_reset"
+-            else:
+-                status = "aligned"
+-        lanes, objects = self.base([image], detect=detect)
+-        raw = lanes[0].softmax(0)[1][None, None]
+-        if status == "aligned":
+-            grid, valid = sampling_grid(self.previous_plane, plane, *raw.shape[-2:], device=raw.device)
+-            fused = self.memory(raw, self.previous, grid, valid).clamp(1e-7, 1 - 1e-7)[0, 0]
+-            lanes = [torch.stack((torch.log1p(-fused), fused.log()))]
+-        # Store raw, not fused probability: no recursive persistence of old errors.
+-        self.previous = raw.detach()
+-        self.previous_plane = np.array(plane, copy=True)
+-        self.sequence, self.timestamp, self.status = sequence, timestamp, status
+-        return lanes, objects
+-
+-
+-def load_model(path, device="cpu"):
+-    saved = torch.load(path, map_location="cpu", weights_only=True)
+-    if saved.get("architecture") != ARCHITECTURE:
+-        raise ValueError("Expected the V76 shared MobileNet/FCOS temporal model")
+-    if saved.get("input_contract") != INPUT_CONTRACT:
+-        raise ValueError("V76 input contract mismatch; runtime and weights must be updated together")
+-    if set(saved) != {"architecture", "input_contract", "model", "provenance"}:
+-        raise ValueError("Expected a model-only deployment checkpoint")
+-    model = TemporalPerception()
+-    model.load_state_dict(saved["model"], strict=True)
+-    return model.to(device).eval()
+--- a/workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py
++++ b/workspace/src/aiformula/perception/road_detector/road_detector/road_detector.py
+@@ -1,5 +1,4 @@
+ import sys
+-from copy import deepcopy
+ import cv2
+ import rclpy
+ from rclpy.node import Node
+@@ -112,9 +111,9 @@
+             _, ll_seg_points = torch.max(ll_seg_mask_raw, 1)
+             ll_seg_mask = ll_seg_points.int().squeeze().cpu().numpy()
+ 
+-        self.publish_result(undistorted_image, ll_seg_mask, msg.header)
++        self.publish_result(undistorted_image, ll_seg_mask, msg.header.stamp)
+ 
+-    def publish_result(self, image, ll_seg_mask, source_header):
++    def publish_result(self, image, ll_seg_mask, time_stamp):
+         ll_seg_mask = np.array(ll_seg_mask, dtype=np.uint8)
+         ll_seg_mask_bin = (ll_seg_mask > 0).astype(np.uint8)
+ 
+@@ -124,15 +123,13 @@
+         annotated_image = cv2.addWeighted(image, 1.0, color_mask, 0.5, 0)
+ 
+         annotated_msg = self.cv_bridge.cv2_to_imgmsg(annotated_image, "bgr8")
+-        # Preserve acquisition time and camera frame without sharing mutable
+-        # Header/Time objects with the input or the other output.
+-        annotated_msg.header = deepcopy(source_header)
++        annotated_msg.header.stamp = time_stamp
+         self.annotated_mask_image_pub.publish(annotated_msg)
+ 
+         # Publish mask image
+         mask_image = (ll_seg_mask_bin * 255).astype(np.uint8)
+         ll_seg_mask_msg = self.cv_bridge.cv2_to_imgmsg(mask_image, "mono8")
+-        ll_seg_mask_msg.header = deepcopy(source_header)
++        ll_seg_mask_msg.header.stamp = time_stamp
+         self.lane_mask_image_pub.publish(ll_seg_mask_msg)
+ 
+ 
+--- a/workspace/src/aiformula/perception/road_detector/setup.py
++++ b/workspace/src/aiformula/perception/road_detector/setup.py
+@@ -5,7 +5,7 @@
+ 
+ setup(
+     name=package_name,
+-    version='0.0.1',
++    version='0.0.0',
+     packages=find_packages(include=[package_name, package_name + '.*']),
+     data_files=get_data_files(package_name, ("weights", "config")),
+     install_requires=['setuptools'],
+--- a/workspace/src/aiformula/perception/road_detector/test/test_output_contract.py
++++ /dev/null
+@@ -1,237 +0,0 @@
+-"""Exercise production image methods offline, without ROS, YOLOP or a GPU.
+-
+-Only ROS message conversion and the inference boundary are doubled. The actual
+-image_callback/publish_result bodies, NumPy and OpenCV execute unchanged. This
+-is not a model-inference or ROS transport test.
+-"""
+-
+-import ast
+-from contextlib import nullcontext
+-from pathlib import Path
+-from types import MethodType, SimpleNamespace
+-import unittest
+-
+-import cv2
+-import numpy as np
+-
+-
+-_SOURCE = (
+-    Path(__file__).resolve().parents[1] / 'road_detector' / 'road_detector.py'
+-)
+-
+-
+-class _Tensor:
+-    """Small NumPy-backed double for the callback's inference boundary."""
+-
+-    def __init__(self, values):
+-        self.values = np.asarray(values)
+-
+-    @property
+-    def shape(self):
+-        return self.values.shape
+-
+-    def to(self, unused_device):
+-        return self
+-
+-    def half(self):
+-        return self
+-
+-    def float(self):
+-        return self
+-
+-    def ndimension(self):
+-        return self.values.ndim
+-
+-    def unsqueeze(self, dimension):
+-        return _Tensor(np.expand_dims(self.values, dimension))
+-
+-    def __getitem__(self, key):
+-        return _Tensor(self.values[key])
+-
+-    def __gt__(self, other):
+-        return _Tensor(self.values > other)
+-
+-    def int(self):
+-        return _Tensor(self.values.astype(np.int32))
+-
+-    def squeeze(self):
+-        return _Tensor(self.values.squeeze())
+-
+-    def cpu(self):
+-        return self
+-
+-    def numpy(self):
+-        return self.values
+-
+-
+-def _header(frame_id='zed_left_camera_optical_frame'):
+-    return SimpleNamespace(
+-        stamp=SimpleNamespace(sec=123, nanosec=987654321), frame_id=frame_id
+-    )
+-
+-
+-class _Bridge:
+-    """Capture requested encodings and pixels at the ROS conversion boundary."""
+-
+-    def imgmsg_to_cv2(self, message, encoding):
+-        if encoding != 'bgr8':
+-            raise AssertionError('Unexpected input encoding')
+-        return message.pixels.copy()
+-
+-    def cv2_to_imgmsg(self, pixels, encoding):
+-        return SimpleNamespace(
+-            pixels=pixels.copy(), encoding=encoding, header=_header('')
+-        )
+-
+-
+-def _production_methods():
+-    tree = ast.parse(_SOURCE.read_text(encoding='utf-8'), filename=str(_SOURCE))
+-    detector = next(
+-        node for node in tree.body
+-        if isinstance(node, ast.ClassDef) and node.name == 'RoadDetector'
+-    )
+-    # Execute the production copy import as well: removing it must fail tests.
+-    imports = [
+-        node for node in tree.body
+-        if isinstance(node, ast.ImportFrom) and node.module == 'copy'
+-    ]
+-    methods = [
+-        node for node in detector.body
+-        if isinstance(node, ast.FunctionDef)
+-        and node.name in ('publish_result', 'image_callback')
+-    ]
+-    module = ast.Module(body=imports + methods, type_ignores=[])
+-
+-    def interpolate(tensor, scale_factor, mode, align_corners):
+-        if (scale_factor, mode, align_corners) != (1, 'bilinear', False):
+-            raise AssertionError('Unexpected interpolation contract')
+-        return tensor
+-
+-    torch = SimpleNamespace(
+-        no_grad=nullcontext,
+-        sigmoid=lambda tensor: _Tensor(1.0 / (1.0 + np.exp(-tensor.values))),
+-        max=lambda tensor, axis: (
+-            _Tensor(np.max(tensor.values, axis=axis)),
+-            _Tensor(np.argmax(tensor.values, axis=axis)),
+-        ),
+-        nn=SimpleNamespace(functional=SimpleNamespace(interpolate=interpolate)),
+-    )
+-    namespace = {'np': np, 'cv2': cv2, 'torch': torch, 'CvBridgeError': ValueError}
+-    exec(compile(module, str(_SOURCE), 'exec'), namespace)
+-    return namespace
+-
+-
+-class TestOutputContract(unittest.TestCase):
+-    """Keep source headers and the existing full-frame pixel contract intact."""
+-
+-    def setUp(self):
+-        self.methods = _production_methods()
+-        self.annotated = []
+-        self.masks = []
+-        self.node = SimpleNamespace(
+-            cv_bridge=_Bridge(),
+-            annotated_mask_image_pub=SimpleNamespace(
+-                publish=self.annotated.append
+-            ),
+-            lane_mask_image_pub=SimpleNamespace(publish=self.masks.append),
+-        )
+-        for name in ('image_callback', 'publish_result'):
+-            setattr(self.node, name, MethodType(self.methods[name], self.node))
+-        self.image = np.arange(36, dtype=np.uint8).reshape(3, 4, 3)
+-
+-    def test_publish_preserves_full_mask_and_encodings(self):
+-        mask = np.array(
+-            [[1, 0, 2, 0], [0, 255, 0, 1], [0, 0, 1, 0]], dtype=np.uint8
+-        )
+-        image_before = self.image.copy()
+-        mask_before = mask.copy()
+-        source_header = _header()
+-        self.node.publish_result(self.image, mask, source_header)
+-        self.assertEqual(len(self.masks), 1)
+-        self.assertEqual(len(self.annotated), 1)
+-        published = self.masks[0]
+-        self.assertEqual(published.encoding, 'mono8')
+-        self.assertEqual(published.pixels.dtype, np.uint8)
+-        np.testing.assert_array_equal(published.pixels, (mask > 0) * 255)
+-        self.assertEqual(self.annotated[0].encoding, 'bgr8')
+-        overlay = np.zeros_like(self.image)
+-        overlay[mask > 0] = (0, 255, 0)
+-        np.testing.assert_array_equal(
+-            self.annotated[0].pixels,
+-            cv2.addWeighted(self.image, 1.0, overlay, 0.5, 0),
+-        )
+-        np.testing.assert_array_equal(self.image, image_before)
+-        np.testing.assert_array_equal(mask, mask_before)
+-
+-    def test_headers_are_full_independent_deep_copies(self):
+-        source_header = _header()
+-        self.node.publish_result(self.image, np.ones((3, 4)), source_header)
+-        mask_header = self.masks[0].header
+-        annotated_header = self.annotated[0].header
+-        for output_header in (mask_header, annotated_header):
+-            self.assertEqual(output_header, source_header)
+-            self.assertIsNot(output_header, source_header)
+-            self.assertIsNot(output_header.stamp, source_header.stamp)
+-        self.assertIsNot(mask_header, annotated_header)
+-        self.assertIsNot(mask_header.stamp, annotated_header.stamp)
+-        source_header.frame_id = 'source_changed'
+-        source_header.stamp.sec = 999
+-        self.assertEqual(mask_header, _header())
+-        self.assertEqual(annotated_header, _header())
+-        mask_header.stamp.nanosec = 0
+-        mask_header.frame_id = 'mask_changed'
+-        self.assertEqual(annotated_header, _header())
+-
+-    def test_empty_source_frame_is_not_fabricated(self):
+-        source_header = _header('')
+-        source_header.stamp.sec = 0
+-        source_header.stamp.nanosec = 0
+-        self.node.publish_result(self.image, np.zeros((3, 4)), source_header)
+-        self.assertEqual(self.masks[0].header, source_header)
+-        self.assertEqual(self.annotated[0].header, source_header)
+-
+-    def test_callback_passes_full_header_for_all_model_output_forms(self):
+-        expected_mask = np.array(
+-            [[0, 1, 0, 1], [1, 0, 1, 0], [0, 0, 1, 1]], dtype=np.uint8
+-        )
+-        self.node.architecture = 'cpu'
+-        self.node.padding_image = lambda pixels: (pixels, 1.0, 0, 0, 0, 0)
+-        self.node.image_to_tensor = lambda pixels: _Tensor(
+-            pixels.transpose(2, 0, 1)
+-        )
+-        for channels in (1, 2):
+-            for container in (lambda value: value, tuple, list):
+-                for half_precision in (False, True):
+-                    with self.subTest(
+-                        channels=channels, container=container,
+-                        half_precision=half_precision,
+-                    ):
+-                        self.annotated.clear()
+-                        self.masks.clear()
+-                        if channels == 1:
+-                            scores = np.where(expected_mask, 10.0, -10.0)
+-                            tensor = _Tensor(scores[None, None, :, :])
+-                        else:
+-                            scores = np.stack((1 - expected_mask, expected_mask))
+-                            tensor = _Tensor(scores[None, :, :, :])
+-                        output = (
+-                            container([tensor])
+-                            if container in (tuple, list) else container(tensor)
+-                        )
+-                        self.node.model = lambda unused_input: output
+-                        self.node.use_half_precision = half_precision
+-                        message = SimpleNamespace(
+-                            header=_header(), pixels=self.image.copy()
+-                        )
+-                        self.node.image_callback(message)
+-                        self.assertEqual(len(self.masks), 1)
+-                        self.assertEqual(self.masks[0].header, message.header)
+-                        self.assertIsNot(self.masks[0].header, message.header)
+-                        self.assertEqual(self.annotated[0].header, message.header)
+-                        np.testing.assert_array_equal(
+-                            self.masks[0].pixels, expected_mask * 255
+-                        )
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()

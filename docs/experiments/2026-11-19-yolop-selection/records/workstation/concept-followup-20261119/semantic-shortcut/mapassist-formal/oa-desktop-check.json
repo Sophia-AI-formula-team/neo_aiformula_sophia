@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/workspace/install/obsticle_avoidence/lib/obsticle_avoidence/oa_2",
+    "--ros-args",
+    "-r",
+    "/lane_stop_flag:=/point_flag",
+    "-r",
+    "/processed_point_a:=/oa_point_a",
+    "-r",
+    "/processed_point_b:=/oa_point_b",
+    "-r",
+    "/processed_point_c:=/oa_point_c"
+  ],
+  "runner": "/home/workspace/install/launchers/share/launchers/shellscript/run_obstacle_avoidance.py"
+}

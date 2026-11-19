@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+exec /usr/bin/python3 -c '
+import json
+import os
+from pathlib import Path
+import runpy
+import sys
+
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
+
+package = "obsticle_avoidence"
+executable = Path(get_package_prefix(package), "lib", package, "oa_2")
+runner = Path(get_package_share_directory("launchers"), "shellscript", "run_obstacle_avoidance.py")
+if not (executable.is_file() and os.access(executable, os.X_OK) and runner.is_file()):
+    raise SystemExit("Missing installed oa_2 executable or avoidance runner")
+
+command = [str(executable), "--ros-args", "-r", "/lane_stop_flag:=/point_flag"]
+for label in "abc":
+    command += ["-r", "/processed_point_" + label + ":=/oa_point_" + label]
+if sys.argv[1:] == ["--check"]:
+    print(json.dumps(dict(command=command, runner=str(runner)), indent=2))
+    sys.exit(0)
+if sys.argv[1:]:
+    raise SystemExit("Usage: oa-avoidance [--check]")
+raise SystemExit(runpy.run_path(str(runner))["run_child"](command))
+' "$@"

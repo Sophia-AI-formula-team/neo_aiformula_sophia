@@ -1,0 +1,365 @@
+--- a/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py
+@@ -1,6 +1,7 @@
+ """Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/backtrack_forward617.py. """
+ 
+ import numpy as np
++from concept_feasibility.response61515 import physical_motor_enabled
+ 
+ from concept_road.compare61513 import Guided
+ 
+@@ -13,34 +14,52 @@
+ from concept_feasibility.response61515 import MODEL
+ 
+ def checked_retreat(obs,reverse_seconds,stop_age,horizon,previous_yaw=0.,reverse_steer=0.):
+-    z=x=angle=travel=turn=0.;v=obs.speed;w=obs.yaw;age=stop_age
+-    controls=[];paths=[];states=[tuple(np.array([q]) if k!=3 else q for k,q in enumerate([0.,0.,0.,0.,0.,0.]))]
+-    initial_gap,initial_lower,initial_known=road_clearance(obs.road,np.array([0.]),np.array([0.]),np.array([0.]),1.)
+-    lower=float(initial_lower[0]);geometric=float(initial_gap[0]);known=bool(initial_known[0]);max_speed=abs(v)
+-    steps=int(np.ceil(max(horizon,reverse_seconds+.5)/.05))
++    steps = int(np.ceil(max(horizon, reverse_seconds + .5) / .05))
++    controls = np.empty((steps, 2))
++    # Keep the scalar frozen dynamics and every 50 ms pose. The footprint
++    # kernel is pointwise and can check the full history in one call.
++    history = np.zeros((steps + 1, 5))
++    z = x = angle = travel = turn = 0.
++    v, w, age = obs.speed, obs.yaw, stop_age
++    max_speed = abs(v)
++    release_from = reverse_steer if reverse_seconds > 0 else previous_yaw
++    release_tick = int(round(reverse_seconds / .05))
+     for i in range(steps):
+-        q=-.2 if (i+.5)*.05<reverse_seconds else 0.
+-        release_from=reverse_steer if reverse_seconds>0 else previous_yaw
+-        release_step=max(0,i-int(round(reverse_seconds/.05)))
+-        steer=reverse_steer if q<0 else np.sign(release_from)*max(0.,abs(release_from)-1.8*(obs.dt+(release_step//4)*.2))
+-        controls.append([q,float(steer)]);ov,ow=v,w
+-        v,w,age=[float(a) for a in advance_reverse(v,w,q,steer,.05,age)]
+-        mid=angle+.25*(ow+w)*.05
+-        z+=(ov+v)*.5*np.cos(mid)*.05;x+=(ov+v)*.5*np.sin(mid)*.05
+-        angle+=(ow+w)*.5*.05;travel+=(abs(ov)+abs(v))*.5*.05;turn+=(abs(ow)+abs(w))*.5*.05
+-        rg,rl,k=road_clearance(obs.road,np.array([z]),np.array([x]),np.array([angle]),1.)
+-        lower=min(lower,float(rl[0]-.04*travel-.08*turn*1.16));geometric=min(geometric,float(rg[0]));known &= bool(k[0])
+-        max_speed=max(max_speed,abs(v));states.append(tuple(np.array([a]) if j!=3 else a for j,a in enumerate([z,x,angle,(i+1)*.05,travel,turn])))
+-        if (i+1)%4==0:paths.append([z,x])
+-    gap,obstacle=path_obstacle_clearance(obs.objects,states)
++        q = -.2 if (i + .5) * .05 < reverse_seconds else 0.
++        release_step = max(0, i - release_tick)
++        steer = reverse_steer if q < 0 else np.sign(release_from) * max(
++            0., abs(release_from) - 1.8 * (obs.dt + (release_step // 4) * .2))
++        controls[i] = q, steer
++        ov, ow = v, w
++        v, w, age = map(float, advance_reverse(v, w, q, steer, .05, age))
++        mid = angle + .25 * (ow + w) * .05
++        z += (ov + v) * .5 * np.cos(mid) * .05
++        x += (ov + v) * .5 * np.sin(mid) * .05
++        angle += (ow + w) * .5 * .05
++        travel += (abs(ov) + abs(v)) * .5 * .05
++        turn += (abs(ow) + abs(w)) * .5 * .05
++        history[i + 1] = z, x, angle, travel, turn
++        max_speed = max(max_speed, abs(v))
++
++    depth, lateral, heading, distance, rotation = history.T
++    road_gap, road_lower, supported = road_clearance(obs.road, depth, lateral, heading, 1.)
++    lower = float((road_lower - .04 * distance - .08 * rotation * 1.16).min())
++    known = bool(supported.all())
++    obstacle_gap = obstacle_lower = 100.
++    if len(obs.objects):
++        times = np.arange(steps + 1) * .05
++        states = list(zip(depth[:, None], lateral[:, None], heading[:, None], times,
++                          distance[:, None], rotation[:, None]))
++        gaps, margins = path_obstacle_clearance(obs.objects, states)
++        obstacle_gap, obstacle_lower = float(gaps[0]), float(margins[0])
+     # Inferred startup road may remain populated after historical rear cells
+     # disappear. It can never authorize another powered reverse interval.
+-    observed_rear=(reverse_seconds==0 or getattr(obs,'rear_observed_limit',None) is not None)
+-    valid=lower>=0 and obstacle[0]>0 and known and observed_rear and abs(v)<.04 and max_speed<=.3
+-    return dict(valid=bool(valid),controls=np.asarray(controls),path=paths,road_lower=lower,
+-        obstacle_lower=float(obstacle[0]),geometric=min(geometric,float(gap[0])),known=known,
+-        maximum_speed=max_speed,travel_m=travel,checked_seconds=steps*.05,
+-        end_z=z,end_x=x,end_heading=angle)
++    observed_rear = reverse_seconds == 0 or getattr(obs, 'rear_observed_limit', None) is not None
++    valid = lower >= 0 and obstacle_lower > 0 and known and observed_rear and abs(v) < .04 and max_speed <= .3
++    return dict(valid=bool(valid), controls=controls, path=history[4::4, :2].tolist(), road_lower=lower,
++                obstacle_lower=obstacle_lower, geometric=min(float(road_gap.min()), obstacle_gap), known=known,
++                maximum_speed=max_speed, travel_m=travel, checked_seconds=steps*.05,
++                end_z=z, end_x=x, end_heading=angle)
+ 
+ def opening_target(obs):
+     """Current observed and remembered openings rank checked reverse actions."""
+@@ -183,7 +202,7 @@
+             duration=min(1.,np.floor(remaining/.3/.2)*.2)
+             slew=getattr(self.base,'p',{}).get('slew',1.8);limit=min(.18,slew*obs.dt/2.)
+             candidates=[]
+-            for steer in [-limit,0.,limit]:
++            for steer in ([0.] if physical_motor_enabled() else [-limit,0.,limit]):
+                 if abs(steer-self.command[1])>slew*obs.dt+1e-8:continue
+                 candidate=checked_retreat(original,duration,self.zero_age,horizon,self.command[1],steer)
+                 valid=duration>=.2 and candidate['valid'] and self.used+candidate['travel_m']<=self.budget
+--- a/vehicle_concept/src/concept_candidates/concept_candidates/curve_road617.py
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/curve_road617.py
+@@ -9,7 +9,8 @@
+ 
+ from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
+ 
+-from concept_feasibility.response61515 import advance, inverse_yaw
++from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
++from .field_controls import forward_ceiling, forward_steering
+ 
+ from concept_candidates.candidate_merge import distinct_requests
+ from concept_candidates.curve_progress import increment
+@@ -120,7 +121,9 @@
+         targets = self.target_points(obs, look)
+         if targets is None:
+             return self.no_observation()
+-        speeds = np.array([0., .25, .55, .8, 1.])*p['pace']
++        physical = physical_motor_enabled()
++        ceiling = forward_ceiling(obs.speed, obs.dt, p['pace']) if physical else p['pace']
++        speeds = np.array([0., .25, .55, .8, 1.]) * ceiling
+         commands = np.tile(speeds, len(targets))
+         targets = np.repeat(targets, len(speeds))
+         # The whole batch shares the same vehicle state, observations, parameters
+@@ -144,7 +147,7 @@
+         heading_integral = np.zeros(count)
+         reference_steps = np.zeros(count,int)
+         camera_belief = CameraBelief(obs.objects, count)
+-        previous = self.command.copy()
++        previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
+         last_yaw = np.full(count, previous[1])
+         zero_age = np.where(commands == 0, self.stop_age, 0.)
+         horizon = float(np.clip((look+2.)/max(obs.speed, 1.2), 2., 5.))
+@@ -174,10 +177,13 @@
+                 lateral = dx*np.cos(heading)-dz*np.sin(heading)
+                 desired = p['steer_gain']*np.maximum(speed, .5)*2*lateral/(dz*dz+dx*dx+.01)-p['yaw_damping']*yaw
+                 command_dt = obs.dt if step == 0 else interval
+-                command_yaw = inverse_yaw(desired, commands,
+-                    lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
+-                    upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
+-                    current_yaw=yaw,dt=command_dt)
++                if physical:
++                    command_yaw = forward_steering(desired, commands, speed, last_yaw, command_dt)
++                else:
++                    command_yaw = inverse_yaw(desired, commands,
++                        lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
++                        upper=np.minimum(yaw_limit,last_yaw+p['slew']*command_dt),
++                        current_yaw=yaw,dt=command_dt)
+                 last_yaw = command_yaw
+                 if first is None:
+                     first = command_yaw.copy()
+@@ -345,6 +351,13 @@
+             self.reserved = None
+             return False
+         tail = reserve['controls'][offset:]
++        if physical_motor_enabled() and tail[0,0] > 0.:
++            drive, steer = tail[0]
++            previous = physical_applied_command()[1]
++            if (drive > forward_ceiling(obs.speed, obs.dt, self.p['pace']) + 1e-9 or
++                    abs(steer-float(forward_steering(steer, drive, obs.speed, previous, obs.dt))) > 1e-8):
++                self.reserved = None
++                return False
+         if reserve['mode']=='drive_then_stop_profile':
+             checked=evaluate_profile(obs,tail[None,:,:],len(tail)*.05,self.stop_age,self.p['uncertainty'])
+             valid=checked['valid'];lower=np.minimum(checked['road_lower'],checked['obstacle_lower'])
+--- /dev/null
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/field_controls.py
+@@ -0,0 +1,49 @@
++"""Field candidate limits, applied before any path or braking branch is evaluated."""
++import numpy as np
++
++from concept_feasibility.response61515 import motor_steering, physical_applied_command
++
++# Initial commissioning limits. The turn ceiling is below the ±0.7 rad/s
++# manual plateaus recorded by VectorNav on 2026-11-19.
++FORWARD_ACCEL = 1.0             # m/s², command ramp
++TRACKING_HEADROOM = .5          # m/s ahead of measured wheel speed
++MAX_YAW = .65                   # body rad/s
++LATERAL_ACCEL = 1.0             # m/s²
++DIFFERENTIAL_SLEW = 1.5         # rad/s² at the legacy differential input
++HALF_TREAD = .30                # metres
++WHEEL_SPEED_FRACTION = .5       # |turn wheel speed| / straight wheel speed
++
++
++def forward_ceiling(measured, dt, pace):
++    applied = max(0., physical_applied_command()[0])
++    return min(pace, applied + FORWARD_ACCEL * min(dt, .2),
++               max(0., measured) + TRACKING_HEADROOM)
++
++
++def forward_steering(desired, drive, measured, previous, dt):
++    """Choose a real motor input whose actual wheel differential rises smoothly.
++
++    The stock inverse sigmoid has disjoint fitted branches at zero. Project
++    in its differential coordinates, then map back to the unchanged converter.
++    All inputs/outputs at the planner boundary are clockwise-positive.
++    """
++    drive = np.asarray(drive, dtype=float)
++    limit = np.minimum(MAX_YAW, LATERAL_ACCEL / np.maximum(.01, np.maximum(measured, drive)))
++    ros = -np.clip(desired, -limit, limit)
++    requested = motor_steering(ros, physical=True)
++    # A small request below the fitted branch's intercept can invert the
++    # wheel differential. Select straight for an unrepresentable request.
++    requested = np.where(requested * ros > 0., requested, 0.)
++    last = motor_steering(-np.asarray(previous, dtype=float), physical=True)
++    delta = DIFFERENTIAL_SLEW * min(dt, .2)
++    wheel_limit = drive * WHEEL_SPEED_FRACTION / HALF_TREAD
++    raw = np.clip(np.clip(requested, last-delta, last+delta), -wheel_limit, wheel_limit)
++    # Additionally respect the body-yaw ceiling when speed changes.
++    raw = np.clip(raw, motor_steering(-limit, physical=True), motor_steering(limit, physical=True))
++    pos = raw >= 0
++    L = np.where(pos, 1.53908994, 1.68283261)
++    k = np.where(pos, 3.15496243, 2.91627673)
++    offset = np.where(pos, 3.36664054, -3.22124235)
++    bias = np.where(pos, -.0621119, 1.6954783)
++    command = L / (1. + np.exp(-k*(raw-offset))) - bias
++    return np.where((drive > 0.) & (np.abs(raw) > 1e-9), -command, 0.)
+--- a/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py
+@@ -5,18 +5,21 @@
+ from concept_feasibility.geometry import road_clearance
+ from concept_feasibility.geometry61514 import RISK_LIMIT
+ from concept_feasibility.path_risk import array_clearance
+-from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals
++from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
+ from .curve_progress import project, supported_increment
++from .field_controls import forward_steering
+ 
+ DT = .05
+-MOTOR = (np.asarray(MODEL['speed']), np.asarray(MODEL['yaw']), MODEL['stop']['delay'],
+-         MODEL['stop']['deceleration'])
++def motor_parameters():
++    return (np.asarray(MODEL['speed']), forward_yaw_model(), MODEL['stop']['delay'],
++            MODEL['stop']['deceleration'])
+ 
+ 
+ def warm_pace(pace):
+     parameters=tuple(MODEL['yaw'])
++    physical=physical_motor_enabled()
+     for speed in np.asarray([.25,.55,.8,1.])*pace:
+-        response_intervals(float(np.float32(speed)),parameters)
++        response_intervals(float(speed if physical else np.float32(speed)), parameters, physical)
+ 
+ 
+ def initial_state(obs, commands, stop_age, *, forward=False):
+@@ -45,9 +48,12 @@
+         desired=parameters['steer_gain']*np.maximum(speed,.5)*2*lateral/(dz*dz+dx*dx+.01)-parameters['yaw_damping']*yaw
+         dt=obs.dt if k==0 else .2
+         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
+-        last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
++        if physical_motor_enabled():
++            last=forward_steering(desired,commands,speed,last,dt)
++        else:
++            last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
+         controls[t:t+4,:,0]=commands;controls[t:t+4,:,1]=last
+-        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*MOTOR)[1:]
++        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*motor_parameters(),physical_motor_enabled())[1:]
+     # The frozen simulator's nominal horizon uses this particular evaluation order.
+     ticks=np.arange(steps*4)
+     times=np.r_[0.,(ticks//4)*.2+(ticks%4+1)*DT]
+@@ -136,7 +142,7 @@
+             controls[:cruise]=coast_sequence[:,:cruise].transpose(1,0,2)
+             endpoint=coast_sequence[:,-1,1]
+         controls[cruise:,:,1]=endpoint*.65**(((ticks[cruise:]-coast)//4+1)[:,None])
+-    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*MOTOR)
++    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
+     stopped=np.logical_or.accumulate((ticks[:,None]>last)&(abs(controls[:,:,0])<1e-8)&(states[1:,:,3]<.04),axis=0)
+     all_stopped=np.flatnonzero(stopped.all(axis=1))
+     nt=int(all_stopped[0])+1 if len(all_stopped) else len(controls)
+@@ -157,7 +163,7 @@
+     controls[:original]=sequence.transpose(1,0,2)
+     ticks=np.arange(nt-original)
+     controls[original:,:,1]=sequence[:,-1,1]*.65**((ticks//4+1)[:,None])
+-    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*MOTOR)
++    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*motor_parameters(),physical_motor_enabled())
+     geometric,road,known,obstacle=clearance(obs,state,np.arange(nt+1)*DT,uncertainty)
+     progress,used,cost=progress_over(obs,state[:nominal+1])
+     finite=np.isfinite(state[1:,:,3:5]).all(axis=(0,2))
+--- /dev/null
++++ b/vehicle_concept/src/concept_candidates/test/test_field_controls.py
+@@ -0,0 +1,46 @@
++import numpy as np
++
++from concept_candidates.field_controls import (
++    DIFFERENTIAL_SLEW, MAX_YAW, forward_ceiling, forward_steering)
++from concept_feasibility.response61515 import can_command, motor_profile, motor_steering
++
++
++def test_field_ramp_uses_applied_zero_and_cannot_wind_up_while_stalled():
++    applied = 0.
++    for expected in (.2, .4, .5, .5):
++        with motor_profile(True, (applied, 0.)):
++            applied = forward_ceiling(0., .2, 4.)
++        np.testing.assert_allclose(applied, expected)
++    with motor_profile(True):
++        assert forward_ceiling(3., .49, 4.) == .2
++    with motor_profile(True, (3.9, .1)):
++        assert forward_ceiling(3.9, .2, 4.) == 4.
++        assert forward_ceiling(1.2, .2, 1.3) == 1.3
++
++
++def test_field_launch_checks_both_real_wheels_and_turn_slew():
++    drive = np.array([.2, .2, .2])
++    desired = np.array([-1.55, 0., 1.55])
++    previous = np.zeros_like(drive)
++    u = forward_steering(desired, drive, 0., previous, .2)
++    raw = motor_steering(-u, physical=True)
++    assert (abs(raw) <= DIFFERENTIAL_SLEW * .2 + 1e-10).all()
++    right, left = can_command(drive, u, physical=True)
++    assert np.all(right > 0) and np.all(left > 0)
++    assert np.allclose(u[1], 0.)
++    assert (right[0] > left[0]) and (right[2] < left[2])
++    assert np.max(np.abs(u)) < MAX_YAW
++
++
++def test_field_turn_speed_cap_and_unrepresentable_request():
++    for speed in (.05, .2, .5, 1., 4.):
++        q = np.full(3, speed)
++        desired = np.array([-.06211189553141594, .001, 0.])
++        assert np.all(forward_steering(desired, q, speed, np.zeros(3), .2) == 0.)
++        for sign in (-1., 1.):
++            last = np.zeros(3)
++            for _ in range(20):
++                last = forward_steering(np.full(3, sign*2.), q, speed, last, .2)
++            assert np.all(np.abs(last) <= min(.65, 1./speed) + 1e-8)
++            assert np.all(last*sign >= 0)
++            assert np.all(forward_steering(last, np.zeros(3), speed, last, .2) == 0.)
+--- /dev/null
++++ b/vehicle_concept/src/concept_candidates/test/test_reverse_sweep.py
+@@ -0,0 +1,39 @@
++from types import SimpleNamespace
++
++import numpy as np
++
++from concept_candidates.backtrack_forward617 import checked_retreat
++from concept_feasibility.response61515 import features, MODEL, motor_profile
++from concept_feasibility.reverse_model617 import DATA, step
++
++
++def test_recovery_checks_all_release_ticks_and_requires_supported_rear():
++    obs = SimpleNamespace(road=np.array([[-3., -2., 2., .04], [10., -2., 2., .04]]),
++                          objects=[], speed=0., yaw=0., dt=.2, rear_observed_limit=-3.)
++    for duration in (0., .2, .4, .6, .8, 1.):
++        result = checked_retreat(obs, duration, .3, 4.2, -.1, .18)
++        assert result['valid']
++        assert len(result['path']) == 21
++        controls = result['controls']
++        ticks = round(duration/.05)
++        np.testing.assert_array_equal(controls[:ticks, 0], -.2)
++        np.testing.assert_array_equal(controls[ticks:, 0], 0.)
++    obs.road[0, 0] = -.08
++    assert not checked_retreat(obs, 1., .3, 4.2)['known']
++    obs.road[0, 0] = -3.
++    obs.rear_observed_limit = None
++    assert not checked_retreat(obs, 1., .3, 4.2)['valid']
++    assert checked_retreat(obs, 0., .3, 4.2)['valid']
++
++
++def test_retreat_cache_separates_motor_profiles():
++    speed, yaw, dt = -.1, .13, .05
++    for physical in (False, True, False):
++        basis = features(-.2, 0., *MODEL['yaw'][4:6], physical=physical)
++        expected = []
++        for model, initial in (('v', speed), ('w', yaw)):
++            tau, *gains = DATA['models'][model]
++            target = float(basis @ np.asarray(gains))
++            expected.append(target + (initial - target) * np.exp(-dt/tau))
++        with motor_profile(physical):
++            np.testing.assert_array_equal(step(speed, yaw, -.2, 0., dt, .3), expected + [0.])

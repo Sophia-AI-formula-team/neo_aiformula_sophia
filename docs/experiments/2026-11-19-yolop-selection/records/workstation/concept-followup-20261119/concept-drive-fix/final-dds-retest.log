@@ -1,0 +1,20 @@
+Starting >>> concept
+[1.046s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+- concept_visualization
+- concept_obstacles
+- concept_ranker
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+- /home/control/aiformula_runtime/concept-field-20261119/install/concept_visualization
+- /home/control/concept_v6275_ws/install/concept_obstacles
+- /home/control/concept_v6275_ws/install/concept_ranker
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road concept_visualization concept_obstacles concept_ranker
+Finished <<< concept [2.50s]
+
+Summary: 1 package finished [3.08s]
+2026-11-19T16:15:42+09:00
+Constructed sensor graph and chassis without devices: robot_state_publisher, joint_state_publisher, joy, launchers, ros2_socketcan, ros2_socketcan, zed_wrapper
+DDS verified command signs, capture stamp, selection, speed cap, restart, projection interlock, Honda direct-frame parity, image-gap restart and signed reverse publication and full-zero braking.
+2026-11-19T16:15:45+09:00

@@ -1,0 +1,55 @@
+--- a/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_follower_gnss_0303.py
++++ b/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_follower_gnss_0303.py
+@@ -301,7 +301,7 @@
+         if r < epsilon:
+             return 0.0, 0.0
+ 
+-        v = (v_t * math.cos(beta) + lambda_v * r) * math.cos(alpha)
++        v = (v_t * math.cos(beta) + lambda_v * dx) * math.cos(alpha)
+         sin_alpha = math.sin(alpha)
+         sin_beta  = math.sin(beta)
+ 
+--- a/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_follower_gnss_0315.py
++++ b/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_follower_gnss_0315.py
+@@ -323,7 +323,7 @@
+         if r < epsilon:
+             return 0.0, 0.0
+ 
+-        v = (v_t * math.cos(beta) + lambda_v * r) * math.cos(alpha)
++        v = (v_t * math.cos(beta) + lambda_v * dx) * math.cos(alpha)
+         sin_alpha = math.sin(alpha)
+         sin_beta  = math.sin(beta)
+ 
+--- a/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_base0316.py
++++ b/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_base0316.py
+@@ -266,7 +266,7 @@
+                 sin_beta = epsilon
+ 
+             # ---------- 计算线速度 v ----------
+-            v = ( (self.lya.v_t)*math.cos(beta) + self.lya.lambda_v*r ) * math.cos(alpha)
++            v = ( (self.lya.v_t)*math.cos(beta) + self.lya.lambda_v*dx ) * math.cos(alpha)
+ 
+             # ---------- 计算角速度，需要 self.lya.omega_t ----------
+             # 保留你原先那套公式:
+--- a/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_plus_opencv0316.py
++++ b/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_plus_opencv0316.py
+@@ -292,7 +292,7 @@
+                 sin_beta = epsilon
+ 
+             # ---------- 计算线速度 v ----------
+-            v = ( (self.lya.v_t)*math.cos(beta) + self.lya.lambda_v*r ) * math.cos(alpha)
++            v = ( (self.lya.v_t)*math.cos(beta) + self.lya.lambda_v*dx ) * math.cos(alpha)
+ 
+             # ---------- 计算角速度，需要 self.lya.omega_t ----------
+             # 保留你原先那套公式:
+--- a/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_plus_path0316.py
++++ b/workspace/src/aiformula/control/gnss_follower/gnss_follower/lya_gnss_plus_path0316.py
+@@ -357,7 +357,7 @@
+         if r < epsilon:
+             return 0.0, 0.0
+ 
+-        v = (v_t * math.cos(beta) + lambda_v * r) * math.cos(alpha)
++        v = (v_t * math.cos(beta) + lambda_v * dx) * math.cos(alpha)
+         sin_alpha = math.sin(alpha)
+         sin_beta  = math.sin(beta)
+ 

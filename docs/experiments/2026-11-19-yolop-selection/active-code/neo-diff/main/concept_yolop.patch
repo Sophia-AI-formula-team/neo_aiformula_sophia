@@ -1,0 +1,1700 @@
+--- /dev/null
++++ b/concept_yolop/README.md
+@@ -0,0 +1,44 @@
++# concept_yolop
++
++ROS 2 Foxy 感知节点。B1.4 用一张 ZED 左相机图同时输出当前车道的道路掩膜、可见标线掩膜与四类物体检测。原尺寸比例为 16:9，交给 V6.26 的图像和像素坐标统一为 640×360。改变相机高度、俯仰或光学参数会改变像素到路面距离的关系。
++
++## 离线安装和权重
++
++在 ROS 环境可用的终端，从仓库的 `vehicle_concept` 目录构建。Foxy 使用节点解释器中的 NumPy、OpenCV、cv_bridge、PyTorch 和包含原生 NMS 算子的 TorchVision。Jetson 使用与机器的 JetPack/CUDA、Python 和 torch 对应的 aarch64 wheel；可将官方对应 wheel 和系统包事先带到机器。此包安装时不会请求网络或替换设备上的 torch。[NVIDIA Jetson 安装说明](https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/) · [TorchVision 版本对照](https://github.com/pytorch/vision/blob/main/README.md#installation)
++
++```bash
++source /opt/ros/foxy/setup.bash
++colcon build --packages-select concept_yolop
++source install/setup.bash
++ros2 run concept_yolop concept_yolop_weights /media/usb/B1.4-road-aligned-research.pth
++ros2 run concept_yolop concept_yolop_check /media/usb/front.png --device cuda
++ros2 launch concept_yolop concept_yolop.launch.py
++```
++
++导入程序将校验通过的权重原子写入 `$XDG_DATA_HOME/concept_yolop/`，默认是 `~/.local/share/concept_yolop/`。也可以把已有的本地冻结归档 V6.26.zip 作为输入，程序只读取其中的 B1.4。文件 15,293,077 字节，SHA256 为 `19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6`。使用有权访问的原件；Git 只包含源码和校验值。启动时传 `weights:=/absolute/path/to/model.pth` 可直接使用本机文件。每次加载前都会验证实际读取的字节。初次带到另一台机器时，使用上面的真实图检查核对 GPU 和 NMS。
++
++
++## 话题与几何
++
++| 用途 | 默认 ROS 话题 | 类型 |
++|---|---|---|
++| 已去畸变的 ZED 左图 | `/aiformula_sensing/zed_node/left_image/undistorted` | sensor_msgs/Image |
++| 相机标定信息 | `/aiformula_sensing/zed_node/left/camera_info` | sensor_msgs/CameraInfo |
++| 同一帧的图像、预测和时间 | `/concept/perception/frame` | std_msgs/String |
++| RViz 叠图 | `/concept/perception/overlay` | sensor_msgs/Image |
++
++叠图中蓝色是本车道，橙色是标线，有框的桶标注类别 91、分数至少 0.5。规划消息保留全部模型输出。节点使用深度 1 的相机订阅，RViz 有订阅者时才生成叠图。消息中的时间戳来自输入图像。
++
++`concept_yolop.frame_codec.decode_frame(msg.data)` 检查协议版本和模型摘要，返回 `stamp_ns`、`frame_id`、`geometry_profile`、`bgr`、`road`、`lane`、`boxes`、`scores`、`labels`。RGB 通道以 BGR8 内存排列交付。两张 bool 掩膜及 BGR 使用无损 PNG；选择监听规划话题的远端设备时应考虑图像负载。6 月实车 bag 的 12 帧每条消息约 443–493 kB。
++
++实车整机启动会依次查找已安装的 `camera.json` 和 `honda-ground.json`。后者结合实时左相机 CameraInfo.P 与本田安装位姿，输出 `honda-v1.4.0-ground`。没有配置时使用 `unverified-resize`。可用一张实测几何登记表，通过 `calibration:=/absolute/path/to/camera.json` 检查。JSON 字段为实际相机的话题 `image_topic`、光学坐标系 `frame_id`、挂载记录编号 `mount_id`、图像 `width` 和 `height`、去畸变后的 3×4 矩阵 `projection`（按行，共 12 个数），以及 `ground_marks`。地面点每行是 `[原图像素u, 原图像素v, 距车中心向右米数, 向前米数]`。这些位置应独立实测。程序验证至少 4 点，覆盖前方 3 米以内和 7 米以外、左右各 0.5 米之外。基于 V6.26 相机模型重建，每点平面误差最多 0.10 米。本版用这个范围筛查明显的投影不匹配；它只说明这批标记的测量结果。登记表与实时话题、光学帧、图像尺寸及 CameraInfo.P 对上后，发布 `calibrated-v626`。更换安装位置后应重新测量。节点仅输出感知，两种状态都能在 RViz 查看。
++
++## 复核
++
++现场可用 `ros2 run concept_yolop concept_yolop_calibrate --capture 新目录 --mount-id 安装编号 --optical-height-m 0.55` 取配对原图和 CameraInfo。将实际左相机光心到水平地面的米数填入 `--optical-height-m`。该值随草稿保存为 `optical_height_m`。
++
++用实拍图中至少四个已测地面标记填写 `fit_marks`，再用另外至少四个已测标记填写 `ground_marks`。每组都要覆盖左右和远近。以车体 `base_footprint` 为参照记录向右、向前的距离，单位为米。程序按实测光心高度和镜头内参拟合朝向，把地面投影变换到冻结策略的 0.655 m 参考视图，随后用独立标记检验所有点的误差。每点均须在 0.10 m 以内。[车辆交接手册](../../AGENTS.md)
++
++填完后执行 `ros2 run concept_yolop concept_yolop_calibrate --install 新目录/camera.json`。校验通过后，命令会原子写入 `$XDG_CONFIG_HOME/concept/camera.json`（缺省为 `~/.config/concept/camera.json`）。`--check 新目录/camera.json` 可以单独查看验证误差。
++
++`concept_yolop_check image.png --weights model.pth --compare same_frame_perception.npz` 在本机检查道路和标线逐像素相同、检测坐标和分数绝对误差不超过 1e-5，并把规划消息编码、解码与原数组对照。没有比对文件时仍检查推理与消息回读。图像须与比对记录来自同一拍。模型与实测证据见 [来源和实测记录](SOURCES.md)。
+--- /dev/null
++++ b/concept_yolop/SOURCES.md
+@@ -0,0 +1,21 @@
++# B1.4 来源和对照
++
++本包保留单帧 RGB 推理所需的 MobileNet V3 特征层、两支独立分割解码器、FCOS 检测头及其冻结参数映射。类别顺序为 1、3、10、91。对研究模型做了严格的 state_dict 加载和独立输出对照。训练损失、训练数据工具、CSP 候选分支、实验字体/绝对路径以及读取旧检查点的初始化程序没有进入 ROS 节点。网络模块由本机的 TorchVision 提供。上游研究源和 SHA256 如下。
++
++| 原研究路径 | SHA256 |
++|---|---|
++| YOLOP_B1/model.py | b7374fa180087ecde5b9849f07b3ab4d7b1460a8be2cfa0cff4ffa2ace706f69 |
++| YOLOP_B1/phase2/models.py | 54c5922b569494f39cff0381ae151cfd9b1a68b61f7aa06fcc833879fcf47794 |
++| YOLOP_B1/common.py | 79a2d33f19cf5157bd6eb0a65c59b2de852877ddeab8e1082fa9d894631bedfc |
++| YOLOP_A3/experiments/efficient_v22_20261025/model.py | a022cb227ab1f1fdff9a587f9b87245b9a0e68943becca5e6b1f095ebeb9b89e |
++| YOLOP_A3/experiments/class_scope_v30_20261025/objectives.py | 8c1fcff5073366623544288a44b539268716e8b08b89f14d28bfc548346b044c |
++
++权重是本机 B1 实验生成的 `B1.4-road-aligned-research.pth`，没有随源码分发。FCOS 的训练子类只覆盖损失函数，推理沿用 TorchVision 的 FCOSHead，载入完全相同的权重。B1.4 的 backend 是 mobile，初始化以后运行只需本版检查点。
++
++2026-11-19 在 NVIDIA RTX 4070 Ti、torch 2.11.0+cu130、torchvision 0.26.0+cu130 上运行了两个独立入口。原入口为 `YOLOP_B1.phase2.models.load` 和 `YOLOP_B1.common.image_tensor`。新入口为 `concept_yolop.inference.Predictor`。原模型和新模型均以 FP32 推理。用 2026-06-29 17:48:44 的实车 bag，按原检测项目 `reports/real_bag/source.json` 核验 12 张原图 SHA256。涵盖序号 0、140、281、421、561、702、842、983、1123、1263、1404、1544。道路和标线共 5,529,600 个逐像素判断一致，1,200 个检测的坐标、类别与分数逐项完全相同。每帧打包再解码后，图像、两张掩膜、全部检测及原始纳秒时间戳都相同。
++
++另外，V6.24 移动桶外圈的第 201 帧重现了此前保留的 Unity 输出：道路 83,984 像素、车线 892 像素、检测 100 项。这里验证的是与原感知模型输出一致；车机的安装、实时延迟和物理相机标定仍要在目标设备测量。
++
++独立 ROS 2 Foxy 基础容器（Linux x86_64、Ubuntu Focal、Python 3.8.10）断网完成 colcon 构建、ament 发现、三个可执行入口枚举、单独 launch 参数解析和冻结归档权重导入。该基础镜像未装 TorchVision、PyTorch、cv_bridge 和 OpenCV；上述 CUDA 推理来自 Windows 工作站。Jetson 上需另测本地 TorchVision NMS 和整条图像消息链。
++
++后续在独立的 ROS Foxy CUDA 容器中重放了 10 月 27 日实车原始 BGRA8 画面，从相机消息到 B1.4 输出收到 120/120 条，15.00 Hz，延迟中位数 33.48 ms。完整设置、对照和原始统计见[相机墙钟实测](bench/README.md)。
+--- /dev/null
++++ b/concept_yolop/bench/README.md
+@@ -0,0 +1,44 @@
++# B1.4 相机到感知的墙钟实测
++
++相机发布进程和原版 B1.4 节点分别运行。程序每秒发送 15 张不同的原始画面，记录每张发送和收到同拍感知结果的单调时钟，并保留模型的全部三路输出。测试没有启动规划器。GPU、操作系统和 ROS 消息链的结果与实车 Jetson 分开统计。
++
++## 测到了什么
++
++环境为 RTX 4070 Ti、Linux x86_64 Docker、Ubuntu 20.04、ROS 2 Foxy、Fast DDS 2.1.4、Python 3.8.10、Torch 2.4.1+cu118、TorchVision 0.19.1+cu118 和 OpenCV 4.12。GPU 使用 FP32、冻结的 B1.4 权重和原来的 640×360 模型输入。各次单独测试，不开启 RViz 叠图订阅。正式段开始前先等 15 条真实视觉结果。
++
++| 输入和版本 | 相机发出 / 模型收到 / 下游收到 | 输出频率 | 相机发布到收到感知，p50 / p95 / 最大 |
++|---|---:|---:|---:|
++| Unity 外圈 120 张 BGR8，原编码与默认 DDS | 120 / 86 / 86 | 10.78 Hz | 36.29 / 55.57 / 66.49 ms |
++| 同一组 120 张，固定 PNG 行滤波与默认 DDS | 120 / 93 / 93 | 11.59 Hz | 29.27 / 58.85 / 91.30 ms |
++| 10 月 27 日实车 bag 的 120 张 BGRA8，固定 PNG、CUDA 预热、仅相机发布者使用下述 DDS 配置 | 120 / 120 / 120 | **15.00 Hz** | **33.48 / 66.05 / 79.73 ms** |
++
++Unity 同场编码中位耗时从 12.03 ms 降到 6.12 ms。两次都有部分图像未到达模型订阅回调，回调处理过的每一张都送到了感知订阅者。默认配置另跑 180 张时收到 146 张。不同次的 GPU 耗时会波动，编码改善和相机丢帧分别统计。每轮的原始统计见 [results](results)。
++
++实车组来自 `rosbag2_2026_10_27llp`。原 bag 的左图话题共有 1,847 张，全部为 640×360 BGRA8，按采集戳计算为 14.985 Hz。回放测试取开头连续的 120 条原始 CDR 消息，保留四通道像素、尺寸和光学帧名，以本次回放的拍摄时刻计算延迟。启动预热后首张真实图像用了 35.69 ms。节点处理一次画面的中位耗时 31.71 ms，其中推理 22.42 ms、消息编码 8.77 ms。测试未装入车上实测的投影校准文件。
++
++Neo 默认让 ZED 以 15 Hz 采 HD1080，由 ZED 节点按三倍下采样后发布 640×360。10 月 27 日的实车图每条含 921,600 字节像素，Unity 的 BGR 图每条为 691,200 字节。用真实相机消息与 CameraInfo，CPU 抽 12 条各测 10 次，BGRA 转 BGR 的中位数为 0.15 ms，p95 为 0.48 ms。已有输入尺寸时尺寸检查中位数 0.004 ms。采用实测内参、假设相机无额外安装旋转，仅测 640×360 投影变换的成本，中位数 1.35 ms、p95 3.40 ms。物理安装旋转、ZED SDK 的采集和校正时延、Jetson 的 GPU 耗时需要上车测量。
++
++## 复现
++
++在有 CUDA GPU 且已装好 Foxy、`cv_bridge`、`concept_yolop` 的隔离环境运行。该测试使用官方 Python 3.8 Linux x86_64 的 CUDA 11.8 torch 2.4.1 与 torchvision 0.19.1 wheel。两者和各 CUDA 依赖独立安装，已有 CPU 环境保留。可以在新 Python 环境中按官方版本表选择对应 wheel。[PyTorch 版本表](https://pytorch.org/get-started/previous-versions/)
++
++```bash
++source /opt/ros/foxy/setup.bash
++source /path/to/colcon/install/setup.bash
++export ROS_DOMAIN_ID=74 ROS_LOCALHOST_ONLY=1
++BENCH=/path/to/vehicle_concept/src/concept_yolop/bench
++python3 "$BENCH/foxy_camera_latency.py" /data/outer-lap/frames \
++  --count 120 --weights /data/B1.4.pth --profile --output /tmp/vision/unity.json
++
++python3 "$BENCH/foxy_camera_latency.py" /data/1027-first120-cdr \
++  --format zed-cdr --count 120 --weights /data/B1.4.pth --profile \
++  --camera-dds-profile "$BENCH/fastdds_camera_local.xml" --output /tmp/vision/real.json
++```
++
++PNG 目录按 `*_rgb.png` 文件名排序。CDR 目录按 `*.cdr` 文件名排序，每个文件保存该拍完整的序列化 `sensor_msgs/Image`，不应混入 CameraInfo。SQLite3 bag 的内容来自 `topics.name='/aiformula_sensing/zed_node/left_image/undistorted'` 对应的 `messages.data`，按 `messages.timestamp` 顺序单独导出并用补零序号命名。测试先把原消息读入内存，文件读取不计入相机延迟。`--profile` 另记进程内推理、输出编码与整个回调耗时，时间戳逐拍对齐。未加此参数时原版视觉节点直接运行。
++
++## 相机消息为何会少
++
++在隔离的 CPU 容器重复发布同一张实车 BGRA8 原图，发 120 个不同序号，用独立订阅进程逐条确认。发送频率为 15 Hz，QoS 为 best effort、depth 1，每次接收后停留 28 ms，模拟订阅处理占用。默认 Foxy 传输收到 84/120。只给接收者增大共享内存收到 93/120，只给发送者设置则收到 120/120，两边都设置时也是 120/120。
++
++随附 XML 为可选实验参数，让 Fast DDS 使用 16 MiB 的共享内存区和最多 1 MiB 的共享内存消息，同时保留 UDPv4。可仅给相机发布进程设置 `FASTRTPS_DEFAULT_PROFILES_FILE`。使用本机仅支持 UDP 的订阅进程也收齐了 120 张。另一次跨 Docker 内部网桥测试中，原配置与新配置都没有发现对端，因此远程 RViz 和车载网络发现仍需现场验证。车载配置和依赖均未因这项测试而改变。
+--- /dev/null
++++ b/concept_yolop/bench/fastdds_camera_local.xml
+@@ -0,0 +1,18 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
++  <transport_descriptors>
++    <transport_descriptor>
++      <transport_id>camera_shm</transport_id>
++      <type>SHM</type>
++      <segment_size>16777216</segment_size>
++      <maxMessageSize>1048576</maxMessageSize>
++    </transport_descriptor>
++    <transport_descriptor><transport_id>camera_udp</transport_id><type>UDPv4</type></transport_descriptor>
++  </transport_descriptors>
++  <participant profile_name="local_camera" is_default_profile="true">
++    <rtps>
++      <userTransports><transport_id>camera_shm</transport_id><transport_id>camera_udp</transport_id></userTransports>
++      <useBuiltinTransports>false</useBuiltinTransports>
++    </rtps>
++  </participant>
++</profiles>
+--- /dev/null
++++ b/concept_yolop/bench/foxy_camera_latency.py
+@@ -0,0 +1,233 @@
++"""Measure wall time from stamped sensor_msgs/Image to B1.4 perception over Foxy DDS."""
++import argparse
++import json
++import os
++from pathlib import Path
++import signal
++import subprocess
++import sys
++import time
++
++import cv2
++import numpy as np
++import rclpy
++from cv_bridge import CvBridge
++from rclpy.node import Node
++from rclpy.serialization import deserialize_message
++from rclpy.qos import QoSProfile, QoSReliabilityPolicy
++from sensor_msgs.msg import Image
++from std_msgs.msg import String
++
++from concept_yolop.weights import SHA256
++
++CAMERA = '/aiformula_sensing/zed_node/left_image/undistorted'
++FRAME = '/concept/perception/frame'
++HZ = 15
++
++
++def distribution(values):
++    return {key: round(float(value), 3) for key, value in zip(
++        ('min', 'p50', 'p95', 'max'), np.percentile(values, (0, 50, 95, 100)))}
++
++
++class Probe(Node):
++    def __init__(self, frames):
++        super().__init__('concept_camera_wall_probe')
++        qos = QoSProfile(depth=1, reliability=QoSReliabilityPolicy.BEST_EFFORT)
++        self.feed = self.create_publisher(Image, CAMERA, qos)
++        self.create_subscription(String, FRAME, self.receive, 10)
++        bridge = CvBridge()
++        self.images = []
++        for path in frames:
++            if path.suffix == '.cdr':
++                msg = deserialize_message(path.read_bytes(), Image)
++            else:
++                frame = cv2.imread(str(path), cv2.IMREAD_COLOR)
++                if frame is None or frame.shape != (360, 640, 3):
++                    raise ValueError('Expected a readable original 640x360 frame: ' + str(path))
++                msg = bridge.cv2_to_imgmsg(frame, encoding='bgr8')
++                msg.header.frame_id = 'replay_optical'
++            self.images.append(msg)
++        self.sent = {}
++        self.received = {}
++
++    def send(self, i):
++        msg = self.images[i % len(self.images)]
++        stamp = self.get_clock().now()
++        msg.header.stamp = stamp.to_msg()
++        self.sent[stamp.nanoseconds] = time.monotonic_ns()
++        self.feed.publish(msg)
++
++    def receive(self, msg):
++        received = time.monotonic_ns()
++        acquired = json.loads(msg.data)['stamp']
++        stamp = acquired['sec']*1000000000 + acquired['nanosec']
++        if stamp in self.sent:
++            self.received[stamp] = (received, len(msg.data))
++
++
++def experiment(probe, camera, count):
++    def wait_until(deadline):
++        while time.monotonic() < deadline:
++            if camera.poll() is not None:
++                raise RuntimeError('B1.4 node exited: ' + str(camera.returncode))
++            rclpy.spin_once(probe, timeout_sec=max(0., min(.01, deadline - time.monotonic())))
++
++    limit = time.monotonic() + 45
++    while probe.feed.get_subscription_count() == 0 and time.monotonic() < limit:
++        wait_until(time.monotonic() + .1)
++    if not probe.feed.get_subscription_count():
++        raise RuntimeError('Camera subscription did not appear')
++
++    i = 0
++    while len(probe.received) < 15:
++        if time.monotonic() >= limit:
++            raise RuntimeError('Camera produced fewer than 15 warm-up outputs')
++        probe.send(i)
++        i += 1
++        wait_until(time.monotonic() + 1 / HZ)
++
++    warmup_age = (probe.received[min(probe.received)][0]-probe.sent[min(probe.received)])/1e6
++    probe.sent.clear()
++    probe.received.clear()
++    start = time.monotonic()
++    for i in range(count):
++        wait_until(start + i / HZ)
++        probe.send(i)
++    wait_until(time.monotonic() + .8)
++    sent = sorted(probe.sent)
++    arrivals = sorted(probe.received)
++    if len(arrivals) < 2:
++        raise RuntimeError('Fewer than two measured outputs')
++    latencies = [(probe.received[s][0]-probe.sent[s])/1e6 for s in arrivals]
++    input_duration = (probe.sent[sent[-1]]-probe.sent[sent[0]])/1e9
++    output_duration = (probe.received[arrivals[-1]][0]-probe.received[arrivals[0]][0])/1e9
++    return dict(model_sha256=SHA256, geometry='640x360', warmup_received=15,
++                first_delivered_image_latency_ms=round(warmup_age, 3),
++                sent=len(sent), received=len(arrivals), lost=len(sent)-len(arrivals),
++                input_hz=round((len(sent)-1)/input_duration, 3),
++                output_hz=round((len(arrivals)-1)/output_duration, 3),
++                acquisition_to_perception_ms=distribution(latencies),
++                camera_intervals_ms=distribution(np.diff([probe.sent[s] for s in sent])/1e6),
++                perception_intervals_ms=distribution(np.diff([probe.received[s][0] for s in arrivals])/1e6),
++                wire_bytes=distribution([probe.received[s][1] for s in arrivals]))
++
++
++def profiled_camera(path, ros_args):
++    from concept_yolop import node as camera_module
++
++    # Instrument the production node in the child process, outside its source.
++    # Keep timings in memory until shutdown to avoid disk I/O on camera frames.
++    measurements = {}
++    active = {}
++    encode = camera_module.encode_frame
++
++    def measure_encoder(*args, **kwargs):
++        started = time.monotonic_ns()
++        payload = encode(*args, **kwargs)
++        active['encode_ms'] = (time.monotonic_ns()-started)/1e6
++        return payload
++
++    class Camera(camera_module.CameraNode):
++        def on_image(self, msg):
++            acquired_ns = msg.header.stamp.sec * 1000000000 + msg.header.stamp.nanosec
++            started = time.monotonic_ns()
++            active.clear()
++            active['callback_ros_ns'] = self.get_clock().now().nanoseconds
++            super().on_image(msg)
++            active['callback_ms'] = (time.monotonic_ns()-started)/1e6
++            measurements[acquired_ns] = dict(active)
++
++    camera_module.encode_frame = measure_encoder
++    rclpy.init(args=ros_args)
++    node = Camera()
++    predictor = node.predictor.predict
++
++    def measure_inference(image):
++        started = time.monotonic_ns()
++        result = predictor(image)
++        active['predict_ms'] = (time.monotonic_ns()-started)/1e6
++        return result
++
++    node.predictor.predict = measure_inference
++    try:
++        rclpy.spin(node)
++    except KeyboardInterrupt:
++        pass
++    finally:
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++        path.write_text(json.dumps(measurements))
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('frame_dir', type=Path, help='Recorded original *_rgb.png files')
++    parser.add_argument('--weights', required=True)
++    parser.add_argument('--format', choices=('png','zed-cdr'), default='png')
++    parser.add_argument('--camera-dds-profile', type=Path, help='Optional Fast DDS XML on the image publisher only')
++    parser.add_argument('--device', choices=('cuda', 'cpu'), default='cuda')
++    parser.add_argument('--count', type=int, default=180)
++    parser.add_argument('--output', type=Path, required=True)
++    parser.add_argument('--profile', action='store_true', help='Attribute callback, inference and PNG time')
++    args = parser.parse_args()
++    if os.environ.get('ROS_LOCALHOST_ONLY') != '1' or not os.environ.get('ROS_DOMAIN_ID'):
++        parser.error('Use a private local ROS domain for the recorded camera publisher')
++    paths = sorted(args.frame_dir.glob('*.cdr' if args.format == 'zed-cdr' else '*_rgb.png'))[:args.count]
++    if len(paths) != args.count or args.count < 2:
++        parser.error('Supply at least --count distinct original images and --count >= 2')
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    child_env = os.environ.copy()
++    if args.camera_dds_profile:
++        os.environ['FASTRTPS_DEFAULT_PROFILES_FILE'] = str(args.camera_dds_profile.resolve(strict=True))
++    rclpy.init()
++    probe = Probe(paths)
++    try:
++        with args.output.with_suffix('.node.log').open('w') as log:
++            detail = args.output.with_suffix('.profile.json')
++            if args.profile:
++                command = [sys.executable, __file__, '--profile-node', str(detail)]
++            else:
++                command = [sys.executable, '-c', 'from concept_yolop.node import main; main()']
++            command += ['--ros-args', '-p', 'weights:=' + args.weights, '-p', 'device:=' + args.device]
++            camera = subprocess.Popen(command, stdout=log, stderr=log, env=child_env)
++            try:
++                metrics = experiment(probe, camera, args.count)
++                metrics.update(device=args.device, first_frame=paths[0].name, last_frame=paths[-1].name,
++                               source_encoding=probe.images[0].encoding, camera_dds_profile=
++                               args.camera_dds_profile.name if args.camera_dds_profile else None)
++            finally:
++                if camera.poll() is None:
++                    camera.send_signal(signal.SIGINT)
++                    try:
++                        camera.wait(timeout=4)
++                    except subprocess.TimeoutExpired:
++                        camera.kill()
++                        camera.wait()
++        if args.profile:
++            raw = json.loads(detail.read_text())
++            matched = {s: raw[str(s)] for s in probe.sent if str(s) in raw}
++            metrics['camera_callbacks'] = len(matched)
++            metrics['sent_without_callback'] = len(probe.sent)-len(matched)
++            metrics['outputs_missing_after_callback'] = len(matched)-len(probe.received)
++            if matched:
++                for stat in ('predict_ms', 'encode_ms', 'callback_ms'):
++                    vals = [row[stat] for row in matched.values() if stat in row]
++                    if vals:
++                        metrics[stat] = distribution(vals)
++                metrics['send_to_callback_ms'] = distribution([
++                    (row['callback_ros_ns']-s)/1e6 for s, row in matched.items()])
++        report = json.dumps(metrics, indent=2)
++        args.output.write_text(report + '\n')
++        print(report, flush=True)
++    finally:
++        probe.destroy_node()
++        rclpy.shutdown()
++
++
++if __name__ == '__main__':
++    if len(sys.argv) > 2 and sys.argv[1] == '--profile-node':
++        profiled_camera(Path(sys.argv[2]), sys.argv[3:])
++    else:
++        main()
+--- /dev/null
++++ b/concept_yolop/bench/results/foxy-cu118-1027-bgra-120.json
+@@ -0,0 +1,67 @@
++{
++  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
++  "geometry": "640x360",
++  "warmup_received": 15,
++  "first_delivered_image_latency_ms": 35.687,
++  "sent": 120,
++  "received": 120,
++  "lost": 0,
++  "input_hz": 15.0,
++  "output_hz": 15.001,
++  "acquisition_to_perception_ms": {
++    "min": 29.021,
++    "p50": 33.48,
++    "p95": 66.049,
++    "max": 79.73
++  },
++  "camera_intervals_ms": {
++    "min": 66.485,
++    "p50": 66.661,
++    "p95": 66.77,
++    "max": 66.946
++  },
++  "perception_intervals_ms": {
++    "min": 32.081,
++    "p50": 66.799,
++    "p95": 94.127,
++    "max": 106.357
++  },
++  "wire_bytes": {
++    "min": 477920.0,
++    "p50": 478848.0,
++    "p95": 479299.75,
++    "max": 479510.0
++  },
++  "device": "cuda",
++  "first_frame": "00000.cdr",
++  "last_frame": "00119.cdr",
++  "source_encoding": "bgra8",
++  "camera_dds_profile": "fastdds_camera_local.xml",
++  "camera_callbacks": 120,
++  "sent_without_callback": 0,
++  "outputs_missing_after_callback": 0,
++  "predict_ms": {
++    "min": 18.518,
++    "p50": 22.42,
++    "p95": 54.536,
++    "max": 66.184
++  },
++  "encode_ms": {
++    "min": 8.368,
++    "p50": 8.77,
++    "p95": 10.872,
++    "max": 12.206
++  },
++  "callback_ms": {
++    "min": 27.617,
++    "p50": 31.711,
++    "p95": 63.804,
++    "max": 76.208
++  },
++  "send_to_callback_ms": {
++    "min": 0.767,
++    "p50": 0.964,
++    "p95": 1.821,
++    "max": 13.122
++  }
++}
+--- /dev/null
++++ b/concept_yolop/bench/results/foxy-cu118-fixed-png-120.json
+@@ -0,0 +1,64 @@
++{
++  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
++  "geometry": "640x360",
++  "warmup_received": 15,
++  "sent": 120,
++  "received": 93,
++  "lost": 27,
++  "input_hz": 14.999,
++  "output_hz": 11.593,
++  "acquisition_to_perception_ms": {
++    "min": 25.777,
++    "p50": 29.268,
++    "p95": 58.853,
++    "max": 91.301
++  },
++  "camera_intervals_ms": {
++    "min": 66.495,
++    "p50": 66.671,
++    "p95": 66.766,
++    "max": 66.903
++  },
++  "perception_intervals_ms": {
++    "min": 28.653,
++    "p50": 67.327,
++    "p95": 153.314,
++    "max": 340.192
++  },
++  "wire_bytes": {
++    "min": 187804.0,
++    "p50": 205452.0,
++    "p95": 212666.2,
++    "max": 215344.0
++  },
++  "device": "cuda",
++  "first_frame": "00000_rgb.png",
++  "last_frame": "00119_rgb.png",
++  "camera_callbacks": 93,
++  "sent_without_callback": 27,
++  "outputs_missing_after_callback": 0,
++  "predict_ms": {
++    "min": 18.611,
++    "p50": 21.477,
++    "p95": 43.937,
++    "max": 83.293
++  },
++  "encode_ms": {
++    "min": 5.584,
++    "p50": 6.123,
++    "p95": 8.349,
++    "max": 15.892
++  },
++  "callback_ms": {
++    "min": 24.611,
++    "p50": 27.933,
++    "p95": 51.663,
++    "max": 89.831
++  },
++  "send_to_callback_ms": {
++    "min": 0.734,
++    "p50": 0.957,
++    "p95": 1.217,
++    "max": 24.794
++  }
++}
+--- /dev/null
++++ b/concept_yolop/bench/results/foxy-cu118-original-120.json
+@@ -0,0 +1,64 @@
++{
++  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
++  "geometry": "640x360",
++  "warmup_received": 15,
++  "sent": 120,
++  "received": 86,
++  "lost": 34,
++  "input_hz": 15.0,
++  "output_hz": 10.784,
++  "acquisition_to_perception_ms": {
++    "min": 31.013,
++    "p50": 36.289,
++    "p95": 55.57,
++    "max": 66.489
++  },
++  "camera_intervals_ms": {
++    "min": 66.506,
++    "p50": 66.663,
++    "p95": 66.775,
++    "max": 66.851
++  },
++  "perception_intervals_ms": {
++    "min": 34.943,
++    "p50": 70.447,
++    "p95": 184.074,
++    "max": 410.223
++  },
++  "wire_bytes": {
++    "min": 229316.0,
++    "p50": 239400.0,
++    "p95": 251811.75,
++    "max": 252557.0
++  },
++  "device": "cuda",
++  "first_frame": "00000_rgb.png",
++  "last_frame": "00119_rgb.png",
++  "camera_callbacks": 86,
++  "sent_without_callback": 34,
++  "outputs_missing_after_callback": 0,
++  "predict_ms": {
++    "min": 18.212,
++    "p50": 22.233,
++    "p95": 37.805,
++    "max": 52.122
++  },
++  "encode_ms": {
++    "min": 11.139,
++    "p50": 12.029,
++    "p95": 15.424,
++    "max": 28.85
++  },
++  "callback_ms": {
++    "min": 29.865,
++    "p50": 34.914,
++    "p95": 54.183,
++    "max": 65.05
++  },
++  "send_to_callback_ms": {
++    "min": 0.709,
++    "p50": 0.957,
++    "p95": 1.166,
++    "max": 1.278
++  }
++}
+--- /dev/null
++++ b/concept_yolop/bench/results/foxy-cu118-original-180.json
+@@ -0,0 +1,37 @@
++{
++  "model_sha256": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
++  "geometry": "640x360",
++  "warmup_received": 15,
++  "sent": 180,
++  "received": 146,
++  "lost": 34,
++  "input_hz": 15.0,
++  "output_hz": 12.157,
++  "acquisition_to_perception_ms": {
++    "min": 31.15,
++    "p50": 36.694,
++    "p95": 77.307,
++    "max": 130.267
++  },
++  "camera_intervals_ms": {
++    "min": 66.38,
++    "p50": 66.67,
++    "p95": 66.835,
++    "max": 66.954
++  },
++  "perception_intervals_ms": {
++    "min": 32.462,
++    "p50": 67.324,
++    "p95": 151.114,
++    "max": 237.043
++  },
++  "wire_bytes": {
++    "min": 217027.0,
++    "p50": 241272.5,
++    "p95": 251435.0,
++    "max": 253210.0
++  },
++  "device": "cuda",
++  "first_frame": "00000_rgb.png",
++  "last_frame": "00179_rgb.png"
++}
+--- /dev/null
++++ b/concept_yolop/concept_yolop/__init__.py
+@@ -0,0 +1 @@
++"""B1.4 camera perception for the concept driving stack."""
+--- /dev/null
++++ b/concept_yolop/concept_yolop/calibrate.py
+@@ -0,0 +1,103 @@
++"""Save a matching rectified image and CameraInfo to measure the stopped vehicle."""
++import argparse
++import json
++import os
++from pathlib import Path
++import tempfile
++import time
++
++from .geometry import CalibrationReceipt, optical_height
++
++
++def install_receipt(source):
++    content = source.expanduser().read_bytes()
++    config = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config')
++    destination = config / 'concept' / 'camera.json'
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as staged:
++        stage_path = Path(staged.name)
++        try:
++            staged.write(content)
++            staged.flush()
++            os.fsync(staged.fileno())
++            receipt = CalibrationReceipt(stage_path)
++            os.replace(stage_path, destination)
++        finally:
++            stage_path.unlink(missing_ok=True)
++    return destination, receipt
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    mode = parser.add_mutually_exclusive_group(required=True)
++    mode.add_argument('--capture', type=Path, metavar='NEW_DIRECTORY')
++    mode.add_argument('--check', type=Path, metavar='RECEIPT_JSON')
++    mode.add_argument('--install', type=Path, metavar='RECEIPT_JSON',
++                      help='Validate and install the default Concept vehicle receipt')
++    parser.add_argument('--mount-id')
++    parser.add_argument('--optical-height-m', type=float,
++                        help='Measured height of the left optical centre above level ground in metres')
++    parser.add_argument('--image-topic', default='/aiformula_sensing/zed_node/left_image/undistorted')
++    parser.add_argument('--camera-info-topic', default='/aiformula_sensing/zed_node/left/camera_info')
++    args = parser.parse_args()
++    if args.optical_height_m is not None:
++        if not args.capture:
++            parser.error('--optical-height-m is for --capture; receipt validation reads the stored height')
++        try:
++            optical_height(args.optical_height_m)
++        except ValueError as exc:
++            parser.error(str(exc))
++    if args.check:
++        receipt = CalibrationReceipt(args.check)
++        print(f'Maximum held-out ground error: {receipt.max_error:.3f} m')
++        return
++    if args.install:
++        destination, receipt = install_receipt(args.install)
++        print(f'Installed {destination}. Maximum held-out ground error: {receipt.max_error:.3f} m')
++        return
++    if args.capture.exists() or not args.mount_id:
++        parser.error('Choose a new capture directory and supply --mount-id')
++    import cv2
++    import rclpy
++    from cv_bridge import CvBridge
++    from rclpy.qos import qos_profile_sensor_data
++    from sensor_msgs.msg import CameraInfo, Image
++
++    rclpy.init(args=[])
++    node = rclpy.create_node('concept_camera_measurement')
++    images, infos = {}, {}
++
++    def save(records, msg):
++        key = (msg.header.frame_id, msg.header.stamp.sec, msg.header.stamp.nanosec, msg.width, msg.height)
++        records[key] = msg
++        if len(records) > 16:
++            records.pop(next(iter(records)))
++
++    node.create_subscription(Image, args.image_topic, lambda m: save(images, m), qos_profile_sensor_data)
++    node.create_subscription(CameraInfo, args.camera_info_topic, lambda m: save(infos, m), qos_profile_sensor_data)
++    try:
++        deadline = time.monotonic() + 15
++        while time.monotonic() < deadline:
++            rclpy.spin_once(node, timeout_sec=.1)
++            keys = images.keys() & infos.keys()
++            if not keys:
++                continue
++            key = max(keys, key=lambda k: k[1:3])
++            info = infos[key]
++            bgr = CvBridge().imgmsg_to_cv2(images[key], 'bgr8')
++            args.capture.mkdir(parents=True, exist_ok=False)
++            if not cv2.imwrite(str(args.capture / 'camera.png'), bgr):
++                raise RuntimeError('Could not save camera.png')
++            record = dict(image_topic=args.image_topic, frame_id=key[0], mount_id=args.mount_id,
++                          width=info.width, height=info.height, projection=list(info.p),
++                          fit_marks=[], ground_marks=[])
++            if args.optical_height_m is not None:
++                record['optical_height_m'] = args.optical_height_m
++            out = args.capture / 'camera.json'
++            out.write_text(json.dumps(record, indent=2), encoding='utf-8')
++            print(out)
++            return
++        raise SystemExit('No matching image/CameraInfo within 15 s. Check topic names and source stamps.')
++    finally:
++        node.destroy_node()
++        rclpy.shutdown()
+--- /dev/null
++++ b/concept_yolop/concept_yolop/check.py
+@@ -0,0 +1,46 @@
++"""Run a real frame through B1.4 on the installed machine without starting ROS."""
++import argparse
++import json
++from pathlib import Path
++
++import cv2
++import numpy as np
++import torch
++import torchvision
++
++from .geometry import UNITY
++from .frame_codec import decode_frame, encode_frame
++from .inference import Predictor
++from .weights import SHA256, default_path
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('image', type=Path)
++    parser.add_argument('--weights', type=Path, default=default_path())
++    parser.add_argument('--device', choices=('cpu', 'cuda'), default='cuda')
++    parser.add_argument('--compare', type=Path, help='Frozen perception.npz for this exact frame')
++    opts = parser.parse_args()
++    bgr = cv2.imread(str(opts.image), cv2.IMREAD_COLOR)
++    if bgr is None:
++        parser.error('Could not read image')
++    bgr, road, lane, det = Predictor(opts.weights, opts.device).predict(bgr)
++    wire = encode_frame(11, 23, 'camera', bgr, road, lane, det, UNITY if opts.compare else 'unverified-resize')
++    packet = decode_frame(wire)
++    for k, v in dict(bgr=bgr, road=road, lane=lane, **det).items():
++        np.testing.assert_array_equal(packet[k], v)
++    report = dict(weights=SHA256, device=opts.device, torch=torch.__version__,
++                  torchvision=torchvision.__version__, detections=len(det['boxes']),
++                  road_pixels=int(road.sum()), lane_pixels=int(lane.sum()), wire_bytes=len(wire.encode()))
++    if opts.compare:
++        with np.load(opts.compare, allow_pickle=False) as golden:
++            np.testing.assert_array_equal(road, golden['raw'])
++            np.testing.assert_array_equal(lane, golden['lane'])
++            for k in ('boxes', 'scores', 'labels'):
++                np.testing.assert_allclose(det[k], golden[k], rtol=0, atol=1.e-5)
++        report['frozen_frame_matches'] = True
++    print(json.dumps(report, indent=2))
++
++
++if __name__ == '__main__':
++    main()
+--- /dev/null
++++ b/concept_yolop/concept_yolop/frame_codec.py
+@@ -0,0 +1,117 @@
++"""Wire contract concept.perception.v1, shared by camera and planner nodes."""
++import base64
++import json
++import struct
++
++import cv2
++import numpy as np
++
++from .geometry import PROFILES, UNVERIFIED
++from .weights import SHA256
++
++SCHEMA = 'concept.perception.v1'
++W, H = 640, 360
++
++
++# A fixed scanline filter avoids trying five filters on every row. In OpenCV
++# 4.2, specifying the compression level selects adaptive filtering. Leave the
++# level unset on those builds to keep the encoder's fixed SUB filter.
++_PNG_COLOR = _PNG_MASK = [cv2.IMWRITE_PNG_STRATEGY, cv2.IMWRITE_PNG_STRATEGY_RLE]
++if hasattr(cv2, 'IMWRITE_PNG_FILTER'):
++    _common = [cv2.IMWRITE_PNG_COMPRESSION, 1, *_PNG_COLOR, cv2.IMWRITE_PNG_FILTER]
++    _PNG_COLOR = _common + [cv2.IMWRITE_PNG_FILTER_SUB]
++    _PNG_MASK = _common + [cv2.IMWRITE_PNG_FILTER_NONE]
++
++
++def _png(image):
++    ok, buf = cv2.imencode('.png', image, _PNG_COLOR if image.ndim == 3 else _PNG_MASK)
++    if not ok:
++        raise ValueError('Failed to encode a camera frame')
++    return base64.b64encode(buf).decode('ascii')
++
++
++def _image(encoded, channels):
++    # Inspect dimensions before allocating decoded pixels.
++    if not isinstance(encoded, str) or len(encoded) > 1600000:
++        raise ValueError('Invalid encoded frame size')
++    raw = base64.b64decode(encoded, validate=True)
++    if len(raw) < 33 or raw[:16] != b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR':
++        raise ValueError('Expected a PNG')
++    width, height, bits, kind = struct.unpack('>IIBB', raw[16:26])
++    if (width, height, bits, kind) != (W, H, 8, 2 if channels == 3 else 0):
++        raise ValueError('Unexpected PNG dimensions or colour format')
++    image = cv2.imdecode(np.frombuffer(raw, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
++    if image is None:
++        raise ValueError('Incomplete camera PNG')
++    if channels == 1:
++        if np.any((image != 0) & (image != 255)):
++            raise ValueError('Expected binary mask pixels')
++        return image != 0
++    return image
++
++
++def validate_pixels(bgr, road, lane):
++    if (bgr.shape != (H, W, 3) or bgr.dtype != np.uint8 or road.shape != (H, W)
++            or lane.shape != (H, W) or road.dtype != np.bool_ or lane.dtype != np.bool_):
++        raise ValueError('Expected canonical BGR and boolean road/lane masks')
++
++
++def encode_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile=UNVERIFIED):
++    if geometry_profile not in PROFILES:
++        raise ValueError("Invalid camera geometry profile")
++    validate_pixels(bgr, road, lane)
++    return json.dumps({
++        'schema': SCHEMA, 'model_sha256': SHA256, 'geometry_profile': geometry_profile,
++        'stamp': {'sec': int(sec), 'nanosec': int(nanosec)}, 'frame_id': frame_id,
++        'width': W, 'height': H, 'bgr_png': _png(bgr),
++        'road_png': _png(road.astype(np.uint8) * 255),
++        'lane_png': _png(lane.astype(np.uint8) * 255),
++        'boxes': detections['boxes'].tolist(), 'scores': detections['scores'].tolist(),
++        'labels': detections['labels'].tolist(),
++    }, separators=(',', ':'), allow_nan=False)
++
++
++def parse_frame_header(payload):
++    """Validate identity, geometry and time before committing to pixel decoding."""
++    if len(payload) > 4000000:
++        raise ValueError('Oversize perception frame')
++    obj = json.loads(payload)
++    if (obj['schema'], obj['model_sha256'], obj['width'], obj['height']) != (SCHEMA, SHA256, W, H):
++        raise ValueError('Unexpected perception contract')
++    if obj.get('geometry_profile') not in PROFILES:
++        raise ValueError('Missing camera geometry profile')
++    sec, ns = obj['stamp']['sec'], obj['stamp']['nanosec']
++    if type(sec) is not int or type(ns) is not int or not 0 <= ns < 1000000000:
++        raise ValueError('Invalid acquisition time')
++    if not isinstance(obj['frame_id'], str):
++        raise ValueError('Expected optical frame ID')
++    return obj, sec * 1000000000 + ns, obj['frame_id'], obj['geometry_profile']
++
++
++def validated_detections(det):
++    boxes = np.asarray(det['boxes'], dtype=np.float32)
++    if boxes.shape == (0,):
++        boxes = boxes.reshape(0, 4)
++    scores = np.asarray(det['scores'], dtype=np.float32)
++    labels = np.asarray(det['labels'])
++    n = len(scores)
++    if (boxes.shape != (n, 4) or labels.shape != (n,) or scores.shape != (n,) or n > 100
++            or not np.all(np.isfinite(boxes)) or not np.all(np.isfinite(scores))
++            or np.any((scores < 0) | (scores > 1))
++            or (n and (not np.issubdtype(labels.dtype, np.integer) or not np.isin(labels, [1,3,10,91]).all()))):
++        raise ValueError('Invalid B1.4 detections')
++    return dict(boxes=boxes, scores=scores, labels=labels.astype(np.int64, copy=False))
++
++
++def decode_frame_data(obj):
++    """Unpack detections and pixels from a header-validated wire object."""
++    det = validated_detections(obj)
++    return dict(geometry_profile=obj['geometry_profile'], stamp_ns=obj['stamp']['sec'] * 1000000000 + obj['stamp']['nanosec'],
++                frame_id=obj['frame_id'],
++                bgr=_image(obj['bgr_png'], 3), road=_image(obj['road_png'], 1),
++                lane=_image(obj['lane_png'], 1), **det)
++
++
++def decode_frame(payload):
++    obj, _, _, _ = parse_frame_header(payload)
++    return decode_frame_data(obj)
+--- /dev/null
++++ b/concept_yolop/concept_yolop/geometry.py
+@@ -0,0 +1,175 @@
++"""Recognition can run with any rectified 16:9 image. Metric driving needs a measured view."""
++import json
++from pathlib import Path
++
++import numpy as np
++import cv2
++
++UNVERIFIED = 'unverified-resize'
++CALIBRATED = 'calibrated-v626'
++UNITY = 'frozen-unity-v626'
++HONDA = 'honda-v1.4.0-ground'
++PROFILES = (UNVERIFIED, CALIBRATED, UNITY, HONDA)
++FX, FY, CX, CY, HEIGHT = 254.391622, 254.391622, 330.01302, 181.14964, .655
++REFERENCE_K = np.array([[FX, 0., CX], [0., FY, CY], [0., 0., 1.]])
++
++
++def measured_points(rows, width, height):
++    marks = np.asarray(rows, dtype=float)
++    if marks.ndim != 2 or marks.shape[1] != 4 or len(marks) < 4 or not np.isfinite(marks).all():
++        raise ValueError('Need measured ground samples [image_u,image_v,right_m,forward_m]')
++    u, v, right, forward = marks.T
++    if (np.any(u < 0) or np.any(u >= width) or np.any(v < 0) or np.any(v >= height)
++            or np.any(forward <= 0) or forward.min() > 3.0 or forward.max() < 7.0
++            or right.min() > -.5 or right.max() < .5):
++        raise ValueError('Ground check must cover nearby, distant and both lateral sides')
++    return marks
++
++
++def optical_height(value):
++    if type(value) not in (float, int) or not np.isfinite(value) or value <= 0:
++        raise ValueError('optical_height_m must be a finite, positive height in metres')
++    return float(value)
++
++
++def fit_rotation(source_k, marks, optical_height_m=HEIGHT):
++    if source_k[0, 0] <= 0 or source_k[1, 1] <= 0 or np.linalg.matrix_rank(source_k) != 3:
++        raise ValueError('Invalid rectified camera intrinsics')
++    rotation = np.eye(3)
++    if marks is not None:
++        # Estimate orientation against ground rays from the physical camera.
++        u, v, right, forward = marks.T
++        sensor = np.linalg.solve(source_k, np.array([u, v, np.ones_like(u)])).T
++        target = np.column_stack((right, np.full_like(right, optical_height_m), forward))
++        sensor /= np.linalg.norm(sensor, axis=1)[:, None]
++        target /= np.linalg.norm(target, axis=1)[:, None]
++        a, s, b = np.linalg.svd(target.T @ sensor)
++        if s[1] <= 1e-7:
++            raise ValueError('Degenerate calibration marks')
++        rotation = a @ np.diag([1., 1., np.linalg.det(a @ b)]) @ b
++    # A level ground ray (right, measured height, forward) maps to the
++    # same footprint in the frozen camera at its reference height.
++    ground_scale = np.diag([1., HEIGHT / optical_height_m, 1.])
++    return REFERENCE_K @ ground_scale @ rotation @ np.linalg.inv(source_k)
++
++
++class CameraProjection:
++    """Bind image projection and its visibility mask to the source CameraInfo."""
++    def __init__(self, data):
++        self.topic, self.frame_id = data['image_topic'], data['frame_id']
++        self.width, self.height = int(data['width']), int(data['height'])
++        self.projection = np.asarray(data['projection'], dtype=float).reshape(3, 4)
++        if (not self.frame_id or self.width <= 0 or self.height <= 0 or self.width * 9 != self.height * 16
++                or not np.isfinite(self.projection).all() or not data['mount_id']):
++            raise ValueError('Incomplete rectified camera registration')
++
++    def rectify(self, bgr):
++        if self.warp is None:
++            return bgr
++        return cv2.warpPerspective(bgr, self.warp, (640, 360), flags=cv2.INTER_LINEAR)
++
++    def restrict_predictions(self, road, lane, detections):
++        if self.visible is None:
++            return road, lane, detections
++        boxes = detections['boxes']
++        u = np.clip(((boxes[:, 0] + boxes[:, 2]) * .5).astype(int), 0, 639)
++        v = np.clip(np.ceil(boxes[:, 3]).astype(int) - 1, 0, 359)
++        keep = self.visible[v, u]
++        return road & self.visible, lane & self.visible, {k: values[keep] for k, values in detections.items()}
++
++    def matches(self, topic, image, info):
++        if info is None:
++            return False
++        return (topic == self.topic and image.header.frame_id == self.frame_id == info.header.frame_id
++                and (image.width, image.height) == (info.width, info.height) == (self.width, self.height)
++                and np.allclose(np.array(info.p).reshape(3, 4), self.projection, rtol=0., atol=.001))
++
++
++class HondaMountProjection(CameraProjection):
++    profile = HONDA
++
++    def __init__(self, data):
++        super().__init__(data)
++        if data['profile'] != HONDA:
++            raise ValueError('Unknown nominal mount')
++        h = optical_height(data['optical_height_m'])
++        # Honda v1.4.0 left optical axis in forward/left/up body coordinates.
++        # The xacro's optical RPY (-89, 0, -90) angles the camera up by 1 degree.
++        angle = np.deg2rad(1.)
++        c, s = np.cos(angle), np.sin(angle)
++        optical_to_body = np.array([[0., s, c], [-1., 0., 0.], [0., -c, s]])
++        # Each column multiplies [right_m, forward_m, 1] on level ground.
++        relative_ground = np.array([[0., 1., -.055], [-1., 0., -.0600025], [0., 0., -h]])
++        target = REFERENCE_K @ np.array([[1., 0., 0.], [0., 0., HEIGHT], [0., 1., 0.]])
++        self.ground_to_virtual = target @ np.linalg.inv(optical_to_body.T @ relative_ground)
++        self.update_intrinsics(self.projection)
++
++    def update_intrinsics(self, projection):
++        self.warp = self.ground_to_virtual @ np.linalg.inv(projection[:, :3])
++        coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
++                                       self.warp, (640, 360), flags=cv2.INTER_NEAREST)
++        self.visible = coverage.astype(bool)
++        self.projection = projection.copy()
++
++    def matches(self, topic, image, info):
++        if (info is None or topic != self.topic or image.header.frame_id != self.frame_id
++                or info.header.frame_id != self.frame_id or (image.width, image.height) != (self.width, self.height)
++                or (info.width, info.height) != (self.width, self.height)):
++            return False
++        projection = np.asarray(info.p, dtype=float).reshape(3, 4)
++        if not np.array_equal(projection, self.projection):
++            if (not np.isfinite(projection).all() or projection[0, 0] <= 0 or projection[1, 1] <= 0
++                    or not np.allclose(projection[2], [0., 0., 1., 0.]) or np.any(projection[:, 3])):
++                return False
++            self.update_intrinsics(projection)
++        return True
++
++
++def load_projection(path):
++    data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++    if data.get('profile') == HONDA:
++        return HondaMountProjection(data)
++    return CalibrationReceipt(path)
++
++
++class CalibrationReceipt(CameraProjection):
++    """Verify held-out ground marks before assigning the measured driving profile."""
++    profile = CALIBRATED
++
++    def __init__(self, path):
++        data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++        super().__init__(data)
++        # A fixed ray-to-ground transform is what matters to the existing planner.
++        # Use actual camera pixels and independent vehicle-relative measured positions.
++        marks = measured_points(data['ground_marks'], self.width, self.height)
++        u, v, right, forward = marks.T
++        self.warp = None
++        self.visible = None
++        self.optical_height_m = optical_height(data.get('optical_height_m', HEIGHT))
++        fit = None
++        if 'fit_marks' in data:
++            fit = measured_points(data['fit_marks'], self.width, self.height)
++            separation = np.linalg.norm(fit[:,None,2:] - marks[None,:,2:], axis=-1)
++            if np.min(separation) < .02:
++                raise ValueError('Use different physical marks for fitting and independent verification')
++        if fit is not None or 'optical_height_m' in data:
++            self.warp = fit_rotation(self.projection[:, :3], fit, self.optical_height_m)
++            coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
++                                           self.warp, (640, 360), flags=cv2.INTER_NEAREST)
++            self.visible = coverage.astype(bool)
++            check = self.warp @ np.array([u, v, np.ones_like(u)])
++            if np.any(check[2] <= 0):
++                raise ValueError('Verification points fall behind the virtual camera')
++            u, v = check[:2] / check[2]
++            if np.any((u < 0) | (u >= 640) | (v < 0) | (v >= 360)):
++                raise ValueError('Verification points fall outside the frozen camera view')
++        else:
++            u = (u + .5) * 640 / self.width - .5
++            v = (v + .5) * 360 / self.height - .5
++        if np.any(v <= CY):
++            raise ValueError('Ground projection crosses the optical horizon')
++        estimated_z = HEIGHT * FY / (v - CY)
++        error = np.hypot((u - CX) * estimated_z / FX - right, estimated_z - forward)
++        if np.max(error) > .10:
++            raise ValueError('Measured camera projection differs from V6.26 by more than 0.10 m')
++        self.max_error = float(np.max(error))
+--- /dev/null
++++ b/concept_yolop/concept_yolop/inference.py
+@@ -0,0 +1,53 @@
++"""Sensor preprocessing and checkpoint load, independent of ROS."""
++import inspect
++from pathlib import Path
++
++import cv2
++import numpy as np
++import torch
++
++from .model import B14
++from .weights import verify
++
++
++def canonical_bgr(image):
++    if image.dtype != np.uint8 or image.ndim != 3 or image.shape[2] != 3:
++        raise ValueError('Expected an 8-bit BGR camera frame')
++    h, w = image.shape[:2]
++    if w * 9 != h * 16:
++        raise ValueError('Camera image must match the calibrated 16:9 optical view')
++    if (w, h) != (640, 360):
++        image = cv2.resize(image, (640, 360), interpolation=cv2.INTER_AREA)
++    return np.ascontiguousarray(image)
++
++
++class Predictor:
++    def __init__(self, path, device='cuda'):
++        self.device = torch.device(device)
++        torch.set_num_threads(4)
++        torch.backends.cudnn.benchmark = False
++        torch.backends.cudnn.deterministic = True
++        torch.backends.cudnn.allow_tf32 = False
++        torch.backends.cuda.matmul.allow_tf32 = False
++        cv2.setNumThreads(1)
++        kwargs = {'weights_only': True} if 'weights_only' in inspect.signature(torch.load).parameters else {}
++        with Path(path).expanduser().open('rb') as stream:
++            verify(stream)
++            checkpoint = torch.load(stream, map_location='cpu', **kwargs)
++        if checkpoint['architecture'] != 'yolop_b1_honda_three_head_v2':
++            raise ValueError('Unexpected checkpoint architecture')
++        native_fusion = (self.device.type == 'cuda' and torch.backends.cudnn.version() == 8600
++                         and torch.cuda.get_device_capability(self.device) == (8, 7))
++        self.model = B14(checkpoint['model_config'], native_fusion=native_fusion)
++        self.model.load_state_dict(checkpoint['model'], strict=True)
++        self.model.to(self.device).eval()
++
++    @torch.no_grad()
++    def predict(self, bgr):
++        frame = canonical_bgr(bgr)
++        rgb = frame[:, :, ::-1].transpose(2, 0, 1).copy()
++        road, lane, detections = self.model(torch.from_numpy(rgb).to(self.device).float() / 255)
++        # The two-class argmax returns int64. Move one byte per mask pixel
++        # across the device boundary and keep the original comparison and ties.
++        return (frame, road.bool().cpu().numpy(), lane.bool().cpu().numpy(),
++                {k: v.cpu().numpy() for k, v in detections.items()})
+--- /dev/null
++++ b/concept_yolop/concept_yolop/model.py
+@@ -0,0 +1,104 @@
++"""Inference equations of the frozen MobileNet B1.4 checkpoint. See SOURCES.md."""
++from collections import OrderedDict
++
++import torch
++from torch import nn
++from torch.nn import functional as F
++from torchvision.models import mobilenet_v3_large
++from torchvision.models.detection import FCOS
++from torchvision.models.detection.anchor_utils import AnchorGenerator
++from torchvision.models.detection.fcos import FCOSHead
++from torchvision.ops import FeaturePyramidNetwork
++from torchvision.ops.feature_pyramid_network import LastLevelMaxPool
++from torchvision.ops.misc import FrozenBatchNorm2d
++
++
++class NativeCudaConv2d(nn.Conv2d):
++    def forward(self, image):
++        # cuDNN 8.6 on Orin is slow for the 112-to-48 decoder fusion.
++        # PyTorch's CUDA convolution keeps this operation in FP32.
++        with torch.backends.cudnn.flags(enabled=False, deterministic=True, allow_tf32=False):
++            return super().forward(image)
++
++
++def lane_conv(in_channels, out_channels, convolution=nn.Conv2d):
++    return nn.Sequential(convolution(in_channels, out_channels, 3, padding=1, bias=False),
++                         nn.GroupNorm(8, out_channels), nn.ReLU(inplace=True))
++
++
++class LaneDecoder(nn.Module):
++    def __init__(self, native_fusion=False):
++        super().__init__()
++        channels = (16, 24, 40, 112, 960)
++        widths = (16, 32, 48, 64, 96)
++        self.lateral = nn.ModuleList(nn.Conv2d(c, w, 1) for c, w in zip(channels, widths))
++        self.fuse = nn.ModuleList([
++            nn.Sequential(
++                lane_conv(widths[i] + widths[i + 1], widths[i],
++                          NativeCudaConv2d if native_fusion and i == 2 else nn.Conv2d),
++                lane_conv(widths[i], widths[i]))
++            for i in range(4)
++        ])
++        self.output = nn.Conv2d(widths[0], 2, 1)
++
++    def forward(self, features):
++        skips = [layer(value) for layer, value in zip(self.lateral, features)]
++        result = skips[-1]
++        for index in range(3, -1, -1):
++            result = F.interpolate(result, size=skips[index].shape[-2:], mode='bilinear', align_corners=False)
++            result = self.fuse[index](torch.cat((result, skips[index]), 1))
++        return self.output(result)
++
++
++class ObjectPyramid(nn.Module):
++    def __init__(self):
++        super().__init__()
++        self.out_channels = 32
++        self.fpn = FeaturePyramidNetwork([24, 40, 112, 960], 32, extra_blocks=LastLevelMaxPool())
++
++    def forward(self, features):
++        return self.fpn(OrderedDict((str(i), x) for i, x in enumerate(features[1:])))
++
++
++class B14(nn.Module):
++    def __init__(self, config, native_fusion=False):
++        super().__init__()
++        if (config['backend'], config['road_mode'], config['width'], config['depth']) != ('mobile', 'separate', 32, 2):
++            raise ValueError('Unexpected B1.4 network configuration')
++        self.encoder = mobilenet_v3_large(weights=None, norm_layer=FrozenBatchNorm2d).features
++        self.lane_head = LaneDecoder(native_fusion)
++        self.road_head = LaneDecoder(native_fusion)
++        anchors = AnchorGenerator(((4,), (8,), (16,), (32,), (64,)), ((1.,),) * 5)
++        self.detector = FCOS(ObjectPyramid(), num_classes=4, anchor_generator=anchors,
++                             head=FCOSHead(32, 1, 4, num_convs=2), min_size=config['min_size'],
++                             max_size=config['max_size'], score_thresh=.05, nms_thresh=.5,
++                             detections_per_img=100, topk_candidates=200)
++        self.register_buffer('label_map', torch.tensor((1, 3, 10, 91), dtype=torch.long))
++
++    @staticmethod
++    def restore(logits, batch, native):
++        logits = F.interpolate(logits, size=batch.tensors.shape[-2:], mode='bilinear', align_corners=False)
++        size = batch.image_sizes[0]
++        return F.interpolate(logits[:, :, :size[0], :size[1]], size=native, mode='bilinear',
++                             align_corners=False)[0]
++
++    def forward(self, image):
++        native = image.shape[-2:]
++        batch, _ = self.detector.transform([image])
++        x = batch.tensors
++        features = []
++        for i, layer in enumerate(self.encoder):
++            x = layer(x)
++            if i in (1, 3, 6, 12, 16):
++                features.append(x)
++        lane = self.restore(self.lane_head(features), batch, native).argmax(0)
++        road = self.restore(self.road_head(features), batch, native).argmax(0)
++        maps = list(self.detector.backbone(features).values())
++        outputs = self.detector.head(maps)
++        anchors = self.detector.anchor_generator(batch, maps)
++        sizes = [value.shape[-2] * value.shape[-1] for value in maps]
++        split = {key: list(value.split(sizes, dim=1)) for key, value in outputs.items()}
++        detections = self.detector.postprocess_detections(
++            split, [list(a.split(sizes)) for a in anchors], batch.image_sizes)
++        detections[0]['labels'] = self.label_map[detections[0]['labels']]
++        return road, lane, self.detector.transform.postprocess(detections, batch.image_sizes, [native])[0]
+--- /dev/null
++++ b/concept_yolop/concept_yolop/node.py
+@@ -0,0 +1,143 @@
++"""Standalone B1.4 sensor node. The image timestamp belongs to the camera."""
++import time
++
++import cv2
++import numpy as np
++import rclpy
++from cv_bridge import CvBridge
++from rclpy.node import Node
++from rclpy.qos import QoSProfile, QoSReliabilityPolicy
++from sensor_msgs.msg import CameraInfo, CompressedImage, Image
++from std_msgs.msg import String
++
++from .geometry import HONDA, UNVERIFIED, load_projection
++from .frame_codec import encode_frame
++from .inference import Predictor
++from .weights import default_path
++
++CAMERA = '/aiformula_sensing/zed_node/left_image/undistorted'
++FRAME = '/concept/perception/frame'
++OVERLAY = '/concept/perception/overlay'
++ROAD_BLEND = (.57 * np.arange(256)[:, None, None] + .43 * np.array([218, 132, 42])).astype(np.uint8)
++
++
++def draw_overlay(image, road, lane, det):
++    out = image.copy()
++    # Every uint8 channel has only 256 possible blends. Keep the original
++    # truncation while avoiding several float64 arrays on each camera frame.
++    cv2.copyTo(cv2.LUT(image, ROAD_BLEND), road.view(np.uint8), out)
++    out[lane] = (30, 143, 255)
++    for box, label, score in zip(det['boxes'], det['labels'], det['scores']):
++        if label == 91 and score >= .5:
++            x1, y1, x2, y2 = map(int, box)
++            cv2.rectangle(out, (x1, y1), (x2, y2), (80, 40, 240), 2)
++            cv2.putText(out, 'cone %.2f' % score, (x1, max(14, y1 - 3)),
++                        cv2.FONT_HERSHEY_SIMPLEX, .45, (80, 40, 240), 1, cv2.LINE_AA)
++    return out
++
++
++class CameraNode(Node):
++    def __init__(self, frame_consumer=None, image_group=None):
++        super().__init__('concept_yolop')
++        self.frame_consumer = frame_consumer
++        for name, default in [('weights', str(default_path())), ('device', 'cuda'),
++                              ('camera_info_topic', '/aiformula_sensing/zed_node/left/camera_info'),
++                              ('calibration', ''), ('image_topic', CAMERA), ('frame_topic', FRAME), ('overlay_topic', OVERLAY)]:
++            self.declare_parameter(name, default)
++        self.predictor = Predictor(self.get_parameter('weights').value or default_path(), self.get_parameter('device').value)
++        if self.predictor.device.type == 'cuda':
++            # Initialize CUDA, cuDNN and detection kernels before subscribing to the
++            # camera. predict() copies its outputs to CPU, completing the warm-up.
++            self.predictor.predict(np.zeros((360, 640, 3), dtype=np.uint8))
++        self.bridge = CvBridge()
++        self.last_error_at = float('-inf')
++        self.frames = self.create_publisher(String, self.get_parameter('frame_topic').value, 1)
++        overlay_topic = self.get_parameter('overlay_topic').value
++        self.overlay = self.create_publisher(Image, overlay_topic, 1)
++        qos = QoSProfile(depth=1, reliability=QoSReliabilityPolicy.BEST_EFFORT)
++        self.compressed_overlay = self.create_publisher(CompressedImage, overlay_topic + '/compressed', qos)
++        self.last_bag_error_at = float('-inf')
++        self.calibration = None
++        self.info = None
++        path = self.get_parameter('calibration').value
++        if path:
++            self.calibration = load_projection(path)
++            self.info_subscription = self.create_subscription(
++                CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos, callback_group=image_group)
++        self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos, callback_group=image_group)
++
++    def on_info(self, msg):
++        self.info = msg
++
++    def on_image(self, msg):
++        try:
++            received = self.get_clock().now().nanoseconds
++            start = time.monotonic_ns()
++            bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
++            matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
++            if self.calibration and self.calibration.profile == HONDA and not matched:
++                if time.monotonic() - self.last_error_at >= 5.:
++                    self.get_logger().warning('Waiting for matching ZED CameraInfo: topic=%s image=%s info=%s'
++                                              % (self.images.topic_name, msg.header.frame_id,
++                                                 self.info.header.frame_id if self.info else 'missing'))
++                    self.last_error_at = time.monotonic()
++                return
++            if matched:
++                bgr = self.calibration.rectify(bgr)
++            prepared = time.monotonic_ns()
++            bgr, road, lane, det = self.predictor.predict(bgr)
++            inferred = time.monotonic_ns()
++            if matched:
++                road, lane, det = self.calibration.restrict_predictions(road, lane, det)
++            stamp = msg.header.stamp
++            profile = self.calibration.profile if matched else UNVERIFIED
++            if self.frame_consumer is not None:
++                self.frame_timing_ms = {
++                    'capture_to_image_callback': (received - stamp.sec * 10**9 - stamp.nanosec) / 1e6,
++                    'decode_and_projection': (prepared - start) / 1e6,
++                    'inference': (inferred - prepared) / 1e6,
++                    'restrict_predictions': (time.monotonic_ns() - inferred) / 1e6,
++                }
++                self.frame_consumer(stamp, msg.header.frame_id, profile, bgr, road, lane, det)
++            if self.frame_consumer is None or self.frames.get_subscription_count():
++                wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det, profile)
++                self.frames.publish(String(data=wire))
++            display = self.overlay.get_subscription_count()
++            record = self.compressed_overlay.get_subscription_count()
++            if display or record:
++                overlay = draw_overlay(bgr, road, lane, det)
++                if display:
++                    preview = self.bridge.cv2_to_imgmsg(overlay, encoding='bgr8')
++                    preview.header = msg.header
++                    self.overlay.publish(preview)
++                if record:
++                    self.publish_compressed(overlay, msg.header)
++        except Exception as exc:
++            # rclpy Foxy has no portable throttle_duration_sec keyword.
++            if time.monotonic() - self.last_error_at >= 2.0:
++                self.get_logger().error('Camera frame dropped: %s' % exc)
++                self.last_error_at = time.monotonic()
++
++    def publish_compressed(self, overlay, header):
++        try:
++            ok, jpeg = cv2.imencode('.jpg', overlay, [cv2.IMWRITE_JPEG_QUALITY, 75])
++            if not ok:
++                raise ValueError('JPEG encoder returned no image')
++            self.compressed_overlay.publish(CompressedImage(
++                header=header, format='bgr8; jpeg compressed bgr8', data=jpeg.tobytes()))
++        except (cv2.error, ValueError, RuntimeError) as exc:
++            if time.monotonic() - self.last_bag_error_at >= 2.0:
++                self.get_logger().warning('Bag camera frame dropped: %s' % exc)
++                self.last_bag_error_at = time.monotonic()
++
++
++def main(args=None):
++    rclpy.init(args=args)
++    node = None
++    try:
++        node = CameraNode()
++        rclpy.spin(node)
++    finally:
++        if node is not None:
++            node.destroy_node()
++        rclpy.shutdown()
+--- /dev/null
++++ b/concept_yolop/concept_yolop/weights.py
+@@ -0,0 +1,75 @@
++"""Import an authorized local copy and verify its content on every model load."""
++import argparse
++import hashlib
++import os
++import tempfile
++from contextlib import contextmanager
++from zipfile import ZipFile
++from pathlib import Path
++
++FILENAME = 'B1.4-road-aligned-research.pth'
++SHA256 = '19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6'
++SIZE = 15293077
++
++
++def default_path():
++    return Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'concept_yolop' / FILENAME
++
++
++def verify(stream):
++    digest = hashlib.sha256()
++    for chunk in iter(lambda: stream.read(1024 * 1024), b''):
++        digest.update(chunk)
++    if digest.hexdigest() != SHA256 or stream.tell() != SIZE:
++        raise ValueError('Expected the frozen B1.4 checkpoint, SHA256 ' + SHA256)
++    stream.seek(0)
++
++
++@contextmanager
++def _source_stream(path):
++    path = Path(path).expanduser()
++    if path.suffix.lower() == '.zip':
++        # Read only the research checkpoint; never extract archive paths to disk.
++        member = 'vision/YOLOP_B1/weights/' + FILENAME
++        with ZipFile(path) as archive:
++            info = archive.getinfo(member)
++            if info.file_size != SIZE:
++                raise ValueError('Unexpected checkpoint size in the archive')
++            with archive.open(info) as stream:
++                yield stream
++    else:
++        with path.open('rb') as stream:
++            yield stream
++
++
++def import_weights(source, destination):
++    destination = Path(destination).expanduser().resolve()
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    with _source_stream(source) as incoming:
++        with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as tmp:
++            temp = Path(tmp.name)
++        try:
++            with temp.open('wb+') as out:
++                for chunk in iter(lambda: incoming.read(1024 * 1024), b''):
++                    out.write(chunk)
++                out.flush()
++                os.fsync(out.fileno())
++                out.seek(0)
++                verify(out)
++            os.replace(str(temp), str(destination))
++        finally:
++            if temp.exists():
++                temp.unlink()
++    return destination
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('source', type=Path)
++    parser.add_argument('--destination', type=Path, default=default_path())
++    args = parser.parse_args()
++    print(import_weights(args.source, args.destination))
++
++
++if __name__ == '__main__':
++    main()
+--- /dev/null
++++ b/concept_yolop/launch/concept_yolop.launch.py
+@@ -0,0 +1,20 @@
++from launch import LaunchDescription
++from launch.actions import DeclareLaunchArgument
++from launch.substitutions import LaunchConfiguration
++from launch_ros.actions import Node
++
++from launch_ros.parameter_descriptions import ParameterValue
++
++
++def generate_launch_description():
++    defaults = {
++        'weights': '', 'device': 'cuda',
++        'calibration': '', 'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
++        'image_topic': '/aiformula_sensing/zed_node/left_image/undistorted',
++        'frame_topic': '/concept/perception/frame', 'overlay_topic': '/concept/perception/overlay',
++    }
++    return LaunchDescription([
++        *[DeclareLaunchArgument(k, default_value=v) for k, v in defaults.items()],
++        Node(package='concept_yolop', executable='concept_yolop_node', output='screen',
++             parameters=[{k: ParameterValue(LaunchConfiguration(k), value_type=str) for k in defaults}]),
++    ])
+--- /dev/null
++++ b/concept_yolop/package.xml
+@@ -0,0 +1,17 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_yolop</name>
++  <version>6.27.4</version>
++  <description>Frozen B1.4 camera perception for concept driving.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <exec_depend>rclpy</exec_depend>
++  <exec_depend>std_msgs</exec_depend>
++  <exec_depend>sensor_msgs</exec_depend>
++  <exec_depend>cv_bridge</exec_depend>
++  <exec_depend>launch_ros</exec_depend>
++  <exec_depend>python3-opencv</exec_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_yolop/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_yolop
++[install]
++install_scripts=$base/lib/concept_yolop
+--- /dev/null
++++ b/concept_yolop/setup.py
+@@ -0,0 +1,26 @@
++from glob import glob
++from setuptools import find_packages, setup
++
++setup(
++    name='concept_yolop',
++    version='6.27.4',
++    packages=find_packages(exclude=['test']),
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/concept_yolop']),
++        ('share/concept_yolop', ['package.xml', 'README.md', 'SOURCES.md']),
++        ('share/concept_yolop/launch', glob('launch/*.launch.py')),
++    ],
++    install_requires=['setuptools'],
++    python_requires='>=3.8',
++    maintainer='Sophia AI Formula',
++    maintainer_email='maintainers@example.invalid',
++    description='Frozen B1.4 camera perception for concept driving.',
++    license='AGPL-3.0-only',
++    zip_safe=False,
++    entry_points={'console_scripts': [
++        'concept_yolop_node = concept_yolop.node:main',
++        'concept_yolop_weights = concept_yolop.weights:main',
++        'concept_yolop_check = concept_yolop.check:main',
++        'concept_yolop_calibrate = concept_yolop.calibrate:main',
++    ]},
++)
+--- /dev/null
++++ b/concept_yolop/test/test_camera_registration.py
+@@ -0,0 +1,92 @@
++import json
++
++import cv2
++import numpy as np
++import pytest
++
++from concept_yolop.geometry import CalibrationReceipt, HONDA, REFERENCE_K, HEIGHT, load_projection
++
++
++def test_honda_mount_projects_vehicle_centerline_using_left_camera_info(tmp_path):
++    params = dict(profile=HONDA, optical_height_m=.55, image_topic='/camera',
++                  frame_id='left', mount_id='sn', width=640, height=360,
++                  projection=[245.857193, 0, 328.655579, 0, 0, 245.857193,
++                              189.012695, 0, 0, 0, 1, 0])
++    path = tmp_path / 'honda-ground.json'
++    path.write_text(json.dumps(params))
++    mount = load_projection(path)
++    # Raw left-camera pixel independently projected from (right=0, forward=4 m).
++    pixel = mount.warp @ [332.405, 227.675, 1.]
++    expected = REFERENCE_K @ [0, HEIGHT, 4.]
++    np.testing.assert_allclose(pixel[:2] / pixel[2], expected[:2] / expected[2], atol=.002)
++    assert mount.profile == HONDA and mount.visible.shape == (360, 640)
++
++from concept_yolop.calibrate import install_receipt
++
++
++@pytest.mark.parametrize('measured_height', [None, 0.55])
++def test_measured_intrinsics_pitch_and_independent_check(tmp_path, measured_height):
++    k = np.array([[246., 0., 328.7], [0., 246., 189.], [0., 0., 1.]])
++    rotation, _ = cv2.Rodrigues(np.array([.025, .014, -.008]))
++    def measure(points):
++        result = []
++        for x, z in points:
++            sight = k @ rotation @ np.array([x, measured_height or HEIGHT, z])
++            result.append([*(sight[:2] / sight[2]), x, z])
++        return result
++    fit = measure([(-.8, 2.), (.8, 2.), (-1., 8.), (1., 8.)])
++    held = measure([(-.7, 2.5), (.9, 2.6), (-1.1, 7.5), (1.2, 7.8)])
++    record = dict(frame_id='cam', image_topic='/img', mount_id='test', width=640, height=360,
++                  projection=np.c_[k, np.zeros(3)].ravel().tolist(), fit_marks=fit, ground_marks=held)
++    if measured_height is not None:
++        record['optical_height_m'] = measured_height
++    path = tmp_path/'receipt.json'
++    path.write_text(json.dumps(record))
++    receipt = CalibrationReceipt(path)
++    assert receipt.max_error < 1e-7
++    u, v, x, z = held[0]
++    marker = np.zeros((360,640,3), np.uint8)
++    cv2.circle(marker, (int(round(u)), int(round(v))), 2, (255,255,255), -1)
++    expected = REFERENCE_K @ [x, HEIGHT, z]
++    px, py = np.rint(expected[:2]/expected[2]).astype(int)
++    assert receipt.rectify(marker)[py,px,0] > 200
++    assert not receipt.visible.all()
++    mask = np.ones_like(receipt.visible)
++    boxes = dict(boxes=np.zeros((0,4)), labels=np.zeros(0), scores=np.zeros(0))
++    road, lane, _ = receipt.restrict_predictions(mask, mask, boxes)
++    assert np.array_equal(road, receipt.visible) and np.array_equal(lane, road)
++    record['ground_marks'] = fit
++    path.write_text(json.dumps(record))
++    with pytest.raises(ValueError, match='different physical'):
++        CalibrationReceipt(path)
++    held[-1][3] += 1.
++    record['ground_marks'] = held
++    path.write_text(json.dumps(record))
++    with pytest.raises(ValueError, match='0.10 m'):
++        CalibrationReceipt(path)
++
++
++def test_level_camera_install_and_reject_invalid_replacement(tmp_path, monkeypatch):
++    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
++    record = dict(frame_id='cam', image_topic='/img', mount_id='test', width=640, height=360,
++                  projection=np.c_[REFERENCE_K, np.zeros(3)].ravel().tolist(), optical_height_m=.55)
++    points = [(-.8, 2.), (.8, 2.), (-1., 8.), (1., 8.)]
++    record['ground_marks'] = []
++    for right, forward in points:
++        pixel = REFERENCE_K @ [right, .55, forward]
++        record['ground_marks'].append([*(pixel[:2] / pixel[2]), right, forward])
++    source = tmp_path / 'source.json'
++    original = json.dumps(record, indent=2).encode('utf8')
++    source.write_bytes(original)
++    destination, receipt = install_receipt(source)
++    assert destination == tmp_path / 'config' / 'concept' / 'camera.json'
++    assert receipt.max_error < 1e-7
++    assert destination.read_bytes() == original
++
++    for bad_height in (0., float('nan'), True, HEIGHT):
++        record['optical_height_m'] = bad_height
++        source.write_text(json.dumps(record))
++        with pytest.raises(ValueError):
++            install_receipt(source)
++        assert destination.read_bytes() == original
++    assert list(destination.parent.iterdir()) == [destination]
+--- /dev/null
++++ b/concept_yolop/test/test_codec_geometry.py
+@@ -0,0 +1,60 @@
++import json
++from types import SimpleNamespace as Obj
++
++import numpy as np
++import pytest
++from concept_yolop.frame_codec import encode_frame, decode_frame, parse_frame_header, decode_frame_data
++from concept_yolop.geometry import CalibrationReceipt, FX, FY, CX, CY, HEIGHT, UNVERIFIED
++from concept_yolop.weights import import_weights
++
++
++def test_registered_and_unregistered_view(tmp_path):
++    marks = [[CX + FX*x/z, CY + FY*HEIGHT/z, x, z] for x, z in ((-.8,2.),(.8,2.),(-1.,8.),(1.,8.))]
++    P = [FX,0.,CX,0.,0.,FY,CY,0.,0.,0.,1.,0.]
++    info = Obj(header=Obj(frame_id='camera'), width=640, height=360, p=P)
++    evidence = dict(image_topic='/camera', frame_id='camera', mount_id='test-install', width=640,
++                    height=360, projection=P, ground_marks=marks)
++    path = tmp_path/'optics.json'
++    path.write_text(json.dumps(evidence))
++    registered = CalibrationReceipt(path)
++    assert registered.matches('/camera', info, info)
++    assert not registered.matches('/another', info, info)
++    assert not registered.matches('/camera', info, None)
++    marks[-1][-1] += .2
++    path.write_text(json.dumps(evidence))
++    with pytest.raises(ValueError):
++        CalibrationReceipt(path)
++
++
++def test_frame_round_trip_and_model_hash():
++    bgr = np.zeros((360,640,3),np.uint8)
++    bgr[8:16,:,2] = 85
++    road = bgr[:,:,2] == 85
++    lane = ~road
++    boxes = dict(boxes=np.empty((0,4),np.float32), labels=np.zeros(0,np.int64), scores=np.zeros(0,np.float32))
++    s = encode_frame(7,11,'camera',bgr,road,lane,boxes)
++    obj, stamp_ns, frame_id, geometry = parse_frame_header(s)
++    assert (stamp_ns, frame_id, geometry) == (7000000011, 'camera', UNVERIFIED)
++    split_result = decode_frame_data(obj)
++    result = decode_frame(s)
++    assert result['stamp_ns'] == 7000000011 and result['geometry_profile'] == UNVERIFIED
++    for k,v in dict(bgr=bgr, road=road, lane=lane, **boxes).items():
++        np.testing.assert_array_equal(result[k], v)
++        np.testing.assert_array_equal(split_result[k], v)
++    frame = json.loads(s)
++    frame['bgr_png'] = ''
++    parsed, _, _, _ = parse_frame_header(json.dumps(frame))
++    with pytest.raises(ValueError):
++        decode_frame_data(parsed)
++    frame['model_sha256'] = 'bad'
++    with pytest.raises(ValueError):
++        decode_frame(json.dumps(frame))
++
++
++def test_bad_weight_does_not_replace_file(tmp_path):
++    old, incoming = tmp_path/'model.pth', tmp_path/'wrong.pth'
++    old.write_bytes(b'existing local copy')
++    incoming.write_bytes(b'wrong')
++    with pytest.raises(ValueError):
++        import_weights(incoming, old)
++    assert old.read_bytes() == b'existing local copy'

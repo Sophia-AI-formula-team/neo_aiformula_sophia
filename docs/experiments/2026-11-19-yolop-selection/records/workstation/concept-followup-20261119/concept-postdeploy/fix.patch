@@ -1,0 +1,169 @@
+diff --git a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+index a0e7f76..ecbd001 100644
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+@@ -4,8 +4,6 @@ import math
+ ZERO = (0.0, 0.0)
+ ZERO_FRAME = bytes(8)
+ COMMAND_TIMEOUT = .5
+-# During a short capture gap the only allowed output is zero.
+-ZERO_HOLD_LIMIT = .1
+ CAN_TIMEOUT = .1
+ 
+ 
+@@ -83,7 +81,7 @@ class Gate:
+             return
+         age = stamp-self.auto_stamp
+         if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
+-                and COMMAND_TIMEOUT < age <= COMMAND_TIMEOUT + ZERO_HOLD_LIMIT):
++                and age > COMMAND_TIMEOUT):
+             if self.reason != 'waiting_fresh_auto':
+                 self.barrier(stamp, 'waiting_fresh_auto')
+         else:
+diff --git a/vehicle_concept/src/concept_control_gate/test/test_gate.py b/vehicle_concept/src/concept_control_gate/test/test_gate.py
+index dafc7dd..41ec1fc 100644
+--- a/vehicle_concept/src/concept_control_gate/test/test_gate.py
++++ b/vehicle_concept/src/concept_control_gate/test/test_gate.py
+@@ -75,21 +75,23 @@ def test_capture_expiry_stops_until_zero_ack_and_fresh_frame():
+     assert g.motor(moving, 1.57, 1.57, 1.57) == ZERO_FRAME
+     assert not g.paused and not g.auto_is_fresh(1.57, 1.57)
+     assert g.tick(1.575, 1.575) == ZERO
+-    g.command(command, 1.18, 1.58, 1.58)
+-    assert g.tick(1.585, 1.585) == ZERO
+-    assert g.motor(moving, 1.59, 1.59, 1.59) == ZERO_FRAME
+-    g.motor(ZERO_FRAME, 1.595, 1.595, 1.595)
+-    assert g.tick(1.60, 1.60) == command
++    # Match the recorded gap: source age exceeds 600 ms while command delivery
++    # is still within the 500 ms watchdog. Await a zero frame past the fence.
++    g.command(command, 1.25, 1.73, 1.73)
++    assert g.tick(1.735, 1.735) == ZERO
++    assert g.motor(moving, 1.74, 1.74, 1.74) == ZERO_FRAME
++    g.motor(ZERO_FRAME, 1.745, 1.745, 1.745)
++    assert g.tick(1.75, 1.75) == command
+ 
+ 
+ def test_late_arrival_cannot_rearm_after_extended_gap():
+     g = ready_auto()
+     g.joy(False, ZERO, 1.49, 1.49, 1.49)
+     g.command((1.,0.), 1.06, 1.49, 1.49)
+-    # A valid new command arrives before the next tick but beyond the zero-only hold.
+-    g.command((1.,0.), 1.35, 1.67, 1.67)
++    # A valid new command arrives before the next tick but beyond the deadline since the last valid command receipt.
++    g.command((1.,0.), 1.60, 2.01, 2.01)
+     assert g.paused and g.reason == 'auto_timeout'
+-    assert g.tick(1.67, 1.67) == ZERO
++    assert g.tick(2.01, 2.01) == ZERO
+ 
+ 
+ def test_silent_or_replayed_stream_still_latches_at_receipt_deadline():
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index a97bf03..f129bb6 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -64,6 +64,7 @@ class DriverNode(Node):
+         self.first_ns = self.last_ns = self.next_ns = None
+         self.rate_skipped_total = 0
+         self.locked_reason = None
++        self.image_gap = False
+         self.camera_key = None
+         self.cached_lap_map = None
+         with self.lock:
+@@ -169,6 +170,7 @@ class DriverNode(Node):
+                     self.rate_skipped_total += 1
+                     return
+                 if ns - self.last_ns > 500_000_000:
++                    self.image_gap = True
+                     self.locked_reason = 'image gap over 0.5 s; pause the gate and restart the driver'
+                     raise ValueError(self.locked_reason)
+             with self.lock:
+@@ -213,7 +215,7 @@ class DriverNode(Node):
+                 output.twist.angular.z = cmd['angular_z_radps']
+                 self.output.publish(output)
+         except Exception as exc:
+-            decision.update(status='invalid', reason=str(exc))
++            decision.update(status='invalid', reason=str(exc), image_gap_reset_required=self.image_gap)
+         emitted = now()
+         decision.update(emitted_stamp=stamp(emitted), processing_ms=(time.monotonic()-tic)*1000.,
+                         rate_skipped_total=self.rate_skipped_total, planning_hz=1e9/self.period_ns)
+diff --git a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+index 254505c..4cfc518 100644
+--- a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++++ b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+@@ -119,8 +119,21 @@ def main():
+         assert commands[-1].header.stamp.sec == 13
+         for key in ('status', 'selected_index', 'command', 'feasible_count', 'selected_path', 'candidates'):
+             assert decisions[0][key] == result[key], key
++        decisions.clear()
++        send_input(HONDA, 14)
++        assert decisions[0]['status'] == 'invalid'
++        assert decisions[0]['image_gap_reset_required'] is True
++        assert len(commands) == 3
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        decisions.clear()
++        send_input(HONDA, 15)
++        until(lambda: len(commands) == 4)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 15
+         print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
+-              'unverified shadow, Honda commands and identical direct-frame choices.')
++              'unverified shadow, Honda commands identical direct-frame choices and restart after a camera gap.')
+     finally:
+         peer.destroy_node()
+         driver.destroy_node()
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/main.py b/vehicle_concept/src/concept_panel/concept_panel/main.py
+index fc5bba3..04287fb 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/main.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/main.py
+@@ -183,7 +183,7 @@ class Controller:
+             if self.future is not None:
+                 self.future.cancel()
+             self.finish('之前的操作已被中断，以门控回读为准')
+-        self.pending=Action(command,value)
++        self.pending=Action(command, value, image_gap=self.window.image_gap())
+         self.window.busy=True
+         self.issue()
+ 
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/model.py b/vehicle_concept/src/concept_panel/concept_panel/model.py
+index c11ae88..fd8c50c 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/model.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/model.py
+@@ -44,9 +44,15 @@ class Journal:
+ 
+ 
+ class Action:
+-    """A restart has two distinct acknowledgements. Timeout never advances the sequence."""
+-    def __init__(self, command, value=None):
+-        self.steps = deque(['pause', 'restart'] if command == 'restart' else [command])
++    """Advance through control services only after successful acknowledgements."""
++    def __init__(self, command, value=None, image_gap=False):
++        if command == 'resume' and image_gap:
++            steps = ['pause', 'restart', 'resume']
++        elif command == 'restart':
++            steps = ['pause', 'restart']
++        else:
++            steps = [command]
++        self.steps = deque(steps)
+         self.value = value
+ 
+     def completed(self, ok):
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/window.py b/vehicle_concept/src/concept_panel/concept_panel/window.py
+index ffd11a5..80797ac 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -445,6 +445,7 @@ class Window(W.QWidget):
+         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
+                           if effective is not None else '规划按目标和限速中较低的值计算。')
+         self.action_feedback.setText(self.pending_text)
++        self.buttons['resume'].setText('清空累计地图并继续' if self.image_gap() else '继续自动驾驶')
+         for key,button in self.buttons.items():
+             ok=live and not self.busy and not self.offline
+             if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
+@@ -452,3 +453,6 @@ class Window(W.QWidget):
+             if key=='disable': ok=not self.offline
+             if key=='pause': ok=not self.offline
+             button.setEnabled(bool(ok))
++
++    def image_gap(self):
++        return self.decision.value.get('image_gap_reset_required') is True

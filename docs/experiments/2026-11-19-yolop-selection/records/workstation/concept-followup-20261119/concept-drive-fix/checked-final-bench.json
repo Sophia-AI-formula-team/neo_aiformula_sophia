@@ -1,0 +1,127 @@
+{
+  "percentiles": "median,p95,max",
+  "timing_ms": {
+    "capture_to_image_callback": [
+      56.35,
+      68.3,
+      75.43
+    ],
+    "decode_and_projection": [
+      7.56,
+      10.68,
+      17.96
+    ],
+    "inference": [
+      70.91,
+      78.29,
+      104.3
+    ],
+    "restrict_predictions": [
+      0.91,
+      1.05,
+      2.1
+    ],
+    "capture_to_driver": [
+      137.5,
+      151.58,
+      175.33
+    ],
+    "driver_ms": [
+      70.57,
+      75.38,
+      95.22
+    ],
+    "decision_age_ms": [
+      208.46,
+      222.89,
+      270.55
+    ],
+    "command_age_ms": [
+      209.28,
+      223.8,
+      271.22
+    ]
+  },
+  "decisions": {
+    "ok feasible": 337,
+    "invalid image is stale or its stamp is in the future": 1,
+    "invalid image gap over 0.5 s; pause the gate and restart the driver": 7
+  },
+  "cmd": 337,
+  "positive": 337,
+  "valid_states": 1267,
+  "right_source": [
+    "can_0x711_signed_le_vectornav_ros_z"
+  ],
+  "joy": 1249,
+  "auto_windows": [
+    {
+      "secs": 26.02,
+      "cmd": 162,
+      "stale_intervals": 0,
+      "worst_interval_ms": 401.89,
+      "modes": {
+        "auto": 259
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 257
+      },
+      "positive_status": 257
+    },
+    {
+      "secs": 26.03,
+      "cmd": 162,
+      "stale_intervals": 0,
+      "worst_interval_ms": 404.81,
+      "modes": {
+        "auto": 259
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 257
+      },
+      "positive_status": 257
+    }
+  ],
+  "deliberate_stream_loss": {
+    "before": [
+      1795072787.1243427,
+      "auto",
+      "auto_command_received",
+      4.0,
+      4.0
+    ],
+    "suspend_at": 1795072787.2255933,
+    "resume_process_at": 1795072788.5837765,
+    "after": [
+      1795072789.2253325,
+      "paused",
+      "auto_timeout",
+      0.0,
+      4.0
+    ],
+    "nonzero_after_500ms": 0,
+    "motor_samples_after_500ms": 74
+  },
+  "expiry_gap_count": 0,
+  "max_last_capture_to_next_receipt_ms": 436.315437,
+  "target_mps": {
+    "4.0": 345
+  },
+  "gate_limit_mps": {
+    "4.0": 634
+  },
+  "effective_mps": {
+    "4.0": 337,
+    "None": 8
+  },
+  "proposals_mps": {
+    "4.0": 337
+  },
+  "requested_mps": {
+    "0.0": 126,
+    "4.0": 2588
+  },
+  "nonzero_yaw_during_stop": 0
+}

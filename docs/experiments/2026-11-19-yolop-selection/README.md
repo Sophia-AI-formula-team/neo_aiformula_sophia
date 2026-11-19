@@ -1,5 +1,13 @@
 # Jetson YOLOP selection experiment · 2026-11-19 JST
 
+## 当日全部实验资料
+
+[完整时间线](TIMELINE.md) · [现场问题与修复](ISSUES.md) · [两段对话全文](conversations/) · [原始 ROS 日志](logs/) · [照片与图表](images/) · [车上活动代码和 Neo 差异](active-code/) · [所有文件与 SHA-256](records/)
+
+17 份录包共有 1,993,511 条消息。逐场可下载原始数据库、元数据及 SQLite 辅助文件。[Semantic / MapAssist（3 份）](bag/semantic/) · [Concept（12 份）](bag/concept/) · [其他（2 份）](bag/other/) · [Release 完整附件](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/tag/field-archive-2026-11-19)
+
+以下为实验进行中留下的阶段记录。
+
 今日全部测试按 YOLOP、Concept 与 Semantic 分类。见 [验收索引](TEST_INDEX.md) 和 [当天实验 ZIP](2026-11-19-experiment-report.zip)。
 
 This is a reversible local experiment for A3 V14, A4 and A4Light in the Neo vehicle workspace. Neo repository ID: 1303517209. Repository main inspected at `d8277bd2b4ce95bcab2883e9b68b011749c0d9ad`. The experiment follows the A4 package AGENTS.md, DEPLOYMENT.md, JETSON.md and the A4 identity handoff in docs/agent-context.

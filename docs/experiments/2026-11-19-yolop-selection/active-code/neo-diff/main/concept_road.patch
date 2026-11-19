@@ -1,0 +1,1988 @@
+--- /dev/null
++++ b/concept_road/concept_road/compare61513.py
+@@ -0,0 +1,11 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/compare61513.py. """
++
++from dataclasses import dataclass
++
++import numpy as np
++
++from concept_road.v34_road import RoadObservation
++
++@dataclass(frozen=True)
++class Guided(RoadObservation):
++    guidance:np.ndarray=None
+--- /dev/null
++++ b/concept_road/concept_road/limits6251.py
+@@ -0,0 +1,49 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v6251_junction/limits6251.py. """
++
++import numpy as np
++
++from concept_road.onboard625 import HALF_PAINT, LocalLimits
++
++class JunctionLimits(LocalLimits):
++    def update(self, road, tracks, lines, speed, yaw, dt):
++        material = np.asarray(road)
++        clipped, edge = super().update(road, tracks, lines, speed, yaw, dt)
++        depth = clipped[:, 0]
++        for side, col, sign in [('left', 1, 1.), ('right', 2, -1.)]:
++            if side not in self.history:
++                continue
++            points, error = self.history[side]
++            visible = (depth >= points[0, 0]) & (depth <= points[-1, 0])
++            z = depth[visible]
++            paint = sign * np.interp(z, points[:, 0], points[:, 1]) - HALF_PAINT
++            ages = np.interp(z, points[:, 0], points[:, 2])
++            paint_error = np.maximum(.04, error + .025 * ages)
++            # The mean edge and the inward confidence bound each intersect both observations.
++            bound = np.maximum(sign * material[visible, col] + material[visible, col + 2], paint + paint_error)
++            clipped[visible, col + 2] = bound - sign * clipped[visible, col]
++        return clipped, edge
++
++def observed_direction(road, heading, tracks, edge):
++    ordered = edge.get('ordered_paint')
++    if not ordered:
++        return heading, None
++    by_id = {t['id']: t for t in tracks}
++    triple = [by_id[i] for i in ordered]
++    near = max(t['zmin'] for t in triple)
++    far = min(t['zmax'] for t in triple)
++    if far <= near:
++        return heading, None
++
++    divider = triple[1]
++    coefficients = np.asarray(divider['coef'])
++    z = road[:, 0]
++    visible = (z >= near) & (z <= far)
++    result = np.asarray(heading).copy()
++    slope = np.polynomial.polynomial.polyder(coefficients)
++    result[visible] = np.arctan(np.polynomial.polynomial.polyval(z[visible], slope))
++    samples = np.linspace(near, far, int(np.ceil((far - near) / .08)) + 1)
++    positions = np.polynomial.polynomial.polyval(samples, coefficients)
++    reference = dict(points=np.c_[samples, positions], source='observed_two_lane_divider',
++                     coef=coefficients, sigma=max(.04, float(divider['error'])), support=[near, far],
++                     rule='Progress along a visible course marking; all lateral positions remain eligible.')
++    return result, reference
+--- /dev/null
++++ b/concept_road/concept_road/map_semantics618.py
+@@ -0,0 +1,252 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/map_semantics618.py. """
++
++from collections import Counter
++from functools import lru_cache
++
++import cv2
++
++import numpy as np
++
++from concept_road.runtime_map import CELL, transform
++
++STEP = .10
++
++FORWARD = np.arange(1.2, 12.01, STEP)
++
++RIGHT = np.arange(-13., 13.01, STEP)
++
++GRID_Z, GRID_X = np.meshgrid(FORWARD, RIGHT, indexing='ij')
++
++def runs(indices):
++    return [g for g in np.split(indices, np.flatnonzero(np.diff(indices)>1)+1) if len(g)]
++
++@lru_cache(maxsize=4)
++def pavement_projection(rows, columns, projection):
++    focal,cx,cy,height=projection
++    u=np.rint(cx+focal*GRID_X/GRID_Z).astype(int)
++    v=np.rint(cy+height*focal/GRID_Z).astype(int)
++    valid=(u>=3)&(u<columns-3)&(v>=int(cy)+4)&(v<rows-3)
++    return np.clip(u,0,columns-1),np.clip(v,0,rows-1),valid
++
++def pavement_grid(image, raw, lane, boxes, projection):
++    u,v,visible=pavement_projection(*image.shape[:2],tuple(projection))
++    valid=visible.copy()
++    for l,t,r,b in boxes:
++        valid &= ~((u>=l-2)&(u<=r+2)&(v>=t-2)&(v<=b+2))
++    lab=cv2.cvtColor(image[v,u],cv2.COLOR_BGR2LAB).astype(np.float32)
++    b_support=raw[v,u]&valid
++    seed=lab[b_support & ~lane[v,u] & (GRID_Z<5.0)]
++    road=np.zeros_like(valid);paint=np.zeros_like(valid);pale=np.zeros_like(valid)
++    if len(seed)>=100:
++        colour=np.median(seed,axis=0)
++        chroma=np.linalg.norm(lab[:,:,1:]-colour[1:],axis=2)
++        lum=lab[:,:,0]-colour[0]
++        road=valid&(chroma<=12)&(lum>=-36)&(lum<=31)
++        pale=valid&(chroma<=13)&(lum>=24)
++        beside=cv2.dilate(road.astype(np.uint8),np.ones((3,3),np.uint8))>0
++        # A genuine white line needs reflectance evidence as well as proximity
++        # to the network's paint prediction. Painted asphalt remains asphalt.
++        network_near=cv2.dilate(lane.astype(np.uint8),np.ones((3,3),np.uint8))>0
++        paint=pale & network_near[v,u]
++        road |= pale & beside
++    return road,paint,pale,valid
++
++def part_grid(parts, kinds):
++    out=np.zeros(GRID_Z.shape,np.uint8)
++    for p in parts:
++        if p['kind'] not in kinds:
++            continue
++        a=np.asarray(p['rows'])
++        pts=np.vstack((a[:,[1,0]],a[::-1][:,[2,0]]))
++        pts=np.rint((pts-[RIGHT[0],FORWARD[0]])/STEP).astype(np.int32)
++        cv2.fillPoly(out,[pts],1)
++    return out>0
++
++def road_fills(parts, measured):
++    result=[]
++    all_known=part_grid(parts,{'ego','adjacent','ego_mask'})
++    adjacent=part_grid(parts,{'adjacent'})
++    for kind in ('ego','adjacent'):
++        original=part_grid(parts,{kind})
++        closed=cv2.morphologyEx(original.astype(np.uint8),cv2.MORPH_CLOSE,
++                               np.ones((9,5),np.uint8)).astype(bool)
++        fill=closed & ~original & measured
++        # For ego, the pale B-pixel fallback can already cover the missing
++        # marking-defined band. Retain the distinction as a repair overlay.
++        if kind=='adjacent':
++            fill &= ~all_known
++        else:
++            fill &= ~adjacent
++        y,x=np.nonzero(fill)
++        result.append((kind,np.c_[FORWARD[y],RIGHT[x]]))
++    return result
++
++def marking_lines(evidence, paint, rgb_pale, asphalt, valid):
++    result=[]
++    for track in evidence['tracks']:
++        coef=track['coef']
++        z=FORWARD[(FORWARD>=max(1.35,track['zmin']))&(FORWARD<=min(11.,track['zmax']))]
++        if len(z)<5:
++            continue
++        x=np.polynomial.polynomial.polyval(z,coef)
++        offsets=np.arange(-.30,.301,STEP)
++        zi=np.rint((z-FORWARD[0])/STEP).astype(int)
++        xi_raw=np.rint((x[:,None]+offsets-RIGHT[0])/STEP).astype(int)
++        xi=np.clip(xi_raw,0,len(RIGHT)-1)
++        view=valid[zi[:,None],xi]&(xi_raw==xi)
++        road=asphalt[zi[:,None],xi]
++        bright=paint[zi[:,None],xi]&view
++        no_visible_paint=~(rgb_pale[zi[:,None],xi[:,1:-1]]&view[:,1:-1]).any(axis=1)
++        # Reject detections far from this line's fresh or remembered support.
++        samples=np.asarray(track['points'])
++        supported=np.min(abs(z[:,None]-samples[:,0]),axis=1)<=.35
++        present=np.any(bright,axis=1)&supported
++        visible_unpainted=np.all(view[:,1:-1],axis=1)&(road.mean(axis=1)>=.6)&no_visible_paint
++        lit=runs(np.flatnonzero(present))
++        marks=[g for g in lit if len(g)>=3]
++        if not marks:
++            continue
++        distance=np.r_[0.,np.cumsum(np.hypot(np.diff(z),np.diff(x)))]
++        styles=np.full(len(z),'unclassified',dtype='<U12')
++        for g in marks:
++            if distance[g[-1]]-distance[g[0]]>=2.8:
++                styles[g]='solid'
++        gap_list=[]
++        for a,b in zip(marks,marks[1:]):
++            gap=np.arange(a[-1]+1,b[0])
++            if not len(gap) or not (.60 <= distance[b[0]]-distance[a[-1]] <= 5.0):
++                continue
++            if (visible_unpainted[gap]&~present[gap]).mean()<.85:
++                continue
++            # A long solid stretch followed by a short strip can be a
++            # transition at a mouth, rather than two dashes of one pattern.
++            if max(distance[g[-1]]-distance[g[0]] for g in (a,b))>2.8:
++                continue
++            styles[a]=styles[b]='dashed'
++            gap_list.append(np.c_[z[gap],x[gap]].round(3).tolist())
++        for g in marks:
++            segment=np.c_[z[g],x[g]]
++            result.append(dict(track=track['id'],kind=str(styles[g[0]]),
++                               points=segment.round(3).tolist()))
++        if gap_list:
++            result.append(dict(track=track['id'],kind='observed_gap',gaps=gap_list))
++    return result
++
++def inside_openings(evidence, asphalt, valid):
++    """Find directly observed pavement extending into the inner side of the circuit."""
++    current=evidence.get('current_lane')
++    if not current or current['score']<.7:
++        return []
++    lines=evidence['tracks']
++    left,right=[lines[current[side]] for side in ('left','right')]
++    z=FORWARD
++    shared=(z>=max(2.1,left['zmin'],right['zmin']))&(z<=min(10.5,left['zmax'],right['zmax']))
++    l,r=[np.polynomial.polynomial.polyval(z,edge['coef']) for edge in (left,right)]
++    shared &= (r-l >= 2.5) & (r-l <= 5.1)
++    offsets=np.arange(.30,-3.61,-STEP)
++    ids=np.rint((l[:,None]+offsets-RIGHT[0])/STEP).astype(int)
++    xc=np.clip(ids,0,len(RIGHT)-1)
++    zr=np.arange(len(z))[:,None]
++    usable=(xc==ids)&valid[zr,xc]
++    observed=asphalt[zr,xc]&usable
++    # Allow isolated sampling misses, but require physically connected
++    # pavement at the threshold and further into the side entrance.
++    required=offsets>=-2.8
++    reach=shared & (usable[:,required].mean(axis=1)>=.95) & (observed[:,required].mean(axis=1)>=.88)
++    candidates=[]
++    for group in runs(np.flatnonzero(reach)):
++        if z[group[-1]]-z[group[0]]<1.4:
++            continue
++        rows=[]
++        for i in group:
++            # Map only a contiguous part of the observed opening. Do not
++            # draw across a color gap to remote asphalt.
++            occupied=np.flatnonzero(observed[i])
++            stop=0
++            for j in occupied:
++                if j-stop>3:
++                    break
++                stop=j
++            if offsets[stop]>-2.8:
++                continue
++            rows.append([z[i],l[i]+offsets[stop],l[i]])
++        if len(rows)<12:
++            continue
++        mid=rows[len(rows)//2]
++        candidates.append(dict(mouth=[float(mid[0]),float(mid[2])],
++                               rows=np.round(rows,3).tolist()))
++    return candidates
++
++def marking_kind(votes):
++    solid, dashed = votes['solid'], votes['dashed']
++    if max(solid, dashed) < 2 or solid == dashed:
++        return 'unclassified'
++    return 'solid' if solid > dashed else 'dashed'
++
++
++class SemanticMap:
++    def __init__(self, projection):
++        self.projection=projection
++        self.markings={}
++        self.repairs={}
++        self.gaps=set()
++        self.junctions=[]
++
++    def grid_coordinates(self, points, pose):
++        return np.unique(np.floor(transform(points,pose)/CELL).astype(int),axis=0)
++
++    def update(self, image, raw, lane, boxes, evidence, snapshot):
++        pose,t=snapshot['pose'],snapshot['t']
++        asphalt,paint,rgb_pale,valid=pavement_grid(image,raw,lane,boxes,self.projection)
++        repairs=road_fills(snapshot['parts'],asphalt)
++        changed_repairs=[]
++        for kind,points in repairs:
++            for z,x in self.grid_coordinates(points,pose):
++                k=int(z),int(x)
++                if self.repairs.get(k)!=kind:
++                    self.repairs[k]=kind
++                    changed_repairs.append([*k,kind])
++        lines=marking_lines(evidence,paint,rgb_pale,asphalt,valid)
++        votes={}
++        changed_gaps=[]
++        for line in lines:
++            if line['kind']=='observed_gap':
++                for gap in line['gaps']:
++                    for z,x in self.grid_coordinates(gap,pose):
++                        key=int(z),int(x)
++                        if key not in self.gaps:
++                            self.gaps.add(key)
++                            changed_gaps.append(list(key))
++                continue
++            for z,x in self.grid_coordinates(line['points'],pose):
++                k=int(z),int(x)
++                votes.setdefault(k,set()).add(line['kind'])
++        changed_markings=[]
++        for k,kinds in votes.items():
++            vote=self.markings.setdefault(k,Counter())
++            vote.update(kinds)
++            changed_markings.append([*k,marking_kind(vote)])
++        openings=inside_openings(evidence,asphalt,valid)
++        for opening in openings:
++            anchor=transform(opening['mouth'],pose)
++            nearest=min(self.junctions,key=lambda j:np.linalg.norm(j['position']-anchor),default=None)
++            if nearest is None or np.linalg.norm(nearest['position']-anchor)>4.:
++                nearest=dict(position=anchor.copy(), frames=0, first=t, last=t, start=pose[:2], travel=0.,cells=Counter())
++                self.junctions.append(nearest)
++            if nearest['frames'] and nearest['last']==t:
++                continue
++            nearest['frames']+=1
++            nearest['last']=t
++            distance=np.linalg.norm(np.asarray(pose[:2])-nearest['start'])
++            nearest['travel']=max(nearest['travel'],float(distance))
++            nearest['position']+= (anchor-nearest['position'])/nearest['frames']
++            pixels=part_grid([dict(kind='branch',rows=opening['rows'])],{'branch'})&asphalt
++            iz,ix=np.nonzero(pixels)
++            nearest['cells'].update(tuple(p) for p in self.grid_coordinates(np.c_[FORWARD[iz],RIGHT[ix]],pose))
++        confirmed=[dict(id=i+1,position=j['position'].round(3).tolist(),frames=j['frames'],
++                        first_s=j['first'],last_s=j['last'],baseline_m=j['travel'],
++                        observed_cells=[[int(z),int(x)] for (z,x),count in sorted(j['cells'].items()) if count>=2])
++                   for i,j in enumerate(self.junctions) if j['frames']>=4 and j['travel']>=.7]
++        return dict(lines=lines,repairs=[dict(kind=k,points=p.round(3).tolist()) for k,p in repairs],
++                    openings=openings, junctions=confirmed, changed_repairs=changed_repairs,
++                    changed_markings=changed_markings,changed_gaps=changed_gaps)
+--- /dev/null
++++ b/concept_road/concept_road/material.py
+@@ -0,0 +1,170 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v67_road/material.py. """
++
++import cv2
++
++import numpy as np
++
++from concept_road.vision import FOCAL, CX, CY, HEIGHT
++
++try:
++    from ._markings import material_sections as native_sections
++except ImportError:
++    native_sections = None
++
++
++def road_sections(road, depths):
++    if native_sections is not None:
++        return native_sections(road.view(np.uint8), depths, CX, CY, HEIGHT*FOCAL, FOCAL)
++    sections = []; pixels = []; edges = []
++    for z in depths:
++        v = round(CY+HEIGHT*FOCAL/z)
++        if not 2 <= v < road.shape[0]-2: continue
++        active = np.flatnonzero(road[v-2:v+3].mean(axis=0) >= .6)
++        groups = [g for g in np.split(active, np.flatnonzero(np.diff(active)>1)+1) if len(g)>8]
++        if not groups: continue
++        g = min(groups, key=lambda g: max(g[0]-CX, CX-g[-1], 0))
++        left, right = (g[[0,-1]].astype(float)-CX)*z/FOCAL
++        if right-left < .3: continue
++        sections.append([z,left,right,.045+.004*z])
++        pixels.append([int(g[0]),int(g[-1]),v])
++        if g[0] > 3: edges.append([z,left,-1.,0.])
++        if g[-1] < road.shape[1]-4: edges.append([z,right,1.,0.])
++    return sections, pixels, edges
++
++
++def local_edge_error(points, coef, at, depth_step, fallback):
++    """Weighted local residual; require distinct depth bins and current evidence."""
++    local=points[np.abs(points[:,0]-at)<=5.*depth_step]
++    bins=np.unique(np.rint((local[:,0]-at)/depth_step)) if len(local) else []
++    if len(bins)<3 or not np.any(local[:,3]<1e-6):
++        return fallback
++    errors=np.abs(local[:,1]-np.polynomial.polynomial.polyval(local[:,0],coef))
++    weight=np.exp(-local[:,3]/.3)/(1.+.02*local[:,0]**2)
++    order=np.argsort(errors);cumulative=np.cumsum(weight[order])
++    return float(errors[order[np.searchsorted(cumulative,.8*cumulative[-1])]])
++
++class MaterialRoad:
++    fit_boundaries = True
++
++    def __init__(self, temporal=True):
++        self.temporal = temporal
++        self.pavement = None
++        self.history = []
++        self.last = {}
++        self.lane_width = None
++        self.lane_width_samples = 0
++        self.chroma_squared = None
++
++    def read(self, image, raw, lane_mask, speed=0., yaw=0., dt=.2, object_boxes=()):
++        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
++        self.chroma_squared = None
++        if self.pavement is None:
++            seeds=raw.astype(bool)&~lane_mask.astype(bool)
++            seeds[:235]=False
++            for x0,y0,x1,y1 in object_boxes:
++                seeds[max(0,int(y0)):int(y1)+1,max(0,int(x0)):int(x1)+1]=False
++            if seeds.sum()<200:
++                return np.zeros((0,4)),[],np.zeros(0)
++            self.pavement = np.median(lab[seeds], axis=0)
++        # Lab pixels are bytes; even half-integer median seeds and the sum of
++        # these two squared differences are represented exactly in float32.
++        delta_a = lab[:, :, 1].astype(np.float32) - np.float32(self.pavement[1])
++        delta_b = lab[:, :, 2].astype(np.float32) - np.float32(self.pavement[2])
++        chroma_squared = delta_a * delta_a + delta_b * delta_b
++        self.chroma_squared = chroma_squared
++        # Achromatic paint, cracks and shadows share pavement chroma.
++        # Luminance cuts incorrectly made zebra stripes and seams impassable.
++        pavement = (chroma_squared < 12**2)
++        # Paint is traversable material, not a hole. Keep detected markings
++        # only beside pavement; do not let false line pixels open distant road.
++        near = cv2.dilate(pavement.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
++        paint = (lane_mask > 0) | ((chroma_squared < 10**2) & (lab[:, :, 0] > self.pavement[0]))
++        road = (pavement | (paint & near)).astype(np.uint8)
++        road[:int(CY)+2] = 0
++        # A cone silhouette is occupied pavement, not a physical road verge.
++        # Bridge only its observed image box where pavement exists on BOTH
++        # sides. The separate obstacle constraint still forbids the cone.
++        # Do not bridge to the image border or across an unobserved outer edge.
++        occluded=np.zeros_like(road)
++        for x0,y0,x1,y1 in object_boxes:
++            left=max(1,int(x0)-3);right=min(image.shape[1]-2,int(x1)+3)
++            for v in range(max(int(CY)+3,int(y0)),min(image.shape[0]-1,int(y1)+2)):
++                if road[v,max(0,left-3):left].any() and road[v,right+1:right+4].any():
++                    road[v,left:right+1]=1;occluded[v,left:right+1]=1
++        road = cv2.morphologyEx(road, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
++        n, labels, stats, _ = cv2.connectedComponentsWithStats(road, 8)
++        seeds = labels[raw.astype(bool)]
++        counts = np.bincount(seeds.ravel(), minlength=n); counts[0] = 0
++        road = (labels == int(np.argmax(counts))) if counts.max() else np.zeros_like(road, bool)
++        depths = np.linspace(.95, 12., 45)
++        sections, pixels, edges = road_sections(road, depths)
++        old=[]
++        if self.temporal and 0 < dt <= .5:
++            angle=yaw*dt;c,s=np.cos(angle),np.sin(angle)
++            # Exact constant-twist translation over this sensor interval.
++            dz=speed*dt*np.sinc(angle/np.pi)
++            dx=speed*dt*(1-np.cos(angle))/angle if abs(angle)>1e-5 else 0.
++            for z,x,side,age in self.history:
++                z-=dz;x-=dx
++                zz=c*z+s*x;xx=-s*z+c*x
++                if age+dt <= .8 and .2 < zz < 12: old.append([zz,xx,side,age+dt])
++        # Fresh observations always enter the fit. Historical evidence has an
++        # explicit age and can neither outlive 0.8 s nor preload the first frame.
++        self.history = edges + old
++        rows=np.asarray(sections,float).reshape(-1,4)
++        heading=np.zeros(len(rows)); fits=[]
++        for side in (-1,1):
++            points=np.asarray([e for e in self.history if e[2]==side],float).reshape(-1,4)
++            if len(points)<6 or np.ptp(points[:,0])<2.: continue
++            z,x,age=points[:,0],points[:,1],points[:,3]
++            weights=np.exp(-age/.3)/(1+.02*z*z)
++            coef=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
++            for iteration in range(3):
++                residual=x-np.polynomial.polynomial.polyval(z,coef)
++                if iteration==0 and np.all(abs(residual)<=.12):
++                    break  # Repeating the same weighted fit gives identical coefficients.
++                robust=np.minimum(1.,.12/np.maximum(abs(residual),1e-6))
++                coef=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
++            residual=x-np.polynomial.polynomial.polyval(z,coef)
++            err=float(np.quantile(abs(residual),.8))
++            if err>.35: continue
++            fits.append(dict(side=side,coef=coef.tolist(),residual=err,points=len(points),zmin=float(z.min()),zmax=float(z.max())))
++        if len(fits)>1:
++            anchor=max(fits,key=lambda f:(f['zmax']-f['zmin'])/(.04+f['residual']))
++            aa=np.asarray(anchor['coef']);stable=[]
++            for f in fits:
++                zz=np.linspace(max(f['zmin'],anchor['zmin']),min(f['zmax'],anchor['zmax']),12)
++                bb=np.asarray(f['coef'])
++                disagreement=np.median(abs(np.arctan(aa[1]+2*aa[2]*zz)-np.arctan(bb[1]+2*bb[2]*zz)))
++                if f is anchor or disagreement<.18:stable.append(f)
++            fits=stable
++        if fits and len(rows):
++            # Physical edge tangent only. A clipped pixel boundary is excluded.
++            all_heading=[np.arctan(f['coef'][1]+2*f['coef'][2]*rows[:,0]) for f in fits]
++            weights=np.array([(f['zmax']-f['zmin'])/(.04+f['residual'])**2 for f in fits])
++            heading=np.average(all_heading,axis=0,weights=weights)
++        if fits and len(rows) and self.fit_boundaries:
++            for i,row in enumerate(rows):
++                for f in fits:
++                    col=1 if f['side']==-1 else 2
++                    zmin=min(e[0] for e in self.history if e[2]==f['side'])
++                    zmax=max(e[0] for e in self.history if e[2]==f['side'])
++                    # Never extrapolate beyond actually observed history.
++                    if zmin<=row[0]<=zmax:
++                        estimate=np.polynomial.polynomial.polyval(row[0],f['coef'])
++                        raw=row[col]
++                        row[col]=estimate
++                        # A disagreement becomes uncertainty, not invented free
++                        # space. Footprint feasibility subtracts this margin.
++                        points=np.asarray([e for e in self.history if e[2]==f['side']],float)
++                        # Five observed depth steps on either side: uncertainty
++                        # belongs to this part of the edge, not a distant bend.
++                        local_error=local_edge_error(points,f['coef'],row[0],float(np.median(np.diff(depths))),f['residual'])
++                        row[3]=max(row[3],local_error+.04,abs(raw-estimate))
++        self.last=dict(physical_edges=fits,history_points=len(old),fresh_points=len(edges),
++                       max_age_s=max([e[3] for e in self.history]+[0]),
++                       heading_source='observed material boundaries; excludes FOV clipping',
++                       unknown_heading=not bool(fits),lane_count_prior=None,
++                       material_seed='current B ego-road pixels excluding markings and detections',
++                       uncertainty_source='V6.11.1 local same-edge residual; 3 native depth bins and current support, 5 depth steps each side; 80 percent weighted residual plus .04; max raw-fit disagreement')
++        return rows,pixels,heading
+--- /dev/null
++++ b/concept_road/concept_road/onboard625.py
+@@ -0,0 +1,96 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v625_boundary/onboard625.py. """
++
++from itertools import combinations
++
++import numpy as np
++
++HALF_TRACK=.30
++
++HALF_TREAD=.055
++
++HALF_PAINT=.0735
++
++def curve(track,z):
++    return np.polynomial.polynomial.polyval(z,track['coef'])
++
++class LocalLimits:
++    def __init__(self):
++        self.history={}
++
++    def update(self,road,tracks,lines,speed,yaw,dt):
++        road=np.array(road,dtype=float,copy=True)
++        z=road[:,0]
++        used={}
++        # Integrate the last local sightings into the new body frame.
++        ang=yaw*dt
++        for side,(stored,err) in self.history.items():
++            points=stored[:,:2]; ages=stored[:,2]+dt
++            p=points-[speed*dt*np.sinc(ang/np.pi),speed*dt*.5*ang*np.sinc(.5*ang/np.pi)**2]
++            p=p@np.array([[np.cos(ang),-np.sin(ang)],[np.sin(ang),np.cos(ang)]])
++            good=np.r_[True,np.diff(p[:,0])>.01]
++            good &= ages<=1.000001
++            if good.sum()>=2 and np.all(np.diff(p[good,0])>0):
++                used[side]=(np.column_stack((p[good],ages[good])),err)
++        paint={line['track'] for line in lines if len(line.get('points',[]))>=3}
++        available=[t for t in tracks if t['id'] in paint and t['age']<=.65]
++        hypotheses=[]
++        for triple in combinations(available,3):
++            lo=max(t['zmin'] for t in triple); hi=min(t['zmax'] for t in triple)
++            if hi-lo<1.25:continue
++            zz=np.linspace(lo,hi,8)
++            tri=sorted(triple,key=lambda t:curve(t,(lo+hi)/2))
++            xs=np.array([curve(t,zz) for t in tri])
++            # Compare widths normal to the centre marking; a bend can appear wider in x.
++            slope=np.gradient(xs[1],zz)
++            widths=np.diff(xs,axis=0)/np.hypot(1,slope)
++            if widths.min()<2.35 or widths.max()>5.1:continue
++            discrepancy=np.mean(abs(widths[0]-widths[1]))+sum(np.std(w) for w in widths)
++            for j,side in [(0,'left'),(2,'right')]:
++                if side in used:
++                    p,_=used[side]; shared=(zz>=p[0,0])&(zz<=p[-1,0])
++                    if np.any(shared):
++                        discrepancy+=.6*np.median(abs(xs[j,shared]-np.interp(zz[shared],p[:,0],p[:,1])))
++            hypotheses.append((discrepancy,tri))
++        evidence={}; ids=None
++        if hypotheses:
++            hypotheses.sort(key=lambda h:h[0])
++            if len(hypotheses)==1 or hypotheses[1][0]-hypotheses[0][0]>.20 or (
++                    hypotheses[0][1][1]['id']==hypotheses[1][1][1]['id']):
++                tri=hypotheses[0][1];ids=[t['id'] for t in tri]
++                for side,t in zip(('left','right'),[tri[0],tri[2]]):
++                    zz=np.arange(max(-1.2,t['zmin']),min(12,t['zmax'])+.01,.12)
++                    if len(zz)<2:continue
++                    pts=np.column_stack([zz,curve(t,zz),np.zeros_like(zz)])
++                    # Preserve old near-field support only where the camera no longer sees it.
++                    if side in used:
++                        old=used[side][0]
++                        if old[0,0]<=zz[0]<=old[-1,0] and abs(np.interp(zz[0],old[:,0],old[:,1])-pts[0,1])<.35:
++                            pts=np.vstack((old[old[:,0]<zz[0]-.03],pts))
++                    used[side]=(pts,float(t['error']))
++        self.history=used
++        for j,side in [(1,'left'),(2,'right')]:
++            if side not in used:continue
++            pts,err=used[side];valid=(z>=pts[0,0])&(z<=pts[-1,0])
++            projected=np.interp(z,pts[:,0],pts[:,1]);sign=1 if j==1 else -1
++            limit=projected-sign*HALF_PAINT
++            tighter=valid&(sign*(limit-road[:,j])>0)
++            road[tighter,j]=limit[tighter]
++            road[tighter,j+2]=np.maximum(.04,err+.025*np.interp(z[tighter],pts[:,0],pts[:,2]))
++            evidence[side]=pts[::2,:2].round(3).tolist()
++        return road,dict(ordered_paint=ids,edges=evidence)
++
++def tread_clearance(road,z,x,heading,uncertainty_scale=1.):
++    # For each side tyre at least one point on its tread must touch legal paint/road.
++    z,x,h=np.broadcast_arrays(z,x,heading);c=np.cos(h);s=np.sin(h)
++    def margins(a):
++        qz=z[...,None]-s[...,None]*a; qx=x[...,None]+c[...,None]*a
++        left=qx-np.interp(qz,road[:,0],road[:,1]);right=np.interp(qz,road[:,0],road[:,2])-qx
++        lower=np.minimum(left-uncertainty_scale*np.interp(qz,road[:,0],road[:,3]),
++                         right-uncertainty_scale*np.interp(qz,road[:,0],road[:,min(4,road.shape[1]-1)]))
++        return np.minimum(left,right),lower,(qz>=road[0,0])&(qz<=road[-1,0])
++    sides=[];bounds=[];known=[]
++    for offset in (-HALF_TRACK,HALF_TRACK):
++        # Interior samples make this a conservative contact test on a curved edge.
++        g,l,k=margins(offset+np.linspace(-HALF_TREAD,HALF_TREAD,5))
++        sides.append(g.max(-1));bounds.append(l.max(-1));known.append(k.all(-1))
++    return np.minimum(*sides),np.minimum(*bounds),np.logical_and(*known)
+--- /dev/null
++++ b/concept_road/concept_road/rear_memory.py
+@@ -0,0 +1,129 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v616_decision/rear_memory.py. """
++
++import cv2
++
++import numpy as np
++
++from concept_road.vision import CX, CY, FOCAL, HEIGHT
++
++try:
++    from ._memory import project as project_mask
++except ImportError:
++    project_mask = None
++
++
++class RearSurfaceMemory:
++    def __init__(self, cell=.08):
++        self.cell = cell
++        self.points = np.empty((0, 4))
++        self.frames = []
++        self.time = 0.
++        self.travel = 0.
++        self.turn = 0.
++        self.current_lane = None
++        self.marking_points = []
++        # This origin is reset each run and integrates only wheel/gyro. It is
++        # not the simulator pose and never uses its track or progress.
++        self.pose = np.zeros(3)
++        self.zz, self.xx = np.meshgrid(np.arange(-1.28, 4.01, cell),
++                                     np.arange(-5.04, 5.05, cell), indexing='ij')
++
++    def update(self, mask, speed, yaw, dt, visible=None):
++        visible = mask if visible is None else np.asarray(visible, bool)
++        if not 0 < dt <= .5 or not np.isfinite([speed, yaw]).all():
++            self.frames = []
++            self.pose[:] = 0.
++            dt, speed, yaw = 0., 0., 0.
++        angle = yaw*dt
++        dz = speed*dt*np.sinc(angle/np.pi)
++        dx = speed*dt*(1-np.cos(angle))/angle if abs(angle) > 1e-5 else 0.
++        c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
++        self.pose[:2] += [c*dz-s*dx, s*dz+c*dx]
++        self.pose[2] += angle
++        self.time += dt
++        self.travel += abs(speed)*dt
++        self.turn += abs(angle)
++        if visible.any():
++            fresh = (mask.copy(), self.pose.copy(), self.time, self.travel, self.turn, visible.copy(), None if self.current_lane is None else self.current_lane.copy())
++            if self.frames and np.linalg.norm(self.pose[:2]-self.frames[-1][1][:2]) < .03 and abs(self.pose[2]-self.frames[-1][1][2]) < .01:
++                self.frames[-1] = fresh
++            else:
++                self.frames.append(fresh)
++        self.frames = [f for f in self.frames if self.travel-f[3] < 5.5 and self.turn-f[4] < 1.2]
++        c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
++        integrated_z = self.pose[0]+c*self.zz-s*self.xx
++        integrated_x = self.pose[1]+s*self.zz+c*self.xx
++        errors, ages = np.full(self.zz.shape, np.inf), np.full(self.zz.shape, np.inf)
++        # Reproject into the ORIGINAL saved mask each time. Repeatedly rounding
++        # transported point centres created fake gaps in a continuous surface.
++        # Keep the original insertion order of each surviving paint observation.
++        # A subsequent clear cell removes a mark and a reappearance gets a new order.
++        mark_order = np.full(self.zz.shape, -1, dtype=np.int64)
++        mark_age = np.zeros(self.zz.shape)
++        next_order = 0
++        for image_mask, pose, when, distance, rotation, visibility, lane in self.frames:
++            c, s = np.cos(pose[2]), np.sin(pose[2])
++            base_error = .06+.04*(self.travel-distance)
++            turn_error = .08*(self.turn-rotation)
++            if project_mask is not None:
++                support, negative, marked, error = project_mask(
++                    integrated_z, integrated_x, image_mask.view(np.uint8), visibility.view(np.uint8),
++                    lane.view(np.uint8) if lane is not None else None, pose[0], pose[1],
++                    c, s, base_error, turn_error, CX, CY, FOCAL, HEIGHT*FOCAL)
++            else:
++                dz, dx = integrated_z-pose[0], integrated_x-pose[1]
++                z, x = c*dz+s*dx, -s*dz+c*dx
++                safe_z = np.maximum(z, .01)
++                u = np.rint(CX+x*FOCAL/safe_z).astype(int)
++                v = np.rint(CY+HEIGHT*FOCAL/safe_z).astype(int)
++                valid = (z >= .95) & (z <= 4.) & (u >= 0) & (u < mask.shape[1]) & (v >= 0) & (v < mask.shape[0])
++                support = np.zeros_like(valid)
++                support[valid] = image_mask[v[valid], u[valid]]
++                error = base_error+turn_error*np.hypot(z, x)
++                negative = np.zeros_like(valid)
++                negative[valid] = visibility[v[valid], u[valid]] & ~image_mask[v[valid], u[valid]]
++                negative &= error <= .30
++                if lane is not None:
++                    marked = np.zeros_like(valid)
++                    marked[valid] = lane[v[valid], u[valid]]
++                    marked &= error <= .30
++            if lane is not None:
++                new = marked & (mark_order < 0)
++                count = np.count_nonzero(new)
++                mark_order[new] = np.arange(next_order, next_order+count)
++                next_order += count
++                mark_age[marked] = self.time-when
++                mark_order[negative] = -1
++            errors[negative], ages[negative] = np.inf, np.inf
++            # Erode each original observation by its own transport allowance BEFORE
++            # union. This avoids assigning one old fringe cell's error to a
++            # whole edge that is also supported by a newer, better observation.
++            padded = np.pad(support.astype(np.uint8), 1)
++            distance_to_unknown = cv2.distanceTransform(padded, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)[1:-1, 1:-1]*self.cell
++            support &= distance_to_unknown > error+self.cell/2
++            better = support & (error <= .30) & (error <= errors)
++            errors[better], ages[better] = error[better], self.time-when
++        active = np.flatnonzero(mark_order >= 0)
++        active = active[np.argsort(mark_order.ravel()[active])]
++        self.marking_points = np.column_stack((self.zz.ravel()[active], self.xx.ravel()[active],
++                                               mark_age.ravel()[active])).tolist()
++        valid = np.isfinite(errors)
++        self.points = np.c_[self.zz[valid], self.xx[valid], ages[valid], errors[valid]]
++        return self.points
++
++    def row(self, z):
++        nearby = self.points[abs(self.points[:, 0]-z) <= .75*self.cell]
++        if len(nearby) < 4:
++            return None
++        cells = np.unique(np.rint(nearby[:, 1]/self.cell).astype(int))
++        groups = np.split(cells, np.flatnonzero(np.diff(cells) > 1)+1)
++        # A disconnected group is never joined merely because both are road.
++        group = min(groups, key=lambda g: max(g[0], -g[-1], 0))
++        if len(group) < 4:
++            return None
++        selected = nearby[(nearby[:, 1] >= group[0]*self.cell-self.cell/2) &
++                          (nearby[:, 1] <= group[-1]*self.cell+self.cell/2)]
++        left = selected[selected[:, 1] <= (group[0]+1)*self.cell+1e-8]
++        right = selected[selected[:, 1] >= (group[-1]-1)*self.cell-1e-8]
++        return [z, group[0]*self.cell, group[-1]*self.cell,
++                0., 0.], float(selected[:, 2].max())
+--- /dev/null
++++ b/concept_road/concept_road/rear_road.py
+@@ -0,0 +1,48 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v616_decision/rear_road.py. """
++
++import numpy as np
++
++from dataclasses import dataclass
++
++from concept_road.compare61513 import Guided
++
++from concept_road.road61527 import RememberedRoad61527
++
++from concept_road.rear_memory import RearSurfaceMemory
++
++@dataclass(frozen=True)
++class RecoveryObservation(Guided):
++    rear_observed_limit: 'float | None' = None
++
++class RearRoad(RememberedRoad61527):
++    def __init__(self):
++        super().__init__()
++        self.surface_memory=RearSurfaceMemory()
++        memory=self.surface_memory
++        memory.zz,memory.xx=np.meshgrid(np.arange(-3.28,4.01,memory.cell),
++            np.arange(-5.04,5.05,memory.cell),indexing='ij')
++
++    def read(self,*args,**kwargs):
++        road,pixels,heading=super().read(*args,**kwargs)
++        extra=[]
++        if len(road):
++            # Work from the vehicle backwards and stop at the first unknown row.
++            # Existing startup inference is never extended into the rear corridor.
++            start=float(road[0,0])
++            for z in np.arange(start-.16,-3.121,-.16):
++                history=self.surface_memory.row(z)
++                if history is None:break
++                row,age=history
++                extra.append(row)
++            if extra:
++                extra=np.asarray(extra[::-1]);road=np.r_[extra,road]
++                heading=np.r_[np.full(len(extra),heading[0]),heading]
++        near=self.last.get('nearfield_rows',[])
++        backwards=[row for row in near if row['z']<=0]
++        observed=(backwards and all(row['source']=='historical_material_observation' for row in backwards))
++        observed_limit=float(road[0,0]) if len(road) and observed else None
++        self.last['rear_history']=dict(rows=len(extra),rear_limit_m=float(road[0,0]) if len(road) else None,
++            observed_limit_m=observed_limit,
++            source='Previously camera-observed pavement transported by signed wheel motion and gyro; no new rear camera',
++            direction='Nearest available direction prior; not a measured rear tangent')
++        return road,pixels,heading
+--- /dev/null
++++ b/concept_road/concept_road/road.py
+@@ -0,0 +1,250 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v67_road/road.py. """
++
++import cv2
++
++import numpy as np
++
++from concept_road.vision import FOCAL, CX, CY, HEIGHT
++
++from concept_road.material import MaterialRoad
++
++try:
++    from ._markings import trace_paint
++except ImportError:  # Direct Python source checkout, without colcon build.
++    trace_paint = None
++
++DEPTHS=np.linspace(.95,12.,45)
++
++def fit(points):
++    p=np.asarray(points,float)
++    if len(p)<5 or np.ptp(p[:,0])<1.:return None
++    z,x=p[:,0],p[:,1]
++    weights=np.exp(-p[:,2]/.35)/(1+.04*z*z)
++    coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
++    for iteration in range(5):
++        residual=x-np.polynomial.polynomial.polyval(z,coefficient)
++        # The initial least-squares solution is already a fixed point when
++        # every sample receives exactly unit robust weight.
++        if iteration==0 and np.all(abs(residual)<=.10):
++            break
++        robust=np.minimum(1.,.10/np.maximum(abs(residual),1e-6))
++        coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
++    residual=abs(x-np.polynomial.polynomial.polyval(z,coefficient))
++    accepted=residual<.25
++    if accepted.sum()<5 or np.ptp(z[accepted])<1.:return None
++    error=float(np.quantile(residual[accepted],.8))
++    if error>.20:return None
++    return dict(coef=coefficient.tolist(),error=error,zmin=float(z[accepted].min()),
++                zmax=float(z[accepted].max()),points=p[accepted].tolist(),
++                age=float(np.average(p[accepted,2],weights=weights[accepted])))
++
++def val(curve,z):
++    coefficients = curve['coef']
++    if len(coefficients) != 3 or isinstance(z, (tuple, list)):
++        return np.polynomial.polynomial.polyval(z, coefficients)
++    intercept, slope, quadratic = coefficients
++    return intercept + z * (slope + z * quadratic)
++
++def tangent(curve,z):return np.arctan(curve['coef'][1]+2*curve['coef'][2]*z)
++
++class RoadMap:
++    def __init__(self,mode):
++        assert mode in ('current','lanes','fused','guided')
++        self.mode=mode;self.tracks=[];self.serial=0;self.last={};self.material=None
++        self.material_road=MaterialRoad() if mode in ('fused','guided') else None
++
++    def transport(self,speed,yaw,dt):
++        if not 0<dt<=.5:return []
++        a=yaw*dt;c,s=np.cos(a),np.sin(a)
++        dz=speed*dt*np.sinc(a/np.pi)
++        dx=speed*dt*(1-np.cos(a))/a if abs(a)>1e-5 else 0.
++        old=[]
++        for track in self.tracks:
++            source=np.asarray(track['points'], dtype=float)
++            z=source[:,0]-dz
++            x=source[:,1]-dx
++            zz=c*z+s*x
++            age=source[:,2]+dt
++            retained=(age<=.8)&(zz>.2)&(zz<14.)
++            curve=fit(np.column_stack((zz[retained],(-s*z+c*x)[retained],age[retained])))
++            if curve is not None:curve['id']=track['id'];old.append(curve)
++        return old
++
++    def markings(self,lane):
++        if trace_paint is not None:
++            tracks = trace_paint(np.ascontiguousarray(lane, dtype=np.uint8),
++                                 lane.shape[0]-4, int(CY+HEIGHT*FOCAL/12),
++                                 CY, CX, HEIGHT*FOCAL, FOCAL)
++            return [curve for points in tracks if (curve := fit(points)) is not None]
++        tracks=[]
++        # Scan actual pixel rows once; duplicate distant pixel rows must not
++        # masquerade as many independent measurements.
++        for v in range(lane.shape[0]-4,int(CY+HEIGHT*FOCAL/12),-1):
++            z=HEIGHT*FOCAL/(v-CY)
++            active=np.flatnonzero(lane[v])
++            groups=[g for g in np.split(active,np.flatnonzero(np.diff(active)>2)+1)
++                    if len(g)>1 and g[0]>2 and g[-1]<lane.shape[1]-3 and len(g)*z/FOCAL<.45]
++            xs=[(float(np.mean(g))-CX)*z/FOCAL for g in groups]
++            used=set()
++            for x in xs:
++                choices=[]
++                for i,points in enumerate(tracks):
++                    if i in used or z-points[-1][0]>4.:continue
++                    recent=np.array(points[-8:]);prediction=recent[-1,1]
++                    if len(recent)>2 and np.ptp(recent[:,0])>.15:
++                        slope=np.clip(np.polyfit(recent[:,0],recent[:,1],1)[0],-2.,2.)
++                        prediction+=slope*(z-recent[-1,0])
++                    gap=abs(x-prediction)
++                    if gap<.20+.10*(z-points[-1][0])+.012*z:choices.append((gap,i))
++                if choices:
++                    _,i=min(choices);tracks[i].append([z,x,0.]);used.add(i)
++                else:tracks.append([[z,x,0.]]);used.add(len(tracks)-1)
++        return [curve for points in tracks if (curve:=fit(points)) is not None]
++
++    @staticmethod
++    def road_rows(raw):
++        n,labels,stats,_=cv2.connectedComponentsWithStats(raw.astype(np.uint8),8)
++        seed=labels[260:350,200:460];counts=np.bincount(seed.ravel(),minlength=n);counts[0]=0
++        component=labels==int(counts.argmax()) if counts.max() else np.zeros_like(raw,bool)
++        rows=[]
++        for z in DEPTHS:
++            v=int(round(CY+HEIGHT*FOCAL/z))
++            if not 2<=v<raw.shape[0]-2:continue
++            active=np.flatnonzero(component[v-2:v+3].mean(0)>=.4)
++            if len(active)<12:continue
++            left,right=active[[0,-1]]
++            # Only the exterior envelope contributes boundary evidence.
++            # Interior holes remain recorded separately and are not new edges.
++            rows.append([z,(left-CX)*z/FOCAL,(right-CX)*z/FOCAL,left,right])
++        return np.asarray(rows,float).reshape(-1,5),component
++
++    def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
++        previous=self.transport(speed,yaw,dt)
++        fresh=self.markings(lane)
++        matched=set();tracks=[]
++        for curve in sorted(fresh,key=lambda c:c['zmax']-c['zmin'],reverse=True):
++            choices=[]
++            for i,old in enumerate(previous):
++                if i in matched:continue
++                lo=max(curve['zmin'],old['zmin']);hi=min(curve['zmax'],old['zmax'])
++                if hi-lo<.7:continue
++                z=np.linspace(lo,hi,12);error=float(np.median(abs(val(curve,z)-val(old,z))))
++                angle=float(np.median(abs(tangent(curve,z)-tangent(old,z))))
++                if error<.55 and angle<.35:choices.append((error,i))
++            if choices:
++                _,i=min(choices);matched.add(i);old=previous[i]
++                joined=fit(curve['points']+old['points'])
++                if joined is not None:curve=joined
++                curve['id']=old['id']
++            else:self.serial+=1;curve['id']=self.serial
++            tracks.append(curve)
++        tracks.extend(old for i,old in enumerate(previous) if i not in matched)
++        # Same marking can be split into fragments; keep the stronger fit when
++        # two fits agree over a substantial common span.
++        unique=[]
++        for curve in sorted(tracks,key=lambda c:(c['zmax']-c['zmin'])/(.05+c['error']),reverse=True):
++            duplicate=False
++            for old in unique:
++                lo=max(curve['zmin'],old['zmin']);hi=min(curve['zmax'],old['zmax'])
++                if hi-lo>1.:
++                    z=np.linspace(lo,hi,8)
++                    if np.median(abs(val(curve,z)-val(old,z)))<.23:duplicate=True;break
++            if not duplicate:unique.append(curve)
++        self.tracks=unique
++        anchors,component=self.road_rows(raw)
++        pairs=[]
++        for i,left in enumerate(unique):
++            for j,right in enumerate(unique):
++                if i==j:continue
++                lo=max(1.7,left['zmin'],right['zmin']);hi=min(9.,left['zmax'],right['zmax'])
++                if hi-lo<1.5:continue
++                z=np.linspace(lo,hi,20);l=val(left,z);r=val(right,z);width=r-l
++                if width.min()<1.2 or width.max()>6.5:continue
++                # A lane is between adjacent, noncrossing observed markings.
++                if any(k not in (i,j) and other['zmin']<=lo+.5 and other['zmax']>=hi-.5 and
++                       np.mean((val(other,z)>l+.2)&(val(other,z)<r-.2))>.7 for k,other in enumerate(unique)):continue
++                if np.median(abs(tangent(left,z)-tangent(right,z)))>.45:continue
++                supported=anchors[(anchors[:,0]>=lo)&(anchors[:,0]<=hi)]
++                score=0.
++                for a,bl,br,*_ in supported:
++                    ll,rr=val(left,a),val(right,a)
++                    score+=max(0.,min(br,rr)-max(bl,ll))/max(.1,br-bl)
++                if len(supported):score/=len(supported)
++                pairs.append(dict(left=i,right=j,score=score,width=float(np.median(width)),zmin=lo,zmax=hi))
++        current=max(pairs,key=lambda p:p['score'],default=None)
++        selected=[]
++        if current and current['score']>.45:
++            selected=[current]
++            if self.mode!='current':
++                changed=True
++                while changed:
++                    changed=False
++                    for pair in pairs:
++                        if pair in selected:continue
++                        adjacent=any(pair['left']==p['right'] or pair['right']==p['left'] for p in selected)
++                        if adjacent and .55< pair['width']/current['width'] <1.6:
++                            selected.append(pair);changed=True
++        leftcurve=rightcurve=None
++        current_curves=None
++        if selected:
++            current_curves=(unique[current['left']],unique[current['right']])
++            leftcurve=unique[min(selected,key=lambda p:val(unique[p['left']],4.))['left']]
++            rightcurve=unique[max(selected,key=lambda p:val(unique[p['right']],4.))['right']]
++        # When paint is absent, fit only B's exterior envelope. Missing interior
++        # pixels never become extra road edges or inflate edge-fit uncertainty.
++        if leftcurve is None and len(anchors):
++            leftcurve=fit([[z,l,0.] for z,l,r,u,v in anchors if u>3])
++            rightcurve=fit([[z,r,0.] for z,l,r,u,v in anchors if v<636])
++        material_rows=None
++        rows=[];pixels=[];head=[];row_sources=[]
++        for z in DEPTHS:
++            if leftcurve is None or rightcurve is None:continue
++            lc,rc=leftcurve,rightcurve
++            if current_curves:
++                lc,rc=current_curves
++                # Preserve the current lane at short range. An outer marking
++                # observed only farther away must not delete all near rows.
++                usable=[p for p in selected if all(c['zmin']-2.<=z<=c['zmax']+.6 for c in [unique[p['left']],unique[p['right']]])]
++                if usable:
++                    connected=[current] if current in usable else []
++                    changed=True
++                    while changed:
++                        changed=False
++                        for p in usable:
++                            if p not in connected and any(p['left']==q['right'] or p['right']==q['left'] for q in connected):
++                                connected.append(p);changed=True
++                    if connected:
++                        lc=unique[min(connected,key=lambda p:val(unique[p['left']],z))['left']]
++                        rc=unique[max(connected,key=lambda p:val(unique[p['right']],z))['right']]
++            if any(z>c['zmax']+.6 or z<c['zmin']-2. for c in [lc,rc]):continue
++            l,r=val(lc,z),val(rc,z)
++            if not .8<r-l<12:continue
++            sigma=max(.045+c['error']+.04*c['age']+.05*max(c['zmin']-z,z-c['zmax'],0) for c in [lc,rc])
++            rows.append([z,float(l),float(r),sigma]);head.append(float((tangent(lc,z)+tangent(rc,z))/2))
++            row_sources.append([z,lc.get('id'),rc.get('id')])
++            v=int(round(CY+HEIGHT*FOCAL/z))
++            pixels.append([int(np.clip(CX+l*FOCAL/z,0,639)),int(np.clip(CX+r*FOCAL/z,0,639)),v])
++        occupied_rows = component[component.any(axis=1)]
++        widths = (component.shape[1] - occupied_rows.argmax(axis=1) -
++                  occupied_rows[:, ::-1].argmax(axis=1))
++        envelope_negative = int(widths.sum() - occupied_rows.sum())
++        self.last=dict(version={'current':'V6.7.1','lanes':'V6.8.1','fused':'V6.9.2','guided':'V6.13.1'}[self.mode],
++                       tracks=unique,lane_bands=pairs,current_lane=current,allowed_bands=selected,
++                       adjacent_direction='unknown; lane-changing permitted by experiment rule',
++                       left_curve=leftcurve,right_curve=rightcurve,road_rows=len(rows),
++                       memory_max_age=.8,history_points=sum(p[2]>0 for c in unique for p in c['points']),
++                       envelope_negative_pixels=envelope_negative,row_sources=row_sources,
++                       source='B ego lane anchor + observed marking curves + causal wheel/gyro history',
++                       lane_count_prior=None,material_support=material_rows is not None)
++        if self.mode in ('fused','guided'):
++            material_rows,pixels,material_head=self.material_road.read(image,raw,lane,speed,yaw,dt,boxes)
++            if self.mode=='guided' and len(rows)>=3:
++                guidance=np.asarray(rows)
++                supported=(material_rows[:,0]>=guidance[0,0])&(material_rows[:,0]<=guidance[-1,0])
++                material_head[supported]=np.interp(material_rows[supported,0],guidance[:,0],head)
++            self.last.update(material_support=True,material_evidence=self.material_road.last,
++                             lane_geometry_rows=rows,road_rows=len(material_rows),
++                             guidance_used=self.mode=='guided' and len(rows)>=3,
++                             source='B ego lane identifies material/component; RGB + lane restore free surface; causal boundary history')
++            return material_rows,pixels,material_head
++        return np.asarray(rows).reshape(-1,4),pixels,np.asarray(head)
+--- /dev/null
++++ b/concept_road/concept_road/road615.py
+@@ -0,0 +1,194 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/road615.py. """
++
++import cv2
++
++import numpy as np
++
++from concept_road.vision import CX, CY, FOCAL, HEIGHT
++
++from concept_road.road import RoadMap
++
++from concept_road.material import MaterialRoad
++
++class RawMaterialRoad(MaterialRoad):
++    # This observer uses the actual pixel endpoints below. Only its heading
++    # consumes the polynomial fit, not its smoothed boundary positions.
++    fit_boundaries = False
++
++    def read(self, image, raw, lane_mask, speed=0., yaw=0., dt=.2, object_boxes=()):
++        road, pixels, heading = super().read(image, raw, lane_mask, speed, yaw, dt, object_boxes)
++        if len(road) != len(pixels):
++            raise ValueError('Raw row/pixel pairing lost')
++        audit = []
++        for row, (left, right, v) in zip(road, pixels):
++            row[1] = (left-CX)*row[0]/FOCAL
++            row[2] = (right-CX)*row[0]/FOCAL
++            # Same base measurement allowance as the original raw observer.
++            # Polynomial residual belongs to heading quality, not a second
++            # inward shift of this directly sampled support endpoint.
++            row[3] = .045+.004*row[0]
++            audit.append(dict(z=float(row[0]), left_source='fov_limit' if left<=3 else 'material_support',
++                              right_source='fov_limit' if right>=image.shape[1]-4 else 'material_support'))
++        self.last['raw_support_rows'] = audit
++        self.last['boundary_rule'] = 'Raw material support; fit only guides heading. Segmentation allowance remains experimental.'
++        return road, pixels, heading
++
++class SurfaceMemory615:
++    def __init__(self, cell=.08):
++        self.cell = cell
++        self.points = np.empty((0, 4))
++        self.frames = []
++        self.time = 0.
++        self.travel = 0.
++        self.turn = 0.
++        self.current_lane = None
++        self.marking_points = []
++        # This origin is reset each run and integrates only wheel/gyro. It is
++        # not the simulator pose and never uses its track or progress.
++        self.pose = np.zeros(3)
++        self.zz, self.xx = np.meshgrid(np.arange(-1.28, 4.01, cell),
++                                     np.arange(-5.04, 5.05, cell), indexing='ij')
++
++    def update(self, mask, speed, yaw, dt, visible=None):
++        visible = mask if visible is None else np.asarray(visible, bool)
++        if not 0 < dt <= .5 or not np.isfinite([speed, yaw]).all():
++            self.frames = []
++            self.pose[:] = 0.
++            dt, speed, yaw = 0., 0., 0.
++        angle = yaw*dt
++        dz = speed*dt*np.sinc(angle/np.pi)
++        dx = speed*dt*(1-np.cos(angle))/angle if abs(angle) > 1e-5 else 0.
++        c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
++        self.pose[:2] += [c*dz-s*dx, s*dz+c*dx]
++        self.pose[2] += angle
++        self.time += dt
++        self.travel += abs(speed)*dt
++        self.turn += abs(angle)
++        if visible.any():
++            fresh = (mask.copy(), self.pose.copy(), self.time, self.travel, self.turn, visible.copy(), None if self.current_lane is None else self.current_lane.copy())
++            if self.frames and np.linalg.norm(self.pose[:2]-self.frames[-1][1][:2]) < .03 and abs(self.pose[2]-self.frames[-1][1][2]) < .01:
++                self.frames[-1] = fresh
++            else:
++                self.frames.append(fresh)
++        self.frames = [f for f in self.frames if self.travel-f[3] < 5.5 and self.turn-f[4] < 1.2][-32:]
++        c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
++        integrated_z = self.pose[0]+c*self.zz-s*self.xx
++        integrated_x = self.pose[1]+s*self.zz+c*self.xx
++        errors, ages = np.full(self.zz.shape, np.inf), np.full(self.zz.shape, np.inf)
++        # Reproject into the ORIGINAL saved mask each time. Repeatedly rounding
++        # transported point centres created fake gaps in a continuous surface.
++        markings = {}
++        for image_mask, pose, when, distance, rotation, visibility, lane in self.frames:
++            dz, dx = integrated_z-pose[0], integrated_x-pose[1]
++            c, s = np.cos(pose[2]), np.sin(pose[2])
++            z, x = c*dz+s*dx, -s*dz+c*dx
++            safe_z = np.maximum(z, .01)
++            u = np.rint(CX+x*FOCAL/safe_z).astype(int)
++            v = np.rint(CY+HEIGHT*FOCAL/safe_z).astype(int)
++            valid = (z >= .95) & (z <= 4.) & (u >= 0) & (u < mask.shape[1]) & (v >= 0) & (v < mask.shape[0])
++            support = np.zeros_like(valid)
++            support[valid] = image_mask[v[valid], u[valid]]
++            error = .06+.04*(self.travel-distance)+.08*(self.turn-rotation)*np.hypot(z, x)
++            negative = np.zeros_like(valid)
++            negative[valid] = visibility[v[valid], u[valid]] & ~image_mask[v[valid], u[valid]]
++            negative &= error <= .30
++            if lane is not None:
++                marked = np.zeros_like(valid)
++                marked[valid] = lane[v[valid], u[valid]]
++                for iz, ix in zip(*np.nonzero(marked & (error <= .30))):
++                    markings[(int(iz), int(ix))] = self.time-when
++                for iz, ix in zip(*np.nonzero(negative)):
++                    markings.pop((int(iz), int(ix)), None)
++            errors[negative], ages[negative] = np.inf, np.inf
++            # Erode each original observation by its own transport allowance BEFORE
++            # union. This avoids assigning one old fringe cell's error to a
++            # whole edge that is also supported by a newer, better observation.
++            padded = np.pad(support.astype(np.uint8), 1)
++            distance_to_unknown = cv2.distanceTransform(padded, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)[1:-1, 1:-1]*self.cell
++            support &= distance_to_unknown > error+self.cell/2
++            better = support & (error <= .30) & (error <= errors)
++            errors[better], ages[better] = error[better], self.time-when
++        self.marking_points = [[float(self.zz[k]), float(self.xx[k]), float(age)] for k, age in markings.items()]
++        valid = np.isfinite(errors)
++        self.points = np.c_[self.zz[valid], self.xx[valid], ages[valid], errors[valid]]
++        return self.points
++
++    def row(self, z):
++        nearby = self.points[abs(self.points[:, 0]-z) <= .75*self.cell]
++        if len(nearby) < 4:
++            return None
++        cells = np.unique(np.rint(nearby[:, 1]/self.cell).astype(int))
++        groups = np.split(cells, np.flatnonzero(np.diff(cells) > 1)+1)
++        # A disconnected group is never joined merely because both are road.
++        group = min(groups, key=lambda g: max(g[0], -g[-1], 0))
++        if len(group) < 4:
++            return None
++        selected = nearby[(nearby[:, 1] >= group[0]*self.cell-self.cell/2) &
++                          (nearby[:, 1] <= group[-1]*self.cell+self.cell/2)]
++        left = selected[selected[:, 1] <= (group[0]+1)*self.cell+1e-8]
++        right = selected[selected[:, 1] >= (group[-1]-1)*self.cell-1e-8]
++        return [z, group[0]*self.cell, group[-1]*self.cell,
++                0., 0.], float(selected[:, 2].max())
++
++class RememberedRoad615(RoadMap):
++    def __init__(self):
++        super().__init__('guided')
++        self.surface_memory = SurfaceMemory615()
++        self.material_road = RawMaterialRoad()
++
++    def read(self, image, raw, lane, boxes=(), speed=0., yaw=0., dt=.2):
++        self.surface_memory.current_lane = lane
++        road, pixels, heading = super().read(image, raw, lane, boxes, speed, yaw, dt)
++        pavement = self.material_road.pavement
++        if pavement is None or len(road) < 3:
++            self.surface_memory.update(np.zeros(image.shape[:2], bool), speed, yaw, dt)
++            return road, pixels, heading
++        # Match measured material support, without the base observer's occlusion
++        # bridge/morphological fill. All object boxes remove current samples.
++        chroma_squared = self.material_road.chroma_squared
++        support = chroma_squared < 12**2
++        # Ambiguous colour and detected occlusion are unknown, not a negative
++        # road measurement. A clear current green verge does invalidate history.
++        visible = support | (chroma_squared > 18**2)
++        support[:int(CY)+2] = False
++        visible[:int(CY)+2] = False
++        for x0, y0, x1, y1 in boxes:
++            support[max(0, int(y0)):min(image.shape[0], int(y1)+1),
++                    max(0, int(x0)):min(image.shape[1], int(x1)+1)] = False
++            visible[max(0, int(y0)):min(image.shape[0], int(y1)+1),
++                    max(0, int(x0)):min(image.shape[1], int(x1)+1)] = False
++        self.surface_memory.update(support, speed, yaw, dt, visible=visible)
++        road = np.c_[road, road[:, 3]]
++        near_rows, sources, near_heading = [], [], []
++        # The first-frame blind approach must be marked inferred, otherwise a
++        # front-only camera can never start. It retains cross-section width with
++        # increasing error; the footprint check subtracts that error on each side.
++        anchor = road[0]
++        tangent = float(np.clip(np.tan(heading[0]), -1., 1.))
++        for z in np.arange(-1.2, .951, .16):
++            if z >= road[0, 0]:
++                break
++            historical = self.surface_memory.row(z)
++            dz = anchor[0]-z
++            inferred = [z, anchor[1]-dz*tangent, anchor[2]-dz*tangent, anchor[3]+.10*dz, anchor[4]+.10*dz]
++            row, source, age = inferred, 'inferred_from_nearest_cross_section', None
++            if historical is not None:
++                measured, age = historical
++                # A historical observed run can replace inference only where it
++                # supports a complete vehicle width; sparse fragments stay logged.
++                if measured[2]-measured[1] >= .76+measured[3]+measured[4]:
++                    row, source = measured, 'historical_material_observation'
++            near_rows.append(row)
++            near_heading.append(heading[0])
++            sources.append(dict(z=float(z), source=source, age_s=age,
++                                allowance_left_m=float(row[3]), allowance_right_m=float(row[4])))
++        self.last.update(version='V6.15', nearfield_rows=sources,
++                         nearfield_cells=int(len(self.surface_memory.points)),
++                         nearfield_markings=self.surface_memory.marking_points,
++                         nearfield_history=self.surface_memory.points[self.surface_memory.points[:, 0] < .95].round(4).tolist(),
++                         nearfield_note='Surface only. Current and predicted obstacles independently veto all paths. Startup inference is not an observation.',
++                         rear_occupancy_observed=False)
++        if near_rows:
++            road = np.vstack((near_rows, road))
++            heading = np.r_[near_heading, heading]
++        return road, pixels, heading
+--- /dev/null
++++ b/concept_road/concept_road/road61524.py
+@@ -0,0 +1,35 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/road61524.py. """
++
++import numpy as np
++
++from concept_road.road6157 import RememberedRoad6157
++
++def current_lane_heading(road,heading,evidence):
++    result=np.asarray(heading).copy()
++    audit=dict(source='existing_heading',applied_rows=0,rule='Only direction; no road or candidate-width changes')
++    lane=evidence.get('current_lane');tracks=evidence.get('tracks',[])
++    if not lane or lane['score']<=.45 or len(road)==0:
++        return result,audit
++    # Pair left/right are indices in the current tracks list, not track IDs.
++    left,right=[tracks[lane[key]] for key in ['left','right']]
++    lo=max(left['zmin'],right['zmin']);hi=min(left['zmax'],right['zmax'])
++    z=np.asarray(road)[:,0];supported=(z>=lo)&(z<=hi)
++    angles=[np.arctan(c['coef'][1]+2*c['coef'][2]*z[supported]) for c in [left,right]]
++    result[supported]=np.mean(angles,axis=0)
++    audit.update(source='B_current_lane_pair_within_observed_support',applied_rows=int(supported.sum()),
++        support_z=[float(lo),float(hi)],track_ids=[left.get('id'),right.get('id')],
++        pair_score=lane['score'],indices=[lane['left'],lane['right']])
++    return result,audit
++
++class RememberedRoad61524(RememberedRoad6157):
++    def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
++        # Run the original complete geometry pipeline before adjusting direction;
++        # changing it earlier would also change startup near-field inference.
++        road,pixels,heading=super().read(image,raw,lane,boxes,speed,yaw,dt)
++        heading,audit=current_lane_heading(road,heading,self.last)
++        self.last['heading_guidance61524']=audit
++        # Keep the blackout transport consistent with the actually issued view.
++        # Cached road geometry and cached source evidence remain unchanged.
++        if self.cached is not None:
++            self.cached=(self.cached[0], heading.copy())
++        return road,pixels,heading
+--- /dev/null
++++ b/concept_road/concept_road/road61527.py
+@@ -0,0 +1,41 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/road61527.py. """
++
++import numpy as np
++
++from concept_road.road615 import RawMaterialRoad
++
++from concept_road.road61524 import RememberedRoad61524, current_lane_heading
++
++class CapturedMaterialRoad(RawMaterialRoad):
++    def __init__(self):
++        super().__init__();self.heading_depth=np.empty(0);self.measured_heading=np.empty(0)
++
++    def read(self,image,raw,lane_mask,speed=0.,yaw=0.,dt=.2,object_boxes=()):
++        road,pixels,heading=super().read(image,raw,lane_mask,speed,yaw,dt,object_boxes)
++        # RoadMap guided mode mutates the returned heading in place. Capture
++        # before that mutation; do not run the temporal observer a second time.
++        self.heading_depth=road[:,0].copy()
++        self.measured_heading=heading.copy()
++        return road,pixels,heading
++
++class RememberedRoad61527(RememberedRoad61524):
++    def __init__(self):
++        super().__init__();self.material_road=CapturedMaterialRoad()
++
++    def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
++        road,pixels,heading=super().read(image,raw,lane,boxes,speed,yaw,dt)
++        if image.max()<3:
++            self.last['heading_guidance61527']=dict(source='transported_last_actual_direction',applied_rows=0)
++            return road,pixels,heading
++        material=self.material_road
++        if len(road) and len(material.heading_depth):
++            base=np.interp(road[:,0],material.heading_depth,material.measured_heading)
++            heading,audit=current_lane_heading(road,base,self.last)
++            audit.update(base_source='material_heading_before_B_envelope_override',
++                material_direction_unknown=material.last.get('unknown_heading',True),
++                material_depth_range=[float(material.heading_depth[0]),float(material.heading_depth[-1])],
++                rule='Direction only: material base plus current lane pair in actual support; geometry and candidate-width guidance unchanged')
++            self.last['heading_guidance61527']=audit
++            if self.cached is not None:
++                self.cached=(self.cached[0], heading.copy())
++        return road,pixels,heading
+--- /dev/null
++++ b/concept_road/concept_road/road6157.py
+@@ -0,0 +1,58 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v615_recovery/road6157.py. """
++
++import numpy as np
++
++from concept_road.road615 import RememberedRoad615
++
++class RememberedRoad6157(RememberedRoad615):
++    def __init__(self):
++        super().__init__()
++        self.cached = None
++        self.blind_travel = 0.
++        self.blind_turn = 0.
++
++    def read(self, image, raw, lane, boxes=(), speed=0., yaw=0., dt=.2):
++        if image.max() >= 3:
++            result = super().read(image, raw, lane, boxes, speed, yaw, dt)
++            if len(result[0]) >= 3:
++                self.cached = (result[0].copy(), result[2].copy())
++                self.blind_travel = self.blind_turn = 0.
++            else:
++                # An untransported cache cannot survive an invalid visible frame.
++                self.cached = None
++            return result
++        self.blind_travel += abs(speed)*dt
++        self.blind_turn += abs(yaw)*dt
++        empty = np.zeros(image.shape[:2], bool)
++        self.surface_memory.current_lane = empty
++        self.surface_memory.update(empty, speed, yaw, dt, visible=empty)
++        self.tracks = self.transport(speed,yaw,dt)
++        self.material_road.history = []
++        self.last = dict(tracks=self.tracks, lane_geometry_rows=[], camera_valid=False, nearfield_rows=[],
++                         nearfield_markings=self.surface_memory.marking_points)
++        if self.cached is None or self.blind_travel > 5.5 or self.blind_turn > 1.2:
++            return np.empty((0,5)), [], np.empty(0)
++        road, heading = self.cached
++        angle = yaw*dt; c, s = np.cos(angle), np.sin(angle)
++        dz = speed*dt*np.sinc(angle/np.pi)
++        dx = speed*dt*(1-c)/angle if abs(angle)>1e-5 else 0.
++        sides = []
++        for side in [1,2]:
++            z, x = road[:,0]-dz, road[:,side]-dx
++            zz, xx = c*z+s*x, -s*z+c*x
++            sigma = road[:,side+2]+.04*abs(speed)*dt+.08*abs(angle)*np.hypot(z,x)
++            order = np.argsort(zz)
++            sides.append((zz[order], xx[order], sigma[order]))
++        lo, hi = max(sides[0][0].min(), sides[1][0].min()), min(sides[0][0].max(), sides[1][0].max())
++        zz = np.unique(np.r_[sides[0][0],sides[1][0]])
++        zz = zz[(zz>=lo)&(zz<=hi)]
++        if len(zz)<3:
++            self.cached = None
++            return np.empty((0,5)),[],np.empty(0)
++        newer = np.c_[zz, np.interp(zz,sides[0][0],sides[0][1]), np.interp(zz,sides[1][0],sides[1][1]),
++                      np.interp(zz,sides[0][0],sides[0][2]), np.interp(zz,sides[1][0],sides[1][2])]
++        newer_heading = np.interp(zz+dz,road[:,0],heading)-angle
++        self.last.update(camera_valid=False, road_source='last_actual_view_transported_during_blackout',
++                         blind_travel_m=self.blind_travel, blind_turn_rad=self.blind_turn)
++        self.cached = (newer, newer_heading)
++        return newer,[],newer_heading
+--- /dev/null
++++ b/concept_road/concept_road/runtime_map.py
+@@ -0,0 +1,164 @@
++"""Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/runtime_map.py. """
++
++import math
++
++import cv2
++
++import numpy as np
++
++CELL = .20
++
++DEPTH_STEP = .20
++
++def transform(points, pose):
++    z, x, yaw = pose
++    c, s = math.cos(yaw), math.sin(yaw)
++    return np.asarray(points) @ np.array([[c, s], [-s, c]]) + (z, x)
++
++def lane_sections(evidence, raw=None, projection=None):
++    tracks = evidence['tracks']
++    current = evidence.get('current_lane')
++    if current is None or current['score'] <= .45:
++        current = None
++    parts = []
++    for band in evidence['allowed_bands']:
++        left, right = [tracks[band[side]] for side in ('left', 'right')]
++        lo = max(left['zmin'], right['zmin'])
++        hi = min(left['zmax'], right['zmax'])
++        if hi-lo < .8:
++            continue
++        depth = np.linspace(lo, hi, int(math.ceil((hi-lo)/DEPTH_STEP))+1)
++        l, r = [np.polynomial.polynomial.polyval(depth, edge['coef']) for edge in (left, right)]
++        valid = (r-l >= 1.2) & (r-l <= 6.5)
++        # Require samples near the claimed section, so a long absent dash does
++        # not give a distant fitted marking unlimited support.
++        for edge in (left, right):
++            points = np.asarray(edge['points'])
++            valid &= np.min(abs(depth[:, None]-points[:, 0]), axis=1) <= 1.0
++        for group in np.split(np.flatnonzero(valid), np.flatnonzero(np.diff(np.flatnonzero(valid))>1)+1):
++            if len(group) < 2:
++                continue
++            z = depth[group]
++            parts.append(dict(kind='ego' if band == current else 'adjacent',
++                              rows=np.c_[z,l[group],r[group]].tolist(),
++                              fit_error_m=max(left['error'], right['error']),
++                              basis='two_supported_markings'))
++    # B directly observes ego-lane pixels even if both markings cannot yet
++    # define a band. Preserve these sparse runs; camera edges are not borders.
++    if raw is not None and projection is not None:
++        focal, cx, cy, height = projection
++        for z in np.arange(1.2, 12.0, DEPTH_STEP):
++            if any(p['kind']=='ego' and p['rows'][0][0]-.1 <= z <= p['rows'][-1][0]+.1 for p in parts):
++                continue
++            v = round(cy+height*focal/z)
++            if not 1 <= v < raw.shape[0]-1:
++                continue
++            active = np.flatnonzero(raw[v-1:v+2].sum(axis=0) >= 2)
++            for g in np.split(active, np.flatnonzero(np.diff(active)>1)+1):
++                if len(g) < 5:
++                    continue
++                l, r = (g[[0,-1]]-cx)*z/focal
++                parts.append(dict(kind='ego_mask', rows=[[z-.10,l,r],[z+.10,l,r]],
++                                  fit_error_m=None, basis='projected_B_pixels'))
++    return parts
++
++class RuntimeMap:
++    def __init__(self):
++        self.pose = np.zeros(3)
++        self.t = None
++        self.motion = None
++        self.cells = {}
++        self.static = {}
++        self.dynamic = {}
++        self.path = []
++        self.distance = 0.
++
++    def _observe(self, parts):
++        updates = {}
++        for part in parts:
++            a = np.asarray(part['rows'])
++            polygon = np.vstack((a[:, :2], a[::-1][:,[0,2]]))
++            polygon = transform(polygon, self.pose)
++            grid = np.floor(polygon[:, ::-1]/CELL).astype(np.int32)
++            low = grid.min(axis=0)
++            size = grid.max(axis=0)-low+1
++            canvas = np.zeros((size[1],size[0]), np.uint8)
++            cv2.fillPoly(canvas, [grid-low], 1)
++            kind = {'ego': 0, 'adjacent': 1, 'ego_mask': 2}[part['kind']]
++            iz, ix = np.nonzero(canvas)
++            bit = 1 << kind
++            for key in zip((iz+low[1]).tolist(), (ix+low[0]).tolist()):
++                updates[key] = updates.get(key, 0) | bit
++        # At most one vote of each class per cell and frame. Keep per-class
++        # counts so repeated observation and colour conflicts remain auditable.
++        for key, bit in updates.items():
++            state = self.cells.setdefault(key,[0,0,0,self.t])
++            for k in range(3):
++                if bit & (1<<k):
++                    state[k] += 1
++            state[3] = self.t
++        return updates
++
++    def _obstacles(self, objects, evidence):
++        now = []
++        if len(objects) != len(evidence['tracks']):
++            raise ValueError('object and track counts differ')
++        for o, track in zip(objects, evidence['tracks']):
++            uid = track['id']
++            static = float(o[25]) >= .5 and not track['dynamic_confirmed'] and uid not in self.dynamic
++            state = np.asarray(o[26:30] if static else o[46:50])
++            cov = np.asarray(o[30:46] if static else o[50:66]).reshape(4,4)
++            c, s = np.cos(self.pose[2]), np.sin(self.pose[2])
++            rot = np.array([[c,-s],[s,c]])
++            pos = transform(state[:2], self.pose)
++            age = track['last_observation_age_s']
++            if age > 2. and not static:
++                continue
++            info = dict(id=uid, position=pos.tolist(), age_s=age, radius_m=float(o[4]),
++                        motion='static' if static else 'moving' if track['dynamic_confirmed'] else 'uncertain')
++            if static and age < .01 and track['hits'] >= 3:
++                score = float(np.trace(cov[:2,:2]))
++                if uid not in self.static or score < self.static[uid]['position_variance_m2']:
++                    self.static[uid] = {**info, 'time':self.t, 'position_variance_m2':score}
++            if not static:
++                if track['dynamic_confirmed']:
++                    self.static.pop(uid,None)
++                ranges=[]
++                for dt in (0.,.5,1.,1.5):
++                    h=np.c_[np.eye(2),dt*np.eye(2)]
++                    acc=np.asarray(track['acceleration_covariance'])
++                    spread=rot@(h@cov@h.T+acc*dt**3/3)@rot.T
++                    ranges.append(dict(in_s=dt, center=(pos+rot@state[2:]*dt).tolist(),
++                                       covariance=spread.tolist()))
++                info['ranges']=ranges
++                if track['dynamic_confirmed'] and age < .21:
++                    self.dynamic[uid] = {**info,'time':self.t}
++            now.append(info)
++        for released in evidence.get('released', []):
++            self.static.pop(released['id'],None)
++            self.dynamic.pop(released['id'],None)
++        return now
++
++    def update(self, sensor, parts, objects, obstacle_evidence):
++        t = float(sensor['t'])
++        speed = (sensor['leftRpm']+sensor['rightRpm'])*math.pi*sensor['wheelRadius']/60
++        yaw_rate = float(sensor['gyro'])
++        if not np.isfinite([t,speed,yaw_rate]).all():
++            raise ValueError('Non-finite sensor sample')
++        if self.t is not None:
++            dt = t-self.t
++            if not 0 < dt <= .5:
++                raise ValueError('Unexpected interval in runtime map')
++            distance, a = .5*(np.asarray(self.motion)+[speed,yaw_rate])*dt
++            dz = distance*np.sinc(a/np.pi)
++            dx = distance*(1-np.cos(a))/a if abs(a)>1e-7 else 0.
++            self.pose[:2] = transform([dz,dx],self.pose)
++            self.pose[2] += a
++            self.distance += abs(distance)
++        self.t, self.motion = t, (speed,yaw_rate)
++        self.path.append([t,*self.pose.tolist()])
++        updates = self._observe(parts)
++        now = self._obstacles(objects,obstacle_evidence)
++        return dict(t=t, pose=self.pose.tolist(), wheel_distance=self.distance,
++                    parts=parts, cells=len(self.cells), changed=[[z,x,*self.cells[z,x]] for z,x in updates],
++                    static=list(self.static.values()), dynamic=list(self.dynamic.values()), now=now)
+--- /dev/null
++++ b/concept_road/concept_road/v34_road.py
+@@ -0,0 +1,11 @@
++"""Runtime source extracted from the accepted V6.26 freeze: research/learned_racing/unity_laps/v34_road.py. """
++
++from dataclasses import dataclass
++
++import numpy as np
++
++from concept_road.v3_model import Observation
++
++@dataclass(frozen=True)
++class RoadObservation(Observation):
++    heading: np.ndarray = None
+--- /dev/null
++++ b/concept_road/concept_road/v3_evidence/plant_fit.json
+@@ -0,0 +1,280 @@
++{
++  "speed": {
++    "tau": 0.3454057715990708,
++    "gain": 0.9707349192285606,
++    "bias": 0.3847019678708669,
++    "delay": 0.0,
++    "fit_acceleration_rmse": 0.4975385070050104,
++    "heldout_step_rmse": 0.05327518394804686
++  },
++  "yaw": {
++    "tau": 0.8406318072434432,
++    "gain": 0.11765680433909902,
++    "bias": -0.056533536181424475,
++    "delay": 0.0,
++    "fit_acceleration_rmse": 0.31920569923172515,
++    "heldout_step_rmse": 0.037232316520586006
++  },
++  "yaw_gain_by_speed": {
++    "speed": [
++      1.5,
++      2.5,
++      3.5,
++      4.5
++    ],
++    "gain": [
++      0.1156982163266071,
++      0.13917828239448293,
++      0.17210156507157082,
++      0.010746244039846626
++    ],
++    "method": "median observed yaw / command per speed band; descriptive fit"
++  },
++  "source": "archived Unity training traces",
++  "fit_runs": 45,
++  "validation_runs": 15,
++  "sources": [
++    {
++      "file": "smooth_revision\\runs\\b01_base.json",
++      "sha256": "ed733ed1a618e3ecc9f503db4ba6b8b990450f26ccfd31d9b67aeb5fb0f55ebe"
++    },
++    {
++      "file": "smooth_revision\\runs\\b01_learned.json",
++      "sha256": "84f235c52f4559e0e07b72a1ac04e7dd80fccb42c00bfecdf42d08e31e8f95b8"
++    },
++    {
++      "file": "smooth_revision\\runs\\b02_base.json",
++      "sha256": "992a52570cb375dd0b189f7a46aeb1163f39f1ebff6174793766d9888d17a61d"
++    },
++    {
++      "file": "smooth_revision\\runs\\b02_learned.json",
++      "sha256": "d075452db296a5b929b9d7e73e2ecc96c2a070bc26792a7706fee50afaca3b1c"
++    },
++    {
++      "file": "smooth_revision\\runs\\b03_base.json",
++      "sha256": "57322de177d1e9ed9c247cc4c4a7bfe0c8890292bdd1072953ed5db2f6d55a4f"
++    },
++    {
++      "file": "smooth_revision\\runs\\b03_learned.json",
++      "sha256": "40c6ae16a8873450a795481910072237cc63337fdeba5f59920763d348e2342c"
++    },
++    {
++      "file": "smooth_revision\\runs\\b04_base.json",
++      "sha256": "8aab7984b0a9f37f2dae4757ad59cdffb3b1dff60eb5d099811909db3a6ae52a"
++    },
++    {
++      "file": "smooth_revision\\runs\\b04_learned.json",
++      "sha256": "c844664a6a647f055b248aae8f20a87abf1133625829fb273d3b2ee27276eb10"
++    },
++    {
++      "file": "smooth_revision\\runs\\b05_base.json",
++      "sha256": "612ea5c47004bfa1f3b83f7f8deb584f37fa06b63c421fd4da1391a19acfc266"
++    },
++    {
++      "file": "smooth_revision\\runs\\b05_learned.json",
++      "sha256": "adf76a744dd0d6af78f2e606bf6bac4942346c6cfc92ce35bddfd9e93e7604be"
++    },
++    {
++      "file": "smooth_revision\\runs\\b06_base.json",
++      "sha256": "2a377aececc8ded1d14b608a46907f302de0dbd4ce10b81634cd9cc8a4ddc64b"
++    },
++    {
++      "file": "smooth_revision\\runs\\b06_learned.json",
++      "sha256": "fb24f2ecfd21972b7d2cf07a080011f86b05c80f595befa9561d7d5f42936cac"
++    },
++    {
++      "file": "smooth_revision\\runs\\b07_base.json",
++      "sha256": "96c071f6e99092bbbe978f332b8a15f974d9c768a9078c2dc8f758985bf217dd"
++    },
++    {
++      "file": "smooth_revision\\runs\\b07_learned.json",
++      "sha256": "f37f394cb95b8aca057e118c3e2e9e3f7e46ce1c98278af102c1d30a04327c8f"
++    },
++    {
++      "file": "smooth_revision\\runs\\b08_base.json",
++      "sha256": "c3969008e4a86abcd16b84e8add6a643a73a250606fd78dc262d2c88c14bc7f2"
++    },
++    {
++      "file": "smooth_revision\\runs\\b08_learned.json",
++      "sha256": "b2b05b673732438690d68ff607fad37b8b1d7c5b7abdd4b0a3210e327b0e8a43"
++    },
++    {
++      "file": "smooth_revision\\runs\\b09_base.json",
++      "sha256": "37c8ef51cf1d184bee2059dd530d88edcb8ab63c08a924286edf8f1597ec9195"
++    },
++    {
++      "file": "smooth_revision\\runs\\b09_learned.json",
++      "sha256": "eefe6cc33b2579db539665ab260fc44500d2950eb72179795bf713ecbf582544"
++    },
++    {
++      "file": "smooth_revision\\runs\\b10_base.json",
++      "sha256": "40690ebec0185af79cb0d185c0477a0274ca636acb817f6ce64639abe73b9d1b"
++    },
++    {
++      "file": "smooth_revision\\runs\\b10_learned.json",
++      "sha256": "6fcd451aa925d6a6cccfde4629d2dc2b9ef5f56726ddd3e8c4e77aead218cee9"
++    },
++    {
++      "file": "smooth_revision\\runs\\b11_base.json",
++      "sha256": "9e4bbe3086db2a1db596e5a92be5bc74e2e4b5b5ed1a486816f5ff1f389dcf06"
++    },
++    {
++      "file": "smooth_revision\\runs\\b11_learned.json",
++      "sha256": "dc403e050716fa8d32780e771774520c85486643ac03318ad81924c8f05c59e1"
++    },
++    {
++      "file": "smooth_revision\\runs\\b12_base.json",
++      "sha256": "e79e534b9b8a93f798237d2f118a013de68c0e46097b9fdbe99c2ece9d914f92"
++    },
++    {
++      "file": "smooth_revision\\runs\\b12_learned.json",
++      "sha256": "7f3ba3f8b59aacf8633ee8ab4b6895544b3bbc994f016c6a0672aba1382b1832"
++    },
++    {
++      "file": "smooth_revision\\runs\\b13_base.json",
++      "sha256": "639ae5a1acb94f3f1402b7dc85fc1b6d920f55e8790660f052bbae1afeff6342"
++    },
++    {
++      "file": "smooth_revision\\runs\\b13_learned.json",
++      "sha256": "d7334151ed3d0b5801429ba8edb924702b063c3d580b809729e0afa79058bc70"
++    },
++    {
++      "file": "smooth_revision\\runs\\b14_base.json",
++      "sha256": "f6f0c0cefed3c822c3a3dca46effa19d80f4def144df0f9ae6fe240ddcb929f7"
++    },
++    {
++      "file": "smooth_revision\\runs\\b14_learned.json",
++      "sha256": "4849b06bfb6c4ffe68a345b5950b016f8e114548c5396f76a91da939667108d1"
++    },
++    {
++      "file": "smooth_revision\\runs\\b15_base.json",
++      "sha256": "60058deb610097626d812185f9500962dcd42334366f695b816194cf8a56c096"
++    },
++    {
++      "file": "smooth_revision\\runs\\b15_learned.json",
++      "sha256": "28004d359ce6b3d11ca84fa3a60e346092ad877b01dd27aaeefde580176102c2"
++    },
++    {
++      "file": "smooth_revision\\runs\\b16_base.json",
++      "sha256": "df0af0b0e74b11cac09599fd8ed177cdfa4cd661273906e1873e19c6a495d629"
++    },
++    {
++      "file": "smooth_revision\\runs\\b16_learned.json",
++      "sha256": "eb8b923c5a409fcb369beafb34b0aa096f9d45e9850e15d1eb49a3146f3c9275"
++    },
++    {
++      "file": "smooth_revision\\runs\\b17_base.json",
++      "sha256": "637b0377f5fb9c01ab9c27165eaf98c2ec1b3cacb02f4ed7fab7edf3eb28564f"
++    },
++    {
++      "file": "smooth_revision\\runs\\b17_learned.json",
++      "sha256": "711e2903f4d83437d0abe432bd58caee3b957023b36df11978401e7115a78b9f"
++    },
++    {
++      "file": "smooth_revision\\runs\\b18_base.json",
++      "sha256": "3256aac3e38bdc628983ff6db63173344ce3c15ac1076e24cf121542b5bb1167"
++    },
++    {
++      "file": "smooth_revision\\runs\\b18_learned.json",
++      "sha256": "7e6b0941f3d70d64cbc246a9f5bfef5590f85368e3840af5f715767ce31d67fa"
++    },
++    {
++      "file": "smooth_revision\\runs\\b19_base.json",
++      "sha256": "69429bec7a7f427e4a3b42e8065c0d5727942f7dab5c37fef01e28b8ec02ddd1"
++    },
++    {
++      "file": "smooth_revision\\runs\\b19_learned.json",
++      "sha256": "9b48a302bbb08b04793308302f0cfd447f0ac243fffab094bc8e922aeade1bce"
++    },
++    {
++      "file": "smooth_revision\\runs\\b20_base.json",
++      "sha256": "ae9900ab80647b3bebcc3c5a3c438b5714c0ec72f6e3fd43f61f98752815f1ae"
++    },
++    {
++      "file": "smooth_revision\\runs\\b20_learned.json",
++      "sha256": "e7b2ce24a2b00524eec71ac58c469d4543a78622e8d8e3a2f22964efcdd257f2"
++    },
++    {
++      "file": "smooth_revision\\runs\\b21_base.json",
++      "sha256": "06c5090b1bbd50b11b7ac37c9edd04541f72a3a44a80f9ea65d003e17b63f003"
++    },
++    {
++      "file": "smooth_revision\\runs\\b21_learned.json",
++      "sha256": "597ec3af504044908dafac13b8879720081a1bd62c6ba0118c0e95ed2f75fc8f"
++    },
++    {
++      "file": "smooth_revision\\runs\\b22_base.json",
++      "sha256": "a09f2805355fde267c2e85ad7d879b288a10115a16fed3c7404fe387f59aac31"
++    },
++    {
++      "file": "smooth_revision\\runs\\b22_learned.json",
++      "sha256": "222f81efc0c738f0cb27cc3b90cfc57d4193e91a94fa2069af62b354cb35dfb6"
++    },
++    {
++      "file": "smooth_revision\\runs\\b23_base.json",
++      "sha256": "9bdb68e3a2f83f5556e6080aa4051bf5c03dcbfdad759ff4cfb20e69040c1c82"
++    },
++    {
++      "file": "smooth_revision\\runs\\b23_learned.json",
++      "sha256": "e7094ebd87aaa28de459bc4603aedc264e184254e6f88e9fd9252fd5d8aa328a"
++    },
++    {
++      "file": "smooth_revision\\runs\\b24_base.json",
++      "sha256": "db8e46949d4c85fe382366042906fe4a6f2eca28c2e97169ec5ed4b66f3c282a"
++    },
++    {
++      "file": "smooth_revision\\runs\\b24_learned.json",
++      "sha256": "479f61fbfa015eb74a852d00781cb111294f66fd28a57022454f5f8c036a7a89"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d001_learned.json",
++      "sha256": "b36f34a56e4d0f4b2536b712a460faf91b85950a350b1e9fcb8a7804297bf5f4"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d002_learned.json",
++      "sha256": "4c151ec4d28742ddd72bf1e7e1aaa0abbaffdda2a480eff936f499cd8dff21ed"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d003_learned.json",
++      "sha256": "95eb9740bd2a35f3288c0f174e76181846f979d0f64ae2d4845dd0cab16c0a10"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d004_learned.json",
++      "sha256": "50b14eebece8c8ddb26b821f3fc71ddde5e8a8365a3a7cb320fa0ab5dc7736ab"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d005_learned.json",
++      "sha256": "6ea2c019c03919943052122dbdd67fa72ba9dbc016d24c0a6ab0446663103ff0"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d006_learned.json",
++      "sha256": "f8392d8f0a2b0bfd7f8ee6e3382bf9cb156487b31aec75d8b605f28329187340"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d007_learned.json",
++      "sha256": "eeebd65a2a56edaab677255d1fccb7d25963b4ba37134ca2b7dd845ef277d39d"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d008_learned.json",
++      "sha256": "6fe50f1a438a726639fed87debc2b7d1fcb0da326b0501cbeb432bcd49ecee05"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d009_learned.json",
++      "sha256": "e379b9a9d1fd50e7fde906647e56dbc7252786e510c8bad89440e761bf9cbfc0"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d010_learned.json",
++      "sha256": "e8e25342138c249816d8b575e1283525e77f3f86a9df345d515084816b9e93ec"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d011_learned.json",
++      "sha256": "7ec12c32e3d65e067b1cd8382f0169a8a6246299559e157d34fb87683c900fe4"
++    },
++    {
++      "file": "smooth_revision\\runs\\ck32_d012_learned.json",
++      "sha256": "cb16fcc478704626100e1817eb13959a67f373c80f12da04731e537d32425573"
++    }
++  ],
++  "limitation": "One-step linear lag fit only, not long-rollout equivalence or real-car calibration",
++  "body_speed_cap": 4.5
++}
+\ No newline at end of file
+--- /dev/null
++++ b/concept_road/concept_road/v3_model.py
+@@ -0,0 +1,25 @@
++"""Runtime source extracted from the accepted V6.26 freeze: research/learned_racing/unity_laps/v3_model.py. """
++
++from dataclasses import dataclass
++
++import numpy as np
++
++BODY_HALF_WIDTH = .38
++
++BODY_FRONT, BODY_REAR = .28, .88
++
++DT = .20
++
++DEFAULT_PARAMETERS = dict(pace=4.45, lookahead=1.1, steer_gain=2.0,
++                         yaw_damping=.65, slew=1.8, clearance=.18,
++                         uncertainty=1.8, smoothness=.12, response=.35)
++
++@dataclass(frozen=True)
++class Observation:
++    # Rows: forward distance, visible left/right bounds, lateral uncertainty.
++    road: np.ndarray
++    # Rows: forward, right, estimated forward/right velocity, radius, uncertainty.
++    objects: np.ndarray
++    speed: float
++    yaw: float
++    dt: float = DT
+--- /dev/null
++++ b/concept_road/concept_road/vision.py
+@@ -0,0 +1,7 @@
++"""Runtime source extracted from the accepted V6.26 freeze: research/learned_racing/unity_laps/vision.py. """
++
++FOCAL=254.391622
++
++CX,CY=330.01302,181.14964
++
++HEIGHT=.655
+--- /dev/null
++++ b/concept_road/package.xml
+@@ -0,0 +1,13 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_road</name>
++  <version>6.27.5</version>
++  <description>V6.26 road, marking and local odometry memory.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula Team</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <build_depend>cython3</build_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <exec_depend>python3-opencv</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_road/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_road
++[install]
++install_scripts=$base/lib/concept_road
+--- /dev/null
++++ b/concept_road/setup.py
+@@ -0,0 +1,27 @@
++import os
++
++from Cython.Distutils import build_ext
++from setuptools import Extension, setup
++
++name = 'concept_road'
++setup(
++    name=name,
++    version='6.27.5',
++    packages=[name],
++    cmdclass={'build_ext': build_ext},
++    options={'build_ext': {'cython_c_in_temp': True, 'cython_directives': {'language_level': 3}}},
++    ext_modules=[Extension(name + '.' + module, [name + '/' + module + '.pyx'],
++                   extra_compile_args=['/O2', '/fp:strict'] if os.name == 'nt'
++                   else ['-O3', '-ffp-contract=off']) for module in ('_markings', '_memory')],
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++    ],
++    package_data={name: ['v3_evidence/plant_fit.json']},
++    install_requires=['setuptools'],
++    zip_safe=False,
++    maintainer='Sophia AI Formula Team',
++    maintainer_email='maintainers@example.invalid',
++    description='V6.26 road, marking and local odometry memory.',
++    license='AGPL-3.0-only',
++)
+--- /dev/null
++++ b/concept_road/test/test_material_sections.py
+@@ -0,0 +1,26 @@
++from unittest.mock import patch
++
++import numpy as np
++
++from concept_road import material
++
++
++def test_native_sections_preserve_thresholds_borders_and_disconnected_runs():
++    depths = np.linspace(.95, 12., 45)
++    rng = np.random.default_rng(62072)
++    observed = np.zeros((360, 640), dtype=bool)
++    observed[:, :80] = True
++    observed[:, 100:108] = True
++    observed[:, 145:154] = True
++    observed[:, 350:485] = True
++    observed[:, 560:] = True
++    # Alternate exact two- and three-of-five column votes at the main run.
++    observed[:, 310:350] = (np.arange(360)[:, None] % 5 < 2)
++    observed[:, 485:520] = (np.arange(360)[:, None] % 5 < 3)
++    assert material.native_sections is not None
++    for mask in (observed, ~observed, observed & (rng.random(observed.shape) > .1),
++                 np.ones_like(observed), np.zeros_like(observed)):
++        actual = material.road_sections(mask, depths)
++        with patch.object(material, 'native_sections', None):
++            expected = material.road_sections(mask, depths)
++        assert actual == expected
+--- /dev/null
++++ b/concept_road/test/test_rear_projection.py
+@@ -0,0 +1,31 @@
++"""Verify the compiled camera-memory sampler across motion, occlusion and blackout."""
++from unittest.mock import patch
++
++import numpy as np
++
++from concept_road import rear_memory
++
++
++def test_native_rear_grid_matches_numpy():
++    reference = rear_memory.RearSurfaceMemory()
++    native = rear_memory.RearSurfaceMemory()
++    rng = np.random.default_rng(7724)
++    road = np.zeros((360, 640), dtype=bool)
++    road[190:, 50:580] = True
++    for i in range(9):
++        measured = road.copy()
++        measured[210:250, 210+i:280+i] = False
++        visible = measured | (rng.random(road.shape) > .65)
++        if i == 6:
++            measured[:] = False
++            visible[:] = False
++        lane = None if i == 0 else measured & (rng.random(road.shape) < .02)
++        args = measured, .9 if i < 5 else -.2, .18 - .04*i, .2
++        with patch.object(rear_memory, 'project_mask', None):
++            reference.current_lane = lane
++            ref = reference.update(*args, visible=visible)
++        assert rear_memory.project_mask is not None
++        native.current_lane = lane
++        result = native.update(*args, visible=visible)
++        np.testing.assert_allclose(result, ref, rtol=0, atol=1e-14)
++        np.testing.assert_array_equal(native.marking_points, reference.marking_points)

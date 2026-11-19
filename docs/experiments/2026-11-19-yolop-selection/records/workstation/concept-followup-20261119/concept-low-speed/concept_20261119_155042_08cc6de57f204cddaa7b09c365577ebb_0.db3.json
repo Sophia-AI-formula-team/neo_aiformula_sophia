@@ -1,0 +1,63 @@
+{
+  "bag": "concept_20261119_155042_08cc6de57f204cddaa7b09c365577ebb",
+  "span": [
+    "2026-11-19T15:50:43.118+09:00",
+    "2026-11-19T15:50:57.960+09:00"
+  ],
+  "planner_reverse": [
+    [
+      [
+        -0.2,
+        "shadow",
+        "reverse wheel-feedback sign unverified"
+      ],
+      13
+    ]
+  ],
+  "planning_status": {
+    "invalid image gap over 0.5 s; pause the gate and restart the driver": 10,
+    "invalid no recent wheel and gyro measurement at image capture": 1,
+    "ok feasible": 38,
+    "ok no_feasible_trajectory": 2,
+    "shadow reverse wheel-feedback sign unverified": 13
+  },
+  "exact_longitudinal": {
+    "0.000": 385,
+    "1.000": 297,
+    "0.800": 32
+  },
+  "yaw_only": 22,
+  "opposed_rpm_words": 197,
+  "both_rpm_negative": 0,
+  "max_motor_yaw_rps": 0.7912610173225403,
+  "auto_speed": {
+    "forward >0.5": 34,
+    "zero longitudinal": 6
+  },
+  "motor_requests": {
+    "zero longitudinal": 385,
+    "forward >0.5": 329
+  },
+  "motor_nonzero_frames": 693,
+  "negative_motor_frames": 197,
+  "raw_wheel_frames": 770,
+  "nonzero_higher_byte_frames": 0,
+  "top_higher_byte_patterns": [],
+  "paired_feedback": {
+    "zero longitudinal": {
+      "both_rpm_zero": 109,
+      "rpm_nonzero": 8
+    },
+    "forward >0.5": {
+      "rpm_nonzero": 2
+    }
+  },
+  "gate": {
+    "paused manual_released": 9,
+    "paused operator_pause": 2,
+    "auto waiting_new_auto": 3,
+    "auto auto_command_received": 80,
+    "auto waiting_fresh_auto": 12,
+    "paused auto_timeout": 42
+  }
+}

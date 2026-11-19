@@ -1,0 +1,340 @@
+    PID    PPID    PGID COMMAND         COMMAND
+      1       0       1 systemd         /sbin/init 2
+      2       0       0 kthreadd        [kthreadd]
+      3       2       0 rcu_gp          [rcu_gp]
+      4       2       0 rcu_par_gp      [rcu_par_gp]
+      8       2       0 mm_percpu_wq    [mm_percpu_wq]
+      9       2       0 rcu_tasks_kthre [rcu_tasks_kthre]
+     10       2       0 rcu_tasks_rude_ [rcu_tasks_rude_]
+     11       2       0 rcu_tasks_trace [rcu_tasks_trace]
+     12       2       0 ksoftirqd/0     [ksoftirqd/0]
+     13       2       0 rcu_preempt     [rcu_preempt]
+     14       2       0 migration/0     [migration/0]
+     16       2       0 cpuhp/0         [cpuhp/0]
+     17       2       0 cpuhp/1         [cpuhp/1]
+     18       2       0 migration/1     [migration/1]
+     19       2       0 ksoftirqd/1     [ksoftirqd/1]
+     22       2       0 cpuhp/2         [cpuhp/2]
+     23       2       0 migration/2     [migration/2]
+     24       2       0 ksoftirqd/2     [ksoftirqd/2]
+     27       2       0 cpuhp/3         [cpuhp/3]
+     28       2       0 migration/3     [migration/3]
+     29       2       0 ksoftirqd/3     [ksoftirqd/3]
+     32       2       0 cpuhp/4         [cpuhp/4]
+     33       2       0 migration/4     [migration/4]
+     34       2       0 ksoftirqd/4     [ksoftirqd/4]
+     36       2       0 kworker/4:0H-kb [kworker/4:0H-kblockd]
+     37       2       0 cpuhp/5         [cpuhp/5]
+     38       2       0 migration/5     [migration/5]
+     39       2       0 ksoftirqd/5     [ksoftirqd/5]
+     42       2       0 cpuhp/6         [cpuhp/6]
+     43       2       0 migration/6     [migration/6]
+     44       2       0 ksoftirqd/6     [ksoftirqd/6]
+     47       2       0 cpuhp/7         [cpuhp/7]
+     48       2       0 migration/7     [migration/7]
+     49       2       0 ksoftirqd/7     [ksoftirqd/7]
+     52       2       0 cpuhp/8         [cpuhp/8]
+     53       2       0 migration/8     [migration/8]
+     54       2       0 ksoftirqd/8     [ksoftirqd/8]
+     57       2       0 cpuhp/9         [cpuhp/9]
+     58       2       0 migration/9     [migration/9]
+     59       2       0 ksoftirqd/9     [ksoftirqd/9]
+     62       2       0 cpuhp/10        [cpuhp/10]
+     63       2       0 migration/10    [migration/10]
+     64       2       0 ksoftirqd/10    [ksoftirqd/10]
+     66       2       0 kworker/10:0H-k [kworker/10:0H-kblockd]
+     67       2       0 cpuhp/11        [cpuhp/11]
+     68       2       0 migration/11    [migration/11]
+     69       2       0 ksoftirqd/11    [ksoftirqd/11]
+     72       2       0 kdevtmpfs       [kdevtmpfs]
+     73       2       0 netns           [netns]
+     78       2       0 kauditd         [kauditd]
+     79       2       0 irq/27-mc_statu [irq/27-mc_statu]
+     81       2       0 khungtaskd      [khungtaskd]
+     82       2       0 oom_reaper      [oom_reaper]
+     83       2       0 writeback       [writeback]
+     84       2       0 kcompactd0      [kcompactd0]
+     85       2       0 ksmd            [ksmd]
+     86       2       0 khugepaged      [khugepaged]
+    117       2       0 kintegrityd     [kintegrityd]
+    118       2       0 kblockd         [kblockd]
+    119       2       0 blkcg_punt_bio  [blkcg_punt_bio]
+    122       2       0 tpm_dev_wq      [tpm_dev_wq]
+    126       2       0 irq/231-2190000 [irq/231-2190000]
+    127       2       0 devfreq_wq      [devfreq_wq]
+    128       2       0 watchdogd       [watchdogd]
+    131       2       0 rpciod          [rpciod]
+    132       2       0 kworker/u25:0-h [kworker/u25:0-hci0]
+    133       2       0 xprtiod         [xprtiod]
+    134       2       0 kswapd0         [kswapd0]
+    135       2       0 nfsiod          [nfsiod]
+    141       2       0 kthrotld        [kthrotld]
+    142       2       0 kpcitest        [kpcitest]
+    146       2       0 nvme-wq         [nvme-wq]
+    147       2       0 nvme-reset-wq   [nvme-reset-wq]
+    148       2       0 nvme-delete-wq  [nvme-delete-wq]
+    149       2       0 uas             [uas]
+    150       2       0 irq/254-tegra_r [irq/254-tegra_r]
+    152       2       0 dm_bufio_cache  [dm_bufio_cache]
+    154       2       0 irq/255-nvvrs-p [irq/255-nvvrs-p]
+    157       2       0 irq/245-tegra_d [irq/245-tegra_d]
+    158       2       0 irq/246-tegra_d [irq/246-tegra_d]
+    159       2       0 dce-async-ipc-w [dce-async-ipc-w]
+    162       2       0 irq/119-bc00000 [irq/119-bc00000]
+    164       2       0 ipv6_addrconf   [ipv6_addrconf]
+    165       2       0 krfcommd        [krfcommd]
+    166       2       0 kstrp           [kstrp]
+    174       2       0 host_low_prio_w [host_low_prio_w]
+    175       2       0 irq/134-host_sy [irq/134-host_sy]
+    176       2       0 irq/135-host_sy [irq/135-host_sy]
+    177       2       0 irq/136-host_sy [irq/136-host_sy]
+    178       2       0 irq/137-host_sy [irq/137-host_sy]
+    179       2       0 irq/138-host_sy [irq/138-host_sy]
+    180       2       0 irq/139-host_sy [irq/139-host_sy]
+    181       2       0 irq/140-host_sy [irq/140-host_sy]
+    182       2       0 irq/141-host_sy [irq/141-host_sy]
+    183       2       0 irq/142-host_st [irq/142-host_st]
+    186       2       0 irq/144-tsec_ri [irq/144-tsec_ri]
+    187       2       0 pva_task_status [pva_task_status]
+    188       2       0 irq/145-pva-isr [irq/145-pva-isr]
+    189       2       0 irq/146-pva-isr [irq/146-pva-isr]
+    190       2       0 irq/147-pva-isr [irq/147-pva-isr]
+    191       2       0 irq/148-pva-isr [irq/148-pva-isr]
+    192       2       0 irq/149-pva-isr [irq/149-pva-isr]
+    193       2       0 irq/150-pva-isr [irq/150-pva-isr]
+    194       2       0 irq/151-pva-isr [irq/151-pva-isr]
+    195       2       0 irq/152-pva-isr [irq/152-pva-isr]
+    196       2       0 irq/153-pva-isr [irq/153-pva-isr]
+    197       2       0 irq/237-3610000 [irq/237-3610000]
+    198       2       0 irq/25-3610000. [irq/25-3610000.]
+    202       2       0 irq/64-tegra-pc [irq/64-tegra-pc]
+    203       2       0 sdhci           [sdhci]
+    205       2       0 irq/82-mmc0     [irq/82-mmc0]
+    211       2       0 mmc_complete    [mmc_complete]
+    213       2       0 irq/64-aerdrv   [irq/64-aerdrv]
+    214       2       0 irq/66-tegra-pc [irq/66-tegra-pc]
+    215       2       0 irq/66-aerdrv   [irq/66-aerdrv]
+    217       2       0 irq/68-tegra-pc [irq/68-tegra-pc]
+    225       2       0 sdhci           [sdhci]
+    226       2       0 irq/83-mmc1     [irq/83-mmc1]
+    227       2       0 irq/303-3400000 [irq/303-3400000]
+    261       2       0 irq/120-d230000 [irq/120-d230000]
+    277       2       0 jbd2/mmcblk0p1- [jbd2/mmcblk0p1-]
+    278       2       0 ext4-rsv-conver [ext4-rsv-conver]
+    316       1     316 systemd-journal /lib/systemd/systemd-journald
+    342       2       0 nvmap-bz        [nvmap-bz]
+    346       2       0 irq/238-gk20a_s [irq/238-gk20a_s]
+    347       2       0 irq/239-gk20a_s [irq/239-gk20a_s]
+    348       2       0 irq/240-gk20a_s [irq/240-gk20a_s]
+    349       2       0 irq/241-gk20a_n [irq/241-gk20a_n]
+    357       1     357 tee-supplicant  /usr/sbin/tee-supplicant
+    359       2       0 optee_bus_scan  [optee_bus_scan]
+    369       1     369 systemd-udevd   /lib/systemd/systemd-udevd
+    372       1     372 haveged         /usr/sbin/haveged --Foreground --verbose=1 -w 1024
+    373       1     373 systemd-resolve /lib/systemd/systemd-resolved
+    374       1     374 systemd-timesyn /lib/systemd/systemd-timesyncd
+    401       1     401 accounts-daemon /usr/lib/accountsservice/accounts-daemon
+    422       1     422 avahi-daemon    avahi-daemon: running [control-desktop.local]
+    424       1     424 cron            /usr/sbin/cron -f
+    425       1     425 dbus-daemon     /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+    427       1     427 NetworkManager  /usr/sbin/NetworkManager --no-daemon
+    434       1     434 networkd-dispat /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+    455       1     455 rsyslogd        /usr/sbin/rsyslogd -n -iNONE
+    464       1     464 switcheroo-cont /usr/libexec/switcheroo-control
+    468       2       0 nv_queue        [nv_queue]
+    469       2       0 nv_queue        [nv_queue]
+    470       2       0 sugov:0         [sugov:0]
+    471       2       0 sugov:8         [sugov:8]
+    473       1     473 systemd-logind  /lib/systemd/systemd-logind
+    479       2       0 sugov:4         [sugov:4]
+    488       1     488 udisksd         /usr/lib/udisks2/udisksd
+    501       1     501 wpa_supplicant  /sbin/wpa_supplicant -u -s -O /run/wpa_supplicant
+    504       2       0 irq/23-3210000. [irq/23-3210000.]
+    507       2       0 spi0            [spi0]
+    511       2       0 irq/24-3230000. [irq/24-3230000.]
+    512       2       0 spi2            [spi2]
+    576     422     422 avahi-daemon    avahi-daemon: chroot helper
+    594       2       0 irq/321-rt5640  [irq/321-rt5640]
+    628       2       0 cfg80211        [cfg80211]
+    632       2       0 irq/323-1-0008  [irq/323-1-0008]
+    652       2       0 tmp451          [tmp451]
+    694       2       0 btfwwork        [btfwwork]
+    757       2       0 cryptd          [cryptd]
+    853       2       0 kworker/u25:2-h [kworker/u25:2-hci0]
+    855       2       0 adspp_kthread   [adspp_kthread]
+    879       2       0 file-storage    [file-storage]
+    895       2       0 loop0           [loop0]
+    907       1     907 bluetoothd      /usr/lib/bluetooth/bluetoothd -d --noplugin=audio,a2dp,avrcp
+    908       1     908 nvfancontrol    /usr/sbin/nvfancontrol &
+    911       1     911 polkitd         /usr/lib/policykit-1/polkitd --no-debug
+   1005       2       0 irq/326-6810000 [irq/326-6810000]
+   1006       2       0 irq/70-eth0.com [irq/70-eth0.com]
+   1010       2       0 RTW_CMD_THREAD  [RTW_CMD_THREAD]
+   1078       2       0 sw-quiesce      [sw-quiesce]
+   1079       2       0 nvgpu_channel_p [nvgpu_channel_p]
+   1080       2       0 nvgpu_nvs_ga10b [nvgpu_nvs_ga10b]
+   1081       2       0 nvgpu_pg_init_g [nvgpu_pg_init_g]
+   1082       2       0 nvgpu_clk_arb_p [nvgpu_clk_arb_p]
+   1087       1    1087 nvs-service     /usr/sbin/nvs-service
+   1099       1    1099 ZEDX_Daemon     /usr/sbin/ZEDX_Daemon
+   1109       1    1109 kerneloops      /usr/sbin/kerneloops --test
+   1114       1    1114 agetty          /sbin/agetty -o -p -- \u --keep-baud 115200,38400,9600 ttyAMA0 vt220
+   1130       1    1130 agetty          /sbin/agetty -o -p -- \u --keep-baud 115200,38400,9600 ttyGS0 vt220
+   1163       1    1163 agetty          /sbin/agetty -o -p -- \u --keep-baud 115200,38400,9600 ttyTCU0 vt220
+   1193       1    1193 lightdm         /usr/sbin/lightdm
+   1206       1    1206 kerneloops      /usr/sbin/kerneloops
+   1207       1    1207 sshd            sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups
+   1211       1    1211 agetty          /sbin/agetty -o -p -- \u --noclear tty1 linux
+   1251    1193    1251 Xorg            /usr/lib/xorg/Xorg -core :0 -seat seat0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -novtswitch
+   1252       1    1252 nvargus-daemon  /usr/sbin/nvargus-daemon
+   1549       1    1549 nvphsd          /usr/sbin/nvphsd
+   1584    1549    1584 nvphsd          /usr/sbin/nvphsd
+   1633       2       0 nvidia-modeset/ [nvidia-modeset/]
+   1635       2       0 nvidia-modeset/ [nvidia-modeset/]
+   1636       2       0 nvidia          [nvidia]
+   1637       2       0 nv_queue        [nv_queue]
+   1727       1    1727 rtkit-daemon    /usr/libexec/rtkit-daemon
+   2900    1193    1193 lightdm         lightdm --session-child 12 21
+   2910       1    2910 systemd         /lib/systemd/systemd --user
+   2911    2910    2910 (sd-pam)        (sd-pam)
+   2917    2910    2917 pulseaudio      /usr/bin/pulseaudio --daemonize=no --log-target=journal
+   2923    2900    2923 xfce4-session   xfce4-session
+   2927    2910    2927 dbus-daemon     /usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+   2988    2923    2988 ssh-agent       /usr/bin/ssh-agent /usr/bin/im-launch startxfce4
+   3006    2910    3006 at-spi-bus-laun /usr/libexec/at-spi-bus-launcher
+   3011    3006    3006 dbus-daemon     /usr/bin/dbus-daemon --config-file=/usr/share/defaults/at-spi2/accessibility.conf --nofork --print-address 3
+   3015    2910    2927 xfconfd         /usr/lib/aarch64-linux-gnu/xfce4/xfconf/xfconfd
+   3021    2910    3006 at-spi2-registr /usr/libexec/at-spi2-registryd --use-gnome-session
+   3027    2910    3027 gpg-agent       /usr/bin/gpg-agent --supervised
+   3029    2923    2923 xfwm4           xfwm4 --display :0.0 --sm-client-id 26b5dd1ee-e480-4a95-b9c2-33cfcf65c199
+   3032    2910    3032 gvfsd           /usr/libexec/gvfsd
+   3037    2910    3032 gvfsd-fuse      /usr/libexec/gvfsd-fuse /run/user/1000/gvfs -f -o big_writes
+   3048       1    3048 xfsettingsd     xfsettingsd --display :0.0 --sm-client-id 237a60883-552c-407e-abf4-5cf34467ec07
+   3067       1    3067 upowerd         /usr/lib/upower/upowerd
+   3102    2923    2923 xfce4-panel     xfce4-panel --display :0.0 --sm-client-id 29512adbf-ea68-48f3-9997-3c24fe04c527
+   3117    2923    2923 xfdesktop       xfdesktop --display :0.0 --sm-client-id 2c7e6ccd0-660e-4a98-84ce-1e88fde8fde8
+   3134    3102    2923 panel-6-systray /usr/lib/aarch64-linux-gnu/xfce4/panel/wrapper-2.0 /usr/lib/aarch64-linux-gnu/xfce4/panel/plugins/libsystray.so 6 16777224 systray Notification Area Area where notification icons appear
+   3145    2923    2923 applet.py       /usr/bin/python3 /usr/share/system-config-printer/applet.py
+   3148    2923    2923 blueman-applet  /usr/bin/python3 /usr/bin/blueman-applet
+   3149    2923    2923 agent           /usr/libexec/geoclue-2.0/demos/agent
+   3155    2923    2923 polkit-gnome-au /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+   3160    2923    2923 nm-applet       nm-applet
+   3161    2923    2923 xiccd           xiccd
+   3164    3102    2923 panel-14-action /usr/lib/aarch64-linux-gnu/xfce4/panel/wrapper-2.0 /usr/lib/aarch64-linux-gnu/xfce4/panel/plugins/libactions.so 14 16777225 actions Action Buttons Log out, lock or other system actions
+   3175       1    3175 colord          /usr/libexec/colord
+   3199    2910    3199 gvfs-udisks2-vo /usr/libexec/gvfs-udisks2-volume-monitor
+   3210    2910    3210 gvfs-gphoto2-vo /usr/libexec/gvfs-gphoto2-volume-monitor
+   3214    2910    3214 gvfs-afc-volume /usr/libexec/gvfs-afc-volume-monitor
+   3219    2910    3219 gvfs-mtp-volume /usr/libexec/gvfs-mtp-volume-monitor
+   3223       1    2923 blueman-tray    /usr/bin/python3 /usr/bin/blueman-tray
+   3252    2910    3252 Thunar          /usr/bin/Thunar --daemon
+   3260    3032    3032 gvfsd-trash     /usr/libexec/gvfsd-trash --spawner :1.13 /org/gtk/gvfs/exec_spaw/0
+   3265    2910    3265 obexd           /usr/lib/bluetooth/obexd
+   3266    2910    3266 gvfsd-metadata  /usr/libexec/gvfsd-metadata
+   3373    2910    2927 notify-osd      /usr/lib/aarch64-linux-gnu/notify-osd
+   3396    2910    3396 xdg-desktop-por /usr/libexec/xdg-desktop-portal
+   3400    2910    3400 xdg-document-po /usr/libexec/xdg-document-portal
+   3403    2910    3403 xdg-permission- /usr/libexec/xdg-permission-store
+   3414    2910    3414 xdg-desktop-por /usr/libexec/xdg-desktop-portal-gtk
+   3422    2910    2927 dconf-service   /usr/libexec/dconf-service
+   3429    2910    2927 gnome-keyring-d /usr/bin/gnome-keyring-daemon --start --foreground --components=secrets
+   3518       1    3518 codex           /home/control/.codex/packages/app-server-daemon/releases/0.170.0-aarch64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   5458    3518    5458 codex           /home/control/.codex/packages/app-server-daemon/releases/0.170.0-aarch64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled --managed-daemon
+   5803    5458    5803 codex-code-mode /home/control/.codex/packages/app-server-daemon/releases/0.170.0-aarch64-unknown-linux-musl/bin/codex-code-mode-host --listen grpc+stdio://
+   9357       2       0 kworker/1:0H-kb [kworker/1:0H-kblockd]
+   9370       2       0 kworker/6:0H-kb [kworker/6:0H-kblockd]
+   9632       2       0 kworker/8:0H-kb [kworker/8:0H-kblockd]
+  11456    3032    3032 gvfsd-network   /usr/libexec/gvfsd-network --spawner :1.13 /org/gtk/gvfs/exec_spaw/1
+  11472    3032    3032 gvfsd-dnssd     /usr/libexec/gvfsd-dnssd --spawner :1.13 /org/gtk/gvfs/exec_spaw/3
+  18772       2       0 kworker/3:2H-kb [kworker/3:2H-kblockd]
+  21170       2       0 jbd2/nvme0n1p1- [jbd2/nvme0n1p1-]
+  21171       2       0 ext4-rsv-conver [ext4-rsv-conver]
+  22356       2       0 kworker/2:1H-kb [kworker/2:1H-kblockd]
+  24814       2       0 kworker/7:1H-kb [kworker/7:1H-kblockd]
+  41622       2       0 kworker/5:0H-kb [kworker/5:0H-kblockd]
+  41722       2       0 kworker/9:2H-kb [kworker/9:2H-kblockd]
+  45615       1    2923 xdg-screensaver /bin/sh /usr/bin/xdg-screensaver suspend 0x196
+  45619   45615    2923 xprop           /usr/bin/xprop -id 0x196 -spy
+  45622       2       0 khidpd_054c09cc [khidpd_054c09cc]
+  46411       2       0 kworker/4:0-eve [kworker/4:0-events]
+  50392       2       0 kworker/u24:2-h [kworker/u24:2-host_low_prio_wq]
+  51803       2       0 kworker/3:0-pm  [kworker/3:0-pm]
+  51804       2       0 kworker/0:2-pm  [kworker/0:2-pm]
+  52947       2       0 kworker/11:0-ev [kworker/11:0-events]
+  54160       2       0 kworker/7:0-pm  [kworker/7:0-pm]
+  54170       2       0 kworker/6:0-eve [kworker/6:0-events]
+  54459       2       0 kworker/5:0-eve [kworker/5:0-events]
+  54923       2       0 kworker/11:2H-k [kworker/11:2H-kblockd]
+  55806       2       0 kworker/1:1-pm  [kworker/1:1-pm]
+  55848       2       0 kworker/8:2-pm  [kworker/8:2-pm]
+  56169       2       0 kworker/10:1-pm [kworker/10:1-pm]
+  56430       2       0 kworker/1:0-mm_ [kworker/1:0-mm_percpu_wq]
+  56698       2       0 kworker/11:1-pm [kworker/11:1-pm]
+  57460       2       0 kworker/9:1-eve [kworker/9:1-events]
+  57461       2       0 kworker/2:1-eve [kworker/2:1-events]
+  57479       2       0 kworker/u24:1-e [kworker/u24:1-events_unbound]
+  57515       2       0 kworker/0:0H-ev [kworker/0:0H-events_highpri]
+  57519       2       0 kworker/7:2-pm  [kworker/7:2-pm]
+  57525       2       0 kworker/4:2-pm  [kworker/4:2-pm]
+  57526       2       0 kworker/1:1H    [kworker/1:1H]
+  57531       2       0 kworker/5:2-eve [kworker/5:2-events]
+  58227       2       0 kworker/3:1-pm  [kworker/3:1-pm]
+  58228       2       0 kworker/9:2-eve [kworker/9:2-events]
+  58254       2       0 kworker/2:2-pm  [kworker/2:2-pm]
+  58270       2       0 kworker/u24:0-e [kworker/u24:0-events_unbound]
+  58271       2       0 kworker/5:2H    [kworker/5:2H]
+  58272       2       0 kworker/11:0H   [kworker/11:0H]
+  58273       2       0 kworker/0:0-cgr [kworker/0:0-cgroup_destroy]
+  58274       2       0 kworker/7:2H    [kworker/7:2H]
+  58275       2       0 kworker/4:2H    [kworker/4:2H]
+  58276       2       0 kworker/10:1H   [kworker/10:1H]
+  58334       2       0 kworker/8:2H    [kworker/8:2H]
+  58335       2       0 kworker/10:2-pm [kworker/10:2-pm]
+  58336       2       0 kworker/2:0H    [kworker/2:0H]
+  58339       2       0 kworker/6:2H    [kworker/6:2H]
+  58340       2       0 kworker/9:1H    [kworker/9:1H]
+  58341       2       0 kworker/3:0H    [kworker/3:0H]
+  58414       2       0 kworker/8:1-cgr [kworker/8:1-cgroup_destroy]
+  58457       1    3048 x-terminal-emul /usr/bin/python3 /usr/bin/x-terminal-emulator
+  58464   58457   58464 bash            /bin/bash
+  58510       2       0 kworker/6:1-pm  [kworker/6:1-pm]
+  58516   58464   58516 ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers allnodes.launch.py
+  58528   58516   58516 robot_state_pub /opt/ros/foxy/lib/robot_state_publisher/robot_state_publisher --ros-args --log-level WARN --ros-args -r __node:=robot_state_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_msmpppvv
+  58530   58516   58516 joint_state_pub /usr/bin/python3 /opt/ros/foxy/lib/joint_state_publisher/joint_state_publisher /home/workspace/install/vehicle/share/vehicle/xacro/ai_car1.urdf --ros-args --log-level WARN --ros-args -r __node:=joint_state_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_e200csv0
+  58532   58516   58516 zed_wrapper     /home/workspace/install/zed_wrapper/lib/zed_wrapper/zed_wrapper --ros-args -r __node:=zed_node -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml --params-file /tmp/launch_params_4scgugkk -r ~/left/image_rect_color:=/aiformula_sensing/zed_node/left_image/undistorted -r ~/right/image_rect_color:=/aiformula_sensing/zed_node/right_image/undistorted -r ~/imu/data:=/aiformula_sensing/zed_node/imu
+  58534   58516   58516 vectornav       /home/workspace/install/vectornav/lib/vectornav/vectornav --ros-args -r __node:=vectornav -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml
+  58536   58516   58516 vn_sensor_msgs  /home/workspace/install/vectornav/lib/vectornav/vn_sensor_msgs --ros-args -r __node:=vn_sensor_msgs -r __ns:=/aiformula_sensing --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml -r vectornav/imu:=/aiformula_sensing/vectornav/imu
+  58538   58516   58516 lane_line_publi /home/workspace/install/lane_line_publisher/lib/lane_line_publisher/lane_line_publisher --ros-args -r __node:=lane_line_publisher --params-file /home/workspace/install/lane_line_publisher/share/lane_line_publisher/config/lane_line_publisher.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/camera_params/SN48797506/intrinsic_nHD.yaml --params-file /tmp/launch_params_3l_e_pwc -r mask_image:=/aiformula_perception/road_detector/mask_image -r annotated_mask_image:=/aiformula_perception/lane_line_publisher/annotated_mask_image -r dynamic_roi_image:=/aiformula_perception/lane_line_publisher/dynamic_roi_image -r linear_fit_image:=/aiformula_perception/lane_line_publisher/linear_fit_image -r vehicle_fit_image:=/aiformula_perception/lane_line_publisher/vehicle_fit_image -r lane_lines/left:=/aiformula_perception/lane_line_publisher/lane_lines/left -r lane_lines/right:=/aiformula_perception/lane_line_publisher/lane_lines/right -r lane_lines/center:=/aiformula_perception/lane_line_publisher/lane_lines/center -r tf:=/tf -r tf_static:=/tf_static
+  58540   58516   58516 lane_0215       /usr/bin/python3 /home/workspace/install/lane_points/lib/lane_points/lane_0215 --ros-args
+  58542   58516   58516 withoutkalman_0 /usr/bin/python3 /home/workspace/install/kalman_filter/lib/kalman_filter/withoutkalman_0312 --ros-args
+  58544   58516   58516 joy_node        /opt/ros/foxy/lib/joy/joy_node --ros-args -r __node:=joy_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/joy.yaml -r joy:=/aiformula_control/joy_node/joy
+  58546   58516   58516 python3         python3 /home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_ohy0g3l2 -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle
+  58548   58516   58516 teleop_node     /opt/ros/foxy/lib/teleop_twist_joy/teleop_node --ros-args -r __node:=teleop_node -r __ns:=/aiformula_control --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r joy:=/aiformula_control/joy_node/joy_l2_throttle -r cmd_vel:=/aiformula_control/game_pad/cmd_vel
+  58553   58516   58516 motor_controlle /usr/bin/python3 /home/workspace/install/motor_controller/lib/motor_controller/motor_controller --ros-args -r __node:=motor_controller -r __ns:=/aiformula_control --params-file /home/workspace/install/vehicle/share/vehicle/config/wheel.yaml --params-file /home/workspace/install/motor_controller/share/motor_controller/config/motor_controller.yaml --params-file /home/workspace/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r sub_speed_command:=/aiformula_control/game_pad/cmd_vel -r pub_can:=/aiformula_control/motor_controller/reference_signal
+  58588   58516   58516 socket_can_rece /home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_zlj9dbb4 -r from_can_bus:=/aiformula_sensing/vehicle_info
+  58604   58516   58516 socket_can_send /home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_sender_node_exe --ros-args -r __node:=socket_can_sender -r __ns:=/aiformula_control --params-file /tmp/launch_params_96cfaryx -r to_can_bus:=/aiformula_control/motor_controller/reference_signal
+  58606   58516   58516 gyro_odometry_p /home/workspace/install/odometry_publisher/lib/odometry_publisher/gyro_odometry_publisher --ros-args -r __node:=gyro_odometry_publisher -r __ns:=/aiformula_sensing --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/wheel.yaml --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/gyro_odometry_publisher.yaml --params-file /tmp/launch_params_jd8hfaft -r sub_imu:=/aiformula_sensing/vectornav/imu -r sub_can:=/aiformula_sensing/vehicle_info -r pub_odometry:=/aiformula_sensing/gyro_odometry_publisher/odom
+  58610   58516   58516 rear_potentiome /usr/bin/python3 /home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info
+  58971   58457   58971 ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers yolop_a3.launch.py start_camera:=false start_lane_publisher:=false
+  59005   58516   58516 rviz2           /opt/ros/foxy/lib/rviz2/rviz2 -d /home/workspace/src/aiformula/perception/lane_line_publisher/rviz/0629llp.rviz --ros-args
+  59076   58457   59076 bash            /bin/bash
+  59119   58971   58971 python3         /home/control/aiformula_runtime/yolop_a3_v14_20261012/venv/bin/python3 /home/control/aiformula_runtime/yolop_a3_v14_20261012/run_a3.py --ros-args -r __ns:=/aiformula_perception -p weights:=/home/control/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/weights/shared_best.pth -p device:=cuda -p score_threshold:=0.5 -p use_sim_time:=false -p input_image_topic:=/aiformula_sensing/zed_node/left_image/undistorted -r pub_mask_image:=/aiformula_perception/road_detector/mask_image -r pub_annotated_mask_image:=/aiformula_visualization/road_detector/annotated_mask_image -r /cone_mask:=/cone_mask -r /cone_bbox_image:=/cone_bbox_image -r /aiformula_perception/yolop_a3/detections:=/aiformula_perception/yolop_a3/detections -r /traffic_light/state:=/aiformula_perception/yolop_a3/traffic_light/state -r /red_pixels_count:=/aiformula_perception/yolop_a3/red_pixels_count
+  59222       2       0 kworker/0:2H-ev [kworker/0:2H-events_highpri]
+  59238   58457   59238 ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch /home/control/semantic_045_ws/commissioning/semantic_045_commissioning.launch.py lane:=outer
+  59280   59238   59238 python3         /usr/bin/python3 /home/control/semantic_045_ws/commissioning/pixel_stop_flag.py 600
+  59282   59238   59238 map_assist      /usr/bin/python3 /home/control/semantic_045_ws/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_95qh4mg1 -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path
+  59284   59238   59238 python3         /usr/bin/python3 /home/control/semantic_045_ws/commissioning/fresh_oa_switch.py --ros-args -r /processed_point_a:=/semantic_drive/map_assist_045/point_a -r /processed_point_b:=/semantic_drive/map_assist_045/point_b -r /processed_point_c:=/semantic_drive/map_assist_045/point_c -r /filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose -r /filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t
+  59286   59238   59238 lya_follower_co /usr/bin/python3 /home/workspace/install/trajectory_follower/lib/trajectory_follower/lya_follower_connected_omegat_global --ros-args -r /filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose -r /filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel
+  59288   59238   59238 python3         /usr/bin/python3 /home/control/semantic_045_ws/commissioning/guarded_stop_wait.py
+  59469       2       0 kworker/4:1-eve [kworker/4:1-events]
+  59483       2       0 kworker/9:0-pm  [kworker/9:0-pm]
+  59488       2       0 kworker/7:1-pm  [kworker/7:1-pm]
+  59492       2       0 kworker/u24:3-e [kworker/u24:3-events_unbound]
+  59496       2       0 kworker/3:2     [kworker/3:2]
+  59501       2       0 kworker/9:0H    [kworker/9:0H]
+  59503       2       0 kworker/6:1H    [kworker/6:1H]
+  59556       2       0 kworker/0:1-pm  [kworker/0:1-pm]
+  59566    1207   59566 sshd            sshd: control [priv]
+  59609   59566   59566 sshd            sshd: control@notty
+  59610   59609   59610 bash            bash -s
+  59613   59610   59610 ps              ps -eo pid,ppid,pgid,comm,args

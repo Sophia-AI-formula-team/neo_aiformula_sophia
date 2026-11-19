@@ -1,0 +1,50 @@
+2026-11-19T16:46:37+09:00
+Starting >>> concept_feasibility
+[1.078s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Starting >>> concept_vehicle_state
+Finished <<< concept_vehicle_state [3.53s]
+Starting >>> concept_visualization
+Finished <<< concept_visualization [2.69s]
+Starting >>> concept_obstacles
+[7.321s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Finished <<< concept_obstacles [2.71s]
+[Processing: concept_feasibility]
+Finished <<< concept_feasibility [47.1s]
+Starting >>> concept_candidates
+--- stderr: concept_feasibility
+warning: concept_feasibility/_motion.pyx:6:54: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:10:109: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:44:94: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:77:92: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_tread.pyx:29:57: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:10:56: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:25:70: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:45:91: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:73:103: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:106:112: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:141:120: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+---
+[48.169s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Finished <<< concept_candidates [16.0s]
+--- stderr: concept_candidates
+warning: concept_candidates/_progress.pyx:34:107: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+---
+
+Summary: 5 packages finished [1min 4s]
+  2 packages had stderr output: concept_candidates concept_feasibility
+2026-11-19T16:47:42+09:00

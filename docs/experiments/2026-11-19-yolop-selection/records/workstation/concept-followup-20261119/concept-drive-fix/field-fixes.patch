@@ -1,0 +1,1360 @@
+diff --git a/vehicle_concept/AGENTS.md b/vehicle_concept/AGENTS.md
+index c22fb5e..3163731 100644
+--- a/vehicle_concept/AGENTS.md
++++ b/vehicle_concept/AGENTS.md
+@@ -25,7 +25,7 @@ V6.27.1 的五场工作站回放中，实际平均 10.08–12.67 Hz，任意连
+ |---|---|---|
+ | ZED X 前相机 | 复用 `zed_wrapper`。HD1080、采集和图像发布均为 60 Hz、输出缩小 3 倍。左侧去畸变图 `/aiformula_sensing/zed_node/left_image/undistorted`，配对的 `CameraInfo` 默认 `/aiformula_sensing/zed_node/left/camera_info`。 | 查实际尺寸、时间、镜头光学帧和相机序号。neo 的车身 xacro 引用 SN48442725，而另一组在用的 nHD 内参来自 SN48797506；要用现场画面做第 3 节核验。 |
+ | VectorNav | 串口缺省 `/dev/ttyUSB0`、115200。原生 `vectornav` 和 `vn_sensor_msgs` 发布 `/aiformula_sensing/vectornav/imu`。使用 z 轴角速度，ROS 左转为正。 | 查设备实际指向、IMU 帧和频率。规划输入取拍摄时已经收到的轮速与陀螺。 |
+-| Kvaser USB-CAN | `kvaser_usb`，经典 CAN `can0`，500000 bit/s，原 socketcan receiver 发布 `/aiformula_sensing/vehicle_info`。0x711 低字节为右轮 data[0]、左轮 data[4]。轮径 0.254 m，轮距 0.60 m，传动比 1.1。 | 检查 `ip -details -statistics link show can0`。记录 CAN 错误计数、左右方向及单位。只验证过 8 位正向反馈，高位非零时状态无效。 |
++| Kvaser USB-CAN | `kvaser_usb`，经典 CAN `can0`，500000 bit/s，原 socketcan receiver 发布 `/aiformula_sensing/vehicle_info`。0x711 的前、后四字节分别为右、左轮的有符号小端 RPM。轮径 0.254 m，轮距 0.60 m，传动比 1.1。 | 检查 `ip -details -statistics link show can0`。记录 CAN 错误计数、左右方向及单位。11 月 19 日录包中正向轮速连续跨过 255 RPM，峰值为 341 RPM，手动倒车反馈最低为 −105 RPM。当前解码接受每轮 −255 至 +341 RPM。 |
+ | 后轮电位计、里程计、TF | 原电位计节点读取同一 CAN 的 0x11，输出 `/aiformula_sensing/rear_potentiometer/yaw`。原 gyro 里程计和车辆 TF 同时启动，便于独立检查。 | 规划和记忆用轮速与陀螺，首圈从空地图开始。 |
+ | DualShock 4 | 原 `joy_node`，device_id=0，20 Hz 自动重发。原 L2/R2 脚本把 `/aiformula_control/joy_node/joy` 转成 `/aiformula_control/joy_node/joy_l2_throttle`。默认模式 L2 前进、R2 后退、右摇杆转向，L1 与十字键模式切换遵照 neo。 | 确认已配对、空闲时仍有心跳。按原映射产生手动控制即切走自动；无需新增接管键。 |
+ | 电机命令 | `/concept/auto_cmd` → `/concept/gate` → 私有速度 → 原 `motor_controller` 0.4.1 左右轮换算 → 私有 CAN → 门控复核 → `/aiformula_control/motor_controller/reference_signal` → 原 sender → 0x210。 | 物理输出话题应只有 1 个发布者和 1 个订阅者。读取门控状态或录内部话题诊断；向物理输出话题添加 echo/录包订阅会触发所有权检查。 |
+@@ -137,7 +137,7 @@ source "$WS/install/local_setup.bash" &&
+ # 等价长命令是 ros2 launch concept concept.launch.py calibration:=...
+ ```
+ 
+-完成独立验证后，用 `ros2 run concept_yolop concept_yolop_calibrate --install camera.json` 安装登记表。实车启动优先读取已安装的 `camera.json`，其次读取同目录的 `honda-ground.json`。本田配置使用实时 ZED 左相机内参和安装位姿，驾驶节点接受 `honda-v1.4.0-ground` 并向 `/concept/auto_cmd` 发布。两份配置都缺失时以影子模式观察。显式传 `calibration:=` 可选择本次不加载登记表。默认目标速度和自动速度上限均为 4.0 m/s。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
++完成独立验证后，用 `ros2 run concept_yolop concept_yolop_calibrate --install camera.json` 安装登记表。实车启动优先读取已安装的 `camera.json`，其次读取同目录的 `honda-ground.json`。本田配置使用实时 ZED 左相机内参和安装位姿，驾驶节点接受 `honda-v1.4.0-ground` 并向 `/concept/auto_cmd` 发布。两份配置都缺失时，节点报告几何无效并停止发布自动指令。显式传 `calibration:=` 可选择本次不加载登记表。首次启动时目标速度和自动速度上限均为 4.0 m/s。RViz 与 Qt 面板各自有窗口；车载桌面使用当前会话的 DISPLAY。无显示时传 `panel:=false rviz:=false`，在已接入同一 ROS 域的显示终端另开 `ros2 run concept_panel panel` 或 `rviz2 -d "$(ros2 pkg prefix concept_visualization)/share/concept_visualization/rviz/concept.rviz"`。要单测识别，可单独 `ros2 launch concept_yolop concept_yolop.launch.py`，整机启动已含此节点。
+ 
+ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640×360 BGR 图为 691,200 字节。发现节点却收不到图时，先查传输设置和容器的 `df -h /dev/shm`。在环境未指定 `FASTRTPS_DEFAULT_PROFILES_FILE` 时，整机 launch 为子进程选择随包 XML。车端 `vehicle-fastdds.xml` 使用 2 MiB 共享内存段及 UDPv4；同机隔离回放 `foxy-fastdds.xml` 仅用共享内存。单独开的面板、RViz、图像发布器或测试终端应加载对应模式的设置，例如 `export FASTRTPS_DEFAULT_PROFILES_FILE="$(ros2 pkg prefix concept)/share/concept/config/vehicle-fastdds.xml"`。若现场已有 DDS 配置，核对里面的传输和图像容量。本次没有测场地无线网络的延迟。
+ 
+@@ -146,7 +146,7 @@ Foxy 的 Fast DDS 默认共享内存段在本次环境约为 545 kB，一张 640
+ | 面板 | 左侧是相机叠图和录包。右侧根据门控发出的最后一条速度和转向指令显示动作，前进为绿、停止为红、倒车闪红。箭头向上为直行，左转朝左、右转朝右，向下表示倒车。控制和「调参…」在底部。「事件记录…」可查看按来源合并的事件、首次和最近时间及次数。 |
+ | 相机叠图 | 面板和 RViz 读 `/concept/view/camera`。蓝色填充是当前车道，橙线是标线或边缘，青绿细线是可行候选，灰色细线是淘汰候选，粉色粗线是最终路线。左上角俯视框以车体为原点，前方朝上，显示选中路线的近车段及 1 m 比例尺。空路径显示 NO PATH。候选和相机图按采集时间戳匹配，暂未收到新决策时还能看识别。 |
+ | RViz 车前与记忆 | 固定帧 `base_footprint`。局部图 `/concept/view/local` 用浅绿色显示通过筛查的候选、灰色显示淘汰的候选、粉色标出最终一条。记忆图 `/concept/view/map` 分色表示本车道与邻道，实虚线均为橙色；已确认静止桶标点，移动桶显示未来中心位置的不确定范围。图随车身坐标更新。 |
+-| 调速 | 点底部「调参…」打开速度对话框。「目标速度」是希望规划参考的速度。「自动驾驶限速」是门控允许发送的自动速度指令上限。比如目标设 3 m/s、限速设 1 m/s，规划就按 1 m/s 计算，遇到弯道或障碍还能主动降速。修改限速会暂停自动驾驶，确认后点「继续自动驾驶」。手柄控制使用自己的设置，实际车速看轮速。 |
++| 调速 | 点底部「调参…」，修改后点对应行的「保存」，确认「当前」读数。实车将两项分别写入 `$XDG_CONFIG_HOME/concept/speed/`（默认 `~/.config/concept/speed/`），重启自动读取。启动时显式指定的对应速度参数优先。隔离回放使用独立的内存参数。「目标速度」是希望规划参考的速度。「自动驾驶限速」是门控允许发送的自动速度指令上限。比如目标设 3 m/s、限速设 1 m/s，规划就按 1 m/s 计算，遇到弯道或障碍还能主动降速。修改限速会暂停自动驾驶，确认后点「继续自动驾驶」。手柄控制使用自己的设置，实际车速看轮速。 |
+ | 动作 | 开启输出后仍处于暂停。手柄居中、有心跳、状态有效时点击「继续运行」。手柄一旦接管，自动命令被切断；视觉和选路继续。松手立即要求零轮速，保持到下一次点击「继续」，恢复前产生的指令全部作废。禁用输出覆盖手动和自动。 |
+ | 停滞重启 | 先读原因。在面板点重启，面板先等门控确认暂停，再请求驾驶节点清空路界、桶和时序历史，重新接收传感器。等待新输入后手动继续。若驾驶进程退出，launch 尝试重启进程；门控超时后仍需手动恢复。服务未应答时按第 6 节处理。 |
+ 
+@@ -199,7 +199,7 @@ python3 "$REPO/vehicle_concept/checks/measure_timing.py" --seconds 60 --planning
+ 
+ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条候选轨迹的车轮边界、停车距离及障碍风险检查成批计算，保留相同筛选规则。五场 1,079 帧回放的白盒和 H12 选择、可行标记、选中路径和输出指令均与冻结结果一致。V6.27.1 进一步合并完全相同的预测轨迹，并对障碍物风险做有误差上界的快速筛选。五场共 1,500 个 200 ms 窗口均收到新指令。车端先做观测、标定与台架验收。[V6.27.1 冻结回归](checks/timing/v6.27.1/frozen-regression.json) · [V6.27.1 工作站时钟回放](checks/timing/v6.27.1/README.md)
+ 
+-在现场负责人安排下，架空车轮确认零输出、左右转向、手柄松开保持和硬件急停；按原接线核对实际车轮方向。随后可直接进行短距离低速自动测试，记录距离、用时、最低帧率、拍摄到控制的延迟和停车距离。无需先跑一圈手操。5 m/s 属于仿真压力测试条件；目前已解码的轮速只有 0–255 rpm，轮径 0.254 m 时约到 3.39 m/s。验证方向位和高位之前，不用这路反馈做更高速度或自主倒车的实车验收。
++在现场负责人安排下，架空车轮确认零输出、左右转向、手柄松开保持和硬件急停；按原接线核对实际车轮方向。随后可直接进行短距离低速自动测试，记录距离、用时、最低帧率、拍摄到控制的延迟和停车距离。无需先跑一圈手操。5 m/s 属于仿真压力测试条件；直行 4 m/s 时每个车轮约 301 RPM，在当前解码范围内。实车能否在自动模式达到目标速度，以及低速倒车能否起步，需要以落地轮速验收。
+ 
+ ## 5. 从图像到轮速，修改时找哪个包
+ 
+diff --git a/vehicle_concept/checks/inspect_vehicle_launch.py b/vehicle_concept/checks/inspect_vehicle_launch.py
+index 11ef89c..ed50952 100644
+--- a/vehicle_concept/checks/inspect_vehicle_launch.py
++++ b/vehicle_concept/checks/inspect_vehicle_launch.py
+@@ -31,7 +31,8 @@ def main():
+     nodes = [perform_substitutions(context, n.cmd[0][0].package)
+              for n in [*actions, *scoped] if isinstance(n, Node)]
+     assert {'zed_wrapper', 'robot_state_publisher', 'joint_state_publisher', 'joy',
+-            'launchers', 'teleop_twist_joy', 'ros2_socketcan'} <= set(nodes), nodes
++            'launchers', 'ros2_socketcan'} <= set(nodes), nodes
++    assert 'teleop_twist_joy' not in nodes
+     assert nodes.count('ros2_socketcan') == 2
+     print('Constructed sensor graph and chassis without devices:', ', '.join(nodes))
+ 
+diff --git a/vehicle_concept/src/concept/concept/bringup.py b/vehicle_concept/src/concept/concept/bringup.py
+index 8f00cd9..b823a59 100644
+--- a/vehicle_concept/src/concept/concept/bringup.py
++++ b/vehicle_concept/src/concept/concept/bringup.py
+@@ -73,7 +73,6 @@ def sensor_actions(context):
+     native = runpy.run_path(share('launchers', 'launch', 'allnodes.launch.py'))
+     native['wait_for_can_interface'](context)
+     joy_config = share('launchers', 'config', 'joy.yaml')
+-    buttons = share('launchers', 'config', 'gamepad', 'dualshock4.yaml')
+     remap = '/aiformula_control/joy_node/joy_l2_throttle'
+     # The original launcher generates a URDF inside the installed vehicle share.
+     # Render the same chassis into a private temporary file for this launch.
+@@ -98,8 +97,6 @@ def sensor_actions(context):
+         Node(package='launchers', executable='l2_throttle_joy_remap.py', name='l2_throttle_joy_remap',
+              namespace='/aiformula_control',
+              remappings=[('joy_in', '/aiformula_control/joy_node/joy'), ('joy_out', remap)]),
+-        Node(package='teleop_twist_joy', executable='teleop_node', namespace='/aiformula_control',
+-             parameters=[buttons], remappings=[('joy', remap), ('cmd_vel', '/concept/manual_preview')]),
+         *native['create_socket_can_receiver'](), *native['create_socket_can_sender'](),
+     ]
+ 
+@@ -144,9 +141,15 @@ def build(context):
+     direct = vehicle if direct == 'auto' else direct == 'true'
+     vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'),
+                   camera_info_topic=LC('camera_info_topic'))
+-    driving = dict(onboard_camera=direct,
+-                   target_speed_mps=float(LC('target_speed_mps').perform(context)),
+-                   planning_hz=float(LC('planning_hz').perform(context)))
++    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)))
++    gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')
++    for params, key in ((driving, 'target_speed_mps'), (gate, 'max_auto_speed_mps')):
++        if vehicle:
++            config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
++            params['speed_settings_directory'] = str(Path(config_home) / 'concept' / 'speed')
++        explicit = LC(key).perform(context)
++        if explicit:
++            params[key] = float(explicit)
+     if direct:
+         driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
+     else:
+@@ -157,8 +160,7 @@ def build(context):
+              remappings=motor_remaps),
+         Node(package='concept_vehicle_state', executable='concept_vehicle_state', output='screen'),
+         Node(package='concept_control_gate', executable='concept_control_gate', output='screen',
+-             parameters=[buttons, {'max_auto_speed_mps': float(LC('max_auto_speed_mps').perform(context)),
+-                                  'can_sender_node': '/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver'}],
++             parameters=[buttons, gate],
+              remappings=[] if vehicle else [(physical, '/concept/replay/reference_signal')]),
+         Node(package='concept_drive', executable='drive', output='screen', respawn=True, respawn_delay=2.,
+              additional_env={'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'},
+diff --git a/vehicle_concept/src/concept/launch/concept.launch.py b/vehicle_concept/src/concept/launch/concept.launch.py
+index 0c82a16..0eb7773 100644
+--- a/vehicle_concept/src/concept/launch/concept.launch.py
++++ b/vehicle_concept/src/concept/launch/concept.launch.py
+@@ -8,7 +8,7 @@ from concept.bringup import build, share
+ def generate_launch_description():
+     defaults = {
+         'mode': 'vehicle', 'onboard_camera': 'auto', 'panel': 'true', 'rviz': 'true',
+-        'target_speed_mps': '4.0', 'max_auto_speed_mps': '4.0', 'planning_hz': '15.0',
++        'target_speed_mps': '', 'max_auto_speed_mps': '', 'planning_hz': '15.0',
+         'weights': '', 'calibration': 'auto', 'device': 'cuda',
+         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
+         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
+diff --git a/vehicle_concept/src/concept/package.xml b/vehicle_concept/src/concept/package.xml
+index e58f215..7803882 100644
+--- a/vehicle_concept/src/concept/package.xml
++++ b/vehicle_concept/src/concept/package.xml
+@@ -23,7 +23,6 @@
+   <exec_depend>robot_state_publisher</exec_depend>
+   <exec_depend>joint_state_publisher</exec_depend>
+   <exec_depend>joy</exec_depend>
+-  <exec_depend>teleop_twist_joy</exec_depend>
+   <exec_depend>ros2launch</exec_depend>
+   <exec_depend>can_msgs</exec_depend>
+   <exec_depend>ros2_socketcan</exec_depend>
+diff --git a/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py b/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py
+index 6f9f3a4..03c5635 100644
+--- a/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/backtrack_forward617.py
+@@ -13,34 +13,52 @@ from concept_feasibility.reverse_model617 import step as advance_reverse
+ from concept_feasibility.response61515 import MODEL
+ 
+ def checked_retreat(obs,reverse_seconds,stop_age,horizon,previous_yaw=0.,reverse_steer=0.):
+-    z=x=angle=travel=turn=0.;v=obs.speed;w=obs.yaw;age=stop_age
+-    controls=[];paths=[];states=[tuple(np.array([q]) if k!=3 else q for k,q in enumerate([0.,0.,0.,0.,0.,0.]))]
+-    initial_gap,initial_lower,initial_known=road_clearance(obs.road,np.array([0.]),np.array([0.]),np.array([0.]),1.)
+-    lower=float(initial_lower[0]);geometric=float(initial_gap[0]);known=bool(initial_known[0]);max_speed=abs(v)
+-    steps=int(np.ceil(max(horizon,reverse_seconds+.5)/.05))
++    steps = int(np.ceil(max(horizon, reverse_seconds + .5) / .05))
++    controls = np.empty((steps, 2))
++    # Keep the scalar frozen dynamics and every 50 ms pose. The footprint
++    # kernel is pointwise and can check the full history in one call.
++    history = np.zeros((steps + 1, 5))
++    z = x = angle = travel = turn = 0.
++    v, w, age = obs.speed, obs.yaw, stop_age
++    max_speed = abs(v)
++    release_from = reverse_steer if reverse_seconds > 0 else previous_yaw
++    release_tick = int(round(reverse_seconds / .05))
+     for i in range(steps):
+-        q=-.2 if (i+.5)*.05<reverse_seconds else 0.
+-        release_from=reverse_steer if reverse_seconds>0 else previous_yaw
+-        release_step=max(0,i-int(round(reverse_seconds/.05)))
+-        steer=reverse_steer if q<0 else np.sign(release_from)*max(0.,abs(release_from)-1.8*(obs.dt+(release_step//4)*.2))
+-        controls.append([q,float(steer)]);ov,ow=v,w
+-        v,w,age=[float(a) for a in advance_reverse(v,w,q,steer,.05,age)]
+-        mid=angle+.25*(ow+w)*.05
+-        z+=(ov+v)*.5*np.cos(mid)*.05;x+=(ov+v)*.5*np.sin(mid)*.05
+-        angle+=(ow+w)*.5*.05;travel+=(abs(ov)+abs(v))*.5*.05;turn+=(abs(ow)+abs(w))*.5*.05
+-        rg,rl,k=road_clearance(obs.road,np.array([z]),np.array([x]),np.array([angle]),1.)
+-        lower=min(lower,float(rl[0]-.04*travel-.08*turn*1.16));geometric=min(geometric,float(rg[0]));known &= bool(k[0])
+-        max_speed=max(max_speed,abs(v));states.append(tuple(np.array([a]) if j!=3 else a for j,a in enumerate([z,x,angle,(i+1)*.05,travel,turn])))
+-        if (i+1)%4==0:paths.append([z,x])
+-    gap,obstacle=path_obstacle_clearance(obs.objects,states)
++        q = -.2 if (i + .5) * .05 < reverse_seconds else 0.
++        release_step = max(0, i - release_tick)
++        steer = reverse_steer if q < 0 else np.sign(release_from) * max(
++            0., abs(release_from) - 1.8 * (obs.dt + (release_step // 4) * .2))
++        controls[i] = q, steer
++        ov, ow = v, w
++        v, w, age = map(float, advance_reverse(v, w, q, steer, .05, age))
++        mid = angle + .25 * (ow + w) * .05
++        z += (ov + v) * .5 * np.cos(mid) * .05
++        x += (ov + v) * .5 * np.sin(mid) * .05
++        angle += (ow + w) * .5 * .05
++        travel += (abs(ov) + abs(v)) * .5 * .05
++        turn += (abs(ow) + abs(w)) * .5 * .05
++        history[i + 1] = z, x, angle, travel, turn
++        max_speed = max(max_speed, abs(v))
++
++    depth, lateral, heading, distance, rotation = history.T
++    road_gap, road_lower, supported = road_clearance(obs.road, depth, lateral, heading, 1.)
++    lower = float((road_lower - .04 * distance - .08 * rotation * 1.16).min())
++    known = bool(supported.all())
++    obstacle_gap = obstacle_lower = 100.
++    if len(obs.objects):
++        times = np.arange(steps + 1) * .05
++        states = list(zip(depth[:, None], lateral[:, None], heading[:, None], times,
++                          distance[:, None], rotation[:, None]))
++        gaps, margins = path_obstacle_clearance(obs.objects, states)
++        obstacle_gap, obstacle_lower = float(gaps[0]), float(margins[0])
+     # Inferred startup road may remain populated after historical rear cells
+     # disappear. It can never authorize another powered reverse interval.
+-    observed_rear=(reverse_seconds==0 or getattr(obs,'rear_observed_limit',None) is not None)
+-    valid=lower>=0 and obstacle[0]>0 and known and observed_rear and abs(v)<.04 and max_speed<=.3
+-    return dict(valid=bool(valid),controls=np.asarray(controls),path=paths,road_lower=lower,
+-        obstacle_lower=float(obstacle[0]),geometric=min(geometric,float(gap[0])),known=known,
+-        maximum_speed=max_speed,travel_m=travel,checked_seconds=steps*.05,
+-        end_z=z,end_x=x,end_heading=angle)
++    observed_rear = reverse_seconds == 0 or getattr(obs, 'rear_observed_limit', None) is not None
++    valid = lower >= 0 and obstacle_lower > 0 and known and observed_rear and abs(v) < .04 and max_speed <= .3
++    return dict(valid=bool(valid), controls=controls, path=history[4::4, :2].tolist(), road_lower=lower,
++                obstacle_lower=obstacle_lower, geometric=min(float(road_gap.min()), obstacle_gap), known=known,
++                maximum_speed=max_speed, travel_m=travel, checked_seconds=steps*.05,
++                end_z=z, end_x=x, end_heading=angle)
+ 
+ def opening_target(obs):
+     """Current observed and remembered openings rank checked reverse actions."""
+diff --git a/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py b/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py
+index 739ecf6..7c139e4 100644
+--- a/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py
++++ b/vehicle_concept/src/concept_candidates/concept_candidates/trajectory_batch.py
+@@ -5,7 +5,7 @@ from concept_feasibility import _motion
+ from concept_feasibility.geometry import road_clearance
+ from concept_feasibility.geometry61514 import RISK_LIMIT
+ from concept_feasibility.path_risk import array_clearance
+-from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals
++from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled
+ from .curve_progress import project, supported_increment
+ 
+ DT = .05
+@@ -15,8 +15,9 @@ MOTOR = (np.asarray(MODEL['speed']), np.asarray(MODEL['yaw']), MODEL['stop']['de
+ 
+ def warm_pace(pace):
+     parameters=tuple(MODEL['yaw'])
++    physical=physical_motor_enabled()
+     for speed in np.asarray([.25,.55,.8,1.])*pace:
+-        response_intervals(float(np.float32(speed)),parameters)
++        response_intervals(float(speed if physical else np.float32(speed)), parameters, physical)
+ 
+ 
+ def initial_state(obs, commands, stop_age, *, forward=False):
+@@ -47,7 +48,7 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
+         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
+         last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
+         controls[t:t+4,:,0]=commands;controls[t:t+4,:,1]=last
+-        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*MOTOR)[1:]
++        state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*MOTOR,physical_motor_enabled())[1:]
+     # The frozen simulator's nominal horizon uses this particular evaluation order.
+     ticks=np.arange(steps*4)
+     times=np.r_[0.,(ticks//4)*.2+(ticks%4+1)*DT]
+@@ -136,7 +137,7 @@ def braking(obs,commands,first,stop_age,uncertainty,coast_seconds,details,contro
+             controls[:cruise]=coast_sequence[:,:cruise].transpose(1,0,2)
+             endpoint=coast_sequence[:,-1,1]
+         controls[cruise:,:,1]=endpoint*.65**(((ticks[cruise:]-coast)//4+1)[:,None])
+-    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*MOTOR)
++    states=_motion.integrate(initial_state(obs,commands,stop_age),controls,DT,*MOTOR,physical_motor_enabled())
+     stopped=np.logical_or.accumulate((ticks[:,None]>last)&(abs(controls[:,:,0])<1e-8)&(states[1:,:,3]<.04),axis=0)
+     all_stopped=np.flatnonzero(stopped.all(axis=1))
+     nt=int(all_stopped[0])+1 if len(all_stopped) else len(controls)
+@@ -157,7 +158,7 @@ def profile(obs,sequence,horizon,stop_age,uncertainty):
+     controls[:original]=sequence.transpose(1,0,2)
+     ticks=np.arange(nt-original)
+     controls[original:,:,1]=sequence[:,-1,1]*.65**((ticks//4+1)[:,None])
+-    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*MOTOR)
++    state=_motion.integrate(initial_state(obs,controls[0,:,0],stop_age),controls,DT,*MOTOR,physical_motor_enabled())
+     geometric,road,known,obstacle=clearance(obs,state,np.arange(nt+1)*DT,uncertainty)
+     progress,used,cost=progress_over(obs,state[:nominal+1])
+     finite=np.isfinite(state[1:,:,3:5]).all(axis=(0,2))
+diff --git a/vehicle_concept/src/concept_candidates/test/test_reverse_sweep.py b/vehicle_concept/src/concept_candidates/test/test_reverse_sweep.py
+new file mode 100644
+index 0000000..db1f192
+--- /dev/null
++++ b/vehicle_concept/src/concept_candidates/test/test_reverse_sweep.py
+@@ -0,0 +1,39 @@
++from types import SimpleNamespace
++
++import numpy as np
++
++from concept_candidates.backtrack_forward617 import checked_retreat
++from concept_feasibility.response61515 import features, MODEL, motor_profile
++from concept_feasibility.reverse_model617 import DATA, step
++
++
++def test_recovery_checks_all_release_ticks_and_requires_supported_rear():
++    obs = SimpleNamespace(road=np.array([[-3., -2., 2., .04], [10., -2., 2., .04]]),
++                          objects=[], speed=0., yaw=0., dt=.2, rear_observed_limit=-3.)
++    for duration in (0., .2, .4, .6, .8, 1.):
++        result = checked_retreat(obs, duration, .3, 4.2, -.1, .18)
++        assert result['valid']
++        assert len(result['path']) == 21
++        controls = result['controls']
++        ticks = round(duration/.05)
++        np.testing.assert_array_equal(controls[:ticks, 0], -.2)
++        np.testing.assert_array_equal(controls[ticks:, 0], 0.)
++    obs.road[0, 0] = -.08
++    assert not checked_retreat(obs, 1., .3, 4.2)['known']
++    obs.road[0, 0] = -3.
++    obs.rear_observed_limit = None
++    assert not checked_retreat(obs, 1., .3, 4.2)['valid']
++    assert checked_retreat(obs, 0., .3, 4.2)['valid']
++
++
++def test_retreat_cache_separates_motor_profiles():
++    speed, yaw, dt = -.1, .13, .05
++    for physical in (False, True, False):
++        basis = features(-.2, 0., *MODEL['yaw'][4:6], physical=physical)
++        expected = []
++        for model, initial in (('v', speed), ('w', yaw)):
++            tau, *gains = DATA['models'][model]
++            target = float(basis @ np.asarray(gains))
++            expected.append(target + (initial - target) * np.exp(-dt/tau))
++        with motor_profile(physical):
++            np.testing.assert_array_equal(step(speed, yaw, -.2, 0., dt, .3), expected + [0.])
+diff --git a/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py b/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
+index f2199e1..bec63aa 100644
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
+@@ -16,6 +16,7 @@ from std_msgs.msg import Bool, String
+ from std_srvs.srv import SetBool, Trigger
+ 
+ from .core import Gate, ZERO, ZERO_FRAME
++from .speed_setting import SpeedSetting
+ 
+ CAN_OUT = '/aiformula_control/motor_controller/reference_signal'
+ JOY = '/aiformula_control/joy_node/joy_l2_throttle'
+@@ -30,7 +31,8 @@ def seconds(stamp):
+ class GateNode(Node):
+     def __init__(self):
+         super().__init__('gate', namespace='/concept')
+-        self.limit = self.declare_parameter('max_auto_speed_mps', 1.0).value
++        self.speed_setting = SpeedSetting(self, 'max_auto_speed_mps', 5.)
++        self.limit = self.speed_setting.initial
+         if not self.valid_limit(self.limit):
+             raise ValueError('max_auto_speed_mps must be in (0, 5]')
+         self.add_on_set_parameters_callback(self.parameters)
+@@ -68,10 +70,18 @@ class GateNode(Node):
+ 
+     def parameters(self, params):
+         for param in params:
++            if param.name == 'speed_settings_directory':
++                return SetParametersResult(successful=False, reason='Set speed_settings_directory at launch')
+             if param.name == 'max_auto_speed_mps' and not self.valid_limit(param.value):
+                 return SetParametersResult(successful=False, reason='expected (0, 5] m/s')
+         for param in params:
+-            if param.name == 'max_auto_speed_mps' and param.value != self.limit:
++            if param.name == 'max_auto_speed_mps':
++                try:
++                    self.speed_setting.save(param.value)
++                except (OSError, ValueError) as exc:
++                    return SetParametersResult(successful=False, reason=str(exc))
++                if param.value == self.limit:
++                    continue
+                 self.limit = param.value
+                 self.gate.pause(self.now(), 'speed_limit_changed')
+                 self.stop()
+diff --git a/vehicle_concept/src/concept_control_gate/concept_control_gate/speed_setting.py b/vehicle_concept/src/concept_control_gate/concept_control_gate/speed_setting.py
+new file mode 100644
+index 0000000..2310f3a
+--- /dev/null
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/speed_setting.py
+@@ -0,0 +1,48 @@
++"""Keep the two independently owned vehicle speed settings across process starts."""
++import json
++import math
++import os
++from pathlib import Path
++import tempfile
++
++
++class SpeedSetting:
++    def __init__(self, node, name, upper):
++        directory = node.declare_parameter('speed_settings_directory', '').value
++        self.path = Path(directory) / (name + '.json') if directory else None
++        self.name, self.upper = name, upper
++        saved = 4.0
++        load_error = None
++        if self.path is not None:
++            try:
++                saved = json.loads(self.path.read_text(encoding='utf8'))
++                self.validate(saved)
++            except FileNotFoundError:
++                pass
++            except (OSError, ValueError) as exc:
++                # An explicit override can still recover a malformed setting.
++                saved, load_error = None, exc
++        # An explicitly supplied ROS parameter takes priority over the saved default.
++        self.initial = node.declare_parameter(name, saved).value
++        if self.initial is None and load_error is not None:
++            raise ValueError(f'Invalid {self.path}: {load_error}') from load_error
++        self.validate(self.initial)
++
++    def validate(self, value):
++        if type(value) is not float or not math.isfinite(value) or not 0 < value <= self.upper:
++            raise ValueError(f'{self.name} must be a double in (0, {self.upper}] m/s')
++
++    def save(self, value):
++        self.validate(value)
++        if self.path is None:
++            return
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        with tempfile.NamedTemporaryFile(dir=self.path.parent, mode='w', delete=False) as tmp:
++            try:
++                tmp.write(json.dumps(value) + '\n')
++                tmp.flush()
++                os.fsync(tmp.fileno())
++                os.replace(tmp.name, self.path)
++            finally:
++                if os.path.exists(tmp.name):
++                    os.unlink(tmp.name)
+diff --git a/vehicle_concept/src/concept_control_gate/test/test_speed_setting.py b/vehicle_concept/src/concept_control_gate/test/test_speed_setting.py
+new file mode 100644
+index 0000000..63456c0
+--- /dev/null
++++ b/vehicle_concept/src/concept_control_gate/test/test_speed_setting.py
+@@ -0,0 +1,51 @@
++from types import SimpleNamespace
++
++import pytest
++
++from concept_control_gate.speed_setting import SpeedSetting
++
++
++class Node:
++    def __init__(self, directory='', **overrides):
++        self.params = dict(speed_settings_directory=str(directory), **overrides)
++
++    def declare_parameter(self, name, default):
++        return SimpleNamespace(value=self.params.get(name, default))
++
++
++def test_independent_settings_restart_recovery_and_replay(tmp_path):
++    target, limit = 'target_speed_mps', 'max_auto_speed_mps'
++    driver = SpeedSetting(Node(tmp_path), target, 6.)
++    gate = SpeedSetting(Node(tmp_path), limit, 5.)
++    assert driver.initial == gate.initial == 4.
++    driver.save(2.35)
++    gate.save(1.75)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    with pytest.raises(ValueError):
++        gate.save(float('nan'))
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    gate.path.write_text('{')
++    with pytest.raises(ValueError, match='Invalid'):
++        SpeedSetting(Node(tmp_path), limit, 5.)
++    recovered = SpeedSetting(Node(tmp_path, max_auto_speed_mps=3.), limit, 5.)
++    assert recovered.initial == 3.
++    recovered.save(4.)
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 4.
++    isolated = SpeedSetting(Node(), target, 6.)
++    assert isolated.initial == 4.
++    isolated.save(.5)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++
++
++def test_failed_write_keeps_last_setting(tmp_path, monkeypatch):
++    import os
++    setting = SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.)
++    setting.save(2.)
++    def unavailable(source, destination):
++        raise OSError('disk is read only')
++    monkeypatch.setattr(os, 'replace', unavailable)
++    with pytest.raises(OSError, match='read only'):
++        setting.save(4.)
++    assert SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.).initial == 2.
++    assert list(tmp_path.iterdir()) == [setting.path]
+diff --git a/vehicle_concept/src/concept_drive/README.md b/vehicle_concept/src/concept_drive/README.md
+index 4192dd7..fa70a25 100644
+--- a/vehicle_concept/src/concept_drive/README.md
++++ b/vehicle_concept/src/concept_drive/README.md
+@@ -13,6 +13,8 @@
+ 
+ ## 启动和操作
+ 
++使用本田投影或实车标定投影时，前进和倒车候选按车上 `motor_controller` 的直行换算预测左右轮指令。规划的零纵向释放动作在实车输出为两轴全零。手柄仍可原地转向。车身速度和制动的响应系数源自 Unity，实车低速起步阈值仍需实测。
++
+ 在 `/concept/decision` 的 JSON 中查看 `candidate_evaluation`。一次常规前进决策会显示 `mode=exact`、候选总数 `input_count` 和实际模拟数 `evaluated_count`。例如总数 75、实际模拟 55 表示有 20 个目标与速度均相同的重复请求共享了结果。所有 75 个编号仍参加原有的筛选和排序。没有执行前进搜索的决策会显示 0 次。
+ 
+ 在已经构建并 source 的 ROS 2 工作区运行。完整的相机、状态和指令门由整机启动入口管理。
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index a0c95ed..5a6de97 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -1,4 +1,5 @@
+ """Sensor-only V6.26 decision node. Physical output belongs to /concept/gate."""
++import gc
+ import json
+ import math
+ import time
+@@ -16,6 +17,8 @@ from rclpy.node import Node
+ from std_msgs.msg import String
+ from std_srvs.srv import Trigger
+ 
++from concept_feasibility.response61515 import motor_profile
++from concept_control_gate.speed_setting import SpeedSetting
+ from concept_yolop.frame_codec import decode_frame_data, parse_frame_header, validate_pixels, validated_detections
+ from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
+ from .core import Drive
+@@ -34,7 +37,8 @@ class DriverNode(Node):
+         # OpenCV builds the Lab conversion tables on first use. Do this before
+         # accepting images, without creating road observations or a command.
+         cv2.cvtColor(np.zeros((1, 1, 3), np.uint8), cv2.COLOR_BGR2LAB)
+-        self.target = float(self.declare_parameter('target_speed_mps', 3.4).value)
++        self.speed_setting = SpeedSetting(self, 'target_speed_mps', 6.)
++        self.target = self.speed_setting.initial
+         hz = self.declare_parameter('planning_hz', 15.0).value
+         if not math.isfinite(hz) or not 5. <= hz <= 15.:
+             raise ValueError('planning_hz must be in [5, 15]')
+@@ -44,8 +48,10 @@ class DriverNode(Node):
+         self.feedback = Feedback()
+         self.lock = Lock()
+         self.telemetry = MutuallyExclusiveCallbackGroup()
++        self.planning_callbacks = MutuallyExclusiveCallbackGroup()
+         self.restart_services = MutuallyExclusiveCallbackGroup()
+         self.restart_requested = Event()
++        self.speed_update_requested = Event()
+         self.planning_state = Lock()
+         self.reset_driver()
+         self.output = self.create_publisher(TwistStamped, '/concept/auto_cmd', 1)
+@@ -55,11 +61,10 @@ class DriverNode(Node):
+         self.onboard_camera = self.declare_parameter('onboard_camera', False).value
+         self.add_on_set_parameters_callback(self.update_parameters)
+         if not self.onboard_camera:
+-            self.create_subscription(String, '/concept/perception/frame', self.frame, 1)
++            self.create_subscription(String, '/concept/perception/frame', self.frame, 1, callback_group=self.planning_callbacks)
+         self.create_service(Trigger, '~/restart', self.restart, callback_group=self.restart_services)
+-        # The default mutually exclusive group keeps the snapshot consistent
+-        # with one completed frame, while feedback still uses its own group.
+-        self.create_service(Trigger, '~/lap_map', self.lap_map)
++        # Leave the default group available for the built-in ROS parameter services.
++        self.create_service(Trigger, '~/lap_map', self.lap_map, callback_group=self.planning_callbacks)
+ 
+     def reset_driver(self):
+         self.driver = Drive(self.target)
+@@ -115,12 +120,19 @@ class DriverNode(Node):
+ 
+     def update_parameters(self, parameters):
+         for p in parameters:
+-            if p.name in ('planning_hz','onboard_camera'):
++            if p.name in ('planning_hz','onboard_camera','speed_settings_directory'):
+                 return SetParametersResult(successful=False, reason='Set %s when launching the driver' % p.name)
++        for p in parameters:
+             if p.name == 'target_speed_mps':
+-                if p.type_ != p.Type.DOUBLE or not math.isfinite(p.value) or not 0. < p.value <= 6.:
+-                    return SetParametersResult(successful=False, reason='target_speed_mps must be a double in (0,6]')
+-                self.target = p.value
++                self.speed_update_requested.set()
++                try:
++                    with self.planning_state:
++                        self.speed_setting.save(p.value)
++                        self.target = p.value
++                except (OSError, ValueError) as exc:
++                    return SetParametersResult(successful=False, reason=str(exc))
++                finally:
++                    self.speed_update_requested.clear()
+         return SetParametersResult(successful=True)
+ 
+     def state(self, message):
+@@ -143,18 +155,18 @@ class DriverNode(Node):
+         except (KeyError, TypeError, ValueError):
+             return
+ 
+-    def camera_frame(self, stamp, frame_id, profile, bgr, road, lane, det):
++    def camera_frame(self, stamp, frame_id, profile, bgr, road, lane, det, timing_ms=None):
+         ns = stamp.sec * 1_000_000_000 + stamp.nanosec
+-        self.process_frame(local=(ns, frame_id, profile, dict(det, bgr=bgr, road=road, lane=lane)))
++        self.process_frame(local=(ns, frame_id, profile, dict(det, bgr=bgr, road=road, lane=lane), timing_ms))
+ 
+     def frame(self, message):
+         self.process_frame(message=message)
+ 
+     def process_frame(self, message=None, local=None):
+-        if self.restart_requested.is_set():
++        if self.restart_requested.is_set() or self.speed_update_requested.is_set():
+             return
+         with self.planning_state:
+-            if not self.restart_requested.is_set():
++            if not self.restart_requested.is_set() and not self.speed_update_requested.is_set():
+                 self.plan_frame(message, local)
+ 
+     def plan_frame(self, message, local):
+@@ -169,7 +181,9 @@ class DriverNode(Node):
+             if local is None:
+                 packet, ns, optical_frame, profile = parse_frame_header(message.data)
+             else:
+-                ns, optical_frame, profile, f = local
++                ns, optical_frame, profile, f, timing_ms = local
++                if timing_ms is not None:
++                    decision['camera_timing_ms'] = timing_ms
+             capture = ns / 1e9
+             decision.update(stamp=stamp(ns), geometry_profile=profile)
+             age = (now() - ns) / 1e9
+@@ -207,7 +221,9 @@ class DriverNode(Node):
+                 self.first_ns = ns
+             native = native_sensor(sample, (ns-self.first_ns)/1e9)
+             try:
+-                result = self.driver.step(f['bgr'], f['road'], f['lane'], det, native)
++                physical = profile in (HONDA, CALIBRATED)
++                with motor_profile(physical):
++                    result = self.driver.step(f['bgr'], f['road'], f['lane'], det, native)
+             except Exception:
+                 # A failure after partially updating temporal maps requires a common new epoch.
+                 self.locked_reason = 'incomplete planner step; pause the gate and restart the driver'
+@@ -216,7 +232,7 @@ class DriverNode(Node):
+             self.last_ns = ns
+             periods = (ns - self.first_ns + CAPTURE_JITTER_NS) // self.period_ns + 1
+             self.next_ns = self.first_ns + periods * self.period_ns
+-            cmd = ros_command(result.pop('command_native'))
++            cmd = ros_command(result.pop('command_native'), physical=physical)
+             decision.update(result, command=cmd, status='ok', planner_reason=result.get('reason', ''))
+             if profile not in (CALIBRATED, HONDA) and not (
+                     profile == UNITY and self.get_parameter('use_sim_time').value):
+@@ -254,14 +270,23 @@ def main(args=None):
+             from concept_yolop.node import CameraNode
+             # Planning, map snapshots and resets share one mutually exclusive group.
+             # Telemetry and restart can run while a frame owns planning state.
+-            camera = CameraNode(node.camera_frame, node.default_callback_group)
++            def on_image(*frame):
++                node.camera_frame(*frame, timing_ms=camera.frame_timing_ms)
++            camera = CameraNode(on_image, node.planning_callbacks)
+             executor.add_node(camera)
++            # Torch and the ROS graph live for the process lifetime. Repeated
++            # full-heap scans of these objects stalled planning on the Jetson.
++            # Future frame data and every subsequently created driver remain
++            # in the normal cyclic collector, including across panel resets.
++            gc.collect()
++            gc.freeze()
+         executor.spin()
+     except KeyboardInterrupt:
+         pass
+     finally:
+         executor.shutdown()
+         if camera is not None:
++            gc.unfreeze()
+             camera.destroy_node()
+         node.destroy_node()
+         if rclpy.ok():
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/transport.py b/vehicle_concept/src/concept_drive/concept_drive/transport.py
+index b13fd05..2b37c99 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/transport.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/transport.py
+@@ -30,8 +30,14 @@ def native_sensor(sample, relative_capture):
+                 gyro=-sample['gyro'], wheelRadius=sample['wheelRadius'], source=sample['source'])
+ 
+ 
+-def ros_command(native):
+-    return dict(linear_x_mps=float(native[0]), angular_z_radps=-float(native[1]))
++def ros_command(native, *, physical=False):
++    speed, steer = map(float, native)
++    if not math.isfinite(speed) or not math.isfinite(steer):
++        raise ValueError('non-finite planner command')
++    # In the checked rollout a zero-drive action brakes: its residual steering
++    # contributes no powered yaw. The real differential drive would pivot.
++    yaw = 0. if physical and speed == 0. else -steer
++    return dict(linear_x_mps=speed, angular_z_radps=yaw)
+ 
+ 
+ def stamp(ns):
+diff --git a/vehicle_concept/src/concept_drive/package.xml b/vehicle_concept/src/concept_drive/package.xml
+index 9d2a969..408728e 100644
+--- a/vehicle_concept/src/concept_drive/package.xml
++++ b/vehicle_concept/src/concept_drive/package.xml
+@@ -7,6 +7,8 @@
+   <license>AGPL-3.0-only</license>
+   <buildtool_depend>ament_python</buildtool_depend>
+   <exec_depend>concept_candidates</exec_depend>
++  <exec_depend>concept_control_gate</exec_depend>
++  <exec_depend>concept_feasibility</exec_depend>
+   <exec_depend>concept_obstacles</exec_depend>
+   <exec_depend>concept_ranker</exec_depend>
+   <exec_depend>concept_road</exec_depend>
+diff --git a/vehicle_concept/src/concept_drive/test/test_frozen_driver.py b/vehicle_concept/src/concept_drive/test/test_frozen_driver.py
+index 3a202b4..e40f566 100644
+--- a/vehicle_concept/src/concept_drive/test/test_frozen_driver.py
++++ b/vehicle_concept/src/concept_drive/test/test_frozen_driver.py
+@@ -35,6 +35,21 @@ def test_five_archived_frames_through_real_perception_wire():
+         json.dumps(result, allow_nan=False)
+ 
+ 
++@pytest.mark.parametrize("speed,steer,expected_yaw", [
++    (0., .55, 0.), (0., -.17, 0.), (0., 0., 0.),
++    (-.2, 0., 0.), (-.2, .12, -.12), (1., -.4, .4),
++])
++def test_physical_release_matches_unpowered_planner_action(speed, steer, expected_yaw):
++    assert ros_command((speed, steer), physical=True) == dict(
++        linear_x_mps=speed, angular_z_radps=expected_yaw)
++    assert ros_command((speed, steer))['angular_z_radps'] == -steer
++
++
++def test_physical_release_rejects_invalid_steering():
++    with pytest.raises(ValueError, match='non-finite'):
++        ros_command((0., float('nan')), physical=True)
++
++
+ def test_feedback_only_consumes_causal_valid_measurements():
+     feedback = Feedback()
+     for t in [4.0, 4.15]:
+diff --git a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+index 24ada6b..969cc5f 100644
+--- a/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
++++ b/vehicle_concept/src/concept_drive/tools/ros_roundtrip.py
+@@ -29,7 +29,8 @@ def main():
+     os.environ.setdefault('ROS_DOMAIN_ID', '172')
+     if os.environ['ROS_DOMAIN_ID'] == '0':
+         raise ValueError('Select a dedicated local test domain')
+-    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=true'])
++    # The archived starting frame and expected action were recorded at 3.4 m/s.
++    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=true', '-p', 'target_speed_mps:=3.4'])
+     driver = DriverNode()
+     peer = Node('concept_driver_replay_probe')
+     executor = SingleThreadedExecutor()
+@@ -157,8 +158,20 @@ def main():
+         sensor['leftRpm'] = sensor['rightRpm'] = 0
+         send_input(HONDA, 17, direct=True)
+         assert decisions[0]['status'] == 'blocked' and len(commands) == 5
++        req = restart.call_async(Trigger.Request())
++        until(req.done)
++        assert req.result().success
++        driver.driver.step = lambda *_: dict(command_native=[0., .55], reason='checked_reverse_release')
++        decisions.clear()
++        sensor['rpm_encoding'] = 'signed_le_int32'
++        send_input(HONDA, 18, direct=True)
++        until(lambda: len(commands) == 6)
++        assert decisions[0]['status'] == 'ok'
++        assert commands[-1].header.stamp.sec == 18
++        assert commands[-1].twist.linear.x == commands[-1].twist.angular.z == 0.
++        assert decisions[0]['command'] == dict(linear_x_mps=0., angular_z_radps=0.)
+         print('DDS verified command signs, capture stamp, selection, speed cap, restart, '
+-              'projection interlock, Honda direct-frame parity, image-gap restart and signed reverse publication.')
++              'projection interlock, Honda direct-frame parity, image-gap restart and signed reverse publication and full-zero braking.')
+     finally:
+         peer.destroy_node()
+         driver.destroy_node()
+diff --git a/vehicle_concept/src/concept_feasibility/concept_feasibility/_motion.pyx b/vehicle_concept/src/concept_feasibility/concept_feasibility/_motion.pyx
+index 8cd3784..39524b5 100644
+--- a/vehicle_concept/src/concept_feasibility/concept_feasibility/_motion.pyx
++++ b/vehicle_concept/src/concept_feasibility/concept_feasibility/_motion.pyx
+@@ -7,19 +7,33 @@ cdef inline double sign(double v) nogil except? -1e300:
+     return (v>0)-(v<0)
+ 
+ @cython.cdivision(True)
+-cdef inline int encoded(double v, double steer, double *common, double *ratio) nogil except -1:
+-    cdef double w = -<double><float>steer
++cdef inline int encoded(double v, double steer, bint physical, double *common, double *ratio) nogil except -1:
++    cdef double w = -steer if physical else -<double><float>steer
+     cdef double limit, gain, offset, bias, bounded, ros, right, left
+-    v=<double><float>v
++    if not physical:
++        v=<double><float>v
+     if w>=0:
+         limit=1.53908994;gain=3.15496243;offset=3.36664054;bias=-.0621119
+     else:
+         limit=1.68283261;gain=2.91627673;offset=-3.22124235;bias=1.6954783
+     bounded=max(-bias+1e-6,min(limit-bias-1e-6,w))
+-    ros=offset-log(limit/(bounded+bias)-1)/gain
++    if physical:
++        ros=offset-(1./gain)*log(limit/(bounded+bias)-1)
++        if fabs(w)<=1e-9:
++            ros=0.
++            if fabs(v)<=1e-9:
++                v=0.
++    else:
++        ros=offset-log(limit/(bounded+bias)-1)/gain
+     right=v/.127+.6/.254*ros;left=v/.127-.6/.254*ros
+-    right=rint(sign(right)*(fabs(right)/.834+2.76)*(60/(2*3.141592653589793)*1.1))
+-    left=rint(sign(left)*(fabs(left)/.844+2.81)*(60/(2*3.141592653589793)*1.1))
++    right=sign(right)*(fabs(right)/.834+2.76)
++    left=sign(left)*(fabs(left)/.844+2.81)
++    if physical:
++        right=rint(right*(60/(2*3.141592653589793))*1.1)
++        left=rint(left*(60/(2*3.141592653589793))*1.1)
++    else:
++        right=rint(right*(60/(2*3.141592653589793)*1.1))
++        left=rint(left*(60/(2*3.141592653589793)*1.1))
+     common[0]=(right+left)*.5
+     ratio[0]=(right-left)/common[0] if fabs(common[0])>1 else 0.
+     return 0
+@@ -36,7 +50,7 @@ cdef inline double response(double common,double ratio,const double[:] p) nogil
+ @cython.wraparound(False)
+ @cython.cdivision(True)
+ def advance(const double[:] speed,const double[:] yaw,const double[:] drive,const double[:] steer,
+-            double dt,const double[:] age,const double[:] pv,const double[:] pw,double delay,double braking):
++            double dt,const double[:] age,const double[:] pv,const double[:] pw,double delay,double braking,bint physical=False):
+     cdef Py_ssize_t n=drive.shape[0],i
+     if speed.shape[0]!=n or yaw.shape[0]!=n or steer.shape[0]!=n or age.shape[0]!=n or pv.shape[0]!=6 or pw.shape[0]!=6:
+         raise ValueError("invalid motor trajectory batch")
+@@ -46,7 +60,7 @@ def advance(const double[:] speed,const double[:] yaw,const double[:] drive,cons
+     with nogil:
+         for i in range(n):
+             if drive[i]>0:
+-                encoded(drive[i],steer[i],&common,&ratio)
++                encoded(drive[i],steer[i],physical,&common,&ratio)
+                 vg=max(0.,response(common,ratio,pv));wg=response(common,ratio,pw)
+                 result[0,i]=vg+(speed[i]-vg)*decay_v
+                 result[1,i]=wg+(yaw[i]-wg)*decay_w
+@@ -112,7 +126,7 @@ def closest(const double[:] commands,const double[:] predicted,const long long[:
+ @cython.wraparound(False)
+ @cython.cdivision(True)
+ def integrate(const double[:,::1] initial, const double[:,:,:] controls, double dt,
+-              const double[:] pv, const double[:] pw, double delay, double braking):
++              const double[:] pv, const double[:] pw, double delay, double braking,bint physical=False):
+     """Integrate the full checked action sequence without crossing the Python boundary per 50 ms step.
+ 
+     State columns are forward, right, heading, speed, gyro, distance, turn and brake age.
+@@ -130,7 +144,7 @@ def integrate(const double[:,::1] initial, const double[:,:,:] controls, double
+             for i in range(n):
+                 speed=out[t,i,3];yaw=out[t,i,4];age=out[t,i,7]
+                 if controls[t,i,0]>0:
+-                    encoded(controls[t,i,0],controls[t,i,1],&common,&ratio)
++                    encoded(controls[t,i,0],controls[t,i,1],physical,&common,&ratio)
+                     vg=max(0.,response(common,ratio,pv));wg=response(common,ratio,pw)
+                     velocity=vg+(speed-vg)*decay_v;angular=wg+(yaw-wg)*decay_w
+                     elapsed=0.
+diff --git a/vehicle_concept/src/concept_feasibility/concept_feasibility/response61515.py b/vehicle_concept/src/concept_feasibility/concept_feasibility/response61515.py
+index 0a2f9f5..c0ebec9 100644
+--- a/vehicle_concept/src/concept_feasibility/concept_feasibility/response61515.py
++++ b/vehicle_concept/src/concept_feasibility/concept_feasibility/response61515.py
+@@ -2,6 +2,8 @@
+ 
+ import json
+ 
++from contextlib import contextmanager
++from contextvars import ContextVar
+ from functools import lru_cache
+ 
+ from pathlib import Path
+@@ -21,46 +23,76 @@ _SPEED = np.asarray(MODEL['speed']) if MODEL else None
+ _YAW = np.asarray(MODEL['yaw']) if MODEL else None
+ 
+ 
+-def can_command(speed_command,yaw_command):
+-    """Installed Archived1030 interface, including Unity float32 and rounding."""
+-    v,w=np.broadcast_arrays(np.asarray(speed_command,dtype=np.float32).astype(float),
+-                            -np.asarray(yaw_command,dtype=np.float32).astype(float))
++# Each driver callback selects its converter. Historical replay uses the
++# Archived1030 transfer, while field rollouts use the actual car's transfer.
++_physical_motor = ContextVar('physical_motor', default=False)
++physical_motor_enabled = _physical_motor.get
++
++
++@contextmanager
++def motor_profile(physical):
++    token = _physical_motor.set(physical)
++    try:
++        yield
++    finally:
++        _physical_motor.reset(token)
++
++
++def can_command(speed_command,yaw_command,physical=False):
++    """Right/left RPM targets under the selected motor conversion."""
++    dtype=float if physical else np.float32
++    v,w=np.broadcast_arrays(np.asarray(speed_command,dtype=dtype).astype(float),
++                            -np.asarray(yaw_command,dtype=dtype).astype(float))
+     pos=w>=0
+     limit=np.where(pos,1.53908994,1.68283261)
+     gain=np.where(pos,3.15496243,2.91627673)
+     offset=np.where(pos,3.36664054,-3.22124235)
+     bias=np.where(pos,-.0621119,1.6954783)
+     bounded=np.clip(w,-bias+1e-6,limit-bias-1e-6)
+-    ros=offset-np.log(limit/(bounded+bias)-1)/gain
++    log_term=np.log(limit/(bounded+bias)-1)
++    if physical:
++        # Concept releases zero both axes before the real motor conversion.
++        # The installed motor bypasses its asymmetric steering fits at zero.
++        ros=offset-(1./gain)*log_term
++        ros=np.where((v==0.) | (abs(w)<=1e-9), 0., ros)
++        v=np.where((abs(v)<=1e-9) & (abs(w)<=1e-9), 0., v)
++    else:
++        ros=offset-log_term/gain
+     right,left=v/.127+.6/.254*ros,v/.127-.6/.254*ros
+     right=np.sign(right)*(abs(right)/.834+2.76)
+     left=np.sign(left)*(abs(left)/.844+2.81)
++    if physical:
++        return np.rint(right*(60/(2*np.pi))*1.1),np.rint(left*(60/(2*np.pi))*1.1)
+     factor=60/(2*np.pi)*1.1
+     return np.rint(right*factor),np.rint(left*factor)
+ 
+-def features(speed_command,yaw_command,knot,saturation):
+-    right,left=can_command(speed_command,yaw_command)
++def features(speed_command,yaw_command,knot,saturation,physical=None):
++    if physical is None:
++        physical=physical_motor_enabled()
++    right,left=can_command(speed_command,yaw_command,physical)
+     common=(right+left)*.5
+     ratio=np.divide(right-left,common,out=np.zeros_like(common),where=abs(common)>1)
+     offset=np.clip(ratio,-saturation,saturation)-knot
+     return np.stack([common/100,common/100*np.minimum(offset,0),
+                      common/100*np.maximum(offset,0)],axis=-1)
+ 
+-def target(speed_command,yaw_command,parameters):
++def target(speed_command,yaw_command,parameters,physical=None):
+     # tau, three gains, hinge location, saturation. Units are stored in JSON.
+-    return features(speed_command,yaw_command,parameters[4],parameters[5])@np.asarray(parameters[1:4])
++    return features(speed_command,yaw_command,parameters[4],parameters[5],physical)@np.asarray(parameters[1:4])
+ 
+ @lru_cache(maxsize=32)
+-def reachable_commands(speed_command):
++def reachable_commands(speed_command,physical=False):
+     """All intervals of constant integer CAN, derived from encoding boundaries.
+ 
+     This is the actuator's finite reachable set, not additional road paths or
+     an arbitrary denser steering grid. ArchivedYaw has a real discontinuity at
+     zero; the strongest turn need not be the largest absolute input command.
+     """
+-    v=float(np.float32(speed_command));points=[-1.55,0.,1.55]
++    v=float(speed_command if physical else np.float32(speed_command));points=[-1.55,0.,1.55]
++    if physical:
++        points.extend([-1e-9,1e-9])
+     probes=np.array([-1.55,-1e-7,0.,1e-7,1.55])
+-    extrema=can_command(v,probes)
++    extrema=can_command(v,probes,physical)
+     for side,(gain,deadband,direction) in enumerate([(.834,2.76,1),(.844,2.81,-1)]):
+         # CAN changes at n+.5, or when the wheel angular input crosses zero.
+         extrema_side=extrema[side]
+@@ -88,13 +120,13 @@ def reachable_commands(speed_command):
+     return candidates[order]
+ 
+ @lru_cache(maxsize=32)
+-def reachable_response(speed,parameters):
+-    commands=reachable_commands(speed)
+-    return commands,target(speed,commands,parameters)
++def reachable_response(speed,parameters,physical=False):
++    commands=reachable_commands(speed,physical)
++    return commands,target(speed,commands,parameters,physical)
+ 
+ @lru_cache(maxsize=32)
+-def response_intervals(speed,parameters):
+-    commands,values=reachable_response(speed,parameters)
++def response_intervals(speed,parameters,physical=False):
++    commands,values=reachable_response(speed,parameters,physical)
+     order=np.argsort(commands)
+     commands,values=commands[order],values[order]
+     starts=np.r_[0,np.flatnonzero(values[1:]!=values[:-1])+1,len(values)].astype(np.int64)
+@@ -114,11 +146,13 @@ def inverse_yaw(desired,speed_command,lower=-1.55,upper=1.55,current_yaw=None,dt
+         lo_flat, hi_flat = lower.ravel(), upper.ravel()
+         endpoints = target(np.concatenate((flat_q, flat_q)), np.concatenate((lo_flat, hi_flat)), MODEL['yaw'])
+         all_lo, all_hi = np.split(endpoints, 2)
++    physical=physical_motor_enabled()
+     for speed in np.unique(flat_q[flat_q>0]):
+         active=flat_q==speed;lo,hi=lower.ravel()[active],upper.ravel()[active]
+-        commands,reachable=reachable_response(float(np.float32(speed)),tuple(MODEL['yaw']))
++        model_speed=float(speed if physical else np.float32(speed))
++        commands,reachable=reachable_response(model_speed,tuple(MODEL['yaw']),physical)
+         if _motion is not None:
+-            intervals=response_intervals(float(np.float32(speed)),tuple(MODEL['yaw']))
++            intervals=response_intervals(model_speed,tuple(MODEL['yaw']),physical)
+             result[active] = _motion.closest(*intervals, flat_d[active], lo, hi,
+                                              all_lo[active], all_hi[active])
+             continue
+@@ -139,7 +173,7 @@ def advance(speed,yaw,speed_command,yaw_command,dt,zero_age):
+         age = np.broadcast_to(zero_age, q.shape)
+         return _motion.advance(np.asarray(speed, float), np.asarray(yaw, float), np.asarray(q, float),
+                                np.asarray(u, float), dt, np.asarray(age, float), _SPEED, _YAW,
+-                               brake['delay'], brake['deceleration'])
++                               brake['delay'], brake['deceleration'], physical_motor_enabled())
+     velocity_target=np.maximum(0,target(q,u,pv))
+     positive=velocity_target+(speed-velocity_target)*np.exp(-dt/pv[0])
+     active=np.maximum(0,zero_age+dt-brake['delay'])-np.maximum(0,zero_age-brake['delay'])
+diff --git a/vehicle_concept/src/concept_feasibility/concept_feasibility/reverse_model617.py b/vehicle_concept/src/concept_feasibility/concept_feasibility/reverse_model617.py
+index 265feff..e87e3fd 100644
+--- a/vehicle_concept/src/concept_feasibility/concept_feasibility/reverse_model617.py
++++ b/vehicle_concept/src/concept_feasibility/concept_feasibility/reverse_model617.py
+@@ -1,21 +1,30 @@
+ """Runtime source extracted from the accepted V6.26 freeze: experiments/v617_regression/reverse_model617.py. """
+ 
++from functools import lru_cache
+ import json
+ 
+ from pathlib import Path
+ 
+ import numpy as np
+ 
+-from concept_feasibility.response61515 import features, MODEL
++from concept_feasibility.response61515 import features, MODEL, physical_motor_enabled
+ 
+ from concept_feasibility.reverse_response import step as original
+ 
+ DATA=json.loads(Path(__file__).with_suffix('.json').read_bytes())
+ 
++@lru_cache(maxsize=32)
++def _reverse_targets(drive, steer, dt, physical):
++    # A powered interval holds one checked speed and steering request.
++    # Its fitted targets and decay factors are independent of vehicle state.
++    f = features(drive, steer, MODEL['yaw'][4], MODEL['yaw'][5], physical=physical)
++    v, w = DATA['models']['v'], DATA['models']['w']
++    return float(f @ np.asarray(v[1:])), float(f @ np.asarray(w[1:])), np.exp(-dt/v[0]), np.exp(-dt/w[0])
++
++
+ def step(speed,yaw,drive,steer,dt,zero_age):
+     if drive>=0:return original(speed,yaw,drive,steer,dt,zero_age)
+     if drive!=DATA['action_speed'] or not DATA['steer_min']-1e-8<=steer<=DATA['steer_max']+1e-8:
+         raise ValueError('Reverse action outside validated simulator range')
+-    f=features(drive,steer,MODEL['yaw'][4],MODEL['yaw'][5]);v=DATA['models']['v'];w=DATA['models']['w']
+-    vtarget=float(f@np.asarray(v[1:]));wtarget=float(f@np.asarray(w[1:]))
+-    return vtarget+(speed-vtarget)*np.exp(-dt/v[0]),wtarget+(yaw-wtarget)*np.exp(-dt/w[0]),0.
++    vtarget, wtarget, vdecay, wdecay = _reverse_targets(drive, steer, dt, physical_motor_enabled())
++    return vtarget + (speed-vtarget)*vdecay, wtarget + (yaw-wtarget)*wdecay, 0.
+diff --git a/vehicle_concept/src/concept_feasibility/test/test_native_equivalence.py b/vehicle_concept/src/concept_feasibility/test/test_native_equivalence.py
+index 219a47c..5cb8d79 100644
+--- a/vehicle_concept/src/concept_feasibility/test/test_native_equivalence.py
++++ b/vehicle_concept/src/concept_feasibility/test/test_native_equivalence.py
+@@ -6,7 +6,13 @@ from concept_feasibility.geometry import road_clearance
+ from concept_road.onboard625 import tread_clearance
+ 
+ 
+-def test_native_integer_steering_search_matches_all_representatives_and_endpoints(monkeypatch):
++@pytest.mark.parametrize('physical', [False, True])
++def test_native_integer_steering_search_matches_all_representatives_and_endpoints(monkeypatch, physical):
++    with response61515.motor_profile(physical):
++        check_integer_steering_search(monkeypatch)
++
++
++def check_integer_steering_search(monkeypatch):
+     module = pytest.importorskip('concept_feasibility._motion')
+     rng = np.random.default_rng(626)
+     for pace in (.2,1.,2.4,3.4,5.99):
+@@ -24,6 +30,39 @@ def test_native_integer_steering_search_matches_all_representatives_and_endpoint
+         np.testing.assert_array_equal(response61515.inverse_yaw(desired,speed,lower,upper,current),expected)
+ 
+ 
++def test_field_motor_exact_straight_and_zero_drive_release():
++    speed = np.array([-.2, .2, -.2, .2, 0., 0.])
++    steer = np.array([0., 0., 1e-9, -1e-9, .55, -.17])
++    right, left = response61515.can_command(speed, steer, physical=True)
++    for wheel in (right, left):
++        np.testing.assert_array_equal(wheel, [-49, 49, -49, 49, 0, 0])
++    legacy = response61515.can_command(speed, steer)
++    assert legacy[0][0] != right[0] and legacy[1][0] != left[0]
++
++
++def test_field_native_rollouts_match_reference_at_the_steering_discontinuity(monkeypatch):
++    module = pytest.importorskip('concept_feasibility._motion')
++    speed = np.array([1., .8, .2, .2, .2, .2])
++    steer = np.array([0., 1e-9, -1e-9, 1.1e-9, -1.1e-9, .17])
++    stopped = np.zeros_like(speed)
++    model = response61515.MODEL
++
++    with response61515.motor_profile(True):
++        monkeypatch.setattr(response61515, '_motion', None)
++        expected = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
++        monkeypatch.setattr(response61515, '_motion', module)
++        calculated = response61515.advance(stopped, stopped, speed, steer, .05, stopped)
++        np.testing.assert_allclose(calculated, expected, rtol=0, atol=1e-12)
++        controls = np.stack((speed,steer), axis=-1)[None]
++        state = module.integrate(np.zeros((len(speed),8)), controls, .05,
++                                 np.array(model['speed']), np.array(model['yaw']),
++                                 model['stop']['delay'], model['stop']['deceleration'],True)
++        np.testing.assert_allclose(state[1,:,3:5].T, expected[:2], rtol=0, atol=1e-12)
++        np.testing.assert_array_equal(
++            response61515.inverse_yaw(stopped,speed,0.,0.), stopped)
++    assert not response61515.physical_motor_enabled()
++
++
+ def test_compiled_tyre_contacts_include_exact_road_end_and_inner_paint():
+     pytest.importorskip('concept_feasibility._tread')
+     station = np.linspace(-1.,13.,71)
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/main.py b/vehicle_concept/src/concept_panel/concept_panel/main.py
+index 04287fb..cc878c4 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/main.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/main.py
+@@ -117,7 +117,7 @@ def image_from_ros(msg):
+ 
+ class Controller:
+     def __init__(self, node, window):
+-        from rcl_interfaces.srv import SetParameters
++        from rcl_interfaces.srv import GetParameters, SetParameters
+         from rclpy.qos import qos_profile_sensor_data
+         from sensor_msgs.msg import Image
+         from std_msgs.msg import String
+@@ -135,6 +135,10 @@ class Controller:
+             ('target','/concept/drive/set_parameters',SetParameters),('limit','/concept/gate/set_parameters',SetParameters)]:
+             self.clients[key]=(node.create_client(kind,path),kind)
+         self.clients['disable']=self.clients['enable']
++        self.read_clients = {key: node.create_client(GetParameters, path + '/get_parameters') for key, path
++                             in (('target', '/concept/drive'), ('limit', '/concept/gate'))}
++        self.read_requests = {}
++        self.next_read = 0.
+         node.create_subscription(String,'/concept/gate/status',lambda m:self.message('门控',m),1)
+         node.create_subscription(String,'/concept/decision',lambda m:self.message('决策',m),1)
+         node.create_subscription(Image,'/concept/view/camera',self.camera,qos_profile_sensor_data)
+@@ -222,6 +226,9 @@ class Controller:
+             if key in ('target','limit'):
+                 ok=len(reply.results)==1 and reply.results[0].successful
+                 why=reply.results[0].reason if reply.results else '缺少参数结果'
++                if ok:
++                    self.window.confirmed_speeds[key] = self.pending.value
++                    self.next_read = 0.
+             else:
+                 ok,why=reply.success,reply.message
+             if key == 'restart' and ok:
+@@ -236,11 +243,36 @@ class Controller:
+         except Exception as exc:
+             self.finish('响应无效 · '+str(exc))
+ 
++    def read_speeds(self, steady):
++        from rcl_interfaces.msg import ParameterType
++        from rcl_interfaces.srv import GetParameters
++        if not self.window.settings_dialog.isVisible():
++            return
++        for key, (future, started) in list(self.read_requests.items()):
++            if future.done():
++                try:
++                    values = future.result().values
++                    if len(values) == 1 and values[0].type == ParameterType.PARAMETER_DOUBLE:
++                        self.window.parameter_reads[key] = (started, values[0].double_value)
++                except (RuntimeError, AttributeError):
++                    pass
++                del self.read_requests[key]
++            elif steady - started >= 2.:
++                future.cancel()
++                del self.read_requests[key]
++        if steady >= self.next_read:
++            self.next_read = steady + .75
++            for key, client in self.read_clients.items():
++                if key not in self.read_requests and client.service_is_ready():
++                    name = 'target_speed_mps' if key == 'target' else 'max_auto_speed_mps'
++                    self.read_requests[key] = (client.call_async(GetParameters.Request(names=[name])), steady)
++
+     def update(self):
+         self.recording.refresh()
+         self.poll()
+         now=self.ros()
+         steady=time.monotonic()
++        self.read_speeds(steady)
+         self.lap_map.refresh(steady)
+         age=self.window.gate.age(now,steady)
+         live=age is not None and age<=.5
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/window.py b/vehicle_concept/src/concept_panel/concept_panel/window.py
+index 7761209..d4c32cb 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -264,6 +264,9 @@ class Window(W.QWidget):
+         toolbar.addWidget(settings_button)
+         self.spins={}
+         self.readbacks={}
++        self.edited_speeds = set()
++        self.confirmed_speeds = {}
++        self.parameter_reads = {}
+         for key,text,maximum in [('target','目标速度',6.),('limit','自动驾驶限速',5.)]:
+             line=W.QHBoxLayout()
+             field=label(text)
+@@ -273,10 +276,12 @@ class Window(W.QWidget):
+             spin.setRange(.05,maximum)
+             spin.setSingleStep(.1)
+             spin.setSuffix(' m/s')
+-            spin.setValue(1.)
++            spin.setValue(4.)
++            spin.valueChanged.connect(lambda value, key=key: self.edited_speeds.add(key))
++            spin.lineEdit().textEdited.connect(lambda text, key=key: self.edited_speeds.add(key))
+             line.addWidget(spin)
+             self.spins[key]=spin
+-            btn=W.QPushButton('应用')
++            btn=W.QPushButton('保存')
+             btn.clicked.connect(lambda checked=False,key=key:self.request(key))
+             self.buttons[key]=btn
+             line.addWidget(btn)
+@@ -291,6 +296,9 @@ class Window(W.QWidget):
+         self.spins['limit'].setToolTip(limit_tip)
+         self.buttons['limit'].setToolTip(limit_tip)
+         settings.addWidget(label('修改限速后，需手动继续自动驾驶。','muted'))
++        self.speed_feedback = label('', 'muted')
++        self.speed_feedback.setWordWrap(True)
++        settings.addWidget(self.speed_feedback)
+         self.action_feedback=label('','muted')
+         self.action_feedback.setWordWrap(True)
+         stack.addWidget(self.action_feedback)
+@@ -332,6 +340,20 @@ class Window(W.QWidget):
+         if self.dispatch is not None:
+             self.dispatch(key,self.spins[key].value() if key in self.spins else None)
+ 
++    def show_speed(self, key, value):
++        self.readbacks[key].setText('当前 '+number(value, 2))
++        spin = self.spins[key]
++        spin.setEnabled(not self.busy and not self.offline)
++        if value is None:
++            return
++        if self.confirmed_speeds.get(key) == value:
++            self.confirmed_speeds.pop(key)
++            self.edited_speeds.discard(key)
++        if key not in self.edited_speeds:
++            previous = spin.blockSignals(True)
++            spin.setValue(value)
++            spin.blockSignals(previous)
++
+     def request_bag(self):
+         if self.bag_action and not self.offline:
+             self.bag_action()
+@@ -445,12 +467,18 @@ class Window(W.QWidget):
+         self.metrics['cmd'].setText(number(g.get('linear_mps')))
+         self.metrics['legal'].setText(f"{d['feasible_count']} / {len(d.get('candidates',[]))}" if 'feasible_count' in d else '—')
+         self.metrics['lag'].setText(number(da*1000,0) if da is not None else '—')
+-        self.readbacks['target'].setText('当前 '+number(d.get('target_speed_mps'),1))
+-        self.readbacks['limit'].setText('当前 '+number(g.get('max_auto_speed_mps'),1))
++        for key, feed, value in (('target', self.decision, d.get('target_speed_mps')),
++                                 ('limit', self.gate, g.get('max_auto_speed_mps'))):
++            if key in self.parameter_reads:
++                receipt, actual = self.parameter_reads[key]
++                if steady - receipt <= 2. and (value is None or receipt >= feed.received):
++                    value = actual
++            self.show_speed(key, value)
+         effective = d.get('effective_speed_mps') if live else None
+         self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
+                           if effective is not None else '规划按目标和限速中较低的值计算。')
+         self.action_feedback.setText(self.pending_text)
++        self.speed_feedback.setText(self.pending_text)
+         self.gap_notice.setVisible(self.image_gap())
+         for key,button in self.buttons.items():
+             ok=live and not self.busy and not self.offline
+diff --git a/vehicle_concept/src/concept_panel/test/test_panel.py b/vehicle_concept/src/concept_panel/test/test_panel.py
+index 71f698a..5843cab 100644
+--- a/vehicle_concept/src/concept_panel/test/test_panel.py
++++ b/vehicle_concept/src/concept_panel/test/test_panel.py
+@@ -198,3 +198,27 @@ def test_embedded_map_resets_on_restart_ack_and_discards_old_snapshot(monkeypatc
+     updates.refresh(.2)
+     assert panel.key == ('new', 2) and panel.save_button.isEnabled()
+     window.close()
++
++
++def test_speed_fields_follow_readbacks_without_discarding_edits(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w = Window()
++    spin = w.spins['target']
++    assert spin.value() == w.spins['limit'].value() == 4.
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.25
++    spin.setValue(2.75)
++    w.busy = True
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.75 and not spin.isEnabled()
++    w.confirmed_speeds['target'] = 2.75
++    w.busy = False
++    w.show_speed('target', 2.75)
++    w.show_speed('target', 3.)
++    assert spin.isEnabled() and spin.value() == 3.
++    assert w.readbacks['target'].text() == '当前 3.00'
++    w.close()
++    assert app
+diff --git a/vehicle_concept/src/concept_vehicle_state/concept_vehicle_state/core.py b/vehicle_concept/src/concept_vehicle_state/concept_vehicle_state/core.py
+index 2b19c87..52709cf 100644
+--- a/vehicle_concept/src/concept_vehicle_state/concept_vehicle_state/core.py
++++ b/vehicle_concept/src/concept_vehicle_state/concept_vehicle_state/core.py
+@@ -5,8 +5,14 @@ import math
+ from numbers import Integral
+ 
+ 
++# The 10:59 Jetson recording crosses 255 continuously and reaches 341 RPM.
++# Preserve the existing reverse envelope until wider reverse data is available.
++MIN_WHEEL_RPM = -255
++MAX_WHEEL_RPM = 341
++
++
+ def decode_honda_rpm(frame_id, data, dlc=8, is_rtr=False, is_extended=False, is_error=False):
+-    """Decode signed 0x711 RPM words, keeping the supported ±255 RPM envelope."""
++    """Decode signed 0x711 RPM words, within the supported field range."""
+     if type(frame_id) is bool or not isinstance(frame_id, Integral) or frame_id != 0x711:
+         raise ValueError('unsupported_can_id')
+     if any(type(flag) is not bool or flag for flag in (is_rtr, is_extended, is_error)):
+@@ -21,7 +27,7 @@ def decode_honda_rpm(frame_id, data, dlc=8, is_rtr=False, is_extended=False, is_
+         raise ValueError('invalid_can_data')
+     right = int.from_bytes(bytes(values[:4]), 'little', signed=True)
+     left = int.from_bytes(bytes(values[4:]), 'little', signed=True)
+-    if not (-255 <= left <= 255 and -255 <= right <= 255):
++    if not (MIN_WHEEL_RPM <= left <= MAX_WHEEL_RPM and MIN_WHEEL_RPM <= right <= MAX_WHEEL_RPM):
+         raise ValueError('unsupported_can_rpm_range')
+     return left, right
+ 
+diff --git a/vehicle_concept/src/concept_vehicle_state/test/test_feedback.py b/vehicle_concept/src/concept_vehicle_state/test/test_feedback.py
+index 51620a3..99b86cd 100644
+--- a/vehicle_concept/src/concept_vehicle_state/test/test_feedback.py
++++ b/vehicle_concept/src/concept_vehicle_state/test/test_feedback.py
+@@ -11,10 +11,10 @@ def test_can_order_causal_gyro_and_expiry():
+     assert data['t'] == 1.03 and not s.sample(1.5, 2.5)['valid']
+ 
+ 
+-def test_unknown_encoding_and_stale_measurement():
++def test_out_of_range_rpm_and_stale_measurement():
+     s = VehicleState()
+     s.gyro(1., 1., 1., 2.)
+-    s.wheels([9, 1, 0, 0, 7, 0, 0, 0], 1., 1., 2., frame_id=1809)
++    s.wheels([86, 1, 0, 0, 7, 0, 0, 0], 1., 1., 2., frame_id=1809)
+     assert s.sample(1., 2.)['leftRpm'] is None
+     s.wheels([9, 0, 0, 0, 7, 0, 0, 0], 1.01, 2., 3., frame_id=1809)
+     assert not s.sample(2., 3.)['valid']
+@@ -38,3 +38,15 @@ def test_signed_reverse_from_vehicle_recording():
+     data = s.sample(1.01, 2.01)
+     assert data['valid'] and data['rpm_encoding'] == 'signed_le_int32'
+     assert (data['leftRpm'], data['rightRpm']) == (-44, -41)
++
++
++def test_recorded_high_word_and_four_mps_cruise_feedback():
++    import struct
++    import pytest
++    from concept_vehicle_state.core import decode_honda_rpm
++
++    for right, left in ((253, 202), (256, 202), (341, 258), (301, 301), (258, 341)):
++        assert decode_honda_rpm(0x711, struct.pack('<ii', right, left)) == (left, right)
++    for right, left in ((342, 0), (0, 342), (-256, 0), (0, -256)):
++        with pytest.raises(ValueError, match='unsupported_can_rpm_range'):
++            decode_honda_rpm(0x711, struct.pack('<ii', right, left))
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/inference.py b/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
+index a453a79..4a63bfa 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/inference.py
+@@ -47,5 +47,7 @@ class Predictor:
+         frame = canonical_bgr(bgr)
+         rgb = frame[:, :, ::-1].transpose(2, 0, 1).copy()
+         road, lane, detections = self.model(torch.from_numpy(rgb).to(self.device).float() / 255)
+-        return (frame, road.cpu().numpy().astype(bool), lane.cpu().numpy().astype(bool),
++        # The two-class argmax returns int64. Move one byte per mask pixel
++        # across the device boundary and keep the original comparison and ties.
++        return (frame, road.bool().cpu().numpy(), lane.bool().cpu().numpy(),
+                 {k: v.cpu().numpy() for k, v in detections.items()})
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/node.py b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+index c51fd29..4846bb9 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/node.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+@@ -18,11 +18,14 @@ from .weights import default_path
+ CAMERA = '/aiformula_sensing/zed_node/left_image/undistorted'
+ FRAME = '/concept/perception/frame'
+ OVERLAY = '/concept/perception/overlay'
++ROAD_BLEND = (.57 * np.arange(256)[:, None, None] + .43 * np.array([218, 132, 42])).astype(np.uint8)
+ 
+ 
+ def draw_overlay(image, road, lane, det):
+     out = image.copy()
+-    out[road] = .57 * out[road] + .43 * np.array([218, 132, 42])
++    # Every uint8 channel has only 256 possible blends. Keep the original
++    # truncation while avoiding several float64 arrays on each camera frame.
++    cv2.copyTo(cv2.LUT(image, ROAD_BLEND), road.view(np.uint8), out)
+     out[lane] = (30, 143, 255)
+     for box, label, score in zip(det['boxes'], det['labels'], det['scores']):
+         if label == 91 and score >= .5:
+@@ -68,6 +71,8 @@ class CameraNode(Node):
+ 
+     def on_image(self, msg):
+         try:
++            received = self.get_clock().now().nanoseconds
++            start = time.monotonic_ns()
+             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+             matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+             if self.calibration and self.calibration.profile == HONDA and not matched:
+@@ -79,12 +84,20 @@ class CameraNode(Node):
+                 return
+             if matched:
+                 bgr = self.calibration.rectify(bgr)
++            prepared = time.monotonic_ns()
+             bgr, road, lane, det = self.predictor.predict(bgr)
++            inferred = time.monotonic_ns()
+             if matched:
+                 road, lane, det = self.calibration.restrict_predictions(road, lane, det)
+             stamp = msg.header.stamp
+             profile = self.calibration.profile if matched else UNVERIFIED
+             if self.frame_consumer is not None:
++                self.frame_timing_ms = {
++                    'capture_to_image_callback': (received - stamp.sec * 10**9 - stamp.nanosec) / 1e6,
++                    'decode_and_projection': (prepared - start) / 1e6,
++                    'inference': (inferred - prepared) / 1e6,
++                    'restrict_predictions': (time.monotonic_ns() - inferred) / 1e6,
++                }
+                 self.frame_consumer(stamp, msg.header.frame_id, profile, bgr, road, lane, det)
+             if self.frame_consumer is None or self.frames.get_subscription_count():
+                 wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det, profile)

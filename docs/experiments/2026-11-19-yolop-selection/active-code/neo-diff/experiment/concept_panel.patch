@@ -1,0 +1,1984 @@
+--- /dev/null
++++ b/concept_panel/concept_panel/__init__.py
+@@ -0,0 +1 @@
++
+--- /dev/null
++++ b/concept_panel/concept_panel/lap_map.py
+@@ -0,0 +1,205 @@
++"""Fixed overhead view of the driver's accumulated observations."""
++
++import base64
++import json
++import math
++import zlib
++
++import numpy as np
++
++from .qt import QtCore, QtGui, QtWidgets as W
++
++
++ROAD = [(0, 0, 0, 0), (61, 132, 176, 255), (63, 156, 132, 255), (166, 198, 216, 255)]
++PAINT = [(0, 0, 0, 0), (237, 132, 31, 255), (237, 132, 31, 255), (204, 125, 58, 180)]
++CONE, MOVING, OPENING = '#ca4f2b', '#8648a0', '#7452af'
++
++
++def unpack_snapshot(message):
++    data = json.loads(message)
++    if data.get('schema') != 'concept.lap-map.v1' or not 0 < data.get('cell_m', 0) <= 1.:
++        raise ValueError('不支持的地图格式')
++    for key, dtype in (('road', '<i4'), ('lines', '<i4'), ('track', '<f4')):
++        packed = base64.b64decode(data[key], validate=True)
++        try:
++            data[key] = np.frombuffer(zlib.decompress(packed), dtype=dtype).reshape(-1, 3)
++        except zlib.error as exc:
++            raise ValueError('地图压缩数据无效') from exc
++    if any(np.any((data[key][:, 2] < 1) | (data[key][:, 2] > 3)) for key in ('road', 'lines')):
++        raise ValueError('地图图层无效')
++    if len(data['pose']) != 3 or not np.isfinite(data['pose']).all() or not np.isfinite(data['track']).all():
++        raise ValueError('地图坐标无效')
++    return data
++
++
++class MapCanvas(W.QWidget):
++    def __init__(self):
++        super().__init__()
++        self.setMinimumSize(210, 160)
++        self.data = self.raster = None
++
++    def set_map(self, data):
++        self.data = data
++        cell = data['cell_m']
++        coords = np.vstack((data['road'][:, :2], data['lines'][:, :2]))
++        extras = np.asarray([[0., 0.], data['pose'][:2], *data['openings'],
++                             *(item['position'] for item in data['static'] + data['moving'])])
++        offsets = np.vstack((extras, data['track'][:, 1:3]))
++        extents = np.vstack((coords, np.floor(offsets / cell).astype(np.int32)))
++        low = extents.min(axis=0) - 5
++        shape = extents.max(axis=0) + 6 - low
++        stride = max(1, math.ceil(int(max(shape)) / 1200))
++        height, width = [math.ceil(int(n) / stride) for n in shape]
++        pixels = np.zeros((height, width, 4), np.uint8)
++        for key, palette in (('road', ROAD), ('lines', PAINT)):
++            cells = data[key]
++            z, x = ((cells[:, :2] - low) // stride).T
++            pixels[height - 1 - z, x] = np.asarray(palette, np.uint8)[cells[:, 2]]
++        self.raster = QtGui.QImage(pixels.data, width, height, width * 4,
++                                   QtGui.QImage.Format_RGBA8888).copy()
++        self.bounds = (*map(float, low * cell), height * stride * cell, width * stride * cell)
++        self.update()
++
++    def paintEvent(self, event):
++        painter = QtGui.QPainter(self)
++        painter.fillRect(self.rect(), QtGui.QColor('#fafbf8'))
++        painter.setRenderHint(QtGui.QPainter.Antialiasing)
++        if self.raster is None:
++            painter.setPen(QtGui.QColor('#52685e'))
++            painter.drawText(self.rect(), QtCore.Qt.AlignCenter, '等待行驶中的地图数据')
++            return
++        low_z, low_x, height, width = self.bounds
++        scale = min((self.width()-44)/width, (self.height()-44)/height)
++        left = (self.width() - width*scale) / 2
++        top = (self.height() - height*scale) / 2
++
++        def point(z, x):
++            return QtCore.QPointF(left + (x-low_x)*scale, top + (low_z+height-z)*scale)
++
++        painter.drawImage(QtCore.QRectF(left, top, width*scale, height*scale), self.raster)
++        data = self.data
++        track = data['track']
++        if len(track) > 1:
++            step = max(1, len(track)//5000)
++            painter.setPen(QtGui.QPen(QtGui.QColor('#25465b'), 1.3))
++            painter.drawPolyline(QtGui.QPolygonF([point(z, x) for _, z, x in track[::step]] + [point(*track[-1, 1:])]))
++        self.dot(painter, point(0., 0.), '#efcb60', 4.)
++        for location in data['openings']:
++            self.dot(painter, point(*location), OPENING, 4.)
++        for item in data['static']:
++            self.dot(painter, point(*item['position']), CONE, 4.7)
++        for item in data['moving']:
++            self.draw_moving(painter, item, point, data['track'][-1, 0] if len(track) else 0.)
++        self.draw_car(painter, point(*data['pose'][:2]), data['pose'][2])
++
++        metres = 10 if width > 45 else 5 if width > 18 else 1
++        y = self.height() - 13
++        painter.setPen(QtGui.QPen(QtGui.QColor('#243831'), 1.4))
++        painter.drawLine(QtCore.QLineF(13., y, 13.+metres*scale, y))
++        painter.drawText(QtCore.QPointF(13., y-4), f'{metres} m')
++
++    @staticmethod
++    def dot(painter, at, color, radius):
++        painter.setPen(QtGui.QPen(QtGui.QColor('#ffffff'), 1.2))
++        painter.setBrush(QtGui.QColor(color))
++        painter.drawEllipse(at, radius, radius)
++
++    @staticmethod
++    def draw_moving(painter, item, point, last_t):
++        color = QtGui.QColor(MOVING)
++        if last_t-item['time'] > 2.:
++            color.setAlpha(115)
++        painter.setPen(QtGui.QPen(color, 1.4))
++        painter.setBrush(QtCore.Qt.NoBrush)
++        phi = np.linspace(0., 2.*np.pi, 21)
++        unit = np.array([np.cos(phi), np.sin(phi)])
++        for estimate in item.get('ranges', []):
++            values, axes = np.linalg.eigh(estimate['covariance'])
++            samples = (axes @ (np.sqrt(np.maximum(values, 0.))[:, None] * unit)).T + estimate['center']
++            painter.drawPolygon(QtGui.QPolygonF([point(z, x) for z, x in samples]))
++        MapCanvas.dot(painter, point(*item['position']), color, 3.2)
++
++    @staticmethod
++    def draw_car(painter, at, yaw):
++        painter.save()
++        painter.translate(at)
++        painter.rotate(math.degrees(yaw))
++        painter.setPen(QtGui.QPen(QtGui.QColor('#ffffff'), 1.2))
++        painter.setBrush(QtGui.QColor('#122838'))
++        painter.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(0, -10), QtCore.QPointF(6, 7),
++                                            QtCore.QPointF(-6, 7)]))
++        painter.restore()
++
++
++class LapMapPanel(W.QFrame):
++    def __init__(self, parent):
++        super().__init__(parent)
++        self.setObjectName('card')
++        self.key = None
++        shell = W.QVBoxLayout(self)
++        shell.setContentsMargins(14, 9, 14, 9)
++        self.paper = W.QWidget()
++        self.paper.setStyleSheet('background: white')
++        layout = W.QVBoxLayout(self.paper)
++        layout.setContentsMargins(0, 0, 0, 0)
++        heading = W.QLabel('累计赛道地图')
++        heading.setObjectName('heading')
++        layout.addWidget(heading)
++        self.summary = W.QLabel('起点朝向为上')
++        self.summary.setWordWrap(True)
++        layout.addWidget(self.summary)
++        self.canvas = MapCanvas()
++        layout.addWidget(self.canvas, 1)
++        legend = W.QLabel(
++            '<span style="color:#3d84b0">■ 本车道</span>　<span style="color:#3f9c84">■ 邻道</span>　'
++            '<span style="color:#ed841f">━ 标线</span>　'
++            '<span style="color:#ca4f2b">● 静止桶</span>　<span style="color:#8648a0">○ 移动桶范围</span><br>'
++            '黄点为起点 · 三角为车辆 · 紫点为场内开口')
++        legend.setWordWrap(True)
++        layout.addWidget(legend)
++        shell.addWidget(self.paper, 1)
++        footer = W.QHBoxLayout()
++        self.connection = W.QLabel('等待地图服务')
++        self.connection.setWordWrap(True)
++        footer.addWidget(self.connection, 1)
++        self.save_button = W.QPushButton('保存 PNG…')
++        self.save_button.setEnabled(False)
++        self.save_button.clicked.connect(self.save)
++        footer.addWidget(self.save_button)
++        shell.addLayout(footer)
++
++    def clear_map(self):
++        self.key = None
++        self.canvas.data = self.canvas.raster = None
++        self.canvas.update()
++        self.summary.setText('起点朝向为上')
++        self.connection.setText('等待第一帧有效地图')
++        self.save_button.setEnabled(False)
++
++    def show_map(self, message):
++        data = unpack_snapshot(message)
++        key = data['session'], data['stamp']
++        if key != self.key:
++            self.canvas.set_map(data)
++            self.key = key
++            self.summary.setText(f"累计 {data['distance_m']:.1f} m · {len(data['road']):,} 个路面格"
++                                 f" · 静止桶 {len(data['static'])} · 移动桶 {len(data['moving'])}")
++            self.save_button.setEnabled(True)
++        self.connection.setText('实时累计 · 位置来自轮速和陀螺仪')
++
++    def save(self):
++        path, _ = W.QFileDialog.getSaveFileName(self, '保存累计赛道地图',
++                                                'concept-track.png', 'PNG (*.png)')
++        if path:
++            if not path.lower().endswith('.png'):
++                path += '.png'
++            # Keep text and map details readable when the embedded panel is narrow.
++            scale = max(1., 800 / self.paper.width())
++            pixmap = QtGui.QPixmap(math.ceil(self.paper.width() * scale),
++                                   math.ceil(self.paper.height() * scale))
++            pixmap.setDevicePixelRatio(scale)
++            self.paper.render(pixmap)
++            if pixmap.save(path, 'PNG'):
++                self.connection.setText('已保存 ' + path)
++            else:
++                W.QMessageBox.warning(self, '地图未保存', '无法写入这个 PNG 文件。')
+--- /dev/null
++++ b/concept_panel/concept_panel/main.py
+@@ -0,0 +1,334 @@
++"""ROS 2 Foxy panel. ROS callbacks and widgets share the Qt thread."""
++import json
++import signal
++import sys
++import time
++
++from .model import Action, stamp_seconds
++from .qt import QtCore, QtGui, QtWidgets
++from .window import MODE, STATUS, Window, reason
++
++LABELS={'enable':'启用电机输出','disable':'禁用电机输出','pause':'暂停自动驾驶',
++        'resume':'继续自动驾驶','restart':'重启驾驶节点','target':'目标速度','limit':'自动驾驶限速'}
++
++BAG_STATES = {
++    'idle': ('未录制', '开始录包', True, '#52685e'),
++    'starting': ('正在启动', '停止录包', True, '#8b630d'),
++    'recording': ('录制中', '停止录包', True, '#9f342e'),
++    'stopping': ('正在保存', '正在保存', False, '#8b630d'),
++    'saved': ('已保存', '开始录包', True, '#205944'),
++    'error': ('录制失败', '重新录包', True, '#9f342e'),
++}
++
++
++class RecordingControls:
++    def __init__(self, recorder, window):
++        self.recorder = recorder
++        self.window = window
++        self.last = None
++        window.bag_action = self.toggle
++        self.refresh()
++
++    def toggle(self):
++        state = self.recorder.status().state
++        if state in ('starting', 'recording'):
++            self.render(self.recorder.stop())
++        elif state in ('idle', 'saved', 'error'):
++            self.render(self.recorder.start())
++
++    def refresh(self):
++        self.render(self.recorder.status())
++
++    def render(self, snapshot):
++        if snapshot == self.last:
++            return
++        title, button, enabled, color = BAG_STATES[snapshot.state]
++        path = str(snapshot.path or self.recorder.root)
++        message = title
++        if snapshot.state == 'saved' and snapshot.messages is not None:
++            message += ' · {} 条消息'.format(snapshot.messages)
++        self.window.show_bag(message, path, button, enabled, color)
++        self.window.bag_status.setToolTip(snapshot.error or message)
++        if (self.last is None or self.last.state != snapshot.state) and snapshot.state != 'idle':
++            self.window.log_event('录包', message + ' · ' + (snapshot.error or path))
++        self.last = snapshot
++
++
++class LapMapUpdates:
++    def __init__(self, node, panel):
++        from std_srvs.srv import Trigger
++
++        self.panel = panel
++        self.client = node.create_client(Trigger, '/concept/drive/lap_map')
++        self.request = Trigger.Request
++        self.pending = None
++        self.sent_at = float('-inf')
++
++    def reset(self):
++        if self.pending is not None:
++            self.pending.cancel()
++            self.pending = None
++        self.sent_at = float('-inf')
++        self.panel.clear_map()
++
++    def refresh(self, steady):
++        if self.pending is not None:
++            if self.pending.done():
++                try:
++                    response = self.pending.result()
++                    if self.panel.isVisible():
++                        if response.success:
++                            self.panel.show_map(response.message)
++                        elif response.message == '等待第一帧有效地图':
++                            self.panel.clear_map()
++                        else:
++                            self.panel.connection.setText(response.message)
++                except (TypeError, ValueError, KeyError, RuntimeError):
++                    self.panel.connection.setText('地图读取失败 · 保留上次地图')
++                self.pending = None
++            elif steady-self.sent_at > 3.:
++                self.pending.cancel()
++                self.pending = None
++                self.panel.connection.setText('地图服务超时 · 保留上次地图')
++        if self.pending is not None or not self.panel.isVisible() or steady-self.sent_at < 1.:
++            return
++        self.sent_at = steady
++        if not self.client.service_is_ready():
++            self.panel.connection.setText('未连接地图服务')
++            return
++        try:
++            self.pending = self.client.call_async(self.request())
++        except RuntimeError:
++            self.panel.connection.setText('地图请求失败')
++
++
++def image_from_ros(msg):
++    encoding=msg.encoding.lower()
++    formats={'rgb8':(3,QtGui.QImage.Format_RGB888),'bgr8':(3,QtGui.QImage.Format_RGB888),
++             'rgba8':(4,QtGui.QImage.Format_RGBA8888),'mono8':(1,QtGui.QImage.Format_Grayscale8)}
++    if encoding not in formats:
++        raise ValueError('不支持的图像编码 '+encoding)
++    channels,fmt=formats[encoding]
++    if min(msg.width,msg.height)<=0 or msg.step<channels*msg.width or len(msg.data)<msg.step*msg.height:
++        raise ValueError('图像尺寸与缓冲区不符')
++    image=QtGui.QImage(bytes(msg.data),msg.width,msg.height,msg.step,fmt).copy()
++    return image.rgbSwapped() if encoding=='bgr8' else image
++
++
++class Controller:
++    def __init__(self, node, window):
++        from rcl_interfaces.srv import GetParameters, SetParameters
++        from rclpy.qos import qos_profile_sensor_data
++        from sensor_msgs.msg import Image
++        from std_msgs.msg import String
++        from std_srvs.srv import SetBool,Trigger
++        from .recorder import BagRecorder
++
++        self.node,self.window=node,window
++        self.recording = RecordingControls(BagRecorder(), window)
++        self.lap_map = LapMapUpdates(node, window.lap_map)
++        self.pending=self.future=None
++        self.clients={}
++        for key,path,kind in [
++            ('enable','/concept/gate/enable_output',SetBool),('pause','/concept/gate/pause',Trigger),
++            ('resume','/concept/gate/resume',Trigger),('restart','/concept/drive/restart',Trigger),
++            ('target','/concept/drive/set_parameters',SetParameters),('limit','/concept/gate/set_parameters',SetParameters)]:
++            self.clients[key]=(node.create_client(kind,path),kind)
++        self.clients['disable']=self.clients['enable']
++        self.read_clients = {key: node.create_client(GetParameters, path + '/get_parameters') for key, path
++                             in (('target', '/concept/drive'), ('limit', '/concept/gate'))}
++        self.read_requests = {}
++        self.next_read = 0.
++        node.create_subscription(String,'/concept/gate/status',lambda m:self.message('门控',m),1)
++        node.create_subscription(String,'/concept/decision',lambda m:self.message('决策',m),1)
++        node.create_subscription(Image,'/concept/view/camera',self.camera,qos_profile_sensor_data)
++        window.dispatch=self.start
++        self.previous_live=None
++
++    def ros(self):
++        return self.node.get_clock().now().nanoseconds*1e-9
++
++    def message(self, channel, msg):
++        try:
++            d=json.loads(msg.data)
++            if channel=='门控':
++                stamp=stamp_seconds(d['t'])
++                self.window.gate.put(d,stamp,time.monotonic())
++                detail=MODE.get(d['mode'],d['mode'])+' · '+reason(d.get('reason','—'))
++            else:
++                stamp=stamp_seconds(d['stamp']) if d.get('stamp') is not None else None
++                self.window.decision.put(d,stamp,time.monotonic())
++                detail=STATUS.get(d['status'],d['status'])+' · '+reason(d.get('reason','—'))
++            self.window.log_event(channel,detail)
++        except (ValueError,TypeError,KeyError) as exc:
++            feed=self.window.gate if channel=='门控' else self.window.decision
++            feed.put({},None,time.monotonic())
++            self.window.log_event(channel,'消息无效 · '+str(exc))
++
++    def camera(self,msg):
++        try:
++            stamp=msg.header.stamp
++            self.window.image(image_from_ros(msg),stamp.sec+stamp.nanosec*1e-9,time.monotonic())
++        except (TypeError,ValueError) as exc:
++            self.window.log_event('摄像头',str(exc))
++
++    def finish(self,text):
++        self.pending=self.future=None
++        self.window.busy=False
++        self.window.pending_text=text
++        self.window.log_event('控制',text)
++
++    def start(self,command,value=None):
++        if self.pending:
++            if command not in ('disable','pause'):
++                return
++            # Supersede future local steps, especially queued restart. The ROS service
++            # call already sent still needs authoritative gate telemetry for confirmation.
++            if self.future is not None:
++                self.future.cancel()
++            self.finish('之前的操作已被中断，以门控回读为准')
++        self.pending=Action(command, value, image_gap=self.window.image_gap())
++        self.window.busy=True
++        self.issue()
++
++    def issue(self):
++        from rcl_interfaces.msg import Parameter,ParameterValue,ParameterType
++        key=self.pending.steps[0]
++        client,kind=self.clients[key]
++        if not client.service_is_ready():
++            self.finish(LABELS[key]+'失败 · 服务不可用')
++            return
++        req=kind.Request()
++        if key in ('enable','disable'):
++            req.data=key=='enable'
++        if key in ('target','limit'):
++            name='target_speed_mps' if key=='target' else 'max_auto_speed_mps'
++            value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE,double_value=float(self.pending.value))
++            req.parameters=[Parameter(name=name,value=value)]
++        try:
++            self.future=client.call_async(req)
++            self.deadline=time.monotonic()+3.
++            self.window.pending_text='等待确认 · '+LABELS[key]
++        except Exception as exc:
++            self.finish('请求失败 · '+str(exc))
++
++    def poll(self):
++        if self.pending is None:
++            return
++        key=self.pending.steps[0]
++        if not self.future.done():
++            if time.monotonic()>self.deadline:
++                self.future.cancel()
++                self.finish(LABELS[key]+'响应超时，执行状态未知')
++            return
++        try:
++            reply=self.future.result()
++            if key in ('target','limit'):
++                ok=len(reply.results)==1 and reply.results[0].successful
++                why=reply.results[0].reason if reply.results else '缺少参数结果'
++                if ok:
++                    self.window.confirmed_speeds[key] = self.pending.value
++                    self.next_read = 0.
++            else:
++                ok,why=reply.success,reply.message
++            if key == 'restart' and ok:
++                self.lap_map.reset()
++            next_key=self.pending.completed(ok)
++            text=LABELS[key]+('已确认' if ok else '未执行')+(' · '+why if why else '')
++            if next_key:
++                self.window.log_event('控制',text)
++                self.issue()
++            else:
++                self.finish(text)
++        except Exception as exc:
++            self.finish('响应无效 · '+str(exc))
++
++    def read_speeds(self, steady):
++        from rcl_interfaces.msg import ParameterType
++        from rcl_interfaces.srv import GetParameters
++        if not self.window.settings_dialog.isVisible():
++            return
++        for key, (future, started) in list(self.read_requests.items()):
++            if future.done():
++                try:
++                    values = future.result().values
++                    if len(values) == 1 and values[0].type == ParameterType.PARAMETER_DOUBLE:
++                        self.window.parameter_reads[key] = (started, values[0].double_value)
++                except (RuntimeError, AttributeError):
++                    pass
++                del self.read_requests[key]
++            elif steady - started >= 2.:
++                future.cancel()
++                del self.read_requests[key]
++        if steady >= self.next_read:
++            self.next_read = steady + .75
++            for key, client in self.read_clients.items():
++                if key not in self.read_requests and client.service_is_ready():
++                    name = 'target_speed_mps' if key == 'target' else 'max_auto_speed_mps'
++                    self.read_requests[key] = (client.call_async(GetParameters.Request(names=[name])), steady)
++
++    def update(self):
++        self.recording.refresh()
++        self.poll()
++        now=self.ros()
++        steady=time.monotonic()
++        self.read_speeds(steady)
++        self.lap_map.refresh(steady)
++        age=self.window.gate.age(now,steady)
++        live=age is not None and age<=.5
++        if self.previous_live is not None and self.previous_live!=live:
++            self.window.log_event('连接','门控已连接' if live else '门控数据失联')
++        self.previous_live=live
++        self.window.refresh(now,steady)
++
++
++def main(args=None):
++    import rclpy
++    from rclpy.node import Node
++    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
++    rclpy.init(args=args)
++    node=Node('concept_panel')
++    window=Window()
++    controller=Controller(node,window)
++    shutting_down = False
++
++    def request_exit(signum, frame):
++        nonlocal shutting_down
++        shutting_down = True
++
++    previous_signals = {sig: signal.signal(sig, request_exit) for sig in (signal.SIGINT, signal.SIGTERM)}
++
++    def spin():
++        if shutting_down or not rclpy.ok():
++            app.quit()
++        else:
++            # Bounded work keeps buttons and service timeouts responsive under camera load.
++            for _ in range(4):
++                rclpy.spin_once(node,timeout_sec=0.)
++
++    io=QtCore.QTimer()
++    io.timeout.connect(spin)
++    io.start(10)
++    refresh=QtCore.QTimer()
++    refresh.timeout.connect(controller.update)
++    refresh.start(100)
++    window.show()
++    try:
++        app.exec_() if hasattr(app,'exec_') else app.exec()
++    finally:
++        io.stop()
++        refresh.stop()
++        recorder = controller.recording.recorder
++        result = recorder.close()
++        # Qt has exited. Keep our SIGINT/SIGTERM handlers installed until the
++        # independent recorder process group is reaped and SQLite is verified.
++        while result.state in ('starting', 'recording', 'stopping'):
++            time.sleep(.05)
++            result = recorder.status()
++        if result.state == 'error':
++            print('录包收尾失败 · {} · {}'.format(result.path, result.error), file=sys.stderr, flush=True)
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++        for sig, handler in previous_signals.items():
++            signal.signal(sig, handler)
+--- /dev/null
++++ b/concept_panel/concept_panel/model.py
+@@ -0,0 +1,62 @@
++"""UI state independent of Qt and ROS."""
++from collections import deque
++import math
++
++
++def stamp_seconds(value):
++    if isinstance(value, dict):
++        value = value['sec'] + value['nanosec'] * 1e-9
++    if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value):
++        raise ValueError('无有效时间戳')
++    return value
++
++
++class Feed:
++    def __init__(self):
++        self.value = {}
++        self.received = self.stamp = None
++
++    def put(self, value, stamp, received):
++        self.value, self.stamp, self.received = value, stamp, received
++
++    def age(self, ros, steady):
++        if self.received is None or self.stamp is None:
++            return None
++        if ros < self.stamp or steady < self.received:
++            return None
++        return max(steady-self.received, ros-self.stamp)
++
++
++class Journal:
++    def __init__(self):
++        self.rows = deque(maxlen=120)
++        self.last_by_channel = {}
++
++    def add(self, channel, message, wall):
++        previous = self.last_by_channel.get(channel)
++        if previous and previous['message'] == message and previous in self.rows:
++            previous['last'] = wall
++            previous['count'] += 1
++        else:
++            event = dict(channel=channel, message=message, first=wall, last=wall, count=1)
++            self.rows.appendleft(event)
++            self.last_by_channel[channel] = event
++
++
++class Action:
++    """Advance through control services only after successful acknowledgements."""
++    def __init__(self, command, value=None, image_gap=False):
++        if command == 'resume' and image_gap:
++            steps = ['pause', 'restart', 'resume']
++        elif command == 'restart':
++            steps = ['pause', 'restart']
++        else:
++            steps = [command]
++        self.steps = deque(steps)
++        self.value = value
++
++    def completed(self, ok):
++        self.steps.popleft()
++        if not ok:
++            self.steps.clear()
++        return self.steps[0] if self.steps else None
+--- /dev/null
++++ b/concept_panel/concept_panel/preview.py
+@@ -0,0 +1,48 @@
++"""Render an explicitly offline sample with a local camera recording, without DDS."""
++import argparse
++import sys
++from pathlib import Path
++
++from .qt import QtGui,QtWidgets
++from .window import Window
++
++
++def main():
++    parser=argparse.ArgumentParser()
++    parser.add_argument('--image', required=True)
++    parser.add_argument('--output', required=True)
++    args=parser.parse_args()
++    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
++    # Qt's Windows offscreen backend may start without any registered system fonts.
++    if sys.platform=='win32' and not QtGui.QFontDatabase.families():
++        for font in ('msyh.ttc','msyhbd.ttc'):
++            QtGui.QFontDatabase.addApplicationFont(str(Path('C:/Windows/Fonts')/font))
++    window=Window(offline=True)
++    window.show_bag('离线预览', '~/rosbags/concept', '开始录包', False, '#52685e')
++    window.show()
++    app.processEvents()
++    img=QtGui.QImage(args.image)
++    if img.isNull():
++        raise ValueError('摄像头文件无法读取')
++    window.image(img,100.,100.)
++    window.gate.put(dict(mode='paused',reason='operator_pause',linear_mps=0.,yaw_rps=0.,max_auto_speed_mps=1.,
++                         output_enabled=False,paused=True),100.,100.)
++    window.decision.put(dict(status='shadow',reason='离线示例 · 已选择可行轨迹',feasible_count=34,
++                             candidates=[None]*75,speed_estimate_mps=.82,target_speed_mps=1.,
++                             effective_speed_mps=1.,selected_index=4,
++                             command=dict(linear_x_mps=.84,angular_z_radps=.25)),100.,100.)
++    window.log_event('操作','离线预览已载入')
++    for _ in range(3):
++        window.log_event('决策','示例状态 · 影子模式')
++    window.log_event('门控','示例状态 · 自动已暂停')
++    window.pending_text='离线示例，控制服务未连接'
++    window.refresh(100.04,100.04)
++    app.processEvents()
++    window.draw_image()
++    app.processEvents()
++    if not window.grab().save(args.output):
++        raise RuntimeError('截图未保存')
++
++
++if __name__=='__main__':
++    main()
+--- /dev/null
++++ b/concept_panel/concept_panel/qt.py
+@@ -0,0 +1,4 @@
++try:
++    from python_qt_binding import QtCore, QtGui, QtWidgets
++except ImportError:
++    from PySide6 import QtCore, QtGui, QtWidgets
+--- /dev/null
++++ b/concept_panel/concept_panel/recorder.py
+@@ -0,0 +1,207 @@
++"""Nonblocking ownership of one Foxy ros2 bag process group per panel."""
++from collections import Counter
++from contextlib import closing
++from dataclasses import dataclass
++from datetime import datetime
++import os
++from pathlib import Path
++import signal
++import sqlite3
++import subprocess
++import tempfile
++import threading
++import time
++from typing import Optional
++from uuid import uuid4
++
++import yaml
++
++
++DECISION_TOPIC = '/concept/decision'
++CAMERA_TOPIC = '/concept/perception/overlay/compressed'
++TOPICS = (
++    DECISION_TOPIC, CAMERA_TOPIC, '/concept/vehicle_state', '/concept/auto_cmd',
++    '/concept/gate/status', '/concept/gate/estop', '/concept/internal/motor_cmd',
++    '/concept/internal/motor_can', '/aiformula_sensing/vehicle_info',
++    '/aiformula_sensing/vectornav/imu', '/aiformula_control/joy_node/joy_l2_throttle',
++)
++_ACTIVE = ('starting', 'recording', 'stopping')
++_POLL = .05
++_STARTUP_TIMEOUT = 15.
++_FINALIZE_TIMEOUT = 15.
++_TERM_TIMEOUT = 3.
++
++
++@dataclass(frozen=True)
++class RecorderStatus:
++    state: str = 'idle'
++    path: str = ''
++    error: str = ''
++    messages: Optional[int] = None
++
++
++def _verified_messages(path):
++    data = yaml.safe_load((path / 'metadata.yaml').read_text(encoding='utf8'))
++    info = data['rosbag2_bagfile_information']
++    if info.get('storage_identifier') != 'sqlite3':
++        raise ValueError('录包元数据没有声明 SQLite 存储')
++    expected = info['message_count']
++    if type(expected) is not int or expected < 1:
++        raise ValueError('没有录到消息，请检查所选 ROS 域和话题发布者')
++    expected_topics = {}
++    for item in info['topics_with_message_count']:
++        topic = item['topic_metadata']['name']
++        count = item['message_count']
++        if topic not in TOPICS or topic in expected_topics or type(count) is not int or count < 0:
++            raise ValueError('录包元数据中的话题或消息数无效')
++        expected_topics[topic] = count
++    actual = Counter()
++    seen = set()
++    for name in info['relative_file_paths']:
++        db = (path / name).resolve(strict=True)
++        if db.parent != path.resolve() or db in seen or not db.is_file():
++            raise ValueError('录包元数据中的 SQLite 文件路径无效')
++        seen.add(db)
++        with closing(sqlite3.connect(db.as_uri() + '?mode=ro', uri=True)) as connection:
++            for topic, count in connection.execute(
++                    'SELECT topics.name, COUNT(*) FROM messages '
++                    'LEFT JOIN topics ON topics.id=messages.topic_id GROUP BY topics.name'):
++                actual[topic] += count
++    if sum(actual.values()) != expected or dict(actual) != {t: n for t, n in expected_topics.items() if n}:
++        raise ValueError('SQLite 各话题实际消息数与 metadata.yaml 不一致')
++    return expected
++
++
++def _signal_group(process, sig):
++    try:
++        os.killpg(process.pid, sig)
++    except ProcessLookupError:
++        pass
++
++
++def _group_alive(process):
++    process.poll()  # Reap our child before querying its group.
++    try:
++        os.killpg(process.pid, 0)
++        return True
++    except ProcessLookupError:
++        return False
++
++
++def _wait_group(process, seconds):
++    end = time.monotonic() + seconds
++    while _group_alive(process):
++        if time.monotonic() >= end:
++            return False
++        time.sleep(_POLL)
++    return True
++
++
++class BagRecorder:
++    """start, stop, close, and status never wait for disk, DDS, or the child.
++
++    A non-daemon supervisor finishes a requested close even after Qt stops
++    processing events. The object can be reused after saved or error.
++    """
++    def __init__(self, root=None):
++        location = root if root is not None else os.environ.get('CONCEPT_BAG_DIR') or '~/rosbags/concept'
++        self.root = Path(location).expanduser().absolute()
++        self._lock = threading.Lock()
++        self._current = RecorderStatus()
++        self._stop = threading.Event()
++        self._closed = False
++
++    def status(self):
++        with self._lock:
++            return self._current
++
++    def start(self):
++        with self._lock:
++            if self._closed or self._current.state in _ACTIVE:
++                return self._current
++            name = datetime.now().strftime('concept_%Y%m%d_%H%M%S_') + uuid4().hex
++            path = self.root / name
++            self._stop = threading.Event()
++            self._current = RecorderStatus('starting', str(path))
++            worker = threading.Thread(target=self._run, args=(path, self._stop),
++                                      name='concept-bag-recorder', daemon=False)
++            try:
++                worker.start()
++            except RuntimeError as exc:
++                self._current = RecorderStatus('error', str(path), str(exc))
++            return self._current
++
++    def _request_stop(self):
++        if self._current.state in _ACTIVE:
++            self._current = RecorderStatus('stopping', self._current.path)
++            self._stop.set()
++        return self._current
++
++    def stop(self):
++        with self._lock:
++            return self._request_stop()
++
++    def close(self):
++        with self._lock:
++            self._closed = True
++            return self._request_stop()
++
++    def _run(self, path, stop):
++        try:
++            if os.name != 'posix':
++                raise OSError('Foxy 面板录包需要支持 POSIX 进程组的系统')
++            self.root.mkdir(parents=True, exist_ok=True)
++            if path.exists():
++                raise FileExistsError(str(path))
++            # Foxy's DDS QoS depth and rosbag's SQLite write cache are independent.
++            profile = {topic: dict(history='keep_last', depth=1, reliability='best_effort',
++                                   durability='volatile') for topic in TOPICS}
++            with tempfile.TemporaryDirectory(prefix='concept-bag-qos-') as scratch, tempfile.TemporaryFile() as log:
++                qos = Path(scratch) / 'qos.yaml'
++                qos.write_text(yaml.safe_dump(profile), encoding='utf8')
++                command = ['ros2', 'bag', 'record', '-s', 'sqlite3', '-o', str(path),
++                           '--max-cache-size', '0', '--qos-profile-overrides-path', str(qos), *TOPICS]
++                process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log,
++                                           stderr=subprocess.STDOUT, start_new_session=True)
++                try:
++                    self._supervise(process, path, stop)
++                except Exception as exc:
++                    size = log.seek(0, os.SEEK_END)
++                    log.seek(max(0, size-800))
++                    tail = log.read().decode('utf8', errors='replace').strip()
++                    raise RuntimeError(str(exc) + ('\n' + tail if tail else '')) from exc
++                finally:
++                    if _group_alive(process):
++                        _signal_group(process, signal.SIGTERM)
++                        if not _wait_group(process, _TERM_TIMEOUT):
++                            _signal_group(process, signal.SIGKILL)
++                            _wait_group(process, _TERM_TIMEOUT)
++            messages = _verified_messages(path)
++            outcome = RecorderStatus('saved', str(path), messages=messages)
++        except Exception as exc:
++            outcome = RecorderStatus('error', str(path), str(exc))
++        with self._lock:
++            self._current = outcome
++
++    def _supervise(self, process, path, stop):
++        deadline = time.monotonic() + _STARTUP_TIMEOUT
++        opened = False
++        while process.poll() is None:
++            if not opened and any(path.glob('*.db3')):
++                opened = True
++                with self._lock:
++                    if not stop.is_set():
++                        self._current = RecorderStatus('recording', str(path))
++            if stop.is_set() and opened:
++                _signal_group(process, signal.SIGINT)
++                if not _wait_group(process, _FINALIZE_TIMEOUT):
++                    raise RuntimeError('录包进程收到 SIGINT 后未在时限内完成收尾')
++                if process.returncode not in (0, -signal.SIGINT, int(signal.SIGINT), 130):
++                    raise RuntimeError('录包进程收尾失败，退出码 %s' % process.returncode)
++                return
++            if not opened and time.monotonic() >= deadline:
++                _signal_group(process, signal.SIGINT)
++                _wait_group(process, _TERM_TIMEOUT)
++                raise RuntimeError('录包进程未能及时打开 SQLite 文件')
++            time.sleep(_POLL)
++        raise RuntimeError('录包进程意外退出，退出码 %s' % process.returncode)
+--- /dev/null
++++ b/concept_panel/concept_panel/window.py
+@@ -0,0 +1,498 @@
++from datetime import datetime
++import math
++
++from .lap_map import LapMapPanel
++
++from .model import Feed, Journal
++from .qt import QtCore, QtGui, QtWidgets as W
++
++MODE = {'disabled':'输出禁用', 'paused':'自动已暂停', 'manual':'手柄接管', 'auto':'自动驾驶', 'estop':'软件急停'}
++STATUS = {'ok':'有效', 'invalid':'无效', 'blocked':'输出受阻', 'shadow':'影子模式', 'waiting':'等待输入', 'late':'超时'}
++REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','output_disabled':'电机输出已禁用',
++         'operator_pause':'操作员已暂停','manual_takeover':'手柄已接管','manual_released':'手柄已松开，等待继续',
++         'joy_timeout':'手柄数据超时','graph_conflict':'控制链存在冲突','motor_timeout':'电机转换输出超时',
++         'waiting_fresh_auto':'当前指令已到期，零输出等待新帧',
++         'image gap over 0.5 s; pause the gate and restart the driver':'图像采集间隔超过 0.5 秒',
++         'planning gap over 0.5 s after missing synchronized wheel/gyro feedback':'图像已到达，轮速与陀螺反馈未配对，规划中断超过 0.5 秒',
++         'planning gap over 0.5 s between completed frames':'图像已到达，两次完成规划的间隔超过 0.5 秒',
++         'vehicle_state_timeout':'车辆状态超时','speed_limit_changed':'速度上限已更改，等待继续',
++         'auto_timeout':'自动指令超时','auto_speed_limit':'自动指令超过速度上限',
++         'waiting_new_auto':'等待恢复后的新指令','auto_command_received':'已收到新的自动指令','feasible':'已选择可行轨迹',
++         'no_feasible_trajectory':'当前无可行轨迹','unobserved_road':'缺少道路观测',
++         'executing_prior_contingency':'沿上一帧已检查的备用路线行驶',
++         'checked_slow_reverse':'后方路线已检查，准备低速倒车',
++         'checked_reverse_release':'结束倒车，等待车停稳',
++         'executing_checked_reverse_release':'按已检查的方案结束倒车',
++         'recovery_unknown_road':'后方路界未知',
++         'recovery_no_checked_motion':'前后暂时都没有通过检查的方案',
++         'camera geometry has no validated driving profile':'相机安装标定尚未通过',
++         'Honda mount projection active; ground error unmeasured':'本田安装参数投影已启用 · 地面误差未实测',
++         'reverse wheel-feedback sign unverified':'轮速反馈尚未确认能识别倒车方向',
++         'decision exceeded 0.5 s from acquisition':'拍摄到出指令超过 0.5 秒'}
++
++def reason(value):
++    return REASONS.get(value,value) if isinstance(value,str) else '—'
++
++STYLE = """
++QWidget { background:#f2f4f1; color:#243831; font-family:'Microsoft YaHei UI','Noto Sans CJK SC',sans-serif; font-size:13px; }
++QLabel {background:transparent;}
++QFrame#card {background:#ffffff;border:1px solid #d4ded7;border-radius:10px;}
++QLabel#title {font-size:26px;font-weight:700;color:#173c30;}
++QLabel#heading {font-size:17px;font-weight:700;}
++QLabel#muted {color:#52685e;}
++QLabel#badge {background:#dcebe3;color:#205944;border-radius:5px;padding:5px 10px;font-weight:600;}
++QLabel#metric {font-size:23px;font-weight:650;color:#174a38;}
++QLabel#camera {background:#172c25;color:#b4cbc0;border-radius:6px;}
++QLabel#motionAction {font-size:43px;font-weight:750;}
++QLabel#decisionAction {font-size:19px;font-weight:700;}
++QLabel#decisionReason {font-size:14px;}
++QLabel#decisionMode {font-size:14px;font-weight:650;padding:5px 9px;border:1px solid #e7efec;border-radius:5px;}
++QLineEdit#bag_path {background:#f2f5f1;border:1px solid #d4ded7;border-radius:4px;padding:4px;}
++QPushButton {background:#f4f7f4;border:1px solid #c3d0c7;border-radius:5px;padding:6px 10px;font-weight:550;}
++QPushButton:hover {background:#e6efe9;}
++QPushButton#primary {background:#245e49;color:white;border-color:#245e49;}
++QPushButton#stop {background:#f9e8df;color:#783817;border-color:#e2c7b7;}
++QPushButton#primary:disabled,QPushButton#stop:disabled,QPushButton:disabled {background:#edf0ed;color:#7d8980;border-color:#e0e4e0;}
++QDoubleSpinBox {background:white;border:1px solid #becfc3;border-radius:4px;padding:4px;}
++QTreeWidget {background:white;border:0;alternate-background-color:#f3f6f3;}
++QHeaderView::section {background:#edf2ed;color:#456051;border:0;padding:4px;text-align:left;}
++"""
++
++
++def label(text='', style=None):
++    item = W.QLabel(text)
++    if style:
++        item.setObjectName(style)
++    return item
++
++
++def card():
++    box = W.QFrame()
++    box.setObjectName('card')
++    layout = W.QVBoxLayout(box)
++    layout.setContentsMargins(15, 12, 15, 12)
++    layout.setSpacing(7)
++    return box, layout
++
++
++def number(value, digits=2):
++    return format(value, '.'+str(digits)+'f') if isinstance(value,(float,int)) else '—'
++
++
++AUTO_YAW_LIMIT = 1.55  # V6.26 candidate yaw limit, used only to scale the display.
++
++
++def output_motion(gate):
++    speed, yaw = gate.get('linear_mps'), gate.get('yaw_rps')
++    if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in (speed, yaw)):
++        return '等待门控', 'unknown', None
++    if speed < 0:
++        return '倒车', 'reverse', 180.
++    if speed > 0:
++        limit = (gate.get('manual_yaw_limit_rps') or 1.) if gate.get('mode') == 'manual' else AUTO_YAW_LIMIT
++        ratio = max(-1., min(1., yaw / limit))
++        angle = -90. * math.copysign(math.sqrt(abs(ratio)), ratio)
++        return '前进', 'forward', angle
++    if yaw:
++        return '原地转向', 'turn', -90. if yaw > 0 else 90.
++    return '停止', 'stop', None
++
++
++class DirectionArrow(W.QWidget):
++    def __init__(self):
++        super().__init__()
++        self.setMinimumHeight(95)
++        self.setMaximumHeight(180)
++        self.motion, self.degrees = 'unknown', None
++        self.setAccessibleName('门控指令方向')
++
++    def show_motion(self, motion, degrees):
++        if (motion, degrees) != (self.motion, self.degrees):
++            self.motion, self.degrees = motion, degrees
++            self.update()
++
++    def paintEvent(self, event):
++        painter = QtGui.QPainter(self)
++        painter.setRenderHint(QtGui.QPainter.Antialiasing)
++        painter.translate(self.width()/2, self.height()/2)
++        scale = min(self.width(), self.height()) / 126.
++        painter.scale(scale, scale)
++        painter.setBrush(QtGui.QColor('#f7faf8'))
++        painter.setPen(QtCore.Qt.NoPen)
++        if self.degrees is not None:
++            painter.rotate(self.degrees)
++            outline = [(-12, 48), (12, 48), (12, -7), (32, -7), (0, -50), (-32, -7), (-12, -7)]
++            painter.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(x, y) for x, y in outline]))
++        elif self.motion == 'stop':
++            painter.drawRoundedRect(QtCore.QRectF(-25, -25, 50, 50), 5, 5)
++        else:
++            painter.drawRoundedRect(QtCore.QRectF(-22, -4, 44, 8), 3, 3)
++
++
++class Window(W.QWidget):
++    def __init__(self, offline=False):
++        super().__init__()
++        self.offline = offline
++        self.dispatch = None
++        self.bag_action = None
++        self.busy = False
++        self.pending_text = ''
++        self.gate, self.decision, self.image_feed = Feed(), Feed(), Feed()
++        self.journal = Journal()
++        self.pix = None
++        self.setWindowTitle('Concept · 驾驶控制台')
++        self.setStyleSheet(STYLE)
++        self.resize(1120, 720)
++        root = W.QVBoxLayout(self)
++        root.setContentsMargins(18,12,18,12)
++        root.setSpacing(8)
++        title = W.QHBoxLayout()
++        title.addWidget(label('驾驶控制台','title'))
++        title.addWidget(label('V6.27.5 · 驾驶策略 V6.26','muted'))
++        title.addStretch()
++        self.connection = label('等待门控','badge')
++        title.addWidget(self.connection)
++        root.addLayout(title)
++        columns = W.QHBoxLayout()
++        columns.setSpacing(12)
++        root.addLayout(columns, 1)
++        self.decision_surface = W.QFrame()
++        self.decision_surface.setObjectName('decisionSurface')
++        decision_layout = W.QVBoxLayout(self.decision_surface)
++        decision_layout.setContentsMargins(18,16,18,16)
++        decision_layout.setSpacing(8)
++        decision_bar = W.QHBoxLayout()
++        decision_bar.addWidget(label('门控输出','heading'))
++        decision_bar.addStretch()
++        self.mode = label('电机状态未知','decisionMode')
++        decision_bar.addWidget(self.mode)
++        decision_layout.addLayout(decision_bar)
++        decision_layout.addStretch()
++        self.motion = label('等待门控','motionAction')
++        self.motion.setAlignment(QtCore.Qt.AlignCenter)
++        decision_layout.addWidget(self.motion)
++        self.arrow = DirectionArrow()
++        decision_layout.addWidget(self.arrow, 1)
++        self.output = label('—')
++        self.output.setAlignment(QtCore.Qt.AlignCenter)
++        decision_layout.addWidget(self.output)
++        decision_layout.addStretch()
++        self.reason = label('等待门控数据')
++        self.reason.setWordWrap(True)
++        decision_layout.addWidget(self.reason)
++        self.action = label('规划 · 等待决策','decisionAction')
++        self.action.setToolTip('自动驾驶规划器建议的动作')
++        decision_layout.addWidget(self.action)
++        self.detail = label('等待有效决策','decisionReason')
++        self.detail.setWordWrap(True)
++        decision_layout.addWidget(self.detail)
++        self.command = label('')
++        self.command.setWordWrap(True)
++        decision_layout.addWidget(self.command)
++        self.output_color = None
++        self.decision_surface.setMinimumWidth(290)
++
++        camera, cam = card()
++        cam.setContentsMargins(14, 9, 14, 9)
++        columns.addWidget(camera, 5)
++        self.lap_map = LapMapPanel(self)
++        columns.addWidget(self.lap_map, 4)
++        columns.addWidget(self.decision_surface, 3)
++        bar = W.QHBoxLayout()
++        bar.addWidget(label('摄像头与规划叠图','heading'))
++        bar.addStretch()
++        self.camera_time = label('等待图像','muted')
++        bar.addWidget(self.camera_time)
++        cam.addLayout(bar)
++        self.camera = label('等待摄像头叠图','camera')
++        self.camera.setMinimumSize(380,230)
++        self.camera.setSizePolicy(W.QSizePolicy.Ignored, W.QSizePolicy.Ignored)
++        self.camera.setAlignment(QtCore.Qt.AlignCenter)
++        cam.addWidget(self.camera,1)
++        legend = W.QHBoxLayout()
++        for text, color in (('可行候选', '#1e6a54'), ('淘汰候选', '#59646b'), ('最终路线', '#a52770')):
++            item = label('━  ' + text)
++            item.setStyleSheet(f'color:{color};font-weight:650;')
++            legend.addWidget(item)
++        legend.addStretch()
++        cam.addLayout(legend)
++        recording = W.QHBoxLayout()
++        recording.addWidget(label('ROS 数据包','heading'))
++        self.bag_status = label('未录制')
++        self.bag_status.setObjectName('bag_status')
++        recording.addWidget(self.bag_status)
++        recording.addStretch()
++        self.bag_toggle = W.QPushButton('开始录包')
++        self.bag_toggle.setObjectName('bag_toggle')
++        self.bag_toggle.setToolTip('保存决策、车况和 640×360 JPEG 识别画面。画面跟随识别帧率。')
++        self.bag_toggle.setEnabled(False)
++        self.bag_toggle.clicked.connect(self.request_bag)
++        recording.addWidget(self.bag_toggle)
++        cam.addLayout(recording)
++        path_line = W.QHBoxLayout()
++        path_line.addWidget(label('保存位置','muted'))
++        self.bag_path = W.QLineEdit()
++        self.bag_path.setObjectName('bag_path')
++        self.bag_path.setReadOnly(True)
++        self.bag_path.setPlaceholderText('等待录制目录')
++        self.bag_path.setAccessibleName('录包保存位置')
++        path_line.addWidget(self.bag_path, 1)
++        cam.addLayout(path_line)
++
++        controls, stack = card()
++        root.addWidget(controls)
++        toolbar = W.QHBoxLayout()
++        stack.addLayout(toolbar)
++        self.buttons = {}
++        for key,text,style in [
++                ('enable','启用电机输出','primary'),('disable','禁用电机输出','stop'),
++                ('pause','暂停自动驾驶',None),('resume','继续自动驾驶',None),
++                ('restart','暂停并重启驾驶节点',None)]:
++            button=W.QPushButton(text)
++            if style: button.setObjectName(style)
++            button.clicked.connect(lambda checked=False, key=key: self.request(key))
++            self.buttons[key]=button
++            toolbar.addWidget(button)
++        toolbar.addStretch()
++
++        self.settings_dialog = W.QDialog(self)
++        self.settings_dialog.setWindowTitle('Concept · 速度设置')
++        self.settings_dialog.setMinimumWidth(420)
++        settings = W.QVBoxLayout(self.settings_dialog)
++        settings.setContentsMargins(16, 16, 16, 16)
++        settings.setSpacing(9)
++        settings.addWidget(label('速度设置','heading'))
++        settings_button = W.QPushButton('调参…')
++        settings_button.clicked.connect(self.settings_dialog.show)
++        toolbar.addWidget(settings_button)
++        self.spins={}
++        self.readbacks={}
++        self.edited_speeds = set()
++        self.confirmed_speeds = {}
++        self.parameter_reads = {}
++        for key,text,maximum in [('target','目标速度',6.),('limit','自动驾驶限速',5.)]:
++            line=W.QHBoxLayout()
++            field=label(text)
++            field.setMinimumWidth(94)
++            line.addWidget(field)
++            spin=W.QDoubleSpinBox()
++            spin.setRange(.05,maximum)
++            spin.setSingleStep(.1)
++            spin.setSuffix(' m/s')
++            spin.setValue(4.)
++            spin.valueChanged.connect(lambda value, key=key: self.edited_speeds.add(key))
++            spin.lineEdit().textEdited.connect(lambda text, key=key: self.edited_speeds.add(key))
++            line.addWidget(spin)
++            self.spins[key]=spin
++            btn=W.QPushButton('保存')
++            btn.clicked.connect(lambda checked=False,key=key:self.request(key))
++            self.buttons[key]=btn
++            line.addWidget(btn)
++            feedback=label('当前 —','muted')
++            self.readbacks[key]=feedback
++            line.addWidget(feedback)
++            settings.addLayout(line)
++        self.pace = label('规划按目标和限速中较低的值计算。','muted')
++        self.pace.setWordWrap(True)
++        settings.addWidget(self.pace)
++        limit_tip = '限制自动驾驶发送的速度指令。修改后自动驾驶暂停，需要手动继续。手柄控制使用自己的设置。'
++        self.spins['limit'].setToolTip(limit_tip)
++        self.buttons['limit'].setToolTip(limit_tip)
++        settings.addWidget(label('修改限速后，需手动继续自动驾驶。','muted'))
++        self.speed_feedback = label('', 'muted')
++        self.speed_feedback.setWordWrap(True)
++        settings.addWidget(self.speed_feedback)
++        self.action_feedback=label('','muted')
++        self.action_feedback.setWordWrap(True)
++        stack.addWidget(self.action_feedback)
++        self.gap_notice = label('', 'muted')
++        self.gap_notice.setWordWrap(True)
++        self.gap_notice.hide()
++        stack.addWidget(self.gap_notice)
++
++        metrics=W.QHBoxLayout()
++        self.metrics={}
++        for key,text in [('speed','轮速估计 · m/s'),('cmd','门控输出 · m/s'),('legal','可行 / 候选'),('lag','距拍摄 · ms')]:
++            box,col=card()
++            col.addWidget(label(text,'muted'))
++            v=label('—','metric')
++            col.addWidget(v)
++            self.metrics[key]=v
++            metrics.addWidget(box)
++        root.insertLayout(2, metrics)
++
++        self.log_dialog = W.QDialog(self)
++        self.log_dialog.setWindowTitle('Concept · 事件记录')
++        self.log_dialog.resize(880, 430)
++        log_button = W.QPushButton('事件记录…')
++        log_button.clicked.connect(self.log_dialog.show)
++        toolbar.addWidget(log_button)
++        logs = W.QVBoxLayout(self.log_dialog)
++        logs.addWidget(label('事件记录','heading'))
++        self.table=W.QTreeWidget()
++        self.table.setHeaderLabels(['来源','事件','首次时间','末次时间','次数'])
++        self.table.setRootIsDecorated(False)
++        self.table.setAlternatingRowColors(True)
++        self.table.header().setStretchLastSection(False)
++        self.table.header().setSectionResizeMode(1,W.QHeaderView.Stretch)
++        for i,w in [(0,75),(2,96),(3,96),(4,52)]: self.table.setColumnWidth(i,w)
++        logs.addWidget(self.table)
++        self.refresh(0.,0.)
++
++    def request(self, key):
++        if self.dispatch is not None:
++            self.dispatch(key,self.spins[key].value() if key in self.spins else None)
++
++    def show_speed(self, key, value):
++        self.readbacks[key].setText('当前 '+number(value, 2))
++        spin = self.spins[key]
++        spin.setEnabled(not self.busy and not self.offline)
++        if value is None:
++            return
++        if self.confirmed_speeds.get(key) == value:
++            self.confirmed_speeds.pop(key)
++            self.edited_speeds.discard(key)
++        if key not in self.edited_speeds:
++            previous = spin.blockSignals(True)
++            spin.setValue(value)
++            spin.blockSignals(previous)
++
++    def request_bag(self):
++        if self.bag_action and not self.offline:
++            self.bag_action()
++
++    def show_bag(self, status, path, button, enabled, color):
++        self.bag_status.setText(status)
++        self.bag_status.setStyleSheet('color:'+color+';font-weight:600;')
++        self.bag_status.setToolTip(status)
++        if self.bag_path.text() != path:
++            self.bag_path.setText(path)
++            self.bag_path.setCursorPosition(len(path))
++            self.bag_path.setToolTip(path)
++        self.bag_toggle.setText(button)
++        self.bag_toggle.setEnabled(enabled and not self.offline)
++
++    def log_event(self, channel, text):
++        self.journal.add(channel,text,datetime.now().strftime('%H:%M:%S'))
++        self.table.clear()
++        for r in self.journal.rows:
++            W.QTreeWidgetItem(self.table,[r['channel'],r['message'],r['first'],r['last'],str(r['count'])])
++
++    def image(self, image, source, receipt):
++        self.pix=QtGui.QPixmap.fromImage(image)
++        self.image_feed.put({},source,receipt)
++        self.draw_image()
++
++    def draw_image(self):
++        if self.pix is not None and not self.pix.isNull():
++            self.camera.setPixmap(self.pix.scaled(self.camera.size(),QtCore.Qt.KeepAspectRatio,QtCore.Qt.SmoothTransformation))
++
++    def resizeEvent(self, event):
++        super().resizeEvent(event)
++        if hasattr(self,'camera'):
++            self.draw_image()
++
++    def show_decision(self, decision, age):
++        status = decision.get('status')
++        cmd = decision.get('command') or {}
++        speed = cmd.get('linear_x_mps')
++        yaw = cmd.get('angular_z_radps')
++        detail = reason(decision.get('reason') or '等待驾驶节点给出路线')
++        description = ''
++        if age is not None and age > 1.:
++            action, detail = '决策已过期', '超过 1 秒没有收到新鲜决策'
++        elif status == 'blocked':
++            action = '控制输出受阻'
++        elif status in ('invalid', 'late'):
++            action = '决策无效' if status == 'invalid' else '决策超时'
++        elif status in ('ok', 'shadow') and speed is not None and yaw is not None:
++            if speed > 0:
++                action = '前进'
++            elif speed < 0:
++                action = '慢速倒车'
++            else:
++                action = '仅转向' if yaw else '停车等待'
++            if status == 'shadow':
++                action = '试算 ' + action
++            direction = '左转' if yaw > 0 else '右转'
++            steer = f'{direction} {abs(yaw):.2f} rad/s' if abs(yaw) >= .005 else '转向 0.00 rad/s'
++            description = f'请求速度 {speed:.2f} m/s   ·   {steer}'
++            if decision.get('selected_index') is not None:
++                description += f"   ·   候选 #{decision['selected_index']}"
++            elif decision.get('selected_path'):
++                description += '   ·   恢复路线'
++            elif 'selected_path' in decision:
++                description += '   ·   当前无选中路径'
++            planner_reason = decision.get('planner_reason')
++            if planner_reason and planner_reason != decision.get('reason'):
++                detail += ' · ' + reason(planner_reason)
++        else:
++            action = '等待决策'
++        self.action.setText('规划 · ' + action)
++        self.detail.setText(detail)
++        self.command.setText(description)
++
++    def show_output(self, gate, steady):
++        action, motion, angle = output_motion(gate)
++        color = {'forward': '#185c48', 'turn': '#795012', 'stop': '#882c30',
++                 'unknown': '#42524e'}.get(motion)
++        if motion == 'reverse':
++            color = '#b1282e' if int(steady * 2) % 2 else '#741b24'
++        if color != self.output_color:
++            self.decision_surface.setStyleSheet(
++                f'QFrame#decisionSurface {{background:{color};border-radius:12px;}}'
++                'QFrame#decisionSurface QLabel {color:#f7faf8;}'
++                'QFrame#decisionSurface QWidget {background:transparent;}')
++            self.output_color = color
++        self.motion.setText(action)
++        self.arrow.show_motion(motion, angle)
++        self.output.setText(f"{number(gate.get('linear_mps'))} m/s  ·  ω {number(gate.get('yaw_rps'))} rad/s")
++
++    def refresh(self, ros, steady):
++        ga=self.gate.age(ros,steady)
++        da=self.decision.age(ros,steady)
++        ca=self.image_feed.age(ros,steady)
++        live=ga is not None and ga<=.5
++        valid=da is not None and da<=1.
++        g=self.gate.value if live else {}
++        unstamped_error = (self.decision.stamp is None and self.decision.received is not None
++                           and 0. <= steady-self.decision.received <= 1.
++                           and self.decision.value.get('status') == 'invalid')
++        d=self.decision.value if valid or unstamped_error else {}
++        self.connection.setText('离线预览' if self.offline else '门控在线' if live else '门控失联' if self.gate.received is not None else '等待门控')
++        self.mode.setText(MODE.get(g.get('mode'),'电机状态未知'))
++        self.connection.setStyleSheet('' if live or self.offline else 'background:#f5dfd7;color:#894328;')
++        self.reason.setText(('门控原因 · '+reason(g.get('reason','—'))) if live else '无法确认电机输出状态')
++        self.camera_time.setText('等待图像' if ca is None else ('图像已过期 · ' if ca>1. else '图像 · ')+f'{ca:.2f} s')
++        self.show_output(g, steady)
++        self.show_decision(d, da)
++        self.metrics['speed'].setText(number(d.get('speed_estimate_mps')))
++        self.metrics['cmd'].setText(number(g.get('linear_mps')))
++        self.metrics['legal'].setText(f"{d['feasible_count']} / {len(d.get('candidates',[]))}" if 'feasible_count' in d else '—')
++        self.metrics['lag'].setText(number(da*1000,0) if da is not None else '—')
++        for key, feed, value in (('target', self.decision, d.get('target_speed_mps')),
++                                 ('limit', self.gate, g.get('max_auto_speed_mps'))):
++            if key in self.parameter_reads:
++                receipt, actual = self.parameter_reads[key]
++                if steady - receipt <= 2. and (value is None or receipt >= feed.received):
++                    value = actual
++            self.show_speed(key, value)
++        effective = d.get('effective_speed_mps') if live else None
++        self.pace.setText(f'本帧规划参考 {effective:.2f} m/s · 目标和限速取较低值'
++                          if effective is not None else '规划按目标和限速中较低的值计算。')
++        self.action_feedback.setText(self.pending_text)
++        self.speed_feedback.setText(self.pending_text)
++        if self.image_gap():
++            gap = self.decision.value.get('gap_reason') or 'image gap over 0.5 s; pause the gate and restart the driver'
++            self.gap_notice.setText(reason(gap) + '。点继续自动驾驶会先清空累计地图并重启规划。')
++        self.gap_notice.setVisible(self.image_gap())
++        for key,button in self.buttons.items():
++            ok=live and not self.busy and not self.offline
++            if key=='enable': ok=ok and not g.get('output_enabled') and not g.get('manual_held') and not g.get('estop')
++            if key=='resume': ok=ok and g.get('output_enabled') and g.get('paused') and not g.get('manual_held') and not g.get('estop')
++            if key=='disable': ok=not self.offline
++            if key=='pause': ok=not self.offline
++            button.setEnabled(bool(ok))
++
++    def image_gap(self):
++        return self.decision.value.get('image_gap_reset_required') is True
+--- /dev/null
++++ b/concept_panel/package.xml
+@@ -0,0 +1,20 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_panel</name>
++  <version>6.27.5</version>
++  <description>Driving status and decision window</description>
++  <maintainer email="maintainers@users.noreply.github.com">Sophia AI Formula</maintainer>
++  <license>AGPL-3.0-only</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <exec_depend>rclpy</exec_depend>
++  <exec_depend>ros2bag</exec_depend>
++  <exec_depend>rosbag2_storage_default_plugins</exec_depend>
++  <exec_depend>python3-yaml</exec_depend>
++  <exec_depend>python3-numpy</exec_depend>
++  <exec_depend>sensor_msgs</exec_depend>
++  <exec_depend>std_msgs</exec_depend>
++  <exec_depend>std_srvs</exec_depend>
++  <exec_depend>rcl_interfaces</exec_depend>
++  <exec_depend>python_qt_binding</exec_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_panel/resource/concept_panel
+@@ -0,0 +1 @@
++
+--- /dev/null
++++ b/concept_panel/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_panel
++[install]
++install_scripts=$base/lib/concept_panel
+--- /dev/null
++++ b/concept_panel/setup.py
+@@ -0,0 +1,11 @@
++from setuptools import setup
++
++name = 'concept_panel'
++setup(
++    name=name, version='6.27.5', packages=[name],
++    data_files=[
++        ('share/ament_index/resource_index/packages', ['resource/' + name]),
++        ('share/' + name, ['package.xml']),
++    ],
++    entry_points={'console_scripts': ['panel = concept_panel.main:main']},
++)
+--- /dev/null
++++ b/concept_panel/test/test_panel.py
+@@ -0,0 +1,229 @@
++from types import SimpleNamespace
++from concept_panel.model import Feed, Journal, Action, stamp_seconds
++
++
++def test_restart_requires_acknowledged_pause():
++    a=Action('restart')
++    assert list(a.steps)==['pause','restart'] and not a.completed(False)
++    a=Action('restart')
++    assert a.completed(True)=='restart' and a.completed(True) is None
++
++
++def test_causal_and_receipt_freshness():
++    f=Feed()
++    assert f.age(0.,0.) is None
++    f.put({},10.,20.)
++    assert f.age(9.,20.) is None
++    assert f.age(10.,21.)==1.
++    assert f.age(12.,20.)==2.
++    assert stamp_seconds(dict(sec=3,nanosec=500000000))==3.5
++
++
++def test_interleaved_repeat_events_preserve_first_last_and_occurrences():
++    j=Journal()
++    j.add('门控','paused','09:00:00')
++    j.add('决策','等待','09:00:02')
++    j.add('门控','paused','09:00:05')
++    assert j.rows[1]==dict(channel='门控',message='paused',first='09:00:00',last='09:00:05',count=2)
++    j.add('门控','manual','09:00:06')
++    j.add('门控','paused','09:00:07')
++    assert j.rows[0]['count']==1
++
++
++def test_offline_qt_render_flags_and_bgr_with_stride(monkeypatch):
++    import os
++    os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
++    from concept_panel.main import image_from_ros
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w=Window()
++    w.gate.put(dict(mode='auto',output_enabled=True,linear_mps=.87),10.,20.)
++    w.refresh(10.,20.)
++    assert w.connection.text()=='门控在线' and w.metrics['cmd'].text()=='0.87'
++    w.show()
++    w.gate.put(dict(mode='paused', output_enabled=True, paused=True, linear_mps=0.),10.,20.)
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True),10.,20.)
++    w.refresh(10.,20.)
++    assert w.buttons['resume'].text()=='继续自动驾驶'
++    assert w.buttons['resume'].isEnabled() and w.gap_notice.isVisible()
++    assert '图像采集间隔' in w.gap_notice.text()
++    w.decision.put(dict(status='invalid', image_gap_reset_required=True,
++                        gap_reason='planning gap over 0.5 s after missing synchronized wheel/gyro feedback'),10.,20.)
++    w.refresh(10.,20.)
++    assert '轮速与陀螺反馈未配对' in w.gap_notice.text()
++    w.refresh(10.,20.6)
++    assert w.connection.text()=='门控失联' and w.metrics['cmd'].text()=='—'
++    assert not w.buttons['enable'].isEnabled()
++    assert w.buttons['disable'].isEnabled()
++    image=image_from_ros(SimpleNamespace(encoding='bgr8',width=1,height=2,step=4,
++                        data=bytes([1,2,3,99,11,22,33,99])))
++    assert image.pixelColor(0,1).getRgb()[:3]==(33,22,11)
++    w.close()
++    assert app is not None
++
++
++def test_controller_restarts_only_after_successful_pause():
++    from concept_panel.main import Controller
++    for outcome in (False, True):
++        controller=Controller.__new__(Controller)
++        sent=[]
++        controller.window=SimpleNamespace(log_event=lambda *args: None,busy=True,pending_text='')
++        controller.pending=Action('restart')
++        controller.future=SimpleNamespace(done=lambda:True,
++            result=lambda:SimpleNamespace(success=outcome,message=''))
++        controller.issue=lambda:sent.append(controller.pending.steps[0])
++        controller.poll()
++        assert sent==(['restart'] if outcome else [])
++
++
++def test_primary_panel_shows_plan_separately_from_motor_permission(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w = Window()
++    w.gate.put(dict(mode='disabled', output_enabled=False, linear_mps=0., yaw_rps=0.,
++                    max_auto_speed_mps=1.), 10., 20.)
++    decision = dict(status='ok', reason='feasible', selected_index=0, target_speed_mps=3.4,
++                    effective_speed_mps=1., command=dict(linear_x_mps=.8, angular_z_radps=.2))
++    w.decision.put(decision, 10., 20.)
++    w.refresh(10., 20.)
++    assert w.action.text() == '规划 · 前进' and w.motion.text() == '停止'
++    assert w.mode.text() == '输出禁用' and w.metrics['cmd'].text() == '0.00'
++    assert w.arrow.degrees is None and w.arrow.motion == 'stop'
++    assert '左转' in w.command.text() and '#0' in w.command.text()
++    assert '1.00 m/s' in w.pace.text()
++
++    w.decision.put(dict(decision, status='shadow', command=dict(linear_x_mps=-.2, angular_z_radps=0.)),
++                   10., 20.)
++    w.refresh(10., 20.)
++    assert w.action.text() == '规划 · 试算 慢速倒车' and w.arrow.motion == 'stop'
++    w.refresh(11.1, 21.1)
++    assert w.action.text() == '规划 · 决策已过期' and not w.command.text()
++    w.decision.put(dict(status='invalid', reason='missing frame stamp'), None, 21.1)
++    w.refresh(11.1, 21.1)
++    assert w.action.text() == '规划 · 决策无效' and 'missing frame stamp' in w.detail.text()
++    w.close()
++    assert app is not None
++
++
++def test_output_arrow_uses_manual_and_automatic_commands(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w = Window()
++    w.show_output(dict(mode='auto', linear_mps=1., yaw_rps=1.55), 0.)
++    assert w.motion.text() == '前进' and w.arrow.degrees == -90.
++    w.show_output(dict(mode='auto', linear_mps=1., yaw_rps=.1), 0.)
++    assert -25. < w.arrow.degrees < -20.
++    w.show_output(dict(mode='manual', linear_mps=1., yaw_rps=-.5, manual_yaw_limit_rps=.5), 0.)
++    assert w.arrow.degrees == 90.
++    reverse = dict(mode='manual', linear_mps=-.1, yaw_rps=.2)
++    w.show_output(reverse, 0.)
++    color = w.output_color
++    assert w.motion.text() == '倒车' and w.arrow.degrees == 180.
++    w.show_output(reverse, .5)
++    assert w.output_color != color
++    w.show_output(dict(mode='manual', linear_mps=0., yaw_rps=-.2), 1.)
++    assert w.motion.text() == '原地转向' and w.arrow.degrees == 90.
++    w.show_output({}, 2.)
++    assert w.motion.text() == '等待门控' and w.arrow.degrees is None
++    assert not w.settings_dialog.isVisible()
++    next(button for button in w.findChildren(QtWidgets.QPushButton) if button.text() == '调参…').click()
++    assert w.settings_dialog.isVisible()
++    w.settings_dialog.close()
++    w.close()
++    assert app is not None
++
++
++def test_controller_pause_timeout_never_restarts():
++    from concept_panel.main import Controller
++    controller=Controller.__new__(Controller)
++    controller.window=SimpleNamespace(log_event=lambda *args: None,busy=True,pending_text='')
++    controller.pending=Action('restart')
++    controller.future=SimpleNamespace(done=lambda:False,cancel=lambda:None)
++    controller.deadline=0
++    controller.poll()
++    assert controller.pending is None and '超时' in controller.window.pending_text
++
++
++def test_embedded_map_resets_on_restart_ack_and_discards_old_snapshot(monkeypatch, tmp_path):
++    import base64
++    from concurrent.futures import Future
++    import json
++    import zlib
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.main import Controller, LapMapUpdates
++    from concept_panel.qt import QtGui, QtWidgets
++    from concept_panel.window import Window
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    window = Window()
++    window.show()
++    app.processEvents()
++    panel = window.lap_map
++    assert panel.isVisible() and panel.window() is window
++    empty = base64.b64encode(zlib.compress(b'')).decode('ascii')
++    snapshot = dict(schema='concept.lap-map.v1', session='old', stamp=1, cell_m=.1, distance_m=0.,
++                    road=empty, lines=empty, track=empty, pose=[0., 0., 0.],
++                    static=[], moving=[], openings=[])
++    panel.show_map(json.dumps(snapshot))
++    path = tmp_path / 'map.png'
++    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args: (str(path), 'PNG'))
++    panel.save_button.click()
++    assert QtGui.QImage(str(path)).width() >= 800
++
++    updates = LapMapUpdates.__new__(LapMapUpdates)
++    updates.panel = panel
++    old_response = Future()
++    old_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.pending = old_response
++    updates.sent_at = 0.
++    new_response = Future()
++    updates.client = SimpleNamespace(service_is_ready=lambda: True, call_async=lambda _: new_response)
++    updates.request = object
++    controller = Controller.__new__(Controller)
++    controller.window, controller.lap_map = window, updates
++    for success in (False, True):
++        controller.pending = Action('restart')
++        controller.pending.completed(True)  # pause acknowledged
++        controller.future = Future()
++        controller.future.set_result(SimpleNamespace(success=success, message=''))
++        controller.poll()
++        assert panel.save_button.isEnabled() == (not success)
++    assert panel.canvas.raster is None and panel.canvas.data is None and panel.key is None
++    updates.refresh(.1)
++    assert panel.key is None and updates.pending is new_response
++    snapshot.update(session='new', stamp=2)
++    new_response.set_result(SimpleNamespace(success=True, message=json.dumps(snapshot)))
++    updates.refresh(.2)
++    assert panel.key == ('new', 2) and panel.save_button.isEnabled()
++    window.close()
++
++
++def test_speed_fields_follow_readbacks_without_discarding_edits(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    w = Window()
++    spin = w.spins['target']
++    assert spin.value() == w.spins['limit'].value() == 4.
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.25
++    spin.setValue(2.75)
++    w.busy = True
++    w.show_speed('target', 2.25)
++    assert spin.value() == 2.75 and not spin.isEnabled()
++    w.confirmed_speeds['target'] = 2.75
++    w.busy = False
++    w.show_speed('target', 2.75)
++    w.show_speed('target', 3.)
++    assert spin.isEnabled() and spin.value() == 3.
++    assert w.readbacks['target'].text() == '当前 3.00'
++    w.close()
++    assert app
+--- /dev/null
++++ b/concept_panel/test/test_recorder.py
+@@ -0,0 +1,168 @@
++import os
++from pathlib import Path
++import time
++
++import pytest
++
++from concept_panel import recorder
++
++
++EXCLUDED = {
++    '/concept/perception/frame', '/concept/view/camera',
++    '/aiformula_control/motor_controller/reference_signal', '/concept/replay/reference_signal',
++}
++
++
++def test_registration_and_topic_selection(tmp_path, monkeypatch):
++    monkeypatch.setenv('CONCEPT_BAG_DIR', str(tmp_path))
++    bag = recorder.BagRecorder()
++    assert bag.root == tmp_path
++    assert bag.status() == recorder.RecorderStatus()
++    assert bag.stop() == bag.close() == bag.start() == recorder.RecorderStatus()
++    assert recorder.DECISION_TOPIC == '/concept/decision'
++    assert recorder.DECISION_TOPIC in recorder.TOPICS
++    assert '/concept/perception/overlay/compressed' in recorder.TOPICS
++    assert {'/concept/internal/motor_cmd', '/concept/internal/motor_can'} <= set(recorder.TOPICS)
++    assert not EXCLUDED.intersection(recorder.TOPICS)
++    assert len(recorder.TOPICS) == len(set(recorder.TOPICS)) == 11
++
++
++@pytest.fixture
++def fake_ros(tmp_path, monkeypatch):
++    if os.name != 'posix':
++        pytest.skip('Foxy production target uses POSIX process groups')
++    binary = tmp_path / 'bin' / 'ros2'
++    binary.parent.mkdir()
++    binary.write_text(r"""#!/usr/bin/env python3
++import json, os, signal, sqlite3, sys, time
++from pathlib import Path
++mode = os.environ.get('FAKE_BAG_MODE', 'normal')
++if mode == 'fail':
++    print('intentional CLI failure', flush=True)
++    sys.exit(3)
++args = sys.argv[1:]
++path = Path(args[args.index('-o') + 1])
++qos = Path(args[args.index('--qos-profile-overrides-path') + 1]).read_text()
++path.mkdir()
++(path / 'args.json').write_text(json.dumps(args))
++(path / 'qos.yaml').write_text(qos)
++stopped = False
++def stop(sig, frame):
++    global stopped
++    stopped = True
++signal.signal(signal.SIGINT, stop)
++if mode == 'delayed':
++    time.sleep(.15)
++if mode == 'hang':
++    signal.signal(signal.SIGINT, signal.SIG_IGN)
++db = sqlite3.connect(str(path / 'one.db3'))
++db.execute('CREATE TABLE topics (id INTEGER, name TEXT)')
++db.execute('CREATE TABLE messages (id INTEGER, topic_id INTEGER)')
++db.execute("INSERT INTO topics VALUES (1, '/concept/decision')")
++if mode != 'empty':
++    db.execute('INSERT INTO messages VALUES (1,1)')
++db.commit()
++while not stopped:
++    time.sleep(.01)
++db.close()
++if mode != 'no_metadata':
++    count = 2 if mode == 'bad_count' else (0 if mode == 'empty' else 1)
++    topic = dict(topic_metadata={'name':'/concept/decision'}, message_count=count)
++    info = dict(storage_identifier='sqlite3', relative_file_paths=['one.db3'],
++                message_count=count, topics_with_message_count=[topic])
++    (path/'metadata.yaml').write_text(json.dumps(dict(rosbag2_bagfile_information=info)))
++sys.exit(2)
++""")
++    binary.chmod(0o755)
++    monkeypatch.setenv('PATH', str(binary.parent) + os.pathsep + os.environ['PATH'])
++    monkeypatch.setattr(recorder, '_POLL', .01)
++    monkeypatch.setattr(recorder, '_FINALIZE_TIMEOUT', 1.5)
++    monkeypatch.setattr(recorder, '_TERM_TIMEOUT', .5)
++    return recorder.BagRecorder(tmp_path / 'bags with spaces #')
++
++
++def await_status(bag, state):
++    finish = time.monotonic() + 5.
++    while time.monotonic() < finish:
++        s = bag.status()
++        if s.state == state:
++            return s
++        if s.state == 'error' and state != 'error':
++            pytest.fail(s.error)
++        time.sleep(.015)
++    pytest.fail('Timed out waiting for %s: %r' % (state, bag.status()))
++
++
++def test_regular_record_stop_repeat_close(fake_ros):
++    import json
++    import yaml
++    bag = fake_ros
++    one = bag.start()
++    assert one.state == 'starting'
++    assert bag.start().path == one.path
++    await_status(bag, 'recording')
++    path = Path(one.path)
++    args = json.loads((path/'args.json').read_text())
++    assert args[:2] == ['bag', 'record'] and args[-len(recorder.TOPICS):] == list(recorder.TOPICS)
++    assert args[args.index('--max-cache-size')+1] == '0'
++    assert args[args.index('-s')+1] == 'sqlite3'
++    assert '-a' not in args and '--all' not in args and '--no-discovery' not in args
++    qos = yaml.safe_load((path/'qos.yaml').read_text())
++    assert set(qos) == set(recorder.TOPICS)
++    assert all(profile == dict(history='keep_last', depth=1, reliability='best_effort',
++                               durability='volatile') for profile in qos.values())
++    assert bag.stop().state == 'stopping'
++    assert await_status(bag, 'saved').messages == 1
++    two = bag.start()
++    assert two.path != one.path
++    await_status(bag, 'recording')
++    assert bag.close().state == 'stopping'
++    result = await_status(bag, 'saved')
++    assert result.path == two.path and result.messages == 1
++    assert bag.start() == result
++
++
++def test_stop_during_startup_is_owned_and_returns_immediately(fake_ros, monkeypatch):
++    monkeypatch.setenv('FAKE_BAG_MODE', 'delayed')
++    bag = fake_ros
++    bag.start()
++    assert bag.close().state == 'stopping'
++    assert bag.status().state == 'stopping'
++    assert await_status(bag, 'saved').messages == 1
++
++
++@pytest.mark.parametrize('mode,expected', [('fail', 'intentional CLI failure'),
++        ('no_metadata','metadata.yaml'), ('bad_count','SQLite'), ('empty','没有录到消息'),
++        ('hang','SIGINT')])
++def test_failure_is_reported_and_reusable(fake_ros, monkeypatch, mode, expected):
++    bag = fake_ros
++    monkeypatch.setenv('FAKE_BAG_MODE', mode)
++    bag.start()
++    if mode != 'fail':
++        await_status(bag, 'recording')
++        bag.stop()
++    failed = await_status(bag, 'error')
++    assert expected in failed.error
++    assert failed.messages is None
++    monkeypatch.delenv('FAKE_BAG_MODE')
++    next_bag = bag.start()
++    assert next_bag.path != failed.path
++    await_status(bag, 'recording')
++    bag.close()
++    assert await_status(bag, 'saved').messages == 1
++
++
++def test_stop_never_signals_another_recording(fake_ros):
++    first = fake_ros
++    second = recorder.BagRecorder(first.root)
++    try:
++        assert first.start().path != second.start().path
++        await_status(first, 'recording')
++        await_status(second, 'recording')
++        first.stop()
++        assert await_status(first, 'saved').messages == 1
++        assert second.status().state == 'recording'
++    finally:
++        first.close()
++        second.close()
++    assert await_status(second, 'saved').messages == 1
+--- /dev/null
++++ b/concept_panel/test/test_recording_controls.py
+@@ -0,0 +1,54 @@
++from pathlib import Path
++from types import SimpleNamespace
++
++
++def test_recording_control_stays_available_without_a_gate(monkeypatch):
++    monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
++    from concept_panel.main import RecordingControls
++    from concept_panel.qt import QtWidgets
++    from concept_panel.window import Window
++
++    class Recorder:
++        root = Path('/bags')
++
++        def set_status(self, state, path='', error='', messages=None):
++            self.snapshot = SimpleNamespace(state=state, path=path, error=error, messages=messages)
++            return self.snapshot
++
++        def status(self):
++            return self.snapshot
++
++        def start(self):
++            return self.set_status('starting', '/bags/run')
++
++        def stop(self):
++            return self.set_status('stopping', '/bags/run')
++
++    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
++    window = Window()
++    recorder = Recorder()
++    recorder.set_status('idle')
++    control = RecordingControls(recorder, window)
++    window.busy = True
++    window.refresh(1., 1.)
++    assert window.bag_toggle.isEnabled() and not window.buttons['enable'].isEnabled()
++    window.bag_toggle.click()
++    assert window.bag_status.text() == '正在启动'
++    recorder.set_status('recording', '/bags/run')
++    control.refresh()
++    assert window.bag_toggle.text() == '停止录包' and window.bag_path.text() == '/bags/run'
++    window.bag_toggle.click()
++    assert not window.bag_toggle.isEnabled() and window.buttons['pause'].isEnabled()
++    recorder.set_status('saved', '/bags/run', messages=17)
++    control.refresh()
++    assert '17' in window.bag_status.text() and window.bag_path.text() == '/bags/run'
++    recorder.set_status('error', '/bags/run', '磁盘已满')
++    control.refresh()
++    assert window.bag_status.toolTip() == '磁盘已满' and window.bag_toggle.isEnabled()
++    assert '磁盘已满' in window.table.topLevelItem(0).text(1)
++    offline = Window(offline=True)
++    RecordingControls(recorder, offline)
++    assert not offline.bag_toggle.isEnabled()
++    window.close()
++    offline.close()
++    assert app is not None
+--- /dev/null
++++ b/concept_panel/test/test_recording_shutdown.py
+@@ -0,0 +1,90 @@
++"""Exercise the real panel exit path with a slow, isolated bag subprocess."""
++import os
++import signal
++import subprocess
++import sys
++import time
++
++import pytest
++
++
++def test_launch_signals_during_startup_and_slow_finalize(tmp_path):
++    if os.name != 'posix':
++        pytest.skip('The Foxy recorder uses POSIX process groups')
++    pytest.importorskip('rclpy')
++    from concept_panel import recorder
++
++    fake_ros = tmp_path / 'ros2'
++    fake_ros.write_text("""#!/usr/bin/env python3
++import json, os, signal, sqlite3, sys, time
++from pathlib import Path
++bag = Path(sys.argv[sys.argv.index('-o')+1])
++bag.mkdir(parents=True)
++requested = []
++signal.signal(signal.SIGINT, lambda *_: requested.append(True))
++(bag/'pending-pid').write_text(str(os.getpid()))
++(bag/'pending-pid').rename(bag/'starting')
++while not (bag/'open').exists(): time.sleep(.03)
++db = sqlite3.connect(str(bag/'bag.db3'))
++db.executescript("CREATE TABLE topics(id INTEGER, name TEXT);"
++                 "INSERT INTO topics VALUES(1,'/concept/decision');"
++                 "CREATE TABLE messages(topic_id INTEGER); INSERT INTO messages VALUES(1);")
++while not requested: time.sleep(.03)
++(bag/'flushing').touch()
++time.sleep(6.5)
++db.close()
++info = dict(storage_identifier='sqlite3', relative_file_paths=['bag.db3'],message_count=1,
++            topics_with_message_count=[dict(topic_metadata=dict(name='/concept/decision'),message_count=1)])
++(bag/'metadata.yaml').write_text(json.dumps(dict(rosbag2_bagfile_information=info)))
++""", encoding='utf8')
++    fake_ros.chmod(0o755)
++    env = dict(os.environ, PATH=str(tmp_path)+os.pathsep+os.environ['PATH'],
++               CONCEPT_BAG_DIR=str(tmp_path/'bags'), ROS_LOCALHOST_ONLY='1',
++               ROS_DOMAIN_ID='88', QT_QPA_PLATFORM='offscreen')
++    code = """
++from concept_panel import main
++original = main.Window.show
++def show(window):
++    original(window)
++    main.QtCore.QTimer.singleShot(0, window.bag_toggle.click)
++main.Window.show = show
++main.main()
++"""
++    panel = subprocess.Popen([sys.executable, '-c', code], env=env, start_new_session=True)
++    bag_pid = None
++
++    def wait_for(pattern, timeout=12):
++        end = time.monotonic()+timeout
++        while time.monotonic() < end:
++            files = list(tmp_path.glob(pattern))
++            if files:
++                return files[0]
++            assert panel.poll() is None, 'Panel exited before '+pattern
++            time.sleep(.05)
++        pytest.fail('Timed out waiting for '+pattern)
++
++    try:
++        marker = wait_for('bags/*/starting')
++        bag = marker.parent
++        bag_pid = int(marker.read_text())
++        panel.send_signal(signal.SIGINT)
++        time.sleep(.25)
++        (bag/'open').touch()
++        wait_for('bags/*/flushing')
++        panel.send_signal(signal.SIGINT)
++        time.sleep(5.1)
++        assert panel.poll() is None
++        panel.send_signal(signal.SIGTERM)
++        assert panel.wait(timeout=15) == 0
++        assert recorder._verified_messages(bag) == 1
++        with pytest.raises(ProcessLookupError):
++            os.killpg(bag_pid, 0)
++    finally:
++        if panel.poll() is None:
++            panel.kill()
++            panel.wait()
++        if bag_pid is not None:
++            try:
++                os.killpg(bag_pid, signal.SIGKILL)
++            except ProcessLookupError:
++                pass

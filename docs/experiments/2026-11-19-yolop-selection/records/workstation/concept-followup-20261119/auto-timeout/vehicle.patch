@@ -1,0 +1,73 @@
+diff --git a/vehicle_concept/src/concept/concept/bringup.py b/vehicle_concept/src/concept/concept/bringup.py
+index 9d616b3..5399198 100644
+--- a/vehicle_concept/src/concept/concept/bringup.py
++++ b/vehicle_concept/src/concept/concept/bringup.py
+@@ -2,10 +2,13 @@
+ import runpy
+ import tempfile
+ import time
++
++import yaml
+ from pathlib import Path
+ 
+ from ament_index_python.packages import get_package_share_directory
+-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, SetEnvironmentVariable
++from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
++                            SetEnvironmentVariable, SetLaunchConfiguration)
+ from launch.event_handlers import OnShutdown
+ from launch.launch_description_sources import PythonLaunchDescriptionSource
+ from launch.substitutions import LaunchConfiguration as LC
+@@ -51,6 +54,19 @@ def check_ownership(context):
+     return []
+ 
+ 
++def zed_actions(context, native, directory):
++    # The wrapper separately caps acquisition and image publication. At 15 Hz
++    # a 60 Hz grab alone still delivers old images to the planning pipeline.
++    original = Path(LC('config_common_path').perform(context))
++    config = yaml.safe_load(original.read_text(encoding='utf-8'))
++    general = config['/**']['ros__parameters']['general']
++    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
++    overlay = Path(directory, 'zed-common.yaml')
++    overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
++    return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
++                                *native['create_zed_node'](context)])
++
++
+ def sensor_actions(context):
+     import xacro
+ 
+@@ -72,7 +88,7 @@ def sensor_actions(context):
+              parameters=[{'robot_description': ParameterValue(description, value_type=str)}]),
+         Node(package='joint_state_publisher', executable='joint_state_publisher', namespace='/aiformula_sensing',
+              arguments=[str(urdf)]),
+-        *native['create_zed_node'](context),
++        zed_actions(context, native, temporary.name),
+         include('launchers', 'vectornav.launch.py'),
+         include('odometry_publisher', 'gyro_odometry_publisher.launch.py', use_rviz='false',
+                 imu_topic='/aiformula_sensing/vectornav/imu'),
+diff --git a/vehicle_concept/src/concept/launch/concept.launch.py b/vehicle_concept/src/concept/launch/concept.launch.py
+index 07d7b56..c08bd58 100644
+--- a/vehicle_concept/src/concept/launch/concept.launch.py
++++ b/vehicle_concept/src/concept/launch/concept.launch.py
+@@ -13,7 +13,7 @@ def generate_launch_description():
+         'camera_info_topic': '/aiformula_sensing/zed_node/left/camera_info',
+         'can_interface': 'can0', 'can_ready_timeout_sec': '10', 'enable_can_fd': 'false',
+         'receiver_interval_sec': '0.1', 'sender_timeout_sec': '0.01',
+-        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '15',
++        'use_sim_time': 'false', 'grab_resolution': 'HD1080', 'grab_frame_rate': '60',
+         'pub_downscale_factor': '3.0',
+         'config_common_path': share('vehicle', 'config', 'zedx', 'common.yaml'),
+         'config_camera_path': share('vehicle', 'config', 'zedx', 'zedx.yaml'),
+diff --git a/vehicle_concept/src/concept/package.xml b/vehicle_concept/src/concept/package.xml
+index ce198d0..e58f215 100644
+--- a/vehicle_concept/src/concept/package.xml
++++ b/vehicle_concept/src/concept/package.xml
+@@ -18,6 +18,7 @@
+   <exec_depend>concept_visualization</exec_depend>
+   <exec_depend>motor_controller</exec_depend>
+   <exec_depend>vehicle</exec_depend>
++  <exec_depend>python3-yaml</exec_depend>
+   <exec_depend>xacro</exec_depend>
+   <exec_depend>robot_state_publisher</exec_depend>
+   <exec_depend>joint_state_publisher</exec_depend>

@@ -1,0 +1,51 @@
+Starting >>> concept_feasibility
+[0.929s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Starting >>> concept_obstacles
+[0.955s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Finished <<< concept_obstacles [2.88s]
+Starting >>> concept_panel
+Finished <<< concept_feasibility [3.54s]
+Starting >>> concept_candidates
+[4.458s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Finished <<< concept_panel [2.34s]
+Starting >>> concept_vehicle_state
+Finished <<< concept_candidates [2.55s]
+Starting >>> concept_visualization
+Finished <<< concept_vehicle_state [2.28s]
+Starting >>> concept_drive
+[8.452s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_control_gate
+- concept_road
+- concept_yolop
+- concept_ranker
+They are being used from the following locations instead:
+- /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_control_gate
+- /home/control/concept_v6275_ws/install/concept_road
+- /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_yolop
+- /home/control/concept_v6275_ws/install/concept_ranker
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_control_gate concept_road concept_yolop concept_ranker
+Finished <<< concept_visualization [2.80s]
+Finished <<< concept_drive [2.33s]
+
+Summary: 7 packages finished [10.4s]
+2026-11-19T16:50:08+09:00
+......................................................................   [100%]
+70 passed in 29.72 seconds
+DDS verified command signs, capture stamp, selection, speed cap, restart, projection interlock, Honda direct-frame parity, image-gap restart and signed reverse publication and full-zero braking.
+2026-11-19T16:50:41+09:00

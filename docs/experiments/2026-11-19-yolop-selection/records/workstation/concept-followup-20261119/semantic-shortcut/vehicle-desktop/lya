@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+exec ros2 run trajectory_follower lya_follower_connected_omegat_global "$@"

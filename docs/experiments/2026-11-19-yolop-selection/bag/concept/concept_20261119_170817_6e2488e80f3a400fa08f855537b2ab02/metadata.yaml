@@ -1,0 +1,79 @@
+rosbag2_bagfile_information:
+  version: 4
+  storage_identifier: sqlite3
+  relative_file_paths:
+    - concept_20261119_170817_6e2488e80f3a400fa08f855537b2ab02_0.db3
+  duration:
+    nanoseconds: 27167609529
+  starting_time:
+    nanoseconds_since_epoch: 1795075698340564151
+  message_count: 15543
+  topics_with_message_count:
+    - topic_metadata:
+        name: /aiformula_sensing/vectornav/imu
+        type: sensor_msgs/msg/Imu
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 485
+    - topic_metadata:
+        name: /aiformula_sensing/vehicle_info
+        type: can_msgs/msg/Frame
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 9846
+    - topic_metadata:
+        name: /concept/vehicle_state
+        type: std_msgs/msg/String
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 490
+    - topic_metadata:
+        name: /concept/decision
+        type: std_msgs/msg/String
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 108
+    - topic_metadata:
+        name: /concept/internal/motor_cmd
+        type: geometry_msgs/msg/Twist
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 2147483647\n    nsec: 4294967295\n  lifespan:\n    sec: 2147483647\n    nsec: 4294967295\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 2147483647\n    nsec: 4294967295\n  avoid_ros_namespace_conventions: false"
+      message_count: 1297
+    - topic_metadata:
+        name: /concept/perception/overlay/compressed
+        type: sensor_msgs/msg/CompressedImage
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 2\n  durability: 2\n  deadline:\n    sec: 2147483647\n    nsec: 4294967295\n  lifespan:\n    sec: 2147483647\n    nsec: 4294967295\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 2147483647\n    nsec: 4294967295\n  avoid_ros_namespace_conventions: false"
+      message_count: 108
+    - topic_metadata:
+        name: /concept/internal/motor_can
+        type: can_msgs/msg/Frame
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 2313
+    - topic_metadata:
+        name: /concept/gate/status
+        type: std_msgs/msg/String
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 2147483647\n    nsec: 4294967295\n  lifespan:\n    sec: 2147483647\n    nsec: 4294967295\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 2147483647\n    nsec: 4294967295\n  avoid_ros_namespace_conventions: false"
+      message_count: 270
+    - topic_metadata:
+        name: /concept/gate/estop
+        type: std_msgs/msg/Bool
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 0
+    - topic_metadata:
+        name: /concept/auto_cmd
+        type: geometry_msgs/msg/TwistStamped
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 106
+    - topic_metadata:
+        name: /aiformula_control/joy_node/joy_l2_throttle
+        type: sensor_msgs/msg/Joy
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 520
+  compression_format: ""
+  compression_mode: ""

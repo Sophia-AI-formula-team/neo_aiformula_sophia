@@ -1,0 +1,128 @@
+--- a/semantic/workspace/src/aiformula/launchers/launch/semantic_vehicle_045.launch.py
++++ b/semantic/workspace/src/aiformula/launchers/launch/semantic_vehicle_045.launch.py
+@@ -20,6 +20,7 @@
+ 
+ def _map_assist_node(context):
+     lane = LaunchConfiguration("lane").perform(context)
++    lane_point_prefix = LaunchConfiguration("lane_point_topic_prefix").perform(context)
+     stop_topic = LaunchConfiguration("traffic_stop_flag_topic").perform(context)
+     if lane not in LANE_RADII:
+         raise ValueError("lane must be inner or outer")
+@@ -48,7 +49,7 @@
+         "detour_min_turn_radius_m": LANE_RADII[lane],
+     }
+     for label in "abc":
+-        overrides[f"input_point_{label}_topic"] = f"/processed_point_{label}"
++        overrides[f"input_point_{label}_topic"] = f"{lane_point_prefix}{label}"
+         overrides[f"output_point_{label}_topic"] = f"{PREFIX}/point_{label}"
+ 
+     # Foxy can give the node-specific base YAML precedence over a wildcard
+@@ -64,6 +65,11 @@
+ 
+ def generate_launch_description():
+     return LaunchDescription([
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
+         DeclareLaunchArgument("oa_initially_idle", default_value="false", choices=["true", "false"]),
+         DeclareLaunchArgument("lane", choices=["inner", "outer"],
+                               description="Select the minimum radius for the commissioned lane."),
+--- a/commissioning/semantic_045_commissioning.launch.py
++++ b/commissioning/semantic_045_commissioning.launch.py
+@@ -40,6 +40,7 @@
+             PythonLaunchDescriptionSource(str(planner_launch)),
+             launch_arguments={
+                 "lane": LaunchConfiguration("lane"),
++                "lane_point_topic_prefix": LaunchConfiguration("lane_point_topic_prefix"),
+                 "oa_initially_idle": LaunchConfiguration("oa_initially_idle"),
+                 "traffic_stop_flag_topic": LaunchConfiguration("traffic_stop_flag_topic"),
+                 "traffic_stop_flag_timeout_sec": "0.5",
+@@ -57,6 +58,11 @@
+         return [ExecuteProcess(cmd=[sys.executable, str(directory / "guarded_stop_wait.py"), *args],
+                                output="screen")]
+     return LaunchDescription([
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
+         DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"],
+                               description="Connect legacy stop_wait and activate the motor session"),
+         DeclareLaunchArgument("oa_initially_idle", default_value="true", choices=["true", "false"],
+--- a/workspace/src/aiformula/launchers/launch/allnodes.launch.py
++++ b/workspace/src/aiformula/launchers/launch/allnodes.launch.py
+@@ -267,6 +267,7 @@
+ 
+ def generate_launch_description():
+     _, topic_names = get_frame_ids_and_topic_names()
++    lane_point_prefix = LaunchConfiguration("lane_point_topic_prefix")
+     launchers_dir = get_package_share_directory("launchers")
+     vehicle_dir = get_package_share_directory("vehicle")
+     motor_controller_dir = get_package_share_directory("motor_controller")
+@@ -274,6 +275,11 @@
+     rear_potentiometer_dir = get_package_share_directory("rear_potentiometer")
+ 
+     launch_args = (
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
+         DeclareLaunchArgument("launch_yolop_a3", default_value="false",
+                               description="Start A3 V14 on the existing lane/object topics."),
+         DeclareLaunchArgument(
+@@ -493,7 +499,7 @@
+                     (f"lane_line_{side}", topic_names["perception"]["lane_lines"][side])
+                     for side in ("left", "right", "center")
+                 ] + [
+-                    (f"/original_processed_point_{label}", f"/processed_point_{label}")
++                    (f"/original_processed_point_{label}", [lane_point_prefix, label])
+                     for label in "abc"
+                 ] + [("/lane_stop_flag", "/point_flag")],
+             ),
+@@ -501,6 +507,10 @@
+                 package="kalman_filter",
+                 executable="withoutkalman_0312",
+                 output="screen",
++                remappings=[
++                    (f"/processed_point_{label}", [lane_point_prefix, label])
++                    for label in "abc"
++                ],
+             ),
+             joy_node,
+             joy_remap_node,
+--- a/commissioning/mapassist_formal.launch.py
++++ b/commissioning/mapassist_formal.launch.py
+@@ -9,6 +9,7 @@
+ from launch.substitutions import LaunchConfiguration
+ 
+ MOTOR_COMMAND = "/semantic_drive/map_assist_045/diagnostic_cmd_vel"
++LANE_POINT_TOPIC_PREFIX = "/original_processed_point_"
+ FINAL_CAN = "/aiformula_control/motor_controller/reference_signal"
+ OWNED_NODES = {"socket_can_sender", "socket_can_receiver", "motor_controller",
+                "zed_node", "map_assist", "motor_gate_session"}
+@@ -49,11 +50,19 @@
+         OpaqueFunction(function=check_owners),
+         IncludeLaunchDescription(
+             PythonLaunchDescriptionSource(str(launchers / "allnodes.launch.py")),
+-            launch_arguments={"motor_cmd_topic": MOTOR_COMMAND, "launch_yolop_a3": "false"}.items(),
++            launch_arguments={
++                "motor_cmd_topic": MOTOR_COMMAND,
++                "launch_yolop_a3": "false",
++                "lane_point_topic_prefix": LANE_POINT_TOPIC_PREFIX,
++            }.items(),
+         ),
+         IncludeLaunchDescription(
+             PythonLaunchDescriptionSource(str(commissioning)),
+-            launch_arguments={"lane": LaunchConfiguration("lane"),
+-                              "vehicle_output": "true", "start_lya": "false"}.items(),
++            launch_arguments={
++                "lane": LaunchConfiguration("lane"),
++                "lane_point_topic_prefix": LANE_POINT_TOPIC_PREFIX,
++                "vehicle_output": "true",
++                "start_lya": "false",
++            }.items(),
+         ),
+     ])

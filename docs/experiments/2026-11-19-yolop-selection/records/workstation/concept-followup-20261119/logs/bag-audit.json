@@ -1,0 +1,310 @@
+{
+  "queried": "2026-11-19T13:56:59+09:00",
+  "runs": [
+    {
+      "source": "concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1",
+      "times": [
+        "2026-11-19T10:59:26.371+09:00",
+        "2026-11-19T11:03:00.188+09:00"
+      ],
+      "topics": {
+        "/aiformula_sensing/vehicle_info": 55914,
+        "/concept/auto_cmd": 0,
+        "/concept/decision": 288,
+        "/aiformula_control/joy_node/joy_l2_throttle": 4663,
+        "/aiformula_sensing/vectornav/imu": 4273,
+        "/concept/vehicle_state": 4271,
+        "/concept/internal/motor_cmd": 10541,
+        "/concept/gate/estop": 0,
+        "/concept/gate/status": 2137,
+        "/concept/internal/motor_can": 20692,
+        "/concept/perception/overlay/compressed": 288
+      },
+      "decisions": {
+        "states": {
+          "('invalid', 'image is stale or its stamp is in the future')": 288
+        },
+        "profiles": {
+          "unverified-resize": 288
+        },
+        "exact_candidate_evaluations": {},
+        "candidates_count": {},
+        "feasible_counts": {},
+        "indices": {},
+        "whitebox_indices": {},
+        "select_path_points": {},
+        "path_endpoint_distances_m": null,
+        "nonzero_planned": 0,
+        "decision_out_age_ms": {
+          "min": 803.5586,
+          "median": 876.0667,
+          "p95": 927.1941,
+          "max": 952.7049
+        },
+        "processing_ms": {
+          "min": 0.9733,
+          "median": 1.6149,
+          "p95": 2.6451,
+          "max": 2.8745
+        },
+        "late_output_500ms": 0,
+        "path_presence_changes": 0,
+        "recovery_feasible_selectedindex_path_candidatecounts": [],
+        "no_path_sample": [],
+        "map_counts": {},
+        "selected_spans_jst": []
+      },
+      "gate": {
+        "status": {
+          "('auto', 'waiting_new_auto', True, False)": 808,
+          "('paused', 'manual_released', True, True)": 753,
+          "('paused', 'operator_pause', True, True)": 227,
+          "('manual', 'manual_takeover', True, True)": 134,
+          "('disabled', 'manual_released', False, True)": 84,
+          "('paused', 'speed_limit_changed', True, True)": 56,
+          "('disabled', 'startup', False, True)": 27,
+          "('disabled', 'manual_takeover', False, True)": 27,
+          "('paused', 'output_enabled', True, True)": 15,
+          "('manual', 'joy_timeout', True, True)": 6
+        },
+        "nonzero_status": 132,
+        "nonzero_private_cmd": 640
+      },
+      "wheel": {
+        "status": {
+          "(True, 'ok')": 4257,
+          "(False, 'unsupported_can_high_bytes_or_direction')": 14
+        },
+        "nonzero_valid": 349
+      }
+    },
+    {
+      "source": "concept_20261119_134918_73515f6a61e54c15ba87d7841d21bf23",
+      "times": [
+        "2026-11-19T13:49:19.001+09:00",
+        "2026-11-19T13:50:28.035+09:00"
+      ],
+      "topics": {
+        "/concept/decision": 468,
+        "/concept/perception/overlay/compressed": 717,
+        "/aiformula_sensing/vectornav/imu": 1320,
+        "/aiformula_sensing/vehicle_info": 17946,
+        "/concept/vehicle_state": 1359,
+        "/aiformula_control/joy_node/joy_l2_throttle": 0,
+        "/concept/gate/status": 661,
+        "/concept/auto_cmd": 0,
+        "/concept/internal/motor_cmd": 3197,
+        "/concept/gate/estop": 0,
+        "/concept/internal/motor_can": 6275
+      },
+      "decisions": {
+        "states": {
+          "('shadow', 'camera geometry has no validated driving profile')": 468
+        },
+        "profiles": {
+          "unverified-resize": 468
+        },
+        "exact_candidate_evaluations": {
+          "{'mode': 'exact', 'batches': 1, 'input_count': 75, 'evaluated_count': 45}": 160,
+          "{'mode': 'exact', 'batches': 1, 'input_count': 75, 'evaluated_count': 50}": 130,
+          "{'mode': 'exact', 'batches': 0, 'input_count': 0, 'evaluated_count': 0}": 103,
+          "{'mode': 'exact', 'batches': 1, 'input_count': 75, 'evaluated_count': 55}": 73,
+          "{'mode': 'exact', 'batches': 1, 'input_count': 75, 'evaluated_count': 60}": 2
+        },
+        "candidates_count": {
+          "75": 261,
+          "0": 203,
+          "1": 4
+        },
+        "feasible_counts": {
+          "30": 261,
+          "0": 203,
+          "1": 4
+        },
+        "indices": {
+          "None": 203,
+          "1": 126,
+          "71": 86,
+          "36": 15,
+          "66": 12,
+          "6": 9,
+          "0": 7,
+          "61": 6,
+          "41": 2,
+          "51": 1,
+          "46": 1
+        },
+        "whitebox_indices": {
+          "None": 203,
+          "1": 126,
+          "71": 86,
+          "36": 15,
+          "66": 12,
+          "6": 9,
+          "0": 7,
+          "61": 6,
+          "41": 2,
+          "51": 1,
+          "46": 1
+        },
+        "select_path_points": {
+          "22": 272,
+          "0": 180,
+          "21": 14,
+          "25": 2
+        },
+        "path_endpoint_distances_m": {
+          "min": 0.0,
+          "median": 1.0628,
+          "p95": 1.107,
+          "max": 1.107
+        },
+        "nonzero_planned": 281,
+        "decision_out_age_ms": {
+          "min": 297.5092,
+          "median": 426.7368,
+          "p95": 495.7923,
+          "max": 566.5107
+        },
+        "processing_ms": {
+          "min": 99.4783,
+          "median": 140.655,
+          "p95": 167.9084,
+          "max": 203.4323
+        },
+        "late_output_500ms": 23,
+        "path_presence_changes": 31,
+        "recovery_feasible_selectedindex_path_candidatecounts": [
+          [
+            [
+              "not_needed",
+              true,
+              true,
+              true,
+              75
+            ],
+            258
+          ],
+          [
+            [
+              "No observed rear corridor; release",
+              false,
+              false,
+              false,
+              0
+            ],
+            85
+          ],
+          [
+            [
+              "Previously checked early release; original deadline retained",
+              false,
+              false,
+              false,
+              0
+            ],
+            67
+          ],
+          [
+            [
+              "Unknown rear or occupied swept path; holding release",
+              false,
+              false,
+              false,
+              0
+            ],
+            28
+          ],
+          [
+            [
+              "previously_checked_pass_then_stop",
+              false,
+              false,
+              true,
+              0
+            ],
+            23
+          ],
+          [
+            [
+              "{'phase': 'release', 'remaining_historical_distance_m': 0.0, 'budget_fixed_at_entry': True, 'maximum_body_speed_mps': 0.3, 'forward_proposals_assume_stationary'",
+              true,
+              true,
+              true,
+              1
+            ],
+            4
+          ],
+          [
+            [
+              "selected_deceleration",
+              true,
+              true,
+              true,
+              75
+            ],
+            3
+          ]
+        ],
+        "no_path_sample": [
+          {
+            "reason": "camera geometry has no validated driving profile",
+            "recovery": "No observed rear corridor; release",
+            "rejected": {},
+            "candidate_count": 0,
+            "road_rows": 58,
+            "tstamp": 1795063759356927000
+          }
+        ],
+        "map_counts": {
+          "(0, 2, 59)": 201,
+          "(0, 1, 59)": 201,
+          "(0, 3, 59)": 21,
+          "(0, 2, 58)": 20,
+          "(0, 1, 58)": 8,
+          "(0, 2, 57)": 4,
+          "(0, 4, 59)": 4,
+          "(0, 3, 58)": 2,
+          "(0, 2, 56)": 2,
+          "(0, 1, 57)": 2,
+          "(0, 1, 56)": 1,
+          "(0, 5, 59)": 1,
+          "(0, 6, 59)": 1
+        },
+        "selected_spans_jst": [
+          [
+            "2026-11-19T13:49:22.089+09:00",
+            22,
+            1,
+            "not_needed"
+          ],
+          [
+            "2026-11-19T13:49:22.776+09:00",
+            22,
+            6,
+            "not_needed"
+          ],
+          [
+            "2026-11-19T13:49:23.041+09:00",
+            22,
+            0,
+            "selected_deceleration"
+          ]
+        ]
+      },
+      "gate": {
+        "status": {
+          "('paused', 'joy_timeout', True, True)": 661
+        },
+        "nonzero_status": 0,
+        "nonzero_private_cmd": 0
+      },
+      "wheel": {
+        "status": {
+          "(True, 'ok')": 1359
+        },
+        "nonzero_valid": 0
+      }
+    }
+  ]
+}

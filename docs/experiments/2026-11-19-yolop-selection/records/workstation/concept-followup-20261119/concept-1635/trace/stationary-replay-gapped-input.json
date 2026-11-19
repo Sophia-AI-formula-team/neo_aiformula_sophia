@@ -1,0 +1,84 @@
+{
+  "version": "recorded stationary sensors and five captured Honda frames, real-clock shifted, no plant dynamics and no detector rerun",
+  "bag": "concept_20261119_163533_c54bf42b0c2d4e38bf8b6542e36b5975",
+  "source_segment": "2026-11-19T16:35:36.430+09:00",
+  "raw_messages_per_second": {
+    "/aiformula_sensing/vehicle_info": 9,
+    "/aiformula_sensing/vectornav/imu": 20,
+    "/aiformula_control/joy_node/joy_l2_throttle": 20
+  },
+  "loop_frames": 5,
+  "windows": [
+    {
+      "start": "2026-11-19T16:52:41.920+09:00",
+      "end": "2026-11-19T16:52:48.926+09:00",
+      "first_positive": [
+        {
+          "t": "2026-11-19T16:52:42.060+09:00",
+          "v": 0.2,
+          "omega": 0.062208589357279895
+        },
+        {
+          "t": "2026-11-19T16:52:42.260+09:00",
+          "v": 0.4,
+          "omega": 0.06236100961547988
+        },
+        {
+          "t": "2026-11-19T16:52:42.459+09:00",
+          "v": 0.5,
+          "omega": 0.06263192394382386
+        }
+      ],
+      "peak_v": 0.5,
+      "peak_abs_yaw": 0.06263192394382386,
+      "nonzero_motor": 40,
+      "gate_modes": {
+        "auto": 2,
+        "paused": 61
+      },
+      "min_v": 0.0,
+      "proposal_count": 35,
+      "state_count": 140,
+      "stationary_valid": 133
+    },
+    {
+      "start": "2026-11-19T16:52:49.631+09:00",
+      "end": "2026-11-19T16:52:56.641+09:00",
+      "first_positive": [],
+      "peak_v": 0.0,
+      "peak_abs_yaw": 0.0,
+      "nonzero_motor": 0,
+      "gate_modes": {
+        "paused": 63
+      },
+      "min_v": 0.0,
+      "proposal_count": 32,
+      "state_count": 140,
+      "stationary_valid": 133
+    }
+  ],
+  "loss": {
+    "start": "2026-11-19T16:52:56.643+09:00",
+    "last_gate": {
+      "output_enabled": true,
+      "paused": true,
+      "manual_held": false,
+      "estop": false,
+      "mode": "paused",
+      "reason": "invalid_vehicle_state",
+      "t": 1795074778.060329,
+      "max_auto_speed_mps": 4.0,
+      "linear_mps": 0.0,
+      "yaw_rps": 0.0,
+      "manual_yaw_limit_rps": 1.0,
+      "auto_fresh": false
+    },
+    "internal_after_700ms": 37,
+    "nonzero_after_700ms": 0,
+    "can_nonzero_after_700ms": 0
+  },
+  "decisions": {
+    "feasible": 74,
+    "no recent wheel and gyro measurement at image capture": 3
+  }
+}

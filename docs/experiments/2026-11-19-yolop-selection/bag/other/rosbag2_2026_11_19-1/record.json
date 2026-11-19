@@ -1,0 +1,396 @@
+{
+  "category": "other",
+  "session": "rosbag2_2026_11_19-1",
+  "vehicle_directory": "/media/control/OrinSSD2000/rosbag2_2026_11_19-1",
+  "directory": "bag/other/rosbag2_2026_11_19-1",
+  "start_jst": "2026-11-19T10:51:19.569005324+09:00",
+  "end_jst": "2026-11-19T10:58:12.358904661+09:00",
+  "messages": 700726,
+  "topic_count": 71,
+  "classification": "OrinSSD 原车录制器，存在 A3、车道点与跟踪器数据。Semantic 的两个已声明话题均为 0 条，收录时段早于首次 Concept 专用录包。",
+  "quick_check": "ok",
+  "files": [
+    {
+      "file": "metadata.yaml",
+      "bytes": 31074,
+      "sha256": "61b95e94740b3d7fcec63aa59cda85401be1cc77c628735b967ad0ee7fccce82"
+    },
+    {
+      "file": "rosbag2_2026_11_19-1_0.db3",
+      "bytes": 181231616,
+      "sha256": "0f438a684423eba9b7bb5c605f52359fdb48750ed83e2f3d5b5c457ee0f20b42"
+    },
+    {
+      "file": "rosbag2_2026_11_19-1_0.db3-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "file": "rosbag2_2026_11_19-1_0.db3-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "topics": [
+    {
+      "name": "/aiformula_control/game_pad/cmd_vel",
+      "type": "geometry_msgs/msg/Twist",
+      "messages": 2736
+    },
+    {
+      "name": "/aiformula_control/joy/set_feedback",
+      "type": "sensor_msgs/msg/JoyFeedback",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_control/joy_node/joy",
+      "type": "sensor_msgs/msg/Joy",
+      "messages": 6900
+    },
+    {
+      "name": "/aiformula_control/joy_node/joy_l2_throttle",
+      "type": "sensor_msgs/msg/Joy",
+      "messages": 6845
+    },
+    {
+      "name": "/aiformula_control/motor_controller/gate_status",
+      "type": "std_msgs/msg/String",
+      "messages": 2911
+    },
+    {
+      "name": "/aiformula_control/motor_controller/reference_signal",
+      "type": "can_msgs/msg/Frame",
+      "messages": 30767
+    },
+    {
+      "name": "/aiformula_control/socket_can_sender/transition_event",
+      "type": "lifecycle_msgs/msg/TransitionEvent",
+      "messages": 4
+    },
+    {
+      "name": "/aiformula_perception/lane_line_publisher/lane_lines/center",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_perception/lane_line_publisher/lane_lines/left",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_perception/lane_line_publisher/lane_lines/right",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_perception/yolop_a3/detections",
+      "type": "std_msgs/msg/String",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_perception/yolop_a3/red_pixels_count",
+      "type": "std_msgs/msg/Int32",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_perception/yolop_a3/traffic_light/state",
+      "type": "std_msgs/msg/String",
+      "messages": 3557
+    },
+    {
+      "name": "/aiformula_sensing/gyro_odometry_publisher/odom",
+      "type": "nav_msgs/msg/Odometry",
+      "messages": 29936
+    },
+    {
+      "name": "/aiformula_sensing/joint_states",
+      "type": "sensor_msgs/msg/JointState",
+      "messages": 3101
+    },
+    {
+      "name": "/aiformula_sensing/rear_potentiometer/yaw",
+      "type": "std_msgs/msg/Float32",
+      "messages": 15476
+    },
+    {
+      "name": "/aiformula_sensing/robot_description",
+      "type": "std_msgs/msg/String",
+      "messages": 1
+    },
+    {
+      "name": "/aiformula_sensing/socket_can_receiver/transition_event",
+      "type": "lifecycle_msgs/msg/TransitionEvent",
+      "messages": 4
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/gnss",
+      "type": "sensor_msgs/msg/NavSatFix",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/imu",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 6309
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/imu_uncompensated",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 6309
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/magnetic",
+      "type": "sensor_msgs/msg/MagneticField",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/pose",
+      "type": "geometry_msgs/msg/PoseWithCovarianceStamped",
+      "messages": 6309
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/pressure",
+      "type": "sensor_msgs/msg/FluidPressure",
+      "messages": 6310
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/attitude",
+      "type": "vectornav_msgs/msg/AttitudeGroup",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/common",
+      "type": "vectornav_msgs/msg/CommonGroup",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/gps",
+      "type": "vectornav_msgs/msg/GpsGroup",
+      "messages": 6310
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/gps2",
+      "type": "vectornav_msgs/msg/GpsGroup",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/imu",
+      "type": "vectornav_msgs/msg/ImuGroup",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/ins",
+      "type": "vectornav_msgs/msg/InsGroup",
+      "messages": 6309
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/raw/time",
+      "type": "vectornav_msgs/msg/TimeGroup",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/temperature",
+      "type": "sensor_msgs/msg/Temperature",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/time_gps",
+      "type": "sensor_msgs/msg/TimeReference",
+      "messages": 6310
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/time_pps",
+      "type": "sensor_msgs/msg/TimeReference",
+      "messages": 6309
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/time_startup",
+      "type": "sensor_msgs/msg/TimeReference",
+      "messages": 6310
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/time_syncin",
+      "type": "sensor_msgs/msg/TimeReference",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/velocity_aiding",
+      "type": "geometry_msgs/msg/Twist",
+      "messages": 0
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/velocity_body",
+      "type": "geometry_msgs/msg/TwistWithCovarianceStamped",
+      "messages": 6308
+    },
+    {
+      "name": "/aiformula_sensing/vehicle_info",
+      "type": "can_msgs/msg/Frame",
+      "messages": 143361
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/imu",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 48154
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/imu/data_raw",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 48154
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/left/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/left_cam_imu_transform",
+      "type": "geometry_msgs/msg/TransformStamped",
+      "messages": 48160
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/left_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/left_raw/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/left_raw_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/rgb/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/rgb_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/rgb_raw/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/rgb_raw_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/right/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/right_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/right_raw/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/right_raw_gray/camera_info",
+      "type": "sensor_msgs/msg/CameraInfo",
+      "messages": 4560
+    },
+    {
+      "name": "/aiformula_sensing/zed_node/temperature/imu",
+      "type": "sensor_msgs/msg/Temperature",
+      "messages": 304
+    },
+    {
+      "name": "/contour_points/center",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/contour_points/left",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/contour_points/right",
+      "type": "sensor_msgs/msg/PointCloud2",
+      "messages": 3557
+    },
+    {
+      "name": "/diagnostics",
+      "type": "diagnostic_msgs/msg/DiagnosticArray",
+      "messages": 306
+    },
+    {
+      "name": "/filtered_lane_pose",
+      "type": "geometry_msgs/msg/Pose2D",
+      "messages": 3529
+    },
+    {
+      "name": "/filtered_omega_t",
+      "type": "geometry_msgs/msg/Pose2D",
+      "messages": 3529
+    },
+    {
+      "name": "/parameter_events",
+      "type": "rcl_interfaces/msg/ParameterEvent",
+      "messages": 65
+    },
+    {
+      "name": "/point_flag",
+      "type": "std_msgs/msg/Bool",
+      "messages": 0
+    },
+    {
+      "name": "/processed_point_a",
+      "type": "geometry_msgs/msg/Pose2D",
+      "messages": 3529
+    },
+    {
+      "name": "/processed_point_b",
+      "type": "geometry_msgs/msg/Pose2D",
+      "messages": 3529
+    },
+    {
+      "name": "/processed_point_c",
+      "type": "geometry_msgs/msg/Pose2D",
+      "messages": 3529
+    },
+    {
+      "name": "/rosout",
+      "type": "rcl_interfaces/msg/Log",
+      "messages": 14431
+    },
+    {
+      "name": "/semantic_drive/map_status",
+      "type": "std_msgs/msg/String",
+      "messages": 0
+    },
+    {
+      "name": "/semantic_drive/motor_session",
+      "type": "std_msgs/msg/String",
+      "messages": 0
+    },
+    {
+      "name": "/tf",
+      "type": "tf2_msgs/msg/TFMessage",
+      "messages": 93798
+    },
+    {
+      "name": "/tf_static",
+      "type": "tf2_msgs/msg/TFMessage",
+      "messages": 6301
+    }
+  ],
+  "observations": {},
+  "asset": "bag-other-rosbag2_2026_11_19-1.tar.gz",
+  "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/bag-other-rosbag2_2026_11_19-1.tar.gz",
+  "archive_bytes": 43904940,
+  "archive_sha256": "924f8edea5bdaa01736659bce3e46ceb18d6f43ac2d51734aa636aefad465555"
+}

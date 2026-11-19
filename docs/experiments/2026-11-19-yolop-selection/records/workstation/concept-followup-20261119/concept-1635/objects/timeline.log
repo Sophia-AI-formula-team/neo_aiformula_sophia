@@ -1,0 +1,8 @@
+2026-11-19T16:41:04+09:00
+2026-11-19T16:41:32+09:00 Read 448 time-aligned decisions and compressed overlays from the 16:35:33 bag; pulled compact evidence and sampled stills only.
+2026-11-19T16:42:35+09:00 Confirmed mixed simulation foot heights after Honda ground remapping and identified the one-hit off-axis track at frame 287. Audited odometry rotation and RViz axis handedness.
+2026-11-19T16:45:15+09:00 Implemented real-ground foot projection, physically reciprocal center/foot reprojection for association, visibility and clipping; retained collision footprint and in-range occluded tracks. Added per-observation audit and RViz memory color.
+2026-11-19T16:45:50+09:00 Two Jetson isolated field/Unity contact regression tests passed.
+2026-11-19T16:47:30+09:00 Reconstructed contact coordinates from static-filter updates on 388 multi-hit observations; compared longitudinal estimates with independent horizontal bearing/odometry intersections.
+2026-11-19T16:48:31+09:00 Cross-target attitude holdout worsened left-target tail error; kept the nominal mount geometry. Retrieved actual attitude ranges for 2,112 VectorNav events. 
+2026-11-19T16:49:10+09:00 Produced two-image ground-projection evidence and recorded limitations; no CAN output was issued.

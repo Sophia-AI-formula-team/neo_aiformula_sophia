@@ -1,0 +1,12 @@
+application x-terminal-emulator
+terminal 'Terminal' lines= 7 matching= 0
+terminal 'Terminal' lines= 5 matching= 5
+{"name": "A4_lite", "lean_runtime": true, "weights": "/home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/weights/shared_best.pth", "sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3", "python": "/home/control/aiformula_runtime/2026-11-19-yolop-selection/foxy-env/bin/python3", "input": "/aiformula_sensing/zed_node/left_image/undistorted", "outputs": {"pub_mask_image": "/aiformula_perception/road_detector/mask_image", "pub_annotated_mask_image": "/aiformula_visualization/road_detector/annotated_mask_image", "/cone_mask": "/cone_mask", "/cone_bbox_image": "/cone_bbox_image", "/aiformula_perception/yolop_a3/detections": "/aiformula_perception/yolop_a3/detections", "/traffic_light/state": "/aiformula_perception/yolop_a3/traffic_light/state", "/red_pixels_count": "/aiformula_perception/yolop_a3/red_pixels_count"}, "live": true}
+/home/control/aiformula_runtime/yolop_a2_20261005/venv/lib/python3.8/site-packages/torch/_utils.py:776: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  return self.fget.__get__(instance, owner)()
+[INFO] [1795072159.315797656] [aiformula_perception.yolop_a3_perception]: A4 single-frame mode; weights=/home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/weights/shared_best.pth; input=/aiformula_sensing/zed_node/left_image/undistorted; lean_runtime=True; calibrated temporal input is available through Python predict_frame
+
+terminal 'Terminal' lines= 24 matching= 2
+control@control-desktop:~$ oa_2
+control@control-desktop:~$ 
+terminal 'Terminal' lines= 36 matching= 0

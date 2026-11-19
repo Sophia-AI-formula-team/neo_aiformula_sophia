@@ -1,0 +1,244 @@
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+@@ -72,8 +72,27 @@
+         self.resume_stamp = stamp
+         return True
+ 
++    def auto_is_fresh(self, stamp, now):
++        return (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT)
++
++    def check_auto_time(self, stamp, now):
++        if self.auto_at == -math.inf or self.auto_is_fresh(stamp, now):
++            return
++        age = stamp-self.auto_stamp
++        if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and age > COMMAND_TIMEOUT):
++            if self.reason != 'waiting_fresh_auto':
++                self.barrier(stamp, 'waiting_fresh_auto')
++        else:
++            self.pause(stamp, 'auto_timeout')
++
+     def command(self, value, source, stamp, now):
+         if self.paused or self.estop or not self.enabled or self.manual_held:
++            return
++        # Enforce deadlines even if a new callback runs before the watchdog tick.
++        self.check_auto_time(stamp, now)
++        if self.paused:
+             return
+         if (source <= max(self.resume_stamp, self.auto_stamp) or
+                 not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
+@@ -93,8 +112,8 @@
+             return self.manual
+         if self.paused or self.auto_at == -math.inf:
+             return ZERO
+-        if now-self.auto_at > COMMAND_TIMEOUT or not 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT:
+-            self.pause(stamp, 'auto_timeout')
++        self.check_auto_time(stamp, now)
++        if self.paused or self.reason == 'waiting_fresh_auto':
+             return ZERO
+         return self.auto
+ 
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/node.py
+@@ -15,7 +15,8 @@
+ from std_msgs.msg import Bool, String
+ from std_srvs.srv import SetBool, Trigger
+ 
+-from .core import COMMAND_TIMEOUT, Gate, ZERO, ZERO_FRAME
++from .core import Gate, ZERO, ZERO_FRAME
++from .speed_setting import SpeedSetting
+ 
+ CAN_OUT = '/aiformula_control/motor_controller/reference_signal'
+ JOY = '/aiformula_control/joy_node/joy_l2_throttle'
+@@ -30,7 +31,8 @@
+ class GateNode(Node):
+     def __init__(self):
+         super().__init__('gate', namespace='/concept')
+-        self.limit = self.declare_parameter('max_auto_speed_mps', 1.0).value
++        self.speed_setting = SpeedSetting(self, 'max_auto_speed_mps', 5.)
++        self.limit = self.speed_setting.initial
+         if not self.valid_limit(self.limit):
+             raise ValueError('max_auto_speed_mps must be in (0, 5]')
+         self.add_on_set_parameters_callback(self.parameters)
+@@ -68,10 +70,18 @@
+ 
+     def parameters(self, params):
+         for param in params:
++            if param.name == 'speed_settings_directory':
++                return SetParametersResult(successful=False, reason='Set speed_settings_directory at launch')
+             if param.name == 'max_auto_speed_mps' and not self.valid_limit(param.value):
+                 return SetParametersResult(successful=False, reason='expected (0, 5] m/s')
+         for param in params:
+-            if param.name == 'max_auto_speed_mps' and param.value != self.limit:
++            if param.name == 'max_auto_speed_mps':
++                try:
++                    self.speed_setting.save(param.value)
++                except (OSError, ValueError) as exc:
++                    return SetParametersResult(successful=False, reason=str(exc))
++                if param.value == self.limit:
++                    continue
+                 self.limit = param.value
+                 self.gate.pause(self.now(), 'speed_limit_changed')
+                 self.stop()
+@@ -221,7 +231,7 @@
+             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
+             t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
+             manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
+-            auto_fresh=not g.paused and time.monotonic()-g.auto_at <= COMMAND_TIMEOUT))))
++            auto_fresh=not g.paused and g.auto_is_fresh(self.now(), time.monotonic())))))
+ 
+ 
+ def main(args=None):
+--- /dev/null
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/speed_setting.py
+@@ -0,0 +1,48 @@
++"""Keep the two independently owned vehicle speed settings across process starts."""
++import json
++import math
++import os
++from pathlib import Path
++import tempfile
++
++
++class SpeedSetting:
++    def __init__(self, node, name, upper):
++        directory = node.declare_parameter('speed_settings_directory', '').value
++        self.path = Path(directory) / (name + '.json') if directory else None
++        self.name, self.upper = name, upper
++        saved = 4.0
++        load_error = None
++        if self.path is not None:
++            try:
++                saved = json.loads(self.path.read_text(encoding='utf8'))
++                self.validate(saved)
++            except FileNotFoundError:
++                pass
++            except (OSError, ValueError) as exc:
++                # An explicit override can still recover a malformed setting.
++                saved, load_error = None, exc
++        # An explicitly supplied ROS parameter takes priority over the saved default.
++        self.initial = node.declare_parameter(name, saved).value
++        if self.initial is None and load_error is not None:
++            raise ValueError(f'Invalid {self.path}: {load_error}') from load_error
++        self.validate(self.initial)
++
++    def validate(self, value):
++        if type(value) is not float or not math.isfinite(value) or not 0 < value <= self.upper:
++            raise ValueError(f'{self.name} must be a double in (0, {self.upper}] m/s')
++
++    def save(self, value):
++        self.validate(value)
++        if self.path is None:
++            return
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        with tempfile.NamedTemporaryFile(dir=self.path.parent, mode='w', delete=False) as tmp:
++            try:
++                tmp.write(json.dumps(value) + '\n')
++                tmp.flush()
++                os.fsync(tmp.fileno())
++                os.replace(tmp.name, self.path)
++            finally:
++                if os.path.exists(tmp.name):
++                    os.unlink(tmp.name)
+--- a/vehicle_concept/src/concept_control_gate/test/test_gate.py
++++ b/vehicle_concept/src/concept_control_gate/test/test_gate.py
+@@ -59,3 +59,44 @@
+     g.tick(1.09, 1.09)
+     g.motor(bytes([1]*8), 1.095, 1.096, 1.096)
+     assert not g.ready
++
++
++def test_capture_expiry_stops_until_zero_ack_and_fresh_frame():
++    g = ready_auto()
++    command = (1., 0.)
++    moving = bytes([1] * 8)
++    for t in (1.12, 1.20, 1.28, 1.36, 1.44):
++        g.motor(ZERO_FRAME, t, t, t)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command(command, 1.06, 1.49, 1.49)
++    g.motor(ZERO_FRAME, 1.50, 1.50, 1.50)
++    assert g.tick(1.51, 1.51) == command
++    assert g.motor(moving, 1.53, 1.53, 1.53) == moving
++    assert g.motor(moving, 1.57, 1.57, 1.57) == ZERO_FRAME
++    assert not g.paused and not g.auto_is_fresh(1.57, 1.57)
++    assert g.tick(1.575, 1.575) == ZERO
++    # Match the recorded gap: source age exceeds 600 ms while command delivery
++    # is still within the 500 ms watchdog. Await a zero frame past the fence.
++    g.command(command, 1.25, 1.73, 1.73)
++    assert g.tick(1.735, 1.735) == ZERO
++    assert g.motor(moving, 1.74, 1.74, 1.74) == ZERO_FRAME
++    g.motor(ZERO_FRAME, 1.745, 1.745, 1.745)
++    assert g.tick(1.75, 1.75) == command
++
++
++def test_late_arrival_cannot_rearm_after_extended_gap():
++    g = ready_auto()
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.49, 1.49)
++    # A valid new command arrives before the next tick but beyond the deadline since the last valid command receipt.
++    g.command((1.,0.), 1.60, 2.01, 2.01)
++    assert g.paused and g.reason == 'auto_timeout'
++    assert g.tick(2.01, 2.01) == ZERO
++
++
++def test_silent_or_replayed_stream_still_latches_at_receipt_deadline():
++    g = ready_auto()
++    g.command((1.,0.), 1.06, 1.06, 1.06)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.565, 1.565)
++    assert g.paused and g.reason == 'auto_timeout'
+--- /dev/null
++++ b/vehicle_concept/src/concept_control_gate/test/test_speed_setting.py
+@@ -0,0 +1,51 @@
++from types import SimpleNamespace
++
++import pytest
++
++from concept_control_gate.speed_setting import SpeedSetting
++
++
++class Node:
++    def __init__(self, directory='', **overrides):
++        self.params = dict(speed_settings_directory=str(directory), **overrides)
++
++    def declare_parameter(self, name, default):
++        return SimpleNamespace(value=self.params.get(name, default))
++
++
++def test_independent_settings_restart_recovery_and_replay(tmp_path):
++    target, limit = 'target_speed_mps', 'max_auto_speed_mps'
++    driver = SpeedSetting(Node(tmp_path), target, 6.)
++    gate = SpeedSetting(Node(tmp_path), limit, 5.)
++    assert driver.initial == gate.initial == 4.
++    driver.save(2.35)
++    gate.save(1.75)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    with pytest.raises(ValueError):
++        gate.save(float('nan'))
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    gate.path.write_text('{')
++    with pytest.raises(ValueError, match='Invalid'):
++        SpeedSetting(Node(tmp_path), limit, 5.)
++    recovered = SpeedSetting(Node(tmp_path, max_auto_speed_mps=3.), limit, 5.)
++    assert recovered.initial == 3.
++    recovered.save(4.)
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 4.
++    isolated = SpeedSetting(Node(), target, 6.)
++    assert isolated.initial == 4.
++    isolated.save(.5)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++
++
++def test_failed_write_keeps_last_setting(tmp_path, monkeypatch):
++    import os
++    setting = SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.)
++    setting.save(2.)
++    def unavailable(source, destination):
++        raise OSError('disk is read only')
++    monkeypatch.setattr(os, 'replace', unavailable)
++    with pytest.raises(OSError, match='read only'):
++        setting.save(4.)
++    assert SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.).initial == 2.
++    assert list(tmp_path.iterdir()) == [setting.path]

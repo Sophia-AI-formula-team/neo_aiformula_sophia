@@ -1,0 +1,29 @@
+Name=Allnodes（原车）
+Exec="/home/control/.local/bin/allnodes"
+Terminal=true
+Name=LYA（独立）
+Exec="/home/control/.local/bin/lya"
+Terminal=true
+Name=OA 避障（oa_2）
+Exec="/home/control/.local/bin/oa-avoidance"
+Terminal=true
+LYA executable: /home/workspace/install/trajectory_follower/lib/trajectory_follower/lya_follower_connected_omegat_global
+    'motor_cmd_topic':
+        no description given
+        (default: '/aiformula_control/game_pad/cmd_vel')
+{
+  "command": [
+    "/home/workspace/install/obsticle_avoidence/lib/obsticle_avoidence/oa_2",
+    "--ros-args",
+    "-r",
+    "/lane_stop_flag:=/point_flag",
+    "-r",
+    "/processed_point_a:=/oa_point_a",
+    "-r",
+    "/processed_point_b:=/oa_point_b",
+    "-r",
+    "/processed_point_c:=/oa_point_c"
+  ],
+  "runner": "/home/workspace/install/launchers/share/launchers/shellscript/run_obstacle_avoidance.py"
+}
+2026-11-19T16:26:21+09:00

@@ -1,0 +1,39 @@
+Starting >>> concept_obstacles
+[0.974s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Starting >>> concept_candidates
+[0.999s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_road
+They are being used from the following locations instead:
+- /home/control/concept_v6275_ws/install/concept_road
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_road
+Finished <<< concept_obstacles [2.97s]
+Starting >>> concept_panel
+Finished <<< concept_candidates [3.56s]
+Starting >>> concept_vehicle_state
+Finished <<< concept_panel [2.34s]
+Starting >>> concept_visualization
+Finished <<< concept_vehicle_state [2.37s]
+Starting >>> concept_drive
+[6.931s] WARNING:colcon.colcon_core.shell:The following packages are in the workspace but haven't been built:
+- concept_control_gate
+- concept_road
+- concept_yolop
+- concept_ranker
+They are being used from the following locations instead:
+- /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_control_gate
+- /home/control/concept_v6275_ws/install/concept_road
+- /home/control/aiformula_runtime/concept-drive-fix-20261119-1603/install/concept_yolop
+- /home/control/concept_v6275_ws/install/concept_ranker
+To suppress this warning ignore these packages in the workspace:
+--packages-ignore concept_control_gate concept_road concept_yolop concept_ranker
+Finished <<< concept_visualization [2.41s]
+Finished <<< concept_drive [2.36s]
+
+Summary: 6 packages finished [8.88s]
+2026-11-19T16:48:52+09:00

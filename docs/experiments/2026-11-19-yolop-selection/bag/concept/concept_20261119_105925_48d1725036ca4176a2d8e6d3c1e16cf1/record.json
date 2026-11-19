@@ -1,0 +1,115 @@
+{
+  "category": "concept",
+  "session": "concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1",
+  "vehicle_directory": "/home/control/rosbags/concept/concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1",
+  "directory": "bag/concept/concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1",
+  "start_jst": "2026-11-19T10:59:26.371238336+09:00",
+  "end_jst": "2026-11-19T11:03:00.188891773+09:00",
+  "messages": 103067,
+  "topic_count": 11,
+  "classification": "Concept 面板专用录包目录和场次 ID。录到 288 条决策、0 条自动指令。",
+  "quick_check": "ok",
+  "files": [
+    {
+      "file": "concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1_0.db3",
+      "bytes": 17760256,
+      "sha256": "d6ab496b04e19a3b9939d28406f8ad233e86d4860d15b0724b5cef11e9294ad5"
+    },
+    {
+      "file": "concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1_0.db3-shm",
+      "bytes": 32768,
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "file": "concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1_0.db3-wal",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "metadata.yaml",
+      "bytes": 5214,
+      "sha256": "ad08a4e667b620569913d9f1d0c1e83921daeae6154f3837435b1f57767a9c25"
+    }
+  ],
+  "topics": [
+    {
+      "name": "/aiformula_control/joy_node/joy_l2_throttle",
+      "type": "sensor_msgs/msg/Joy",
+      "messages": 4663
+    },
+    {
+      "name": "/aiformula_sensing/vectornav/imu",
+      "type": "sensor_msgs/msg/Imu",
+      "messages": 4273
+    },
+    {
+      "name": "/aiformula_sensing/vehicle_info",
+      "type": "can_msgs/msg/Frame",
+      "messages": 55914
+    },
+    {
+      "name": "/concept/auto_cmd",
+      "type": "geometry_msgs/msg/TwistStamped",
+      "messages": 0
+    },
+    {
+      "name": "/concept/decision",
+      "type": "std_msgs/msg/String",
+      "messages": 288
+    },
+    {
+      "name": "/concept/gate/estop",
+      "type": "std_msgs/msg/Bool",
+      "messages": 0
+    },
+    {
+      "name": "/concept/gate/status",
+      "type": "std_msgs/msg/String",
+      "messages": 2137
+    },
+    {
+      "name": "/concept/internal/motor_can",
+      "type": "can_msgs/msg/Frame",
+      "messages": 20692
+    },
+    {
+      "name": "/concept/internal/motor_cmd",
+      "type": "geometry_msgs/msg/Twist",
+      "messages": 10541
+    },
+    {
+      "name": "/concept/perception/overlay/compressed",
+      "type": "sensor_msgs/msg/CompressedImage",
+      "messages": 288
+    },
+    {
+      "name": "/concept/vehicle_state",
+      "type": "std_msgs/msg/String",
+      "messages": 4271
+    }
+  ],
+  "observations": {
+    "gate": {
+      "mode": {
+        "paused": 1051,
+        "auto": 808,
+        "manual": 140,
+        "disabled": 138
+      },
+      "reason": {
+        "manual_released": 837,
+        "waiting_new_auto": 808,
+        "operator_pause": 227,
+        "manual_takeover": 161,
+        "speed_limit_changed": 56,
+        "startup": 27,
+        "output_enabled": 15,
+        "joy_timeout": 6
+      }
+    }
+  },
+  "asset": "bag-concept-concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1.tar.gz",
+  "url": "https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/releases/download/field-archive-2026-11-19/bag-concept-concept_20261119_105925_48d1725036ca4176a2d8e6d3c1e16cf1.tar.gz",
+  "archive_bytes": 9214551,
+  "archive_sha256": "bc5d83f2163b94afc26aa1833b69cc7341e41ffd007128afc8aff08190514fc5"
+}

@@ -1,0 +1,656 @@
+--- /dev/null
++++ b/concept_control_gate/concept_control_gate/core.py
+@@ -0,0 +1,151 @@
++"""Pure gate state machine. All event handlers run on one ROS executor thread."""
++import math
++
++ZERO = (0.0, 0.0)
++ZERO_FRAME = bytes(8)
++COMMAND_TIMEOUT = .5
++CAN_TIMEOUT = .1
++
++
++class Gate:
++    def __init__(self):
++        self.enabled = False
++        self.estop = False
++        self.manual_held = False
++        self.paused = True
++        self.joy_at = -math.inf
++        self.joy_stamp = -1
++        self.auto_at = -math.inf
++        self.auto_stamp = -1
++        self.resume_stamp = math.inf
++        self.manual = self.auto = ZERO
++        self.reason = 'startup'
++        self.zero_issued = False
++        self.fence = math.inf
++        self.last_can = -1
++        self.ready = False
++        self.last_receipt = -math.inf
++        self.sent = ZERO
++
++    def barrier(self, stamp, reason):
++        self.ready = False
++        self.fence = stamp
++        self.zero_issued = False
++        self.last_can = stamp
++        self.last_receipt = -math.inf
++        self.sent = ZERO
++        self.reason = reason
++
++    def pause(self, stamp, reason):
++        self.paused = True
++        self.auto_at = -math.inf
++        self.resume_stamp = math.inf
++        self.barrier(stamp, reason)
++
++    def enable(self, enabled, stamp):
++        if enabled and (self.estop or self.manual_held):
++            return False
++        self.enabled = enabled
++        self.pause(stamp, 'output_enabled' if enabled else 'output_disabled')
++        return True
++
++    def emergency(self, active, stamp):
++        if self.estop != active:
++            self.estop = active
++            self.enabled = False
++            self.pause(stamp, 'estop' if active else 'estop_released')
++
++    def joy(self, held, command, source, stamp, now):
++        if not 0 <= stamp-source <= COMMAND_TIMEOUT or source <= self.joy_stamp:
++            return
++        self.joy_at, self.joy_stamp = now, source
++        if self.manual_held != held:
++            self.pause(stamp, 'manual_takeover' if held else 'manual_released')
++        self.manual_held = held
++        self.manual = command if held else ZERO
++
++    def resume(self, stamp, now):
++        if not self.enabled or self.estop or self.manual_held or now-self.joy_at > COMMAND_TIMEOUT:
++            return False
++        self.pause(stamp, 'waiting_new_auto')
++        self.paused = False
++        self.resume_stamp = stamp
++        return True
++
++    def auto_is_fresh(self, stamp, now):
++        return (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT)
++
++    def check_auto_time(self, stamp, now):
++        if self.auto_at == -math.inf or self.auto_is_fresh(stamp, now):
++            return
++        age = stamp-self.auto_stamp
++        if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
++                and age > COMMAND_TIMEOUT):
++            if self.reason != 'waiting_fresh_auto':
++                self.barrier(stamp, 'waiting_fresh_auto')
++        else:
++            self.pause(stamp, 'auto_timeout')
++
++    def command(self, value, source, stamp, now):
++        if self.paused or self.estop or not self.enabled or self.manual_held:
++            return
++        # Enforce deadlines even if a new callback runs before the watchdog tick.
++        self.check_auto_time(stamp, now)
++        if self.paused:
++            return
++        if (source <= max(self.resume_stamp, self.auto_stamp) or
++                not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
++            return
++        self.auto, self.auto_stamp, self.auto_at = value, source, now
++        self.reason = 'auto_command_received'
++
++    def demand(self, stamp, now):
++        if not self.enabled or self.estop:
++            return ZERO
++        if now-self.joy_at > COMMAND_TIMEOUT:
++            if self.reason != 'joy_timeout':
++                self.manual = ZERO
++                self.pause(stamp, 'joy_timeout')
++            return ZERO
++        if self.manual_held:
++            return self.manual
++        if self.paused or self.auto_at == -math.inf:
++            return ZERO
++        self.check_auto_time(stamp, now)
++        if self.paused or self.reason == 'waiting_fresh_auto':
++            return ZERO
++        return self.auto
++
++    def tick(self, stamp, now):
++        demand = self.demand(stamp, now)
++        if self.ready and now-self.last_receipt > CAN_TIMEOUT:
++            self.enabled = False
++            self.pause(stamp, 'motor_timeout')
++            demand = ZERO
++        # A new zero must reach the legacy converter and be acknowledged before
++        # issuing nonzero commands after an authority transition.
++        if demand == ZERO and self.sent != ZERO:
++            self.barrier(stamp, 'zero_requested')
++        if not self.ready and not self.zero_issued:
++            self.fence = stamp
++            self.zero_issued = True
++        self.sent = demand if self.ready else ZERO
++        return self.sent
++
++    def motor(self, payload, source, stamp, now):
++        demand = self.demand(stamp, now)
++        if not self.enabled or self.estop or source <= self.last_can or not 0 <= stamp-source <= CAN_TIMEOUT:
++            return ZERO_FRAME
++        self.last_can = source
++        if not self.ready:
++            if self.zero_issued and payload == ZERO_FRAME and source > self.fence:
++                self.ready = True
++            self.last_receipt = now
++            return ZERO_FRAME
++        if now-self.last_receipt > CAN_TIMEOUT:
++            self.enabled = False
++            self.pause(stamp, 'motor_timeout')
++            return ZERO_FRAME
++        self.last_receipt = now
++        return payload if demand != ZERO and self.sent != ZERO else ZERO_FRAME
+--- /dev/null
++++ b/concept_control_gate/concept_control_gate/node.py
+@@ -0,0 +1,247 @@
++"""Foxy adapters for the single Concept CAN command path."""
++import json
++import math
++import time
++
++import rclpy
++from can_msgs.msg import Frame
++from geometry_msgs.msg import Twist, TwistStamped
++from motor_controller.gate import joystick_command
++from rclpy.clock import Clock, ClockType
++from rcl_interfaces.msg import SetParametersResult
++from rclpy.node import Node
++from rclpy.qos import qos_profile_sensor_data
++from sensor_msgs.msg import Joy
++from std_msgs.msg import Bool, String
++from std_srvs.srv import SetBool, Trigger
++
++from .core import Gate, ZERO, ZERO_FRAME
++from .speed_setting import SpeedSetting
++
++CAN_OUT = '/aiformula_control/motor_controller/reference_signal'
++JOY = '/aiformula_control/joy_node/joy_l2_throttle'
++MOTOR_IN = '/concept/internal/motor_can'
++TWIST_OUT = '/concept/internal/motor_cmd'
++
++
++def seconds(stamp):
++    return stamp.sec + stamp.nanosec * 1e-9
++
++
++class GateNode(Node):
++    def __init__(self):
++        super().__init__('gate', namespace='/concept')
++        self.speed_setting = SpeedSetting(self, 'max_auto_speed_mps', 5.)
++        self.limit = self.speed_setting.initial
++        if not self.valid_limit(self.limit):
++            raise ValueError('max_auto_speed_mps must be in (0, 5]')
++        self.add_on_set_parameters_callback(self.parameters)
++        self.gate = Gate()
++        self.state_t = -math.inf
++        self.state_at = -math.inf
++        self.sender = self.declare_parameter('can_sender_node', '/aiformula_control/socket_can_sender').value
++        self.settings = {}
++        for field, parameter, default in (
++                ('enable_button', 'enable_button', 6), ('enable_turbo_button', 'enable_turbo_button', 4),
++                ('axis_linear', 'axis_linear.x', 1), ('axis_angular', 'axis_angular.yaw', 3),
++                ('scale_linear', 'scale_linear.x', 3.5), ('scale_linear_turbo', 'scale_linear_turbo.x', 3.6),
++                ('scale_angular', 'scale_angular.yaw', .7), ('scale_angular_turbo', 'scale_angular_turbo.yaw', 1.)):
++            self.settings[field] = self.declare_parameter(parameter, default).value
++        self.cmd = self.create_publisher(Twist, TWIST_OUT, 1)
++        self.can = self.create_publisher(Frame, CAN_OUT, 1)
++        self.status = self.create_publisher(String, '/concept/gate/status', 1)
++        self.create_subscription(String, '/concept/vehicle_state', self.vehicle_state, 1)
++        self.create_subscription(TwistStamped, '/concept/auto_cmd', self.auto, 1)
++        self.create_subscription(Joy, JOY, self.joy, qos_profile_sensor_data)
++        self.create_subscription(Frame, MOTOR_IN, self.motor, 1)
++        self.create_subscription(Bool, '/concept/gate/estop', self.estop, 1)
++        self.create_service(SetBool, '/concept/gate/enable_output', self.enable)
++        self.create_service(Trigger, '/concept/gate/resume', self.resume)
++        self.create_service(Trigger, '/concept/gate/pause', self.pause)
++        self.steady = Clock(clock_type=ClockType.STEADY_TIME)
++        self.create_timer(.02, self.tick, clock=self.steady)
++        self.create_timer(.1, self.report, clock=self.steady)
++        self.last_clock = None
++        self.repeat_zero_until = -math.inf
++
++    @staticmethod
++    def valid_limit(value):
++        return isinstance(value, float) and math.isfinite(value) and 0 < value <= 5.
++
++    def parameters(self, params):
++        for param in params:
++            if param.name == 'speed_settings_directory':
++                return SetParametersResult(successful=False, reason='Set speed_settings_directory at launch')
++            if param.name == 'max_auto_speed_mps' and not self.valid_limit(param.value):
++                return SetParametersResult(successful=False, reason='expected (0, 5] m/s')
++        for param in params:
++            if param.name == 'max_auto_speed_mps':
++                try:
++                    self.speed_setting.save(param.value)
++                except (OSError, ValueError) as exc:
++                    return SetParametersResult(successful=False, reason=str(exc))
++                if param.value == self.limit:
++                    continue
++                self.limit = param.value
++                self.gate.pause(self.now(), 'speed_limit_changed')
++                self.stop()
++        return SetParametersResult(successful=True)
++
++    def now(self):
++        return self.get_clock().now().nanoseconds * 1e-9
++
++    def publish_frame(self, data):
++        msg = Frame()
++        msg.header.stamp = self.get_clock().now().to_msg()
++        msg.header.frame_id = 'can0'
++        msg.id, msg.dlc, msg.data = 0x210, 8, list(data)
++        self.can.publish(msg)
++
++    def private_cmd(self, value):
++        cmd = Twist()
++        cmd.linear.x, cmd.angular.z = value
++        self.cmd.publish(cmd)
++
++    def stop(self):
++        self.private_cmd(ZERO)
++        self.publish_frame(ZERO_FRAME)
++        if not self.gate.enabled:
++            self.repeat_zero_until = time.monotonic() + .20
++
++    def graph_ok(self):
++        infos = self.get_subscriptions_info_by_topic(self.can.topic_name)
++        subscribers = [s.node_namespace.rstrip('/') + '/' + s.node_name for s in infos]
++        senders = [ns.rstrip('/') + '/' + name for name, ns in self.get_node_names_and_namespaces()
++                   if 'socket_can_sender' in name or ns.rstrip('/') + '/' + name == self.sender]
++        return (subscribers == [self.sender] and senders == [self.sender]
++                and self.count_publishers(self.can.topic_name) == 1 and self.count_publishers(MOTOR_IN) == 1
++                and self.count_publishers(self.cmd.topic_name) == 1
++                and self.count_publishers('/concept/auto_cmd') <= 1
++                and all(self.count_publishers('/concept/internal/unused_motor_' + name) == 0
++                        for name in ('joy', 'session', 'map_status')))
++
++    def fault(self, reason):
++        self.gate.enabled = False
++        self.gate.pause(self.now(), reason)
++        self.stop()
++
++    def vehicle_state(self, msg):
++        try:
++            data = json.loads(msg.data)
++            stamp = data['t']
++            valid = (data['valid'] is True and type(stamp) in (int, float)
++                     and math.isfinite(stamp) and 0 <= self.now()-stamp <= .2)
++        except (KeyError, ValueError, TypeError):
++            valid = False
++        if not valid:
++            self.state_at = -math.inf
++            if not self.gate.paused:
++                self.gate.pause(self.now(), 'invalid_vehicle_state')
++                self.stop()
++        elif stamp > self.state_t:
++            self.state_t = stamp
++            self.state_at = time.monotonic()
++
++    def state_fresh(self):
++        return time.monotonic()-self.state_at <= .2 and 0 <= self.now()-self.state_t <= .2
++
++    def joy(self, msg):
++        try:
++            held, command = joystick_command(msg.axes, msg.buttons, self.settings)
++        except (ValueError, TypeError, IndexError):
++            self.fault('invalid_joy')
++            return
++        old = self.gate.manual_held
++        self.gate.joy(held, command, seconds(msg.header.stamp), self.now(), time.monotonic())
++        if old != self.gate.manual_held:
++            self.stop()
++
++    def auto(self, msg):
++        if (not self.gate.paused and not self.gate.manual_held
++                and not -self.limit <= msg.twist.linear.x <= self.limit):
++            self.gate.pause(self.now(), 'auto_speed_limit')
++            self.stop()
++            return
++        if not all(map(math.isfinite, (msg.twist.linear.x, msg.twist.angular.z))):
++            if not self.gate.paused:
++                self.gate.pause(self.now(), 'invalid_auto_command')
++                self.stop()
++            return
++        self.gate.command((msg.twist.linear.x, msg.twist.angular.z),
++                          seconds(msg.header.stamp), self.now(), time.monotonic())
++
++    def motor(self, msg):
++        if msg.id != 0x210 or msg.dlc != 8 or msg.is_extended or msg.is_rtr or msg.is_error:
++            self.fault('invalid_motor_frame')
++            return
++        if self.gate.enabled and not self.graph_ok():
++            self.fault('graph_conflict')
++            return
++        if self.gate.enabled:
++            self.publish_frame(self.gate.motor(bytes(msg.data), seconds(msg.header.stamp),
++                                                self.now(), time.monotonic()))
++            if not self.gate.enabled:
++                self.repeat_zero_until = time.monotonic() + .20
++
++    def tick(self):
++        stamp = self.now()
++        if self.last_clock is not None and stamp < self.last_clock:
++            self.fault('clock_rewound')
++        self.last_clock = stamp
++        if self.gate.enabled and not self.graph_ok():
++            self.fault('graph_conflict')
++        if not self.gate.paused and not self.state_fresh():
++            self.gate.pause(stamp, 'vehicle_state_timeout')
++        was_enabled = self.gate.enabled
++        cmd = self.gate.tick(stamp, time.monotonic())
++        self.private_cmd(cmd)
++        if was_enabled and not self.gate.enabled:
++            self.repeat_zero_until = time.monotonic() + .20
++        if cmd == ZERO and (self.gate.enabled or time.monotonic() < self.repeat_zero_until):
++            self.publish_frame(ZERO_FRAME)
++
++    def estop(self, msg):
++        self.gate.emergency(msg.data, self.now())
++        if msg.data:
++            self.stop()
++
++    def enable(self, request, response):
++        ok = not request.data or self.graph_ok()
++        response.success = ok and self.gate.enable(request.data, self.now())
++        self.stop()
++        response.message = self.gate.reason if ok else 'graph_conflict'
++        return response
++
++    def pause(self, _, response):
++        self.gate.pause(self.now(), 'operator_pause')
++        self.stop()
++        response.success, response.message = True, self.gate.reason
++        return response
++
++    def resume(self, _, response):
++        response.success = self.state_fresh() and self.gate.resume(self.now(), time.monotonic())
++        response.message = self.gate.reason if response.success else 'resume_interlocked'
++        return response
++
++    def report(self):
++        g = self.gate
++        mode = ('estop' if g.estop else 'disabled' if not g.enabled else 'manual'
++                if g.manual_held else 'paused' if g.paused else 'auto')
++        self.status.publish(String(data=json.dumps(dict(output_enabled=g.enabled, paused=g.paused,
++            manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
++            t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
++            manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
++            auto_fresh=not g.paused and g.auto_is_fresh(self.now(), time.monotonic())))))
++
++
++def main(args=None):
++    rclpy.init(args=args)
++    node = GateNode()
++    try:
++        rclpy.spin(node)
++    finally:
++        if rclpy.ok():
++            node.stop()
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
+--- /dev/null
++++ b/concept_control_gate/concept_control_gate/speed_setting.py
+@@ -0,0 +1,48 @@
++"""Keep the two independently owned vehicle speed settings across process starts."""
++import json
++import math
++import os
++from pathlib import Path
++import tempfile
++
++
++class SpeedSetting:
++    def __init__(self, node, name, upper):
++        directory = node.declare_parameter('speed_settings_directory', '').value
++        self.path = Path(directory) / (name + '.json') if directory else None
++        self.name, self.upper = name, upper
++        saved = 4.0
++        load_error = None
++        if self.path is not None:
++            try:
++                saved = json.loads(self.path.read_text(encoding='utf8'))
++                self.validate(saved)
++            except FileNotFoundError:
++                pass
++            except (OSError, ValueError) as exc:
++                # An explicit override can still recover a malformed setting.
++                saved, load_error = None, exc
++        # An explicitly supplied ROS parameter takes priority over the saved default.
++        self.initial = node.declare_parameter(name, saved).value
++        if self.initial is None and load_error is not None:
++            raise ValueError(f'Invalid {self.path}: {load_error}') from load_error
++        self.validate(self.initial)
++
++    def validate(self, value):
++        if type(value) is not float or not math.isfinite(value) or not 0 < value <= self.upper:
++            raise ValueError(f'{self.name} must be a double in (0, {self.upper}] m/s')
++
++    def save(self, value):
++        self.validate(value)
++        if self.path is None:
++            return
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        with tempfile.NamedTemporaryFile(dir=self.path.parent, mode='w', delete=False) as tmp:
++            try:
++                tmp.write(json.dumps(value) + '\n')
++                tmp.flush()
++                os.fsync(tmp.fileno())
++                os.replace(tmp.name, self.path)
++            finally:
++                if os.path.exists(tmp.name):
++                    os.unlink(tmp.name)
+--- /dev/null
++++ b/concept_control_gate/package.xml
+@@ -0,0 +1,19 @@
++<?xml version="1.0"?>
++<package format="3">
++  <name>concept_control_gate</name>
++  <version>6.27.4</version>
++  <description>Manual and autonomous command arbitration and final CAN interlock.</description>
++  <maintainer email="maintainers@example.invalid">Sophia AI Formula</maintainer>
++  <license>MIT</license>
++  <buildtool_depend>ament_python</buildtool_depend>
++  <exec_depend>rclpy</exec_depend>
++  <exec_depend>rcl_interfaces</exec_depend>
++  <exec_depend>can_msgs</exec_depend>
++  <exec_depend>sensor_msgs</exec_depend>
++  <exec_depend>std_msgs</exec_depend>
++  <exec_depend>geometry_msgs</exec_depend>
++  <exec_depend>std_srvs</exec_depend>
++  <exec_depend>motor_controller</exec_depend>
++  <test_depend>python3-pytest</test_depend>
++  <export><build_type>ament_python</build_type></export>
++</package>
+--- /dev/null
++++ b/concept_control_gate/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/concept_control_gate
++[install]
++install_scripts=$base/lib/concept_control_gate
+--- /dev/null
++++ b/concept_control_gate/setup.py
+@@ -0,0 +1,10 @@
++from setuptools import setup
++
++PACKAGE = 'concept_control_gate'
++setup(name=PACKAGE, version='6.27.4', packages=[PACKAGE],
++      data_files=[('share/ament_index/resource_index/packages', ['resource/' + PACKAGE]),
++                  ('share/' + PACKAGE, ['package.xml'])],
++      install_requires=['setuptools'], zip_safe=True,
++      maintainer='Sophia AI Formula', maintainer_email='maintainers@example.invalid',
++      description='Manual and autonomous command arbitration and final CAN interlock.', license='MIT',
++      entry_points={'console_scripts': [PACKAGE + ' = ' + PACKAGE + '.node:main']})
+--- /dev/null
++++ b/concept_control_gate/test/test_gate.py
+@@ -0,0 +1,102 @@
++from concept_control_gate.core import Gate, ZERO, ZERO_FRAME
++
++
++def ready_auto():
++    g = Gate()
++    assert g.enable(True, 1)
++    g.joy(False, ZERO, 1.01, 1.01, 1.01)
++    assert g.resume(1.02, 1.02)
++    g.tick(1.03, 1.03)
++    g.motor(ZERO_FRAME, 1.04, 1.04, 1.04)
++    return g
++
++
++def test_new_command_required():
++    g = ready_auto()
++    g.command((1., 0.), 1.015, 1.05, 1.05)
++    assert g.tick(1.05, 1.05) == ZERO
++    g.command((1., 0.), 1.06, 1.06, 1.06)
++    assert g.tick(1.07, 1.07) == (1., 0.)
++    frame = bytes([1] * 8)
++    assert g.motor(frame, 1.08, 1.08, 1.08) == frame
++
++
++def test_takeover_release_and_estop():
++    g = ready_auto()
++    g.joy(True, (0., .5), 1.05, 1.05, 1.05)
++    assert not g.resume(1.06, 1.06)
++    g.tick(1.06, 1.06)
++    assert g.motor(bytes([3]*8), 1.07, 1.07, 1.07) == ZERO_FRAME
++    g.motor(ZERO_FRAME, 1.08, 1.08, 1.08)
++    assert g.tick(1.09, 1.09) == (0., .5)
++    g.joy(False, ZERO, 1.10, 1.10, 1.10)
++    assert g.paused and g.tick(1.11, 1.11) == ZERO
++    g.emergency(True, 1.12)
++    assert not g.enabled and not g.enable(True, 1.13)
++    g.emergency(False, 1.14)
++    assert not g.enabled and g.paused
++
++
++def test_motor_silence_stale_joy_and_disabled_manual():
++    g = ready_auto()
++    g.joy(True, (2., 0.), 1.05, 1.05, 1.05)
++    g.tick(1.055, 1.055)
++    g.motor(ZERO_FRAME, 1.06, 1.06, 1.06)
++    assert g.tick(1.17, 1.17) == ZERO and not g.enabled
++    assert not g.enable(True, 1.18)
++    g.joy(False, ZERO, 1.01, 1.18, 1.18)
++    assert g.manual_held
++    g.joy(False, ZERO, 1.19, 1.19, 1.19)
++    assert g.enable(True, 1.20)
++    assert not g.resume(2, 2)
++
++
++def test_frame_before_acknowledged_transition_is_never_forwarded():
++    g = ready_auto()
++    g.pause(1.08, 'pause')
++    g.motor(bytes([1]*8), 1.079, 1.081, 1.081)
++    assert not g.ready and g.paused
++    g.tick(1.09, 1.09)
++    g.motor(bytes([1]*8), 1.095, 1.096, 1.096)
++    assert not g.ready
++
++
++def test_capture_expiry_stops_until_zero_ack_and_fresh_frame():
++    g = ready_auto()
++    command = (1., 0.)
++    moving = bytes([1] * 8)
++    for t in (1.12, 1.20, 1.28, 1.36, 1.44):
++        g.motor(ZERO_FRAME, t, t, t)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command(command, 1.06, 1.49, 1.49)
++    g.motor(ZERO_FRAME, 1.50, 1.50, 1.50)
++    assert g.tick(1.51, 1.51) == command
++    assert g.motor(moving, 1.53, 1.53, 1.53) == moving
++    assert g.motor(moving, 1.57, 1.57, 1.57) == ZERO_FRAME
++    assert not g.paused and not g.auto_is_fresh(1.57, 1.57)
++    assert g.tick(1.575, 1.575) == ZERO
++    # Match the recorded gap: source age exceeds 600 ms while command delivery
++    # is still within the 500 ms watchdog. Await a zero frame past the fence.
++    g.command(command, 1.25, 1.73, 1.73)
++    assert g.tick(1.735, 1.735) == ZERO
++    assert g.motor(moving, 1.74, 1.74, 1.74) == ZERO_FRAME
++    g.motor(ZERO_FRAME, 1.745, 1.745, 1.745)
++    assert g.tick(1.75, 1.75) == command
++
++
++def test_late_arrival_cannot_rearm_after_extended_gap():
++    g = ready_auto()
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.49, 1.49)
++    # A valid new command arrives before the next tick but beyond the deadline since the last valid command receipt.
++    g.command((1.,0.), 1.60, 2.01, 2.01)
++    assert g.paused and g.reason == 'auto_timeout'
++    assert g.tick(2.01, 2.01) == ZERO
++
++
++def test_silent_or_replayed_stream_still_latches_at_receipt_deadline():
++    g = ready_auto()
++    g.command((1.,0.), 1.06, 1.06, 1.06)
++    g.joy(False, ZERO, 1.49, 1.49, 1.49)
++    g.command((1.,0.), 1.06, 1.565, 1.565)
++    assert g.paused and g.reason == 'auto_timeout'
+--- /dev/null
++++ b/concept_control_gate/test/test_speed_setting.py
+@@ -0,0 +1,51 @@
++from types import SimpleNamespace
++
++import pytest
++
++from concept_control_gate.speed_setting import SpeedSetting
++
++
++class Node:
++    def __init__(self, directory='', **overrides):
++        self.params = dict(speed_settings_directory=str(directory), **overrides)
++
++    def declare_parameter(self, name, default):
++        return SimpleNamespace(value=self.params.get(name, default))
++
++
++def test_independent_settings_restart_recovery_and_replay(tmp_path):
++    target, limit = 'target_speed_mps', 'max_auto_speed_mps'
++    driver = SpeedSetting(Node(tmp_path), target, 6.)
++    gate = SpeedSetting(Node(tmp_path), limit, 5.)
++    assert driver.initial == gate.initial == 4.
++    driver.save(2.35)
++    gate.save(1.75)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    with pytest.raises(ValueError):
++        gate.save(float('nan'))
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 1.75
++    gate.path.write_text('{')
++    with pytest.raises(ValueError, match='Invalid'):
++        SpeedSetting(Node(tmp_path), limit, 5.)
++    recovered = SpeedSetting(Node(tmp_path, max_auto_speed_mps=3.), limit, 5.)
++    assert recovered.initial == 3.
++    recovered.save(4.)
++    assert SpeedSetting(Node(tmp_path), limit, 5.).initial == 4.
++    isolated = SpeedSetting(Node(), target, 6.)
++    assert isolated.initial == 4.
++    isolated.save(.5)
++    assert SpeedSetting(Node(tmp_path), target, 6.).initial == 2.35
++
++
++def test_failed_write_keeps_last_setting(tmp_path, monkeypatch):
++    import os
++    setting = SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.)
++    setting.save(2.)
++    def unavailable(source, destination):
++        raise OSError('disk is read only')
++    monkeypatch.setattr(os, 'replace', unavailable)
++    with pytest.raises(OSError, match='read only'):
++        setting.save(4.)
++    assert SpeedSetting(Node(tmp_path), 'target_speed_mps', 6.).initial == 2.
++    assert list(tmp_path.iterdir()) == [setting.path]

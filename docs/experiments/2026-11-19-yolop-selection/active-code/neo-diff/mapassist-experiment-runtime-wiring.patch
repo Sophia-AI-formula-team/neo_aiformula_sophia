@@ -1,0 +1,1164 @@
+--- /dev/null
++++ b/home/control/semantic_045_ws/source/workspace/src/aiformula/launchers/launch/semantic_vehicle_045.launch.py
+@@ -0,0 +1,80 @@
++"""Connect MapAssist 0.4.5 to the vehicle topics for held-still commissioning."""
++
++from pathlib import Path
++import re
++
++import yaml
++
++from ament_index_python.packages import get_package_share_directory
++from launch import LaunchDescription
++from launch.actions import DeclareLaunchArgument, OpaqueFunction
++from launch.substitutions import LaunchConfiguration
++from launch_ros.actions import Node
++
++
++PREFIX = "/semantic_drive/map_assist_045"
++LANE_RADII = {"inner": 6.0, "outer": 5.5}
++AVOIDANCE_TOPIC = "/point_flag"
++BRANCH_TOPIC = "/semantic_drive/branch_active"
++
++
++def _map_assist_node(context):
++    lane = LaunchConfiguration("lane").perform(context)
++    lane_point_prefix = LaunchConfiguration("lane_point_topic_prefix").perform(context)
++    stop_topic = LaunchConfiguration("traffic_stop_flag_topic").perform(context)
++    if lane not in LANE_RADII:
++        raise ValueError("lane must be inner or outer")
++    if not re.fullmatch(r"(?:/[A-Za-z_][A-Za-z0-9_]*)+", stop_topic):
++        raise ValueError("Set traffic_stop_flag_topic to the verified absolute std_msgs/msg/Bool topic")
++    if stop_topic in {AVOIDANCE_TOPIC, BRANCH_TOPIC, "/lane_stop_flag", PREFIX + "/reset"}:
++        raise ValueError("traffic_stop_flag_topic must be a separate distance flag topic")
++
++    share = Path(get_package_share_directory("semantic_local_planner_ros"))
++    overrides = {
++        "use_sim_time": False,
++        "enable_traffic_control": True,
++        "enable_velocity_gate": True,
++        "avoidance_initially_idle": LaunchConfiguration("oa_initially_idle").perform(context) == "true",
++        "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
++        "traffic_light_topic": "/aiformula_perception/yolop_a3/traffic_light/state",
++        "traffic_stop_flag_topic": stop_topic,
++        "traffic_stop_flag_timeout_sec": float(LaunchConfiguration("traffic_stop_flag_timeout_sec").perform(context)),
++        "avoidance_flag_topic": AVOIDANCE_TOPIC,
++        "branch_active_topic": BRANCH_TOPIC,
++        "reset_topic": PREFIX + "/reset",
++        "status_topic": PREFIX + "/status",
++        "reference_path_topic": PREFIX + "/path",
++        "input_cmd_vel_topic": "/aiformula_control/game_pad/cmd_vel",
++        "output_cmd_vel_topic": PREFIX + "/diagnostic_cmd_vel",
++        "detour_min_turn_radius_m": LANE_RADII[lane],
++    }
++    for label in "abc":
++        overrides[f"input_point_{label}_topic"] = f"{lane_point_prefix}{label}"
++        overrides[f"output_point_{label}_topic"] = f"{PREFIX}/point_{label}"
++
++    # Foxy can give the node-specific base YAML precedence over a wildcard
++    # override file. Pass one node-specific parameter set to keep the outputs
++    # on the diagnostic topics.
++    with (share / "config" / "map_assist.yaml").open(encoding="utf-8") as config:
++        parameters = yaml.safe_load(config)["map_assist"]["ros__parameters"]
++    parameters.update(overrides)
++    return [Node(package="semantic_local_planner_ros", executable="map_assist",
++                 name="map_assist", namespace="/", output="screen", parameters=[parameters],
++                 remappings=[("/map_assist/detour_path", PREFIX + "/detour_path")])]
++
++
++def generate_launch_description():
++    return LaunchDescription([
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
++        DeclareLaunchArgument("oa_initially_idle", default_value="false", choices=["true", "false"]),
++        DeclareLaunchArgument("lane", choices=["inner", "outer"],
++                              description="Select the minimum radius for the commissioned lane."),
++        DeclareLaunchArgument("traffic_stop_flag_topic",
++                              description="Confirmed vehicle publisher of the continuous distance Bool."),
++        DeclareLaunchArgument("traffic_stop_flag_timeout_sec", default_value="0.0"),
++        OpaqueFunction(function=_map_assist_node),
++    ])
+--- /dev/null
++++ b/home/control/semantic_045_ws/activate_semantic.bash
+@@ -0,0 +1,6 @@
++# Source in a new Bash terminal to select the Semantic 0.4.5 overlay.
++semantic_ws=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
++source /opt/ros/foxy/setup.bash || return
++source /home/workspace/install/setup.bash || return
++source "$semantic_ws/install/local_setup.bash" || return
++unset semantic_ws
+--- /dev/null
++++ b/home/control/concept_v6275_ws/activate_concept.bash
+@@ -0,0 +1,14 @@
++# Source in a fresh Bash terminal to activate the isolated Jetson deployment.
++concept_ws=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
++source /opt/ros/foxy/setup.bash || return
++source /home/workspace/install/setup.bash || return
++export PATH="$concept_ws/venv/bin:$PATH"
++export PYTHONNOUSERSITE=1
++export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1:/lib/aarch64-linux-gnu/libGLdispatch.so.0${LD_PRELOAD:+:$LD_PRELOAD}"
++if [ -r "$concept_ws/install/local_setup.bash" ]; then
++    source "$concept_ws/install/local_setup.bash" || return
++fi
++source "$HOME/aiformula_runtime/concept-field-20261119/install/local_setup.bash" || return
++unset concept_ws
++source "$HOME/aiformula_runtime/concept-drive-fix-20261119-1603/install/local_setup.bash" || return
++source "$HOME/aiformula_runtime/concept-field-1635/install/local_setup.bash" || return
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/commissioning_probe.py
+@@ -0,0 +1,129 @@
++"""Vehicle-local synthetic routing check with no motor or CAN readers/writers."""
++from datetime import datetime
++import json
++import os
++import time
++
++import rclpy
++from geometry_msgs.msg import Pose2D, Twist
++from nav_msgs.msg import Odometry
++from std_msgs.msg import Bool, String
++
++PREFIX = "/semantic_drive/map_assist_045"
++ODOM = "/aiformula_sensing/gyro_odometry_publisher/odom"
++LIGHT = "/aiformula_perception/yolop_a3/traffic_light/state"
++STOP = "/semantic_fixture/stop_distance"
++FLAG = "/point_flag"
++
++
++def main():
++    if os.environ.get("ROS_DOMAIN_ID") != "75" or os.environ.get("ROS_LOCALHOST_ONLY") != "1":
++        raise SystemExit("Use localhost-only ROS domain 75")
++    rclpy.init()
++    node = rclpy.create_node("semantic_commissioning_probe")
++    data = {name: [] for name in ("pose", "lya", "guarded", "state", "legacy")}
++
++    def subscribe(name, msg, suffix, decode=lambda value: value):
++        node.create_subscription(msg, PREFIX + suffix, lambda value: data[name].append(decode(value)), 10)
++
++    subscribe("pose", Pose2D, "/filtered_lane_pose")
++    subscribe("lya", Twist, "/lya_cmd_vel")
++    subscribe("guarded", Twist, "/diagnostic_cmd_vel")
++    subscribe("state", String, "/status", lambda value: json.loads(value.data))
++    subscribe("legacy", String, "/stop_wait_candidate", lambda value: json.loads(value.data))
++    pubs = {topic: node.create_publisher(kind, topic, 10) for topic, kind in (
++        (ODOM, Odometry), (LIGHT, String), (STOP, Bool), (FLAG, Bool),
++    )}
++    for label in "abc":
++        for prefix in ("/processed_point_", "/oa_point_"):
++            pubs[prefix + label] = node.create_publisher(Pose2D, prefix + label, 10)
++
++    def latest(name):
++        return data[name][-1] if data[name] else None
++
++    def drive_frame(*, oa=False, light="green", stop=False, oa_points="abc"):
++        odom = Odometry()
++        odom.header.frame_id = "odom"
++        odom.header.stamp = node.get_clock().now().to_msg()
++        odom.child_frame_id = "base_link"
++        odom.pose.pose.orientation.w = 1.0
++        pubs[ODOM].publish(odom)
++        pubs[LIGHT].publish(String(data=light))
++        pubs[STOP].publish(Bool(data=stop))
++        pubs[FLAG].publish(Bool(data=oa))
++        for i, label in enumerate("abc"):
++            x = 1.0 + i
++            pubs["/processed_point_" + label].publish(Pose2D(x=x, y=0.15))
++            if label in oa_points:
++                pubs["/oa_point_" + label].publish(Pose2D(x=x, y=-0.2))
++
++    def wait_for(predicate, action=lambda: None, timeout=10):
++        deadline = time.monotonic() + timeout
++        while time.monotonic() < deadline:
++            action()
++            end = time.monotonic() + .09
++            while time.monotonic() < end:
++                rclpy.spin_once(node, timeout_sec=.015)
++            if predicate():
++                return
++        raise AssertionError({
++            "counts": {key: len(values) for key, values in data.items()},
++            "state": latest("state"), "legacy": latest("legacy"),
++        })
++
++    def graph_has(topic, name):
++        return any(i.node_name == name for i in node.get_subscriptions_info_by_topic(topic))
++
++    def moving(msg):
++        return msg is not None and (msg.linear.x != 0.0 or msg.angular.z != 0.0)
++
++    def y_is(y):
++        return latest("pose") is not None and abs(latest("pose").y - y) < 1e-6
++
++    try:
++        wait_for(lambda: y_is(.15) and moving(latest("lya")) and moving(latest("guarded"))
++                 and latest("legacy") and not latest("legacy")["traffic_stop_required"],
++                 drive_frame, timeout=20)
++        assert graph_has(PREFIX + "/point_a", "data_processing_node")
++        assert graph_has(PREFIX + "/filtered_lane_pose", "trajectory_follower")
++        assert graph_has(PREFIX + "/lya_cmd_vel", "map_assist")
++        map_speed = [latest("lya").linear.x, latest("lya").angular.z]
++
++        wait_for(lambda: graph_has("/oa_point_c", "data_processing_node"),
++                 lambda: drive_frame(oa=True, oa_points=""))
++        pose_count = len(data["pose"])
++        end = time.monotonic() + .4
++        while time.monotonic() < end:
++            drive_frame(oa=True, oa_points="c")
++            for _ in range(3):
++                rclpy.spin_once(node, timeout_sec=.02)
++        assert len(data["pose"]) == pose_count, "Cached map ABC mixed with partial OA data"
++        wait_for(lambda: y_is(-.2) and moving(latest("lya")), lambda: drive_frame(oa=True))
++        oa_speed = [latest("lya").linear.x, latest("lya").angular.z]
++        wait_for(lambda: y_is(.15), drive_frame)
++
++        wait_for(lambda: latest("state") and latest("state")["traffic_mode"] == "wait"
++                 and latest("legacy") and latest("legacy")["traffic_stop_required"]
++                 and latest("guarded") is not None and not moving(latest("guarded")),
++                 lambda: drive_frame(light="red", stop=True))
++        wait_for(lambda: latest("state")["traffic_light"] == "not_red"
++                 and latest("legacy")["traffic_mode"] == "normal" and moving(latest("guarded")),
++                 lambda: drive_frame(light="unknown"))
++        for topic in ("/aiformula_control/game_pad/cmd_vel",
++                      "/aiformula_control/motor_controller/reference_signal",
++                      "/semantic_drive/map_status", "/semantic_drive/motor_session"):
++            assert node.count_publishers(topic) == 0, topic
++        print(json.dumps(dict(
++            time_jst=datetime.now().astimezone().isoformat(timespec="seconds"),
++            original_lya_from_map=map_speed, original_lya_from_oa=oa_speed,
++            switched_back_to_map=True, partial_triplet_forwarded=False,
++            red_stopped_guarded_command=True, fresh_unknown_resumed=True,
++            physical_publishers=0, ros_domain=75,
++        ), indent=2), flush=True)
++    finally:
++        node.destroy_node()
++        rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/fresh_oa_switch.py
+@@ -0,0 +1,28 @@
++"""Use the original Neo OA selector and discard cached points on a source switch."""
++import rclpy
++from kalman_filter.withoutkalman_0312 import DataProcessingNode
++
++
++class FreshOaSwitch(DataProcessingNode):
++    def flag_callback(self, message):
++        previous_source = self.current_source
++        super().flag_callback(message)
++        if self.current_source != previous_source:
++            self.A = self.B = self.C = None
++
++
++def main():
++    rclpy.init()
++    node = FreshOaSwitch()
++    try:
++        rclpy.spin(node)
++    except KeyboardInterrupt:
++        pass
++    finally:
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/guarded_stop_wait.py
+@@ -0,0 +1,112 @@
++"""Encode the commissioned MapAssist chain's stop status for a legacy motor gate."""
++import argparse
++import json
++import math
++import time
++
++from stop_wait_preview import INPUT, convert_status
++
++PREFIX = "/semantic_drive/map_assist_045"
++GUARDED_COMMAND = PREFIX + "/diagnostic_cmd_vel"
++OUTPUT = PREFIX + "/stop_wait_candidate"
++LEGACY_OUTPUT = "/semantic_drive/map_status"
++
++
++def translate(text, now_ns, has_fresh_command):
++    status = convert_status(text, now_ns)
++    if status is None:
++        return None
++
++    source = json.loads(text)
++    mode = source.get("traffic_mode")
++    route_ready = source.get("path_output_allowed") is True
++    if mode == "detour":
++        route_ready = (
++            route_ready
++            and source.get("smooth_plan_available") is True
++            and source.get("route_matched") is True
++        )
++    if source.get("avoidance_active") is True:
++        route_ready = True
++
++    allowed = (
++        has_fresh_command and route_ready
++        and mode in ("normal", "prepare", "detour")
++        and source.get("traffic_planner_version") == "ubs_auto_turn_v1"
++        and source.get("use_sim_time") is False
++        and type(source.get("avoidance_active")) is bool
++        and source.get("branch_active") is False
++        and (mode == "detour" or (
++            source.get("traffic_stop_committed") is False
++            and source.get("auto_stop_latched") is False
++        ))
++        and source.get("velocity_gate_reason") == "forwarding_controller"
++    )
++    status["traffic_mode"] = "normal" if allowed else "wait"
++    status["traffic_stop_required"] = not allowed
++    if allowed:
++        status["traffic_reason"] = str(source.get("traffic_reason", "map_assist_ready"))
++    elif mode != "wait":
++        status["traffic_reason"] = "semantic_045_route_or_command_unready"
++    return status
++
++
++def main():
++    import rclpy
++    from geometry_msgs.msg import Twist
++    from rclpy.executors import ExternalShutdownException
++    from rclpy.node import Node
++    from std_msgs.msg import String
++
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--vehicle-output", action="store_true")
++    args = parser.parse_args()
++    output_topic = LEGACY_OUTPUT if args.vehicle_output else OUTPUT
++
++    class Candidate(Node):
++        def __init__(self):
++            super().__init__("map_assist_stop_wait_candidate")
++            self.last_command = -math.inf
++            self.last_stamp = None
++            self.output = self.create_publisher(String, output_topic, 1)
++            if self.output.topic_name != output_topic:
++                raise ValueError("Unexpected legacy stop status topic")
++            self.create_subscription(Twist, GUARDED_COMMAND, self.on_command, 1)
++            self.create_subscription(String, INPUT, self.on_status, 1)
++
++        def on_command(self, command):
++            values = (command.linear.x, command.angular.z)
++            valid = all(math.isfinite(value) for value in values) and any(values)
++            self.last_command = time.monotonic() if valid else -math.inf
++
++        def on_status(self, message):
++            for topic in (INPUT, GUARDED_COMMAND):
++                publishers = self.get_publishers_info_by_topic(topic)
++                if len(publishers) != 1 or publishers[0].node_name != "map_assist" or publishers[0].node_namespace != "/":
++                    return
++            if self.count_publishers(output_topic) != 1:
++                return
++            status = translate(message.data, self.get_clock().now().nanoseconds,
++                               time.monotonic() - self.last_command <= 0.25)
++            if status is not None:
++                stamp = status["ros_time_sec"]
++                if self.last_stamp is None or stamp > self.last_stamp:
++                    self.last_stamp = stamp
++                    self.output.publish(String(data=json.dumps(status, allow_nan=False)))
++
++    rclpy.init()
++    node = None
++    try:
++        node = Candidate()
++        rclpy.spin(node)
++    except (KeyboardInterrupt, ExternalShutdownException):
++        pass
++    finally:
++        if node is not None:
++            node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/mapassist_formal.launch.py
+@@ -0,0 +1,68 @@
++"""Start the vehicle and live MapAssist with LYA and OA available separately."""
++from pathlib import Path
++import time
++
++from ament_index_python.packages import get_package_share_directory
++from launch import LaunchDescription
++from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
++from launch.launch_description_sources import PythonLaunchDescriptionSource
++from launch.substitutions import LaunchConfiguration
++
++MOTOR_COMMAND = "/semantic_drive/map_assist_045/diagnostic_cmd_vel"
++LANE_POINT_TOPIC_PREFIX = "/original_processed_point_"
++FINAL_CAN = "/aiformula_control/motor_controller/reference_signal"
++OWNED_NODES = {"socket_can_sender", "socket_can_receiver", "motor_controller",
++               "zed_node", "map_assist", "motor_gate_session"}
++
++
++def check_owners(_context):
++    import rclpy
++    from rclpy.context import Context
++    from rclpy.executors import SingleThreadedExecutor
++
++    ros = Context()
++    rclpy.init(args=[], context=ros)
++    node = rclpy.create_node("mapassist_formal_start_check", context=ros, enable_rosout=False,
++                             start_parameter_services=False)
++    executor = SingleThreadedExecutor(context=ros)
++    executor.add_node(node)
++    try:
++        deadline = time.monotonic() + 1.8
++        while time.monotonic() < deadline:
++            executor.spin_once(timeout_sec=.10)
++            owners = sorted({name for name, _ in node.get_node_names_and_namespaces() if name in OWNED_NODES})
++            if owners or node.count_publishers(FINAL_CAN):
++                detail = ", ".join(owners) if owners else FINAL_CAN
++                raise RuntimeError("Stop the existing vehicle or MapAssist launch before starting this shortcut: " + detail)
++    finally:
++        executor.shutdown()
++        node.destroy_node()
++        rclpy.shutdown(context=ros)
++    return []
++
++
++def generate_launch_description():
++    launchers = Path(get_package_share_directory("launchers"), "launch")
++    commissioning = Path(__file__).resolve().with_name("semantic_045_commissioning.launch.py")
++    return LaunchDescription([
++        DeclareLaunchArgument("lane", default_value="outer", choices=["inner", "outer"],
++                              description="outer = 5.5 m; inner = 6.0 m minimum detour radius"),
++        OpaqueFunction(function=check_owners),
++        IncludeLaunchDescription(
++            PythonLaunchDescriptionSource(str(launchers / "allnodes.launch.py")),
++            launch_arguments={
++                "motor_cmd_topic": MOTOR_COMMAND,
++                "launch_yolop_a3": "false",
++                "lane_point_topic_prefix": LANE_POINT_TOPIC_PREFIX,
++            }.items(),
++        ),
++        IncludeLaunchDescription(
++            PythonLaunchDescriptionSource(str(commissioning)),
++            launch_arguments={
++                "lane": LaunchConfiguration("lane"),
++                "lane_point_topic_prefix": LANE_POINT_TOPIC_PREFIX,
++                "vehicle_output": "true",
++                "start_lya": "false",
++            }.items(),
++        ),
++    ])
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/pixel_commissioning_probe.py
+@@ -0,0 +1,146 @@
++"""Vehicle-local synthetic routing check with no motor or CAN readers/writers."""
++from datetime import datetime
++import json
++import os
++import time
++
++import rclpy
++from geometry_msgs.msg import Pose2D, Twist
++from nav_msgs.msg import Odometry
++from std_msgs.msg import Bool, String
++
++PREFIX = "/semantic_drive/map_assist_045"
++ODOM = "/aiformula_sensing/gyro_odometry_publisher/odom"
++LIGHT = "/aiformula_perception/yolop_a3/traffic_light/state"
++STOP = "/flag_stop"
++DETECTIONS = "/aiformula_perception/yolop_a3/detections"
++FLAG = "/point_flag"
++
++
++def main():
++    if os.environ.get("ROS_DOMAIN_ID") != "75" or os.environ.get("ROS_LOCALHOST_ONLY") != "1":
++        raise SystemExit("Use localhost-only ROS domain 75")
++    rclpy.init()
++    node = rclpy.create_node("semantic_commissioning_probe")
++    data = {name: [] for name in ("pose", "lya", "guarded", "state", "legacy", "stop")}
++
++    def subscribe(name, msg, suffix, decode=lambda value: value):
++        node.create_subscription(msg, PREFIX + suffix, lambda value: data[name].append(decode(value)), 10)
++
++    subscribe("pose", Pose2D, "/filtered_lane_pose")
++    subscribe("lya", Twist, "/lya_cmd_vel")
++    subscribe("guarded", Twist, "/diagnostic_cmd_vel")
++    subscribe("state", String, "/status", lambda value: json.loads(value.data))
++    subscribe("legacy", String, "/stop_wait_candidate", lambda value: json.loads(value.data))
++    node.create_subscription(Bool, STOP, lambda value: data["stop"].append(value.data), 10)
++    pubs = {topic: node.create_publisher(kind, topic, 10) for topic, kind in (
++        (ODOM, Odometry), (LIGHT, String), (DETECTIONS, String), (FLAG, Bool),
++    )}
++    for label in "abc":
++        for prefix in ("/processed_point_", "/oa_point_"):
++            pubs[prefix + label] = node.create_publisher(Pose2D, prefix + label, 10)
++
++    def latest(name):
++        return data[name][-1] if data[name] else None
++
++    def drive_frame(*, oa=False, light="green", pixels=0, oa_points="abc"):
++        odom = Odometry()
++        odom.header.frame_id = "odom"
++        odom.header.stamp = node.get_clock().now().to_msg()
++        odom.child_frame_id = "base_link"
++        odom.pose.pose.orientation.w = 1.0
++        pubs[ODOM].publish(odom)
++        pubs[LIGHT].publish(String(data=light))
++        if pixels is not None:
++            stamp = odom.header.stamp
++            payload = dict(
++                header=dict(frame_id="zed_left_camera_optical_frame",
++                            stamp=dict(sec=stamp.sec, nanosec=stamp.nanosec)),
++                red_pixels_count=pixels,
++            )
++            pubs[DETECTIONS].publish(String(data=json.dumps(payload)))
++        pubs[FLAG].publish(Bool(data=oa))
++        for i, label in enumerate("abc"):
++            x = 1.0 + i
++            pubs["/processed_point_" + label].publish(Pose2D(x=x, y=0.15))
++            if label in oa_points:
++                pubs["/oa_point_" + label].publish(Pose2D(x=x, y=-0.2))
++
++    def wait_for(predicate, action=lambda: None, timeout=10):
++        deadline = time.monotonic() + timeout
++        while time.monotonic() < deadline:
++            action()
++            end = time.monotonic() + .09
++            while time.monotonic() < end:
++                rclpy.spin_once(node, timeout_sec=.015)
++            if predicate():
++                return
++        raise AssertionError({
++            "counts": {key: len(values) for key, values in data.items()},
++            "state": latest("state"), "legacy": latest("legacy"),
++        })
++
++    def graph_has(topic, name):
++        return any(i.node_name == name for i in node.get_subscriptions_info_by_topic(topic))
++
++    def moving(msg):
++        return msg is not None and (msg.linear.x != 0.0 or msg.angular.z != 0.0)
++
++    def y_is(y):
++        return latest("pose") is not None and abs(latest("pose").y - y) < 1e-6
++
++    try:
++        wait_for(lambda: y_is(.15) and moving(latest("lya")) and moving(latest("guarded"))
++                 and latest("legacy") and not latest("legacy")["traffic_stop_required"],
++                 drive_frame, timeout=20)
++        assert graph_has(PREFIX + "/point_a", "data_processing_node")
++        assert graph_has(PREFIX + "/filtered_lane_pose", "trajectory_follower")
++        assert graph_has(PREFIX + "/lya_cmd_vel", "map_assist")
++        map_speed = [latest("lya").linear.x, latest("lya").angular.z]
++
++        wait_for(lambda: graph_has("/oa_point_c", "data_processing_node"),
++                 lambda: drive_frame(oa=True, oa_points=""))
++        pose_count = len(data["pose"])
++        end = time.monotonic() + .4
++        while time.monotonic() < end:
++            drive_frame(oa=True, oa_points="c")
++            for _ in range(3):
++                rclpy.spin_once(node, timeout_sec=.02)
++        assert len(data["pose"]) == pose_count, "Cached map ABC mixed with partial OA data"
++        wait_for(lambda: y_is(-.2) and moving(latest("lya")), lambda: drive_frame(oa=True))
++        oa_speed = [latest("lya").linear.x, latest("lya").angular.z]
++        wait_for(lambda: y_is(.15), drive_frame)
++
++        wait_for(lambda: latest("state") and latest("state")["traffic_mode"] == "prepare"
++                 and latest("state")["traffic_stop_flag"] is False and latest("stop") is False,
++                 lambda: drive_frame(light="red", pixels=599))
++        wait_for(lambda: latest("state") and latest("state")["traffic_mode"] == "wait"
++                 and latest("state")["traffic_stop_flag"] is True and latest("stop") is True
++                 and latest("legacy") and latest("legacy")["traffic_stop_required"]
++                 and latest("guarded") is not None and not moving(latest("guarded")),
++                 lambda: drive_frame(light="red", pixels=600))
++        wait_for(lambda: latest("state")["traffic_stop_flag"] is None
++                 and latest("state")["traffic_mode"] == "wait",
++                 lambda: drive_frame(light="red", pixels=None))
++        wait_for(lambda: latest("state")["traffic_light"] == "not_red"
++                 and latest("legacy")["traffic_mode"] == "normal" and moving(latest("guarded")),
++                 lambda: drive_frame(light="unknown"))
++        for topic in ("/aiformula_control/game_pad/cmd_vel",
++                      "/aiformula_control/motor_controller/reference_signal",
++                      "/semantic_drive/map_status", "/semantic_drive/motor_session"):
++            assert node.count_publishers(topic) == 0, topic
++        print(json.dumps(dict(
++            time_jst=datetime.now().astimezone().isoformat(timespec="seconds"),
++            original_lya_from_map=map_speed, original_lya_from_oa=oa_speed,
++            switched_back_to_map=True, partial_triplet_forwarded=False,
++            pixels_599_approach=True, pixels_600_stop=True,
++            expired_pixel_flag_unknown_while_waiting=True, fresh_unknown_resumed=True,
++            physical_publishers=0, ros_domain=75,
++        ), indent=2), flush=True)
++    finally:
++        node.destroy_node()
++        rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/pixel_stop_flag.py
+@@ -0,0 +1,107 @@
++"""Publish stop-position flags from fresh A3 red-pixel observations."""
++import argparse
++from collections import Counter
++import json
++import sys
++
++INPUT = "/aiformula_perception/yolop_a3/detections"
++OUTPUT = "/flag_stop"
++EXPECTED_FRAME = "zed_left_camera_optical_frame"
++MAX_AGE_NS = 500_000_000
++
++
++def inspect_observation(text, now_ns):
++    try:
++        payload = json.loads(text)
++        header = payload["header"]
++        stamp = header["stamp"]
++        sec, nanosec = stamp["sec"], stamp["nanosec"]
++        count = payload["red_pixels_count"]
++        if (
++            header["frame_id"] != EXPECTED_FRAME
++            or type(sec) is not int or not 0 <= sec <= 2147483647
++            or type(nanosec) is not int or not 0 <= nanosec < 1_000_000_000
++            or type(count) is not int or count < 0
++        ):
++            return None, "invalid_header_or_pixel_count"
++        source = sec * 1_000_000_000 + nanosec
++        if source > 0 and 0 <= now_ns - source <= MAX_AGE_NS:
++            return (source, count), "ok"
++        return None, "stale_or_future_image"
++    except (KeyError, TypeError, ValueError):
++        return None, "malformed_detections"
++
++
++def observation(text, now_ns):
++    return inspect_observation(text, now_ns)[0]
++
++
++def main():
++    import rclpy
++    from rclpy.executors import ExternalShutdownException
++    from rclpy.node import Node
++    from rclpy.qos import qos_profile_sensor_data
++    from std_msgs.msg import Bool, String
++
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("threshold", type=int)
++    args = parser.parse_args()
++    if args.threshold <= 0:
++        parser.error("threshold must be positive")
++
++    class PixelStop(Node):
++        def __init__(self):
++            super().__init__("a3_pixel_stop_position")
++            self.output = self.create_publisher(Bool, OUTPUT, 1)
++            self.create_subscription(String, INPUT, self.receive, qos_profile_sensor_data)
++            self.last_source = 0
++            self.counts = Counter()
++            self.latest_pixels = None
++            self.latest_source = None
++            self.audit = self.create_publisher(String, "/semantic_drive/map_assist_045/pixel_stop_status", 1)
++            self.create_timer(1.0, self.report)
++
++        def report(self):
++            age = None if self.latest_source is None else (
++                self.get_clock().now().nanoseconds - self.latest_source) / 1e6
++            data = dict(threshold=args.threshold, latest_pixels=self.latest_pixels, age_ms=age,
++                        counts=self.counts, detections_publishers=self.count_publishers(INPUT),
++                        flag_publishers=self.count_publishers(OUTPUT))
++            self.audit.publish(String(data=json.dumps(data)))
++            if self.latest_source is None or age > MAX_AGE_NS / 1e6:
++                self.get_logger().warn("No fresh pixel-stop output: " + json.dumps(data))
++
++
++        def receive(self, message):
++            if self.count_publishers(INPUT) != 1 or self.count_publishers(OUTPUT) != 1:
++                self.counts["publisher_count_mismatch"] += 1
++                return
++            item, reason = inspect_observation(message.data, self.get_clock().now().nanoseconds)
++            if item is None:
++                self.counts[reason] += 1
++                return
++            if item[0] <= self.last_source:
++                self.counts["nonmonotonic_image"] += 1
++                return
++            self.last_source, count = item
++            self.latest_pixels, self.latest_source = count, self.last_source
++            at_stop = count >= args.threshold
++            self.counts["at_stop" if at_stop else "below_threshold"] += 1
++            self.output.publish(Bool(data=at_stop))
++
++    rclpy.init(args=[sys.argv[0]])
++    node = None
++    try:
++        node = PixelStop()
++        rclpy.spin(node)
++    except (KeyboardInterrupt, ExternalShutdownException):
++        pass
++    finally:
++        if node is not None:
++            node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/semantic_045_commissioning.launch.py
+@@ -0,0 +1,79 @@
++"""Exercise vehicle MapAssist, OA selection and LYA on diagnostic outputs."""
++from pathlib import Path
++import sys
++
++from launch import LaunchDescription
++from launch.conditions import IfCondition
++from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, IncludeLaunchDescription, OpaqueFunction
++from launch.launch_description_sources import PythonLaunchDescriptionSource
++from launch.substitutions import LaunchConfiguration
++from launch_ros.actions import Node, SetRemap
++
++PREFIX = "/semantic_drive/map_assist_045"
++VEHICLE_COMMAND = "/aiformula_control/game_pad/cmd_vel"
++PIXEL_STOP_TOPIC = "/flag_stop"
++
++
++def pixel_stop_source(context, script):
++    if LaunchConfiguration("traffic_stop_flag_topic").perform(context) != PIXEL_STOP_TOPIC:
++        return []
++    threshold = int(LaunchConfiguration("red_pixel_stop_threshold").perform(context))
++    if threshold <= 0:
++        raise ValueError("red_pixel_stop_threshold must be positive")
++    return [ExecuteProcess(cmd=[sys.executable, str(script), str(threshold)], output="screen")]
++
++
++def generate_launch_description():
++    directory = Path(__file__).resolve().parent
++    planner_launch = directory.parent / "source/workspace/src/aiformula/launchers/launch/semantic_vehicle_045.launch.py"
++    lya_command = PREFIX + "/lya_cmd_vel"
++    filtered = [(f"/{name}", f"{PREFIX}/{name}") for name in ("filtered_lane_pose", "filtered_omega_t")]
++    source = [(f"/processed_point_{label}", f"{PREFIX}/point_{label}") for label in "abc"]
++    switch_args = [arg for old, new in source + filtered for arg in ("-r", f"{old}:={new}")]
++    switch = ExecuteProcess(
++        cmd=[sys.executable, str(directory / "fresh_oa_switch.py"), "--ros-args", *switch_args],
++        output="screen",
++    )
++    planner = GroupAction([
++        SetRemap(src=VEHICLE_COMMAND, dst=lya_command),
++        IncludeLaunchDescription(
++            PythonLaunchDescriptionSource(str(planner_launch)),
++            launch_arguments={
++                "lane": LaunchConfiguration("lane"),
++                "lane_point_topic_prefix": LaunchConfiguration("lane_point_topic_prefix"),
++                "oa_initially_idle": LaunchConfiguration("oa_initially_idle"),
++                "traffic_stop_flag_topic": LaunchConfiguration("traffic_stop_flag_topic"),
++                "traffic_stop_flag_timeout_sec": "0.5",
++            }.items(),
++        ),
++    ])
++    follower = Node(
++        package="trajectory_follower", executable="lya_follower_connected_omegat_global",
++        output="screen", remappings=filtered + [(VEHICLE_COMMAND, lya_command)],
++        condition=IfCondition(LaunchConfiguration("start_lya")),
++    )
++    def adapter(context):
++        live = LaunchConfiguration("vehicle_output").perform(context) == "true"
++        args = ["--vehicle-output"] if live else []
++        return [ExecuteProcess(cmd=[sys.executable, str(directory / "guarded_stop_wait.py"), *args],
++                               output="screen")]
++    return LaunchDescription([
++        DeclareLaunchArgument(
++            "lane_point_topic_prefix", default_value="/processed_point_",
++            choices=["/processed_point_", "/original_processed_point_"],
++            description="Topic prefix for the A, B and C points from lane_points.",
++        ),
++        DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"],
++                              description="Connect legacy stop_wait and activate the motor session"),
++        DeclareLaunchArgument("oa_initially_idle", default_value="true", choices=["true", "false"],
++                              description="Start on the normal lane when standalone OA is off"),
++        DeclareLaunchArgument("start_lya", default_value="true", choices=["true", "false"],
++                              description="Start the private LYA follower with MapAssist"),
++        DeclareLaunchArgument("lane", choices=["inner", "outer"]),
++        DeclareLaunchArgument("traffic_stop_flag_topic", default_value=PIXEL_STOP_TOPIC),
++        DeclareLaunchArgument("red_pixel_stop_threshold", default_value="600"),
++        OpaqueFunction(function=pixel_stop_source, args=[directory / "pixel_stop_flag.py"]),
++        planner, switch, follower, OpaqueFunction(function=adapter),
++        Node(package="semantic_vehicle_wiring", executable="motor_gate_session", namespace="/semantic_drive",
++             output="screen", condition=IfCondition(LaunchConfiguration("vehicle_output"))),
++    ])
+--- /dev/null
++++ b/home/control/semantic_045_ws/commissioning/stop_wait_preview.py
+@@ -0,0 +1,98 @@
++"""Preview the legacy motor status contract without publishing on vehicle topics."""
++import json
++import math
++
++INPUT = "/semantic_drive/map_assist_045/status"
++OUTPUT = "/semantic_drive/map_assist_045/stop_wait_preview"
++MAX_AGE_NS = 600_000_000
++
++
++def _invalid_constant(value):
++    raise ValueError(value)
++
++
++def convert_status(text, now_ns):
++    try:
++        source = json.loads(text, parse_constant=_invalid_constant)
++        stamp = source["ros_time_sec"]
++        if (type(stamp) not in (float, int) or not math.isfinite(stamp)
++                or stamp < 0 or not -1000 <= now_ns - round(stamp * 1e9) <= MAX_AGE_NS):
++            return None
++    except (TypeError, ValueError, KeyError, OverflowError):
++        return None
++
++    mode = source.get("traffic_mode")
++    reason = source.get("traffic_reason")
++    can_resume = (
++        source.get("traffic_planner_version") == "ubs_auto_turn_v1"
++        and source.get("use_sim_time") is False
++        and mode == "normal"
++        and isinstance(reason, str)
++        and source.get("traffic_light") in ("green", "yellow", "off", "not_red")
++        and source.get("traffic_light_raw") in ("green", "yellow", "off", "unknown")
++        and source.get("traffic_stop_committed") is False
++        and source.get("auto_stop_latched") is False
++        and source.get("avoidance_active") is False
++        and source.get("branch_active") is False
++        and source.get("path_output_allowed") is True
++    )
++    if not can_resume:
++        if mode in ("prepare", "detour"):
++            reason = "unsupported_new_mode_" + mode
++        elif mode != "wait" or not isinstance(reason, str):
++            reason = "waiting_for_confirmed_light_release_and_ready_inputs"
++
++    return {
++        "traffic_policy": "stop_wait",
++        "traffic_mode": "normal" if can_resume else "wait",
++        "traffic_stop_required": not can_resume,
++        "traffic_reason": reason,
++        "ros_time_sec": stamp,
++    }
++
++
++def main():
++    import rclpy
++    from rclpy.executors import ExternalShutdownException
++    from rclpy.node import Node
++    from std_msgs.msg import String
++
++    class Preview(Node):
++        def __init__(self):
++            super().__init__("map_assist_stop_wait_preview")
++            self.output = self.create_publisher(String, OUTPUT, 1)
++            if self.output.topic_name != OUTPUT:
++                raise ValueError("Stop-wait preview must remain on its diagnostic topic")
++            self.subscription = self.create_subscription(String, INPUT, self.receive, 1)
++            self.last_stamp = None
++
++        def receive(self, message):
++            publishers = self.get_publishers_info_by_topic(INPUT)
++            if (len(publishers) != 1 or publishers[0].node_name != "map_assist"
++                    or publishers[0].node_namespace != "/"):
++                return
++            status = convert_status(message.data, self.get_clock().now().nanoseconds)
++            if status is None:
++                return
++            stamp = status["ros_time_sec"]
++            if self.last_stamp is not None and stamp <= self.last_stamp:
++                return
++            self.last_stamp = stamp
++            self.output.publish(String(data=json.dumps(status, allow_nan=False)))
++
++    rclpy.init()
++    node = None
++    try:
++        node = Preview()
++        rclpy.spin(node)
++    except (KeyboardInterrupt, ExternalShutdownException):
++        pass
++    finally:
++        if node is not None:
++            node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/home/control/.local/bin/allnodes
+@@ -0,0 +1,5 @@
++#!/usr/bin/env bash
++set -e
++source /opt/ros/foxy/setup.bash
++source /home/workspace/install/setup.bash
++exec ros2 launch launchers allnodes.launch.py "$@"
+--- /dev/null
++++ b/home/control/.local/bin/lya
+@@ -0,0 +1,5 @@
++#!/usr/bin/env bash
++set -e
++source /opt/ros/foxy/setup.bash
++source /home/workspace/install/setup.bash
++exec ros2 run trajectory_follower lya_follower_connected_omegat_global "$@"
+--- /dev/null
++++ b/home/control/.local/bin/oa_2
+@@ -0,0 +1,5 @@
++#!/usr/bin/env bash
++set -e
++source /opt/ros/foxy/setup.bash
++source /home/workspace/install/setup.bash
++exec ros2 run obsticle_avoidence oa_2 "$@"
+--- /dev/null
++++ b/home/control/.local/bin/oa-avoidance
+@@ -0,0 +1,29 @@
++#!/usr/bin/env bash
++set -e
++source /opt/ros/foxy/setup.bash
++source /home/workspace/install/setup.bash
++exec /usr/bin/python3 -c '
++import json
++import os
++from pathlib import Path
++import runpy
++import sys
++
++from ament_index_python.packages import get_package_prefix, get_package_share_directory
++
++package = "obsticle_avoidence"
++executable = Path(get_package_prefix(package), "lib", package, "oa_2")
++runner = Path(get_package_share_directory("launchers"), "shellscript", "run_obstacle_avoidance.py")
++if not (executable.is_file() and os.access(executable, os.X_OK) and runner.is_file()):
++    raise SystemExit("Missing installed oa_2 executable or avoidance runner")
++
++command = [str(executable), "--ros-args", "-r", "/lane_stop_flag:=/point_flag"]
++for label in "abc":
++    command += ["-r", "/processed_point_" + label + ":=/oa_point_" + label]
++if sys.argv[1:] == ["--check"]:
++    print(json.dumps(dict(command=command, runner=str(runner)), indent=2))
++    sys.exit(0)
++if sys.argv[1:]:
++    raise SystemExit("Usage: oa-avoidance [--check]")
++raise SystemExit(runpy.run_path(str(runner))["run_child"](command))
++' "$@"
+--- /dev/null
++++ b/home/control/.local/bin/semantic
+@@ -0,0 +1,29 @@
++#!/usr/bin/env bash
++set -e
++
++usage() {
++    printf '%s\n' 'Usage: semantic [6.0|5.5] [ROS launch arguments]' \
++        'Run without arguments to choose the minimum turn radius interactively.'
++}
++
++case "${1:-}" in
++    -h|--help) usage; exit 0 ;;
++    6.0|inner) lane=inner; shift ;;
++    5.5|outer) lane=outer; shift ;;
++    '')
++        if [[ ! -t 0 ]]; then usage >&2; exit 2; fi
++        printf '%s\n' 'Semantic MapAssist 0.4.5' '1. 6.0 m' '2. 5.5 m' 'q. 退出'
++        read -r -p '选择: ' choice || exit 0
++        case "$choice" in
++            1|6.0|inner) lane=inner ;;
++            2|5.5|outer) lane=outer ;;
++            q|Q) exit 0 ;;
++            *) usage >&2; exit 2 ;;
++        esac
++        ;;
++    *) usage >&2; exit 2 ;;
++esac
++
++workspace="$HOME/semantic_045_ws"
++source "$workspace/activate_semantic.bash"
++exec ros2 launch "$workspace/commissioning/semantic_045_commissioning.launch.py" "lane:=$lane" "$@"
+--- /dev/null
++++ b/home/control/.local/bin/mapassist-live
+@@ -0,0 +1,5 @@
++#!/usr/bin/env bash
++set -e
++workspace="$HOME/semantic_045_ws"
++source "$workspace/activate_semantic.bash"
++exec ros2 launch "$workspace/commissioning/mapassist_formal.launch.py" "$@"
+--- /dev/null
++++ b/home/control/.local/bin/concept-live
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++set -e
++source "$HOME/concept_v6275_ws/activate_concept.bash"
++exec ros2 run concept live "$@"
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/Allnodes.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=Allnodes（原车）
++Comment=Start the standard allnodes launch
++Exec="/home/control/.local/bin/allnodes"
++TryExec=/home/control/.local/bin/allnodes
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/Concept.desktop
+@@ -0,0 +1,8 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=Concept
++Comment=Launch the Concept panel and RViz
++Exec="/home/control/.local/bin/concept-live"
++Icon=applications-engineering
++Terminal=true
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/LYA MapAssist.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=LYA（MapAssist）
++Comment=Start the LYA follower on the private MapAssist topics
++Exec="/home/control/.local/bin/lya" --ros-args -r "/filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose" -r "/filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t" -r "/aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel"
++TryExec=/home/control/.local/bin/lya
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/LYA.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=LYA（独立）
++Comment=Start the connected global LYA follower
++Exec="/home/control/.local/bin/lya"
++TryExec=/home/control/.local/bin/lya
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/MapAssist 正式接线.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=MapAssist（正式接线）
++Comment=Start allnodes and MapAssist stop-wait; start LYA and OA separately
++Exec="/home/control/.local/bin/mapassist-live"
++TryExec=/home/control/.local/bin/mapassist-live
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/OA 避障.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=OA 避障（oa_2）
++Comment=Start oa_2 with the OA point and source-switch topics
++Exec="/home/control/.local/bin/oa-avoidance"
++TryExec=/home/control/.local/bin/oa-avoidance
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/Semantic MapAssist.desktop
+@@ -0,0 +1,10 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=Semantic MapAssist
++Comment=Choose the inner or outer lane for Semantic MapAssist 0.4.5 diagnostics
++Exec=/home/control/.local/bin/semantic
++TryExec=/home/control/.local/bin/semantic
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/.xdg-hidden/Desktop/YOLOP.desktop
+@@ -0,0 +1,9 @@
++[Desktop Entry]
++Version=1.0
++Type=Application
++Name=YOLOP Perception
++Comment=Choose A3 V14, A4, or A4Light
++Exec=/home/control/.local/bin/yolop-launch
++Icon=utilities-terminal
++Terminal=true
++Categories=Utility;
+--- /dev/null
++++ b/home/control/aiformula_runtime/yolop_a3_v14_20261012/run_a3.py
+@@ -0,0 +1,12 @@
++"""Validate immutable V14 weight identity before entering the installed ROS adapter."""
++import hashlib
++from pathlib import Path
++
++WEIGHT = Path(__file__).resolve().parent / "upstream/YOLOP_A3_Deploy/weights/shared_best.pth"
++EXPECTED = "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c"
++
++if hashlib.sha256(WEIGHT.read_bytes()).hexdigest() != EXPECTED:
++    raise RuntimeError("A3 V14 checkpoint checksum mismatch")
++
++from yolop_a3_perception.node import main
++main()
+--- /dev/null
++++ b/home/control/aiformula_runtime/2026-11-19-yolop-selection/yolop.launch
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++set -eo pipefail
++experiment="$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" && pwd)"
++if [[ $# -gt 1 ]]; then
++    echo "Usage: $0 [a3|a4|a4l]" >&2
++    exit 2
++fi
++choice="${1:-}"
++if [[ -z "$choice" ]]; then
++    printf 'Choose YOLOP: [1] A3 V14  [2] A4 (vehicle topics)  [3] A4Light (vehicle topics)\n> '
++    read -r choice || exit 2
++fi
++case "${choice,,}" in
++    1|a3) profile=V14 ;;
++    2|a4) profile=A4 ;;
++    3|a4l|a4light|a4_lite) profile=A4_lite ;;
++    *) echo "Choose a3, a4, or a4l." >&2; exit 2 ;;
++esac
++
++# Hold the same lock across all three selector choices in this ROS domain.
++exec 9>"$experiment/selector-${ROS_DOMAIN_ID:-0}.lock"
++if ! flock -n 9; then
++    echo "A YOLOP selection is already running in this ROS domain. Stop it with Ctrl-C first." >&2
++    exit 1
++fi
++
++source /opt/ros/foxy/setup.bash
++source /home/workspace/install/local_setup.bash
++export PYTHONDONTWRITEBYTECODE=1
++if [[ "$profile" == V14 ]]; then
++    exec ros2 launch launchers yolop_a3.launch.py start_camera:=false start_lane_publisher:=false
++fi
++
++bundle="$experiment/bundles/$profile"
++if [[ ! -x "$experiment/foxy-env/bin/python3" || ! -f "$bundle/run_vehicle.py" ]]; then
++    echo "$profile is not configured. See $experiment/README.md." >&2
++    exit 1
++fi
++export PYTHONNOUSERSITE=1
++export YOLOP_FOXY_EXPERIMENT=1
++export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
++exec "$experiment/foxy-env/bin/python3" "$bundle/run_vehicle.py" --profile "$profile" --live

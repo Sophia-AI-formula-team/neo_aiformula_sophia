@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LYA（MapAssist）
+Comment=Start the LYA follower on the private MapAssist topics
+Exec="/home/control/.local/bin/lya" --ros-args -r "/filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose" -r "/filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t" -r "/aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel"
+TryExec=/home/control/.local/bin/lya
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;

@@ -1,0 +1,56 @@
+{
+  "percentiles": "median,p95,max",
+  "timing_ms": {
+    "capture_to_driver": [
+      135.92,
+      148.6,
+      173.06
+    ],
+    "driver_ms": [
+      86.72,
+      101.05,
+      229.52
+    ],
+    "decision_age_ms": [
+      222.74,
+      246.35,
+      362.57
+    ],
+    "command_age_ms": [
+      223.44,
+      246.92,
+      363.03
+    ]
+  },
+  "decisions": {
+    "ok recovery_no_checked_motion": 8,
+    "ok feasible": 331
+  },
+  "cmd": 339,
+  "positive": 331,
+  "valid_states": 1394,
+  "right_source": [
+    "can_0x711_low_byte_vectornav_ros_z"
+  ],
+  "joy": 1379,
+  "auto_windows": [
+    {
+      "secs": 60.88,
+      "cmd": 326,
+      "stale_intervals": 24,
+      "worst_interval_ms": 558.63,
+      "modes": {
+        "auto": 11,
+        "paused": 597
+      },
+      "reasons": {
+        "waiting_new_auto": 2,
+        "auto_command_received": 9,
+        "auto_timeout": 597
+      },
+      "positive_status": 9
+    }
+  ],
+  "expiry_gap_count": 24,
+  "max_last_capture_to_next_receipt_ms": 558.631938
+}

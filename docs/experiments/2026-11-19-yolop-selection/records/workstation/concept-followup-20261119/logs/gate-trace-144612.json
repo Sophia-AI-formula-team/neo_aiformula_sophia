@@ -1,0 +1,236 @@
+{
+  "bag": "concept_20261119_144612_7a08887c408f4446b0d9f6ee87ab15aa",
+  "gate": {
+    "('paused', 'output_enabled', True, True, False, False)": 20,
+    "('auto', 'waiting_new_auto', True, False, False, False)": 14,
+    "('auto', 'auto_command_received', True, False, False, False)": 4,
+    "('paused', 'auto_timeout', True, True, False, False)": 157
+  },
+  "gate_transitions": [
+    [
+      "2026-11-19T14:46:15.315+09:00",
+      [
+        "paused",
+        "output_enabled",
+        true,
+        true,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:17.199+09:00",
+      [
+        "auto",
+        "waiting_new_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:17.699+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:17.799+09:00",
+      [
+        "paused",
+        "auto_timeout",
+        true,
+        true,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:28.299+09:00",
+      [
+        "auto",
+        "waiting_new_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:28.799+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:28.899+09:00",
+      [
+        "paused",
+        "auto_timeout",
+        true,
+        true,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:30.699+09:00",
+      [
+        "auto",
+        "waiting_new_auto",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:31.099+09:00",
+      [
+        "auto",
+        "auto_command_received",
+        true,
+        false,
+        false,
+        false
+      ]
+    ],
+    [
+      "2026-11-19T14:46:31.300+09:00",
+      [
+        "paused",
+        "auto_timeout",
+        true,
+        true,
+        false,
+        false
+      ]
+    ]
+  ],
+  "range": [
+    "2026-11-19T14:46:14.461+09:00",
+    "2026-11-19T14:46:34.641+09:00"
+  ],
+  "decisions": {
+    "('ok', 'feasible', 'honda-v1.4.0-ground')": 163,
+    "('late', 'decision exceeded 0.5 s from acquisition', 'honda-v1.4.0-ground')": 1,
+    "('invalid', 'no recent wheel and gyro measurement at image capture', 'honda-v1.4.0-ground')": 6
+  },
+  "auto_cmd": 164,
+  "positive": 164,
+  "nonzero": 164,
+  "auto_speed_mps": {
+    "min": 1.0,
+    "median": 1.0,
+    "p95": 1.0,
+    "max": 1.0
+  },
+  "gate_limits": {
+    "1.0": 195
+  },
+  "auto_capture_to_bag_ms": {
+    "min": 309.36739,
+    "median": 399.794054,
+    "p95": 463.016317,
+    "max": 489.386816
+  },
+  "auto_gap_ms": {
+    "min": 5.766127,
+    "median": 115.323045,
+    "p95": 165.776919,
+    "max": 440.48776
+  },
+  "feedback": {
+    "(True, 'ok')": 391,
+    "(False, 'gyro_timeout')": 2
+  },
+  "wheels": {
+    "(0, 0)": 391
+  },
+  "joy": 382,
+  "joy_pressed": {
+    "[]": 382
+  },
+  "joy_age_ms": {
+    "min": 0.810361,
+    "median": 1.078871,
+    "p95": 14.171148,
+    "max": 43.515061
+  },
+  "motor_cmd": 930,
+  "motor_nonzero": 18,
+  "motor_can": {
+    "('0x210', '0000000000000000')": 1781,
+    "('0x210', 'e20000001f000000')": 34
+  },
+  "motor_command_pulses": [
+    {
+      "start": "2026-11-19T14:46:17.678+09:00",
+      "samples": 4,
+      "until_zero_ms": 80.228419
+    },
+    {
+      "start": "2026-11-19T14:46:28.718+09:00",
+      "samples": 5,
+      "until_zero_ms": 99.754122
+    },
+    {
+      "start": "2026-11-19T14:46:31.079+09:00",
+      "samples": 9,
+      "until_zero_ms": 200.088278
+    }
+  ],
+  "before_timeout": [
+    {
+      "last_active": "2026-11-19T14:46:17.699+09:00",
+      "first_paused": "2026-11-19T14:46:17.799+09:00",
+      "cmd_arrival": "2026-11-19T14:46:17.672+09:00",
+      "last_capture": "2026-11-19T14:46:17.239+09:00",
+      "last_capture_expires": "2026-11-19T14:46:17.739+09:00",
+      "following_cmd_arrival": "2026-11-19T14:46:17.795+09:00"
+    },
+    {
+      "last_active": "2026-11-19T14:46:28.799+09:00",
+      "first_paused": "2026-11-19T14:46:28.899+09:00",
+      "cmd_arrival": "2026-11-19T14:46:28.710+09:00",
+      "last_capture": "2026-11-19T14:46:28.305+09:00",
+      "last_capture_expires": "2026-11-19T14:46:28.805+09:00",
+      "following_cmd_arrival": "2026-11-19T14:46:28.816+09:00"
+    },
+    {
+      "last_active": "2026-11-19T14:46:31.232+09:00",
+      "first_paused": "2026-11-19T14:46:31.300+09:00",
+      "cmd_arrival": "2026-11-19T14:46:31.184+09:00",
+      "last_capture": "2026-11-19T14:46:30.771+09:00",
+      "last_capture_expires": "2026-11-19T14:46:31.271+09:00",
+      "following_cmd_arrival": "2026-11-19T14:46:31.286+09:00"
+    }
+  ],
+  "successful_decision_ms": {
+    "driver_processing": {
+      "min": 95.21054599827039,
+      "median": 109.6163139991404,
+      "p95": 128.42735599770094,
+      "max": 155.0694370016572
+    },
+    "capture_to_driver_callback": {
+      "min": 197.01530099647954,
+      "median": 280.97375600129607,
+      "p95": 344.157366999358,
+      "max": 373.8430430008313
+    }
+  },
+  "uncovered_capture_expiry_intervals": 92,
+  "final_can_topic_recorded": false
+}

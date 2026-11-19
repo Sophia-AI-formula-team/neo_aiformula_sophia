@@ -1,0 +1,42 @@
+{
+  "unmodified_shortcut": {
+    "roi_pixels": 2448,
+    "lane_flag": {
+      "False": 4,
+      "True": 16
+    },
+    "point_flag": {},
+    "oa_triplets": [
+      0,
+      0,
+      0
+    ],
+    "lane_a_publishers": [
+      "cone_mask_avoider",
+      "mapassist_oa2_isolated_probe"
+    ],
+    "mapassist_avoidance_samples": 0,
+    "selected_oa_pose_samples": 26
+  },
+  "explicit_remaps": {
+    "roi_pixels": 2448,
+    "lane_flag": {},
+    "point_flag": {
+      "False": 4,
+      "True": 15
+    },
+    "oa_triplets": [
+      30,
+      30,
+      30
+    ],
+    "lane_a_publishers": [
+      "mapassist_oa2_isolated_probe"
+    ],
+    "mapassist_avoidance_samples": 8,
+    "selected_oa_pose_samples": 30,
+    "returned_to_lane": true
+  },
+  "physical_can_publishers": 0,
+  "domain": 196
+}

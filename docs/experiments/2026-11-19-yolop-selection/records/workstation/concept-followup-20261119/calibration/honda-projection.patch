@@ -1,0 +1,232 @@
+diff --git a/vehicle_concept/src/concept/concept/bringup.py b/vehicle_concept/src/concept/concept/bringup.py
+index fcda2e7..9d616b3 100644
+--- a/vehicle_concept/src/concept/concept/bringup.py
++++ b/vehicle_concept/src/concept/concept/bringup.py
+@@ -97,6 +97,8 @@ def build(context):
+     if calibration == 'auto':
+         config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
+         receipt = Path(config_home) / 'concept' / 'camera.json'
++        if not receipt.is_file():
++            receipt = receipt.with_name('honda-ground.json')
+         calibration = str(receipt) if vehicle and receipt.is_file() else ''
+     simulated_clock = LC('use_sim_time').perform(context).lower() == 'true'
+     if vehicle and simulated_clock:
+diff --git a/vehicle_concept/src/concept_drive/concept_drive/node.py b/vehicle_concept/src/concept_drive/concept_drive/node.py
+index 8096f37..522f785 100644
+--- a/vehicle_concept/src/concept_drive/concept_drive/node.py
++++ b/vehicle_concept/src/concept_drive/concept_drive/node.py
+@@ -181,7 +181,9 @@ class DriverNode(Node):
+             self.next_ns = self.first_ns + periods * self.period_ns
+             cmd = ros_command(result.pop('command_native'))
+             decision.update(result, command=cmd, status='ok', planner_reason=result.get('reason', ''))
+-            if profile != 'calibrated-v626' and not (
++            if profile == 'honda-v1.4.0-ground':
++                decision.update(status='shadow', reason='Honda mount projection active; ground error unmeasured')
++            elif profile != 'calibrated-v626' and not (
+                     profile == 'frozen-unity-v626' and self.get_parameter('use_sim_time').value):
+                 decision.update(status='shadow', reason='camera geometry has no validated driving profile')
+             elif cmd['linear_x_mps'] < 0 and sample.get('rpm_encoding') == 'forward_only_uint8':
+diff --git a/vehicle_concept/src/concept_panel/concept_panel/window.py b/vehicle_concept/src/concept_panel/concept_panel/window.py
+index ccdd02e..b61484e 100644
+--- a/vehicle_concept/src/concept_panel/concept_panel/window.py
++++ b/vehicle_concept/src/concept_panel/concept_panel/window.py
+@@ -22,6 +22,7 @@ REASONS={'startup':'初始化','output_enabled':'等待恢复自动驾驶','outp
+          'recovery_unknown_road':'后方路界未知',
+          'recovery_no_checked_motion':'前后暂时都没有通过检查的方案',
+          'camera geometry has no validated driving profile':'相机安装标定尚未通过',
++         'Honda mount projection active; ground error unmeasured':'本田安装参数投影已启用 · 地面误差未实测',
+          'reverse wheel-feedback sign unverified':'轮速反馈尚未确认能识别倒车方向',
+          'decision exceeded 0.5 s from acquisition':'拍摄到出指令超过 0.5 秒'}
+ 
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+index eaa9638..1749e2c 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/geometry.py
+@@ -8,7 +8,8 @@ import cv2
+ UNVERIFIED = 'unverified-resize'
+ CALIBRATED = 'calibrated-v626'
+ UNITY = 'frozen-unity-v626'
+-PROFILES = (UNVERIFIED, CALIBRATED, UNITY)
++HONDA = 'honda-v1.4.0-ground'
++PROFILES = (UNVERIFIED, CALIBRATED, UNITY, HONDA)
+ FX, FY, CX, CY, HEIGHT = 254.391622, 254.391622, 330.01302, 181.14964, .655
+ REFERENCE_K = np.array([[FX, 0., CX], [0., FY, CY], [0., 0., 1.]])
+ 
+@@ -52,16 +53,75 @@ def fit_rotation(source_k, marks, optical_height_m=HEIGHT):
+     return REFERENCE_K @ ground_scale @ rotation @ np.linalg.inv(source_k)
+ 
+ 
+-class CalibrationReceipt:
+-    """Verify held-out ground marks, then bind them to the live rectified stream."""
+-    def __init__(self, path):
+-        data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++class CameraProjection:
++    """Bind image projection and its visibility mask to the source CameraInfo."""
++    def __init__(self, data):
+         self.topic, self.frame_id = data['image_topic'], data['frame_id']
+         self.width, self.height = int(data['width']), int(data['height'])
+         self.projection = np.asarray(data['projection'], dtype=float).reshape(3, 4)
+         if (not self.frame_id or self.width <= 0 or self.height <= 0 or self.width * 9 != self.height * 16
+                 or not np.isfinite(self.projection).all() or not data['mount_id']):
+             raise ValueError('Incomplete rectified camera registration')
++
++    def rectify(self, bgr):
++        if self.warp is None:
++            return bgr
++        return cv2.warpPerspective(bgr, self.warp, (640, 360), flags=cv2.INTER_LINEAR)
++
++    def restrict_predictions(self, road, lane, detections):
++        if self.visible is None:
++            return road, lane, detections
++        boxes = detections['boxes']
++        u = np.clip(((boxes[:, 0] + boxes[:, 2]) * .5).astype(int), 0, 639)
++        v = np.clip(np.ceil(boxes[:, 3]).astype(int) - 1, 0, 359)
++        keep = self.visible[v, u]
++        return road & self.visible, lane & self.visible, {k: values[keep] for k, values in detections.items()}
++
++    def matches(self, topic, image, info):
++        if info is None:
++            return False
++        return (topic == self.topic and image.header.frame_id == self.frame_id == info.header.frame_id
++                and (image.width, image.height) == (info.width, info.height) == (self.width, self.height)
++                and np.allclose(np.array(info.p).reshape(3, 4), self.projection, rtol=0., atol=.001))
++
++
++class HondaMountProjection(CameraProjection):
++    profile = HONDA
++
++    def __init__(self, data):
++        super().__init__(data)
++        if data['profile'] != HONDA:
++            raise ValueError('Unknown nominal mount')
++        h = optical_height(data['optical_height_m'])
++        # Honda v1.4.0 left optical axis in forward/left/up body coordinates.
++        # The xacro's optical RPY (-89, 0, -90) angles the camera up by 1 degree.
++        angle = np.deg2rad(1.)
++        c, s = np.cos(angle), np.sin(angle)
++        optical_to_body = np.array([[0., s, c], [-1., 0., 0.], [0., -c, s]])
++        # Each column multiplies [right_m, forward_m, 1] on level ground.
++        relative_ground = np.array([[0., 1., -.055], [-1., 0., -.0600025], [0., 0., -h]])
++        source = self.projection[:, :3] @ optical_to_body.T @ relative_ground
++        target = REFERENCE_K @ np.array([[1., 0., 0.], [0., 0., HEIGHT], [0., 1., 0.]])
++        self.warp = target @ np.linalg.inv(source)
++        coverage = cv2.warpPerspective(np.ones((self.height, self.width), np.uint8),
++                                       self.warp, (640, 360), flags=cv2.INTER_NEAREST)
++        self.visible = coverage.astype(bool)
++
++
++def load_projection(path):
++    data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++    if data.get('profile') == HONDA:
++        return HondaMountProjection(data)
++    return CalibrationReceipt(path)
++
++
++class CalibrationReceipt(CameraProjection):
++    """Verify held-out ground marks before assigning the measured driving profile."""
++    profile = CALIBRATED
++
++    def __init__(self, path):
++        data = json.loads(Path(path).expanduser().read_text(encoding='utf8'))
++        super().__init__(data)
+         # A fixed ray-to-ground transform is what matters to the existing planner.
+         # Use actual camera pixels and independent vehicle-relative measured positions.
+         marks = measured_points(data['ground_marks'], self.width, self.height)
+@@ -96,24 +156,3 @@ class CalibrationReceipt:
+         if np.max(error) > .10:
+             raise ValueError('Measured camera projection differs from V6.26 by more than 0.10 m')
+         self.max_error = float(np.max(error))
+-
+-    def rectify(self, bgr):
+-        if self.warp is None:
+-            return bgr
+-        return cv2.warpPerspective(bgr, self.warp, (640, 360), flags=cv2.INTER_LINEAR)
+-
+-    def restrict_predictions(self, road, lane, detections):
+-        if self.visible is None:
+-            return road, lane, detections
+-        boxes = detections['boxes']
+-        u = np.clip(((boxes[:, 0] + boxes[:, 2]) * .5).astype(int), 0, 639)
+-        v = np.clip(np.ceil(boxes[:, 3]).astype(int) - 1, 0, 359)
+-        keep = self.visible[v, u]
+-        return road & self.visible, lane & self.visible, {k: values[keep] for k, values in detections.items()}
+-
+-    def matches(self, topic, image, info):
+-        if info is None:
+-            return False
+-        return (topic == self.topic and image.header.frame_id == self.frame_id == info.header.frame_id
+-                and (image.width, image.height) == (info.width, info.height) == (self.width, self.height)
+-                and np.allclose(np.array(info.p).reshape(3, 4), self.projection, rtol=0., atol=.001))
+diff --git a/vehicle_concept/src/concept_yolop/concept_yolop/node.py b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+index c138689..e8b58af 100644
+--- a/vehicle_concept/src/concept_yolop/concept_yolop/node.py
++++ b/vehicle_concept/src/concept_yolop/concept_yolop/node.py
+@@ -10,7 +10,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
+ from sensor_msgs.msg import CameraInfo, CompressedImage, Image
+ from std_msgs.msg import String
+ 
+-from .geometry import CALIBRATED, UNVERIFIED, CalibrationReceipt
++from .geometry import HONDA, UNVERIFIED, load_projection
+ from .frame_codec import encode_frame
+ from .inference import Predictor
+ from .weights import default_path
+@@ -57,7 +57,7 @@ class CameraNode(Node):
+         self.info = None
+         path = self.get_parameter('calibration').value
+         if path:
+-            self.calibration = CalibrationReceipt(path)
++            self.calibration = load_projection(path)
+             self.info_subscription = self.create_subscription(
+                 CameraInfo, self.get_parameter('camera_info_topic').value, self.on_info, qos)
+         self.images = self.create_subscription(Image, self.get_parameter('image_topic').value, self.on_image, qos)
+@@ -68,15 +68,17 @@ class CameraNode(Node):
+     def on_image(self, msg):
+         try:
+             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+-            verified = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
+-            if verified:
++            matched = self.calibration and self.calibration.matches(self.images.topic_name, msg, self.info)
++            if self.calibration and self.calibration.profile == HONDA and not matched:
++                return
++            if matched:
+                 bgr = self.calibration.rectify(bgr)
+             bgr, road, lane, det = self.predictor.predict(bgr)
+-            if verified:
++            if matched:
+                 road, lane, det = self.calibration.restrict_predictions(road, lane, det)
+             stamp = msg.header.stamp
+             wire = encode_frame(stamp.sec, stamp.nanosec, msg.header.frame_id, bgr, road, lane, det,
+-                                CALIBRATED if verified else UNVERIFIED)
++                                self.calibration.profile if matched else UNVERIFIED)
+             self.frames.publish(String(data=wire))
+             display = self.overlay.get_subscription_count()
+             record = self.compressed_overlay.get_subscription_count()
+diff --git a/vehicle_concept/src/concept_yolop/test/test_camera_registration.py b/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
+index 7f86bf6..d039e2f 100644
+--- a/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
++++ b/vehicle_concept/src/concept_yolop/test/test_camera_registration.py
+@@ -4,7 +4,23 @@ import cv2
+ import numpy as np
+ import pytest
+ 
+-from concept_yolop.geometry import CalibrationReceipt, REFERENCE_K, HEIGHT
++from concept_yolop.geometry import CalibrationReceipt, HONDA, REFERENCE_K, HEIGHT, load_projection
++
++
++def test_honda_mount_projects_vehicle_centerline_using_left_camera_info(tmp_path):
++    params = dict(profile=HONDA, optical_height_m=.55, image_topic='/camera',
++                  frame_id='left', mount_id='sn', width=640, height=360,
++                  projection=[245.857193, 0, 328.655579, 0, 0, 245.857193,
++                              189.012695, 0, 0, 0, 1, 0])
++    path = tmp_path / 'honda-ground.json'
++    path.write_text(json.dumps(params))
++    mount = load_projection(path)
++    # Raw left-camera pixel independently projected from (right=0, forward=4 m).
++    pixel = mount.warp @ [332.405, 227.675, 1.]
++    expected = REFERENCE_K @ [0, HEIGHT, 4.]
++    np.testing.assert_allclose(pixel[:2] / pixel[2], expected[:2] / expected[2], atol=.002)
++    assert mount.profile == HONDA and mount.visible.shape == (360, 640)
++
+ from concept_yolop.calibrate import install_receipt
+ 
+ 
