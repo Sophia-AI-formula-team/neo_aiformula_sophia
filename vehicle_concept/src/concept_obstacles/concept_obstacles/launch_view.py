@@ -29,6 +29,11 @@ def launch_objects(detections, tracked, measurements):
             raw = np.asarray(raw, dtype=float)
             if raw.shape != (4,) or not np.isfinite(raw).all():
                 return None
+            # A big foreground proposal can contain a tiny, much farther
+            # cone. Its bottom must not claim a nearer foot than the measured
+            # one beyond the detector's existing three-pixel error budget.
+            if raw[3] > foot[1]+3. or not raw[0]-3. <= foot[0] <= raw[2]+3.:
+                return None
             explained.add(tuple(raw))
         if z >= 12.:
             continue

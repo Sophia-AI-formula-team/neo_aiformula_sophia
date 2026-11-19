@@ -114,6 +114,8 @@ class SupportedLaunch:
                 reasons[int(idx)] = 'localized_cone_on_drive_or_brake_path'
             certified[indices] = passes
         selected = choose(scores, certified)
+        if selected is not None and 'localized_cone_checked' in decision:
+            decision['localized_cone_selected_margin_m'] = float(margins[np.searchsorted(indices, selected)])
         decision.update(forward_index=top, h12_top_forward_score=float(scores[top]),
                         top_forward_rejection=reasons.get(top), certified_index=selected,
                         certified_forward_indices=np.flatnonzero(certified).tolist(),

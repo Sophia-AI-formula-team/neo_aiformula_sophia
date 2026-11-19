@@ -49,11 +49,20 @@ def test_close_crossing_and_multiple_cones_reject():
     assert (margins((10.2, -6.1), (1.35, -.25)) < .5).all()
 
 
+def test_same_cone_clears_only_the_slow_candidates():
+    # A 7.25 m cone in the road clears the 0.05 m/s trajectory's risk
+    # limit. The longer 0.2 m/s trajectory enters its moving envelope.
+    np.testing.assert_array_equal(margins((7.25, 0.)) >= .5, [True, False, True])
+
+
 def test_missing_projection_unmatched_raw_box_and_live_track_still_block():
     far = measurement(10.2, -6.1)
     valid = far['source_boxes'][0]
     assert launch_objects(detections(valid), [], [{}]) is None
     assert launch_objects(detections(valid, [300, 240, 330, 260]), [], [far]) is None
+    nearer = list(valid)
+    nearer[3] += 12
+    assert launch_objects(detections(nearer), [], [{**far, 'source_boxes': [nearer]}]) is None
     assert launch_objects(detections(valid), [object()], [far]) is None
     assert launch_objects(detections(valid), [], [{**far, 'ground_forward_right_m': [10., 6.]}]) is None
     # Logged low-confidence feet have no annotated raw boxes. They must
