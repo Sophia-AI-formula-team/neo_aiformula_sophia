@@ -56,6 +56,7 @@ class MapAssist(Node):
         defaults = {
             "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
             "avoidance_flag_topic": "/lane_stop_flag",
+            "oa_ready_topic": "",
             "avoidance_initially_idle": False,
             "branch_active_topic": "/map_assist/branch_active",
             "reset_topic": "/map_assist/reset",
@@ -151,6 +152,7 @@ class MapAssist(Node):
         # Event state stays latched until an explicit opposite event. Unknown
         # startup state cannot accidentally compete with an active avoidance.
         self.avoidance_active = False if self.p["avoidance_initially_idle"] else None
+        self.oa_ready_time = -math.inf
         self.branch_active = False
         self.resume_after = 0.0
         self.odom = None
@@ -216,6 +218,8 @@ class MapAssist(Node):
             self.point_pubs[label] = self.create_publisher(Pose2D, self.p[f"output_point_{label}_topic"], 10)
         self.create_subscription(Odometry, self.p["odom_topic"], self._on_odom, 10)
         self.create_subscription(Bool, self.p["avoidance_flag_topic"], self._on_avoidance, 10)
+        if self.p["oa_ready_topic"]:
+            self.create_subscription(Bool, self.p["oa_ready_topic"], self._on_oa_ready, 10)
         self.create_subscription(Bool, self.p["branch_active_topic"], self._on_branch, 10)
         self.create_subscription(Bool, self.p["reset_topic"], self._on_reset, 10)
         self.status_pub = self.create_publisher(String, self.p["status_topic"], 10)
@@ -235,11 +239,13 @@ class MapAssist(Node):
             self.create_subscription(String, self.p["traffic_light_topic"], self._on_light_state, 10)
             self.create_subscription(Bool, self.p["traffic_stop_flag_topic"], self._on_traffic_stop_flag, 10)
         self.create_timer(1.0 / self.p["publish_rate_hz"], self._tick)
-        # Diagnostics must remain visible before /clock arrives and while a bag
-        # is paused. Only this status timer uses steady time; control stays on
-        # the node's ROS clock and cannot run from the diagnostic callback.
+        # Keep diagnostics and an active red stop alive on a paused ROS clock.
+        # The main planning loop still uses ROS time.
         self.status_clock = Clock(clock_type=ClockType.STEADY_TIME)
         self.status_timer = self.create_timer(0.2, self._status_tick, clock=self.status_clock)
+        if self.cmd_pub is not None and self.p["enable_traffic_control"]:
+            self.red_hold_timer = self.create_timer(
+                1.0 / self.p["publish_rate_hz"], self._red_hold_tick, clock=self.status_clock)
         self._status_tick()
         self.get_logger().info(
             "Map assist: first lap learns in RAM; points use metres, x forward/y left. "
@@ -284,8 +290,11 @@ class MapAssist(Node):
         if self.p["input_cmd_vel_topic"] == self.p["output_cmd_vel_topic"]:
             raise ValueError("Velocity input/output must differ; feedback is not allowed")
         if self.p["enable_traffic_control"] and self.p["traffic_stop_flag_topic"] in (
-                self.p["avoidance_flag_topic"], self.p["branch_active_topic"]):
+                self.p["avoidance_flag_topic"], self.p["branch_active_topic"], self.p["oa_ready_topic"]):
             raise ValueError("Traffic stop flag must be a separate topic from OA and branch flags")
+        if self.p["oa_ready_topic"] and self.p["oa_ready_topic"] in (
+                self.p["avoidance_flag_topic"], self.p["branch_active_topic"], self.p["reset_topic"]):
+            raise ValueError("OA readiness requires a separate topic")
         for name in ("angle_tolerance_deg", "max_correction_deg", "max_step_deg", "lap_closure_heading_deg", "match_heading_limit_deg", "detour_target_angle_deg"):
             if not math.isfinite(float(self.p[name])) or not 0 < self.p[name] < 90:
                 raise ValueError(f"{name} must be between 0 and 90 degrees")
@@ -378,12 +387,21 @@ class MapAssist(Node):
             self.visual_motion_ready = False
             self.detour_motion_ready = False
             self.last_cmd_time = -math.inf
+            self.oa_ready_time = -math.inf
+            self.velocity_gate_reason = "oa_source_changed_waiting_command"
         if not active and previous is not False:
             self.resume_after = time.monotonic() + self.p["resume_delay_sec"]
             self.reason = "resume_delay"
         elif active:
             self.reason = "avoidance_active"
         self._publish_velocity_stop_if_needed(time.monotonic())
+
+    def _on_oa_ready(self, msg: Bool) -> None:
+        self.oa_ready_time = time.monotonic() if msg.data and self.avoidance_active is True else -math.inf
+
+    def _oa_command_ready(self, now: float) -> bool:
+        return (self.avoidance_active is True
+                and (not self.p["oa_ready_topic"] or now - self.oa_ready_time <= self.p["point_timeout_sec"]))
 
     def _on_light_state(self, msg: String) -> None:
         state = str(msg.data).strip().lower()
@@ -427,15 +445,14 @@ class MapAssist(Node):
 
     def _on_traffic_stop_flag(self, msg: Bool) -> None:
         self.stop_flag = bool(msg.data)
-        # After a lap is recorded, the distance flag is only a fallback stop;
-        # it never triggers a turn or re-arms a light event.
+        # The flag alone never starts or re-arms a red event.
         if self.reference is None and not self.stop_flag:
             self.traffic_event_consumed = False
         now = time.monotonic()
         self._update_light_vote(now)
         if self.stop_flag and self.reference is not None and self.traffic_mode in ("prepare", "wait"):
             # Apply the fallback without waiting for the next control timer.
-            # The same pose/route/light checks and OA priority still apply.
+            # A pending OA manoeuvre cannot mask a required red stop.
             self._update_traffic(now)
         self._publish_velocity_stop_if_needed(now)
 
@@ -461,7 +478,7 @@ class MapAssist(Node):
                      or now - self.red_last_confirmed_at > self.p["traffic_vote_window_sec"])):
             # A missing lamp also produces zero red pixels. Hold before the pixel
             # stop point, and require a new vote before committing a red detour.
-            if self.traffic_mode != "detour":
+            if self.traffic_mode != "detour" and not self.stop_committed:
                 self._auto_red_hold("red_wait_signal_lost")
             self._clear_light_confirmation()
         if received_frame:
@@ -496,27 +513,15 @@ class MapAssist(Node):
             self.traffic_reason = "red_prepare"
         elif self.traffic_mode in ("prepare", "wait") and green:
             self._resume_vision("green_resume")
-        if self.reference is not None:
+        if self.reference is not None or self.traffic_mode != "prepare":
             return
         # On the first lap the distance flag marks the usual red stop position.
-        if (self.traffic_mode == "wait" and self.traffic_reason == "red_wait_flag_unavailable"
-                and not self.stop_committed and self.stop_flag is False
-                and self._red_recently_confirmed(now)):
-            self.traffic_mode = "prepare"
-            self.traffic_reason = "red_prepare"
-        if self.traffic_mode == "prepare" and self.stop_flag is None:
-            self.traffic_mode = "wait"
-            self.traffic_reason = "red_wait_flag_unavailable"
-            self.visual_motion_ready = False
-            if self.avoidance_active is not True:
-                self.last_cmd_time = -math.inf
-        elif self.traffic_mode in ("prepare", "wait") and self.stop_flag is True:
-            self.traffic_mode = "wait"
-            self.stop_committed = True
-            self.traffic_reason = "red_wait_first_lap"
-            self.visual_motion_ready = False
-            if self.avoidance_active is not True:
-                self.last_cmd_time = -math.inf
+        if self.stop_flag is None:
+            self._auto_red_hold("red_wait_flag_unavailable")
+        elif self.stop_flag is True:
+            self._auto_red_hold("red_wait_first_lap")
+        else:
+            self.traffic_reason = "red_prepare_first_lap"
 
     def _resume_vision(self, reason: str) -> None:
         self.traffic_mode = "normal"
@@ -545,21 +550,22 @@ class MapAssist(Node):
         self.visual_motion_ready = False
         self.used_seq = dict(self.point_seq)
         self.resume_after = time.monotonic() + self.p["resume_delay_sec"]
-        if self.avoidance_active is not True:
-            self.last_cmd_time = -math.inf
+        self.last_cmd_time = -math.inf
+        self.oa_ready_time = -math.inf
         self.guard.reset()
         self.last_correction = 0.0
 
+    def _red_stop_required(self) -> bool:
+        return self.p["enable_traffic_control"] and self.traffic_mode == "wait"
+
     def _velocity_hold_reason(self, now: float) -> Optional[str]:
-        # OA still owns the path and moving commands during its active phase.
-        # Red waits remain latched and are reconsidered when OA releases control.
+        if self._red_stop_required():
+            return self.traffic_reason
         if self.avoidance_active is True:
-            return None
+            return None if self._oa_command_ready(now) else "waiting_fresh_oa_triplet"
         blocked = self._output_block_reason(now)
         if blocked:
             return blocked
-        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
-            return self.traffic_reason
         if self.traffic_mode == "detour":
             if not self.detour_motion_ready or now - self.odom_time > self.p["odom_timeout_sec"]:
                 return "route_waiting_valid_odom_and_points"
@@ -575,16 +581,15 @@ class MapAssist(Node):
         if not all(math.isfinite(value) for value in values):
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = "invalid_controller_command"
-            # Reject invalid inputs, but do not insert commands while OA owns
-            # the manoeuvre. OA/downstream must enforce their own watchdog.
-            if self.avoidance_active is not True:
+            if self._red_stop_required() or self.avoidance_active is not True:
                 self.cmd_pub.publish(Twist())
             return
         held = self._velocity_hold_reason(now)
         if held:
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = held
-            self.cmd_pub.publish(Twist())
+            if self._red_stop_required() or self.avoidance_active is not True:
+                self.cmd_pub.publish(Twist())
             return
         self.last_cmd_time = now
         self.velocity_gate_reason = "forwarding_controller"
@@ -593,9 +598,8 @@ class MapAssist(Node):
     def _publish_velocity_stop_if_needed(self, now: float) -> None:
         if not self.p["enable_velocity_gate"] or self.cmd_pub is None:
             return
-        # Do not inject a timeout stop over OA while it owns the manoeuvre.
-        # Fresh OA-derived controller commands still pass through the gate.
-        if self.avoidance_active is True:
+        # Outside a red stop, the downstream motor gate handles OA timeout.
+        if self.avoidance_active is True and not self._red_stop_required():
             return
         held = self._velocity_hold_reason(now)
         if held or now - self.last_cmd_time > self.p["cmd_vel_timeout_sec"]:
@@ -604,6 +608,10 @@ class MapAssist(Node):
                 self.last_cmd_time = -math.inf
             self.cmd_pub.publish(Twist())
         # Moving commands are only forwarded on receipt; never replay a cache.
+
+    def _red_hold_tick(self) -> None:
+        if self._red_stop_required():
+            self._publish_velocity_stop_if_needed(time.monotonic())
 
     def _prepare_mapped_topology(self) -> None:
         """Attach the official graph to the already fused odometry-frame nodes.
@@ -762,14 +770,13 @@ class MapAssist(Node):
         self.auto_trigger_reason = "radius_has_margin"
         return False
 
-    def _auto_red_hold(self, reason: str, latch: bool = True) -> None:
+    def _auto_red_hold(self, reason: str) -> None:
         self.traffic_mode = "wait"
         self.traffic_reason = reason
-        self.auto_stop_latched = self.auto_stop_latched or latch
-        self.stop_committed = self.auto_stop_latched
+        self.auto_stop_latched = True
+        self.stop_committed = True
         self.visual_motion_ready = False
-        if self.avoidance_active is not True:
-            self.last_cmd_time = -math.inf
+        self.last_cmd_time = -math.inf
 
     def _clear_auto_measurements(self, reason: str) -> None:
         self.auto_trigger_reason = reason
@@ -783,7 +790,7 @@ class MapAssist(Node):
             return
         if self.stop_flag is None:
             # Without a distance state the requested last stop cannot be located.
-            self._auto_red_hold("red_wait_flag_unavailable", latch=False)
+            self._auto_red_hold("red_wait_flag_unavailable")
         elif self.stop_flag or self.auto_stop_latched:
             self._auto_red_hold(wait_reason)
         else:
@@ -803,27 +810,18 @@ class MapAssist(Node):
                 and now - self.red_last_confirmed_at <= self.p["traffic_vote_window_sec"])
 
     def _update_traffic(self, now: float) -> None:
-        if not self.p["enable_traffic_control"] or self.traffic_mode not in ("prepare", "wait"):
+        if (not self.p["enable_traffic_control"] or self.reference is None
+                or self.traffic_mode not in ("prepare", "wait")):
+            return
+        # Only the temporary loss-of-color hold may progress to a verified red
+        # detour. A committed stop for missing range or route waits for green.
+        if self.stop_committed and self.traffic_reason != "red_wait_signal_lost":
             return
         if self.traffic_mode == "wait" and not self._red_recently_confirmed(now):
             return
-        if self.reference is None:
-            # During the learning lap only, preserve the existing distance stop.
-            if self.stop_flag is None:
-                self.traffic_mode = "wait"
-                self.traffic_reason = "red_wait_flag_unavailable"
-                return
-            if self.stop_committed:
-                self.traffic_mode = "wait"
-                self.traffic_reason = "red_wait_first_lap"
-            else:
-                self.traffic_mode = "prepare"
-                self.traffic_reason = "red_prepare_first_lap"
-            return
         if self._output_block_reason(now) or self.branch_active:
             self.smooth_plan_reason = "waiting_for_oa_or_branch_release"
-            if self.stop_committed:
-                self.traffic_reason = "red_wait_maneuver_release"
+            self._auto_unavailable("red_prepare_maneuver_release", "red_wait_maneuver_release")
             return
         if not self.fusion_status.get("available") or self.mapped_topology is None:
             self.smooth_plan_reason = "waiting_for_map_fusion"
@@ -1155,6 +1153,8 @@ class MapAssist(Node):
         self.reference = reference
         # A first-lap stop may still be latched when the map closes.
         self.auto_stop_latched = self.stop_committed
+        if self.traffic_reason == "red_wait_signal_lost":
+            self.traffic_reason = "red_wait_first_lap_signal_lost"
         self.fusion_status = {"available": False, "mode": "odom_only", "reason": "alignment_pending"}
         self.alignment = {"diagnostic_only": True, "superseded_by": "map_fusion"}
         self.recorded_distance += math.hypot(current[0] - self.samples[-1].x, current[1] - self.samples[-1].y)
@@ -1243,20 +1243,22 @@ class MapAssist(Node):
 
     def _tick(self) -> None:
         now = time.monotonic()
+        was_holding_red = self._red_stop_required()
         self._poll_fusion(now)
         self._update_light_vote(now)
         self._update_traffic(now)
+        if self._red_stop_required():
+            self.guard.reset()
+            self.last_correction = 0.0
+            self.reason = self.traffic_reason
+            if not was_holding_red:
+                self._publish_velocity_stop_if_needed(now)
+            return
         blocked = self._output_block_reason(now)
         if blocked:
             self.guard.reset()
             self.last_correction = 0.0
             self.reason = blocked
-            self._publish_housekeeping(now)
-            return
-        if self.p["enable_traffic_control"] and self.traffic_mode == "wait":
-            self.reason = self.traffic_reason
-            self.guard.reset()
-            self.last_correction = 0.0
             self._publish_housekeeping(now)
             return
         if self.traffic_mode == "detour":
@@ -1408,6 +1410,7 @@ class MapAssist(Node):
             "correction_deg": math.degrees(self.last_correction),
             "violation_frames": self.guard.violation_count,
             "avoidance_active": self.avoidance_active, "branch_active": self.branch_active,
+            "oa_command_ready": self._oa_command_ready(now),
             "path_output_allowed": self._output_block_reason(now) is None and self.traffic_mode != "wait",
             "enable_correction": self.p["enable_correction"],
             "official_route_node_ids": self.official.node_ids,
@@ -1430,6 +1433,7 @@ class MapAssist(Node):
             "auto_red_signal_valid": self._red_recently_confirmed(now),
             "traffic_mode": self.traffic_mode,
             "traffic_reason": self.traffic_reason,
+            "red_stop_required": self._red_stop_required(),
             "traffic_planner_version": "ubs_auto_turn_v1",
             "traffic_stop_flag": self.stop_flag,
             "traffic_stop_flag_role": "first_lap_stop" if self.reference is None else "red_fallback_only",

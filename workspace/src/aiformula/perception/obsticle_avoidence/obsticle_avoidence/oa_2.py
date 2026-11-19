@@ -5,7 +5,7 @@ import numpy as np
 
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose, Pose2D, PoseArray
 from std_msgs.msg import Int32, Bool
 from cv_bridge import CvBridge
 
@@ -81,6 +81,7 @@ class ConeMaskAvoider(Node):
         self.pub_pt_b = self.create_publisher(Pose2D, '/processed_point_b', 10)
         self.pub_pt_c = self.create_publisher(Pose2D, '/processed_point_c', 10)
         self.triplet_pubs = [self.pub_pt_a, self.pub_pt_b, self.pub_pt_c]
+        self.group_pub = self.create_publisher(PoseArray, "/semantic_drive/map_assist_045/oa_triplet", 10)
 
         self.pub_dbg_img   = self.create_publisher(Image, '/processed_image', 10)
         self.pub_cnt       = self.create_publisher(Int32, '/cone_pixels_count', 10)
@@ -249,6 +250,19 @@ class ConeMaskAvoider(Node):
         return roi_cnt, roi_total, L_cnt, R_cnt, col_mask
 
     # ---------------- 规划 ----------------
+    def publish_window(self, points):
+        group = PoseArray()
+        group.header.stamp = self.get_clock().now().to_msg()
+        group.header.frame_id = "oa_window"
+        for pub, point in zip(self.triplet_pubs, points):
+            x, y = float(point[0]), float(point[1])
+            pose = Pose()
+            pose.position.x, pose.position.y = x, y
+            pose.orientation.w = 1.0
+            group.poses.append(pose)
+            pub.publish(Pose2D(x=x, y=y, theta=0.0))
+        self.group_pub.publish(group)
+
     def compute_and_store_path(self, col_mask, vis=None, publish_window=True):
         plan = self.plan_path(col_mask)
         if plan is None:
@@ -261,8 +275,7 @@ class ConeMaskAvoider(Node):
         self.path_idx = idx_mid + 1
 
         if publish_window:
-            for pub, p in zip(self.triplet_pubs, [p_start, p_mid, p_end]):
-                pub.publish(Pose2D(x=float(p[0]), y=float(p[1]), theta=0.0))
+            self.publish_window([p_start, p_mid, p_end])
 
         if vis is not None:
             dbg_px = [self.robot2px(p) for p in path]
@@ -353,8 +366,7 @@ class ConeMaskAvoider(Node):
 
         rel_chunk = [p - self.reference_point for p in chunk] if self.reference_point is not None else chunk
 
-        for pub, rel in zip(self.triplet_pubs, rel_chunk):
-            pub.publish(Pose2D(x=float(rel[0]), y=float(rel[1]), theta=0.0))
+        self.publish_window(rel_chunk)
 
         self.reference_point = chunk[1].copy()
         self.path_idx += 3

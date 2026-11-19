@@ -1,0 +1,92 @@
+{
+  "accepted": false,
+  "reason": "No verified green restart",
+  "distance": 13.1904154,
+  "laps": 0,
+  "first_stop": true,
+  "second_red": false,
+  "detour_entered": false,
+  "detour_completed": false,
+  "left": false,
+  "early_red_release": false,
+  "confirmed_green_after_switch": false,
+  "scenario": "signal",
+  "oa_entered": false,
+  "oa_motion": false,
+  "oa_exited": false,
+  "samples": 791,
+  "last": {
+    "seq": 791,
+    "odom_batch": 4,
+    "dropped_odom": 0,
+    "v": 0.0,
+    "w": 0.0,
+    "motor": {
+      "reason": "semantic_hold:red_wait_signal_lost",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "counts": {
+      "oa": 132,
+      "guarded": 1080,
+      "motor": 250,
+      "state": 89,
+      "light": 359,
+      "detector_frame": 359,
+      "pixels": 359,
+      "cone_pixels": 825,
+      "lane_a": 354,
+      "lane_b": 354,
+      "lane_c": 354,
+      "filtered": 96,
+      "stop": 358,
+      "lya": 96
+    },
+    "oa_ready": null,
+    "group": null,
+    "cone_pixels": 0,
+    "stop": false,
+    "oa": false,
+    "light": "green",
+    "pixels": 0,
+    "lya": [
+      1.7813421035730297,
+      0.45
+    ],
+    "state": {
+      "red_stop_required": true,
+      "oa_command_ready": false,
+      "traffic_mode": "wait",
+      "traffic_reason": "red_wait_signal_lost",
+      "traffic_light": "unknown",
+      "traffic_stop_flag": false,
+      "avoidance_active": false,
+      "route_matched": false,
+      "map_fusion": {
+        "available": false,
+        "reason": "waiting_for_odom"
+      },
+      "odom_reference_ready": false,
+      "smooth_min_turn_radius_m": 6.0,
+      "smooth_plan_reason": "not_planned",
+      "velocity_gate_reason": "red_wait_signal_lost",
+      "recorded_samples": 64,
+      "recorded_distance_m": 13.135578462752532,
+      "progress_m": 0.0
+    }
+  }
+}

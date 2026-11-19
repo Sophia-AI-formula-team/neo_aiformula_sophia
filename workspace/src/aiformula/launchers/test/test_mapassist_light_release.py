@@ -41,3 +41,12 @@ class LightReleaseTests(unittest.TestCase):
                             traffic_mode=mode, smooth_plan_available=True, route_matched=True)
                 self.assertEqual(translate(json.dumps(data), self.now, True)["traffic_stop_required"],
                                  mode == "wait")
+
+    def test_formal_adapter_blocks_oa_on_red_and_requires_fresh_oa_points_after_green(self):
+        oa = dict(self.fields, avoidance_active=True, path_output_allowed=False, oa_command_ready=True)
+        held = dict(oa, traffic_mode="wait", traffic_reason="red_wait_first_lap", red_stop_required=True)
+        self.assertEqual(translate(json.dumps(held), self.now, True)["traffic_reason"], "red_wait_first_lap")
+        for red_required, points_ready, allowed in ((True, True, False), (False, False, False), (False, True, True)):
+            with self.subTest(red_required=red_required, points_ready=points_ready):
+                status = dict(oa, red_stop_required=red_required, oa_command_ready=points_ready)
+                self.assertEqual(translate(json.dumps(status), self.now, True)["traffic_stop_required"], not allowed)

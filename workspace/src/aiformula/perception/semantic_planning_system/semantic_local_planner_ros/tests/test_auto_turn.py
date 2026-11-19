@@ -154,17 +154,26 @@ class AutoTurnTests(unittest.TestCase):
         self.h.confirm_light('green')
         self.assertEqual(self.node.traffic_mode, 'normal')
 
-    def test_no_distance_message_and_no_plan_holds_until_a_state_arrives(self):
+    def test_no_distance_message_and_no_plan_holds_until_green(self):
         self.node.p['detour_min_turn_radius_m'] = 100.0
         self.h.confirm_light('red')
         self.node._tick()
         self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
-        self.assertFalse(self.node.auto_stop_latched)
+        self.assertTrue(self.node.auto_stop_latched)
         self.h.assert_stopped()
         self.node._on_traffic_stop_flag(fixtures.DataMessage(False))
         self.node._tick()
-        self.assertEqual(self.node.traffic_mode, 'prepare')
-        self.assertEqual(self.node.traffic_reason, 'red_prepare_spline_unavailable')
+        self.assertEqual(self.node.traffic_mode, 'wait')
+        self.assertEqual(self.node.traffic_reason, 'red_wait_flag_unavailable')
+        self.h.confirm_light('unknown')
+        count = len(self.node.cmd_pub.messages)
+        for _ in range(20):
+            self.h.advance(.05)
+            self.node._red_hold_tick()
+            self.h.assert_stopped()
+        self.assertEqual(len(self.node.cmd_pub.messages), count + 20)
+        self.h.confirm_light('green')
+        self.assertEqual(self.node.traffic_mode, 'normal')
 
     def test_unconfirmed_or_unknown_light_never_starts_turn(self):
         self.case.red_far()
@@ -268,7 +277,7 @@ class AutoTurnTests(unittest.TestCase):
         self.node._update_light_vote(self.h.now)
         self.assertFalse(self.node._red_recently_confirmed(self.h.now))
 
-    def test_oa_owns_control_even_when_fallback_stop_is_requested(self):
+    def test_red_fallback_stop_preempts_oa(self):
         self.node.p['detour_min_turn_radius_m'] = 100.0
         self.case.red_far()
         self.node._on_avoidance(fixtures.DataMessage(True))
@@ -276,14 +285,16 @@ class AutoTurnTests(unittest.TestCase):
         self.node._on_traffic_stop_flag(fixtures.DataMessage(True))
         self.node._tick()
         self.assertEqual(self.h.output_count(), count)
-        self.assertEqual(len(self.node.cmd_pub.messages), commands)
+        self.assertGreater(len(self.node.cmd_pub.messages), commands)
+        self.assertEqual(self.node.traffic_reason, 'red_wait_maneuver_release')
+        self.h.assert_stopped()
         self.node._on_avoidance(fixtures.DataMessage(False))
         self.h.advance(0.25)
         self.h.triplet()
         self.h.odom(*self.node.odom)
         self.node._tick()
         self.assertEqual(self.node.traffic_mode, 'wait')
-        self.assertTrue(self.node.traffic_reason.startswith('red_wait_spline_'))
+        self.assertEqual(self.node.traffic_reason, 'red_wait_maneuver_release')
         self.h.assert_stopped()
 
     def test_status_exposes_configured_radius_and_fallback_role(self):

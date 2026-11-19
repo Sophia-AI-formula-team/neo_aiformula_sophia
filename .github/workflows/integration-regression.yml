@@ -21,7 +21,8 @@ permissions:
 
 jobs:
   linux-offline-contracts:
-    runs-on: ubuntu-latest
+    # setup-python provides the Foxy-era Python 3.8 build for Ubuntu 22.04.
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     env:
       OMP_NUM_THREADS: '1'
