@@ -7,7 +7,8 @@ from concept_feasibility.geometry61514 import RISK_LIMIT
 from concept_feasibility.path_risk import array_clearance
 from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
 from .curve_progress import project, supported_increment
-from .edge_recovery import edge_control, preview_steering
+from .edge_recovery import edge_control, preview_control
+from .field_controls import TRACKING_HEADROOM
 
 DT = .05
 def motor_parameters():
@@ -50,11 +51,13 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         dt=obs.dt if k==0 else .2
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
         if physical_motor_enabled():
-            steering = preview_steering(edge, desired, z, x, heading, speed, yaw, last, commands, dt)
+            prior_drive = previous[0] if k == 0 else drive
+            ceiling = np.minimum(prior_drive, np.minimum(parameters['pace'], np.maximum(speed, 0.) + TRACKING_HEADROOM))
+            drive, steering = preview_control(edge, desired, z, x, heading, speed, yaw, last, commands, dt, ceiling)
             if edge_slot:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
-                    previous[0] if k == 0 else drive[-1], last[-1], dt, parameters['pace'])
+                    previous[0] if k == 0 else prior_drive[-1], last[-1], dt, parameters['pace'])
             last = steering
         else:
             last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)

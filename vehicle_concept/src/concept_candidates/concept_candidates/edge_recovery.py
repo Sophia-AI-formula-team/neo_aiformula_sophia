@@ -3,7 +3,7 @@ import numpy as np
 
 from concept_candidates.field_controls import (
     DIFFERENTIAL_SLEW, OUTWARD_RELEASE_SLEW, FORWARD_ACCEL, HALF_TREAD, TRACKING_HEADROOM,
-    WHEEL_SPEED_FRACTION, forward_steering,
+    WHEEL_SPEED_FRACTION, forward_control,
 )
 from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering
 from concept_road.onboard625 import HALF_TRACK
@@ -167,19 +167,7 @@ def preview_audit(edge, source, yaw, previous=0.):
                 urgency=float(urgency))
 
 
-def coordinating_drive_floor(edge, yaw, previous, dt):
-    """Keep enough common wheel speed to withdraw the applied differential gradually."""
-    if edge is None or len(edge) < 4 or edge[0]*previous <= 0.:
-        return 0.
-    *_, conflict, _ = edge_preview(edge, 0., 0., 0., yaw, previous)
-    if not conflict:
-        return 0.
-    difference = abs(motor_steering(-previous, physical=True))
-    remaining = max(0., difference - OUTWARD_RELEASE_SLEW*min(dt,.2))
-    return remaining * HALF_TREAD / WHEEL_SPEED_FRACTION
-
-
-def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, dt):
+def preview_control(edge, desired, z, x, heading, speed, yaw, previous, drive, dt, previous_drive=None):
     """Turn back while the currently observed verge is still reachable.
 
     The measured gyro continues rotating the body while the motor changes
@@ -189,7 +177,7 @@ def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, 
     and wheel-speed limits apply during both the response and the rollout.
     """
     if edge is None or len(edge) < 4:
-        return forward_steering(desired, drive, speed, previous, dt)
+        return forward_control(desired, drive, speed, previous, dt, previous_drive=previous_drive)
     side = edge[0]
     predicted_heading, distance, _, _, conflict, _ = edge_preview(edge, z, x, heading, yaw, previous)
     reserve = HALF_TRACK + MARGIN_M
@@ -198,7 +186,7 @@ def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, 
     inside = np.maximum(0., 2.*side*predicted_heading + .35*np.maximum(0., reserve-distance))
     desired = np.where(conflict, -side*np.maximum(-side*desired, inside), desired)
     release = conflict & (side*np.asarray(previous) > 0.)
-    return forward_steering(desired, drive, speed, previous, dt, release_outward=release)
+    return forward_control(desired, drive, speed, previous, dt, release_outward=release, previous_drive=previous_drive)
 
 
 def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace):
@@ -219,5 +207,5 @@ def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, 
     goal = np.where(approaching, np.minimum(pace, turning_drive), pace)
     drive = np.minimum(goal, np.minimum(applied_drive + FORWARD_ACCEL*dt_step,
                                         np.maximum(speed, 0.) + TRACKING_HEADROOM))
-    steer = preview_steering(edge, desired, z, x, heading, speed, yaw, applied_steer, drive, dt)
-    return drive, steer
+    return preview_control(edge, desired, z, x, heading, speed, yaw, applied_steer, drive, dt,
+                           np.minimum(applied_drive, np.minimum(pace, np.maximum(speed, 0.) + TRACKING_HEADROOM)))

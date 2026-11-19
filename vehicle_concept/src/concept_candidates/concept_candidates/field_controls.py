@@ -25,7 +25,7 @@ def forward_ceiling(measured, dt, pace):
                max(0., measured) + TRACKING_HEADROOM)
 
 
-def forward_steering(desired, drive, measured, previous, dt, *, release_outward=None):
+def forward_control(desired, drive, measured, previous, dt, *, release_outward=None, previous_drive=None):
     """Choose a real motor input whose actual wheel differential rises smoothly.
 
     The stock inverse sigmoid has disjoint fitted branches at zero. Project
@@ -48,7 +48,19 @@ def forward_steering(desired, drive, measured, previous, dt, *, release_outward=
         release = np.minimum(relaxed, abs(last)) + np.maximum(0., delta*(1.-abs(last)/relaxed))
         delta = np.where(release_outward, release, delta)
     wheel_limit = drive * WHEEL_SPEED_FRACTION / HALF_TREAD
-    raw = np.clip(np.clip(requested, last-delta, last+delta), -wheel_limit, wheel_limit)
+    if previous_drive is not None:
+        # The target combination may need less wheel differential simply
+        # because it asks for less forward speed. Limit that desired pair
+        # before applying the differential ramp. While the wheels unwind,
+        # keep just enough common speed; an explicit zero still brakes now.
+        requested = np.clip(requested, -wheel_limit, wheel_limit)
+        raw = np.clip(requested, last-delta, last+delta)
+        floor = np.minimum(previous_drive, np.abs(raw)*HALF_TREAD/WHEEL_SPEED_FRACTION)
+        drive = np.where(drive > 0., np.maximum(drive, floor), 0.)
+        wheel_limit = drive*WHEEL_SPEED_FRACTION/HALF_TREAD
+    else:
+        raw = np.clip(requested, last-delta, last+delta)
+    raw = np.clip(raw, -wheel_limit, wheel_limit)
     # Additionally respect the body-yaw ceiling when speed changes.
     raw = np.clip(raw, motor_steering(-limit, physical=True), motor_steering(limit, physical=True))
     pos = raw >= 0
@@ -57,4 +69,8 @@ def forward_steering(desired, drive, measured, previous, dt, *, release_outward=
     offset = np.where(pos, 3.36664054, -3.22124235)
     bias = np.where(pos, -.0621119, 1.6954783)
     command = L / (1. + np.exp(-k*(raw-offset))) - bias
-    return np.where((drive > 0.) & (np.abs(raw) > 1e-9), -command, 0.)
+    return drive, np.where((drive > 0.) & (np.abs(raw) > 1e-9), -command, 0.)
+
+
+def forward_steering(desired, drive, measured, previous, dt, *, release_outward=None):
+    return forward_control(desired, drive, measured, previous, dt, release_outward=release_outward)[1]
