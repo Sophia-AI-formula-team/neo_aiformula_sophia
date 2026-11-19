@@ -10,7 +10,7 @@ TRACKING_HEADROOM = .5          # m/s ahead of measured wheel speed
 MAX_YAW = .65                   # body rad/s
 LATERAL_ACCEL = 1.0             # m/sÂ²
 # 16:35 Nov 19, forward/manual and valid 0x711 wheel feedback. Among
-# 2,406 overlapping 0.20¨C0.24 s intervals the 95th percentile change
+# 2,406 overlapping intervals of 0.20 to 0.24 s, the 95th percentile change
 # in right-minus-left speed was 30 RPM. The stock converter gives about
 # 59 RPM of wheel differential per unit here (0.5 per 0.2 s).
 OUTWARD_RELEASE_SLEW = 2.5
