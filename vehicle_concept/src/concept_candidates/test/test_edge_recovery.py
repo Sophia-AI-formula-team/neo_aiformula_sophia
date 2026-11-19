@@ -1,0 +1,102 @@
+import math
+
+import numpy as np
+import pytest
+
+from concept_candidates.edge_recovery import edge_control, fit_edge
+from concept_candidates.field_controls import DIFFERENTIAL_SLEW, HALF_TREAD, WHEEL_SPEED_FRACTION
+from concept_feasibility.response61515 import motor_steering, motor_profile
+
+
+def observations(tangent, near_side):
+    z = np.arange(1., 6.01, .25)
+    left, right = (-1.3, 5.) if near_side == -1 else (-5., 1.3)
+    road = np.column_stack((z, left/np.cos(tangent)+z*np.tan(tangent),
+                            right/np.cos(tangent)+z*np.tan(tangent),
+                            np.full_like(z, .05), np.full_like(z, .05)))
+    return road, [[float(p), 'paint_material_edge', 'connected_material_edge'] for p in z]
+
+
+@pytest.mark.parametrize('side', [-1, 1])
+def test_nearest_observed_exterior_and_no_prescribed_width(side):
+    tangent = math.radians(-14*side)
+    road, observed = observations(tangent, side)
+    fit = fit_edge(road, observed)
+    np.testing.assert_allclose(fit, (side, tangent, side*1.3), atol=1e-10)
+    # An unrelated change of the far boundary cannot move the fitted edge.
+    road[:, 2 if side < 0 else 1] -= side*3.
+    np.testing.assert_allclose(fit_edge(road, observed), fit, atol=1e-10)
+
+
+def test_no_edge_from_lane_mask_divider_distant_or_disconnected_samples():
+    road, observed = observations(.2, -1)
+    assert fit_edge(road, [[r[0], 'road_head', 'paint_connected_asphalt'] for r in observed]) is None
+    assert fit_edge(road, observed[-8:]) is None
+    assert fit_edge(road, observed[::4]) is None
+    assert fit_edge(road, []) is None
+
+
+def left_observations(z, left):
+    return (np.column_stack((z, left, np.full_like(z, 4.))),
+            [[float(depth), 'paint_material_edge', 'road_head'] for depth in z])
+
+
+def test_measured_bend_can_supply_a_local_tangent_for_the_proposal():
+    # Rounded confirmed left-edge samples in the 17:08:17 field recording,
+    # frame 22. The visible bend is not straight over its entire 3 m extent.
+    z = np.array([2.21, 2.46, 2.71, 2.96, 3.21, 3.46, 3.71, 4.21, 4.47, 4.72, 4.97, 5.22])
+    x = np.array([-2.563, -2.186, -1.943, -1.706, -1.551, -1.423,
+                  -1.275, -1.133, -1.073, -1.019, -1.012, -.967])
+    result = fit_edge(*left_observations(z, x))
+    assert result is not None
+    side, angle, signed_distance = result
+    assert side == -1 and .20 < angle < .45 and -3 < signed_distance < -1.5
+
+
+def test_isolated_wrong_marking_does_not_remove_a_measured_near_edge():
+    z = np.arange(1., 3.01, .25)
+    x = -1.5 + .25*z
+    x[4] += .8
+    fit = fit_edge(*left_observations(z, x))
+    angle = np.arctan(.25)
+    np.testing.assert_allclose(fit, [-1, angle, -1.5*np.cos(angle)], atol=1e-9)
+
+
+@pytest.mark.parametrize('alternating', [False, True])
+def test_two_incompatible_edges_do_not_supply_a_turn_direction(alternating):
+    z = np.arange(1., 4.01, .25)
+    x = -1.5 + .20*z
+    branches = np.arange(len(z)) % 2 == 0 if alternating else z >= 2.75
+    x[branches] -= .95
+    assert fit_edge(*left_observations(z, x)) is None
+
+
+def test_samples_from_the_other_side_of_the_car_remain_ineligible():
+    z = np.arange(1., 4.01, .25)
+    assert fit_edge(*left_observations(z, 1.2+.20*z)) is None
+
+
+@pytest.mark.parametrize('side', [-1, 1])
+def test_edge_shape_builds_differential_inside_the_actual_motor_limits(side):
+    angle = math.radians(-14*side)
+    edge = (side, angle, side*1.3)
+    last_q, last_w = 1.4, 0.
+    with motor_profile(True):
+        for _ in range(6):
+            q, w = edge_control(edge, 0., 0., 0., 1.4, 0., last_q, last_w, .2, 2.)
+            old_raw = motor_steering(-np.asarray(last_w), physical=True)
+            raw = motor_steering(-np.asarray(w), physical=True)
+            assert w*side < 0 and 0. < q <= min(last_q+.2, 1.9)
+            assert abs(raw-old_raw) <= DIFFERENTIAL_SLEW*.2+1e-9
+            assert abs(raw)*HALF_TREAD <= WHEEL_SPEED_FRACTION*q+1e-9
+            last_q, last_w = q, w
+    assert last_q > .9 and abs(last_w) > .02
+
+
+def test_vectorized_rollout_matches_individual_shapes():
+    edge = (-1, .24, -1.3)
+    samples = [(0., 0., 0., 1.4, 0., 1.4, 0.), (1., .05, .2, .9, .1, .55, .03)]
+    with motor_profile(True):
+        expected = [edge_control(edge, *s, .2, 2.) for s in samples]
+        command = edge_control(edge, *np.asarray(samples).T, .2, 2.)
+    np.testing.assert_allclose(np.array(command).T, expected)

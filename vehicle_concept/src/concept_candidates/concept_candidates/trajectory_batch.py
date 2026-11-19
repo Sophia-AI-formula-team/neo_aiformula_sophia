@@ -8,6 +8,7 @@ from concept_feasibility.path_risk import array_clearance
 from concept_feasibility.response61515 import MODEL, inverse_yaw, response_intervals, physical_motor_enabled, forward_yaw_model
 from .curve_progress import project, supported_increment
 from .field_controls import forward_steering
+from .edge_recovery import edge_control
 
 DT = .05
 def motor_parameters():
@@ -30,13 +31,14 @@ def initial_state(obs, commands, stop_age, *, forward=False):
     return state
 
 
-def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters):
+def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parameters, *, edge=None):
     n=len(commands)
     state=np.empty((steps*4+1,n,8))
     controls=np.empty((steps*4,n,2))
     state[0]=initial_state(obs,commands,age,forward=True)
     limit=parameters.get('yaw_limit',1.55)
     last=np.full(n,previous[1])
+    drive = commands.copy()
     for k in range(steps):
         t=4*k
         z,x,heading,speed,yaw=state[t,:,:5].T
@@ -49,10 +51,15 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         dt=obs.dt if k==0 else .2
         lo=np.maximum(-limit,last-parameters['slew']*dt);hi=np.minimum(limit,last+parameters['slew']*dt)
         if physical_motor_enabled():
-            last=forward_steering(desired,commands,speed,last,dt)
+            steering = forward_steering(desired,commands,speed,last,dt)
+            if edge is not None:
+                drive[-1], steering[-1] = edge_control(
+                    edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
+                    previous[0] if k == 0 else drive[-1], last[-1], dt, parameters['pace'])
+            last = steering
         else:
             last=inverse_yaw(desired,commands,lower=lo,upper=hi,current_yaw=yaw,dt=dt)
-        controls[t:t+4,:,0]=commands;controls[t:t+4,:,1]=last
+        controls[t:t+4,:,0]=drive;controls[t:t+4,:,1]=last
         state[t+1:t+5]=_motion.integrate(state[t],controls[t:t+4],DT,*motor_parameters(),physical_motor_enabled())[1:]
     # The frozen simulator's nominal horizon uses this particular evaluation order.
     ticks=np.arange(steps*4)

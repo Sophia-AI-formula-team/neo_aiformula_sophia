@@ -3,7 +3,7 @@ from glob import glob
 
 name = 'concept'
 setup(
-    name=name, version='6.27.5', packages=[name],
+    name=name, version='6.27.6', packages=[name],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + name]),
         ('share/' + name, ['package.xml']),

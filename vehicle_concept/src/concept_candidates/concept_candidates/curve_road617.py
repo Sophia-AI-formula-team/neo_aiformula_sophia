@@ -11,6 +11,7 @@ from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WID
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
 from .field_controls import forward_ceiling, forward_steering
+from .edge_recovery import edge_control
 
 from concept_candidates.candidate_merge import distinct_requests
 from concept_candidates.curve_progress import increment
@@ -129,7 +130,28 @@ class RoadAwareCurvePlanner:
         # The whole batch shares the same vehicle state, observations, parameters
         # and lookahead. A request is identified by its two float64 input values.
         full_targets, full_commands = targets, commands
-        representatives, inverse = distinct_requests(targets, commands)
+        reference = getattr(obs, 'reference', None)
+        edge = reference.get('_field_edge') if physical and reference is not None else None
+        edge_slot = None
+        previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
+        if edge is not None and previous[0] >= 0. and obs.speed >= 0.:
+            # Reuse one duplicate forward request. The original unique curves,
+            # all five speed options, and the existing checked stop remain available.
+            lateral_bits = np.ascontiguousarray(targets[::len(speeds)]).view(np.uint64)
+            duplicate_groups = np.flatnonzero(lateral_bits[1:] == lateral_bits[:-1]) + 1
+            if len(duplicate_groups) and ceiling > 0.:
+                edge_slot = int((duplicate_groups[-1] + 1) * len(speeds) - 1)
+                first_drive, _ = edge_control(edge, 0., 0., 0., max(0., obs.speed), obs.yaw,
+                                              previous[0], previous[1], obs.dt, p['pace'])
+                full_commands[edge_slot] = first_drive
+        if edge_slot is None:
+            representatives, inverse = distinct_requests(targets, commands)
+        else:
+            ordinary = np.delete(np.arange(len(commands)), edge_slot)
+            groups, restore = distinct_requests(targets[ordinary], commands[ordinary])
+            representatives = np.r_[ordinary[groups], edge_slot]
+            inverse = np.empty(len(commands), dtype=np.intp)
+            inverse[ordinary], inverse[edge_slot] = restore, len(groups)
         targets, commands = targets[representatives], commands[representatives]
         count = len(commands)
         evaluation = self.candidate_evaluation
@@ -147,7 +169,6 @@ class RoadAwareCurvePlanner:
         heading_integral = np.zeros(count)
         reference_steps = np.zeros(count,int)
         camera_belief = CameraBelief(obs.objects, count)
-        previous = np.asarray(physical_applied_command()) if physical else self.command.copy()
         last_yaw = np.full(count, previous[1])
         zero_age = np.where(commands == 0, self.stop_age, 0.)
         horizon = float(np.clip((look+2.)/max(obs.speed, 1.2), 2., 5.))
@@ -157,7 +178,8 @@ class RoadAwareCurvePlanner:
         yaw_limit = p.get('yaw_limit', 1.55)
         if batch is not None:
             state, nominal_controls, geometric, road_lower, evidence, obstacle_lower, road_progress, reference_steps, heading_integral = batch.driven_path(
-                obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p)
+                obs,commands,slope,aa,bb,look,steps,previous,self.stop_age,p,
+                edge=edge if edge_slot is not None else None)
             first=nominal_controls[0,:,1].copy()
             paths=state[4::4,:,:2]
             z,x,heading,speed,yaw=state[-1,:,:5].T.copy()
@@ -167,6 +189,7 @@ class RoadAwareCurvePlanner:
             geometric = np.minimum(road_gap, object_gap)
             paths, first, nominal_controls = [], None, []
             obstacle_states=[(z.copy(),x.copy(),heading.copy(),0.,travel.copy(),turn.copy())]
+            drive = commands.copy()
             # Replan short manoeuvres; the independent loss-of-observation branch
             # still checks all the way to a stop, using the actual covariance.
             for step in range(steps):
@@ -179,6 +202,10 @@ class RoadAwareCurvePlanner:
                 command_dt = obs.dt if step == 0 else interval
                 if physical:
                     command_yaw = forward_steering(desired, commands, speed, last_yaw, command_dt)
+                    if edge_slot is not None:
+                        drive[-1], command_yaw[-1] = edge_control(
+                            edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
+                            previous[0] if step == 0 else drive[-1], last_yaw[-1], command_dt, p['pace'])
                 else:
                     command_yaw = inverse_yaw(desired, commands,
                         lower=np.maximum(-yaw_limit,last_yaw-p['slew']*command_dt),
@@ -188,10 +215,10 @@ class RoadAwareCurvePlanner:
                 if first is None:
                     first = command_yaw.copy()
                 for sub in range(4):
-                    nominal_controls.append(np.c_[commands,command_yaw])
+                    nominal_controls.append(np.c_[drive,command_yaw])
                     old_speed, old_yaw = speed.copy(), yaw.copy()
                     old_z, old_x = z.copy(), x.copy()
-                    speed, yaw, zero_age = advance(speed, yaw, commands, command_yaw, substep, zero_age)
+                    speed, yaw, zero_age = advance(speed, yaw, drive, command_yaw, substep, zero_age)
                     mid_heading = heading+.25*(old_yaw+yaw)*substep
                     x += (old_speed+speed)*.5*np.sin(mid_heading)*substep
                     z += (old_speed+speed)*.5*np.cos(mid_heading)*substep
@@ -257,7 +284,7 @@ class RoadAwareCurvePlanner:
         profile_controls = profile['controls']
         profile_lower = np.minimum(profile['road_lower'], profile['obstacle_lower'])
         camera_updates = camera_belief.updates
-        if count < len(full_commands):
+        if count < len(full_commands) or edge_slot is not None:
             # Restore first-in-order ties, hard masks, fallback controls and H12
             # features for all 75 original IDs before any selection or commit.
             (first, geometric, sigma, robust, feasible, scores, progress,
@@ -318,6 +345,10 @@ class RoadAwareCurvePlanner:
                                     geometric_limit='Full body at 0.05 s intervals; continuous-time between-step collision is not formally certified'))
         if pick is None:
             self.resume_contingency()
+        if edge_slot is not None:
+            self.last['audit']['edge_candidate_index'] = edge_slot
+            if not retimed[edge_slot]:
+                self.last['audit']['schedule'][edge_slot] = 'field_edge_recovery'
         return self.command.copy()
 
     def commit(self, index):

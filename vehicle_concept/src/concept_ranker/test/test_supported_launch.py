@@ -33,7 +33,10 @@ def test_logged_hold_only_displaced_with_measured_corridor_and_brake():
     args = logged_case()
     pick, scores, why = SupportedLaunch().decide(**args)
     assert pick == scores.argmax() == 1 and why['applied'] and not why['continued']
-    np.testing.assert_array_equal(scores[1:], args['scores'][1:])
+    assert scores[1] == args['scores'][1]
+    assert why['certified_forward_indices'] == [1]
+    np.testing.assert_allclose(scores[[0, 2]] + why['noncertified_score_reduction'],
+                               args['scores'][[0, 2]])
     # The next logged frame has only 0.424476 m of robust clearance.
     args['audit']['table'][1, 5] = .424476
     pick, scores, why = SupportedLaunch().decide(**args)
@@ -112,4 +115,47 @@ def test_frozen_sim_and_native_h12_motion_keep_scores_and_clear_episode():
     args.update(pick=0, evidence=None)
     pick, scores, why = launch.decide(**args)
     assert why is None and pick == 0
+    np.testing.assert_array_equal(scores, args['scores'])
+
+
+@pytest.mark.parametrize('blocked', ['margin', 'brake'])
+def test_real_second_choice_only_with_its_own_certificate(blocked):
+    args = logged_case()
+    # 17:06, field replay frame 169: incumbent highest moving score belonged
+    # to slot 59. Slot 4 had these recorded counterfactual costs and clearances.
+    args['scores'] = np.array([1.2, .8269419348338949, .688204054805746])
+    audit = args['audit']
+    audit['table'][2, 5] = .517425
+    audit['brake_lower'][2] = 2.955
+    if blocked == 'margin':
+        audit['table'][1, 5] = .49
+    else:
+        audit['no_observation_brake_feasible'][1] = False
+    original_allowed = args['allowed'].copy()
+    pick, scores, why = SupportedLaunch().decide(**args)
+    assert pick == scores.argmax() == why['certified_index'] == 2
+    assert why['forward_index'] == 1 and why['top_forward_rejection']
+    assert why['h12_top_forward_score'] == args['scores'][1]
+    assert why['certified_forward_indices'] == [2]
+    assert scores[2] == why['h12_forward_score'] == args['scores'][2]
+    assert len(why['rejection_counts']) == 1
+    np.testing.assert_array_equal(args['allowed'], original_allowed)
+    # An uncertain detection vetoes the whole start, including the alternate.
+    args['evidence']['obstacle_clear'] = False
+    decision, unchanged, why = SupportedLaunch().decide(**args)
+    assert decision == 0 and why['reason'] == 'obstacle_or_unresolved_detection'
+    np.testing.assert_array_equal(unchanged, args['scores'])
+
+
+def test_no_certificate_for_any_alternative_keeps_model_scores_and_stop():
+    args = logged_case()
+    args['audit']['brake_lower'][1] = .4
+    args['audit']['no_observation_brake_feasible'][2] = False
+    pick, scores, why = SupportedLaunch().decide(**args)
+    assert pick == 0 and not why['applied'] and why['certified_index'] is None
+    assert why['certified_forward_indices'] == []
+    assert why['rejection_counts'] == {
+        'insufficient_driving_or_braking_margin': 1,
+        'continuous_drive_or_immediate_brake_unavailable': 1,
+    }
     np.testing.assert_array_equal(scores, args['scores'])

@@ -1,4 +1,6 @@
 """Allow a checked start when H12 prefers waiting on an observed clear corridor."""
+from collections import Counter
+
 import numpy as np
 
 from concept_candidates.ranker617 import choose
@@ -11,27 +13,56 @@ CLEAR_MARGIN_M = .5
 NEAR_ROW_STEP_M = .16
 
 
-def observed_corridor(near_z, visible_z, path):
+def observed_path_limit(near_z, visible_z):
     if visible_z is None:
-        return False
+        return -np.inf
     visible = np.asarray(visible_z, dtype=float)
     near = np.asarray(near_z, dtype=float)
     if (visible.shape != (2,) or near.ndim != 1 or not len(near)
             or not np.isfinite(visible).all() or not np.isfinite(near).all()):
-        return False
+        return -np.inf
     lo, hi = visible
     # A change in yaw can move the front corner further than BODY_FRONT.
     front_radius = np.hypot(BODY_FRONT, BODY_HALF_WIDTH)
-    if hi <= lo or not (.0 < lo) or path[:, 0].max() + front_radius > hi:
-        return False
+    if hi <= lo or lo <= 0:
+        return -np.inf
     history = np.sort(near[near < lo])
     behind_body = np.flatnonzero(history <= -np.hypot(BODY_REAR, BODY_HALF_WIDTH))
     if not len(behind_body):
-        return False
+        return -np.inf
     # One missing 16 cm row doubles the spacing. A visible far-away patch
     # cannot bridge the gap from the front camera to the vehicle.
     samples = np.r_[history[behind_body[-1]:], lo]
-    return bool(np.all(np.diff(samples) <= NEAR_ROW_STEP_M + 1e-6))
+    if np.any(np.diff(samples) > NEAR_ROW_STEP_M + 1e-6):
+        return -np.inf
+    return hi - front_radius
+
+
+def certify_forward(moving, table, audit, stop, evidence):
+    """Check every allowed forward candidate; retain the first failing reason."""
+    nominal_brake = (np.asarray(audit['nominal_feasible'], dtype=bool)
+                     & np.asarray(audit['no_observation_brake_feasible'], dtype=bool))
+    margins = (table[:, 5] >= CLEAR_MARGIN_M) & (np.asarray(audit['brake_lower']) >= CLEAR_MARGIN_M)
+    reasons = {}
+    limit = observed_path_limit(evidence['observed_near_z'], evidence.get('visible_z'))
+    certified = np.zeros_like(moving)
+    for i in np.flatnonzero(moving):
+        if not nominal_brake[i]:
+            reason = 'continuous_drive_or_immediate_brake_unavailable'
+        elif not margins[i]:
+            reason = 'insufficient_driving_or_braking_margin'
+        else:
+            path = np.asarray(audit['paths'][i], dtype=float)
+            if (not len(path) or not np.isfinite(path).all() or np.any(np.diff(path[:, 0]) < 0)
+                    or table[i, 8] <= table[stop, 8] or path[-1, 0] <= 0):
+                reason = 'no_verified_forward_progress'
+            elif path[-1, 0] > limit:
+                reason = 'incomplete_measured_corridor'
+            else:
+                certified[i] = True
+                continue
+        reasons[int(i)] = reason
+    return certified, reasons
 
 
 class SupportedLaunch:
@@ -68,30 +99,27 @@ class SupportedLaunch:
             return keep('not_at_rest_or_continuing_applied_launch')
         if baseline is None or not allowed[baseline] or table[baseline, 0] <= 0:
             return keep('whitebox_prefers_hold')
-        # Preserve the entire H12 order between moving options. If its top
-        # forward option lacks evidence, a lower-ranked one does not replace it.
-        moving = choose(scores, allowed & (table[:, 0] > 0))
-        decision['forward_index'] = int(moving)
-        if not (audit['nominal_feasible'][moving] and audit['no_observation_brake_feasible'][moving]):
-            return keep('continuous_drive_or_immediate_brake_unavailable')
-        if min(table[moving, 5], audit['brake_lower'][moving]) < CLEAR_MARGIN_M:
-            return keep('insufficient_driving_or_braking_margin')
-        path = np.asarray(audit['paths'][moving], dtype=float)
-        if (not len(path) or not np.isfinite(path).all() or np.any(np.diff(path[:, 0]) < 0)
-                or table[moving, 8] <= table[pick, 8] or path[-1, 0] <= 0):
-            return keep('no_verified_forward_progress')
-        if not observed_corridor(evidence['observed_near_z'], evidence.get('visible_z'), path):
-            return keep('incomplete_measured_corridor')
-        # Waiting is dominated here. Shift only the checked waiting choices as
-        # one group so the exported scores explain the result without altering
-        # the order between forward trajectories or their H12 corrections.
-        waiting = allowed & (table[:, 0] == 0)
+        moving = allowed & (table[:, 0] > 0)
+        top = choose(scores, moving)
+        certified, reasons = certify_forward(moving, table, audit, pick, evidence)
+        selected = choose(scores, certified)
+        decision.update(forward_index=top, h12_top_forward_score=float(scores[top]),
+                        top_forward_rejection=reasons.get(top), certified_index=selected,
+                        certified_forward_indices=np.flatnonzero(certified).tolist(),
+                        rejection_counts=dict(Counter(reasons.values())))
+        if selected is None:
+            return keep(reasons[top])
+        # Lexicographic order for this start only: certified first, then H12.
+        # Export a score that agrees with that order. This common offset lets
+        # the raw H12 scores be recovered exactly to reporting precision.
+        others = allowed & ~certified
         final = scores.copy()
-        shift = float(scores[waiting].max() - scores[moving] + 1e-6)
-        final[waiting] -= shift
+        shift = float(scores[others].max() - scores[certified].min() + 1e-6)
+        final[others] -= shift
         self.last_time = stamp
-        self.last_command = table[moving, :2].copy()
+        self.last_command = table[selected, :2].copy()
         decision.update(applied=True, reason='measured_clear_launch', waiting_score_reduction=shift,
+                        noncertified_score_reduction=shift,
                         continued=bool(continuing), h12_hold_score=float(scores[pick]),
-                        h12_forward_score=float(scores[moving]))
-        return moving, final, decision
+                        h12_forward_score=float(scores[selected]))
+        return selected, final, decision

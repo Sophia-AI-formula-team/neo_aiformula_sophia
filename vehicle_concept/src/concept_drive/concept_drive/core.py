@@ -9,11 +9,14 @@ import numpy as np
 
 from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
+from concept_candidates.edge_recovery import fit_edge
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
 from concept_candidates.rear_reference617 import RecoveryReference
+from concept_feasibility.response61515 import physical_applied_command
 from concept_obstacles.obstacles617 import Occupancy617, instances
 from concept_ranker import trajectory624
+from concept_road.field_road import FieldRoad
 from concept_road.limits6251 import JunctionLimits, observed_direction
 from concept_road.map_semantics618 import SemanticMap
 from concept_road.rear_road import RearRoad
@@ -28,6 +31,7 @@ class Drive:
         self.mapper = RuntimeMap()
         self.semantics = SemanticMap((FOCAL, CX, CY, HEIGHT))
         self.limits = JunctionLimits()
+        self.field_road = FieldRoad()
         self.planner = MarkedPlanner(dict(pace=pace, uncertainty=1., yaw_limit=1.55))
         self.builder = RankedBuilder(BacktrackSteer(self.planner))
         weights = Path(trajectory624.__file__).with_name('model-h12.json')
@@ -72,15 +76,40 @@ class Drive:
         road, edges = self.limits.update(road, evidence['tracks'], semantic['lines'], motion_speed, motion_yaw, dt)
         heading, reference = observed_direction(road, heading, evidence['tracks'], edges)
         evidence['circuit_edges'] = edges
-        if set(edges['edges']) == {'left', 'right'}:
-            guidance = np.empty((0, 4))
+        launch_evidence = None
+        if field_ground:
+            near_rows = evidence.get('nearfield_rows', [])
+            scene = self.field_road.update(image, raw, lane, road, heading, motion_speed, motion_yaw, dt,
+                                           nearfield_rows=near_rows)
+            road = intersect_confirmed_edges(scene.road, road, edges['edges'])
+            heading, guidance, reference = scene.heading, scene.guidance, scene.reference
+            # A contradictory physical limit invalidates this depth and everything
+            # beyond it. Do not interpolate the planner through the missing road.
+            heading = heading[:len(road)]
+            if len(road):
+                guidance = guidance[(guidance[:, 0] >= road[0, 0]) & (guidance[:, 0] <= road[-1, 0])]
+                if reference is not None:
+                    reference['_field_edge'] = fit_edge(road, scene.audit['observed_bounds'])
+            else:
+                guidance, reference = np.empty((0, 4)), None
+            near_visibility = [row['z'] for row in near_rows
+                               if row['source'] == 'historical_material_observation']
+            launch_evidence = dict(stamp_s=float(sensor['t']), applied_speed_mps=physical_applied_command()[0],
+                                   observed_near_z=near_visibility, visible_z=scene.audit.get('visible_z'),
+                                   obstacle_clear=clear_launch_view(det, objects, measurements))
+        else:
+            if set(edges['edges']) == {'left', 'right'}:
+                guidance = np.empty((0, 4))
+            if reference is None:
+                reference = build_reference(evidence)
         obs = RecoveryReference(road, objects, speed, yaw, dt, heading, guidance,
                                 evidence['rear_history']['observed_limit_m'],
-                                reference=reference if reference is not None else build_reference(evidence))
+                                reference=reference)
         features, allowed, baseline = self.builder.prepare(obs)
         pick, ranking = baseline, None
         if self.builder.network_allowed:
-            pick, ranking = self.ranker.rank(features, allowed, baseline, self.builder.planner.last['audit'], obs)
+            pick, ranking = self.ranker.rank(features, allowed, baseline, self.builder.planner.last['audit'], obs,
+                                            **({'launch_evidence': launch_evidence} if field_ground else {}))
         control = self.builder.command(pick)
         self.previous_time = sensor['t']
         self.previous_motion = (speed, yaw)
@@ -100,9 +129,56 @@ class Drive:
                     selected_path=paths[pick] if pick is not None and len(paths) else detail.get('path', []),
                     candidate_evaluation=audit['candidate_evaluation'],
                     candidates=candidates, feasible_count=sum(c['allowed'] for c in candidates),
+                    **({'edge_candidate_index': audit.get('edge_candidate_index'),
+                        'edge_candidate_schedule': (audit['schedule'][audit['edge_candidate_index']]
+                                                    if audit.get('edge_candidate_index') is not None else None)}
+                       if field_ground else {}),
                     reason=detail.get('reason', ''), recovery=detail.get('recovery', ''),
                     ranking_active=ranking is not None, road_rows=road.tolist(), heading=heading.tolist(),
-                    **({'obstacle_measurements': measurements} if field_ground else {}),
+                    **({'obstacle_measurements': measurements, 'field_road': scene.audit,
+                        'launch_decision': ranking.get('launch_decision') if ranking else None} if field_ground else {}),
                     objects=objects.tolist(), tracks=self.tracker.last['tracks'], speed_estimate_mps=float(speed),
                     rejected=audit.get('rejected', {}), edges=edges['edges'], lines=semantic['lines'],
                     map=snapshot, map_semantics={k: semantic[k] for k in ('changed_markings','changed_gaps','changed_repairs')})
+
+
+def intersect_confirmed_edges(camera_road, constrained, edges):
+    """Keep the previously confirmed physical outer edges wherever both observers report."""
+    if not len(camera_road) or not edges:
+        return camera_road
+    result = camera_road.copy()
+    depth = result[:, 0]
+    supported = np.ones(len(depth), dtype=bool)
+    for side, col, sign in [('left', 1, 1.), ('right', 2, -1.)]:
+        if not len(edges.get(side, [])):
+            continue
+        points = np.asarray(edges[side])
+        inside = (depth >= points[0, 0]) & (depth <= points[-1, 0])
+        if not len(constrained):
+            supported &= ~inside
+            continue
+        measured = (depth >= constrained[0, 0]) & (depth <= constrained[-1, 0])
+        supported &= ~inside | measured
+        inside &= measured
+        edge = sign * np.interp(depth[inside], constrained[:, 0], constrained[:, col])
+        error = np.interp(depth[inside], constrained[:, 0], constrained[:, col + 2])
+        original = sign * result[inside, col]
+        bound = np.maximum(original + result[inside, col + 2], edge + error)
+        merged = np.maximum(original, edge)
+        result[inside, col] = sign * merged
+        result[inside, col + 2] = bound - merged
+    invalid = np.flatnonzero(~supported | (result[:, 1] >= result[:, 2]))
+    return result[:invalid[0]] if len(invalid) else result
+
+
+def clear_launch_view(detections, objects, measurements):
+    """Keep stopping eligible for untracked or unprojectable nearby detections."""
+    if len(objects) or any(m.get('within_tracking_range', True) for m in measurements):
+        return False
+    boxes = detections['boxes'][(detections['labels'] == 91) & (detections['scores'] >= .15)]
+    for box in boxes:
+        if not np.isfinite(box).all() or box[3] <= CY + 5:
+            return False
+        if HEIGHT * FOCAL / (box[3] - CY) <= 12.:
+            return False
+    return True
