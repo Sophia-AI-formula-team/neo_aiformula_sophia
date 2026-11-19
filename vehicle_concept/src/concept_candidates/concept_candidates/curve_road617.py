@@ -205,7 +205,8 @@ class RoadAwareCurvePlanner:
                     prior_drive = previous[0] if step == 0 else drive
                     drive_ceiling = np.minimum(prior_drive, np.minimum(p['pace'], np.maximum(speed, 0.) + TRACKING_HEADROOM))
                     drive, command_yaw = preview_control(edge, desired, z, x, heading, speed, yaw, last_yaw,
-                                                         requested_drive, command_dt, drive_ceiling)
+                                                         requested_drive, command_dt, drive_ceiling,
+                                                         capture=tracking_first if step == 0 else None)
                     if edge_slot is not None:
                         drive[-1], command_yaw[-1] = edge_control(
                             edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],

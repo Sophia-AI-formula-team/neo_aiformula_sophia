@@ -100,10 +100,13 @@ def controller_record(mode, control=None, owner='unavailable', frame=None, index
     if owner != 'candidate' or frame is None or index is None:
         return record
     data, indices = frame
+    j = indices[index]
+    if 'edge_override' in data and data['edge_override'][j]:
+        record['owner'] = 'edge_recovery'
+        return record
     if 'points' not in data:
         record['owner'] = 'unavailable'
         return record
-    j = indices[index]
     points = [[float(z[j]), float(x[j])] for z, x in data['points']]
     record.update(active=True, points_zx_m=points, target_zx_m=points[0],
                   requested_yaw_right_radps=float(data['requested'][j]), reference_speed_mps=float(data['vref'][j]))

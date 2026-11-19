@@ -167,7 +167,7 @@ def preview_audit(edge, source, yaw, previous=0.):
                 urgency=float(urgency))
 
 
-def preview_control(edge, desired, z, x, heading, speed, yaw, previous, drive, dt, previous_drive=None):
+def preview_control(edge, desired, z, x, heading, speed, yaw, previous, drive, dt, previous_drive=None, *, capture=None):
     """Turn back while the currently observed verge is still reachable.
 
     The measured gyro continues rotating the body while the motor changes
@@ -184,9 +184,13 @@ def preview_control(edge, desired, z, x, heading, speed, yaw, previous, drive, d
     # Turning parallel removes the closing velocity. A near wheel also needs
     # inward displacement to recover the available turn-away margin.
     inside = np.maximum(0., 2.*side*predicted_heading + .35*np.maximum(0., reserve-distance))
-    desired = np.where(conflict, -side*np.maximum(-side*desired, inside), desired)
+    guarded = np.where(conflict, -side*np.maximum(-side*desired, inside), desired)
+    if capture is not None:
+        # The wheel slew limit can act on any command. Only a change in the
+        # requested yaw caused by the observed exterior transfers ownership.
+        capture['edge_override'] = guarded != desired
     release = conflict & (side*np.asarray(previous) > 0.)
-    return forward_control(desired, drive, speed, previous, dt, release_outward=release, previous_drive=previous_drive)
+    return forward_control(guarded, drive, speed, previous, dt, release_outward=release, previous_drive=previous_drive)
 
 
 def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace):

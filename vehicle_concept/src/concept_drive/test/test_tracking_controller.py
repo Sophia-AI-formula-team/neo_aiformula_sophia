@@ -70,3 +70,29 @@ def test_actual_first_control_and_sampled_points_match_selected_checked_candidat
 def test_independent_actions_do_not_inherit_a_tracking_target(owner):
     record = controller_record('lya', [0., 0.], owner)
     assert not record['active'] and not record['points_zx_m'] and record['target_zx_m'] is None
+
+def test_only_a_superseded_point_hands_steering_to_the_edge_guard():
+    from concept_candidates.edge_recovery import preview_control
+
+    # Construct two requests against the 11/19 frame-25 exterior fit.
+    # One points outwards; the other already asks for a stronger inward turn.
+    edge = (-1, .19, -1.73, 5.72)
+    desire = np.array([-.15, 2.])
+    base = np.zeros(2)
+    drive = np.full(2, .5)
+    args = (edge, desire, base, base, base, np.full(2, 1.9), np.full(2, -.09),
+            np.full(2, -.218), drive, .2, 2.)
+    capture = dict(points=((np.ones(2), base),), requested=desire, vref=drive)
+    with motor_profile(True):
+        ordinary = preview_control(*args)
+        measured = preview_control(*args, capture=capture)
+    np.testing.assert_array_equal(ordinary, measured)
+    assert list(capture['edge_override']) == [True, False]
+    # Exercise the real index mapping: each request can represent several slots.
+    frame = capture, [1, 0, 1]
+    overridden = controller_record('lya', [measured[0][0], measured[1][0]], 'candidate', frame, 1)
+    limited = controller_record('pure_pursuit', [measured[0][1], measured[1][1]], 'candidate', frame, 2)
+    assert overridden['owner'] == 'edge_recovery' and not overridden['active']
+    assert not overridden['points_zx_m'] and overridden['target_zx_m'] is None
+    assert limited['owner'] == 'candidate' and limited['active']
+    assert limited['requested_yaw_right_radps'] != limited['checked_yaw_right_radps']

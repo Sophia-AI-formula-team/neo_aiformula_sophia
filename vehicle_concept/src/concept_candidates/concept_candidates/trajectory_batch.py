@@ -51,7 +51,8 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
         if physical_motor_enabled():
             prior_drive = previous[0] if k == 0 else drive
             ceiling = np.minimum(prior_drive, np.minimum(parameters['pace'], np.maximum(speed, 0.) + TRACKING_HEADROOM))
-            drive, steering = preview_control(edge, desired, z, x, heading, speed, yaw, last, requested_drive, dt, ceiling)
+            drive, steering = preview_control(edge, desired, z, x, heading, speed, yaw, last, requested_drive, dt, ceiling,
+                                              capture=tracking_first if k == 0 else None)
             if edge_slot:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
