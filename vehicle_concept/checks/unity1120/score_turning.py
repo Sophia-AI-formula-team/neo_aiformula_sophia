@@ -126,6 +126,7 @@ def summarize(folder, geometry):
                     cmd_omega_radps=float(w[peak]), gyro_next_frame_radps=gyro[peak+1] if peak+1<len(gyro) else None,
                     selected=event["command"].get("selected_index"), feasible=event["command"].get("feasible_count")),
                 rolling_peak_delta_rpm=int(np.max(abs(delta[np.array([abs(row["body_forward_mps"]) for row in events])>.1]),initial=0)),
+                peak_delta_when_requesting_forward_rpm=int(np.max(abs(delta[v>.001]),initial=0)),
                 measured_peak_abs_speed_times_yaw_mps2=float(max(abs(actual[:, 4]*actual[:, 14]))),
                 cmd_total_variation_radps=float(sum(abs(np.diff(w)))),
                 largest_cmd_step_radps=float(max(abs(np.diff(w)), default=0)),
