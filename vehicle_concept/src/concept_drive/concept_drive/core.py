@@ -10,7 +10,7 @@ import numpy as np
 
 from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
-from concept_candidates.edge_recovery import corroborated_previous_edge, fit_edge
+from concept_candidates.edge_recovery import corroborated_previous_edge, fit_edge, preview_audit
 from concept_candidates.launch_clearance import launch_clearance
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
@@ -102,6 +102,8 @@ class Drive:
                     reference['_field_edge'] = edge
             else:
                 guidance, reference = np.empty((0, 4)), None
+            source = 'camera' if self.previous_field_edge is not None else 'previous_fit_confirmed_in_camera'
+            scene.audit['edge_preview'] = preview_audit(edge, source, yaw)
             near_visibility = [row['z'] for row in near_rows
                                if row['source'] == 'historical_material_observation']
             provisional = launch_objects(det, objects, measurements)

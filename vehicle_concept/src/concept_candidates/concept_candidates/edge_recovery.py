@@ -134,6 +134,34 @@ def corroborated_previous_edge(edge, road, observed_bounds, speed, yaw, dt):
     return side, angle, distance, max(ends)
 
 
+def edge_preview(edge, z, x, heading, yaw):
+    """Compute the same measured-edge test used by the rollout and the ROS trace."""
+    side, angle, normal_distance, end = edge
+    z, x, heading, yaw = map(np.asarray, (z, x, heading, yaw))
+    distance = side*(normal_distance + np.sin(angle)*z - np.cos(angle)*x)
+    predicted_heading = heading + FIELD_YAW_TAU_S*yaw - angle
+    outward = side*np.sin(predicted_heading)
+    reach = np.maximum(0., end-z)
+    reserve = HALF_TRACK + MARGIN_M
+    predicted_margin = distance - reach*outward
+    conflict = (reach > .25) & (outward > 0.) & (predicted_margin < reserve)
+    urgency = np.where(conflict, np.clip((reserve-predicted_margin) / MARGIN_M, 0., 1.), 0.)
+    return predicted_heading, distance, reach, predicted_margin, conflict, urgency
+
+
+def preview_audit(edge, source, yaw):
+    if edge is None:
+        return dict(source='no_supported_exterior', side=None, triggered=False)
+    angle_error, distance, reach, margin, conflict, urgency = edge_preview(edge, 0., 0., 0., yaw)
+    side, angle, normal_distance, end = edge
+    return dict(source=source, side='left' if side < 0 else 'right', triggered=bool(conflict),
+                normal_distance_m=float(normal_distance), tangent_right_rad=float(angle),
+                end_forward_m=float(end), gyro_right_radps=float(yaw),
+                predicted_relative_heading_rad=float(angle_error),
+                projected_center_clearance_m=float(margin), desired_center_clearance_m=HALF_TRACK+MARGIN_M,
+                urgency=float(urgency))
+
+
 def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, dt):
     """Turn back while the currently observed verge is still reachable.
 
@@ -145,16 +173,9 @@ def preview_steering(edge, desired, z, x, heading, speed, yaw, previous, drive, 
     """
     if edge is None or len(edge) < 4:
         return forward_steering(desired, drive, speed, previous, dt)
-    side, angle, normal_distance, end = edge
-    z, x, heading, speed, yaw = map(np.asarray, (z, x, heading, speed, yaw))
-    distance = side*(normal_distance + np.sin(angle)*z - np.cos(angle)*x)
-    predicted_heading = heading + FIELD_YAW_TAU_S*yaw - angle
-    outward = side*np.sin(predicted_heading)
-    reach = np.maximum(0., end-z)
+    side = edge[0]
+    predicted_heading, distance, _, _, conflict, urgency = edge_preview(edge, z, x, heading, yaw)
     reserve = HALF_TRACK + MARGIN_M
-    predicted_margin = distance - reach*outward
-    conflict = (reach > .25) & (outward > 0.) & (predicted_margin < reserve)
-    urgency = np.where(conflict, np.clip((reserve-predicted_margin) / MARGIN_M, 0., 1.), 0.)
     # Turning parallel removes the closing velocity. A near wheel also needs
     # inward displacement to recover the available turn-away margin.
     inside = np.maximum(0., 2.*side*predicted_heading + .35*np.maximum(0., reserve-distance))
