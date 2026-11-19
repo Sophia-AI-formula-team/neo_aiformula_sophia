@@ -1,0 +1,18 @@
+2026-11-19T10:07:50+09:00 SSH recovered at 10:07:31 JST. Extended 10 s pass adds process CPU/RSS/disk counters, GPU clocks and per-frame timings; passed process preflight.
+2026-11-19T10:07:51.989+09:00 Started only the ZED camera in localhost ROS domain 193.
+2026-11-19T10:07:57.270+09:00 Camera frames ready: [640, 360, 'bgra8']. Starting 10 s camera-only baseline.
+2026-11-19T10:08:07.405+09:00 camera-only: recorded 20 GPU samples across 10.086 s; messages: {'camera': 151}.
+2026-11-19T10:08:07.411+09:00 Started a3-v14; waiting for camera, lane and object outputs.
+2026-11-19T10:08:19.941+09:00 a3-v14: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:08:30.089+09:00 a3-v14: recorded 20 GPU samples across 10.08 s; messages: {'detections': 139, 'traffic_light': 139, 'red_pixels': 139, 'lane_mask': 133, 'object_mask': 137, 'camera': 130, 'object_overlay': 112, 'lane_overlay': 123}.
+2026-11-19T10:08:30.855+09:00 Stopped a3-v14; exit 0.
+2026-11-19T10:08:32.380+09:00 Started a4; waiting for camera, lane and object outputs.
+2026-11-19T10:08:42.363+09:00 a4: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:08:52.515+09:00 a4: recorded 20 GPU samples across 10.079 s; messages: {'lane_overlay': 140, 'lane_mask': 144, 'object_mask': 148, 'object_overlay': 135, 'detections': 149, 'traffic_light': 149, 'red_pixels': 149, 'camera': 126}.
+2026-11-19T10:08:53.532+09:00 Stopped a4; exit 0.
+2026-11-19T10:08:55.072+09:00 Started a4light; waiting for camera, lane and object outputs.
+2026-11-19T10:09:06.670+09:00 a4light: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:09:16.802+09:00 a4light: recorded 20 GPU samples across 10.081 s; messages: {'camera': 127, 'detections': 151, 'traffic_light': 151, 'red_pixels': 151, 'lane_mask': 147, 'object_mask': 150, 'object_overlay': 133, 'lane_overlay': 141}.
+2026-11-19T10:09:17.868+09:00 Stopped a4light; exit 0.
+2026-11-19T10:09:19.620+09:00 Stopped ZED camera; exit 0.
+2026-11-19T10:09:36+09:00 Verified both benchmark passes had finished and no vehicle application, ZED camera, detector, or tegrastats process remained.

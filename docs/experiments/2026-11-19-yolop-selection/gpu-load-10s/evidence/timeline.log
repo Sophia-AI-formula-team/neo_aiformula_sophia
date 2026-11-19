@@ -1,0 +1,20 @@
+2026-11-19T10:03:11+09:00 10:02:53 JST preflight: identified the vehicle allnodes process group and separate A4 detector; located tegrastats and the camera factory.
+2026-11-19T10:03:11+09:00 Sent SIGINT to allnodes and the separate A4 detector.
+2026-11-19T10:03:21+09:00 Verified allnodes and its process group, including motor/CAN and camera nodes, and A4 exited.
+2026-11-19T10:04:45+09:00 Confirmed no vehicle launch groups or perception processes remained. Prepared isolated benchmark scripts for real ZED frames, GPU telemetry and all ROS perception streams.
+2026-11-19T10:04:46.453+09:00 Started only the ZED camera in localhost ROS domain 193.
+2026-11-19T10:04:51.427+09:00 Camera frames ready: [640, 360, 'bgra8']. Starting 10 s camera-only baseline.
+2026-11-19T10:05:01.537+09:00 camera-only: recorded 20 GPU samples across 10.095 s; messages: {'camera': 148}.
+2026-11-19T10:05:01.545+09:00 Started a3-v14; waiting for camera, lane and object outputs.
+2026-11-19T10:05:13.997+09:00 a3-v14: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:05:24.133+09:00 a3-v14: recorded 20 GPU samples across 10.075 s; messages: {'detections': 151, 'traffic_light': 151, 'red_pixels': 151, 'lane_mask': 146, 'object_mask': 150, 'lane_overlay': 141, 'object_overlay': 133, 'camera': 148}.
+2026-11-19T10:05:24.949+09:00 Stopped a3-v14; exit 0.
+2026-11-19T10:05:26.492+09:00 Started a4; waiting for camera, lane and object outputs.
+2026-11-19T10:05:37.625+09:00 a4: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:05:47.717+09:00 a4: recorded 20 GPU samples across 10.078 s; messages: {'camera': 149, 'lane_mask': 141, 'lane_overlay': 147, 'object_mask': 150, 'object_overlay': 127, 'detections': 150, 'traffic_light': 150, 'red_pixels': 150}.
+2026-11-19T10:05:48.735+09:00 Stopped a4; exit 0.
+2026-11-19T10:05:50.274+09:00 Started a4light; waiting for camera, lane and object outputs.
+2026-11-19T10:06:00.790+09:00 a4light: all eight input/output streams ready. Starting 10 s sampling.
+2026-11-19T10:06:10.889+09:00 a4light: recorded 20 GPU samples across 10.078 s; messages: {'lane_overlay': 141, 'lane_mask': 138, 'object_mask': 150, 'object_overlay': 130, 'detections': 150, 'traffic_light': 150, 'red_pixels': 150, 'camera': 150}.
+2026-11-19T10:06:11.907+09:00 Stopped a4light; exit 0.
+2026-11-19T10:06:13.589+09:00 Stopped ZED camera; exit 0.

@@ -59,3 +59,7 @@ See the [step-by-step timestamps](evidence/a4light-wiring.log) and [DDS topic ou
 - [Timeline](evidence/timeline.log), [A4 startup](evidence/a4.ros.log), [A4Light startup](evidence/a4l.ros.log), [A4 vehicle-topic startup](evidence/a4.vehicle-topics.log), and [duplicate selection rejection](evidence/duplicate-selection.log). The earlier startup logs show the shadow routes from before the 09:46 follow-up. Home paths in the published logs are shortened to `~/`.
 
 The archive is on branch `experiment/yolop-selection-20261119` in Neo. The vehicle workspace launch changes are recorded as an experiment diff. The original weights, bundles, and local environment remain on the Jetson.
+
+## 10-second Jetson benchmark and daily report
+
+The 2026-11-19 [illustrated report](gpu-load-10s/README.md) compares A3 V14, A4 and A4Light using the live ZED camera. It includes GPU and CPU load, memory and thermals, object outputs and frame timing. The [ZIP package](2026-11-19-yolop-report.zip) contains the report, charts, timestamped samples and scripts.
