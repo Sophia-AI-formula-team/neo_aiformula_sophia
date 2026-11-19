@@ -3,7 +3,7 @@ from setuptools import setup
 name = 'concept_obstacles'
 setup(
     name=name,
-    version='6.26.0',
+    version='6.27.6',
     packages=[name],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + name]),

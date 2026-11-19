@@ -303,11 +303,12 @@ class RoadAwareCurvePlanner:
         targets, commands = full_targets, full_commands
         count = len(commands)
         self.pending = dict(brake_ok=brake_ok, brake_lower=brake_lower,
-                            nominal_substeps=nominal_controls, nominal_indices=inverse,
                             brake_controls=brake_controls, escape_ok=escape_ok,
                             escape_lower=escape_lower, escape_controls=escape_controls,
                             escape_duration=horizon, retimed=retimed,
                             profile_controls=profile_controls, profile_lower=profile_lower)
+        if physical:
+            self.pending.update(nominal_substeps=nominal_controls, nominal_indices=inverse)
         pick = int(np.argmax(np.where(feasible, scores, -np.inf))) if feasible.any() else None
         table = np.c_[commands, first, targets, geometric, sigma, robust, feasible, scores,
                       progress, heading_cost, smooth_cost, risk_cost]

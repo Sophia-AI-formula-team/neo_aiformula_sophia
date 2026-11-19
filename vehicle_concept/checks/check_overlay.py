@@ -19,6 +19,7 @@ NATIVE = {
 }
 EXPECTED_VERSIONS = dict(concept="6.27.6", concept_panel="6.27.6", concept_drive="6.27.6",
                          concept_road="6.27.6", concept_candidates="6.27.6", concept_ranker="6.27.6",
+                         concept_obstacles="6.27.6",
                          concept_control_gate="6.27.4",
                          concept_visualization="6.27.4", concept_yolop="6.27.4")
 
