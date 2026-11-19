@@ -1,4 +1,8 @@
-# Concept V6.27.5 部署手册（V6.26 驾驶策略）
+# Concept 车端接手手册
+
+**11 月 20 日研究分支。** 本地 `fix/concept-field-driving-20261120` 为 **V6.27.6**。以 11 月 19 日实车安装源码为基线，修了赛道外缘、贴边回正和直路起步。H12 仍负责可行路线的排序。当前证据为真实录包的离线重放和局部闭环模型；实车复测待做。[修复、复现与剩余问题](checks/field_20261119.md)
+
+以下接线和操作说明来自冻结的 **V6.27.5**。第 2 节的 GitHub 分支和版本检查用于取回该冻结版。在本地修复分支上构建请按上面的修复文档选源码和工作区。
 
 **从这里接手。** 正式版本在团队 neo 的 `feat/concept-v626-live` 分支，代码在 `vehicle_concept/src`。现场先核对车机底层版本，再建独立的 ROS 2 工作区。启动命令是 `ros2 run concept live`。默认打开驾驶面板和 RViz，电机输出初始禁用。本文的离线副本仅用于备份；实验记录请标明实际运行的 Git SHA。[团队分支](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/feat/concept-v626-live) · [本手册线上入口](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/feat/concept-v626-live/vehicle_concept/AGENTS.md)
 
