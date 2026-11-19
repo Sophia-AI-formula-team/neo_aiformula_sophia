@@ -19,4 +19,6 @@ def generate_launch_description():
         'config_camera_path': share('vehicle', 'config', 'zedx', 'zedx.yaml'),
     }
     return LaunchDescription([DeclareLaunchArgument(k, default_value=v) for k, v in defaults.items()]
-                             + [OpaqueFunction(function=build)])
+                             + [DeclareLaunchArgument('tracking_controller', default_value='auto',
+                                                      description='auto shows a terminal menu; pure_pursuit or lya selects directly'),
+                                OpaqueFunction(function=build)])

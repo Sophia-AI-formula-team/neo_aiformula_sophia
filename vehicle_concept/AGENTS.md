@@ -1,6 +1,6 @@
 # Concept 车端接手手册
 
-本分支供 V6.27.7 实验复核。接手时先读[关键帧、轮速、仿真和延迟](checks/edge1120b/README.md)，再按下方手册核对实际设备。11/20 原备车手册仍指向已备份的 V6.27.6。
+本分支为 **V6.27.8 双控制器实验版**。在独立工作区构建本分支，加载该工作区的 `install/local_setup.bash`，运行 `ros2 run concept live`。终端输入 **1** 选 Pure Pursuit，输入 **2** 选 LYA，直接回车选 Pure Pursuit。脚本可显式传 `tracking_controller:=lya` 或 `tracking_controller:=pure_pursuit`。无交互终端且未指定时沿用 Pure Pursuit。选择在传感器和电机节点启动前生效，启动后可用 `ros2 param get /concept/drive tracking_controller` 核对。面板的电机使能与继续运行仍需分别操作。[两种控制器和 Unity 对照](checks/tracking_v6278/README.md) · [上版外缘和延迟记录](checks/edge1120b/README.md)
 
 **11 月 20 日实验部署分支为 `experiment/concept-foxy-unity-20261120`，车端包为 V6.27.6。** 以 11 月 19 日实车安装源码为基线，修了赛道外缘、贴边回正和直路起步。H12 负责可行路线排序。已有原车录包重放、Foxy/GPU 与独立 Unity 的短程闭环和软件 CAN 控制门重放。车头大角度朝外的案例仍会停在道内。实车复测待做。[实车修复记录](checks/field_20261119.md) · [Unity 入口](checks/unity1120/) · [车机部署和结果](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)
 
@@ -215,7 +215,7 @@ V6.26 初版白盒单帧中位约 563 ms，H12 约 0.9 ms。V6.27 已把 75 条�
 | 道路及记忆、桶 | `concept_road` 结合路面与标线，靠轮速和陀螺更新车身附近的地图；`concept_obstacles` 合并重复检测，区分静止和可能运动的桶。 |
 | 预测与筛选 | `concept_candidates` 生成动作；`concept_feasibility` 根据车辆响应预测占地、边界与避障风险。车道之间允许跨线，支路不可驶入，路界按一侧轮胎完全越出判断。具体不确定度仍会影响可选方案。 |
 | 模型选择 | `concept_ranker` 的 4 个宽度为 12 的网络对允许的前进候选给分数修正。正常驾驶按最终得分选择，特定恢复阶段走冻结的白盒逻辑。 |
-| 控制 | `concept_drive` 收到新感知时按配置节奏推进，默认最高请求 15 Hz，最低服务目标为 5 Hz，选中的速度、转向直接形成 `TwistStamped`。车上复用 neo 电机换算和补偿。此链路没有 LYA 或独立 P follower 节点。[同一张图的真实评分例子](src/concept_drive/README.md) |
+| 控制 | `concept_drive` 在候选轨迹预测中使用启动时所选的 Pure Pursuit 或 LYA。白盒检查轨迹，H12 在通过检查的候选中排序。选中的速度、转向送往已有门控和 neo 电机换算。整车只启动一条电机输出链。默认请求最高 15 Hz，最低服务目标为 5 Hz。[同一张图的评分例子](src/concept_drive/README.md) |
 | 输出与显示 | `concept_control_gate` 仲裁唯一最终输出，`concept_visualization` 发布路径和地图，`concept_panel` 负责 GUI。ROS 中左转为正，冻结规划内部向右为正，边界只转换一次。 |
 
 ## 6. 复验、排错和回退

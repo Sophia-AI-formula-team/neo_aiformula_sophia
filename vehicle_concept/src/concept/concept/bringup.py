@@ -7,13 +7,15 @@ import yaml
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import (GroupAction, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler,
+from launch.actions import (GroupAction, IncludeLaunchDescription, LogInfo, OpaqueFunction, RegisterEventHandler,
                             SetEnvironmentVariable, SetLaunchConfiguration)
 from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration as LC
 from launch_ros.actions import Node, SetParameter
 from launch_ros.parameter_descriptions import ParameterValue
+
+from concept.controller_selection import select_controller
 
 
 def share(package, *parts):
@@ -106,6 +108,7 @@ def build(context):
     if mode not in ('vehicle', 'replay'):
         raise ValueError('Select mode:=vehicle or mode:=replay')
     vehicle = mode == 'vehicle'
+    tracking_controller = select_controller(LC('tracking_controller').perform(context))
     calibration = LC('calibration').perform(context)
     if calibration == 'auto':
         config_home = context.environment.get('XDG_CONFIG_HOME') or Path.home() / '.config'
@@ -116,7 +119,7 @@ def build(context):
     simulated_clock = LC('use_sim_time').perform(context).lower() == 'true'
     if vehicle and simulated_clock:
         raise ValueError('Vehicle mode requires the vehicle clock.')
-    actions = []
+    actions = [LogInfo(msg='Concept tracking controller: ' + tracking_controller)]
     if not context.environment.get('FASTRTPS_DEFAULT_PROFILES_FILE'):
         profile = 'vehicle-fastdds.xml' if vehicle else 'foxy-fastdds.xml'
         actions.append(SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE',
@@ -141,7 +144,8 @@ def build(context):
     direct = vehicle if direct == 'auto' else direct == 'true'
     vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'), cuda_fusion=LC('cuda_fusion'),
                   camera_info_topic=LC('camera_info_topic'))
-    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)))
+    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)),
+                   tracking_controller=tracking_controller)
     gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')
     for params, key in ((driving, 'target_speed_mps'), (gate, 'max_auto_speed_mps')):
         if vehicle:

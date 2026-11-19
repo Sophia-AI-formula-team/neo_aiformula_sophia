@@ -21,7 +21,10 @@ docker load -i vehicle-semantic-1120.tar
 CONCEPT_WEIGHTS_FILE=/data/weights/B1.4-road-aligned-research.pth
 CONCEPT_EVIDENCE_DIR=/data/foxy-runs
 CONCEPT_TARGET_MPS=2.0
+CONCEPT_TRACKING_CONTROLLER=pure_pursuit
 ```
+
+V6.27.8 起，设 `CONCEPT_TRACKING_CONTROLLER=lya` 后重建 driver 容器实例即可切换。两种模式共用同一份 B1.4 权重。桥在每场开始时读取 ROS 实际参数，并逐帧核对有效驾驶决策的控制器名称。[同一起点的闭环对照](../../tracking_v6278/README.md)
 
 ```sh
 docker compose build driver
