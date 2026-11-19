@@ -48,7 +48,7 @@ def _map_assist_node(context):
         "detour_min_turn_radius_m": LANE_RADII[lane],
     }
     for label in "abc":
-        overrides[f"input_point_{label}_topic"] = f"/processed_point_{label}"
+        overrides[f"input_point_{label}_topic"] = LaunchConfiguration("lane_point_topic_prefix").perform(context) + label
         overrides[f"output_point_{label}_topic"] = f"{PREFIX}/point_{label}"
 
     # Foxy can give the node-specific base YAML precedence over a wildcard
@@ -64,6 +64,8 @@ def _map_assist_node(context):
 
 def generate_launch_description():
     return LaunchDescription([
+        DeclareLaunchArgument("lane_point_topic_prefix", default_value="/processed_point_",
+                              choices=["/processed_point_", "/original_processed_point_"]),
         DeclareLaunchArgument("oa_initially_idle", default_value="false", choices=["true", "false"]),
         DeclareLaunchArgument("lane", choices=["inner", "outer"],
                               description="Select the minimum radius for the commissioned lane."),

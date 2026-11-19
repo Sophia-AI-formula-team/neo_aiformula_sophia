@@ -42,6 +42,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(str(planner_launch)),
             launch_arguments={
                 "lane": LaunchConfiguration("lane"),
+                "lane_point_topic_prefix": LaunchConfiguration("lane_point_topic_prefix"),
                 "oa_initially_idle": LaunchConfiguration("oa_initially_idle"),
                 "traffic_stop_flag_topic": LaunchConfiguration("traffic_stop_flag_topic"),
                 "traffic_stop_flag_timeout_sec": "0.5",
@@ -50,6 +51,7 @@ def generate_launch_description():
     ])
     follower = Node(
         package="trajectory_follower", executable="lya_follower_connected_omegat_global",
+        condition=IfCondition(LaunchConfiguration("start_lya")),
         output="screen", remappings=filtered + [(VEHICLE_COMMAND, lya_command)],
     )
     def adapter(context):
@@ -58,6 +60,10 @@ def generate_launch_description():
         return [ExecuteProcess(cmd=[sys.executable, str(directory / "guarded_stop_wait.py"), *args],
                                output="screen")]
     return LaunchDescription([
+        DeclareLaunchArgument("start_lya", default_value="true", choices=["true", "false"]),
+        DeclareLaunchArgument("start_oa2", default_value="false", choices=["true", "false"]),
+        DeclareLaunchArgument("lane_point_topic_prefix", default_value="/processed_point_",
+                              choices=["/processed_point_", "/original_processed_point_"]),
         DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"],
                               description="Connect legacy stop_wait and activate the motor session"),
         DeclareLaunchArgument("oa_initially_idle", default_value="true", choices=["true", "false"],
@@ -66,6 +72,11 @@ def generate_launch_description():
         DeclareLaunchArgument("traffic_stop_flag_topic", default_value=PIXEL_STOP_TOPIC),
         DeclareLaunchArgument("red_pixel_stop_threshold", default_value="600"),
         OpaqueFunction(function=pixel_stop_source, args=[directory / "pixel_stop_flag.py"]),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(str(share / "launch" / "obstacle_avoidance.launch.py")),
+            launch_arguments={"algorithm": "oa_2"}.items(),
+            condition=IfCondition(LaunchConfiguration("start_oa2")),
+        ),
         planner, switch, follower, OpaqueFunction(function=adapter),
         Node(package="semantic_vehicle_wiring", executable="motor_gate_session", namespace="/semantic_drive",
              output="screen", condition=IfCondition(LaunchConfiguration("vehicle_output"))),

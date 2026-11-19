@@ -15,7 +15,7 @@ import sys
 import time
 
 
-ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs")
+ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2")
 
 
 def reset_lane_source():
