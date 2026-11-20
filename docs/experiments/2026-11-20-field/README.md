@@ -17,4 +17,4 @@
 
 [09:03 与 09:09 两场 MapAssist 红灯检查，含正面灯牌实录、日志和参数回放](mapassist-red-light/)
 
-已归档场次包含 Concept 和 MapAssist 的关闭录包，最近一场为 11:52–11:56 的 1120-09。场次、时标及校验见录包索引。 [1120-09 实车复盘](diagnostics/mapassist-1120-09/)
+新增 13:23 MapAssist 避障和 13:26 Concept 实录。场次、时标和完整录包校验见录包索引。 [1120-10 避障复盘](diagnostics/mapassist-1120-10/) · [1120-11 Concept 实录](diagnostics/concept-1120-11/)

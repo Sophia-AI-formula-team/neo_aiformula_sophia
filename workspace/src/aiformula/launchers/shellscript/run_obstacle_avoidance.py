@@ -3,11 +3,12 @@
 
 The existing CMake directory install includes this file. The launch invokes it
 with the current Python interpreter, so an executable install rule is not needed.
-This bounded best-effort cleanup cannot run after SIGKILL, power loss, or a host
-failure. It does not add a watchdog or change the existing three-point algorithm.
+On Linux, parent-death signals also stop OA if the launcher or runner vanishes.
+The lane-source reset is best-effort when the runner itself is forcibly killed.
 """
 
 import argparse
+import ctypes
 import os
 import signal
 import subprocess
@@ -16,6 +17,24 @@ import time
 
 
 ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2")
+PR_SET_PDEATHSIG = 1
+
+
+def watch_parent(parent_pid, signum):
+    """Arm the Linux parent-death signal and check whether the parent already exited."""
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.prctl(PR_SET_PDEATHSIG, int(signum), 0, 0, 0) != 0:
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
+    return parent_pid != 1 and os.getppid() == parent_pid
+
+
+def exec_child(parent_pid, command):
+    """Arm shutdown before replacing this process with the installed OA executable."""
+    if not watch_parent(parent_pid, signal.SIGTERM):
+        return 128 + signal.SIGTERM
+    os.execv(command[0], command)
 
 
 def reset_lane_source():
@@ -61,23 +80,39 @@ def reset_lane_source():
 
 def run_child(command):
     """Keep cleanup outside the algorithm's process and forward launch signals."""
-    child = subprocess.Popen(command, start_new_session=True)
+    launcher_pid = os.getppid()
+    child = None
+    pending_signal = None
     previous_handlers = {}
 
     def forward_signal(signum, _frame):
-        if child.poll() is None:
+        nonlocal pending_signal
+        stop_signal = signal.SIGINT if signum == signal.SIGHUP else signum
+        if child is None:
+            pending_signal = stop_signal
+        elif child.poll() is None:
             try:
-                os.killpg(child.pid, signum)
+                os.killpg(child.pid, stop_signal)
             except ProcessLookupError:
                 pass
 
     try:
-        for signum in (signal.SIGINT, signal.SIGTERM):
+        for signum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
             previous_handlers[signum] = signal.signal(signum, forward_signal)
+        if not watch_parent(launcher_pid, signal.SIGHUP):
+            return 128 + signal.SIGHUP
+        if pending_signal is not None:
+            return 128 + pending_signal
+        # Register the child's parent-death signal before exec, without a preexec
+        # callback between fork and exec in the runner.
+        child = subprocess.Popen(
+            [sys.executable, os.path.abspath(__file__), "--oa-child", str(os.getpid()), *command],
+            start_new_session=True,
+        )
+        if pending_signal is not None:
+            forward_signal(pending_signal, None)
         returncode = child.wait()
         # The algorithm is gone before False is sent, so it cannot race the reset.
-        # A second soft stop may interrupt cleanup; forced termination cannot be
-        # made reliable by a process-local wrapper.
         try:
             reset_lane_source()
         except Exception as error:
@@ -95,6 +130,11 @@ def run_child(command):
 
 
 def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv and argv[0] == "--oa-child":
+        return exec_child(int(argv[1]), argv[2:])
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("algorithm", choices=ALGORITHMS)
     parser.add_argument("ros_args", nargs=argparse.REMAINDER)

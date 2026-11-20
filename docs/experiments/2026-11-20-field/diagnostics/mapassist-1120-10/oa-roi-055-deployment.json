@@ -1,0 +1,37 @@
+{
+  "started": "2026-11-20T13:52:45.915243+09:00",
+  "verified": "2026-11-20T13:52:48.726012+09:00",
+  "isolated_ros_domain": 192,
+  "probes": {
+    "mapassist": {
+      "ratio": 0.55,
+      "roi_top_y": 198,
+      "enter_px": 1000,
+      "exit_px": 500
+    },
+    "standalone": {
+      "ratio": 0.55,
+      "roi_top_y": 198,
+      "enter_px": 1000,
+      "exit_px": 500
+    }
+  },
+  "loaded_on_restart": true,
+  "files": [
+    {
+      "name": "mapassist",
+      "before": "96bbed699732c2a6cc80d1578bf8df20f2cdec4159ff15028e72625a95b40ed2",
+      "after": "7d6287ef39c1a241a9ca46da80ff51223ee291e76fd4c5002be5fff3c97edb66"
+    },
+    {
+      "name": "standalone",
+      "before": "2ab661650b9bf4a8e9cf8310db9e940bba66dc3c3e34ae57736230f0e7b59261",
+      "after": "434d295d493a9e0e77700c143e4d5180e2143068d7a0bf25f37ae9aac5b4b45a"
+    },
+    {
+      "name": "workspace_source",
+      "before": "2ab661650b9bf4a8e9cf8310db9e940bba66dc3c3e34ae57736230f0e7b59261",
+      "after": "434d295d493a9e0e77700c143e4d5180e2143068d7a0bf25f37ae9aac5b4b45a"
+    }
+  ]
+}

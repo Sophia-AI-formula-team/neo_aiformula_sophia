@@ -1,0 +1,99 @@
+1795148766.7669661 [INFO] [launch]: All log files can be found below ~/.ros/log/2026-11-20-13-26-06-758999-vehicle-6445
+1795148766.7674325 [INFO] [launch]: Default logging verbosity is set to INFO
+1795148768.3732917 [INFO] [launch.user]: Concept tracking controller: lya
+1795148770.6595285 [INFO] [allnodes.can_ready]: Waiting up to 10.0s for CAN interface 'can0'
+1795148770.6608098 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795148771.0226986 [INFO] [gyro_odometry_publisher-6]: process started with pid [6483]
+1795148771.0232780 [INFO] [rear_potentiometer-7]: process started with pid [6485]
+1795148771.0250401 [INFO] [robot_state_publisher-1]: process started with pid [6473]
+1795148771.0254340 [INFO] [joint_state_publisher-2]: process started with pid [6475]
+1795148771.0256200 [INFO] [zed_wrapper-3]: process started with pid [6477]
+1795148771.0257602 [INFO] [vectornav-4]: process started with pid [6479]
+1795148771.0258887 [INFO] [vn_sensor_msgs-5]: process started with pid [6481]
+1795148771.0260608 [INFO] [joy_node-8]: process started with pid [6487]
+1795148771.0261884 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [6489]
+1795148771.0263131 [INFO] [socket_can_receiver_node_exe-10]: process started with pid [6492]
+1795148771.0264287 [INFO] [socket_can_sender_node_exe-11]: process started with pid [6494]
+1795148771.0265422 [INFO] [motor_controller-12]: process started with pid [6496]
+1795148771.0266604 [INFO] [concept_vehicle_state-13]: process started with pid [6568]
+1795148771.0267696 [INFO] [concept_control_gate-14]: process started with pid [6572]
+1795148771.0268824 [INFO] [drive-15]: process started with pid [6574]
+1795148771.0269918 [INFO] [visualization-16]: process started with pid [6576]
+1795148771.0270994 [INFO] [panel-17]: process started with pid [6578]
+1795148771.0272148 [INFO] [rviz2-18]: process started with pid [6589]
+1795148771.0311177 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795148771.0314455 [robot_state_publisher-1] Link base_link had 4 children
+1795148771.0315590 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795148771.0316513 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795148771.0317235 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795148771.0317941 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795148771.0318632 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795148771.0319300 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795148771.0319948 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795148771.0320592 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795148771.0321257 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795148771.0321908 [robot_state_publisher-1] [INFO] [1795148770.918892606] [aiformula_sensing.robot_state_publisher]: got segment base_footprint
+1795148771.0322578 [robot_state_publisher-1] [INFO] [1795148770.919075013] [aiformula_sensing.robot_state_publisher]: got segment base_link
+1795148771.0323212 [robot_state_publisher-1] [INFO] [1795148770.919094406] [aiformula_sensing.robot_state_publisher]: got segment caster_back_link
+1795148771.0323820 [robot_state_publisher-1] [INFO] [1795148770.919102790] [aiformula_sensing.robot_state_publisher]: got segment wheel_left_link
+1795148771.0324388 [robot_state_publisher-1] [INFO] [1795148770.919109607] [aiformula_sensing.robot_state_publisher]: got segment wheel_right_link
+1795148771.0325127 [robot_state_publisher-1] [INFO] [1795148770.919115847] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_center
+1795148771.0325820 [robot_state_publisher-1] [INFO] [1795148770.919122151] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_link
+1795148771.0326412 [robot_state_publisher-1] [INFO] [1795148770.919128136] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_frame
+1795148771.0327017 [robot_state_publisher-1] [INFO] [1795148770.919134664] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_optical_frame
+1795148771.0327992 [robot_state_publisher-1] [INFO] [1795148770.919141128] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_frame
+1795148771.0328641 [robot_state_publisher-1] [INFO] [1795148770.919147848] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_optical_frame
+1795148771.0333946 [vectornav-4] [INFO] [1795148770.934552743] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795148771.0335124 [vectornav-4] [INFO] [1795148771.006632368] [aiformula_sensing.vectornav]: Connected to /dev/ttyUSB0 @ 115200 baud
+1795148771.0335853 [vectornav-4] [INFO] [1795148771.006745973] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795148771.0336490 [vectornav-4] [INFO] [1795148771.006760117] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795148771.0337100 [vectornav-4] [INFO] [1795148771.006767862] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795148771.0337691 [vectornav-4] [INFO] [1795148771.006774710] [aiformula_sensing.vectornav]: Serial Number : 100095497
+1795148771.0338264 [vectornav-4] [INFO] [1795148771.006781334] [aiformula_sensing.vectornav]: User Tag : ""
+1795148771.1249168 [vectornav-4] [INFO] [1795148771.107230562] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795148771.1257818 [vectornav-4] [INFO] [1795148771.107323974] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795148771.1277714 [vectornav-4] [INFO] [1795148771.113748079] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795148771.1400938 [vectornav-4] [INFO] [1795148771.139356526] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795148771.6664102 [joy_node-8] [INFO] [1795148771.665593031] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795148771.6673236 [joy_node-8] [INFO] [1795148771.665958422] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795148772.5082302 [rviz2-18] [INFO] [1795148772.507489000] [rviz2]: Stereo is NOT SUPPORTED
+1795148772.5093143 [rviz2-18] [INFO] [1795148772.507814486] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+1795148772.6162572 [rviz2-18] [INFO] [1795148772.615623706] [rviz2]: Stereo is NOT SUPPORTED
+1795148773.1263235 [rviz2-18] [INFO] [1795148773.125884028] [rviz2]: Stereo is NOT SUPPORTED
+1795148902.5609810 [INFO] [panel-17]: process has finished cleanly [pid 6578]
+1795148907.5877919 [INFO] [rviz2-18]: process has finished cleanly [pid 6589]
+1795148911.1078663 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795148911.1720102 [INFO] [robot_state_publisher-1]: process has finished cleanly [pid 6473]
+1795148911.1723113 [INFO] [gyro_odometry_publisher-6]: process has finished cleanly [pid 6483]
+1795148911.1724653 [INFO] [vn_sensor_msgs-5]: process has finished cleanly [pid 6481]
+1795148911.1726227 [INFO] [socket_can_sender_node_exe-11]: process has finished cleanly [pid 6494]
+1795148911.1727512 [INFO] [vectornav-4]: process has finished cleanly [pid 6479]
+1795148911.1736958 [vectornav-4] [INFO] [1795148911.107246878] [rclcpp]: signal_handler(signal_value=2)
+1795148911.1740453 [joy_node-8] [INFO] [1795148911.107341216] [rclcpp]: signal_handler(signal_value=2)
+1795148911.1744280 [robot_state_publisher-1] [INFO] [1795148911.107349152] [rclcpp]: signal_handler(signal_value=2)
+1795148911.1761565 [vn_sensor_msgs-5] [INFO] [1795148911.107349376] [rclcpp]: signal_handler(signal_value=2)
+1795148911.1776445 [l2_throttle_joy_remap.py-9] Traceback (most recent call last):
+1795148911.1777985 [l2_throttle_joy_remap.py-9]   File "~/concept_1120_v6278_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 110, in <module>
+1795148911.1778824 [l2_throttle_joy_remap.py-9]     main()
+1795148911.1779556 [l2_throttle_joy_remap.py-9]   File "~/concept_1120_v6278_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 103, in main
+1795148911.1780269 [l2_throttle_joy_remap.py-9]     rclpy.spin(node)
+1795148911.1780932 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+1795148911.1781993 [l2_throttle_joy_remap.py-9]     executor.spin_once()
+1795148911.1782701 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+1795148911.1783392 [l2_throttle_joy_remap.py-9]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+1795148911.1784043 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+1795148911.1784708 [l2_throttle_joy_remap.py-9]     return next(self._cb_iter)
+1795148911.1787500 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+1795148911.1788366 [l2_throttle_joy_remap.py-9]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+1795148911.1789067 [l2_throttle_joy_remap.py-9] KeyboardInterrupt
+1795148911.2390232 [ERROR] [rear_potentiometer-7]: process has died [pid 6485, exit code -2, cmd '/home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_4_mb5p1m -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info'].
+1795148911.2407050 [ERROR] [l2_throttle_joy_remap.py-9]: process has died [pid 6489, exit code -2, cmd '~/concept_1120_v6278_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_1tnst89w -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle'].
+1795148911.2473571 [INFO] [joy_node-8]: process has finished cleanly [pid 6487]
+1795148911.2555988 [INFO] [joint_state_publisher-2]: process has finished cleanly [pid 6475]
+1795148911.2574475 [ERROR] [concept_vehicle_state-13]: process has died [pid 6568, exit code -2, cmd '~/concept_1120_v6278_ws/install/concept_vehicle_state/lib/concept_vehicle_state/concept_vehicle_state --ros-args --params-file /tmp/launch_params_rjy3mi19'].
+1795148911.2608252 [ERROR] [concept_control_gate-14]: process has died [pid 6572, exit code -2, cmd '~/concept_1120_v6278_ws/install/concept_control_gate/lib/concept_control_gate/concept_control_gate --ros-args --params-file /tmp/launch_params_b9d9hck6 --params-file ~/concept_1120_v6278_ws/install/launchers/share/launchers/config/gamepad/dualshock4.yaml --params-file /tmp/launch_params_thf0ebvp'].
+1795148911.2899580 [INFO] [motor_controller-12]: process has finished cleanly [pid 6496]
+1795148911.3045390 [ERROR] [visualization-16]: process has died [pid 6576, exit code -2, cmd '~/concept_1120_v6278_ws/install/concept_visualization/lib/concept_visualization/visualization --ros-args --params-file /tmp/launch_params_6nenfuz7'].
+1795148911.4684787 [ERROR] [socket_can_receiver_node_exe-10]: process has died [pid 6492, exit code -6, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_zuti5baq --params-file /tmp/launch_params_yljgu84n -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795148912.4308591 [INFO] [drive-15]: process has finished cleanly [pid 6574]
+1795148912.6135850 [INFO] [zed_wrapper-3]: process has finished cleanly [pid 6477]
