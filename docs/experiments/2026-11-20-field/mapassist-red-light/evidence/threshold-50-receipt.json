@@ -1,0 +1,40 @@
+{
+  "started_jst": "2026-11-20T09:26:13+09:00",
+  "verified_jst": "2026-11-20T09:26:13+09:00",
+  "backup": "/home/control/aiformula_runtime/1120-deploy-records/mapassist-threshold-50-20261120T092613552970+0900",
+  "files": [
+    {
+      "path": "/home/control/.local/bin/mapassist",
+      "resolved_source": "/home/control/.local/bin/mapassist",
+      "backup": "/home/control/aiformula_runtime/1120-deploy-records/mapassist-threshold-50-20261120T092613552970+0900/mapassist",
+      "before_sha256": "d392eab995ef9585254703a9482f85b6bd99d70b4cf926992405a8f9000e2488",
+      "after_sha256": "d392eab995ef9585254703a9482f85b6bd99d70b4cf926992405a8f9000e2488",
+      "before": [
+        "    threshold=${2-50}"
+      ],
+      "after": [
+        "    threshold=${2-50}"
+      ]
+    },
+    {
+      "path": "/home/control/.xdg-hidden/Desktop/1120-mapassist.desktop",
+      "resolved_source": "/home/control/.xdg-hidden/Desktop/1120-mapassist.desktop",
+      "backup": "/home/control/aiformula_runtime/1120-deploy-records/mapassist-threshold-50-20261120T092613552970+0900/1120-mapassist.desktop",
+      "before_sha256": "17e1f200449965c95037f14dc9b78e64597a1c4fa43992dab654a4c5a916ac87",
+      "after_sha256": "30d5329db318a2071f594be877bb78396d4d691eb68c2cd4600366c935fce02f",
+      "before": [
+        "Name=1120 3 mapassist",
+        "Exec=\"/home/control/.local/bin/mapassist\"",
+        "Name=AV314 inner (50 px)",
+        "Exec=\"/home/control/.local/bin/mapassist\" inner 450"
+      ],
+      "after": [
+        "Name=1120 3 mapassist",
+        "Exec=\"/home/control/.local/bin/mapassist\"",
+        "Name=AV314 inner (50 px)",
+        "Exec=\"/home/control/.local/bin/mapassist\" inner 50"
+      ]
+    }
+  ],
+  "applies": "next start of the shortcut"
+}

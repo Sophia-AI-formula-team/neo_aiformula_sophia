@@ -1,0 +1,22 @@
+2026-11-20T09:26:21+09:00
+10:    threshold=${2-50}
+46:    exec ros2 launch launchers semantic_045_commissioning.launch.py lane:="$lane" red_pixel_stop_threshold:="$threshold" \
+4:Name=1120 3 mapassist
+5:Exec="/home/control/.local/bin/mapassist"
+12:Name=AV314 inner (50 px)
+13:Exec="/home/control/.local/bin/mapassist" inner 50
+   7486 /home/control/aiformula_runtime/2026-11-19-yolop-selection/foxy-env/bin/python3 /home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/run_vehicle.py --profile A4_lite --live
+   7544 /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch launchers semantic_045_commissioning.launch.py lane:=outer red_pixel_stop_threshold:=600 vehicle_output:=true start_oa2:=true oa_initially_idle:=false start_lya:=false lane_point_topic_prefix:=/original_processed_point_
+/home/control/.ros/log/python3_93144_1795074652467.log
+/home/control/.ros/log/python3_6645_1795048758411.log
+/home/control/.ros/log/python3_11144_1795050331559.log
+/home/control/.ros/log/python3_102785_1795077007466.log
+/home/control/.ros/log/python3_9720_1795049891421.log
+/home/control/.ros/log/python3_72270_1795072156636.log
+/home/control/.ros/log/python3_12255_1795050540441.log
+/home/control/.ros/log/python3_11254_1795050355654.log
+/home/control/.ros/log/python3_103177_1795077052334.log
+/home/control/.ros/log/python3_6504_1795048735713.log
+/home/control/.ros/log/python3_4116_1795133485171.log
+/home/control/.ros/log/python3_12125_1795050517346.log
+/home/control/.ros/log/python3_5662_1795133634812.log

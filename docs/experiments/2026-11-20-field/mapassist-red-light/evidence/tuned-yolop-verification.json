@@ -1,0 +1,366 @@
+{
+  "checked_jst": "2026-11-20T09:35:59+09:00",
+  "device": "CPU",
+  "weights_sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3",
+  "scores": [
+    0.5,
+    0.23
+  ],
+  "cases_per_profile": 14,
+  "results": [
+    {
+      "profile": "A4",
+      "cases": [
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0001-1795133419402138000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0002-1795133420002195000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0003-1795133422202471000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0004-1795133422535872000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0005-1795133423669267000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 78,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                524.7645874023438,
+                168.03387451171875,
+                540.2538452148438,
+                182.81414794921875
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.26787069439888,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0006-1795133424069407000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 131,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                557.0706176757812,
+                169.0077362060547,
+                576.5430297851562,
+                183.33151245117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.25606149435043335,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0007-1795133424402655000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 169,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                576.40185546875,
+                164.1285858154297,
+                606.00439453125,
+                188.25900268554688
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23742181062698364,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "truck",
+          "source": "stills/event-1-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-rgb.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-left_raw.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-rgb_raw.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/1-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/2-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/3-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        }
+      ],
+      "staged_runtime_sha256": "64ba390e91e770a3186a785d2f0bad6252d2448c1d9ae63fa1b3c8c141885090"
+    },
+    {
+      "profile": "A4_lite",
+      "cases": [
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0001-1795133419402138000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0002-1795133420002195000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0003-1795133422202471000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "approach",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0004-1795133422535872000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0005-1795133423669267000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 78,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                524.7645874023438,
+                168.03387451171875,
+                540.2538452148438,
+                182.81414794921875
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.26787069439888,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0006-1795133424069407000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 131,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                557.0706176757812,
+                169.0077362060547,
+                576.5430297851562,
+                183.33151245117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.25606149435043335,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "board",
+          "source": "light-board/originals/rosbag2_2026_11_20-09_09_31/0007-1795133424402655000.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 169,
+          "old_light": "unknown",
+          "new_light": "red",
+          "new_light_detections": [
+            {
+              "box_xyxy": [
+                576.40185546875,
+                164.1285858154297,
+                606.00439453125,
+                188.25900268554688
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23742181062698364,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        {
+          "kind": "truck",
+          "source": "stills/event-1-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-rgb.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-left_raw.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "truck",
+          "source": "stills/source-rgb_raw.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/1-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/2-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        },
+        {
+          "kind": "distant_objects",
+          "source": "live-A4Light/3-camera.jpg",
+          "previous_pixels": 0,
+          "tuned_pixels": 0,
+          "old_light": "unknown",
+          "new_light": "unknown",
+          "new_light_detections": []
+        }
+      ],
+      "staged_runtime_sha256": "64ba390e91e770a3186a785d2f0bad6252d2448c1d9ae63fa1b3c8c141885090"
+    }
+  ]
+}
