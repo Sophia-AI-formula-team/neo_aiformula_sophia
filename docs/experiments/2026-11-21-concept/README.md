@@ -11,3 +11,5 @@
 | 验证范围 | 140 项 Python 测试通过。两段 Unity 指令经 Foxy 门控和原车换算重放，各有 25/25 条双轮指令吻合。现场 Jetson、相机、物理 CAN 和整圈表现待实测。 |
 
 [离线完整报告、刹停图和复现脚本](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/checks/offline1121/README.md) · [逐场指标与分段延迟](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/checks/offline1121/measurements.json)
+
+安装器在隔离的 Ubuntu 20.04 / Foxy 工作站从 GitHub 检出固定 SHA，构建了 12 个 Concept 包和专用的 `launchers`。底层校验、H12 和 B1.4 哈希、单图 CUDA 推理、启动参数、`concept-live --verify-install` 及回退均已通过。临时家目录模拟了桌面环境，独立 Linux 测试还覆盖了从已装 1120 升级及回退，合计 12 个快捷方式测试。车机安装由现场执行。
