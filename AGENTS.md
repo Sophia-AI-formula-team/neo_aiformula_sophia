@@ -1,3 +1,7 @@
+## 1121 Concept 实验准备
+
+11 月 21 日的 Concept 运行源码固定在 `6793a13c0a1a22c127accb452ef65a206d6f415d`。部署 agent 先读 [1121 Concept 车机部署](docs/experiments/2026-11-21-concept/DEPLOY.md)，从独立工作区安装，复查快捷方式、回退入口和实际生效的速度参数。其他车端方案参考 [1120 整车交接](docs/experiments/2026-11-20-mapassist/AGENT_DEPLOY_1120.md)。
+
 # User-authorized experiment import (2026-11-04)
 
 The user explicitly authorized merging the latest 1027simtest experimental source before fixing its known issues, with rollback if needed. Read the [selection and rollback receipt](docs/agent-context/receipts/2026-11-04-experimental-import-036.md); preserve the source snapshot and its known-failure evidence. Do not silently revert it or weaken tests. Existing motor backups, launchers and PR18 archive remain protected; this authorization does not start or deploy hardware.
