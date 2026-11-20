@@ -47,14 +47,13 @@ def red_area(image, boxes):
     return int((mask & covered).sum())
 
 
-def current_face(image, box):
+def lamp_faces(image, box):
     x, y, r, b = bounds(box, image.shape)
     mask = red_mask(image[y:b, x:r])
     _, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
-    for _, _, width, height, area in stats[1:]:
+    for left, top, width, height, area in stats[1:]:
         if area >= 15 and .70 <= width / height <= 1.70 and area >= .62 * width * height:
-            return True
-    return False
+            yield (int(x + left), int(y + top), int(x + left + width), int(y + top + height)), int(area)
 
 
 class SignalTracker:
@@ -69,9 +68,11 @@ class SignalTracker:
 
     def reset(self):
         self.last_native = None
+        self.last_native_face = None
         self.native_stamp = 0
         self.native_count = 0
         self.anchor = self.park_position = None
+        self.anchor_face = None
         self.last_wait = -math.inf
         self.consecutive = 0
 
@@ -121,41 +122,40 @@ class SignalTracker:
         red = [v for v in lights if v.get('traffic_light_state')=='red' and bounds(v['box_xyxy'],image.shape)]
         if state=='red' and red:
             box = tuple(max(red, key=lambda v:v['score'])['box_xyxy'])
-            continuous = (self.last_native is not None and stamp-self.native_stamp < 500_000_000
-                          and overlap(box, self.last_native)>=.50)
-            self.native_count = self.native_count+1 if continuous else 1
-            self.last_native, self.native_stamp = box, stamp
+            face, _ = max(lamp_faces(image, box), key=lambda face: face[1], default=(None, 0))
+            continuous = (face is not None and self.last_native_face is not None
+                          and stamp - self.native_stamp < 500_000_000
+                          and overlap(box, self.last_native) >= .50
+                          and overlap(face, self.last_native_face) >= .50)
+            self.native_count = self.native_count + 1 if continuous else int(face is not None)
+            self.last_native, self.last_native_face, self.native_stamp = box, face, stamp
         if (self.waiting and self.speed < .05 and self.native_count>=2
                 and stamp-self.native_stamp < 500_000_000):
             self.anchor, self.park_position = self.last_native, self.position
+            self.anchor_face = self.last_native_face
             self.last_wait = now
 
-    def correct(self, image, original, candidates, stamp, now, field_colour):
-        """Candidates are current-frame class 10 (box, score) from the detector ROI head."""
+    def correct(self, image, original, stamp, now):
+        """Recheck only the previously confirmed image region, using CPU pixels."""
         if self.shape != image.shape[:2]:
             self.reset()
             self.shape = image.shape[:2]
         lights = [v for v in original['detections'] if v['class_id']==10]
         state = original['traffic_light_state']
         self.update_anchor(image, lights, state, stamp, now)
-        matching = []
-        if self.anchor is not None and current_face(image, self.anchor):
-            if callable(candidates):
-                candidates = candidates()
-            for box, score in candidates:
-                if not math.isfinite(score) or score < .30 or bounds(box, image.shape) is None or overlap(self.anchor,box)<.50:
-                    continue
-                colour = field_colour(image, box)
-                if colour.label=='red' and colour.counts['red']>=15:
-                    matching.append((score,box))
-        self.consecutive = self.consecutive+1 if matching else 0
+        face = None
+        if self.anchor is not None and state in ("red", "unknown"):
+            matching = [(overlap(box, self.anchor_face), box) for box, _ in lamp_faces(image, self.anchor)]
+            match, box = max(matching, default=(0., None))
+            if match >= .50:
+                face = box
+        self.consecutive = self.consecutive + 1 if face is not None else 0
         corrected = dict(original)
         rescued = state=='unknown' and self.consecutive>=2
         if rescued:
-            score, box = max(matching, key=lambda v:v[0])
-            lamp = dict(box_xyxy=box, score=score, class_id=10, class_name='traffic light',
+            lamp = dict(box_xyxy=face, score=None, class_id=10, class_name='traffic light',
                         color=None, semantic_label='red_traffic_light', traffic_light_state='red',
-                        source='oa_1b_same_light')
+                        source='oa_1b_red_region')
             corrected['detections'] = original['detections'] + [lamp]
             corrected['traffic_light_state'] = 'red'
             lights.append(lamp)

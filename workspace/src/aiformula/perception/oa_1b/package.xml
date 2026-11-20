@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>oa_1b</name>
-  <version>0.1.1</version>
-  <description>Optional AV314 traffic signal observer for stock MapAssist and OA 2.1.</description>
+  <version>0.1.2</version>
+  <description>Optional CPU traffic signal observer for stock MapAssist and OA 2.1.</description>
   <maintainer email="skromosk@gmail.com">Sophia AI Formula Team</maintainer>
   <license>AGPL-3.0-or-later</license>
   <buildtool_depend>ament_python</buildtool_depend>
@@ -10,6 +10,8 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>ros2cli</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>

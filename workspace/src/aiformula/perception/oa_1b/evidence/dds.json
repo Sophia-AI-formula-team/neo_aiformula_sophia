@@ -1,605 +1,594 @@
 {
-  "counts": {
-    "CAN": 3201,
-    "motor": 306,
-    "public": 190,
-    "abc_a": 190,
-    "abc_b": 190,
-    "abc_c": 190,
-    "/oa_1b/flag_stop": 48,
-    "private": 48,
-    "session": 116,
-    "status": 31,
-    "guard": 32,
-    "diagnostic_cmd_vel": 216,
-    "/point_flag": 170,
-    "filtered_lane_pose": 42,
-    "filtered_omega_t": 42,
-    "lya_cmd_vel": 36,
-    "/flag_stop": 26
-  },
-  "last": {
-    "CAN": {
-      "id": 528,
-      "dlc": 8,
-      "data": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ],
-      "stamp": [
-        1795205377,
-        206437142
-      ]
+  "A3": {
+    "counts": {
+      "motor": 254,
+      "CAN": 2666,
+      "public": 154,
+      "abc_a": 154,
+      "abc_b": 154,
+      "abc_c": 154,
+      "/oa_1b/flag_stop": 51,
+      "private": 51,
+      "session": 119,
+      "/point_flag": 171,
+      "guard": 37,
+      "diagnostic_cmd_vel": 230,
+      "status": 35,
+      "filtered_lane_pose": 44,
+      "filtered_omega_t": 44,
+      "lya_cmd_vel": 36,
+      "/flag_stop": 27
     },
-    "motor": {
-      "reason": "command_timeout",
-      "semantic_active": false,
-      "manual_held": false,
-      "command": [
-        0.0,
-        0.0
-      ],
-      "can_data": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
+    "motor_reasons": {
+      "command_timeout": 156,
+      "semantic_status_timeout": 2,
+      "semantic_go": 68,
+      "semantic_hold:red_wait_first_lap": 28
     },
-    "public": {
-      "traffic_light_state": "red",
-      "red_pixels_count": 50,
-      "header": {
-        "stamp": {
-          "sec": 1795205376,
-          "nanosec": 604892809
+    "frame_pairs": [
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 50,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 463642345
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
         },
-        "frame_id": "zed_left_camera_optical_frame"
-      }
-    },
-    "abc_a": [
-      2.0,
-      0.6217069625854492,
-      0.0
-    ],
-    "abc_b": [
-      3.0,
-      0.6348468661308289,
-      0.0
-    ],
-    "abc_c": [
-      4.0,
-      0.6479867100715637,
-      0.0
-    ],
-    "/oa_1b/flag_stop": false,
-    "private": {
-      "traffic_light_state": "red",
-      "red_pixels_count": 25,
-      "header": {
-        "stamp": {
-          "sec": 1795205374,
-          "nanosec": 204870033
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 463642345
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 50,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 613637862
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
         },
-        "frame_id": "zed_left_camera_optical_frame"
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 613637862
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 50,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 763648710
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 763648710
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 50,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 913632447
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206890,
+              "nanosec": 913632447
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
       }
-    },
-    "session": {
-      "session": "da552e749a4e4429b3bf2ada44b551b5",
-      "sequence": 7,
-      "stamp_ns": 1795205374533012759,
-      "active": false
-    },
-    "status": {
-      "traffic_light": "red",
-      "traffic_mode": "wait",
-      "smooth_min_turn_radius_m": 6.0,
-      "velocity_gate_reason": "red_wait_first_lap"
-    },
-    "guard": {
-      "traffic_policy": "stop_wait",
-      "traffic_mode": "wait",
-      "traffic_stop_required": true,
-      "traffic_reason": "red_wait_first_lap",
-      "ros_time_sec": 1795205366.2869442
-    },
-    "diagnostic_cmd_vel": [
-      0.0,
-      0.0
     ],
-    "/point_flag": false,
-    "filtered_lane_pose": [
-      2.0,
-      0.6217069625854492,
-      0.013139147391316991
-    ],
-    "filtered_omega_t": [
-      0.013139147391316991,
-      0.013139087796961556,
-      -5.959435543483049e-07
-    ],
-    "lya_cmd_vel": [
-      1.8343073968232098,
-      0.05816142690920718
-    ],
-    "/flag_stop": true
-  },
-  "motor_reasons": {
-    "command_timeout": 208,
-    "semantic_status_timeout": 3,
-    "semantic_go": 67,
-    "semantic_hold:red_wait_first_lap": 28
-  },
-  "motor_examples": {
-    "command_timeout": {
-      "reason": "command_timeout",
-      "semantic_active": false,
-      "manual_held": false,
-      "command": [
-        0.0,
-        0.0
-      ],
-      "can_data": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    "semantic_status_timeout": {
-      "reason": "semantic_status_timeout",
-      "semantic_active": true,
-      "manual_held": false,
-      "command": [
-        0.0,
-        0.0
-      ],
-      "can_data": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    },
-    "semantic_go": {
-      "reason": "semantic_go",
-      "semantic_active": true,
-      "manual_held": false,
-      "command": [
-        1.8343073968232098,
-        0.05816142690920718
-      ],
-      "can_data": [
-        177,
-        0,
-        0,
-        0,
-        243,
-        0,
-        0,
-        0
-      ]
-    },
-    "semantic_hold:red_wait_first_lap": {
-      "reason": "semantic_hold:red_wait_first_lap",
-      "semantic_active": true,
-      "manual_held": false,
-      "command": [
-        0.0,
-        0.0
-      ],
-      "can_data": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
-    }
-  },
-  "matched": [
-    {
-      "ros_stamp": 1795205353348023943,
-      "sources": {
-        "motor": {
-          "reason": "semantic_go",
-          "semantic_active": true,
-          "manual_held": false,
-          "command": [
+    "matched": [
+      {
+        "ros_stamp": 1795206892558807018,
+        "sources": {
+          "motor": {
+            "reason": "semantic_go",
+            "semantic_active": true,
+            "manual_held": false,
+            "command": [
+              1.8343073968232098,
+              0.05816142690920718
+            ],
+            "can_data": [
+              177,
+              0,
+              0,
+              0,
+              243,
+              0,
+              0,
+              0
+            ]
+          },
+          "CAN": {
+            "id": 528,
+            "dlc": 8,
+            "data": [
+              177,
+              0,
+              0,
+              0,
+              243,
+              0,
+              0,
+              0
+            ],
+            "stamp": [
+              1795206892,
+              558419875
+            ]
+          },
+          "session": {
+            "session": "0569097916904c6eac41aa5d664c828d",
+            "sequence": 16,
+            "stamp_ns": 1795206892521359915,
+            "active": true
+          },
+          "guard": {
+            "traffic_policy": "stop_wait",
+            "traffic_mode": "normal",
+            "traffic_stop_required": false,
+            "traffic_reason": "red_prepare_first_lap",
+            "ros_time_sec": 1795206892.4366112
+          },
+          "diagnostic_cmd_vel": [
             1.8343073968232098,
             0.05816142690920718
           ],
-          "can_data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
-          ]
-        },
-        "CAN": {
-          "id": 528,
-          "dlc": 8,
-          "data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
-          ],
-          "stamp": [
-            1795205353,
-            337854191
-          ]
-        },
-        "session": {
-          "session": "2232d324c11c4f67b91ffcde892de0e3",
-          "sequence": 14,
-          "stamp_ns": 1795205353342198936,
-          "active": true
-        },
-        "guard": {
-          "traffic_policy": "stop_wait",
-          "traffic_mode": "normal",
-          "traffic_stop_required": false,
-          "traffic_reason": "red_prepare_first_lap",
-          "ros_time_sec": 1795205353.142062
-        },
-        "diagnostic_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ],
-        "lya_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ]
-      },
-      "age_seconds": {
-        "motor": 0.0,
-        "CAN": 0.0098,
-        "session": 0.0055,
-        "guard": 0.2049,
-        "diagnostic_cmd_vel": 0.1019,
-        "lya_cmd_vel": 0.1021
-      }
-    },
-    {
-      "ros_stamp": 1795205353348122693,
-      "sources": {
-        "motor": {
-          "reason": "semantic_go",
-          "semantic_active": true,
-          "manual_held": false,
-          "command": [
+          "lya_cmd_vel": [
             1.8343073968232098,
             0.05816142690920718
-          ],
-          "can_data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
           ]
         },
-        "CAN": {
-          "id": 528,
-          "dlc": 8,
-          "data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
-          ],
-          "stamp": [
-            1795205353,
-            347791086
-          ]
-        },
-        "session": {
-          "session": "2232d324c11c4f67b91ffcde892de0e3",
-          "sequence": 14,
-          "stamp_ns": 1795205353342198936,
-          "active": true
-        },
-        "guard": {
-          "traffic_policy": "stop_wait",
-          "traffic_mode": "normal",
-          "traffic_stop_required": false,
-          "traffic_reason": "red_prepare_first_lap",
-          "ros_time_sec": 1795205353.142062
-        },
-        "diagnostic_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ],
-        "lya_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ]
-      },
-      "age_seconds": {
-        "motor": 0.0001,
-        "CAN": 0.0,
-        "session": 0.0056,
-        "guard": 0.205,
-        "diagnostic_cmd_vel": 0.1021,
-        "lya_cmd_vel": 0.1022
+        "age_seconds": {
+          "motor": 0.0,
+          "CAN": 0.0001,
+          "session": 0.0371,
+          "guard": 0.1213,
+          "diagnostic_cmd_vel": 0.0312,
+          "lya_cmd_vel": 0.0316
+        }
       }
+    ]
+  },
+  "A4": {
+    "counts": {
+      "motor": 271,
+      "CAN": 2836,
+      "public": 137,
+      "/oa_1b/flag_stop": 47,
+      "private": 47,
+      "abc_a": 137,
+      "abc_b": 137,
+      "abc_c": 137,
+      "session": 116,
+      "/point_flag": 170,
+      "status": 32,
+      "guard": 34,
+      "diagnostic_cmd_vel": 109,
+      "filtered_lane_pose": 62,
+      "filtered_omega_t": 62,
+      "lya_cmd_vel": 57,
+      "/flag_stop": 25
     },
-    {
-      "ros_stamp": 1795205353358287291,
-      "sources": {
-        "motor": {
-          "reason": "semantic_go",
-          "semantic_active": true,
-          "manual_held": false,
-          "command": [
-            1.8343073968232098,
-            0.05816142690920718
+    "motor_reasons": {
+      "command_timeout": 174,
+      "semantic_go": 93,
+      "legacy_passthrough": 1,
+      "semantic_status_timeout": 3
+    },
+    "frame_pairs": [
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206921,
+              "nanosec": 962328003
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206921,
+              "nanosec": 962328003
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 112701213
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 112701213
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 262341385
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 262341385
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 412392154
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206922,
+              "nanosec": 412392154
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      }
+    ],
+    "matched": [
+      {
+        "ros_stamp": 1795206923837177696,
+        "sources": {
+          "motor": {
+            "reason": "semantic_go",
+            "semantic_active": true,
+            "manual_held": false,
+            "command": [
+              2.001303797701178,
+              -0.026516581351005434
+            ],
+            "can_data": [
+              180,
+              0,
+              0,
+              0,
+              16,
+              1,
+              0,
+              0
+            ]
+          },
+          "CAN": {
+            "id": 528,
+            "dlc": 8,
+            "data": [
+              180,
+              0,
+              0,
+              0,
+              16,
+              1,
+              0,
+              0
+            ],
+            "stamp": [
+              1795206923,
+              826728882
+            ]
+          },
+          "session": {
+            "session": "1814b1e95c5a4699adcb16ced4a5c996",
+            "sequence": 12,
+            "stamp_ns": 1795206923739111632,
+            "active": true
+          },
+          "guard": {
+            "traffic_policy": "stop_wait",
+            "traffic_mode": "normal",
+            "traffic_stop_required": false,
+            "traffic_reason": "red_prepare_first_lap",
+            "ros_time_sec": 1795206923.654918
+          },
+          "diagnostic_cmd_vel": [
+            2.001303797701178,
+            -0.026516581351005434
           ],
-          "can_data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
+          "lya_cmd_vel": [
+            2.001303797701178,
+            -0.026516581351005434
           ]
         },
-        "CAN": {
-          "id": 528,
-          "dlc": 8,
-          "data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
+        "age_seconds": {
+          "motor": 0.0,
+          "CAN": 0.01,
+          "session": 0.0978,
+          "guard": 0.1812,
+          "diagnostic_cmd_vel": 0.028,
+          "lya_cmd_vel": 0.0284
+        }
+      }
+    ]
+  },
+  "A4_lite": {
+    "counts": {
+      "motor": 277,
+      "CAN": 2891,
+      "public": 155,
+      "abc_a": 155,
+      "abc_b": 155,
+      "abc_c": 155,
+      "/oa_1b/flag_stop": 49,
+      "private": 49,
+      "session": 120,
+      "/point_flag": 170,
+      "status": 33,
+      "guard": 34,
+      "diagnostic_cmd_vel": 137,
+      "filtered_lane_pose": 66,
+      "filtered_omega_t": 66,
+      "lya_cmd_vel": 57,
+      "/flag_stop": 28
+    },
+    "motor_reasons": {
+      "command_timeout": 180,
+      "semantic_go": 97
+    },
+    "frame_pairs": [
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206952,
+              "nanosec": 919413096
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206952,
+              "nanosec": 919413096
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 69413886
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 69413886
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 219420161
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 219420161
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      },
+      {
+        "public": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 369420256
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        },
+        "private": {
+          "traffic_light_state": "red",
+          "red_pixels_count": 25,
+          "header": {
+            "stamp": {
+              "sec": 1795206953,
+              "nanosec": 369420256
+            },
+            "frame_id": "zed_left_camera_optical_frame"
+          }
+        }
+      }
+    ],
+    "matched": [
+      {
+        "ros_stamp": 1795206955257821478,
+        "sources": {
+          "motor": {
+            "reason": "semantic_go",
+            "semantic_active": true,
+            "manual_held": false,
+            "command": [
+              2.001303797701178,
+              -0.026516581351005434
+            ],
+            "can_data": [
+              180,
+              0,
+              0,
+              0,
+              16,
+              1,
+              0,
+              0
+            ]
+          },
+          "CAN": {
+            "id": 528,
+            "dlc": 8,
+            "data": [
+              180,
+              0,
+              0,
+              0,
+              16,
+              1,
+              0,
+              0
+            ],
+            "stamp": [
+              1795206955,
+              247233509
+            ]
+          },
+          "session": {
+            "session": "96c5122d22114529a0746e48d111b539",
+            "sequence": 18,
+            "stamp_ns": 1795206955210433212,
+            "active": true
+          },
+          "guard": {
+            "traffic_policy": "stop_wait",
+            "traffic_mode": "normal",
+            "traffic_stop_required": false,
+            "traffic_reason": "red_prepare_first_lap",
+            "ros_time_sec": 1795206955.1367798
+          },
+          "diagnostic_cmd_vel": [
+            2.001303797701178,
+            -0.026516581351005434
           ],
-          "stamp": [
-            1795205353,
-            357932367
+          "lya_cmd_vel": [
+            2.001303797701178,
+            -0.026516581351005434
           ]
         },
-        "session": {
-          "session": "2232d324c11c4f67b91ffcde892de0e3",
-          "sequence": 14,
-          "stamp_ns": 1795205353342198936,
-          "active": true
-        },
-        "guard": {
-          "traffic_policy": "stop_wait",
-          "traffic_mode": "normal",
-          "traffic_stop_required": false,
-          "traffic_reason": "red_prepare_first_lap",
-          "ros_time_sec": 1795205353.142062
-        },
-        "diagnostic_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ],
-        "lya_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ]
-      },
-      "age_seconds": {
-        "motor": 0.0103,
-        "CAN": 0.0,
-        "session": 0.0158,
-        "guard": 0.2151,
-        "diagnostic_cmd_vel": 0.1122,
-        "lya_cmd_vel": 0.1124
-      }
-    },
-    {
-      "ros_stamp": 1795205353368317156,
-      "sources": {
-        "motor": {
-          "reason": "semantic_go",
-          "semantic_active": true,
-          "manual_held": false,
-          "command": [
-            1.8343073968232098,
-            0.05816142690920718
-          ],
-          "can_data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
-          ]
-        },
-        "CAN": {
-          "id": 528,
-          "dlc": 8,
-          "data": [
-            177,
-            0,
-            0,
-            0,
-            243,
-            0,
-            0,
-            0
-          ],
-          "stamp": [
-            1795205353,
-            367904533
-          ]
-        },
-        "session": {
-          "session": "2232d324c11c4f67b91ffcde892de0e3",
-          "sequence": 14,
-          "stamp_ns": 1795205353342198936,
-          "active": true
-        },
-        "guard": {
-          "traffic_policy": "stop_wait",
-          "traffic_mode": "normal",
-          "traffic_stop_required": false,
-          "traffic_reason": "red_prepare_first_lap",
-          "ros_time_sec": 1795205353.142062
-        },
-        "diagnostic_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ],
-        "lya_cmd_vel": [
-          1.8343073968232098,
-          0.05816142690920718
-        ]
-      },
-      "age_seconds": {
-        "motor": 0.0203,
-        "CAN": 0.0,
-        "session": 0.0258,
-        "guard": 0.2252,
-        "diagnostic_cmd_vel": 0.1222,
-        "lya_cmd_vel": 0.1224
-      }
-    }
-  ],
-  "frame_pairs": [
-    {
-      "public": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 50,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 554897984
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      },
-      "private": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 25,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 554897984
-          },
-          "frame_id": "zed_left_camera_optical_frame"
+        "age_seconds": {
+          "motor": 0.0,
+          "CAN": 0.0101,
+          "session": 0.0471,
+          "guard": 0.1202,
+          "diagnostic_cmd_vel": 0.0169,
+          "lya_cmd_vel": 0.0173
         }
       }
-    },
-    {
-      "public": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 50,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 704863883
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      },
-      "private": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 25,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 704863883
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      }
-    },
-    {
-      "public": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 50,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 854866500
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      },
-      "private": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 25,
-        "header": {
-          "stamp": {
-            "sec": 1795205351,
-            "nanosec": 854866500
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      }
-    },
-    {
-      "public": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 50,
-        "header": {
-          "stamp": {
-            "sec": 1795205352,
-            "nanosec": 4916167
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      },
-      "private": {
-        "traffic_light_state": "red",
-        "red_pixels_count": 25,
-        "header": {
-          "stamp": {
-            "sec": 1795205352,
-            "nanosec": 4916167
-          },
-          "frame_id": "zed_left_camera_optical_frame"
-        }
-      }
-    }
-  ]
+    ]
+  }
 }

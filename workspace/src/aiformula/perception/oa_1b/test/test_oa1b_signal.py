@@ -1,5 +1,4 @@
 import unittest
-from types import SimpleNamespace
 
 import numpy as np
 from oa_1b.traffic_signal import SignalTracker
@@ -16,7 +15,7 @@ class SignalTests(unittest.TestCase):
         self.native={'class_id':10,'box_xyxy':self.box,'score':.6,'traffic_light_state':'red'}
         self.sec=0.9
 
-    def frame(self, status='wait', native=False, lit=True, score=.40, gap=.075, speed=0., x=0., box=None):
+    def frame(self, status='wait', native=False, lit=True, gap=.075, speed=0., x=0., image=None):
         self.sec+=gap
         track=self.tracker
         track.status({'traffic_mode':status,'red_stop_required':status=='wait',
@@ -27,9 +26,9 @@ class SignalTests(unittest.TestCase):
         result=dict(self.base)
         if native:
             result.update(detections=[self.native],traffic_light_state='red',red_pixels_count=25)
-        colour=SimpleNamespace(label='red' if lit else 'unknown',counts={'red':25 if lit else 0})
-        return track.correct(self.on if lit else self.off,result,[(box or self.box,score)],stamp,self.sec,
-                             lambda *_:colour)
+        if image is None:
+            image = self.on if lit else self.off
+        return track.correct(image, result, stamp, self.sec)
 
     def test_acquire_only_from_actual_confirmed_stop_and_native_reds(self):
         for _ in range(3):
@@ -41,8 +40,12 @@ class SignalTests(unittest.TestCase):
         self.assertEqual(self.frame(lit=False)['traffic_light_state'],'unknown')
         self.assertEqual(self.frame()['traffic_light_state'],'unknown')
         self.assertTrue(self.frame()['oa_1b']['rescued'])
-        self.assertEqual(self.frame(score=.28)['traffic_light_state'],'unknown')
-        self.assertEqual(self.frame(box=(20,20,30,30))['traffic_light_state'],'unknown')
+        shifted = np.zeros_like(self.on)
+        shifted[10:15,13:18,2] = 255
+        self.assertEqual(self.frame(image=shifted)['traffic_light_state'], 'unknown')
+        self.assertEqual(self.frame(image=shifted)['traffic_light_state'], 'unknown')
+        shifted = np.roll(shifted, 10, axis=0)
+        self.assertEqual(self.frame(image=shifted)['traffic_light_state'], 'unknown')
         self.assertFalse(self.frame(status='normal',x=4.)['oa_1b']['tracked'])
 
     def test_duplicate_gap_and_reset_require_fresh_confirmation(self):
@@ -61,7 +64,7 @@ class SignalTests(unittest.TestCase):
 
     def test_unique_red_does_not_modify_stock(self):
         stock=dict(detections=[self.native,self.native],traffic_light_state='red',red_pixels_count=50)
-        fixed=self.tracker.correct(self.on,stock,[],10**9,1.,None)
+        fixed=self.tracker.correct(self.on,stock,10**9,1.)
         self.assertEqual(fixed['red_pixels_count'],25)
         self.assertEqual(stock['red_pixels_count'],50)
 
@@ -75,7 +78,7 @@ class SignalTests(unittest.TestCase):
         self.frame(native=True)
         self.assertTrue(self.frame()['oa_1b']['rescued'])
         green=dict(self.base,traffic_light_state='green')
-        fixed=self.tracker.correct(self.off,green,[],int(self.sec*1e9),self.sec,None)
+        fixed=self.tracker.correct(self.off,green,int(self.sec*1e9),self.sec)
         self.assertEqual(fixed['traffic_light_state'],'green')
         self.assertFalse(fixed['oa_1b']['tracked'])
         self.frame(native=True)

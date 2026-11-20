@@ -1,21 +1,18 @@
-"""Run the delivered node's model tap + state machine against the original three outer-circle captures."""
+"""Run the delivered node's CPU observer logic against the original three outer-circle captures."""
 import argparse
 from collections import Counter
 import gzip
 import json
 import time
 
-import torch
 from pathlib import Path
 
 import cv2
-from yolop_a3_runtime.color_semantics import classify_traffic_light
 
-from oa_1b.observer import Candidates, check_runtime
 from oa_1b.traffic_signal import SignalTracker
 
 
-def replay(run, model):
+def replay(run, elapsed_ms):
     track = SignalTracker()
     body = [json.loads(s) for s in (run/'trial/observations.jsonl').read_text().splitlines()]
     phases = {r['event']:r['utc_ms'] for r in body if r['event']!='sample'}
@@ -40,18 +37,9 @@ def replay(run, model):
             if not track.accept_stamp(ns,t):
                 counts['stale']+=1
                 continue
-            def infer():
-                began = time.monotonic()
-                boxes = model.infer(image)
-                inference_ms.append((time.monotonic() - began) * 1000)
-                counts['inference_calls'] += 1
-                return boxes
-
-            if base['traffic_light_state'] == 'unknown':
-                candidates = infer
-            else:
-                candidates = [(b['box_xyxy'], b['score']) for b in base['detections'] if b['class_id'] == 10]
-            fixed = track.correct(image, base, candidates, ns, t * 1e-9, classify_traffic_light)
+            began = time.perf_counter()
+            fixed = track.correct(image, base, ns, t * 1e-9)
+            elapsed_ms.append((time.perf_counter() - began) * 1000)
             counts['after_stop_tracked']+=int(fixed['oa_1b']['tracked'] and ms>=phases['first_stop'])
             counts['distance_threshold_crossings_removed']+=int(base['red_pixels_count']>=50>fixed['red_pixels_count'])
             if ms>=phases['second_red']:
@@ -67,22 +55,13 @@ def replay(run, model):
 if __name__=='__main__':
     cli=argparse.ArgumentParser(description=__doc__)
     cli.add_argument('capture',type=Path)
-    cli.add_argument('weights',type=Path)
-    args=cli.parse_args()
-    check_runtime(args.weights)
-    model = Candidates(args.weights)
-    first_image = cv2.imread(str(next((args.capture / "run1/raw").glob("*.png"))))
-    began = time.monotonic()
-    model.infer(first_image)
-    warmup_ms = (time.monotonic() - began) * 1000
-    inference_ms = []
-    output = {r.name: replay(r, model) for r in sorted(args.capture.glob('run[123]'))}
+    args = cli.parse_args()
+    elapsed_ms = []
+    output = {r.name: replay(r, elapsed_ms) for r in sorted(args.capture.glob('run[123]'))}
     assert sum(s['frames'] for s in output.values()) == 420
-    output['gpu'] = {
-        'warmup_ms': round(warmup_ms, 2),
-        'inference_count': len(inference_ms),
-        'p50_ms': round(sorted(inference_ms)[len(inference_ms) // 2], 2),
-        'max_ms': round(max(inference_ms), 2),
-        'torch_peak_allocated_mib': round(torch.cuda.max_memory_allocated() / 1024**2, 1),
+    output['cpu'] = {
+        'processed_frames': len(elapsed_ms),
+        'median_ms': round(sorted(elapsed_ms)[len(elapsed_ms) // 2], 3),
+        'max_ms': round(max(elapsed_ms), 3),
     }
     print(json.dumps(output, indent=2))

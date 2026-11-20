@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="oa_1b",
-    version="0.1.1",
+    version="0.1.2",
     packages=["oa_1b"],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/oa_1b"]),

@@ -1,4 +1,4 @@
-# 1121 车端部署 · OA 1B 0.1.1
+# 1121 车端部署 · OA 1B 0.1.2
 
 `mapassist_b` 是第三个终端的可选入口，一次启动原 MapAssist、OA 2.1 和独立的 `oa_1b` 灯态复核节点。实验包的 Git 分支为 `experiment/mapassist-b-1121`，基于 1121 准备分支 `dff29d12`。安装范围是 OA 1B 专用发行目录、一个用户命令和一个桌面图标。手柄仲裁、停车等待状态机、车道点、避障轨迹及转向约束都沿用车端版本。
 
@@ -7,7 +7,7 @@
 | 顺序 | 命令 |
 |---|---|
 | 1 | `allnodes` |
-| 2 | `yolop`，实验模式在原菜单选 `1`（A3 V14 / AV314） |
+| 2 | `yolop`，原菜单可选 `1`（A3 V14）、`2`（A4）或 `3`（A4L） |
 | 3 | 旧版用 `mapassist`。实验外圈用 `mapassist_b outer`，内圈用 `mapassist_b inner` |
 | 4 | `lya` |
 
@@ -17,7 +17,7 @@
 
 ## 部署 agent 安装
 
-用原车用户从独立检出目录安装。保留现有 ROS Foxy underlay、1120 MapAssist/OA 2.1 安装、AV314 环境和旧快捷方式。安装脚本比对两份原 MapAssist launch、AV314 权重及运行模块的 SHA-256。现场版本不一致时，记录路径和实际摘要并先回报。
+用原车用户从独立检出目录安装。OA 1B 使用 ROS Foxy、系统 Python、OpenCV 和 NumPy，由原 `yolop` 入口决定模型与运行环境。安装脚本比对两份原 MapAssist launch 的 SHA-256，并检查系统 Python 能导入 OA 1B。现场版本不一致时，记录路径和实际摘要并先回报。
 
 ```bash
 git clone --filter=blob:none --sparse --branch experiment/mapassist-b-1121 \
@@ -29,7 +29,7 @@ bash workspace/src/aiformula/perception/oa_1b/scripts/install.sh
 type -a allnodes yolop mapassist mapassist_b lya
 ```
 
-安装器只构建 `oa_1b` 到 `~/aiformula_runtime/2026-11-21-mapassist-b/<完整 Git 提交>`。若 `~/.local/bin` 不在 PATH，用 `~/.local/bin/mapassist_b`。同名自定义入口会使安装失败。要撤下新版快捷方式，先退出第三步。核对 `readlink ~/.local/bin/mapassist_b` 指向本次发行目录，并看桌面图标的 `Exec` 指向上述用户命令，然后删掉这两个本版入口。原客户端、桌面、Bash 配置和已有 ROS 安装均保留。
+安装器只构建 `oa_1b` 到 `~/aiformula_runtime/2026-11-21-mapassist-b/<完整 Git 提交>`。若 `~/.local/bin` 不在 PATH，用 `~/.local/bin/mapassist_b`。如果装过 0.1.1 或要撤下新版，先退出第三步。核对 `readlink ~/.local/bin/mapassist_b` 指向本实验发行目录，并核对 `1121-mapassist_b.desktop` 的 `Exec`，再移除这两个实验入口。升级时随后运行新版安装脚本。安装脚本遇到同名自定义入口会停止。
 
 ## 接线与现场核对
 
@@ -40,4 +40,4 @@ type -a allnodes yolop mapassist mapassist_b lya
 | 原选点、避障和 LYA | 原 `/original_processed_point_{a,b,c}` → MapAssist，原 OA 2.1 带同组 A/B/C 的 `/semantic_drive/map_assist_045/oa_triplet` → 选择器 → LYA |
 | 到电机 | LYA 的 `/semantic_drive/map_assist_045/lya_cmd_vel` → MapAssist 的 `/semantic_drive/map_assist_045/diagnostic_cmd_vel` → 原电机仲裁和 CAN |
 
-已确认红灯且停稳后，只有原检测暂报 `unknown`、同一灯牌位置仍有合格红色亮区时，OA 1B 才对这一帧另做一次 AV314 推理。仍需两帧同一位置的候选通过分数、重叠和颜色检查。原 YOLOP 的发布、置信度和起停均独立。新模式会增加一个 AV314 模型的显存和少量触发帧的推理负载。现场应记录两进程 GPU、同戳原/实验检测、首次达阈值的距离及停稳时灯牌是否持续可见。Foxy 台架的数据和现场验证范围见 [验证记录](VALIDATION.md)。
+整条链只有原 `yolop` 执行模型推理。OA 1B 在 CPU 上对检测框内的红像素去重。红灯已确认且车停稳时，记录原检测框中的红色亮区。原检测暂报 `unknown` 时，只在同一区域检查当前红色连通区域的面积、宽高比、填充率和重叠。连续两帧满足才补红，检测到绿灯会立即取消关联。复核输出标明 `oa_1b_red_region`。现场应记录同戳原输出、实验输出、首次达阈值的距离以及停稳后灯牌可见性。台架数据见 [验证记录](VALIDATION.md)。

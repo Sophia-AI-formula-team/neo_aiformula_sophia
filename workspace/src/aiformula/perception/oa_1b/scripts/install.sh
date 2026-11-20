@@ -9,7 +9,6 @@ if [[ -n "$(git -C "$src" status --porcelain --untracked-files=all -- .)" ]]; th
     exit 1
 fi
 release="$HOME/aiformula_runtime/2026-11-21-mapassist-b/$rev"
-a3="$HOME/aiformula_runtime/yolop_a3_v14_20261012"
 field="$HOME/aiformula_runtime/2026-11-20-mapassist-av314/install"
 mkdir -p -- "$release"
 exec 9>"$release/install.lock"
@@ -32,10 +31,7 @@ cmp "$release/mapassist_b" "$src/scripts/mapassist_b"
 source "$release/install/local_setup.bash"
 [[ "$(ros2 pkg prefix oa_1b)" == "$release/install" ]]
 export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
-if [[ $(uname -m) == aarch64 ]]; then
-    export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
-fi
-"$a3/venv/bin/python3" -m oa_1b.observer --check --weights "$a3/upstream/YOLOP_A3_Deploy/weights/shared_best.pth"
+/usr/bin/python3 -m oa_1b.observer --check
 printf '%s\n' "$rev" > "$release/READY"
 python3 "$src/scripts/shortcut.py" "$release"
 printf 'OA 1B ready: %s\n' "$release/mapassist_b"

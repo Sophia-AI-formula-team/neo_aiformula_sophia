@@ -1,5 +1,6 @@
-"""One optional MapAssist stage. Allnodes, AV314 and LYA remain operator-owned."""
+"""One optional MapAssist stage. Allnodes, YOLOP and LYA remain operator-owned."""
 from pathlib import Path
+import sys
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -13,9 +14,8 @@ from launch_ros.actions import SetRemap
 
 
 def generate_launch_description():
-    av314 = ExecuteProcess(
-        cmd=[LaunchConfiguration("vision_python"), "-m", "oa_1b.observer",
-             "--weights", LaunchConfiguration("weights"),
+    observer = ExecuteProcess(
+        cmd=[sys.executable, "-m", "oa_1b.observer",
              "--threshold", LaunchConfiguration("red_pixel_stop_threshold")],
         output="screen",
     )
@@ -54,17 +54,15 @@ def generate_launch_description():
     def startup_timeout(_context):
         if ready:
             return []
-        return [EmitEvent(event=Shutdown(reason="No fresh stock AV314 detection and camera pair. Start yolop and select A3 V14."))]
+        return [EmitEvent(event=Shutdown(reason="No fresh YOLOP detection and camera pair. Start yolop first."))]
 
     return LaunchDescription([
         DeclareLaunchArgument("lane", default_value="outer", choices=["inner", "outer"]),
         DeclareLaunchArgument("red_pixel_stop_threshold", default_value="50"),
-        DeclareLaunchArgument("vision_python"),
-        DeclareLaunchArgument("weights"),
         DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"]),
-        RegisterEventHandler(OnProcessIO(target_action=av314, on_stdout=on_stdout)),
+        RegisterEventHandler(OnProcessIO(target_action=observer, on_stdout=on_stdout)),
         RegisterEventHandler(OnProcessExit(
-            target_action=av314, on_exit=[EmitEvent(event=Shutdown(reason="OA 1B observer exited."))])),
+            target_action=observer, on_exit=[EmitEvent(event=Shutdown(reason="OA 1B observer exited."))])),
         TimerAction(period=45.0, actions=[OpaqueFunction(function=startup_timeout)]),
-        av314,
+        observer,
     ])
