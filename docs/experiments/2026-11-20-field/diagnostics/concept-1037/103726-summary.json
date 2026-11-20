@@ -1,0 +1,229 @@
+[
+  {
+    "bag": "concept_20261120_103726_a70fd2f43c754872968ea2f058f4eedc",
+    "range": [
+      "2026-11-20T10:37:28.575+09:00",
+      "2026-11-20T10:37:38.669+09:00"
+    ],
+    "topic_counts": {
+      "/aiformula_sensing/vectornav/imu": 194,
+      "/aiformula_sensing/vehicle_info": 2096,
+      "/aiformula_control/joy_node/joy_l2_throttle": 174,
+      "/concept/internal/motor_can": 782,
+      "/concept/internal/motor_cmd": 393,
+      "/concept/vehicle_state": 160,
+      "/concept/auto_cmd": 30,
+      "/concept/decision": 30,
+      "/concept/gate/estop": 0,
+      "/concept/gate/status": 79,
+      "/concept/perception/overlay/compressed": 30
+    },
+    "gate_counts": {
+      "auto / auto_command_received": 58,
+      "auto / waiting_fresh_auto": 21
+    },
+    "gate_fresh": 53,
+    "gate_positive_fresh": 28,
+    "gate_speeds": {
+      "0.05": 31,
+      "0.0": 48
+    },
+    "gate_limits": {
+      "2.5": 79
+    },
+    "first_gate_events": [
+      [
+        "2026-11-20T10:37:30.778+09:00",
+        "auto",
+        "auto_command_received",
+        0.05,
+        -0.0
+      ],
+      [
+        "2026-11-20T10:37:30.908+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:30.978+09:00",
+        "auto",
+        "auto_command_received",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:31.378+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:31.478+09:00",
+        "auto",
+        "auto_command_received",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:31.678+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:31.778+09:00",
+        "auto",
+        "auto_command_received",
+        0.05,
+        -0.0
+      ],
+      [
+        "2026-11-20T10:37:32.179+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:32.279+09:00",
+        "auto",
+        "auto_command_received",
+        0.05,
+        -0.0
+      ],
+      [
+        "2026-11-20T10:37:32.478+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:32.579+09:00",
+        "auto",
+        "auto_command_received",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:32.980+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:33.079+09:00",
+        "auto",
+        "auto_command_received",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:33.278+09:00",
+        "auto",
+        "waiting_fresh_auto",
+        0.0,
+        0.0
+      ],
+      [
+        "2026-11-20T10:37:33.378+09:00",
+        "auto",
+        "auto_command_received",
+        0.05,
+        -0.0
+      ]
+    ],
+    "pauses": [],
+    "auto_gap_ms": {
+      "min": 245.798,
+      "median": 266.234,
+      "p95": 279.568,
+      "max": 282.162
+    },
+    "auto_capture_age_at_bag_ms": {
+      "min": 289.067,
+      "median": 311.749,
+      "p95": 326.222,
+      "max": 331.093
+    },
+    "auto_command_counts": {
+      "(0.0, 0.0)": 15,
+      "(0.05, -0.0)": 15
+    },
+    "motor_speeds": {
+      "0.0": 240,
+      "0.05": 153
+    },
+    "motor_can_nonzero": 306,
+    "motor_nonzero_rpm": [
+      [
+        "(34, 34)",
+        306
+      ]
+    ],
+    "vehicle_state": {
+      "ok": 160
+    },
+    "wheel_nonzero": 0,
+    "decisions": {
+      "ok / feasible": 30
+    },
+    "planner_recovery": {
+      "selected_deceleration": 15,
+      "not_needed": 15
+    },
+    "planner_tracking": {
+      "lya": 30
+    },
+    "planner_target": {
+      "2.0": 30
+    },
+    "planner_command_counts": {
+      "(0.0, 0.0)": 15,
+      "(0.05, -0.0)": 15
+    },
+    "processing_ms": {
+      "min": 157.331,
+      "median": 165.446,
+      "p95": 174.533,
+      "max": 176.304
+    },
+    "capture_age_ms": {
+      "min": 288.926,
+      "median": 311.56,
+      "p95": 325.704,
+      "max": 326.115
+    },
+    "camera_timing_ms": {
+      "capture_to_image_callback": {
+        "min": 41.553,
+        "median": 54.565,
+        "p95": 64.33,
+        "max": 69.385
+      },
+      "inference": {
+        "min": 71.977,
+        "median": 80.408,
+        "p95": 86.22,
+        "max": 91.43
+      },
+      "decode_and_projection": {
+        "min": 6.66,
+        "median": 7.446,
+        "p95": 8.593,
+        "max": 10.851
+      },
+      "restrict_predictions": {
+        "min": 0.887,
+        "median": 0.916,
+        "p95": 1.451,
+        "max": 5.983
+      }
+    }
+  }
+]

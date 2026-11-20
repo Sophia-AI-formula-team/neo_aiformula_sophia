@@ -1,0 +1,36 @@
+{
+  "profiles": {
+    "A3": {
+      "installed_module": "/home/control/aiformula_runtime/yolop_a3_v14_20261012/venv/lib/python3.8/site-packages/yolop_a3_runtime",
+      "thresholds": [
+        0.23,
+        55,
+        35,
+        16
+      ],
+      "weights_sha256": "a411c983b661d6b26217019a968251c89a6b66c95400e4e7cb78f04a644ca10c"
+    },
+    "A4": {
+      "installed_module": "/home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4/yolop_a3_runtime",
+      "thresholds": [
+        0.23,
+        55,
+        35,
+        16
+      ],
+      "weights_sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3"
+    },
+    "A4_lite": {
+      "installed_module": "/home/control/aiformula_runtime/2026-11-19-yolop-selection/bundles/A4_lite/yolop_a3_runtime",
+      "thresholds": [
+        0.23,
+        55,
+        35,
+        16
+      ],
+      "weights_sha256": "b4d3556ded29ada232682b607a11296d723ffe74814a85cc4f2bcbf573e5b1e3"
+    }
+  },
+  "red_stop_pixels": 50,
+  "hardware_started": false
+}

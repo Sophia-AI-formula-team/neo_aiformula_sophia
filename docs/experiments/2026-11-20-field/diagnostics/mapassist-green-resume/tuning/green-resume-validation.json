@@ -1,0 +1,2404 @@
+{
+  "continuous_bag_frames": true,
+  "frame_count": 72,
+  "controls": 14,
+  "mapassist_sha256": "b3135ef6a1a19450d54522dd5b3dbe39d7161225eb4eb3e99359a108d59faa60",
+  "installed_filter_sha256": "f3e5243fb1694cecb6d70a1183d7d50015a9de3cc916db8cbf1439e437054236",
+  "patch_sha256": "2b65bc48bf0beb5785aac46d1d1ed0c88556f9e1832a30bbed626494c7ade57e",
+  "runtime_sha256": "64ba390e91e770a3186a785d2f0bad6252d2448c1d9ae63fa1b3c8c141885090",
+  "results": {
+    "75": {
+      "green_count": 0,
+      "replay": [
+        {
+          "dataset": "all-unique-left",
+          "sample_count": 72,
+          "clock": "header_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        },
+        {
+          "dataset": "all-unique-left",
+          "sample_count": 72,
+          "clock": "record_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        },
+        {
+          "dataset": "original-left-only",
+          "sample_count": 25,
+          "clock": "header_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        },
+        {
+          "dataset": "original-left-only",
+          "sample_count": 25,
+          "clock": "record_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        }
+      ]
+    },
+    "55": {
+      "green_count": 2,
+      "replay": [
+        {
+          "dataset": "all-unique-left",
+          "sample_count": 72,
+          "clock": "header_ns",
+          "events": [
+            {
+              "source_time_jst": "2026-11-20T09:55:17.953+09:00",
+              "bag_time_jst": "2026-11-20T09:55:18.754+09:00",
+              "file": "0065-1795136117953779000.jpg",
+              "camera_topic": "/aiformula_sensing/zed_node/left_raw/image_raw_color",
+              "light": "green",
+              "reason": "green_resume",
+              "before": "wait",
+              "after": "normal",
+              "latched": false,
+              "vote": {
+                "window_sec": 0.5,
+                "min_samples": 3,
+                "ready": true,
+                "sample_count": 3,
+                "red_count": 0,
+                "green_count": 2,
+                "yellow_count": 0,
+                "off_count": 0,
+                "unknown_count": 1,
+                "reported_unknown_count": 1,
+                "last_message_age_sec": 0.0
+              }
+            }
+          ],
+          "final_mode": "normal",
+          "final_stop_latched": false
+        },
+        {
+          "dataset": "all-unique-left",
+          "sample_count": 72,
+          "clock": "record_ns",
+          "events": [
+            {
+              "source_time_jst": "2026-11-20T09:55:17.953+09:00",
+              "bag_time_jst": "2026-11-20T09:55:18.754+09:00",
+              "file": "0065-1795136117953779000.jpg",
+              "camera_topic": "/aiformula_sensing/zed_node/left_raw/image_raw_color",
+              "light": "green",
+              "reason": "green_resume",
+              "before": "wait",
+              "after": "normal",
+              "latched": false,
+              "vote": {
+                "window_sec": 0.5,
+                "min_samples": 3,
+                "ready": true,
+                "sample_count": 3,
+                "red_count": 0,
+                "green_count": 2,
+                "yellow_count": 0,
+                "off_count": 0,
+                "unknown_count": 1,
+                "reported_unknown_count": 1,
+                "last_message_age_sec": 0.0
+              }
+            }
+          ],
+          "final_mode": "normal",
+          "final_stop_latched": false
+        },
+        {
+          "dataset": "original-left-only",
+          "sample_count": 25,
+          "clock": "header_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        },
+        {
+          "dataset": "original-left-only",
+          "sample_count": 25,
+          "clock": "record_ns",
+          "events": [],
+          "final_mode": "wait",
+          "final_stop_latched": true
+        }
+      ]
+    }
+  },
+  "controlled_100ms_loop": {},
+  "frames": [
+    {
+      "frame": 1,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24874,
+      "record_ns": 1795136104039269968,
+      "header_ns": 1795136103156642000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0001-1795136103156642000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0001-1795136103156642000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 2,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24896,
+      "record_ns": 1795136104215898986,
+      "header_ns": 1795136103422948000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0002-1795136103422948000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0002-1795136103422948000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 3,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24901,
+      "record_ns": 1795136104402273824,
+      "header_ns": 1795136103622922000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0003-1795136103622922000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0003-1795136103622922000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 4,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24965,
+      "record_ns": 1795136104617117166,
+      "header_ns": 1795136103889527000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0004-1795136103889527000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0004-1795136103889527000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 5,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24985,
+      "record_ns": 1795136104917705959,
+      "header_ns": 1795136104156038000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0005-1795136104156038000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0005-1795136104156038000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 6,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 24990,
+      "record_ns": 1795136105153628302,
+      "header_ns": 1795136104422659000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0006-1795136104422659000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0006-1795136104422659000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 7,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25055,
+      "record_ns": 1795136105472693100,
+      "header_ns": 1795136104689277000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0007-1795136104689277000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0007-1795136104689277000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 8,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25077,
+      "record_ns": 1795136105637505556,
+      "header_ns": 1795136104822589000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0008-1795136104822589000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0008-1795136104822589000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 9,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25146,
+      "record_ns": 1795136106028822343,
+      "header_ns": 1795136105222722000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0009-1795136105222722000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0009-1795136105222722000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 10,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25167,
+      "record_ns": 1795136106113816056,
+      "header_ns": 1795136105355871000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0010-1795136105355871000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0010-1795136105355871000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 11,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25172,
+      "record_ns": 1795136106209241197,
+      "header_ns": 1795136105422644000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0011-1795136105422644000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0011-1795136105422644000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 12,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25237,
+      "record_ns": 1795136106513760460,
+      "header_ns": 1795136105755798000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0012-1795136105755798000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0012-1795136105755798000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 13,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25258,
+      "record_ns": 1795136106713197658,
+      "header_ns": 1795136105889117000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0013-1795136105889117000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0013-1795136105889117000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 14,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25263,
+      "record_ns": 1795136106811482448,
+      "header_ns": 1795136106022429000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0014-1795136106022429000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0014-1795136106022429000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 15,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25352,
+      "record_ns": 1795136107424237067,
+      "header_ns": 1795136106422262000,
+      "topic": "/aiformula_sensing/zed_node/left_raw/image_raw_color",
+      "file": "0015-1795136106422262000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0015-1795136106422262000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 16,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25348,
+      "record_ns": 1795136107415560035,
+      "header_ns": 1795136106688955000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0016-1795136106688955000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0016-1795136106688955000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 17,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25418,
+      "record_ns": 1795136107685256552,
+      "header_ns": 1795136106888790000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0017-1795136106888790000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0017-1795136106888790000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 18,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25440,
+      "record_ns": 1795136107814866190,
+      "header_ns": 1795136107022101000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0018-1795136107022101000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0018-1795136107022101000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 19,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25445,
+      "record_ns": 1795136108080976502,
+      "header_ns": 1795136107288953000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0019-1795136107288953000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0019-1795136107288953000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 20,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25510,
+      "record_ns": 1795136108408305436,
+      "header_ns": 1795136107688777000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0020-1795136107688777000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0020-1795136107688777000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 21,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25531,
+      "record_ns": 1795136108632788161,
+      "header_ns": 1795136107822197000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0021-1795136107822197000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0021-1795136107822197000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 22,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25536,
+      "record_ns": 1795136108824111363,
+      "header_ns": 1795136108088701000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0022-1795136108088701000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0022-1795136108088701000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 23,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25600,
+      "record_ns": 1795136109105765508,
+      "header_ns": 1795136108355451000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0023-1795136108355451000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0023-1795136108355451000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 24,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25621,
+      "record_ns": 1795136109287344409,
+      "header_ns": 1795136108488660000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0024-1795136108488660000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0024-1795136108488660000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 25,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25626,
+      "record_ns": 1795136109416878902,
+      "header_ns": 1795136108555212000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0025-1795136108555212000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0025-1795136108555212000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 26,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25691,
+      "record_ns": 1795136109705784953,
+      "header_ns": 1795136108956551000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0026-1795136108956551000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0026-1795136108956551000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 27,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25712,
+      "record_ns": 1795136109814505637,
+      "header_ns": 1795136109088509000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0027-1795136109088509000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0027-1795136109088509000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 28,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25782,
+      "record_ns": 1795136110183168891,
+      "header_ns": 1795136109421878000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0028-1795136109421878000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0028-1795136109421878000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 29,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25804,
+      "record_ns": 1795136110301450204,
+      "header_ns": 1795136109555071000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0029-1795136109555071000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0029-1795136109555071000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 30,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25809,
+      "record_ns": 1795136110395992258,
+      "header_ns": 1795136109621708000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0030-1795136109621708000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0030-1795136109621708000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 31,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25873,
+      "record_ns": 1795136110816286492,
+      "header_ns": 1795136110021690000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0031-1795136110021690000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0031-1795136110021690000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 32,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25893,
+      "record_ns": 1795136110958641708,
+      "header_ns": 1795136110154998000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0032-1795136110154998000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0032-1795136110154998000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 33,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25898,
+      "record_ns": 1795136111324558557,
+      "header_ns": 1795136110554947000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0033-1795136110554947000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0033-1795136110554947000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 34,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25963,
+      "record_ns": 1795136111661343556,
+      "header_ns": 1795136110888137000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0034-1795136110888137000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0034-1795136110888137000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 35,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 25985,
+      "record_ns": 1795136111915465077,
+      "header_ns": 1795136111154771000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0035-1795136111154771000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0035-1795136111154771000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 36,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26054,
+      "record_ns": 1795136112164419398,
+      "header_ns": 1795136111288022000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0036-1795136111288022000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0036-1795136111288022000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 37,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26076,
+      "record_ns": 1795136112507250272,
+      "header_ns": 1795136111754684000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0037-1795136111754684000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0037-1795136111754684000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 38,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26081,
+      "record_ns": 1795136112597753321,
+      "header_ns": 1795136111821280000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0038-1795136111821280000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0038-1795136111821280000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 39,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26146,
+      "record_ns": 1795136112778779000,
+      "header_ns": 1795136112021333000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0039-1795136112021333000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0039-1795136112021333000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 40,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26167,
+      "record_ns": 1795136112988063957,
+      "header_ns": 1795136112221320000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0040-1795136112221320000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0040-1795136112221320000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 41,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26172,
+      "record_ns": 1795136113155680760,
+      "header_ns": 1795136112421301000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0041-1795136112421301000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0041-1795136112421301000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 42,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26237,
+      "record_ns": 1795136113545361827,
+      "header_ns": 1795136112821254000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0042-1795136112821254000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0042-1795136112821254000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 43,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26258,
+      "record_ns": 1795136113652317300,
+      "header_ns": 1795136112887915000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0043-1795136112887915000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0043-1795136112887915000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 44,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26326,
+      "record_ns": 1795136114165897488,
+      "header_ns": 1795136113421014000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0044-1795136113421014000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0044-1795136113421014000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 45,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26347,
+      "record_ns": 1795136114384392216,
+      "header_ns": 1795136113620994000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0045-1795136113620994000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0045-1795136113620994000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 46,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26351,
+      "record_ns": 1795136114482519280,
+      "header_ns": 1795136113687648000,
+      "topic": "/aiformula_sensing/zed_node/left_raw/image_raw_color",
+      "file": "0046-1795136113687648000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0046-1795136113687648000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 47,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26352,
+      "record_ns": 1795136114484298855,
+      "header_ns": 1795136113754304000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0047-1795136113754304000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0047-1795136113754304000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 48,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26416,
+      "record_ns": 1795136114869812922,
+      "header_ns": 1795136114087671000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0048-1795136114087671000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0048-1795136114087671000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 49,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26437,
+      "record_ns": 1795136114947594277,
+      "header_ns": 1795136114154255000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0049-1795136114154255000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0049-1795136114154255000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 50,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26442,
+      "record_ns": 1795136115030695754,
+      "header_ns": 1795136114220914000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0050-1795136114220914000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0050-1795136114220914000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 4,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26440,
+      "record_ns": 1795136115022756832,
+      "header_ns": 1795136114287650000,
+      "topic": "/aiformula_sensing/zed_node/stereo/image_rect_color",
+      "file": "0004-1795136114287650000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0004-1795136114287650000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 51,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26505,
+      "record_ns": 1795136115463068684,
+      "header_ns": 1795136114687632000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0051-1795136114687632000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0051-1795136114687632000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 52,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26527,
+      "record_ns": 1795136115556644094,
+      "header_ns": 1795136114754295000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0052-1795136114754295000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0052-1795136114754295000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 53,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26532,
+      "record_ns": 1795136115866153371,
+      "header_ns": 1795136115087711000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0053-1795136115087711000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0053-1795136115087711000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 54,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26594,
+      "record_ns": 1795136116048310239,
+      "header_ns": 1795136115287558000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0054-1795136115287558000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0054-1795136115287558000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 55,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26615,
+      "record_ns": 1795136116355735991,
+      "header_ns": 1795136115620811000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0055-1795136115620811000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0055-1795136115620811000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 56,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26683,
+      "record_ns": 1795136116684099340,
+      "header_ns": 1795136115887328000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0056-1795136115887328000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0056-1795136115887328000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 57,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26705,
+      "record_ns": 1795136116793417185,
+      "header_ns": 1795136116020645000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0057-1795136116020645000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0057-1795136116020645000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 9,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26708,
+      "record_ns": 1795136116967845953,
+      "header_ns": 1795136116154033000,
+      "topic": "/aiformula_sensing/zed_node/stereo/image_rect_color",
+      "file": "0009-1795136116154033000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0009-1795136116154033000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 58,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26710,
+      "record_ns": 1795136116973544664,
+      "header_ns": 1795136116220707000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0058-1795136116220707000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0058-1795136116220707000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 59,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26773,
+      "record_ns": 1795136117317521783,
+      "header_ns": 1795136116553921000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0059-1795136116553921000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0059-1795136116553921000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 60,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26794,
+      "record_ns": 1795136117414077378,
+      "header_ns": 1795136116620970000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0060-1795136116620970000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0060-1795136116620970000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 61,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26799,
+      "record_ns": 1795136117607579922,
+      "header_ns": 1795136116820626000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0061-1795136116820626000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0061-1795136116820626000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 62,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26861,
+      "record_ns": 1795136117887658939,
+      "header_ns": 1795136117153952000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0062-1795136117153952000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0062-1795136117153952000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                197.6248321533203,
+                291.0560607910156,
+                286.35687255859375,
+                359.2801208496094
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5017127394676208,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                197.6248321533203,
+                291.0560607910156,
+                286.35687255859375,
+                359.2801208496094
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5017127394676208,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            },
+            {
+              "box_xyxy": [
+                373.79083251953125,
+                159.66070556640625,
+                401.5426330566406,
+                180.2631072998047
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.27082574367523193,
+              "semantic_label": "green_traffic_light",
+              "color": null,
+              "traffic_light_state": "green"
+            },
+            {
+              "box_xyxy": [
+                382.41864013671875,
+                165.08627319335938,
+                400.041748046875,
+                180.60757446289062
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23590093851089478,
+              "semantic_label": "green_traffic_light",
+              "color": null,
+              "traffic_light_state": "green"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 12,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26885,
+      "record_ns": 1795136118156760223,
+      "header_ns": 1795136117353945000,
+      "topic": "/aiformula_sensing/zed_node/stereo/image_rect_color",
+      "file": "0012-1795136117353945000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0012-1795136117353945000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 63,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26882,
+      "record_ns": 1795136118152749940,
+      "header_ns": 1795136117421154000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0063-1795136117421154000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0063-1795136117421154000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "frame": 64,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26971,
+      "record_ns": 1795136118648185581,
+      "header_ns": 1795136117820460000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0064-1795136117820460000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0064-1795136117820460000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "green",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                374.2385559082031,
+                162.4042510986328,
+                403.243408203125,
+                185.32504272460938
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23521684110164642,
+              "semantic_label": "green_traffic_light",
+              "color": null,
+              "traffic_light_state": "green"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 13,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26967,
+      "record_ns": 1795136118643689454,
+      "header_ns": 1795136117887059000,
+      "topic": "/aiformula_sensing/zed_node/stereo_raw/image_raw_color",
+      "file": "0013-1795136117887059000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0013-1795136117887059000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                194.6953125,
+                291.7731628417969,
+                286.680908203125,
+                360.0
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5024875998497009,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                194.6953125,
+                291.7731628417969,
+                286.680908203125,
+                360.0
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5024875998497009,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            },
+            {
+              "box_xyxy": [
+                380.3194274902344,
+                163.8912811279297,
+                398.604248046875,
+                180.49371337890625
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.2784179151058197,
+              "semantic_label": "green_traffic_light",
+              "color": null,
+              "traffic_light_state": "green"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 65,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26975,
+      "record_ns": 1795136118754315505,
+      "header_ns": 1795136117953779000,
+      "topic": "/aiformula_sensing/zed_node/left_raw/image_raw_color",
+      "file": "0065-1795136117953779000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0065-1795136117953779000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "green",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                380.6333312988281,
+                163.78506469726562,
+                398.01580810546875,
+                180.9425048828125
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.2623032033443451,
+              "semantic_label": "green_traffic_light",
+              "color": null,
+              "traffic_light_state": "green"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 66,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 26976,
+      "record_ns": 1795136118757212292,
+      "header_ns": 1795136118020376000,
+      "topic": "/aiformula_sensing/zed_node/rgb/image_rect_color",
+      "file": "0066-1795136118020376000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0066-1795136118020376000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "red",
+          "red_pixels": 106,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                375.9747009277344,
+                164.7548370361328,
+                403.24560546875,
+                184.5423126220703
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.3248957395553589,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        "55": {
+          "light": "red",
+          "red_pixels": 106,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                375.9747009277344,
+                164.7548370361328,
+                403.24560546875,
+                184.5423126220703
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.3248957395553589,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 67,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 27038,
+      "record_ns": 1795136119374051006,
+      "header_ns": 1795136118620376000,
+      "topic": "/aiformula_sensing/zed_node/rgb_raw/image_raw_color",
+      "file": "0067-1795136118620376000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0067-1795136118620376000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                195.1405792236328,
+                293.8442077636719,
+                284.4827880859375,
+                359.0439147949219
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5022516846656799,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                195.1405792236328,
+                293.8442077636719,
+                284.4827880859375,
+                359.0439147949219
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5022516846656799,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "frame": 68,
+      "storage": "rosbag2_2026_11_20-09_11_06_0.db3",
+      "id": 27059,
+      "record_ns": 1795136119459923347,
+      "header_ns": 1795136118687035000,
+      "topic": "/aiformula_sensing/zed_node/left_image/undistorted",
+      "file": "0068-1795136118687035000.jpg",
+      "width": 640,
+      "height": 360,
+      "image": "0068-1795136118687035000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    }
+  ],
+  "negative_controls": [
+    {
+      "kind": "approach",
+      "image": "0001-1795133419402138000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "approach",
+      "image": "0002-1795133420002195000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "approach",
+      "image": "0003-1795133422202471000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "approach",
+      "image": "0004-1795133422535872000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "board",
+      "image": "0005-1795133423669267000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "red",
+          "red_pixels": 78,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                524.7645874023438,
+                168.03387451171875,
+                540.2538452148438,
+                182.81414794921875
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.26787069439888,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        "55": {
+          "light": "red",
+          "red_pixels": 78,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                524.7645874023438,
+                168.03387451171875,
+                540.2538452148438,
+                182.81414794921875
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.26787069439888,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "board",
+      "image": "0006-1795133424069407000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "red",
+          "red_pixels": 131,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                557.0706176757812,
+                169.0077362060547,
+                576.5430297851562,
+                183.33151245117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.25606149435043335,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        "55": {
+          "light": "red",
+          "red_pixels": 131,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                557.0706176757812,
+                169.0077362060547,
+                576.5430297851562,
+                183.33151245117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.25606149435043335,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "board",
+      "image": "0007-1795133424402655000.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "red",
+          "red_pixels": 169,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                576.40185546875,
+                164.1285858154297,
+                606.00439453125,
+                188.25900268554688
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23742181062698364,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        },
+        "55": {
+          "light": "red",
+          "red_pixels": 169,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                576.40185546875,
+                164.1285858154297,
+                606.00439453125,
+                188.25900268554688
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.23742181062698364,
+              "semantic_label": "red_traffic_light",
+              "color": null,
+              "traffic_light_state": "red"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "truck",
+      "image": "event-1-camera.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "truck",
+      "image": "source-rgb.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                628.3756713867188,
+                139.050537109375,
+                636.7440795898438,
+                156.94479370117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5118211507797241,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": [
+            {
+              "box_xyxy": [
+                628.3756713867188,
+                139.050537109375,
+                636.7440795898438,
+                156.94479370117188
+              ],
+              "class_id": 10,
+              "class_name": "traffic light",
+              "score": 0.5118211507797241,
+              "semantic_label": "unknown_traffic_light",
+              "color": null,
+              "traffic_light_state": "unknown"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "truck",
+      "image": "source-left_raw.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "truck",
+      "image": "source-rgb_raw.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "distant_objects",
+      "image": "1-camera.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "distant_objects",
+      "image": "2-camera.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    },
+    {
+      "kind": "distant_objects",
+      "image": "3-camera.jpg",
+      "by_saturation": {
+        "75": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        },
+        "55": {
+          "light": "unknown",
+          "red_pixels": 0,
+          "light_boxes": []
+        }
+      }
+    }
+  ]
+}

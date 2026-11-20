@@ -1,0 +1,621 @@
+{
+  "concept_20261120_103726_a70fd2f43c754872968ea2f058f4eedc": {
+    "gate_reasons": {
+      "auto_command_received": 58,
+      "waiting_fresh_auto": 21
+    },
+    "first_four": [
+      {
+        "at": "2026-11-20T10:37:30.908+09:00",
+        "processing_began_approx": "2026-11-20T10:37:30.743+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": false,
+        "launch": null,
+        "feasible": 16,
+        "rejected": {
+          "road": 59,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.25,
+        "estimated_speed_mps": 0.0,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.0625": 1
+        }
+      },
+      {
+        "at": "2026-11-20T10:37:31.158+09:00",
+        "processing_began_approx": "2026-11-20T10:37:30.999+09:00",
+        "command": {
+          "linear_x_mps": 0.05,
+          "angular_z_radps": -0.0
+        },
+        "reason": "feasible",
+        "ranking": false,
+        "launch": null,
+        "feasible": 30,
+        "rejected": {
+          "road": 45,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 0.0,
+        "selected": 1,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:37:31.431+09:00",
+        "processing_began_approx": "2026-11-20T10:37:31.257+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": false,
+        "launch": null,
+        "feasible": 16,
+        "rejected": {
+          "road": 59,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.25,
+        "estimated_speed_mps": 0.0,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.0625": 1
+        }
+      },
+      {
+        "at": "2026-11-20T10:37:31.692+09:00",
+        "processing_began_approx": "2026-11-20T10:37:31.535+09:00",
+        "command": {
+          "linear_x_mps": 0.05,
+          "angular_z_radps": -0.0
+        },
+        "reason": "feasible",
+        "ranking": false,
+        "launch": null,
+        "feasible": 30,
+        "rejected": {
+          "road": 45,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 0.0,
+        "selected": 1,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15
+        }
+      }
+    ],
+    "alternation": [
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.0,
+      0.05,
+      0.05,
+      0.0,
+      0.05,
+      0.0
+    ]
+  },
+  "concept_20261120_103837_984e635ee62d48088b4f7c6eebe1cb43": {
+    "gate_reasons": {
+      "operator_pause": 16,
+      "waiting_new_auto": 19,
+      "auto_command_received": 357,
+      "waiting_fresh_auto": 82,
+      "zero_requested": 5,
+      "manual_takeover": 14,
+      "manual_released": 122
+    },
+    "mid_stop": [
+      {
+        "at": "2026-11-20T10:38:51.956+09:00",
+        "processing_began_approx": "2026-11-20T10:38:51.818+09:00",
+        "command": {
+          "linear_x_mps": 2.190949513444109,
+          "angular_z_radps": 0.2288552004462715
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 34,
+          "applied": false,
+          "reason": "h12_selected_motion"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 2.195036,
+        "estimated_speed_mps": 3.078813160395557,
+        "selected": 34,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "1.3275": 30,
+          "1.5269": 1,
+          "1.9084": 1,
+          "1.5931": 1,
+          "1.991": 1,
+          "1.6591": 1,
+          "2.0735": 1,
+          "1.7164": 1,
+          "2.1452": 1,
+          "1.7525": 2,
+          "2.1903": 2,
+          "1.7531": 5,
+          "2.1909": 5,
+          "1.7563": 1,
+          "2.195": 1,
+          "1.7267": 1,
+          "2.1579": 1,
+          "1.6731": 1,
+          "2.091": 1,
+          "1.6087": 1,
+          "2.0105": 1
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:52.175+09:00",
+        "processing_began_approx": "2026-11-20T10:38:52.057+09:00",
+        "command": {
+          "linear_x_mps": 2.390949513444109,
+          "angular_z_radps": 0.13141978997284343
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 64,
+          "applied": false,
+          "reason": "h12_selected_motion"
+        },
+        "feasible": 66,
+        "rejected": {
+          "road": 9,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 2.39095,
+        "estimated_speed_mps": 2.8327740957419167,
+        "selected": 64,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "1.4391": 30,
+          "1.677": 1,
+          "2.0959": 1,
+          "1.7311": 1,
+          "2.1636": 1,
+          "1.7853": 1,
+          "2.2313": 1,
+          "1.836": 1,
+          "1.8782": 2,
+          "1.9058": 1,
+          "1.9106": 5,
+          "1.9128": 1,
+          "2.391": 1,
+          "1.901": 1,
+          "2.3759": 1,
+          "1.8695": 1,
+          "2.3365": 1
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:52.415+09:00",
+        "processing_began_approx": "2026-11-20T10:38:52.288+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 0,
+          "applied": false,
+          "reason": "obstacle_or_unresolved_detection"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 2.69313030228985,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15,
+          "0.11": 15,
+          "0.16": 15,
+          "0.2": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:52.633+09:00",
+        "processing_began_approx": "2026-11-20T10:38:52.516+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 0,
+          "applied": false,
+          "reason": "obstacle_or_unresolved_detection"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 2.81947468684172,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15,
+          "0.11": 15,
+          "0.16": 15,
+          "0.2": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:52.838+09:00",
+        "processing_began_approx": "2026-11-20T10:38:52.728+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 0,
+          "applied": false,
+          "reason": "not_at_rest_or_continuing_applied_launch"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 2.7064297111900473,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15,
+          "0.11": 15,
+          "0.16": 15,
+          "0.2": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:53.064+09:00",
+        "processing_began_approx": "2026-11-20T10:38:52.941+09:00",
+        "command": {
+          "linear_x_mps": 0.19988900000000065,
+          "angular_z_radps": 0.06220853858276644
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 4,
+          "applied": false,
+          "reason": "h12_selected_motion"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.199889,
+        "estimated_speed_mps": 2.1744533551821754,
+        "selected": 4,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15,
+          "0.1099": 15,
+          "0.1599": 15,
+          "0.1999": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:53.286+09:00",
+        "processing_began_approx": "2026-11-20T10:38:53.167+09:00",
+        "command": {
+          "linear_x_mps": 0.39988900000000066,
+          "angular_z_radps": 0.062360878813415926
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 4,
+          "applied": false,
+          "reason": "h12_selected_motion"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.399889,
+        "estimated_speed_mps": 1.5826296591234181,
+        "selected": 4,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.1": 15,
+          "0.2199": 15,
+          "0.3199": 15,
+          "0.3999": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:53.522+09:00",
+        "processing_began_approx": "2026-11-20T10:38:53.388+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 0,
+          "applied": false,
+          "reason": "obstacle_or_unresolved_detection"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.599889,
+        "estimated_speed_mps": 0.8910603963131849,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.1799": 15,
+          "0.3299": 15,
+          "0.4799": 15,
+          "0.5999": 15
+        }
+      },
+      {
+        "at": "2026-11-20T10:38:53.760+09:00",
+        "processing_began_approx": "2026-11-20T10:38:53.624+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "feasible",
+        "ranking": true,
+        "launch": {
+          "h12_index": 0,
+          "applied": false,
+          "reason": "obstacle_or_unresolved_detection"
+        },
+        "feasible": 75,
+        "rejected": {
+          "road": 0,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 0,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 0.2,
+        "estimated_speed_mps": 0.5851739916086588,
+        "selected": 0,
+        "tracked_objects": 0,
+        "candidate_speeds": {
+          "0.0": 15,
+          "0.05": 15,
+          "0.11": 15,
+          "0.16": 15,
+          "0.2": 15
+        }
+      }
+    ],
+    "first_full_rejection": [
+      {
+        "at": "2026-11-20T10:38:43.668+09:00",
+        "processing_began_approx": "2026-11-20T10:38:43.510+09:00",
+        "command": {
+          "linear_x_mps": 0.0,
+          "angular_z_radps": 0.0
+        },
+        "reason": "no_feasible_trajectory",
+        "ranking": false,
+        "launch": null,
+        "feasible": 0,
+        "rejected": {
+          "road": 75,
+          "obstacle": 0,
+          "unobserved": 0,
+          "loss_of_camera_contingency": 75,
+          "dynamics": 0
+        },
+        "max_candidate_mps": 1.398219,
+        "estimated_speed_mps": 0.9708568497143657,
+        "selected": null,
+        "tracked_objects": 0,
+        "candidate_speeds": {}
+      }
+    ],
+    "nearby_gate": [
+      {
+        "at": "2026-11-20T10:38:51.987+09:00",
+        "sample_time": "2026-11-20T10:38:51.987+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 2.190949513444109
+      },
+      {
+        "at": "2026-11-20T10:38:52.088+09:00",
+        "sample_time": "2026-11-20T10:38:52.087+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 2.190949513444109
+      },
+      {
+        "at": "2026-11-20T10:38:52.219+09:00",
+        "sample_time": "2026-11-20T10:38:52.188+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.287+09:00",
+        "sample_time": "2026-11-20T10:38:52.287+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 2.390949513444109
+      },
+      {
+        "at": "2026-11-20T10:38:52.387+09:00",
+        "sample_time": "2026-11-20T10:38:52.387+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 2.390949513444109
+      },
+      {
+        "at": "2026-11-20T10:38:52.489+09:00",
+        "sample_time": "2026-11-20T10:38:52.488+09:00",
+        "fresh": true,
+        "reason": "zero_requested",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.588+09:00",
+        "sample_time": "2026-11-20T10:38:52.587+09:00",
+        "fresh": true,
+        "reason": "zero_requested",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.688+09:00",
+        "sample_time": "2026-11-20T10:38:52.687+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.790+09:00",
+        "sample_time": "2026-11-20T10:38:52.788+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.889+09:00",
+        "sample_time": "2026-11-20T10:38:52.888+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 0.0
+      },
+      {
+        "at": "2026-11-20T10:38:52.987+09:00",
+        "sample_time": "2026-11-20T10:38:52.987+09:00",
+        "fresh": true,
+        "reason": "auto_command_received",
+        "mode": "auto",
+        "speed": 0.0
+      }
+    ],
+    "manual_pauses": [
+      "2026-11-20T10:39:06.690+09:00",
+      "2026-11-20T10:39:12.090+09:00",
+      "2026-11-20T10:39:30.116+09:00",
+      "2026-11-20T10:39:31.092+09:00"
+    ]
+  }
+}

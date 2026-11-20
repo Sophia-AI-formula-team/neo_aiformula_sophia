@@ -1,0 +1,112 @@
+{
+  "source_bag": "/run/media/nanato/Extreme SSD/2026-11-20_Bag_Drive_Transfer/1120-04_rosbag2_2026_11_20-10_22_28/rosbag2_2026_11_20-10_22_28_0.db3",
+  "streams": {
+    "roi": 368,
+    "left": 368,
+    "rgb": 365,
+    "mask": 360,
+    "fit": 357,
+    "stereo": 355
+  },
+  "unique_pov_frames": 863,
+  "first_camera_ns": 1795137763990089000,
+  "last_camera_ns": 1795138140153530000,
+  "max_gap_sec": 1.066691,
+  "cameras": {
+    "/aiformula_sensing/zed_node/rgb/camera_info": {
+      "samples": 367,
+      "distinct": 1,
+      "best": [
+        "zed_left_camera_optical_frame",
+        640,
+        360,
+        [
+          246.0109100341797,
+          246.0109100341797,
+          328.6549377441406,
+          189.013671875
+        ]
+      ]
+    },
+    "/aiformula_sensing/zed_node/left/camera_info": {
+      "samples": 366,
+      "distinct": 1,
+      "best": [
+        "zed_left_camera_optical_frame",
+        640,
+        360,
+        [
+          246.0109100341797,
+          246.0109100341797,
+          328.6549377441406,
+          189.013671875
+        ]
+      ]
+    }
+  },
+  "static_transforms": {
+    "base_footprint -> base_link": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "zed_camera_link -> zed_camera_center": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "base_link -> zed_camera_link": [
+      0.055,
+      0.0,
+      0.54,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "zed_camera_center -> zed_left_camera_frame": [
+      0.0,
+      0.0600025,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "zed_left_camera_frame -> zed_left_camera_optical_frame": [
+      0.0,
+      0.0,
+      0.0,
+      -0.4956176937410621,
+      0.4956176804610375,
+      -0.5043442290905813,
+      0.5043442426044329
+    ],
+    "zed_camera_center -> zed_right_camera_frame": [
+      0.0,
+      -0.0600025,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "zed_right_camera_frame -> zed_right_camera_optical_frame": [
+      0.0,
+      0.0,
+      0.0,
+      -0.4956176937410621,
+      0.4956176804610375,
+      -0.5043442290905813,
+      0.5043442426044329
+    ]
+  }
+}

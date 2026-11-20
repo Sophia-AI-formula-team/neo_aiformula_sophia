@@ -1,0 +1,69 @@
+{
+  "before": [
+    {
+      "jst": "2026-11-20T10:23:25.460+09:00",
+      "before": "normal",
+      "after": "wait",
+      "reason": "red_wait_first_lap",
+      "flag": true,
+      "latched": true,
+      "vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": true,
+        "sample_count": 3,
+        "red_count": 3,
+        "green_count": 0,
+        "yellow_count": 0,
+        "off_count": 0,
+        "unknown_count": 0,
+        "reported_unknown_count": 0,
+        "last_message_age_sec": 0.0
+      }
+    }
+  ],
+  "after": [
+    {
+      "jst": "2026-11-20T10:23:25.460+09:00",
+      "before": "normal",
+      "after": "wait",
+      "reason": "red_wait_first_lap",
+      "flag": true,
+      "latched": true,
+      "vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": true,
+        "sample_count": 3,
+        "red_count": 3,
+        "green_count": 0,
+        "yellow_count": 0,
+        "off_count": 0,
+        "unknown_count": 0,
+        "reported_unknown_count": 0,
+        "last_message_age_sec": 0.0
+      }
+    },
+    {
+      "jst": "2026-11-20T10:23:38.127+09:00",
+      "before": "wait",
+      "after": "normal",
+      "reason": "green_resume",
+      "flag": false,
+      "latched": false,
+      "vote": {
+        "window_sec": 0.5,
+        "min_samples": 3,
+        "ready": true,
+        "sample_count": 3,
+        "red_count": 0,
+        "green_count": 2,
+        "yellow_count": 0,
+        "off_count": 0,
+        "unknown_count": 1,
+        "reported_unknown_count": 1,
+        "last_message_age_sec": 0.0
+      }
+    }
+  ]
+}

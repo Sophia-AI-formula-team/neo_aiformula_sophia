@@ -12,6 +12,7 @@
 - [Concept 场次](CONCEPT.md)
 - [MapAssist 场次](MAPASSIST.md)
 - [录包索引和证据状态](BAGS.md)
+- [诊断图、复盘报告与 POV 视频](diagnostics/)
 - [11 月 19 日 LYA 调参回滚](LYA_ROLLBACK.md)
 
 [09:03 与 09:09 两场 MapAssist 红灯检查，含正面灯牌实录、日志和参数回放](mapassist-red-light/)

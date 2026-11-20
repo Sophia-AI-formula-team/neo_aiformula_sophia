@@ -15,7 +15,7 @@
 | 1120-07 | Concept LYA 第二包 | 10:38:38.704–10:39:40.363 | 33,268 | 自动最高 2.5 m/s，中途停车和手柄接管 |
 | 1120-08 | Concept 启动期通用抓包 | 10:37:02.714–10:37:17.853 | 1,404 | 物理 CAN 10 条双零，作为启动期旁证 |
 
-[MapAssist 取证与回放](MAPASSIST.md) · [Concept 场次](CONCEPT.md) · [LYA 回滚](LYA_ROLLBACK.md) · [最早两场审阅资料](mapassist-red-light/)
+[诊断图与 POV 视频](diagnostics/) · [MapAssist 场次](MAPASSIST.md) · [Concept 场次](CONCEPT.md) · [LYA 回滚](LYA_ROLLBACK.md) · [最早两场审阅资料](mapassist-red-light/)
 
 ## 归档文件与校验
 

@@ -1,0 +1,151 @@
+[
+  {
+    "input": "source-rgb.jpg",
+    "sha256": "46e5d33ec537f657451f75735ea5b85523ad62354658060318f234e6f6ac4fc7",
+    "device": "cpu",
+    "profile": "A3",
+    "detections": [
+      {
+        "box_xyxy": [
+          541.9789428710938,
+          153.2828369140625,
+          639.8677978515625,
+          205.8095245361328
+        ],
+        "class_id": 3,
+        "class_name": "car",
+        "score": 0.819477915763855,
+        "semantic_label": "car",
+        "color": null,
+        "traffic_light_state": null
+      }
+    ],
+    "traffic_light_state": "unknown",
+    "red_pixels_count": 0,
+    "timings_ms": {
+      "total": 345.1900050004042
+    }
+  },
+  {
+    "input": "event-1-camera.jpg",
+    "sha256": "9cac615045a675cf5ac37af50bef4672fd68a1caa4a4ba00ba6222168aeeba22",
+    "device": "cpu",
+    "profile": "A3",
+    "detections": [
+      {
+        "box_xyxy": [
+          585.8156127929688,
+          154.56265258789062,
+          637.310546875,
+          207.06683349609375
+        ],
+        "class_id": 3,
+        "class_name": "car",
+        "score": 0.6870439052581787,
+        "semantic_label": "car",
+        "color": null,
+        "traffic_light_state": null
+      },
+      {
+        "box_xyxy": [
+          523.0593872070312,
+          187.8061981201172,
+          542.720703125,
+          209.5
+        ],
+        "class_id": 91,
+        "class_name": "traffic cone",
+        "score": 0.5395578145980835,
+        "semantic_label": "red_traffic_cone",
+        "color": "red",
+        "traffic_light_state": null
+      },
+      {
+        "box_xyxy": [
+          620.1788940429688,
+          183.75320434570312,
+          637.8746948242188,
+          213.15530395507812
+        ],
+        "class_id": 1,
+        "class_name": "person",
+        "score": 0.5262991786003113,
+        "semantic_label": "person",
+        "color": null,
+        "traffic_light_state": null
+      }
+    ],
+    "traffic_light_state": "unknown",
+    "red_pixels_count": 0,
+    "timings_ms": {
+      "total": 288.74514500012083
+    }
+  },
+  {
+    "input": "event-2-camera.jpg",
+    "sha256": "c3f48e36beb7a3b9332c1ebc2d8dfe4cc00f929b1a4fa25e9bf6f1a56d1f21e2",
+    "device": "cpu",
+    "profile": "A3",
+    "detections": [
+      {
+        "box_xyxy": [
+          27.253751754760742,
+          187.16888427734375,
+          68.96745300292969,
+          233.97439575195312
+        ],
+        "class_id": 91,
+        "class_name": "traffic cone",
+        "score": 0.9322454333305359,
+        "semantic_label": "red_traffic_cone",
+        "color": "red",
+        "traffic_light_state": null
+      },
+      {
+        "box_xyxy": [
+          8.49248218536377,
+          188.93748474121094,
+          44.05531311035156,
+          235.71881103515625
+        ],
+        "class_id": 91,
+        "class_name": "traffic cone",
+        "score": 0.6546066999435425,
+        "semantic_label": "red_traffic_cone",
+        "color": "red",
+        "traffic_light_state": null
+      },
+      {
+        "box_xyxy": [
+          84.95436096191406,
+          194.24949645996094,
+          98.11772155761719,
+          214.07627868652344
+        ],
+        "class_id": 91,
+        "class_name": "traffic cone",
+        "score": 0.6045608520507812,
+        "semantic_label": "white_traffic_cone",
+        "color": "white",
+        "traffic_light_state": null
+      }
+    ],
+    "traffic_light_state": "unknown",
+    "red_pixels_count": 0,
+    "timings_ms": {
+      "total": 302.1371649997491
+    }
+  },
+  {
+    "input": "source-left_raw.jpg",
+    "sha256": "cd3fe91e576ac10565aa19460d36f6b1a6e4e2347a9d6d02f7a59519d6735c31",
+    "device": "cpu",
+    "profile": "A3",
+    "detections": [],
+    "traffic_light_state": "unknown",
+    "red_pixels_count": 0,
+    "timings_ms": {
+      "total": 295.34952199992404
+    }
+  }
+]
