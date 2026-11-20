@@ -50,3 +50,9 @@
 1120-10 的完整归档位于 Drive 日期目录下的「1120-10 MapAssist 分卷」。下载 00–12 号分卷，按该目录 README 顺序合并，再用上表 SHA-256 验证还原后的单文件。13 个 Drive 分卷均已逐卷读回校验。
 
 使用 `tar --zstd -xf 文件名.tar.zst` 解包，解包后的 ROS bag 目录包含 SQLite 和 `metadata.yaml`。
+
+## 收尾批次
+
+7 个 Concept 场次和 MapAssist 16:04 场共 8 个原包。各包有逐场说明。17:08 LYA 和 17:13 Pure Pursuit 另存完整原件，待回放。
+
+[Drive 收尾原包与说明](https://drive.google.com/drive/folders/1PLbIx1ZWQuzODyqZWWDAfGdixOLRV-lr) · [压缩包清单与合并说明](concept-wrap-up/DRIVE-ARCHIVE.md) · [分卷校验表](concept-wrap-up/DRIVE-SHA256SUMS)

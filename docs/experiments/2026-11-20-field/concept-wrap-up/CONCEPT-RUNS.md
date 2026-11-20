@@ -21,3 +21,5 @@
 17:13:22 是本机已收齐的 22 份 Concept 启动日志中的最新一份。14:09 场原包缺失，仍有诊断归档。
 
 [录包 SHA-256](CONCEPT-SHA256SUMS) · [14:09 诊断归档](https://drive.google.com/file/d/1oqAnv4tuIcW4ZkbB9UdLEfY-ZCksPLwy/view)
+
+17:08 LYA 和 17:13 Pure Pursuit 已另留经过校验的本机原包及 SSD 副本，等待完整回放。两场的指令、门控和轮速统计已记入上表。

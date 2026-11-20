@@ -22,3 +22,5 @@
 - 16:04 场原包位于 Extreme SSD 的 `2026-11-20 Experiment Logs/wrap-up-1717/bags/MapAssist/rosbag2_2026_11_20-16_03_08`，包含原 SQLite、metadata、SHM 和 WAL。消息数 164,563 与 metadata 相符。
 - 14:05 场完整压缩归档已于 14:33 完成 Drive 回读，文件为 [1120-1405 MapAssist](https://drive.google.com/file/d/1KUYO5ucsqz-MujwCX0HIFFCwxWc-lsO3/view)。
 - OrinSSD 的 11/19 冻结运行代码及当日实装补充在同一 Extreme SSD 目录的 `artifacts/`。SHA-256 和文件名见 [SSD MapAssist 归档清单](ssd-sha256.txt)。
+
+16:04 场的 Drive 归档名为 1120-MapAssist-160308，压缩包共 16 卷。 [Drive 收尾原包与说明](https://drive.google.com/drive/folders/1PLbIx1ZWQuzODyqZWWDAfGdixOLRV-lr) · [合并与校验](../concept-wrap-up/DRIVE-ARCHIVE.md)
