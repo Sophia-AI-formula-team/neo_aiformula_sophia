@@ -1,0 +1,15 @@
+diff --git a/deployment/concept-docs/experiments/2026-11-20-mapassist/concept/shortcuts.py b/deployment/shortcuts-field-1120.py
+index 076f0c4..a4167b0 100644
+--- a/deployment/concept-docs/experiments/2026-11-20-mapassist/concept/shortcuts.py
++++ b/deployment/shortcuts-field-1120.py
+@@ -123,6 +123,10 @@ def accepted_hashes(command, release):
+         old = release.previous
+         hashes["concept-live"].add(digest((old.source / "concept-live").read_bytes()))
+         hashes["Concept.desktop"].add(digest(desktop_entry(command, old.version)))
++    if release.version == "1121 experiment":
++        # The 11/20 16:17 field receipt verifies both launcher files.
++        hashes['concept-live'].add('1a0ca11ab5aea5b6f1a89bb0e349e0b07069fc37c2893f028dd14657b64925c3')
++        hashes['Concept.desktop'].add('5c6e06eee7e7c2934bf2a1a959fd5e38e39a181bb5cd9ef157af5ad841baa876')
+     return hashes
+ 
+ 

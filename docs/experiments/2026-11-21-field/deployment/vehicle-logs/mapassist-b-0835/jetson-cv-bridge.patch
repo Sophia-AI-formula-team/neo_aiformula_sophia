@@ -1,0 +1,21 @@
+diff --git a/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py b/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
+index 6217611b..77324439 100644
+--- a/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
++++ b/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
+@@ -4,7 +4,6 @@ from collections import OrderedDict
+ import json
+ import time
+ 
+-from cv_bridge import CvBridge
+ from nav_msgs.msg import Odometry
+ import rclpy
+ from rclpy.executors import ExternalShutdownException
+@@ -14,6 +13,8 @@ from sensor_msgs.msg import Image
+ from std_msgs.msg import Bool, String
+ 
+ from .traffic_signal import SignalTracker
++# SignalTracker loads OpenCV and NumPy before the Foxy bridge on Jetson.
++from cv_bridge import CvBridge
+ 
+ 
+ RAW = "/aiformula_sensing/zed_node/left_image/undistorted"

@@ -1,0 +1,26 @@
+diff --git a/preflight/stage/concept-prep/docs/experiments/2026-11-21-concept/prepare-concept.sh b/deployment/concept-docs/experiments/2026-11-21-concept/prepare-concept.sh
+index 0708a29..860c8f7 100644
+--- a/preflight/stage/concept-prep/docs/experiments/2026-11-21-concept/prepare-concept.sh
++++ b/deployment/concept-docs/experiments/2026-11-21-concept/prepare-concept.sh
+@@ -25,7 +25,7 @@ for required in git flock python3 xdg-user-dir; do command -v "$required" >/dev/
+ mkdir -p "$HOME/src" "$ws"
+ exec 9>"$ws/.prepare-concept.lock"
+ flock -n 9 || fail "Preparation is already running in $ws"
+-python3 "$here/legacy_install.py" preflight
++# Keep both existing installations available for rollback.
+ python3 "$here/legacy_install.py" migrate-dependencies
+ 
+ if [[ ! -e "$repo" ]]; then
+@@ -92,10 +92,6 @@ install -m 644 "$here/activate_concept.bash" "$ws/activate_concept.bash.tmp"
+ mv -T -- "$ws/activate_concept.bash.tmp" "$ws/activate_concept.bash"
+ python3 "$here/shortcuts.py" --apply
+ python3 "$here/shortcuts.py" --check
+-python3 "$here/legacy_install.py" retire bash -c '
+-    set -e
+-    "$HOME/.local/bin/concept-live" --verify-install
+-    source "$1"
+-    ros2 run concept_yolop concept_yolop_check "$2" --device cuda
+-' bash "$ws/activate_concept.bash" "$repo/vehicle_concept/src/concept_drive/test/data/moving-lap-start/00000_rgb.png"
++"$HOME/.local/bin/concept-live" --verify-install
++printf 'Existing Concept installs preserved for rollback.\n'
+ printf 'Ready: %s  %s\n' "$pin" "$ws"

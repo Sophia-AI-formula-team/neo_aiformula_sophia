@@ -1,0 +1,92 @@
+1795217563.7340295 [INFO] [launch]: All log files can be found below <vehicle-home>/.ros/log/2026-11-21-08-32-43-718505-jetson-3300
+1795217563.7344828 [INFO] [launch]: Default logging verbosity is set to INFO
+1795217563.8657064 [INFO] [allnodes.can_ready]: Waiting up to 120.0s for CAN interface 'can0'
+1795217563.8661308 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795217564.2807465 [INFO] [lane_line_publisher-6]: process started with pid [3353]
+1795217564.2813668 [INFO] [motor_controller-11]: process started with pid [3363]
+1795217564.2816567 [INFO] [gyro_odometry_publisher-14]: process started with pid [3372]
+1795217564.2818573 [INFO] [rear_potentiometer-15]: process started with pid [3392]
+1795217564.2831421 [INFO] [robot_state_publisher-1]: process started with pid [3343]
+1795217564.2836015 [INFO] [joint_state_publisher-2]: process started with pid [3345]
+1795217564.2839386 [INFO] [zed_wrapper-3]: process started with pid [3347]
+1795217564.2842474 [INFO] [vectornav-4]: process started with pid [3349]
+1795217564.2844801 [INFO] [vn_sensor_msgs-5]: process started with pid [3351]
+1795217564.2847154 [INFO] [lane_0927oa-7]: process started with pid [3355]
+1795217564.2849250 [INFO] [joy_node-8]: process started with pid [3357]
+1795217564.2851710 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [3359]
+1795217564.2854393 [INFO] [teleop_node-10]: process started with pid [3361]
+1795217564.2856684 [INFO] [socket_can_receiver_node_exe-12]: process started with pid [3366]
+1795217564.2858691 [INFO] [socket_can_sender_node_exe-13]: process started with pid [3369]
+1795217564.3104429 [teleop_node-10] [INFO] [1795217564.309141429] [TeleopTwistJoy]: Teleop enable button 6.
+1795217564.3115134 [teleop_node-10] [INFO] [1795217564.309262295] [TeleopTwistJoy]: Turbo on button 4.
+1795217564.3172019 [teleop_node-10] [INFO] [1795217564.309271546] [TeleopTwistJoy]: Linear axis x on 1 at scale 3.500000.
+1795217564.3180561 [teleop_node-10] [INFO] [1795217564.309282493] [TeleopTwistJoy]: Turbo for linear axis x is scale 3.600000.
+1795217564.3183703 [teleop_node-10] [INFO] [1795217564.309287519] [TeleopTwistJoy]: Angular axis yaw on 3 at scale 0.700000.
+1795217564.3187277 [teleop_node-10] [INFO] [1795217564.309292640] [TeleopTwistJoy]: Turbo for angular axis yaw is scale 1.000000.
+1795217564.4114778 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795217564.4122541 [robot_state_publisher-1] Link base_link had 4 children
+1795217564.4124088 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795217564.4124956 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795217564.4125683 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795217564.4126356 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795217564.4126997 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795217564.4127617 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795217564.4128230 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795217564.4128838 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795217564.4129431 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795217564.4840629 [vectornav-4] [INFO] [1795217564.483268486] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795217564.5671172 [vectornav-4] [INFO] [1795217564.566295201] [aiformula_sensing.vectornav]: Connected to /dev/serial/by-id/usb-FTDI_USB-RS232-WE_AV0LG0YM-if00-port0 @ 115200 baud
+1795217564.5675468 [vectornav-4] [INFO] [1795217564.566418116] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795217564.5676780 [vectornav-4] [INFO] [1795217564.566429799] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795217564.5677872 [vectornav-4] [INFO] [1795217564.566439690] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795217564.5678704 [vectornav-4] [INFO] [1795217564.566446156] [aiformula_sensing.vectornav]: Serial Number : 100095497
+1795217564.5679867 [vectornav-4] [INFO] [1795217564.566452334] [aiformula_sensing.vectornav]: User Tag : ""
+1795217564.6279886 [vectornav-4] [INFO] [1795217564.627168984] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795217564.6283288 [vectornav-4] [INFO] [1795217564.627281432] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795217564.6524463 [vectornav-4] [INFO] [1795217564.651938053] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795217564.6586916 [vectornav-4] [INFO] [1795217564.657112006] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795217564.9970853 [joy_node-8] [INFO] [1795217564.996378921] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795217564.9982626 [joy_node-8] [INFO] [1795217564.997990260] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795217576.2975273 [INFO] [rviz2-16]: process started with pid [3761]
+1795217577.5515091 [rviz2-16] [INFO] [1795217577.550719261] [rviz2]: Stereo is NOT SUPPORTED
+1795217577.5528090 [rviz2-16] [INFO] [1795217577.550941550] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+1795217577.6121187 [rviz2-16] [INFO] [1795217577.611643433] [rviz2]: Stereo is NOT SUPPORTED
+1795217578.0528364 [rviz2-16] [INFO] [1795217578.052180998] [rviz2]: Stereo is NOT SUPPORTED
+1795217578.0974188 [rviz2-16] [INFO] [1795217578.096748425] [rviz2]: Stereo is NOT SUPPORTED
+1795217578.1329048 [rviz2-16] [INFO] [1795217578.132332719] [rviz2]: Stereo is NOT SUPPORTED
+1795217595.0625899 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795217595.6596553 [rviz2-16] [INFO] [1795217595.061192189] [rclcpp]: signal_handler(signal_value=2)
+1795217595.6608646 [INFO] [robot_state_publisher-1]: process has finished cleanly [pid 3343]
+1795217595.6612201 [INFO] [teleop_node-10]: process has finished cleanly [pid 3361]
+1795217595.6614971 [INFO] [socket_can_sender_node_exe-13]: process has finished cleanly [pid 3369]
+1795217595.6617601 [INFO] [vectornav-4]: process has finished cleanly [pid 3349]
+1795217595.6620121 [INFO] [gyro_odometry_publisher-14]: process has finished cleanly [pid 3372]
+1795217595.6622574 [INFO] [vn_sensor_msgs-5]: process has finished cleanly [pid 3351]
+1795217595.6625223 [ERROR] [l2_throttle_joy_remap.py-9]: process has died [pid 3359, exit code -2, cmd '/home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_amq_djla -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle'].
+1795217595.6627710 [INFO] [joy_node-8]: process has finished cleanly [pid 3357]
+1795217595.6630054 [INFO] [motor_controller-11]: process has finished cleanly [pid 3363]
+1795217595.6632345 [INFO] [joint_state_publisher-2]: process has finished cleanly [pid 3345]
+1795217595.6634803 [ERROR] [rear_potentiometer-15]: process has died [pid 3392, exit code -2, cmd '/home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info'].
+1795217595.6637759 [INFO] [rviz2-16]: process has finished cleanly [pid 3761]
+1795217595.6640332 [INFO] [lane_0927oa-7]: process has finished cleanly [pid 3355]
+1795217595.6642983 [ERROR] [socket_can_receiver_node_exe-12]: process has died [pid 3366, exit code -6, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_2ikldo6b -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795217595.6645725 [ERROR] [lane_line_publisher-6]: process has died [pid 3353, exit code -11, cmd '/home/workspace/install/lane_line_publisher/lib/lane_line_publisher/lane_line_publisher --ros-args -r __node:=lane_line_publisher --params-file /home/workspace/install/lane_line_publisher/share/lane_line_publisher/config/lane_line_publisher.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/camera_params/SN[redacted]/intrinsic_nHD.yaml --params-file /tmp/launch_params_a7tv06z1 -r mask_image:=/aiformula_perception/road_detector/mask_image -r annotated_mask_image:=/aiformula_perception/lane_line_publisher/annotated_mask_image -r dynamic_roi_image:=/aiformula_perception/lane_line_publisher/dynamic_roi_image -r linear_fit_image:=/aiformula_perception/lane_line_publisher/linear_fit_image -r vehicle_fit_image:=/aiformula_perception/lane_line_publisher/vehicle_fit_image -r lane_lines/left:=/aiformula_perception/lane_line_publisher/lane_lines/left -r lane_lines/right:=/aiformula_perception/lane_line_publisher/lane_lines/right -r lane_lines/center:=/aiformula_perception/lane_line_publisher/lane_lines/center -r tf:=/tf -r tf_static:=/tf_static'].
+1795217595.6659312 [joy_node-8] [INFO] [1795217595.061225986] [rclcpp]: signal_handler(signal_value=2)
+1795217595.6683931 [teleop_node-10] [INFO] [1795217595.061374203] [rclcpp]: signal_handler(signal_value=2)
+1795217595.6690128 [vn_sensor_msgs-5] [INFO] [1795217595.061776510] [rclcpp]: signal_handler(signal_value=2)
+1795217595.6695673 [vectornav-4] [INFO] [1795217595.062494805] [rclcpp]: signal_handler(signal_value=2)
+1795217595.6721590 [l2_throttle_joy_remap.py-9] Traceback (most recent call last):
+1795217595.6723275 [l2_throttle_joy_remap.py-9]   File "/home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 110, in <module>
+1795217595.6724734 [l2_throttle_joy_remap.py-9]     main()
+1795217595.6726105 [l2_throttle_joy_remap.py-9]   File "/home/workspace/install/launchers/lib/launchers/l2_throttle_joy_remap.py", line 103, in main
+1795217595.6727448 [l2_throttle_joy_remap.py-9]     rclpy.spin(node)
+1795217595.6728740 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+1795217595.6730020 [l2_throttle_joy_remap.py-9]     executor.spin_once()
+1795217595.6731269 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+1795217595.6732533 [l2_throttle_joy_remap.py-9]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+1795217595.6733763 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+1795217595.6735015 [l2_throttle_joy_remap.py-9]     return next(self._cb_iter)
+1795217595.6736252 [l2_throttle_joy_remap.py-9]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+1795217595.6737480 [l2_throttle_joy_remap.py-9]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+1795217595.6738665 [l2_throttle_joy_remap.py-9] KeyboardInterrupt
+1795217597.3720193 [INFO] [zed_wrapper-3]: process has finished cleanly [pid 3347]

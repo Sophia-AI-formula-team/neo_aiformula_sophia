@@ -1,0 +1,21 @@
+test_oa1b_signal (unittest.loader._FailedTest.test_oa1b_signal) ... ERROR
+
+======================================================================
+ERROR: test_oa1b_signal (unittest.loader._FailedTest.test_oa1b_signal)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_oa1b_signal
+Traceback (most recent call last):
+  File "/usr/lib64/python3.14/unittest/loader.py", line 433, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/usr/lib64/python3.14/unittest/loader.py", line 374, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "./preflight/stage/mapassist-b/workspace/src/aiformula/perception/oa_1b/test/test_oa1b_signal.py", line 3, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

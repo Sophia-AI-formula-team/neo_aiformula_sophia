@@ -1,0 +1,218 @@
+Moved Python dependencies into <vehicle-home>/concept_1121_ws/venv
+Cloning into '<vehicle-home>/src/.neo-concept-1121.3rwxb2'...
+HEAD is now at 6793a13c Honor explicit stops, track target poses with neo LYA and reduce offline planning latency
+Python dependencies: 3.0.12 1.10.1 2.0.0+nv23.05 0.15.1
+[0.819s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'launchers' is in: /home/workspace/install/launchers
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding launchers
+
+This may be promoted to an error in a future release of colcon-override-check.
+Starting >>> concept_road
+Starting >>> concept_control_gate
+Finished <<< concept_control_gate [2.29s]
+Starting >>> concept_visualization
+Finished <<< concept_visualization [1.85s]
+Starting >>> concept_yolop
+Finished <<< concept_yolop [2.31s]
+Starting >>> concept_vehicle_state
+Finished <<< concept_vehicle_state [2.41s]
+Starting >>> launchers
+Finished <<< launchers [1.61s]
+Starting >>> concept_panel
+Finished <<< concept_panel [1.86s]
+[Processing: concept_road]
+Finished <<< concept_road [1min 7s]
+Starting >>> concept_feasibility
+Starting >>> concept_obstacles
+Finished <<< concept_obstacles [2.33s]
+--- stderr: concept_feasibility
+warning: concept_feasibility/_motion.pyx:6:54: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:10:109: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:44:94: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_motion.pyx:77:92: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_tread.pyx:29:57: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:10:56: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:25:70: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:45:91: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:73:103: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:106:112: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+warning: concept_feasibility/_risk.pyx:141:120: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+---
+[Processing: concept_feasibility]
+Finished <<< concept_feasibility [40.2s]
+Starting >>> concept_candidates
+--- stderr: concept_candidates
+warning: concept_candidates/_progress.pyx:34:107: The keyword 'nogil' should appear at the end of the function signature line. Placing it before 'except' or 'noexcept' will be disallowed in a future version of Cython.
+---
+Finished <<< concept_candidates [12.9s]
+Starting >>> concept_ranker
+Finished <<< concept_ranker [1.89s]
+Starting >>> concept_drive
+Finished <<< concept_drive [1.94s]
+Starting >>> concept
+Finished <<< concept [1.99s]
+
+Summary: 13 packages finished [2min 6s]
+  2 packages had stderr output: concept_candidates concept_feasibility
+OK        <vehicle-home>/concept_1121_ws/install/launchers/share/launchers/launch/allnodes.launch.py
+OK        <vehicle-home>/concept_1121_ws/install/launchers/share/launchers/launch/vectornav.launch.py
+OK        <vehicle-home>/concept_1121_ws/install/launchers/share/launchers/config/topic_list.yaml
+OK        <vehicle-home>/concept_1121_ws/install/launchers/share/launchers/config/joy.yaml
+OK        <vehicle-home>/concept_1121_ws/install/launchers/share/launchers/config/gamepad/dualshock4.yaml
+OK        /home/workspace/install/vehicle/share/vehicle/config/wheel.yaml
+OK        /home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml
+OK        /home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml
+OK        /home/workspace/install/motor_controller/share/motor_controller/config/motor_controller.yaml
+OK        <vehicle-home>/concept_1121_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py
+OK        /home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/gate.py
+OK        /home/workspace/install/motor_controller/lib/python3.8/site-packages/motor_controller/motor_controller.py
+concept 6.27.8  ROS=<vehicle-home>/concept_1121_ws/install/concept  Python=<vehicle-home>/concept_1121_ws/install/concept/lib/python3.8/site-packages/concept
+concept_candidates 6.27.8  ROS=<vehicle-home>/concept_1121_ws/install/concept_candidates  Python=<vehicle-home>/concept_1121_ws/install/concept_candidates/lib/python3.8/site-packages/concept_candidates
+concept_control_gate 6.27.4  ROS=<vehicle-home>/concept_1121_ws/install/concept_control_gate  Python=<vehicle-home>/concept_1121_ws/install/concept_control_gate/lib/python3.8/site-packages/concept_control_gate
+concept_drive 6.27.8  ROS=<vehicle-home>/concept_1121_ws/install/concept_drive  Python=<vehicle-home>/concept_1121_ws/install/concept_drive/lib/python3.8/site-packages/concept_drive
+concept_feasibility 6.26.0  ROS=<vehicle-home>/concept_1121_ws/install/concept_feasibility  Python=<vehicle-home>/concept_1121_ws/install/concept_feasibility/lib/python3.8/site-packages/concept_feasibility
+concept_obstacles 6.27.6  ROS=<vehicle-home>/concept_1121_ws/install/concept_obstacles  Python=<vehicle-home>/concept_1121_ws/install/concept_obstacles/lib/python3.8/site-packages/concept_obstacles
+concept_panel 6.27.8  ROS=<vehicle-home>/concept_1121_ws/install/concept_panel  Python=<vehicle-home>/concept_1121_ws/install/concept_panel/lib/python3.8/site-packages/concept_panel
+concept_ranker 6.27.6  ROS=<vehicle-home>/concept_1121_ws/install/concept_ranker  Python=<vehicle-home>/concept_1121_ws/install/concept_ranker/lib/python3.8/site-packages/concept_ranker
+concept_road 6.27.7  ROS=<vehicle-home>/concept_1121_ws/install/concept_road  Python=<vehicle-home>/concept_1121_ws/install/concept_road/lib/python3.8/site-packages/concept_road
+concept_vehicle_state 0.1.0  ROS=<vehicle-home>/concept_1121_ws/install/concept_vehicle_state  Python=<vehicle-home>/concept_1121_ws/install/concept_vehicle_state/lib/python3.8/site-packages/concept_vehicle_state
+concept_visualization 6.27.4  ROS=<vehicle-home>/concept_1121_ws/install/concept_visualization  Python=<vehicle-home>/concept_1121_ws/install/concept_visualization/lib/python3.8/site-packages/concept_visualization
+concept_yolop 6.27.7  ROS=<vehicle-home>/concept_1121_ws/install/concept_yolop  Python=<vehicle-home>/concept_1121_ws/install/concept_yolop/lib/python3.8/site-packages/concept_yolop
+material_sections=native candidate_merge=exact
+H12 verified: <vehicle-home>/concept_1121_ws/install/concept_ranker/lib/python3.8/site-packages/concept_ranker/model-h12.json
+B1.4 verified: <vehicle-home>/.local/share/concept_yolop/B1.4-road-aligned-research.pth
+<vehicle-home>/concept_1121_ws/venv/lib/python3.8/site-packages/torch/_utils.py:776: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  return self.fget.__get__(instance, owner)()
+{
+  "weights": "19d6eeed99fee90a46f09761746845afcf330974a8e1aff057055697a02706a6",
+  "device": "cuda",
+  "torch": "2.0.0+nv23.05",
+  "torchvision": "0.15.1",
+  "detections": 100,
+  "road_pixels": 82849,
+  "lane_pixels": 1913,
+  "wire_bytes": 194733
+}
+Qt + Torch + cv_bridge imports OK
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'mode':
+        no description given
+        (default: 'vehicle')
+
+    'onboard_camera':
+        no description given
+        (default: 'auto')
+
+    'local_frame_transport':
+        no description given
+        (default: 'auto')
+
+    'panel':
+        no description given
+        (default: 'true')
+
+    'rviz':
+        no description given
+        (default: 'auto')
+
+    'target_speed_mps':
+        no description given
+        (default: '')
+
+    'max_auto_speed_mps':
+        no description given
+        (default: '')
+
+    'planning_hz':
+        no description given
+        (default: '15.0')
+
+    'min_nonzero_speed_mps':
+        no description given
+        (default: '0.5')
+
+    'lya_v_t_mps':
+        no description given
+        (default: '2.0')
+
+    'profile_timing':
+        no description given
+        (default: 'false')
+
+    'weights':
+        no description given
+        (default: '')
+
+    'calibration':
+        no description given
+        (default: 'auto')
+
+    'device':
+        no description given
+        (default: 'cuda')
+
+    'cuda_fusion':
+        no description given
+        (default: 'auto')
+
+    'camera_info_topic':
+        no description given
+        (default: '/aiformula_sensing/zed_node/left/camera_info')
+
+    'can_interface':
+        no description given
+        (default: 'can0')
+
+    'can_ready_timeout_sec':
+        no description given
+        (default: '10')
+
+    'enable_can_fd':
+        no description given
+        (default: 'false')
+
+    'receiver_interval_sec':
+        no description given
+        (default: '0.1')
+
+    'sender_timeout_sec':
+        no description given
+        (default: '0.01')
+
+    'use_sim_time':
+        no description given
+        (default: 'false')
+
+    'grab_resolution':
+        no description given
+        (default: 'HD1080')
+
+    'grab_frame_rate':
+        no description given
+        (default: '60')
+
+    'pub_frame_rate':
+        no description given
+        (default: '60.0')
+
+    'pub_downscale_factor':
+        no description given
+        (default: '3.0')
+
+    'config_common_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml')
+
+    'config_camera_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml')
+
+    'tracking_controller':
+        auto shows a terminal menu; pure_pursuit or lya selects directly
+        (default: 'auto')
+Unrecognized content at <vehicle-home>/.local/bin/concept-live; inspect before replacing.

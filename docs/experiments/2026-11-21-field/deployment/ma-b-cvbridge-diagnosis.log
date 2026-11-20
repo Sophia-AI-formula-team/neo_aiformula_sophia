@@ -1,0 +1,19 @@
+2026-11-21T08:36:31,603099057+09:00
+case base
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/opt/ros/foxy/lib/python3.8/site-packages/cv_bridge/__init__.py", line 6, in <module>
+    from cv_bridge.boost.cv_bridge_boost import cvtColorForDisplay, getCvType
+SystemError: initialization of cv_bridge_boost raised unreported exception
+exit=1
+case imports-first
+CvBridge OK 4.2.0 1.17.4
+exit=0
+case preload
+CvBridge OK
+exit=0
+case both
+CvBridge OK
+exit=0
+total 80
+-rw-r--r-- 1 root root 81616  5月 27  2023 cv_bridge_boost.so

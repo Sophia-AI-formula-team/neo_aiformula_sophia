@@ -1,0 +1,31 @@
+test_copied_dependency_works_after_old_paths_are_removed (test_legacy_install.LegacyInstall.test_copied_dependency_works_after_old_paths_are_removed) ... Moved Python dependencies into /tmp/tmphc0y4c3u/concept_1121_ws/venv
+ok
+test_failed_verification_restores_previous_workspaces (test_legacy_install.LegacyInstall.test_failed_verification_restores_previous_workspaces) ... ok
+test_unrecognized_data_and_symlinks_block_removal (test_legacy_install.LegacyInstall.test_unrecognized_data_and_symlinks_block_removal) ... ok
+test_rollback_restores_1120_command_and_icons (test_upgrade.Upgrade.test_rollback_restores_1120_command_and_icons) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.290s
+
+OK
+Removed old Concept installation: /tmp/tmphc0y4c3u/src/neo-concept-v6275
+Removed old Concept installation: /tmp/tmphc0y4c3u/concept_v6275_ws
+Removed old Concept installation: /tmp/tmphc0y4c3u/concept_1120_v6278_ws
+apply /tmp/tmpxp7_as0x/.local/bin/concept-live
+apply /tmp/tmpxp7_as0x/.local/share/applications/Concept.desktop
+apply /tmp/tmpxp7_as0x/Desktop first/Concept.desktop
+Backup: /tmp/tmpxp7_as0x/.local/state/aiformula/concept-shortcuts-v6278/backup-j820a2p9
+apply /tmp/tmpxp7_as0x/.local/bin/concept-live
+apply /tmp/tmpxp7_as0x/.local/bin/renamed-concept
+apply /tmp/tmpxp7_as0x/.local/share/applications/Concept.desktop
+apply /tmp/tmpxp7_as0x/Desktop after/Concept.desktop
+apply /tmp/tmpxp7_as0x/Desktop first/Concept.desktop
+Backup: /tmp/tmpxp7_as0x/.local/state/aiformula/concept-shortcuts-1121/backup-ij1c0r6q
+Verified 1121 experiment overlay and Concept shortcuts.
+rollback /tmp/tmpxp7_as0x/.local/bin/concept-live
+rollback /tmp/tmpxp7_as0x/.local/bin/renamed-concept
+rollback /tmp/tmpxp7_as0x/.local/share/applications/Concept.desktop
+rollback /tmp/tmpxp7_as0x/Desktop after/Concept.desktop
+rollback /tmp/tmpxp7_as0x/Desktop first/Concept.desktop
+Backup: /tmp/tmpxp7_as0x/.local/state/aiformula/concept-shortcuts-1121/backup-ij1c0r6q
+Verified V6.27.8 overlay and Concept shortcuts.

@@ -1,0 +1,104 @@
+[INFO] [launch]: All log files can be found below <vehicle-home>/.ros/log/2026-11-21-08-36-54-181742-jetson-7120
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [python3-1]: process started with pid [7122]
+[python3-1] OA1B_CAMERA_READY
+[INFO] [obstacle_avoidance-2]: process started with pid [7160]
+[INFO] [map_assist-3]: process started with pid [7162]
+[INFO] [python3-4]: process started with pid [7164]
+[INFO] [python3-5]: process started with pid [7166]
+[map_assist-3] [INFO] [1795217821.754338550] [map_assist]: Map assist: first lap learns in RAM; points use metres, x forward/y left. Initial avoidance state: None; unknown waits for a real False flag. Official map: <vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/share/semantic_local_planner_ros/config/aiformula_topomap.osm
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [python3-5]: sending signal 'SIGINT' to process[python3-5]
+[INFO] [python3-4]: sending signal 'SIGINT' to process[python3-4]
+[INFO] [map_assist-3]: sending signal 'SIGINT' to process[map_assist-3]
+[INFO] [obstacle_avoidance-2]: sending signal 'SIGINT' to process[obstacle_avoidance-2]
+[INFO] [python3-1]: sending signal 'SIGINT' to process[python3-1]
+[python3-5] Traceback (most recent call last):
+[python3-5]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/guarded_stop_wait.py", line 91, in <module>
+[python3-5]     main()
+[python3-5]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/guarded_stop_wait.py", line 85, in main
+[python3-5]     node.destroy_node()
+[python3-5]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1528, in destroy_node
+[python3-5]     self.destroy_service(self.__services[0])
+[python3-5]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1453, in destroy_service
+[python3-5]     service.destroy()
+[python3-5]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/service.py", line 81, in destroy
+[python3-5]     self.handle.destroy()
+[python3-5]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[python3-5]     self.__destroy()
+[python3-5]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[python3-5]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[python3-5] KeyboardInterrupt
+[python3-4] Traceback (most recent call last):
+[python3-4]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py", line 77, in <module>
+[python3-4]     main()
+[python3-4]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py", line 71, in main
+[python3-4]     node.destroy_node()
+[python3-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1528, in destroy_node
+[python3-4]     self.destroy_service(self.__services[0])
+[python3-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1453, in destroy_service
+[python3-4]     service.destroy()
+[python3-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/service.py", line 81, in destroy
+[python3-4]     self.handle.destroy()
+[python3-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[python3-4]     self.__destroy()
+[python3-4]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[python3-4]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[python3-4] KeyboardInterrupt
+[python3-1] Traceback (most recent call last):
+[python3-1]   File "/usr/lib/python3.8/runpy.py", line 194, in _run_module_as_main
+[python3-1]     return _run_code(code, main_globals, None,
+[python3-1]   File "/usr/lib/python3.8/runpy.py", line 87, in _run_code
+[python3-1]     exec(code, run_globals)
+[python3-1]   File "<vehicle-home>/aiformula_runtime/2026-11-21-mapassist-b/c8a8a4d8be47aff06f252c7a3dd612d9c7ef9ee1/install/lib/python3.8/site-packages/oa_1b/observer.py", line 141, in <module>
+[python3-1]     main()
+[python3-1]   File "<vehicle-home>/aiformula_runtime/2026-11-21-mapassist-b/c8a8a4d8be47aff06f252c7a3dd612d9c7ef9ee1/install/lib/python3.8/site-packages/oa_1b/observer.py", line 135, in main
+[python3-1]     node.destroy_node()
+[python3-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1522, in destroy_node
+[python3-1]     self.destroy_publisher(self.__publishers[0])
+[python3-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1403, in destroy_publisher
+[python3-1]     publisher.destroy()
+[python3-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/publisher.py", line 93, in destroy
+[python3-1]     self.handle.destroy()
+[python3-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[python3-1]     self.__destroy()
+[python3-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[python3-1]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[python3-1] KeyboardInterrupt
+[map_assist-3] Traceback (most recent call last):
+[map_assist-3]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/python3.8/site-packages/semantic_local_planner_ros/map_assist.py", line 1509, in main
+[map_assist-3]     rclpy.spin(node)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+[map_assist-3]     executor.spin_once()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+[map_assist-3]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+[map_assist-3]     return next(self._cb_iter)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+[map_assist-3]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+[map_assist-3] KeyboardInterrupt
+[map_assist-3]
+[map_assist-3] During handling of the above exception, another exception occurred:
+[map_assist-3]
+[map_assist-3] Traceback (most recent call last):
+[map_assist-3]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist", line 11, in <module>
+[map_assist-3]     load_entry_point('semantic-local-planner-ros==0.4.5', 'console_scripts', 'map_assist')()
+[map_assist-3]   File "<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/python3.8/site-packages/semantic_local_planner_ros/map_assist.py", line 1512, in main
+[map_assist-3]     node.destroy_node()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1522, in destroy_node
+[map_assist-3]     self.destroy_publisher(self.__publishers[0])
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1403, in destroy_publisher
+[map_assist-3]     publisher.destroy()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/publisher.py", line 93, in destroy
+[map_assist-3]     self.handle.destroy()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[map_assist-3]     self.__destroy()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[map_assist-3]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[map_assist-3] KeyboardInterrupt
+[ERROR] [python3-5]: process has died [pid 7166, exit code -2, cmd '/usr/bin/python3 <vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/guarded_stop_wait.py'].
+[ERROR] [python3-4]: process has died [pid 7164, exit code -2, cmd '/usr/bin/python3 <vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py --ros-args -r /processed_point_a:=/semantic_drive/map_assist_045/point_a -r /processed_point_b:=/semantic_drive/map_assist_045/point_b -r /processed_point_c:=/semantic_drive/map_assist_045/point_c -r /filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose -r /filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t'].
+[ERROR] [python3-1]: process has died [pid 7122, exit code -2, cmd '/usr/bin/python3 -m oa_1b.observer --threshold 50'].
+[ERROR] [map_assist-3]: process has died [pid 7162, exit code -2, cmd '<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_m46z3t45 -r /aiformula_perception/yolop_a3/traffic_light/state:=/oa_1b/traffic_light/state -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+[obstacle_avoidance-2] OA exited: reset published, but no /point_flag subscriber was discovered; source restoration is unconfirmed.
+[INFO] [obstacle_avoidance-2]: process has finished cleanly [pid 7160]

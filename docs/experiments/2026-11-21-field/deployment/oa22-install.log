@@ -1,0 +1,30 @@
+Cloning into '<vehicle-home>/aiformula_runtime/1121-deploy-records/oa22-0835/source'...
+HEAD is now at e4866962 Add OA 2.2 with stable avoidance direction and dynamic ROI
+[0.810s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'launchers' is in: /home/workspace/install/launchers
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding launchers
+
+This may be promoted to an error in a future release of colcon-override-check.
+Starting >>> lane_line_publisher
+--- stderr: lane_line_publisher
+** WARNING ** io features related to pcap will be disabled
+** WARNING ** io features related to png will be disabled
+** WARNING ** io features related to libusb-1.0 will be disabled
+---
+Finished <<< lane_line_publisher [49.6s]
+Starting >>> launchers
+Finished <<< launchers [1.62s]
+
+Summary: 2 packages finished [51.8s]
+  1 package had stderr output: lane_line_publisher
+dynamic_roi_mask
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'algorithm':
+        Existing obstacle-avoidance executable; oa_neo uses a B-spline. Valid choices are: ['oa_neo', 'oa_neo_nurbs', 'oa_neo_ubs', 'oa_2', 'oa_2_1', 'oa_2_2']
+        (default: 'oa_neo')
+OA 2.2 ready: <vehicle-home>/aiformula_runtime/2026-11-21-oa22/e4866962ac24ba2ed8a7ee7d99523e7c239ba76a

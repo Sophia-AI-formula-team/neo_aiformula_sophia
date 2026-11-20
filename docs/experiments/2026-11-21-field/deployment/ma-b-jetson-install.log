@@ -1,0 +1,38 @@
+diff --git a/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py b/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
+index 6217611b..77324439 100644
+--- a/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
++++ b/workspace/src/aiformula/perception/oa_1b/oa_1b/observer.py
+@@ -4,7 +4,6 @@ from collections import OrderedDict
+ import json
+ import time
+
+-from cv_bridge import CvBridge
+ from nav_msgs.msg import Odometry
+ import rclpy
+ from rclpy.executors import ExternalShutdownException
+@@ -14,6 +13,8 @@ from sensor_msgs.msg import Image
+ from std_msgs.msg import Bool, String
+
+ from .traffic_signal import SignalTracker
++# SignalTracker loads OpenCV and NumPy before the Foxy bridge on Jetson.
++from cv_bridge import CvBridge
+
+
+ RAW = "/aiformula_sensing/zed_node/left_image/undistorted"
+Switched to a new branch 'vehicle/mapassist-b-1121-cvbridge'
+[vehicle/mapassist-b-1121-cvbridge c8a8a4d8] Initialize OpenCV before the Foxy bridge on Jetson
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_045_commissioning.launch.py: OK
+<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_vehicle_045.launch.py: OK
+Starting >>> oa_1b
+Finished <<< oa_1b [1.86s]
+
+Summary: 1 package finished [2.36s]
+OA 1B ready: <vehicle-home>/aiformula_runtime/2026-11-21-mapassist-b/c8a8a4d8be47aff06f252c7a3dd612d9c7ef9ee1/mapassist_b
+<vehicle-home>/.local/bin/allnodes: OK
+<vehicle-home>/.local/bin/yolop: OK
+<vehicle-home>/.local/bin/mapassist: OK
+<vehicle-home>/.local/bin/lya: OK
+<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_045_commissioning.launch.py: OK
+<vehicle-home>/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_vehicle_045.launch.py: OK
+<vehicle-home>/aiformula_runtime/2026-11-21-mapassist-b/c8a8a4d8be47aff06f252c7a3dd612d9c7ef9ee1/mapassist_b
