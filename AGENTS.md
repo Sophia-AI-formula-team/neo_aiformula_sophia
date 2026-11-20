@@ -1,7 +1,3 @@
-## 1121 OA 1B 实验准备
-
-部署独立的 OA 1B 前，先读[车端部署与回退](docs/experiments/2026-11-21-oa1b/DEPLOY.md)。仅新增 OA 1B 的桌面和终端入口。保留原车、1120 和 Concept 的入口、启动文件和安装前缀。按文档回传实车版本、DDS 连接、停车距离与退出后的检查结果。归档版本或话题与实车不一致时，记录具体差异并在更改前反馈。
-
 ## 1121 Concept 实验准备
 
 11 月 21 日的 Concept 运行源码固定在 `6793a13c0a1a22c127accb452ef65a206d6f415d`。部署 agent 先读 [1121 Concept 车机部署](docs/experiments/2026-11-21-concept/DEPLOY.md)，核对快捷方式、实际生效的速度参数及旧版清理结果。其他车端方案参考 [1120 整车交接](docs/experiments/2026-11-20-mapassist/AGENT_DEPLOY_1120.md)。

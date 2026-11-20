@@ -1,5 +1,0 @@
-[INFO] [1795201942.415462417] [aiformula_perception.yolop_a3_perception]: A3 single-backbone weights=/field/profiles/A3/weights/shared_best.pth; input=/aiformula_sensing/zed_node/left_image/undistorted
-[INFO] [1795201942.760929691] [aiformula_perception.yolop_a3_perception]: OA 1B single-pass AV314 active; original outputs and /oa_1b/perception
-{"camera_subscribers": 1, "stock_red_pixels": 50, "private_unique_pixels": 25, "received": ["cone", "lane", "light", "new", "pixels", "private_light", "stock"], "stamp": {"sec": 1795201943, "nanosec": 744110603}}
-/vision/torch/_utils.py:776: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
-  return self.fget.__get__(instance, owner)()
