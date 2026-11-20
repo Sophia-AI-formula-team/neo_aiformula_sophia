@@ -1,0 +1,39 @@
+/root/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_045_commissioning.launch.py: OK
+/root/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_vehicle_045.launch.py: OK
+Starting >>> oa_1b
+Finished <<< oa_1b [0.64s]
+--- stderr: oa_1b
+warning: build_py: byte-compiling is disabled, skipping.
+
+warning: install_lib: byte-compiling is disabled, skipping.
+
+---
+
+Summary: 1 package finished [0.72s]
+  1 package had stderr output: oa_1b
+OA 1B ready: /root/aiformula_runtime/2026-11-21-mapassist-b/a222377cfb9e7c4c20094bd7ad31e5bc878a68ae/mapassist_b
+/root/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_045_commissioning.launch.py: OK
+/root/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers/share/launchers/launch/semantic_vehicle_045.launch.py: OK
+OA 1B ready: /root/aiformula_runtime/2026-11-21-mapassist-b/a222377cfb9e7c4c20094bd7ad31e5bc878a68ae/mapassist_b
+/root/.local/bin/mapassist: OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.002s
+
+OK
+camera ['/usr/bin/python3', '/bench/replay_inputs.py']
+tf ['ros2', 'run', 'tf2_ros', 'static_transform_publisher', '0.055', '0.0600025', '0.54', '-0.49561769374106207', '0.4956176804610375', '-0.5043442290905813', '0.5043442426044329', 'base_footprint', 'zed_left_camera_optical_frame']
+LLP ['ros2', 'run', 'lane_line_publisher', 'lane_line_publisher', '--ros-args', '--params-file', '/sim/install/lane_line_publisher/share/lane_line_publisher/config/lane_line_publisher.yaml', '--params-file', '/field/camera/SN48797506/intrinsic_nHD.yaml', '-p', 'vehicle_frame_id:=base_footprint', '-p', 'camera_frame_id:=zed_left_camera_optical_frame', '-p', 'camera_name:=zedx', '-p', 'debug:=true', '-r', 'mask_image:=/aiformula_perception/road_detector/mask_image', '-r', 'lane_lines/left:=/aiformula_perception/lane_line_publisher/lane_lines/left', '-r', 'lane_lines/right:=/aiformula_perception/lane_line_publisher/lane_lines/right', '-r', 'lane_lines/center:=/aiformula_perception/lane_line_publisher/lane_lines/center']
+abc ['ros2', 'run', 'lane_points', 'lane_0927oa', '--ros-args', '-r', 'lane_line_left:=/aiformula_perception/lane_line_publisher/lane_lines/left', '-r', 'lane_line_right:=/aiformula_perception/lane_line_publisher/lane_lines/right', '-r', 'lane_line_center:=/aiformula_perception/lane_line_publisher/lane_lines/center']
+motor ['/usr/bin/python3', '/arch/lib/motor_controller/motor_controller', '--ros-args', '-r', '__ns:=/aiformula_control', '--params-file', '/field/field/wheel.yaml', '--params-file', '/field/field/motor.yaml', '--params-file', '/field/field/dualshock4.yaml', '-r', 'sub_speed_command:=/semantic_drive/map_assist_045/diagnostic_cmd_vel', '-r', 'pub_can:=/aiformula_control/motor_controller/reference_signal']
+vision ['/usr/bin/python3', '-c', 'from yolop_a3_perception.node import main; main()', '--ros-args', '-r', '__ns:=/aiformula_perception', '-p', 'device:=cuda', '-p', 'weights:=/field/profiles/A3/weights/shared_best.pth', '-p', 'input_image_topic:=/aiformula_sensing/zed_node/left_image/undistorted', '-r', 'pub_mask_image:=/aiformula_perception/road_detector/mask_image', '-r', 'pub_annotated_mask_image:=/aiformula_visualization/road_detector/annotated_mask_image', '-r', '/traffic_light/state:=/aiformula_perception/yolop_a3/traffic_light/state', '-r', '/red_pixels_count:=/aiformula_perception/yolop_a3/red_pixels_count']
+mapassist_b ['/root/.local/bin/mapassist_b', 'outer', '50']
+1 mapassist already running
+follower ['ros2', 'run', 'trajectory_follower', 'lya_follower_connected_omegat_global', '--ros-args', '-r', '/filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose', '-r', '/filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t', '-r', '/aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel']
+Selective exit: MapAssist, OA, and observer stopped. Stock YOLOP, Allnodes components and LYA remained live.
+mapassist ['/root/.local/bin/mapassist', 'inner', '50']
+1 mapassist or mapassist_b already running in this ROS domain.
+Legacy MapAssist restored with the same running upstream and downstream.
+mapassist_b_hup ['/root/.local/bin/mapassist_b', 'inner', '50']
+SIGHUP also stopped the isolated third stage without stopping stock YOLOP or LYA.
+exited [('camera', 0), ('tf', 0), ('LLP', 245), ('abc', 0), ('motor', 0), ('vision', 0), ('mapassist_b', 0), ('follower', 0), ('mapassist', 0), ('mapassist_b_hup', 0)]

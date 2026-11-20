@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -eo pipefail
+lane=${1:-outer}
+threshold=${2:-50}
+if [[ $# -gt 2 || ! "$lane" =~ ^(inner|outer)$ || ! "$threshold" =~ ^[1-9][0-9]*$ ]]; then
+    echo 'Usage: mapassist_b [inner|outer] [positive-unique-red-pixel-count]' >&2
+    exit 2
+fi
+release=$(dirname -- "$(readlink -f -- "$0")")
+field="$HOME/aiformula_runtime/2026-11-20-mapassist-av314/install"
+a3="$HOME/aiformula_runtime/yolop_a3_v14_20261012"
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+source "$field/local_setup.bash"
+for package in launchers obsticle_avoidence semantic_local_planner_ros semantic_vehicle_wiring; do
+    [[ "$(ros2 pkg prefix "$package")" == "$field/$package" ]] || { echo "Unexpected prefix for $package" >&2; exit 1; }
+done
+source "$release/install/local_setup.bash"
+
+# Use the exact same lock as mapassist so only one third terminal can own the vehicle topics.
+exec 9>"${XDG_RUNTIME_DIR:-$HOME}/aiformula-1120-${ROS_DOMAIN_ID:-0}-mapassist.lock"
+flock -n 9 || { echo 'mapassist or mapassist_b already running in this ROS domain.' >&2; exit 1; }
+export PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1
+if [[ $(uname -m) == aarch64 ]]; then
+    export LD_PRELOAD="/lib/aarch64-linux-gnu/libgomp.so.1${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+exec /usr/bin/python3 -m oa_1b.launch_cli launch oa_1b mapassist_b.launch.py lane:="$lane" red_pixel_stop_threshold:="$threshold" \
+    vision_python:="$a3/venv/bin/python3" weights:="$a3/upstream/YOLOP_A3_Deploy/weights/shared_best.pth" \
+    vehicle_output:=true
