@@ -1,6 +1,6 @@
 ## 1121 Concept 实验准备
 
-11 月 21 日的 Concept 运行源码固定在 `6793a13c0a1a22c127accb452ef65a206d6f415d`。部署 agent 先读 [1121 Concept 车机部署](docs/experiments/2026-11-21-concept/DEPLOY.md)，从独立工作区安装，复查快捷方式、回退入口和实际生效的速度参数。其他车端方案参考 [1120 整车交接](docs/experiments/2026-11-20-mapassist/AGENT_DEPLOY_1120.md)。
+11 月 21 日的 Concept 运行源码固定在 `6793a13c0a1a22c127accb452ef65a206d6f415d`。部署 agent 先读 [1121 Concept 车机部署](docs/experiments/2026-11-21-concept/DEPLOY.md)，核对快捷方式、实际生效的速度参数及旧版清理结果。其他车端方案参考 [1120 整车交接](docs/experiments/2026-11-20-mapassist/AGENT_DEPLOY_1120.md)。
 
 # User-authorized experiment import (2026-11-04)
 

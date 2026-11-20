@@ -2,7 +2,7 @@
 # Source this file from Bash. The build and the installed desktop launcher share it.
 _concept_activate_1121() {
     local ws="$HOME/concept_1121_ws"
-    local venv="$HOME/concept_v6275_ws/venv" site preload lib
+    local venv="$ws/venv" site preload lib
     source /opt/ros/foxy/setup.bash || return 1
     source /home/workspace/install/setup.bash || return 1
     if [[ -d "$venv" ]]; then

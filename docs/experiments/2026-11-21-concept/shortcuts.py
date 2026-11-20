@@ -10,6 +10,8 @@ from shortcuts import Release, V6278, main
 
 if __name__ == "__main__":
     try:
+        if "--rollback" in sys.argv[1:] and (Path.home() / "concept_1121_ws/.legacy-retired").exists():
+            raise ValueError("The old Concept installation was removed. Reinstall it from its pinned GitHub source to revert.")
         main(Release(HERE, "1121 experiment", "concept-shortcuts-1121", previous=V6278))
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         sys.exit(str(exc))

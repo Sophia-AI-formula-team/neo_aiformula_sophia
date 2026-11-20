@@ -25,6 +25,8 @@ for required in git flock python3 xdg-user-dir; do command -v "$required" >/dev/
 mkdir -p "$HOME/src" "$ws"
 exec 9>"$ws/.prepare-concept.lock"
 flock -n 9 || fail "Preparation is already running in $ws"
+python3 "$here/legacy_install.py" preflight
+python3 "$here/legacy_install.py" migrate-dependencies
 
 if [[ ! -e "$repo" ]]; then
     staged=$(mktemp -d "$HOME/src/.neo-concept-1121.XXXXXX")
@@ -90,4 +92,10 @@ install -m 644 "$here/activate_concept.bash" "$ws/activate_concept.bash.tmp"
 mv -T -- "$ws/activate_concept.bash.tmp" "$ws/activate_concept.bash"
 python3 "$here/shortcuts.py" --apply
 python3 "$here/shortcuts.py" --check
+python3 "$here/legacy_install.py" retire bash -c '
+    set -e
+    "$HOME/.local/bin/concept-live" --verify-install
+    source "$1"
+    ros2 run concept_yolop concept_yolop_check "$2" --device cuda
+' bash "$ws/activate_concept.bash" "$repo/vehicle_concept/src/concept_drive/test/data/moving-lap-start/00000_rgb.png"
 printf 'Ready: %s  %s\n' "$pin" "$ws"

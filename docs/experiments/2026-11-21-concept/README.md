@@ -1,6 +1,6 @@
 # 1121 实验准备 · Concept
 
-本次只涉及 Concept。启动入口仍叫 **Concept** 和 `concept-live`。安装器从固定源码构建独立 Foxy 工作区，校验通过后替换入口，并备份车机原有的命令和图标。现场准备从[部署说明](DEPLOY.md)开始。昨天的整车准备、AV314 和 MapAssist 入口继续按[1120 交接文档](../2026-11-20-mapassist/AGENT_DEPLOY_1120.md)操作。
+本次只涉及 Concept。启动入口仍叫 **Concept** 和 `concept-live`。安装器从固定源码构建独立 Foxy 工作区，更新现有桌面和菜单入口，并在旧路径停用后再次验证新版，再删除已知旧 Concept 安装。现场准备从[部署说明](DEPLOY.md)开始。AV314 和 MapAssist 参考[1120 交接文档](../2026-11-20-mapassist/AGENT_DEPLOY_1120.md)中的对应章节。
 
 | 项目 | 11/21 结果 |
 |---|---|
@@ -12,4 +12,6 @@
 
 [离线完整报告、刹停图和复现脚本](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/checks/offline1121/README.md) · [逐场指标与分段延迟](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/checks/offline1121/measurements.json)
 
-安装器在隔离的 Ubuntu 20.04 / Foxy 工作站从 GitHub 检出固定 SHA，构建了 12 个 Concept 包和专用的 `launchers`。底层校验、H12 和 B1.4 哈希、单图 CUDA 推理、启动参数、`concept-live --verify-install` 及回退均已通过。临时家目录模拟了桌面环境，独立 Linux 测试还覆盖了从已装 1120 升级及回退，合计 12 个快捷方式测试。车机安装由现场执行。
+隔离 Ubuntu 20.04 / Foxy 工作站从 GitHub 检出固定 SHA，构建了 12 个 Concept 包和专用的 `launchers`。底层校验、H12 和 B1.4 哈希、单图 CUDA 推理、启动参数以及 `concept-live --verify-install` 均已通过。车机安装由现场执行。
+
+旧版清理已在同一 Foxy 环境用两套旧目录的测试副本跑完。四个旧目录删除后，1121 的桌面入口、迁移后的 Python 依赖和 B1.4 CUDA 推理仍可用。另测了复验失败恢复旧目录，以及拒绝清理含额外文件或为符号链接的路径。
