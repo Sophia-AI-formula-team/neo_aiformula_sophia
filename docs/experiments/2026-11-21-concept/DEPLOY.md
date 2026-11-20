@@ -54,7 +54,7 @@ concept-live tracking_controller:=lya target_speed_mps:=2.0 max_auto_speed_mps:=
   min_nonzero_speed_mps:=0.5 lya_v_t_mps:=2.0
 ```
 
-启动后在另一个终端加载 `~/concept_1121_ws/activate_concept.bash`。核对 `ros2 param get /concept/drive min_nonzero_speed_mps`、`ros2 param get /concept/drive lya_v_t_mps` 和面板上的实际速度上限。已有保存值可能覆盖目标车速或上限。最低非零速度与 LYA 参考速度按启动参数读取。目标车速低于有效非零下限时，前进候选无法执行。[车端接线和话题](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/AGENTS.md)
+启动后在另一个终端加载 `~/concept_1121_ws/activate_concept.bash`。核对 `ros2 param get /concept/drive min_nonzero_speed_mps`、`ros2 param get /concept/drive lya_v_t_mps` 和面板上的实际速度上限。显式传入的车速和上限优先，省略时读取已有保存值。最低非零速度与 LYA 参考速度按启动参数读取。目标车速低于有效非零下限时，前进候选无法执行。[车端接线和话题](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/6793a13c0a1a22c127accb452ef65a206d6f415d/vehicle_concept/AGENTS.md)
 
 ## 回退
 

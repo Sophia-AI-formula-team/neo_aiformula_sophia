@@ -40,6 +40,9 @@ jobs:
     steps:
       - name: Verify canonical repository identity
         run: python -c "import os; assert os.environ['GITHUB_REPOSITORY_ID'] == '1303517209'; assert os.environ['GITHUB_REPOSITORY'] == 'Sophia-AI-formula-team/neo_aiformula_sophia'"
+      - name: Enable long archive paths in Git on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
