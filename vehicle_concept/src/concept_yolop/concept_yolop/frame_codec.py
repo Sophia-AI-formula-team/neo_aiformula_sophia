@@ -1,6 +1,7 @@
 """Wire contract concept.perception.v1, shared by camera and planner nodes."""
 import base64
 import json
+import math
 import struct
 
 import cv2
@@ -10,7 +11,14 @@ from .geometry import PROFILES, UNVERIFIED
 from .weights import SHA256
 
 SCHEMA = 'concept.perception.v1'
+LOCAL_SCHEMA = 'concept.perception.local.v1'
+LOCAL_FRAME_TOPIC = '/concept/internal/perception/packed'
 W, H = 640, 360
+_HEADER_SIZE = struct.Struct('!I')
+_MAX_HEADER = 65536
+_BGR_SIZE = H * W * 3
+_MASK_SIZE = H * W // 8
+_BODY_SIZE = _BGR_SIZE + 2 * _MASK_SIZE
 
 
 # A fixed scanline filter avoids trying five filters on every row. In OpenCV
@@ -76,7 +84,11 @@ def parse_frame_header(payload):
     if len(payload) > 4000000:
         raise ValueError('Oversize perception frame')
     obj = json.loads(payload)
-    if (obj['schema'], obj['model_sha256'], obj['width'], obj['height']) != (SCHEMA, SHA256, W, H):
+    return _validated_header(obj, SCHEMA)
+
+
+def _validated_header(obj, schema):
+    if (obj['schema'], obj['model_sha256'], obj['width'], obj['height']) != (schema, SHA256, W, H):
         raise ValueError('Unexpected perception contract')
     if obj.get('geometry_profile') not in PROFILES:
         raise ValueError('Missing camera geometry profile')
@@ -115,3 +127,43 @@ def decode_frame_data(obj):
 def decode_frame(payload):
     obj, _, _, _ = parse_frame_header(payload)
     return decode_frame_data(obj)
+
+
+def encode_local_frame(sec, nanosec, frame_id, bgr, road, lane, detections, geometry_profile, timings):
+    """Pack one exact frame for the private same-host DDS route."""
+    validate_pixels(bgr, road, lane)
+    meta = {
+        'schema': LOCAL_SCHEMA, 'model_sha256': SHA256, 'geometry_profile': geometry_profile,
+        'stamp': {'sec': int(sec), 'nanosec': int(nanosec)}, 'frame_id': frame_id,
+        'width': W, 'height': H, 'timings': timings,
+        **{key: detections[key].tolist() for key in ('boxes', 'scores', 'labels')},
+    }
+    _validated_header(meta, LOCAL_SCHEMA)
+    header = json.dumps(meta, separators=(',', ':'), allow_nan=False).encode('utf-8')
+    if len(header) > _MAX_HEADER:
+        raise ValueError('Oversize local perception header')
+    return b''.join((_HEADER_SIZE.pack(len(header)), header, bgr.tobytes(),
+                     np.packbits(road).tobytes(), np.packbits(lane).tobytes()))
+
+
+def decode_local_frame(payload):
+    """Validate and unpack the lossless private binary packet."""
+    if not _HEADER_SIZE.size < len(payload) <= _HEADER_SIZE.size + _MAX_HEADER + _BODY_SIZE:
+        raise ValueError('Invalid local perception packet size')
+    view = memoryview(payload).cast('B')
+    length, = _HEADER_SIZE.unpack_from(view)
+    offset = _HEADER_SIZE.size + length
+    if not 0 < length <= _MAX_HEADER or len(view) != offset + _BODY_SIZE:
+        raise ValueError('Invalid local perception header size')
+    obj = json.loads(view[_HEADER_SIZE.size:offset].tobytes())
+    obj, ns, frame_id, profile = _validated_header(obj, LOCAL_SCHEMA)
+    timings = obj['timings']
+    if not isinstance(timings, dict) or any(type(value) not in (float, int) or not math.isfinite(value)
+                                           for value in timings.values()):
+        raise ValueError('Invalid local perception timings')
+    frame = validated_detections(obj)
+    raw = np.frombuffer(view, dtype=np.uint8, offset=offset)
+    frame['bgr'] = raw[:_BGR_SIZE].reshape(H, W, 3)
+    frame['road'] = np.unpackbits(raw[_BGR_SIZE:_BGR_SIZE + _MASK_SIZE]).reshape(H, W).view(np.bool_)
+    frame['lane'] = np.unpackbits(raw[_BGR_SIZE + _MASK_SIZE:]).reshape(H, W).view(np.bool_)
+    return ns, frame_id, profile, frame, timings

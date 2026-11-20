@@ -126,7 +126,11 @@ class RoadAwareCurvePlanner:
         if targets is None:
             return self.no_observation()
         physical = physical_motor_enabled()
-        ceiling = forward_ceiling(obs.speed, obs.dt, p['pace']) if physical else p['pace']
+        # The real applied pair still initializes the rollout and the brake branch.
+        initial_reference = p.get('initial_ramp_reference_mps', 0.)
+        ceiling = p['pace']
+        if physical:
+            ceiling = forward_ceiling(obs.speed, obs.dt, ceiling, initial_reference=initial_reference)
         speeds = np.array([0., .25, .55, .8, 1.]) * ceiling
         commands = np.tile(speeds, len(targets))
         targets = np.repeat(targets, len(speeds))
@@ -271,16 +275,32 @@ class RoadAwareCurvePlanner:
         # The vehicle gate can hold a fresh Twist for 0.5 s between images.
         # A 0.2 s drive-then-brake fallback cannot authorize an otherwise
         # rejected powered candidate. Keep it as backup for feasible paths.
-        profile = evaluate_profile(obs,escape_controls,horizon,self.stop_age,p['uncertainty'])
-        retimed = (~feasible)&profile['valid']&escape_ok&(commands>0)
-        # Same initial action and geometry slot; replace only an unexecutable
-        # constant-drive schedule with its explicitly checked drive/stop schedule.
+        # Only a rejected forward candidate with a valid escape can be retimed.
+        # Nominal selections keep their immediate brake or pass-then-stop backup.
+        profile_indices = np.flatnonzero(~nominal_feasible & escape_ok & (commands > 0.))
+        profile_steps = max(int(round(horizon / substep)), escape_controls.shape[1])
+        profile_valid = np.full(count, None, dtype=object)
+        profile_controls = np.zeros((count, profile_steps, 2))
+        profile_lower = np.full(count, np.nan)
+        retimed = np.zeros(count, dtype=bool)
         path_array = np.asarray(paths).transpose(1,0,2)
-        path_array[retimed] = profile['paths'][retimed]
-        for original,key in [(road_lower,'road_lower'),(obstacle_lower,'obstacle_lower'),
-            (geometric,'geometric'),(evidence,'evidence'),(dynamics,'dynamics'),
-            (z,'z'),(x,'x'),(heading,'heading'),(speed,'speed'),(road_progress,'road_progress'),(heading_integral,'heading_integral'),(reference_steps,'reference_steps')]:
-            original[retimed] = profile[key][retimed]
+        if profile_indices.size:
+            profile = evaluate_profile(obs, escape_controls[profile_indices], horizon,
+                                       self.stop_age, p['uncertainty'])
+            valid = profile['valid']
+            profile_valid[profile_indices] = valid
+            retimed_indices = profile_indices[valid]
+            retimed[retimed_indices] = True
+            profile_controls[retimed_indices] = profile['controls'][valid]
+            profile_lower[retimed_indices] = np.minimum(profile['road_lower'][valid],
+                                                        profile['obstacle_lower'][valid])
+            # The checked drive/stop schedule keeps the original action and slot.
+            for original, key in ((path_array, 'paths'), (road_lower, 'road_lower'),
+                                  (obstacle_lower, 'obstacle_lower'), (geometric, 'geometric'),
+                                  (evidence, 'evidence'), (dynamics, 'dynamics'), (z, 'z'), (x, 'x'),
+                                  (heading, 'heading'), (speed, 'speed'), (road_progress, 'road_progress'),
+                                  (heading_integral, 'heading_integral'), (reference_steps, 'reference_steps')):
+                original[retimed_indices] = profile[key][valid]
         conditional[retimed] = True
         feasible[retimed] = True
         robust = np.minimum(road_lower, obstacle_lower)
@@ -294,9 +314,6 @@ class RoadAwareCurvePlanner:
         # It only ranks; a trained selector may choose ANY candidate in the mask.
         risk_cost = .35*np.clip((.5-robust)/.5, 0., 1.)**2
         scores = progress-heading_cost-smooth_cost-risk_cost
-        profile_valid = profile['valid']
-        profile_controls = profile['controls']
-        profile_lower = np.minimum(profile['road_lower'], profile['obstacle_lower'])
         camera_updates = camera_belief.updates
         if count < len(full_commands) or edge_slot is not None:
             # Restore first-in-order ties, hard masks, fallback controls and H12
@@ -339,7 +356,7 @@ class RoadAwareCurvePlanner:
                          recovery=('not_needed' if pick is not None and commands[pick] > 0 else
                                    'selected_deceleration' if np.any(feasible & (commands > 0)) else
                                    'no_forward_candidate_reverse_unavailable_unknown_rear_and_unvalidated_response'),
-                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile_valid.tolist(),profile_checked_seconds=profile['checked_seconds'],profile_rule='Substitute only a checked two-second drive/stop path; verify it through the complete wait horizon.',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
+                         audit=dict(curve_progress=dict(reference=None if getattr(obs,'reference',None) is None else {key:(value.tolist() if isinstance(value,np.ndarray) else value) for key,value in obs.reference.items() if not key.startswith('_')},used_substeps=reference_steps.tolist(),total_substeps=steps*4,rule='Same-reference projection arc advance only within supported non-singular span; other substeps retain original projected travel'),heading_penalty_rule='0.8/H times speed-weighted squared direction error integrated over original H at .05s; stopped wait adds zero; safety tail beyond H excluded from score', terminal_heading_penalty=terminal_heading_cost.round(6).tolist(), schedule=['drive_2s_then_stop_and_wait' if flag else 'constant_drive' for flag in retimed],nominal_feasible=nominal_feasible.tolist(),retimed_profile_valid=profile_valid.tolist(),profile_checked_seconds=profile_steps*substep,profile_rule='Check alternatives through the complete wait horizon only for rejected forward candidates with a valid escape. Null means unchecked.',progress_rule='Integral of each .05s displacement projected onto observed local road heading; m/s proxy, not map progress',path_rule='Cubic from current heading to target and observed terminal road heading', response_version='V6.15.15', inverse_rule='nearest reachable CAN output within yaw and slew interval', selected=pick, control_interval=interval, integration_substep=substep,
                                     constraint_interval=substep, horizon=horizon, threshold=0.,
                                     uncertainty_scale=p['uncertainty'], previous_command=previous.tolist(),
                                     columns=['speed', 'yaw', 'target_x', 'geometric_clearance', 'sigma', 'robust_clearance',

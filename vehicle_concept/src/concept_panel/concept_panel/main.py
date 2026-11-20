@@ -1,4 +1,5 @@
 """ROS 2 Foxy panel. ROS callbacks and widgets share the Qt thread."""
+from concurrent.futures import ThreadPoolExecutor
 import json
 import signal
 import sys
@@ -6,7 +7,11 @@ import time
 
 from .model import Action, stamp_seconds
 from .qt import QtCore, QtGui, QtWidgets
+from .recorder import PANEL_TOPIC
 from .window import MODE, STATUS, Window, reason
+
+PANEL_FPS = 15
+PANEL_FRAME_PERIOD = 1. / PANEL_FPS
 
 LABELS={'enable':'启用电机输出','disable':'禁用电机输出','pause':'暂停自动驾驶',
         'resume':'继续自动驾驶','restart':'重启驾驶节点','target':'目标速度','limit':'自动驾驶限速'}
@@ -115,17 +120,31 @@ def image_from_ros(msg):
     return image.rgbSwapped() if encoding=='bgr8' else image
 
 
+def panel_jpeg(image):
+    if image.width() > 1280 or image.height() > 720:
+        image = image.scaled(1280, 720, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    buffer = QtCore.QBuffer()
+    if not buffer.open(QtCore.QIODevice.WriteOnly) or not image.save(buffer, 'JPEG', 70):
+        return None
+    return bytes(buffer.data())
+
+
 class Controller:
     def __init__(self, node, window):
         from rcl_interfaces.srv import GetParameters, SetParameters
         from rclpy.qos import qos_profile_sensor_data
-        from sensor_msgs.msg import Image
+        from sensor_msgs.msg import CompressedImage, Image
         from std_msgs.msg import String
         from std_srvs.srv import SetBool,Trigger
         from .recorder import BagRecorder
 
         self.node,self.window=node,window
         self.recording = RecordingControls(BagRecorder(), window)
+        self.panel_image_type = CompressedImage
+        self.panel_image_pub = node.create_publisher(CompressedImage, PANEL_TOPIC, qos_profile_sensor_data)
+        self.next_panel_image = 0.
+        self.panel_encoder = ThreadPoolExecutor(max_workers=1, thread_name_prefix='concept-panel-jpeg')
+        self.panel_pending = None
         self.lap_map = LapMapUpdates(node, window.lap_map)
         self.pending=self.future=None
         self.clients={}
@@ -184,6 +203,23 @@ class Controller:
         self.window.busy=False
         self.window.pending_text=text
         self.window.log_event('控制',text)
+
+    def disable_before_close(self):
+        from rclpy import spin_until_future_complete
+
+        client, kind = self.clients['disable']
+        try:
+            if client.service_is_ready():
+                future = client.call_async(kind.Request(data=False))
+                spin_until_future_complete(self.node, future, timeout_sec=.75)
+                if future.done() and future.result().success:
+                    return True
+                future.cancel()
+        except Exception as exc:
+            self.node.get_logger().warning(f'关窗关闭动力失败 · {exc}')
+            return False
+        self.node.get_logger().warning('关窗时未收到关闭动力的确认')
+        return False
 
     def start(self,command,value=None):
         if self.pending:
@@ -275,6 +311,46 @@ class Controller:
                     name = 'target_speed_mps' if key == 'target' else 'max_auto_speed_mps'
                     self.read_requests[key] = (client.call_async(GetParameters.Request(names=[name])), steady)
 
+    def record_panel_image(self, steady):
+        status = self.recording.recorder.status()
+        active = status.state == 'recording' and self.panel_image_pub.get_subscription_count()
+        if not active:
+            self.next_panel_image = 0.
+        if self.panel_pending is not None:
+            path, stamp, future = self.panel_pending
+            if not future.done():
+                return
+            self.panel_pending = None
+            if active and path == status.path:
+                try:
+                    payload = future.result()
+                    if payload is not None:
+                        frame = self.panel_image_type()
+                        frame.header.stamp = stamp
+                        frame.format = 'jpeg'
+                        frame.data = payload
+                        self.panel_image_pub.publish(frame)
+                except RuntimeError as exc:
+                    self.window.log_event('录包', '界面帧保存失败 · ' + str(exc))
+        if not active or steady < self.next_panel_image:
+            return
+        # Keep the 15 FPS phase across timer jitter, resetting after a long stall.
+        if steady - self.next_panel_image >= PANEL_FRAME_PERIOD:
+            self.next_panel_image = steady
+        self.next_panel_image += PANEL_FRAME_PERIOD
+        stamp = self.node.get_clock().now().to_msg()
+        image = self.window.grab().toImage()
+        if not image.isNull():
+            # QWidget rendering stays in Qt; compression owns a read-only QImage.
+            self.panel_pending = (status.path, stamp, self.panel_encoder.submit(panel_jpeg, image))
+
+    def panel_timer(self):
+        timer = QtCore.QTimer(self.window)
+        timer.setTimerType(QtCore.Qt.PreciseTimer)
+        timer.timeout.connect(lambda: self.record_panel_image(time.monotonic()))
+        timer.start(10)
+        return timer
+
     def update(self):
         self.recording.refresh()
         self.poll()
@@ -296,6 +372,7 @@ def main(args=None):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
     rclpy.init(args=args)
     node=Node('concept_panel')
+    disable_output_on_close = node.declare_parameter('disable_output_on_close', False).value
     window=Window()
     controller=Controller(node,window)
     shutting_down = False
@@ -320,19 +397,28 @@ def main(args=None):
     refresh=QtCore.QTimer()
     refresh.timeout.connect(controller.update)
     refresh.start(100)
+    capture=controller.panel_timer()
     window.show()
     try:
         app.exec_() if hasattr(app,'exec_') else app.exec()
     finally:
         io.stop()
         refresh.stop()
+        capture.stop()
+        zero_until = 0.
+        if (disable_output_on_close and not shutting_down and rclpy.ok()
+                and controller.disable_before_close()):
+            # Keep the CAN sender alive through the gate's 200 ms zero burst.
+            zero_until = time.monotonic() + .22
         recorder = controller.recording.recorder
         result = recorder.close()
+        controller.panel_encoder.shutdown(wait=True)
         # Qt has exited. Keep our SIGINT/SIGTERM handlers installed until the
         # independent recorder process group is reaped and SQLite is verified.
         while result.state in ('starting', 'recording', 'stopping'):
             time.sleep(.05)
             result = recorder.status()
+        time.sleep(max(0., zero_until - time.monotonic()))
         if result.state == 'error':
             print('录包收尾失败 · {} · {}'.format(result.path, result.error), file=sys.stderr, flush=True)
         node.destroy_node()

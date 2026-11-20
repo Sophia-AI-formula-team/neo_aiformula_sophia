@@ -84,9 +84,8 @@ class B14(nn.Module):
         return F.interpolate(logits[:, :, :size[0], :size[1]], size=native, mode='bilinear',
                              align_corners=False)[0]
 
-    def forward(self, image):
-        native = image.shape[-2:]
-        batch, _ = self.detector.transform([image])
+    def forward_fixed(self, batch, native):
+        """Compute the fixed-size tensors before FCOS selects detections."""
         x = batch.tensors
         features = []
         for i, layer in enumerate(self.encoder):
@@ -97,10 +96,22 @@ class B14(nn.Module):
         road = self.restore(self.road_head(features), batch, native).argmax(0)
         maps = list(self.detector.backbone(features).values())
         outputs = self.detector.head(maps)
+        return road, lane, maps, outputs
+
+    def detection_grid(self, batch, maps):
         anchors = self.detector.anchor_generator(batch, maps)
         sizes = [value.shape[-2] * value.shape[-1] for value in maps]
+        return sizes, [list(a.split(sizes)) for a in anchors]
+
+    def decode_detections(self, batch, native, fixed, grid=None):
+        road, lane, maps, outputs = fixed
+        sizes, anchors = self.detection_grid(batch, maps) if grid is None else grid
         split = {key: list(value.split(sizes, dim=1)) for key, value in outputs.items()}
-        detections = self.detector.postprocess_detections(
-            split, [list(a.split(sizes)) for a in anchors], batch.image_sizes)
+        detections = self.detector.postprocess_detections(split, anchors, batch.image_sizes)
         detections[0]['labels'] = self.label_map[detections[0]['labels']]
         return road, lane, self.detector.transform.postprocess(detections, batch.image_sizes, [native])[0]
+
+    def forward(self, image):
+        native = image.shape[-2:]
+        batch, _ = self.detector.transform([image])
+        return self.decode_detections(batch, native, self.forward_fixed(batch, native))

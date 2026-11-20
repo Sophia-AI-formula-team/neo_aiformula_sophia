@@ -1,4 +1,5 @@
 """Vehicle wiring from neo main d8277bd. Reuse native camera and lifecycle CAN actions."""
+import math
 import runpy
 import tempfile
 import time
@@ -7,9 +8,10 @@ import yaml
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import (GroupAction, IncludeLaunchDescription, LogInfo, OpaqueFunction, RegisterEventHandler,
+from launch.actions import (EmitEvent, GroupAction, IncludeLaunchDescription, LogInfo, OpaqueFunction, RegisterEventHandler,
                             SetEnvironmentVariable, SetLaunchConfiguration)
-from launch.event_handlers import OnShutdown
+from launch.event_handlers import OnProcessExit, OnShutdown
+from launch.events import Shutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration as LC
 from launch_ros.actions import Node, SetParameter
@@ -57,12 +59,15 @@ def check_ownership(context):
 
 
 def zed_actions(context, native, directory):
-    # The wrapper separately caps acquisition and image publication. At 15 Hz
-    # a 60 Hz grab alone still delivers old images to the planning pipeline.
+    # Keep sensor acquisition independent of the image traffic sent to ROS.
+    grab_hz = float(LC('grab_frame_rate').perform(context))
+    publish_hz = float(LC('pub_frame_rate').perform(context))
+    if not all(math.isfinite(rate) and rate > 0 for rate in (grab_hz, publish_hz)):
+        raise ValueError('ZED acquisition and publication rates must be positive and finite')
     original = Path(LC('config_common_path').perform(context))
     config = yaml.safe_load(original.read_text(encoding='utf-8'))
     general = config['/**']['ros__parameters']['general']
-    general['pub_frame_rate'] = float(LC('grab_frame_rate').perform(context))
+    general['pub_frame_rate'] = min(grab_hz, publish_hz)
     overlay = Path(directory, 'zed-common.yaml')
     overlay.write_text(yaml.safe_dump(config), encoding='utf-8')
     return GroupAction(actions=[SetLaunchConfiguration('config_common_path', str(overlay)),
@@ -141,10 +146,22 @@ def build(context):
     direct = LC('onboard_camera').perform(context)
     if direct not in ('auto', 'true', 'false'):
         raise ValueError('onboard_camera must be auto, true or false')
-    direct = vehicle if direct == 'auto' else direct == 'true'
+    transport = LC('local_frame_transport', default='auto').perform(context).lower()
+    if transport not in ('auto', 'true', 'false'):
+        raise ValueError('local_frame_transport must be auto, true or false')
+    local_transport = (vehicle and direct == 'auto') if transport == 'auto' else transport == 'true'
+    direct = (vehicle and not local_transport) if direct == 'auto' else direct == 'true'
+    if local_transport and direct:
+        raise ValueError('local_frame_transport requires onboard_camera:=false or auto')
+    if vehicle and local_transport and 'CONCEPT_CUDA_GRAPH' not in context.environment:
+        board = Path('/proc/device-tree/model')
+        if board.is_file() and b'Jetson AGX Orin Developer Kit' in board.read_bytes():
+            actions.append(SetEnvironmentVariable('CONCEPT_CUDA_GRAPH', '1'))
     vision = dict(calibration=calibration, device=LC('device'), weights=LC('weights'), cuda_fusion=LC('cuda_fusion'),
                   camera_info_topic=LC('camera_info_topic'))
-    driving = dict(onboard_camera=direct, planning_hz=float(LC('planning_hz').perform(context)),
+    driving = dict(onboard_camera=direct, local_frame_transport=local_transport,
+                   planning_hz=float(LC('planning_hz').perform(context)),
+                   profile_timing=LC('profile_timing').perform(context).lower() in ('true', '1'),
                    tracking_controller=tracking_controller)
     gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')
     for params, key in ((driving, 'target_speed_mps'), (gate, 'max_auto_speed_mps')):
@@ -157,7 +174,9 @@ def build(context):
     if direct:
         driving.update({key: ParameterValue(value, value_type=str) for key, value in vision.items()})
     else:
-        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision))
+        actions.append(include('concept_yolop', 'concept_yolop.launch.py', **vision,
+                               local_frame_transport='true' if local_transport else 'false',
+                               profile_timing='true' if local_transport and driving['profile_timing'] else 'false'))
     actions.extend([
         Node(package='motor_controller', executable='motor_controller', name='motor_controller', namespace='/concept/hardware',
              parameters=[share('vehicle','config','wheel.yaml'), share('motor_controller','config','motor_controller.yaml'), buttons],
@@ -174,9 +193,16 @@ def build(context):
     if LC('panel').perform(context).lower() in ('true', '1'):
         # The panel alone owns a bag process. Allow startup (15 s), graceful
         # finalization (15 s), group cleanup and readback of a long recording.
-        actions.append(Node(package='concept_panel', executable='panel', output='screen',
-                            sigterm_timeout='45', sigkill_timeout='75'))
-    if LC('rviz').perform(context).lower() in ('true', '1'):
+        panel = Node(package='concept_panel', executable='panel', output='screen',
+                     parameters=[{'disable_output_on_close': True}],
+                     sigterm_timeout='45', sigkill_timeout='75')
+        actions.extend([
+            RegisterEventHandler(OnProcessExit(target_action=panel, on_exit=[
+                EmitEvent(event=Shutdown(reason='Concept panel exited'))])),
+            panel,
+        ])
+    rviz = LC('rviz').perform(context).lower()
+    if rviz in ('true', '1') or (rviz == 'auto' and not vehicle):
         actions.append(Node(package='rviz2', executable='rviz2', name='concept_rviz',
                             arguments=['-d', share('concept_visualization', 'rviz', 'concept.rviz')]))
     return actions

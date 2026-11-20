@@ -35,7 +35,8 @@ def lane_sections(evidence, raw=None, projection=None):
         for edge in (left, right):
             points = np.asarray(edge['points'])
             valid &= np.min(abs(depth[:, None]-points[:, 0]), axis=1) <= 1.0
-        for group in np.split(np.flatnonzero(valid), np.flatnonzero(np.diff(np.flatnonzero(valid))>1)+1):
+        indices = np.flatnonzero(valid)
+        for group in np.split(indices, np.flatnonzero(np.diff(indices)>1)+1):
             if len(group) < 2:
                 continue
             z = depth[group]
@@ -47,17 +48,29 @@ def lane_sections(evidence, raw=None, projection=None):
     # define a band. Preserve these sparse runs; camera edges are not borders.
     if raw is not None and projection is not None:
         focal, cx, cy, height = projection
+        ego_spans = [(p['rows'][0][0]-.1, p['rows'][-1][0]+.1)
+                     for p in parts if p['kind']=='ego']
+        depth_rows = []
         for z in np.arange(1.2, 12.0, DEPTH_STEP):
-            if any(p['kind']=='ego' and p['rows'][0][0]-.1 <= z <= p['rows'][-1][0]+.1 for p in parts):
+            if any(lo <= z <= hi for lo, hi in ego_spans):
                 continue
             v = round(cy+height*focal/z)
-            if not 1 <= v < raw.shape[0]-1:
-                continue
-            active = np.flatnonzero(raw[v-1:v+2].sum(axis=0) >= 2)
-            for g in np.split(active, np.flatnonzero(np.diff(active)>1)+1):
-                if len(g) < 5:
+            if 1 <= v < raw.shape[0]-1:
+                depth_rows.append((z, v))
+        if depth_rows:
+            z_values, pixel_rows = zip(*depth_rows)
+            rows = np.asarray(pixel_rows)
+            active = raw[rows[:, None] + [-1, 0, 1]].sum(axis=1) >= 2
+            # Pair starts and ends of consecutive runs in row-major order.
+            # The zero columns allow a run to touch either image border.
+            padded = np.pad(active, ((0, 0), (1, 1)))
+            active_row, left = np.nonzero(~padded[:, :-1] & padded[:, 1:])
+            right = np.nonzero(padded[:, :-1] & ~padded[:, 1:])[1] - 1
+            for i, first, last in zip(active_row, left, right):
+                if last-first < 4:
                     continue
-                l, r = (g[[0,-1]]-cx)*z/focal
+                z = z_values[i]
+                l, r = (np.asarray([first, last])-cx)*z/focal
                 parts.append(dict(kind='ego_mask', rows=[[z-.10,l,r],[z+.10,l,r]],
                                   fit_error_m=None, basis='projected_B_pixels'))
     return parts

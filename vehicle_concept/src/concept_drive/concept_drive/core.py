@@ -5,6 +5,7 @@ module are clockwise-positive; the ROS adapter performs the two sign conversions
 """
 from functools import partial
 from pathlib import Path
+from time import perf_counter_ns
 
 import numpy as np
 
@@ -26,6 +27,12 @@ from concept_road.map_semantics618 import SemanticMap
 from concept_road.rear_road import RearRoad
 from concept_road.runtime_map import RuntimeMap, lane_sections
 from concept_road.vision import CX, CY, FOCAL, HEIGHT
+
+
+def _record_stage(timings, stage, start):
+    end = perf_counter_ns()
+    timings[stage] = (end - start) / 1e6
+    return end
 
 
 class Drive:
@@ -54,7 +61,10 @@ class Drive:
         self.planner.p['pace'] = float(pace)
         self.ranker.pace = float(pace)
 
-    def step(self, image, raw, lane, det, sensor):
+    def step(self, image, raw, lane, det, sensor, timings=None):
+        """Advance one frame and optionally record wall-clock stage durations in ms."""
+        if timings is not None:
+            stage_start = perf_counter_ns()
         if image.shape != (360, 640, 3) or image.dtype != np.uint8:
             raise ValueError('B1.4 requires a 640x360 BGR image')
         if raw.shape != image.shape[:2] or lane.shape != raw.shape:
@@ -69,20 +79,30 @@ class Drive:
             motion_speed = .5 * (self.previous_motion[0] + speed)
             motion_yaw = .5 * (self.previous_motion[1] + yaw)
         boxes = det['boxes'][(det['labels'] == 91) & (det['scores'] >= .5)].tolist()
+        if timings is not None:
+            stage_start = _record_stage(timings, 'input_prepare', stage_start)
         road, _, heading = self.observer.read(image, raw, lane, boxes, motion_speed, motion_yaw, dt)
         evidence = self.observer.last
+        if timings is not None:
+            stage_start = _record_stage(timings, 'road_observation', stage_start)
         field_ground = sensor.get('field_ground_projection', False)
         measurements = []
         groups = instances(det, image.shape, image, field_ground=field_ground, measurements=measurements)
         objects = self.tracker.update(groups, motion_speed, motion_yaw, dt,
                                       minimum_body_z=float(road[0, 0]) if len(road) else None, image=image)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'obstacle_tracking', stage_start)
         parts = lane_sections(evidence, raw, (FOCAL, CX, CY, HEIGHT))
         snapshot = self.mapper.update(sensor, parts, objects, self.tracker.last)
         semantic = self.semantics.update(image, raw, lane, boxes, evidence, snapshot)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'mapping_semantics', stage_start)
         guidance = np.asarray(evidence.get('lane_geometry_rows', [])).reshape(-1, 4)
         road, edges = self.limits.update(road, evidence['tracks'], semantic['lines'], motion_speed, motion_yaw, dt)
         heading, reference = observed_direction(road, heading, evidence['tracks'], edges)
         evidence['circuit_edges'] = edges
+        if timings is not None:
+            stage_start = _record_stage(timings, 'road_limits', stage_start)
         launch_evidence = None
         if field_ground:
             near_rows = evidence.get('nearfield_rows', [])
@@ -120,6 +140,8 @@ class Drive:
                 guidance = np.empty((0, 4))
             if reference is None:
                 reference = build_reference(evidence)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'field_road_and_launch', stage_start)
         if self.tracking_controller == 'lya':
             if field_ground:
                 # Visible_z ends at the first missing direct ground section.
@@ -134,7 +156,15 @@ class Drive:
         obs = RecoveryReference(road, objects, speed, yaw, dt, heading, guidance,
                                 evidence['rear_history']['observed_limit_m'],
                                 reference=reference)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'reference_prepare', stage_start)
+        initial_reference = 0.
+        if field_ground and self.builder.planner.phase == 'forward':
+            initial_reference = sensor.get('initial_ramp_reference_mps', 0.)
+        self.planner.p['initial_ramp_reference_mps'] = initial_reference
         features, allowed, baseline = self.builder.prepare(obs)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'candidate_prepare', stage_start)
         pick, ranking = baseline, None
         if self.builder.network_allowed:
             audit = self.builder.planner.last['audit']
@@ -143,7 +173,11 @@ class Drive:
                     launch_clearance, provisional, obs, self.planner.pending, audit)
             pick, ranking = self.ranker.rank(features, allowed, baseline, audit, obs,
                                             **({'launch_evidence': launch_evidence} if field_ground else {}))
+        if timings is not None:
+            stage_start = _record_stage(timings, 'ranking', stage_start)
         control = self.builder.command(pick)
+        if timings is not None:
+            stage_start = _record_stage(timings, 'control_select', stage_start)
         self.previous_time = sensor['t']
         self.previous_motion = (speed, yaw)
         self.observed_openings = [item['position'] for item in semantic['junctions']]
@@ -168,7 +202,7 @@ class Drive:
         else:
             owner = 'candidate'
         tracking = controller_record(self.tracking_controller, control, owner, self.planner.tracking_frame, pick)
-        return dict(tracking_controller=tracking, selected_index=None if pick is None else int(pick),
+        result = dict(tracking_controller=tracking, selected_index=None if pick is None else int(pick),
                     whitebox_index=None if baseline is None else int(baseline), command_native=control.tolist(),
                     selected_path=paths[pick] if pick is not None and len(paths) else detail.get('path', []),
                     candidate_evaluation=audit['candidate_evaluation'],
@@ -184,6 +218,9 @@ class Drive:
                     objects=objects.tolist(), tracks=self.tracker.last['tracks'], speed_estimate_mps=float(speed),
                     rejected=audit.get('rejected', {}), edges=edges['edges'], lines=semantic['lines'],
                     map=snapshot, map_semantics={k: semantic[k] for k in ('changed_markings','changed_gaps','changed_repairs')})
+        if timings is not None:
+            _record_stage(timings, 'decision_pack', stage_start)
+        return result
 
 
 def intersect_confirmed_edges(camera_road, constrained, edges):

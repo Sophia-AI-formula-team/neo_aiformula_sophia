@@ -19,8 +19,9 @@ import yaml
 
 DECISION_TOPIC = '/concept/decision'
 CAMERA_TOPIC = '/concept/perception/overlay/compressed'
+PANEL_TOPIC = '/concept/panel/screenshot/compressed'
 TOPICS = (
-    DECISION_TOPIC, CAMERA_TOPIC, '/concept/vehicle_state', '/concept/auto_cmd',
+    DECISION_TOPIC, CAMERA_TOPIC, PANEL_TOPIC, '/concept/vehicle_state', '/concept/auto_cmd',
     '/concept/gate/status', '/concept/gate/estop', '/concept/internal/motor_cmd',
     '/concept/internal/motor_can', '/aiformula_sensing/vehicle_info',
     '/aiformula_sensing/vectornav/imu', '/aiformula_control/joy_node/joy_l2_throttle',

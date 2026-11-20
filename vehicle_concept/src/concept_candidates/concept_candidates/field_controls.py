@@ -19,8 +19,8 @@ HALF_TREAD = .30                # metres
 WHEEL_SPEED_FRACTION = .5       # |turn wheel speed| / straight wheel speed
 
 
-def forward_ceiling(measured, dt, pace):
-    applied = max(0., physical_applied_command()[0])
+def forward_ceiling(measured, dt, pace, *, initial_reference=0.):
+    applied = max(initial_reference, 0., physical_applied_command()[0])
     return min(pace, applied + FORWARD_ACCEL * min(dt, .2),
                max(0., measured) + TRACKING_HEADROOM)
 

@@ -41,23 +41,31 @@ def _transport(rows, speed, yaw, dt):
 
 def _connect_edge_samples(current, edges, labels, seed, green):
     """Follow a measured verge through gaps, checking the actual image at each step."""
+    prefixes = {}
     for side in (0, 1):
         col = 1 + side
         direction = 1 if side == 0 else -1  # points towards the road
         anchor = current[edges[:, side]]
         if len(anchor) < 3 or np.ptp(anchor[:, 0]) < .7:
             continue
+        fits = {}
         for i, row in enumerate(current):
             if edges[i, side]:
                 continue
             z = row[0]
             # Three close measured samples define a local tangent. No correction
             # far beyond the last measured edge or across a change in its direction.
-            nearest = anchor[np.argsort(abs(anchor[:, 0] - z))[:5]]
+            indices = np.argsort(abs(anchor[:, 0] - z))[:5]
+            nearest = anchor[indices]
             if min(abs(nearest[:, 0] - z)) > 2.1 or np.ptp(nearest[:, 0]) < .35:
                 continue
-            line = np.polynomial.polynomial.polyfit(nearest[:, 0], nearest[:, col], 1)
-            if np.max(abs(nearest[:, col] - np.polynomial.polynomial.polyval(nearest[:, 0], line))) > .20:
+            key = indices.tobytes()
+            if key not in fits:
+                line = np.polynomial.polynomial.polyfit(nearest[:, 0], nearest[:, col], 1)
+                residual = np.max(abs(nearest[:, col] - np.polynomial.polynomial.polyval(nearest[:, 0], line)))
+                fits[key] = None if residual > .20 else line
+            line = fits[key]
+            if line is None:
                 continue
             # Stored anchors are at the outside of legal paint. Compare colour
             # across the paint centre, then recover the outside edge exactly once.
@@ -72,7 +80,9 @@ def _connect_edge_samples(current, edges, labels, seed, green):
             # Compare patches beside the expected boundary instead of treating
             # an interrupted white line or a failed B section as the outer edge.
             us = np.arange(center-reach, center+reach+1)
-            prefix = np.r_[0., np.cumsum(green[v], dtype=float)]
+            if v not in prefixes:
+                prefixes[v] = np.r_[0., np.cumsum(green[v], dtype=float)]
+            prefix = prefixes[v]
             left = (prefix[us-pad] - prefix[us-pad-width]) / width
             right = (prefix[us+pad+width] - prefix[us+pad]) / width
             inside, outside = (right, left) if side == 0 else (left, right)

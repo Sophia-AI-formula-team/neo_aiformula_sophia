@@ -63,6 +63,7 @@ class GateNode(Node):
         self.create_timer(.1, self.report, clock=self.steady)
         self.last_clock = None
         self.repeat_zero_until = -math.inf
+        self.last_reported_state = None
 
     @staticmethod
     def valid_limit(value):
@@ -199,6 +200,10 @@ class GateNode(Node):
             self.repeat_zero_until = time.monotonic() + .20
         if cmd == ZERO and (self.gate.enabled or time.monotonic() < self.repeat_zero_until):
             self.publish_frame(ZERO_FRAME)
+        # Show changes in the applied command and interlocks on the output
+        # tick. The heartbeat carries ages without publishing on every receipt.
+        if self.status_key() != self.last_reported_state:
+            self.report()
 
     def estop(self, msg):
         self.gate.emergency(msg.data, self.now())
@@ -223,15 +228,26 @@ class GateNode(Node):
         response.message = self.gate.reason if response.success else 'resume_interlocked'
         return response
 
+    def status_key(self):
+        g = self.gate
+        return g.enabled, g.paused, g.manual_held, g.estop, g.reason, g.ready, g.sent
+
     def report(self):
         g = self.gate
+        stamp, now = self.now(), time.monotonic()
+        self.last_reported_state = self.status_key()
         mode = ('estop' if g.estop else 'disabled' if not g.enabled else 'manual'
                 if g.manual_held else 'paused' if g.paused else 'auto')
+        receipt_age = now-g.auto_at
+        capture_age = stamp-g.auto_stamp if math.isfinite(g.auto_at) else math.inf
         self.status.publish(String(data=json.dumps(dict(output_enabled=g.enabled, paused=g.paused,
             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
-            t=self.now(), max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
+            t=stamp, max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
             manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),
-            auto_fresh=not g.paused and g.auto_is_fresh(self.now(), time.monotonic())))))
+            converter_ready=g.ready,
+            auto_capture_age_s=capture_age if math.isfinite(capture_age) else None,
+            auto_receipt_age_s=receipt_age if math.isfinite(receipt_age) else None,
+            auto_fresh=not g.paused and g.auto_is_fresh(stamp, now)))))
 
 
 def main(args=None):

@@ -64,10 +64,10 @@ def part_grid(parts, kinds):
 
 def road_fills(parts, measured):
     result=[]
-    all_known=part_grid(parts,{'ego','adjacent','ego_mask'})
+    ego=part_grid(parts,{'ego'})
     adjacent=part_grid(parts,{'adjacent'})
-    for kind in ('ego','adjacent'):
-        original=part_grid(parts,{kind})
+    all_known=ego | adjacent | part_grid(parts,{'ego_mask'})
+    for kind, original in (('ego',ego),('adjacent',adjacent)):
         closed=cv2.morphologyEx(original.astype(np.uint8),cv2.MORPH_CLOSE,
                                np.ones((9,5),np.uint8)).astype(bool)
         fill=closed & ~original & measured

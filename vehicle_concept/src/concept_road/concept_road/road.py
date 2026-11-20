@@ -14,13 +14,30 @@ except ImportError:  # Direct Python source checkout, without colcon build.
     trace_paint = None
 
 DEPTHS=np.linspace(.95,12.,45)
+DEPTH_PIXEL_ROWS = np.asarray([round(CY + HEIGHT * FOCAL / z) for z in DEPTHS])
+
+
+def _weighted_quadratic(design, lateral, weights, rcond, depth):
+    # Match numpy.polynomial.polyfit's weighted, column-scaled solve. The
+    # Vandermonde matrix is the same at every robust reweighting iteration.
+    lhs = design * weights
+    rhs = lateral * weights
+    scale = np.sqrt(np.square(lhs).sum(axis=1))
+    scale[scale == 0] = 1.
+    coefficients, _, rank, _ = np.linalg.lstsq(lhs.T / scale, rhs, rcond)
+    if rank != 3:
+        return np.polynomial.polynomial.polyfit(depth, lateral, 2, w=weights)
+    return coefficients / scale
 
 def fit(points):
     p=np.asarray(points,float)
     if len(p)<5 or np.ptp(p[:,0])<1.:return None
     z,x=p[:,0],p[:,1]
+    design = np.polynomial.polynomial.polyvander(z+0., 2).T
+    fit_lateral = x+0.
+    rcond = len(z) * np.finfo(z.dtype).eps
     weights=np.exp(-p[:,2]/.35)/(1+.04*z*z)
-    coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights))
+    coefficient=_weighted_quadratic(design,fit_lateral,np.sqrt(weights),rcond,z)
     for iteration in range(5):
         residual=x-np.polynomial.polynomial.polyval(z,coefficient)
         # The initial least-squares solution is already a fixed point when
@@ -28,7 +45,7 @@ def fit(points):
         if iteration==0 and np.all(abs(residual)<=.10):
             break
         robust=np.minimum(1.,.10/np.maximum(abs(residual),1e-6))
-        coefficient=np.polynomial.polynomial.polyfit(z,x,2,w=np.sqrt(weights*robust))
+        coefficient=_weighted_quadratic(design,fit_lateral,np.sqrt(weights*robust),rcond,z)
     residual=abs(x-np.polynomial.polynomial.polyval(z,coefficient))
     accepted=residual<.25
     if accepted.sum()<5 or np.ptp(z[accepted])<1.:return None
@@ -103,20 +120,22 @@ class RoadMap:
 
     @staticmethod
     def road_rows(raw):
-        n,labels,stats,_=cv2.connectedComponentsWithStats(raw.astype(np.uint8),8)
+        n,labels=cv2.connectedComponents(raw.astype(np.uint8),connectivity=8)
         seed=labels[260:350,200:460];counts=np.bincount(seed.ravel(),minlength=n);counts[0]=0
         component=labels==int(counts.argmax()) if counts.max() else np.zeros_like(raw,bool)
-        rows=[]
-        for z in DEPTHS:
-            v=int(round(CY+HEIGHT*FOCAL/z))
-            if not 2<=v<raw.shape[0]-2:continue
-            active=np.flatnonzero(component[v-2:v+3].mean(0)>=.4)
-            if len(active)<12:continue
-            left,right=active[[0,-1]]
-            # Only the exterior envelope contributes boundary evidence.
-            # Interior holes remain recorded separately and are not new edges.
-            rows.append([z,(left-CX)*z/FOCAL,(right-CX)*z/FOCAL,left,right])
-        return np.asarray(rows,float).reshape(-1,5),component
+        observed = (DEPTH_PIXEL_ROWS >= 2) & (DEPTH_PIXEL_ROWS < raw.shape[0] - 2)
+        pixels = DEPTH_PIXEL_ROWS[observed]
+        # Two of five pixels are exactly the old .4 support threshold.
+        support = component[pixels[:, None] + np.arange(-2, 3)].sum(axis=1) >= 2
+        valid = support.sum(axis=1) >= 12
+        if not np.any(valid):
+            return np.empty((0, 5)), component
+        depth, visible = DEPTHS[observed][valid], support[valid]
+        left = visible.argmax(axis=1)
+        right = visible.shape[1] - 1 - visible[:, ::-1].argmax(axis=1)
+        # Use the exterior envelope. Internal holes still do not form edges.
+        return np.column_stack((depth, (left-CX)*depth/FOCAL, (right-CX)*depth/FOCAL,
+                                left, right)), component
 
     def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
         previous=self.transport(speed,yaw,dt)
