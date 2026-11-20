@@ -9,6 +9,7 @@
 | 1120-04 红转绿 | [SSD 原包复算](mapassist-start-speed/ssd-replay/REPORT.md) · [红绿灯牌实拍局部](mapassist-start-speed/panel-red-green-detail.png) |
 | A3、A4 和 A4 Lite 灯牌识别 | [早场检测对照](mapassist-red-light/stills/a3-a4-detection-comparison.png) · [A4 Lite 转绿报告](mapassist-green-resume/REPORT.md) · [A3 回放](mapassist-a3-tuning/REPLAY.md) |
 | 1120-05 起步外拐、近场 OA 和红停不解锁 | [逐事件复盘](mapassist-latest/REPORT.md) · [OA 原生 HUD](mapassist-latest/work/oa-hud-2.jpg) · [绿牌实拍局部](mapassist-latest/work/held-green-panel-crop.png) |
+| 1120-09 A3 红转绿、非红停、闭环与 OA 乱拐 | [复盘](mapassist-1120-09/) · [实车鸟瞰](mapassist-1120-09/trajectory-odom.png) · [里程计轨迹 CSV](mapassist-1120-09/trajectory-odom.csv) |
 | Concept 门控与停车 | [两次实车场次](concept-1037/REPORT.md) · [新指令断档定位](concept-1037/command-fix/REPORT.md) · [15 FPS 界面样帧](concept-1037/panel-15fps-frame.jpg) |
 
 ## 车载回放

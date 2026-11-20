@@ -14,6 +14,7 @@
 | 1120-06 | Concept LYA 第一包 | 10:37:28.575–10:37:38.669 | 3,968 | 指令交替为 0 和 0.05 m/s，轮速为零 |
 | 1120-07 | Concept LYA 第二包 | 10:38:38.704–10:39:40.363 | 33,268 | 自动最高 2.5 m/s，中途停车和手柄接管 |
 | 1120-08 | Concept 启动期通用抓包 | 10:37:02.714–10:37:17.853 | 1,404 | 物理 CAN 10 条双零，作为启动期旁证 |
+| 1120-09 | MapAssist A3 外圈 | 11:52:14.763–11:56:47.704 | 190,065 | 绿灯恢复驱动。短中线断供触发非红停，首圈未闭合，OA 接管后角速度尖峰。[分析与轨迹](diagnostics/mapassist-1120-09/) |
 
 [诊断图与 POV 视频](diagnostics/) · [MapAssist 场次](MAPASSIST.md) · [Concept 场次](CONCEPT.md) · [LYA 回滚](LYA_ROLLBACK.md) · [最早两场审阅资料](mapassist-red-light/)
 
@@ -29,5 +30,8 @@
 | 1120-06 | `1120-06_concept_20261120_103726_a70fd2f43c754872968ea2f058f4eedc.tar.zst` | 884,845 | `aa95e23d05c12d456aed1f8e93e1f48fd0c97f0c69c8eab5e8540edcc336cb85` |
 | 1120-07 | `1120-07_concept_20261120_103837_984e635ee62d48088b4f7c6eebe1cb43.tar.zst` | 8,479,715 | `2f16bd529b5f1d5a8ff2d51db0ffd051a539b370bc97aee8ff0429a28eabc01b` |
 | 1120-08 | `1120-08_rosbag2_2026_11_20-10_29_02.tar.zst` | 128,500,602 | `fac7c412d7dff49b005a4cf98b0efab71190f9c07b4997a57446bea55c7d585f` |
+| 1120-09 | `1120-09_rosbag2_2026_11_20-11_49_36.tar.zst` | 1,587,310,126 | `2b27cc66428e62828df3eb84ca59d7fb73e60abd2a0777276aea154adc353484` |
+
+1120-09 的 SSD 转存目录使用临时编号 `1120-06`。以原始 ROS 时间名识别，统一归档编号使用 `1120-09`。
 
 使用 `tar --zstd -xf 文件名.tar.zst` 解包，解包后的 ROS bag 目录包含 SQLite 和 `metadata.yaml`。
