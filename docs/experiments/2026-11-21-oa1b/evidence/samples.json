@@ -1,0 +1,485 @@
+{
+  "counts": {
+    "motor": 242,
+    "CAN": 2523,
+    "public": 129,
+    "abc_a": 129,
+    "private": 128,
+    "abc_b": 129,
+    "abc_c": 129,
+    "/flag_stop": 112,
+    "session": 170,
+    "/point_flag": 117,
+    "status": 56,
+    "guard": 56,
+    "diagnostic_cmd_vel": 138,
+    "filtered_lane_pose": 101,
+    "filtered_omega_t": 101,
+    "lya_cmd_vel": 94
+  },
+  "last": {
+    "motor": {
+      "reason": "command_timeout",
+      "semantic_active": false,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "CAN": {
+      "id": 528,
+      "dlc": 8,
+      "data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stamp": [
+        1795202978,
+        95043599
+      ]
+    },
+    "public": {
+      "traffic_light_state": "red",
+      "red_pixels_count": 50,
+      "header": {
+        "stamp": {
+          "sec": 1795202977,
+          "nanosec": 403486110
+        },
+        "frame_id": "zed_left_camera_optical_frame"
+      }
+    },
+    "abc_a": [
+      2.0,
+      0.6217069625854492,
+      0.0
+    ],
+    "private": {
+      "traffic_light_state": "red",
+      "red_pixels_count": 25,
+      "header": {
+        "stamp": {
+          "sec": 1795202977,
+          "nanosec": 403486110
+        },
+        "frame_id": "zed_left_camera_optical_frame"
+      }
+    },
+    "abc_b": [
+      3.0,
+      0.6348468661308289,
+      0.0
+    ],
+    "abc_c": [
+      4.0,
+      0.6479867100715637,
+      0.0
+    ],
+    "/flag_stop": false,
+    "session": {
+      "session": "ee576fe56d354d1e8ff7f976066770e6",
+      "sequence": 170,
+      "stamp_ns": 1795202975429287549,
+      "active": false
+    },
+    "/point_flag": false,
+    "status": {
+      "traffic_light": "red",
+      "traffic_mode": "prepare",
+      "smooth_min_turn_radius_m": 5.5,
+      "velocity_gate_reason": "forwarding_controller"
+    },
+    "guard": {
+      "traffic_policy": "stop_wait",
+      "traffic_mode": "normal",
+      "traffic_stop_required": false,
+      "traffic_reason": "red_prepare_first_lap",
+      "ros_time_sec": 1795202975.0292094
+    },
+    "diagnostic_cmd_vel": [
+      1.8343073968232098,
+      0.05816142690920718
+    ],
+    "filtered_lane_pose": [
+      2.0,
+      0.6217069625854492,
+      0.013139147391316991
+    ],
+    "filtered_omega_t": [
+      0.013139147391316991,
+      0.013139087796961556,
+      -5.959435543483049e-07
+    ],
+    "lya_cmd_vel": [
+      1.8343073968232098,
+      0.05816142690920718
+    ]
+  },
+  "motor_reasons": {
+    "command_timeout": 82,
+    "semantic_status_timeout": 14,
+    "semantic_go": 146
+  },
+  "motor_examples": {
+    "command_timeout": {
+      "reason": "command_timeout",
+      "semantic_active": false,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "semantic_status_timeout": {
+      "reason": "semantic_status_timeout",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        0.0,
+        0.0
+      ],
+      "can_data": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "semantic_go": {
+      "reason": "semantic_go",
+      "semantic_active": true,
+      "manual_held": false,
+      "command": [
+        1.8343073968232098,
+        0.05816142690920718
+      ],
+      "can_data": [
+        177,
+        0,
+        0,
+        0,
+        243,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "matched": [
+    {
+      "ros_stamp": 1795202961234176865,
+      "sources": {
+        "motor": {
+          "reason": "semantic_go",
+          "semantic_active": true,
+          "manual_held": false,
+          "command": [
+            1.8343073968232098,
+            0.05816142690920718
+          ],
+          "can_data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ]
+        },
+        "CAN": {
+          "id": 528,
+          "dlc": 8,
+          "data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ],
+          "stamp": [
+            1795202961,
+            223913504
+          ]
+        },
+        "session": {
+          "session": "ee576fe56d354d1e8ff7f976066770e6",
+          "sequence": 27,
+          "stamp_ns": 1795202961217616107,
+          "active": true
+        },
+        "guard": {
+          "traffic_policy": "stop_wait",
+          "traffic_mode": "normal",
+          "traffic_stop_required": false,
+          "traffic_reason": "red_prepare_first_lap",
+          "ros_time_sec": 1795202961.2282739
+        },
+        "diagnostic_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ],
+        "lya_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ]
+      },
+      "age_seconds": {
+        "motor": 0.0,
+        "CAN": 0.01,
+        "session": 0.0162,
+        "guard": 0.0049,
+        "diagnostic_cmd_vel": 0.0733,
+        "lya_cmd_vel": 0.0737
+      }
+    },
+    {
+      "ros_stamp": 1795202961234260452,
+      "sources": {
+        "motor": {
+          "reason": "semantic_go",
+          "semantic_active": true,
+          "manual_held": false,
+          "command": [
+            1.8343073968232098,
+            0.05816142690920718
+          ],
+          "can_data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ]
+        },
+        "CAN": {
+          "id": 528,
+          "dlc": 8,
+          "data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ],
+          "stamp": [
+            1795202961,
+            233897184
+          ]
+        },
+        "session": {
+          "session": "ee576fe56d354d1e8ff7f976066770e6",
+          "sequence": 27,
+          "stamp_ns": 1795202961217616107,
+          "active": true
+        },
+        "guard": {
+          "traffic_policy": "stop_wait",
+          "traffic_mode": "normal",
+          "traffic_stop_required": false,
+          "traffic_reason": "red_prepare_first_lap",
+          "ros_time_sec": 1795202961.2282739
+        },
+        "diagnostic_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ],
+        "lya_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ]
+      },
+      "age_seconds": {
+        "motor": 0.0001,
+        "CAN": 0.0,
+        "session": 0.0163,
+        "guard": 0.005,
+        "diagnostic_cmd_vel": 0.0734,
+        "lya_cmd_vel": 0.0737
+      }
+    },
+    {
+      "ros_stamp": 1795202961244456132,
+      "sources": {
+        "motor": {
+          "reason": "semantic_go",
+          "semantic_active": true,
+          "manual_held": false,
+          "command": [
+            1.8343073968232098,
+            0.05816142690920718
+          ],
+          "can_data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ]
+        },
+        "CAN": {
+          "id": 528,
+          "dlc": 8,
+          "data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ],
+          "stamp": [
+            1795202961,
+            243971353
+          ]
+        },
+        "session": {
+          "session": "ee576fe56d354d1e8ff7f976066770e6",
+          "sequence": 27,
+          "stamp_ns": 1795202961217616107,
+          "active": true
+        },
+        "guard": {
+          "traffic_policy": "stop_wait",
+          "traffic_mode": "normal",
+          "traffic_stop_required": false,
+          "traffic_reason": "red_prepare_first_lap",
+          "ros_time_sec": 1795202961.2282739
+        },
+        "diagnostic_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ],
+        "lya_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ]
+      },
+      "age_seconds": {
+        "motor": 0.0103,
+        "CAN": 0.0,
+        "session": 0.0265,
+        "guard": 0.0152,
+        "diagnostic_cmd_vel": 0.0836,
+        "lya_cmd_vel": 0.0839
+      }
+    },
+    {
+      "ros_stamp": 1795202961254273578,
+      "sources": {
+        "motor": {
+          "reason": "semantic_go",
+          "semantic_active": true,
+          "manual_held": false,
+          "command": [
+            1.8343073968232098,
+            0.05816142690920718
+          ],
+          "can_data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ]
+        },
+        "CAN": {
+          "id": 528,
+          "dlc": 8,
+          "data": [
+            177,
+            0,
+            0,
+            0,
+            243,
+            0,
+            0,
+            0
+          ],
+          "stamp": [
+            1795202961,
+            253923431
+          ]
+        },
+        "session": {
+          "session": "ee576fe56d354d1e8ff7f976066770e6",
+          "sequence": 27,
+          "stamp_ns": 1795202961217616107,
+          "active": true
+        },
+        "guard": {
+          "traffic_policy": "stop_wait",
+          "traffic_mode": "normal",
+          "traffic_stop_required": false,
+          "traffic_reason": "red_prepare_first_lap",
+          "ros_time_sec": 1795202961.2282739
+        },
+        "diagnostic_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ],
+        "lya_cmd_vel": [
+          1.8343073968232098,
+          0.05816142690920718
+        ]
+      },
+      "age_seconds": {
+        "motor": 0.0201,
+        "CAN": 0.0,
+        "session": 0.0363,
+        "guard": 0.025,
+        "diagnostic_cmd_vel": 0.0934,
+        "lya_cmd_vel": 0.0938
+      }
+    }
+  ]
+}

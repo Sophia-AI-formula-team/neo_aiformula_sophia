@@ -1,0 +1,33 @@
+{"lane": "inner", "stop_at_49_50": [false, true], "oa_pub": ["/cone_mask_avoider"], "oa_sub": ["/data_processing_node"], "control_source": ["/map_assist"], "turn_radius": 6.0}
+   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+[map_assist-3]     executor.spin_once()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+[map_assist-3]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+[map_assist-3]     return next(self._cb_iter)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+[map_assist-3]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+[map_assist-3] KeyboardInterrupt
+[INFO] [python3-5]: process has finished cleanly [pid 135]
+[INFO] [python3-1]: process has finished cleanly [pid 127]
+[INFO] [python3-4]: process has finished cleanly [pid 133]
+[ERROR] [map_assist-3]: process has died [pid 131, exit code -2, cmd '/pr47/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_r2k23wjb -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+[obstacle_avoidance-2] OA exited: reset published, but no /point_flag subscriber was discovered; source restoration is unconfirmed.
+[INFO] [obstacle_avoidance-2]: process has finished cleanly [pid 129]
+
+{"lane": "outer", "stop_at_49_50": [false, true], "oa_pub": ["/cone_mask_avoider"], "oa_sub": ["/data_processing_node"], "control_source": ["/map_assist"], "turn_radius": 5.5}
+   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+[map_assist-3]     executor.spin_once()
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+[map_assist-3]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+[map_assist-3]     return next(self._cb_iter)
+[map_assist-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+[map_assist-3]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+[map_assist-3] KeyboardInterrupt
+[INFO] [python3-5]: process has finished cleanly [pid 297]
+[INFO] [python3-1]: process has finished cleanly [pid 289]
+[INFO] [python3-4]: process has finished cleanly [pid 295]
+[ERROR] [map_assist-3]: process has died [pid 293, exit code -2, cmd '/pr47/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_g1st8x5x -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+[obstacle_avoidance-2] OA exited: reset published, but no /point_flag subscriber was discovered; source restoration is unconfirmed.
+[INFO] [obstacle_avoidance-2]: process has finished cleanly [pid 291]

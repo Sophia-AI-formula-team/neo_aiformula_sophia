@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>oa_1b</name>
+  <version>0.1.0</version>
+  <description>Isolated AV314 same-lamp recognition and OA 2.1/MapAssist experiment.</description>
+  <maintainer email="skromosk@gmail.com">Sophia AI Formula Team</maintainer>
+  <license>AGPL-3.0-or-later</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>builtin_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>can_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launchers</exec_depend>
+  <exec_depend>semantic_vehicle_wiring</exec_depend>
+  <exec_depend>semantic_local_planner_ros</exec_depend>
+  <exec_depend>motor_controller</exec_depend>
+  <exec_depend>trajectory_follower</exec_depend>
+  <exec_depend>obsticle_avoidence</exec_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

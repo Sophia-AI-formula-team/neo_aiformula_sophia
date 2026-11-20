@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+release=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
+stage=${1:-}
+shift || true
+supervisor="$release/install/lib/python3.8/site-packages/oa_1b/supervise.py"
+case "$stage" in
+    allnodes|yolop|lya) [[ $# == 0 ]] || { echo "Usage: $0 $stage" >&2; exit 2; } ;;
+    oa1b) [[ $# -le 2 && ${1:-outer} =~ ^(inner|outer)$ && ${2:-50} =~ ^[1-9][0-9]*$ ]] || {
+        echo 'Usage: oa1b [outer|inner] [unique-red-pixels, default 50]' >&2; exit 2; } ;;
+    stop) [[ $# == 0 ]] || exit 2; exec /usr/bin/python3 -I "$supervisor" stop ;;
+    verify) [[ $# == 0 ]] || exit 2; exec bash "$release/stage.sh" verify ;;
+    *) echo "Usage: $0 {allnodes|yolop|oa1b|lya|verify|stop}" >&2; exit 2 ;;
+esac
+exec /usr/bin/python3 -I "$supervisor" "$stage" -- bash "$release/stage.sh" "$stage" "$@"

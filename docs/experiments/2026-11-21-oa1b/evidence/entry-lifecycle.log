@@ -1,0 +1,60 @@
+Starting >>> oa_1b
+Finished <<< oa_1b [0.73s]
+--- stderr: oa_1b
+warning: build_py: byte-compiling is disabled, skipping.
+
+warning: install_lib: byte-compiling is disabled, skipping.
+
+---
+
+Summary: 1 package finished [0.82s]
+  1 package had stderr output: oa_1b
+Installed supervise.py a1c223fb135c8e05caed551483d1aac51068da3ddf7cab16adcd43b590fca4cf
+Installed traffic_signal.py 8ef13ef3d47091b739cc976af3170c0c7b0a8411eab2f9dd06d08d7f25fc72ba
+Stock release entry SHA256 88eb40d4206df3dd96852e436b120931f3d02675e3f439e49234fbef2a897b78 shortcuts.py fc1eddd0d8a6df55ed4514c2be521a5eb33014f7c5d2328000719fd1f4eaeb51
+Test boundary: stage.sh is a four-stage tf2_ros fixture. No vehicle hardware commands.
+install /tmp/tmppkpjv50_/.local/bin/oa1b-allnodes
+install /tmp/tmppkpjv50_/.local/bin/oa1b-yolop
+install /tmp/tmppkpjv50_/.local/bin/oa1b
+install /tmp/tmppkpjv50_/.local/bin/oa1b-lya
+install /tmp/tmppkpjv50_/.local/bin/oa1b-stop
+install /tmp/tmppkpjv50_/.local/bin/oa1b-verify
+install /tmp/tmppkpjv50_/1121 桌面/1121-oa1b-1-allnodes.desktop
+install /tmp/tmppkpjv50_/1121 桌面/1121-oa1b-2-yolop.desktop
+install /tmp/tmppkpjv50_/1121 桌面/1121-oa1b-3-oa1b.desktop
+install /tmp/tmppkpjv50_/1121 桌面/1121-oa1b-4-lya.desktop
+[INFO] [launch]: All log files can be found below /tmp/tmppkpjv50_/.ros/log/2026-11-20-19-31-20-773218-bd20add02b99-72
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [75]
+[static_transform_publisher-1] [INFO] [1795203080.828139413] [oa1b_entry_probe_allnodes]: Spinning until killed publishing transform from 'map' to 'allnodes'
+DDS found allnodes via oa1b-allnodes
+[INFO] [launch]: All log files can be found below /tmp/tmppkpjv50_/.ros/log/2026-11-20-19-31-21-204287-bd20add02b99-93
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [96]
+[static_transform_publisher-1] [INFO] [1795203081.257668175] [oa1b_entry_probe_yolop]: Spinning until killed publishing transform from 'map' to 'yolop'
+DDS found yolop via oa1b-yolop
+[INFO] [launch]: All log files can be found below /tmp/tmppkpjv50_/.ros/log/2026-11-20-19-31-21-573034-bd20add02b99-114
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [117]
+[static_transform_publisher-1] [INFO] [1795203081.629240086] [oa1b_entry_probe_oa1b]: Spinning until killed publishing transform from 'map' to 'oa1b'
+DDS found oa1b via oa1b inner 50
+[INFO] [launch]: All log files can be found below /tmp/tmppkpjv50_/.ros/log/2026-11-20-19-31-22-093275-bd20add02b99-135
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [static_transform_publisher-1]: process started with pid [138]
+[static_transform_publisher-1] [INFO] [1795203082.168138984] [oa1b_entry_probe_lya]: Spinning until killed publishing transform from 'map' to 'lya'
+DDS found lya via oa1b-lya
+Observed terminals and ordered arguments [['/dev/pts/0', 'allnodes'], ['/dev/pts/1', 'yolop'], ['/dev/pts/2', 'oa1b inner 50'], ['/dev/pts/3', 'lya']]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[static_transform_publisher-1] [INFO] [1795203082.294140940] [rclcpp]: signal_handler(signal_value=2)
+[static_transform_publisher-1] [INFO] [1795203082.294001063] [rclcpp]: signal_handler(signal_value=2)
+[static_transform_publisher-1] [INFO] [1795203082.293926943] [rclcpp]: signal_handler(signal_value=2)
+[static_transform_publisher-1] [INFO] [1795203082.294067040] [rclcpp]: signal_handler(signal_value=2)
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 138]
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 96]
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 117]
+[INFO] [static_transform_publisher-1]: process has finished cleanly [pid 75]
+oa1b-stop returned 0; PTY exits [0, 0, 0, 0]
+All four DDS instances absent; all four old locks reacquired; independent observer alive.
