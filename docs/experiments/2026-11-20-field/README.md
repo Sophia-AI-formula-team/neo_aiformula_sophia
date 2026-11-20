@@ -12,7 +12,8 @@
 - [Concept 场次](CONCEPT.md)
 - [MapAssist 场次](MAPASSIST.md)
 - [录包索引和证据状态](BAGS.md)
+- [11 月 19 日 LYA 调参回滚](LYA_ROLLBACK.md)
 
 [09:03 与 09:09 两场 MapAssist 红灯检查，含正面灯牌实录、日志和参数回放](mapassist-red-light/)
 
-本次批次为上午两场 MapAssist。后续场次和日终结论随现场证据追加。
+本次批次覆盖截至 11:37 的已关闭录包、Concept 界面录制装车和独立 LYA 回滚。场次和实际时标见录包索引。
