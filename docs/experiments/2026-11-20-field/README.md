@@ -12,6 +12,7 @@
 - [Concept 场次](CONCEPT.md)
 - [MapAssist 场次](MAPASSIST.md)
 - [录包索引和证据状态](BAGS.md)
+- [联合收尾归档与恢复材料](ARCHIVE.md)
 - [诊断图、复盘报告与 POV 视频](diagnostics/)
 - [11 月 19 日 LYA 调参回滚](LYA_ROLLBACK.md)
 

@@ -56,3 +56,5 @@
 7 个 Concept 场次和 MapAssist 16:04 场共 8 个原包。各包有逐场说明。17:08 LYA 和 17:13 Pure Pursuit 另存完整原件，待回放。
 
 [Drive 收尾原包与说明](https://drive.google.com/drive/folders/1PLbIx1ZWQuzODyqZWWDAfGdixOLRV-lr) · [压缩包清单与合并说明](concept-wrap-up/DRIVE-ARCHIVE.md) · [分卷校验表](concept-wrap-up/DRIVE-SHA256SUMS)
+
+[车机代码、日志与联合归档](ARCHIVE.md)
