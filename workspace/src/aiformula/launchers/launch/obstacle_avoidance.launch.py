@@ -19,7 +19,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "algorithm",
             default_value="oa_neo",
-            choices=["oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2"],
+            choices=["oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", "oa_2_1"],
             description="Existing obstacle-avoidance executable; oa_neo uses a B-spline.",
         ),
         ExecuteProcess(
