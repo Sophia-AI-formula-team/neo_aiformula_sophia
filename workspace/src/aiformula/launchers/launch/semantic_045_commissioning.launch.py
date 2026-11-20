@@ -62,6 +62,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("start_lya", default_value="true", choices=["true", "false"]),
         DeclareLaunchArgument("start_oa2", default_value="false", choices=["true", "false"]),
+        DeclareLaunchArgument("oa_algorithm", default_value="oa_2", choices=["oa_2", "oa_2_1"]),
         DeclareLaunchArgument("lane_point_topic_prefix", default_value="/processed_point_",
                               choices=["/processed_point_", "/original_processed_point_"]),
         DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"],
@@ -74,7 +75,7 @@ def generate_launch_description():
         OpaqueFunction(function=pixel_stop_source, args=[directory / "pixel_stop_flag.py"]),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(share / "launch" / "obstacle_avoidance.launch.py")),
-            launch_arguments={"algorithm": "oa_2"}.items(),
+            launch_arguments={"algorithm": LaunchConfiguration("oa_algorithm")}.items(),
             condition=IfCondition(LaunchConfiguration("start_oa2")),
         ),
         planner, switch, follower, OpaqueFunction(function=adapter),

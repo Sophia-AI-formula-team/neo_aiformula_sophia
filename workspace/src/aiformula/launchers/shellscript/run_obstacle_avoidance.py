@@ -15,7 +15,7 @@ import sys
 import time
 
 
-ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2")
+ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", "oa_2_1")
 
 
 def reset_lane_source():
@@ -99,6 +99,12 @@ def main(argv=None):
     parser.add_argument("algorithm", choices=ALGORITHMS)
     parser.add_argument("ros_args", nargs=argparse.REMAINDER)
     arguments = parser.parse_args(argv)
+
+    if arguments.algorithm == "oa_2_1":
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oa_2_1.py")
+        if not os.path.isfile(script):
+            parser.error("Installed avoidance script not found: {}".format(script))
+        return run_child([sys.executable, script] + arguments.ros_args)
 
     from ament_index_python.packages import get_package_prefix
 
