@@ -17,6 +17,8 @@
 
 视觉失稳与 OA 前视过近在同一天的日志中并存。回程两次进入起点区域而保持首圈，实车没有验证 detour。OA 2.1 的接线和退出通过隔离测试，后续仍需实车验证绕障和轨迹连续性。
 
+[17:35 实装与恢复所需归档](DEPLOYMENT.md)
+
 ## 归档坐标
 
 - 16:04 场原包位于 Extreme SSD 的 `2026-11-20 Experiment Logs/wrap-up-1717/bags/MapAssist/rosbag2_2026_11_20-16_03_08`，包含原 SQLite、metadata、SHM 和 WAL。消息数 164,563 与 metadata 相符。
