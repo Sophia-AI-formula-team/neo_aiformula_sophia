@@ -1,5 +1,7 @@
 # Concept 车端接手手册
 
+**11 月 21 日离线实验版**位于本地分支 `experiment/concept-1121-offline`，以 11 月 20 日收车源码为对照。`min_nonzero_speed_mps:=0.5` 在白盒检查轨迹之前设置前进指令下限，保留零速。设为 0 可关闭下限。LYA 用 `lya_v_t_mps:=2.0` 和所选路线上的目标位姿计算线速度与角速度。两个参数在启动时读取。[离线结果、限制和复现入口](checks/offline1121/README.md)
+
 本分支为 **V6.27.8 双控制器实验版**。在独立工作区构建本分支，加载该工作区的 `install/local_setup.bash`，运行 `ros2 run concept live`。终端输入 **1** 选 Pure Pursuit，输入 **2** 选 LYA，直接回车选 Pure Pursuit。脚本可显式传 `tracking_controller:=lya` 或 `tracking_controller:=pure_pursuit`。无交互终端且未指定时沿用 Pure Pursuit。选择在传感器和电机节点启动前生效，启动后可用 `ros2 param get /concept/drive tracking_controller` 核对。面板的电机使能与继续运行仍需分别操作。[两种控制器和 Unity 对照](checks/tracking_v6278/README.md) · [上版外缘和延迟记录](checks/edge1120b/README.md)
 
 **11 月 20 日实验部署分支为 `experiment/concept-foxy-unity-20261120`，车端包为 V6.27.6。** 以 11 月 19 日实车安装源码为基线，修了赛道外缘、贴边回正和直路起步。H12 负责可行路线排序。已有原车录包重放、Foxy/GPU 与独立 Unity 的短程闭环和软件 CAN 控制门重放。车头大角度朝外的案例仍会停在道内。实车复测待做。[实车修复记录](checks/field_20261119.md) · [Unity 入口](checks/unity1120/) · [车机部署和结果](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/blob/experiment/vehicle-prep-20261120/docs/experiments/2026-11-20-mapassist/concept/DEPLOY.md)

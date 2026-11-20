@@ -161,6 +161,8 @@ def build(context):
                   camera_info_topic=LC('camera_info_topic'))
     driving = dict(onboard_camera=direct, local_frame_transport=local_transport,
                    planning_hz=float(LC('planning_hz').perform(context)),
+                   min_nonzero_speed_mps=float(LC('min_nonzero_speed_mps').perform(context)),
+                   lya_v_t_mps=float(LC('lya_v_t_mps').perform(context)),
                    profile_timing=LC('profile_timing').perform(context).lower() in ('true', '1'),
                    tracking_controller=tracking_controller)
     gate = dict(can_sender_node='/aiformula_control/socket_can_sender' if vehicle else '/concept/replay/virtual_receiver')

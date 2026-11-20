@@ -43,7 +43,7 @@ def add_latency_experiment(solver, delay_ms):
     shutil.copy2(HERE/"DelayedApply.cs",solver)
 
 
-def build(lab_root, out, source_dir, delay_ms=0, rolling_start=False):
+def build(lab_root, out, source_dir, delay_ms=0, rolling_start=False, observe_boundary=False):
     harness = lab_root / "research/learned_racing/unity_laps/run.py"
     module = importlib.util.spec_from_file_location("concept_lap_host", harness)
     runtime = importlib.util.module_from_spec(module)
@@ -84,6 +84,12 @@ def build(lab_root, out, source_dir, delay_ms=0, rolling_start=False):
     src = replace_once(src, "net.ReceiveTimeout=20000;", "net.ReceiveTimeout=120000;")
     src = replace_once(src,"if(net!=null)net.Close();",
                        "try{if(d && foxy!=null)foxy.Release(d);}finally{if(net!=null)net.Close();}")
+    if observe_boundary:
+        # Only the referee continues sampling. The driving bridge receives the
+        # ordinary camera and vehicle state, with no departure notification.
+        src = replace_once(src, 'if(departure){Finish("boundary");return;}', '')
+        src = replace_once(src, 'Finish("duration");return;',
+                           'Finish(firstCompletelyOut>=0?"boundary_observed":"duration");return;')
     if rolling_start:
         src=replace_once(src,"public sealed class UnityRace","public sealed partial class UnityRace")
         src=replace_once(src,"job.Open();EditorApplication.update", "job.Open();job.RollingStart();EditorApplication.update")
@@ -128,6 +134,8 @@ def main():
     parser.add_argument("--actuation-delay-ms", type=int, default=0,
                         help="Hold last CAN for this many simulation ms after capture (0..190 in steps of 10)")
     parser.add_argument("--rolling-start", action="store_true", help="1 s of straight-wheel physics before camera/score time zero")
+    parser.add_argument("--observe-boundary", action="store_true",
+                        help="Keep scoring after departure to measure controller braking")
     parser.add_argument("--port", type=int, default=16826)
     parser.add_argument("--compile-only", action="store_true")
     args=parser.parse_args()
@@ -141,9 +149,9 @@ def main():
         os.environ["AIFORMULA_LAP_COPY"]=str(host)
         os.environ["AIFORMULA_SIM_ROOT"]=str(Path(owner["source"]).resolve().parent)
         source = args.referee_source or lab_root/".runtime/v626_time/eval-inner-check/solver"
-        runtime=build(lab_root,out,source.resolve(),args.actuation_delay_ms,args.rolling_start)
+        runtime=build(lab_root,out,source.resolve(),args.actuation_delay_ms,args.rolling_start,args.observe_boundary)
         lab=runtime.Lab(runtime.SIM,out)
-        provenance={"host":owner,"solver_hash":lab.build,"actuation_delay_ms":args.actuation_delay_ms,"rolling_start":args.rolling_start,
+        provenance={"host":owner,"solver_hash":lab.build,"actuation_delay_ms":args.actuation_delay_ms,"rolling_start":args.rolling_start,"observe_boundary":args.observe_boundary,
                     "unity_scene_sha256":runtime.sha(host/"Assets/Scenes/MotorControllerValidation.unity"),
                     "drive_assembly_sha256":runtime.sha(host/"Library/ScriptAssemblies/Assembly-CSharp.dll"),
                     "bridge_source_sha256":hashlib.sha256((HERE/"FoxyExchange.cs").read_bytes()).hexdigest()}

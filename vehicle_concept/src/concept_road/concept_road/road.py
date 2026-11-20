@@ -138,6 +138,21 @@ class RoadMap:
                                 left, right)), component
 
     def read(self,image,raw,lane,boxes=(),speed=0.,yaw=0.,dt=.2):
+        if self.mode not in ('fused','guided'):
+            return self._marking_rows(raw, lane, speed, yaw, dt)
+        rows, _, head = self._marking_rows(raw, lane, speed, yaw, dt)
+        material_rows, pixels, material_head = self.material_road.read(image, raw, lane, speed, yaw, dt, boxes)
+        if self.mode=='guided' and len(rows)>=3:
+            guidance=np.asarray(rows)
+            supported=(material_rows[:,0]>=guidance[0,0])&(material_rows[:,0]<=guidance[-1,0])
+            material_head[supported]=np.interp(material_rows[supported,0],guidance[:,0],head)
+        self.last.update(material_support=True,material_evidence=self.material_road.last,
+                         lane_geometry_rows=rows.tolist(),road_rows=len(material_rows),
+                         guidance_used=self.mode=='guided' and len(rows)>=3,
+                         source='B ego lane identifies material/component; RGB + lane restore free surface; causal boundary history')
+        return material_rows,pixels,material_head
+
+    def _marking_rows(self, raw, lane, speed, yaw, dt):
         previous=self.transport(speed,yaw,dt)
         fresh=self.markings(lane)
         matched=set();tracks=[]
@@ -185,10 +200,11 @@ class RoadMap:
                 if np.median(abs(tangent(left,z)-tangent(right,z)))>.45:continue
                 supported=anchors[(anchors[:,0]>=lo)&(anchors[:,0]<=hi)]
                 score=0.
-                for a,bl,br,*_ in supported:
-                    ll,rr=val(left,a),val(right,a)
-                    score+=max(0.,min(br,rr)-max(bl,ll))/max(.1,br-bl)
-                if len(supported):score/=len(supported)
+                if len(supported):
+                    depths, bl, br = supported[:, :3].T
+                    overlap = np.minimum(br, val(right, depths)) - np.maximum(bl, val(left, depths))
+                    votes = np.maximum(0., overlap) / np.maximum(.1, br-bl)
+                    score = float(np.add.accumulate(votes)[-1] / len(votes))
                 pairs.append(dict(left=i,right=j,score=score,width=float(np.median(width)),zmin=lo,zmax=hi))
         current=max(pairs,key=lambda p:p['score'],default=None)
         selected=[]
@@ -214,7 +230,6 @@ class RoadMap:
         if leftcurve is None and len(anchors):
             leftcurve=fit([[z,l,0.] for z,l,r,u,v in anchors if u>3])
             rightcurve=fit([[z,r,0.] for z,l,r,u,v in anchors if v<636])
-        material_rows=None
         rows=[];pixels=[];head=[];row_sources=[]
         for z in DEPTHS:
             if leftcurve is None or rightcurve is None:continue
@@ -242,7 +257,8 @@ class RoadMap:
             rows.append([z,float(l),float(r),sigma]);head.append(float((tangent(lc,z)+tangent(rc,z))/2))
             row_sources.append([z,lc.get('id'),rc.get('id')])
             v=int(round(CY+HEIGHT*FOCAL/z))
-            pixels.append([int(np.clip(CX+l*FOCAL/z,0,639)),int(np.clip(CX+r*FOCAL/z,0,639)),v])
+            if self.mode not in ('fused', 'guided'):
+                pixels.append([int(np.clip(CX+l*FOCAL/z,0,639)),int(np.clip(CX+r*FOCAL/z,0,639)),v])
         occupied_rows = component[component.any(axis=1)]
         widths = (component.shape[1] - occupied_rows.argmax(axis=1) -
                   occupied_rows[:, ::-1].argmax(axis=1))
@@ -254,16 +270,5 @@ class RoadMap:
                        memory_max_age=.8,history_points=sum(p[2]>0 for c in unique for p in c['points']),
                        envelope_negative_pixels=envelope_negative,row_sources=row_sources,
                        source='B ego lane anchor + observed marking curves + causal wheel/gyro history',
-                       lane_count_prior=None,material_support=material_rows is not None)
-        if self.mode in ('fused','guided'):
-            material_rows,pixels,material_head=self.material_road.read(image,raw,lane,speed,yaw,dt,boxes)
-            if self.mode=='guided' and len(rows)>=3:
-                guidance=np.asarray(rows)
-                supported=(material_rows[:,0]>=guidance[0,0])&(material_rows[:,0]<=guidance[-1,0])
-                material_head[supported]=np.interp(material_rows[supported,0],guidance[:,0],head)
-            self.last.update(material_support=True,material_evidence=self.material_road.last,
-                             lane_geometry_rows=rows,road_rows=len(material_rows),
-                             guidance_used=self.mode=='guided' and len(rows)>=3,
-                             source='B ego lane identifies material/component; RGB + lane restore free surface; causal boundary history')
-            return material_rows,pixels,material_head
+                       lane_count_prior=None,material_support=False)
         return np.asarray(rows).reshape(-1,4),pixels,np.asarray(head)

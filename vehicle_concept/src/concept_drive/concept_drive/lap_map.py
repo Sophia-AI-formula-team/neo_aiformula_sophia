@@ -3,6 +3,7 @@
 import base64
 from itertools import chain
 import json
+from types import SimpleNamespace
 import zlib
 
 import numpy as np
@@ -26,6 +27,19 @@ def grid_rows(mapper, semantics):
 def pack_rows(rows, dtype):
     values = np.fromiter(chain.from_iterable(rows), dtype=dtype)
     return base64.b64encode(zlib.compress(values.tobytes(), 1)).decode('ascii')
+
+
+def snapshot_map(driver):
+    # Detach mutable counters before releasing the planning lock. Obstacle and
+    # path records are replaced or appended by the mapper, never edited in place.
+    m, s = driver.mapper, driver.semantics
+    mapper = SimpleNamespace(cells={k: tuple(v) for k, v in m.cells.items()},
+                             pose=m.pose.copy(), distance=m.distance, path=list(m.path),
+                             static=m.static.copy(), dynamic=m.dynamic.copy())
+    semantics = SimpleNamespace(markings={k: v.copy() for k, v in s.markings.items()},
+                                repairs=s.repairs.copy())
+    return SimpleNamespace(mapper=mapper, semantics=semantics,
+                           observed_openings=list(driver.observed_openings))
 
 
 def encode_map(driver, session, stamp):

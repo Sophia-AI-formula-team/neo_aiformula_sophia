@@ -56,7 +56,10 @@ class MaterialRoad:
         self.chroma_squared = None
 
     def read(self, image, raw, lane_mask, speed=0., yaw=0., dt=.2, object_boxes=()):
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        # The first retained row is CY+2. Include the two source rows above it
+        # required by the 5x5 dilation, then restore full image coordinates.
+        top = int(CY)
+        lab = cv2.cvtColor(image[top:], cv2.COLOR_BGR2LAB)
         self.chroma_squared = None
         if self.pavement is None:
             seeds=raw.astype(bool)&~lane_mask.astype(bool)
@@ -65,22 +68,23 @@ class MaterialRoad:
                 seeds[max(0,int(y0)):int(y1)+1,max(0,int(x0)):int(x1)+1]=False
             if seeds.sum()<200:
                 return np.zeros((0,4)),[],np.zeros(0)
-            self.pavement = np.median(lab[seeds], axis=0)
+            self.pavement = np.median(lab[seeds[top:]], axis=0)
         # Lab pixels are bytes; even half-integer median seeds and the sum of
         # these two squared differences are represented exactly in float32.
         delta_a = lab[:, :, 1].astype(np.float32) - np.float32(self.pavement[1])
         delta_b = lab[:, :, 2].astype(np.float32) - np.float32(self.pavement[2])
         chroma_squared = delta_a * delta_a + delta_b * delta_b
-        self.chroma_squared = chroma_squared
+        self.chroma_squared = np.full(raw.shape, np.inf, dtype=np.float32)
+        self.chroma_squared[top:] = chroma_squared
         # Achromatic paint, cracks and shadows share pavement chroma.
         # Luminance cuts incorrectly made zebra stripes and seams impassable.
         pavement = (chroma_squared < 12**2)
         # Paint is traversable material, not a hole. Keep detected markings
         # only beside pavement; do not let false line pixels open distant road.
         near = cv2.dilate(pavement.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
-        paint = (lane_mask > 0) | ((chroma_squared < 10**2) & (lab[:, :, 0] > self.pavement[0]))
-        road = (pavement | (paint & near)).astype(np.uint8)
-        road[:int(CY)+2] = 0
+        paint = (lane_mask[top:] > 0) | ((chroma_squared < 10**2) & (lab[:, :, 0] > self.pavement[0]))
+        road = np.zeros(raw.shape, dtype=np.uint8)
+        road[top+2:] = (pavement | (paint & near))[2:]
         # A cone silhouette is occupied pavement, not a physical road verge.
         # Bridge only its observed image box where pavement exists on BOTH
         # sides. The separate obstacle constraint still forbids the cone.
@@ -92,10 +96,22 @@ class MaterialRoad:
                 if road[v,max(0,left-3):left].any() and road[v,right+1:right+4].any():
                     road[v,left:right+1]=1;occluded[v,left:right+1]=1
         road = cv2.morphologyEx(road, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-        n, labels, stats, _ = cv2.connectedComponentsWithStats(road, 8)
-        seeds = labels[raw.astype(bool)]
+        # Closing the material mask can expand it upward by at most two rows.
+        # Preserve full row coordinates for the section extractor, while
+        # labelling just the nonempty side of the horizon.
+        label_top = max(0, top-4)
+        n, labels = cv2.connectedComponents(road[label_top:], connectivity=8)
+        seeds = labels[raw[label_top:].astype(bool)]
         counts = np.bincount(seeds.ravel(), minlength=n); counts[0] = 0
-        road = (labels == int(np.argmax(counts))) if counts.max() else np.zeros_like(road, bool)
+        if counts.max() and np.count_nonzero(counts == counts.max()) > 1:
+            # Equal support is resolved by the original full-image label order.
+            label_top = 0
+            n, labels, _, _ = cv2.connectedComponentsWithStats(road, 8)
+            counts = np.bincount(labels[raw.astype(bool)], minlength=n)
+            counts[0] = 0
+        road = np.zeros(raw.shape, dtype=bool)
+        if counts.max():
+            road[label_top:] = labels == int(np.argmax(counts))
         depths = np.linspace(.95, 12., 45)
         sections, pixels, edges = road_sections(road, depths)
         old=[]

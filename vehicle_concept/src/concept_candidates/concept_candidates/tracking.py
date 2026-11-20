@@ -8,6 +8,8 @@ import math
 
 import numpy as np
 
+from .field_controls import forward_request
+
 
 MODES = ('pure_pursuit', 'lya')
 
@@ -81,14 +83,15 @@ def tracking_request(z, x, heading, speed, yaw, commands, slope, aa, bb, look, p
     # Only the wheel/gyro-integrated rotation since local start is needed.
     odom_yaw = params['lya_odom_heading_right_rad']
     odom_dx = np.cos(odom_yaw)*(az-z) - np.sin(odom_yaw)*(ax-x)
-    v, w = neo_lya(np.hypot(az-z, ax-x), odom_dx, alpha, beta, omega_t, commands)
-    # Neo's 0.8 m/s floor belongs to free-running LYA. Concept's candidate
-    # remains a hard speed cap, including explicit zero and slow launch slots.
-    drive = np.minimum(commands, v)
+    vref = np.full_like(commands, params.get('lya_v_t_mps', 2.), dtype=float)
+    v, w = neo_lya(np.hypot(az-z, ax-x), odom_dx, alpha, beta, omega_t, vref)
+    cap = params.get('forward_command_ceiling', params.get('pace', 4.))
+    drive = forward_request(np.where(commands > 0., v, 0.), params.get('min_nonzero_speed_mps', 0.), cap)
     if capture is not None:
-        capture.update(points=((az, ax), (az+1., bx), (az+2., cx)), requested=-w, vref=commands,
+        capture.update(points=((az, ax), (az+1., bx), (az+2., cx)), requested=np.where(drive>0., -w, 0.), vref=vref,
+                       raw_speed=v, raw_ros_yaw=w,
                        heading=-ab, omega=-omega_t)
-    return drive, -w
+    return drive, np.where(drive > 0., -w, 0.)
 
 
 def controller_record(mode, control=None, owner='unavailable', frame=None, index=None):
@@ -111,5 +114,7 @@ def controller_record(mode, control=None, owner='unavailable', frame=None, index
     record.update(active=True, points_zx_m=points, target_zx_m=points[0],
                   requested_yaw_right_radps=float(data['requested'][j]), reference_speed_mps=float(data['vref'][j]))
     if 'heading' in data:
-        record.update(target_heading_right_rad=float(data['heading'][j]), reference_yaw_right_radps=float(data['omega'][j]))
+        record.update(lya_pose_speed_mps=float(data['raw_speed'][j]),
+                      lya_pose_yaw_ros_radps=float(data['raw_ros_yaw'][j]),
+                      target_heading_right_rad=float(data['heading'][j]), reference_yaw_right_radps=float(data['omega'][j]))
     return record

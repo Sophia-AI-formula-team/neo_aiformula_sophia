@@ -3,7 +3,6 @@
 All geometry here uses metres forward/right. Sensor gyro and output yaw in this
 module are clockwise-positive; the ROS adapter performs the two sign conversions.
 """
-from functools import partial
 from pathlib import Path
 from time import perf_counter_ns
 
@@ -12,7 +11,6 @@ import numpy as np
 from concept_candidates.backtrack_forward617 import BacktrackSteer
 from concept_candidates.curve_progress import build_reference
 from concept_candidates.edge_recovery import corroborated_previous_edge, fit_edge, preview_audit
-from concept_candidates.launch_clearance import launch_clearance
 from concept_candidates.tracking import controller_record, first_lya_depth, validate_mode
 from concept_candidates.planner625 import MarkedPlanner
 from concept_candidates.ranked_builder617 import RankedBuilder
@@ -36,7 +34,11 @@ def _record_stage(timings, stage, start):
 
 
 class Drive:
-    def __init__(self, pace=3.4, tracking_controller='pure_pursuit'):
+    def __init__(self, pace=3.4, tracking_controller='pure_pursuit', min_nonzero_speed_mps=.5, lya_v_t_mps=2.):
+        if not np.isfinite(min_nonzero_speed_mps) or not 0. <= min_nonzero_speed_mps <= 6.:
+            raise ValueError('min_nonzero_speed_mps must be in [0, 6]')
+        if not np.isfinite(lya_v_t_mps) or not 0. < lya_v_t_mps <= 4.:
+            raise ValueError('lya_v_t_mps must be in (0, 4]')
         self.tracking_controller = validate_mode(tracking_controller)
         self.observer = RearRoad()
         self.tracker = Occupancy617()
@@ -45,7 +47,9 @@ class Drive:
         self.limits = JunctionLimits()
         self.field_road = FieldRoad()
         self.planner = MarkedPlanner(dict(pace=pace, uncertainty=1., yaw_limit=1.55,
-                                          tracking_controller=self.tracking_controller))
+                                          tracking_controller=self.tracking_controller,
+                                          min_nonzero_speed_mps=float(min_nonzero_speed_mps),
+                                          lya_v_t_mps=float(lya_v_t_mps)))
         self.builder = RankedBuilder(BacktrackSteer(self.planner))
         weights = Path(trajectory624.__file__).with_name('model-h12.json')
         self.ranker = trajectory624.TrajectorySelector(weights, pace)
@@ -128,12 +132,7 @@ class Drive:
                 guidance, reference = np.empty((0, 4)), None
             source = 'camera' if self.previous_field_edge is not None else 'previous_fit_confirmed_in_camera'
             scene.audit['edge_preview'] = preview_audit(edge, source, yaw, physical_applied_command()[1])
-            near_visibility = [row['z'] for row in near_rows
-                               if row['source'] == 'historical_material_observation']
-            provisional = launch_objects(det, objects, measurements)
-            launch_evidence = dict(stamp_s=float(sensor['t']), applied_speed_mps=physical_applied_command()[0],
-                                   observed_near_z=near_visibility, visible_z=scene.audit.get('visible_z'),
-                                   obstacle_clear=provisional is not None)
+            launch_evidence = dict(obstacle_clear=clear_launch_view(det, objects, measurements))
         else:
             self.previous_field_edge = None
             if set(edges['edges']) == {'left', 'right'}:
@@ -168,9 +167,6 @@ class Drive:
         pick, ranking = baseline, None
         if self.builder.network_allowed:
             audit = self.builder.planner.last['audit']
-            if field_ground and provisional is not None and len(provisional):
-                launch_evidence['check_localized_cones'] = partial(
-                    launch_clearance, provisional, obs, self.planner.pending, audit)
             pick, ranking = self.ranker.rank(features, allowed, baseline, audit, obs,
                                             **({'launch_evidence': launch_evidence} if field_ground else {}))
         if timings is not None:

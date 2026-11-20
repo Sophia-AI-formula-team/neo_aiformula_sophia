@@ -21,7 +21,7 @@ def test_installed_lya_formula(inputs, expected):
     np.testing.assert_allclose(neo_lya(*inputs), expected, atol=1e-13, rtol=0)
 
 
-def test_lya_uses_only_observed_depth_grid_and_never_overrides_speed_plan():
+def test_lya_uses_target_pose_and_its_own_reference_speed_and_honours_stop():
     assert first_lya_depth(.95, 3.) == 1.
     assert first_lya_depth(1.05, 3.5) == 1.5
     assert first_lya_depth(1.05, 3.4) is None
@@ -32,13 +32,36 @@ def test_lya_uses_only_observed_depth_grid_and_never_overrides_speed_plan():
     trace = {}
     drive, yaw = tracking_request(zero, zero, zero, zero, zero, requested, zero, zero, zero, 3.,
                                   params, 1., trace)
-    np.testing.assert_allclose(drive, [0., .12, 1.9983], atol=1e-12)
+    assert yaw[0] == 0.
+    np.testing.assert_allclose(trace['vref'], 2.)
+    np.testing.assert_allclose(drive, [0., 1.9983, 1.9983], atol=1e-12)
     assert yaw[2] > 0.  # Installed ROS bias turns to the car's right.
     assert [float(p[0][0]) for p in trace['points']] == [1., 2., 3.]
     trace.clear()
     drive, yaw = tracking_request(zero, zero, zero, zero, zero, requested, zero, zero, zero, 3.,
                                   params, None, trace)
     assert not trace and not drive.any() and not yaw.any()
+
+
+@pytest.mark.parametrize('minimum, pace, expected', [
+    (.5, 2., [0., .5, 1., 2.]), (0., 2., [0., .12, 1., 2.]),
+    (.5, .4, [0., 0., 0., 0.]), (.8, 2., [0., .8, 1., 2.]),
+])
+def test_configured_forward_requests_preserve_stop_and_ceiling(minimum, pace, expected):
+    from concept_candidates.field_controls import forward_request
+    np.testing.assert_array_equal(forward_request(np.array([0., .12, 1., 3.]), minimum, pace), expected)
+
+
+def test_lya_reference_speed_and_final_checked_limits_are_independent():
+    zero = np.zeros(2)
+    trace = {}
+    params = dict(tracking_controller='lya', lya_odom_heading_right_rad=0., lya_v_t_mps=1.4,
+                  min_nonzero_speed_mps=.5, forward_command_ceiling=.6)
+    speed, yaw = tracking_request(zero, zero, zero, zero, zero, np.array([0., .2]), zero, zero, zero,
+                                  3., params, 1., trace)
+    np.testing.assert_array_equal(trace['vref'], 1.4)
+    assert trace['raw_speed'][1] > 1.4 and yaw[0] == 0.
+    np.testing.assert_array_equal(speed, [0., .6])
 
 
 @pytest.mark.parametrize('mode,count', [('pure_pursuit',1), ('lya',3)])

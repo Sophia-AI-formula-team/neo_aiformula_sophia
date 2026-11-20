@@ -25,7 +25,7 @@ from concept_yolop.frame_codec import (LOCAL_FRAME_TOPIC, decode_frame_data, dec
                                        parse_frame_header, validate_pixels, validated_detections)
 from concept_yolop.geometry import CALIBRATED, HONDA, UNITY
 from .core import Drive
-from .lap_map import encode_map
+from .lap_map import encode_map, snapshot_map
 from .transport import Feedback, StartRamp, native_sensor, ros_command, stamp
 
 CAPTURE_JITTER_NS = 10_000_000
@@ -43,6 +43,8 @@ class DriverNode(Node):
         self.speed_setting = SpeedSetting(self, 'target_speed_mps', 6.)
         self.target = self.speed_setting.initial
         self.tracking_controller = validate_mode(self.declare_parameter('tracking_controller', 'pure_pursuit').value)
+        self.min_nonzero = self.declare_parameter('min_nonzero_speed_mps', .5).value
+        self.lya_v_t = self.declare_parameter('lya_v_t_mps', 2.).value
         self.profile_timing = self.declare_parameter('profile_timing', False).value
         hz = self.declare_parameter('planning_hz', 15.0).value
         if not math.isfinite(hz) or not 5. <= hz <= 15.:
@@ -56,6 +58,7 @@ class DriverNode(Node):
         self.lock = Lock()
         self.telemetry = MutuallyExclusiveCallbackGroup()
         self.planning_callbacks = MutuallyExclusiveCallbackGroup()
+        self.map_callbacks = MutuallyExclusiveCallbackGroup()
         self.restart_services = MutuallyExclusiveCallbackGroup()
         self.restart_requested = Event()
         self.speed_update_requested = Event()
@@ -82,10 +85,10 @@ class DriverNode(Node):
             self.create_subscription(String, '/concept/perception/frame', self.frame, 1, callback_group=self.planning_callbacks)
         self.create_service(Trigger, '~/restart', self.restart, callback_group=self.restart_services)
         # Leave the default group available for the built-in ROS parameter services.
-        self.create_service(Trigger, '~/lap_map', self.lap_map, callback_group=self.planning_callbacks)
+        self.create_service(Trigger, '~/lap_map', self.lap_map, callback_group=self.map_callbacks)
 
     def reset_driver(self):
-        self.driver = Drive(self.target, self.tracking_controller)
+        self.driver = Drive(self.target, self.tracking_controller, self.min_nonzero, self.lya_v_t)
         self.session = uuid4().hex
         self.first_ns = self.last_ns = self.next_ns = None
         self.last_input_ns = None
@@ -120,34 +123,34 @@ class DriverNode(Node):
             self.restart_requested.clear()
 
     def lap_map(self, _, response):
-        with self.planning_state:
-            return self.map_snapshot(response)
-
-    def map_snapshot(self, response):
-        if self.last_ns is None:
-            response.message = '等待第一帧有效地图'
-            return response
-        if self.driver.mapper.t != self.driver.previous_time:
-            response.message = '最新规划未完成，保留上次地图'
-            return response
         now = time.monotonic()
-        if self.cached_lap_map is None or (
-                self.cached_lap_map[0] != self.last_ns and now-self.cached_lap_map[1] >= 1.):
-            try:
-                message = encode_map(self.driver, self.session, stamp(self.last_ns))
-            except (ValueError, TypeError, OverflowError) as exc:
-                self.get_logger().warning('Could not export lap map: %s' % exc)
-                response.message = '地图读取失败 · 保留上次地图'
+        with self.planning_state:
+            session, ns = self.session, self.last_ns
+            if ns is None or self.driver.mapper.t != self.driver.previous_time:
+                response.message = 'Waiting for a completed map'
                 return response
-            self.cached_lap_map = (self.last_ns, now, message)
-        response.success = True
-        response.message = self.cached_lap_map[2]
+            cached = self.cached_lap_map
+            if cached and (cached[0] == ns or now-cached[1] < 1.):
+                response.success, response.message = True, cached[2]
+                return response
+            view = snapshot_map(self.driver)
+        try:
+            message = encode_map(view, session, stamp(ns))
+        except (ValueError, TypeError, OverflowError) as exc:
+            response.message = 'Map encoding failed: ' + str(exc)
+            return response
+        with self.planning_state:
+            if session != self.session:
+                response.message = 'Driver restarted during map export'
+                return response
+            self.cached_lap_map = (ns, now, message)
+        response.success, response.message = True, message
         return response
 
     def update_parameters(self, parameters):
         for p in parameters:
             if p.name in ('planning_hz', 'onboard_camera', 'local_frame_transport', 'speed_settings_directory',
-                          'tracking_controller', 'profile_timing'):
+                          'tracking_controller', 'profile_timing', 'min_nonzero_speed_mps', 'lya_v_t_mps'):
                 return SetParametersResult(successful=False, reason='Set %s when launching the driver' % p.name)
         for p in parameters:
             if p.name == 'target_speed_mps':
@@ -228,7 +231,8 @@ class DriverNode(Node):
             self.last_camera_ready_ns = ns
             if self.pending_camera is not None:
                 self.camera_frames_replaced += 1
-            self.pending_camera = (ns, frame_id, profile, frame, timing_ms, time.monotonic_ns())
+            queued = time.monotonic_ns()
+            self.pending_camera = (ns, frame_id, profile, frame, timing_ms, queued)
             self.camera_ready.notify()
 
     def plan_latest_camera(self):

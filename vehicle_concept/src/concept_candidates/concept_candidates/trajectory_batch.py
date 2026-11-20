@@ -56,7 +56,8 @@ def driven_path(obs, commands, slope, aa, bb, look, steps, previous, age, parame
             if edge_slot:
                 drive[-1], steering[-1] = edge_control(
                     edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
-                    previous[0] if k == 0 else prior_drive[-1], last[-1], dt, parameters['pace'])
+                    previous[0] if k == 0 else prior_drive[-1], last[-1], dt, parameters['pace'],
+                    parameters.get('min_nonzero_speed_mps', 0.))
             last = steering
         else:
             drive = requested_drive

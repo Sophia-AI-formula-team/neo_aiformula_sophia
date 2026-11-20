@@ -1,0 +1,729 @@
+{
+  "scenes": [
+    {
+      "mode": "pure",
+      "scene": "normal",
+      "source": "offline-ros-pure\\1e9647b6e42848bcb7433fe4f19a7f9e\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 0,
+      "initial_speed": 6.29443946e-08,
+      "final_speed": 2.33258843,
+      "first_command": 0.5,
+      "driven_progress_m": 9.6064,
+      "fully_out_s": null,
+      "below_005_until_end_s": null,
+      "tracker_example": [
+        3,
+        {
+          "mode": "pure_pursuit",
+          "owner": "candidate",
+          "active": true,
+          "points_zx_m": [
+            [
+              1.662367099017035,
+              -0.9781014464615587
+            ]
+          ],
+          "target_zx_m": [
+            1.662367099017035,
+            -0.9781014464615587
+          ],
+          "requested_yaw_right_radps": -0.9844563766488381,
+          "checked_yaw_right_radps": -0.062208589351789315,
+          "checked_speed_mps": 1.099999988,
+          "reference_speed_mps": 1.099999988,
+          "target_heading_right_rad": null,
+          "reference_yaw_right_radps": null
+        }
+      ],
+      "owners": {
+        "edge_recovery": 5,
+        "candidate": 20
+      },
+      "reason": {
+        "feasible": 25
+      },
+      "first_feasible": 75,
+      "rejected_first": {
+        "road": 0,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 54,
+        "applied": false,
+        "reason": "h12_selected_motion",
+        "selectable_forward_count": 60,
+        "obstacle_clear": false
+      }
+    },
+    {
+      "mode": "pure",
+      "scene": "hardroll",
+      "source": "offline-ros-pure\\912d369e12af4fc992985640a2818415\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 1.82139742,
+      "final_speed": 6.419956e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.914032,
+      "fully_out_s": null,
+      "below_005_until_end_s": 1.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "feasible": 4,
+        "no_feasible_trajectory": 1,
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 19
+      },
+      "first_feasible": 15,
+      "rejected_first": {
+        "road": 60,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 0,
+        "applied": false,
+        "reason": "h12_selected_stop",
+        "selectable_forward_count": 0,
+        "obstacle_clear": false
+      }
+    },
+    {
+      "mode": "pure",
+      "scene": "crossing",
+      "source": "offline-ros-pure\\ce6d661efd8947c5920c961cd0a4e9b3\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 1.821398,
+      "final_speed": -1.4523367e-07,
+      "first_command": 0.0,
+      "driven_progress_m": 0.914032,
+      "fully_out_s": 0.299999982,
+      "below_005_until_end_s": 0.979999959,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "no_feasible_trajectory": 4,
+        "feasible": 1,
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 19
+      },
+      "first_feasible": 0,
+      "rejected_first": {
+        "road": 75,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 75,
+        "dynamics": 0
+      },
+      "first_launch": null
+    },
+    {
+      "mode": "pure",
+      "scene": "outside",
+      "source": "offline-ros-pure\\c3f783c238884113b79d7ccbfc26c878\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 8.95875161e-08,
+      "final_speed": 8.892532e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.0,
+      "fully_out_s": 0.0,
+      "below_005_until_end_s": 0.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 20,
+        "recovery_unknown_road": 4
+      },
+      "first_feasible": 1,
+      "rejected_first": {},
+      "first_launch": null
+    },
+    {
+      "mode": "pure",
+      "scene": "near",
+      "source": "offline-ros-pure\\0acd30a995014f98ba99b0c95f3e37e7\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 3.14706661e-08,
+      "final_speed": 9.193287e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.0,
+      "fully_out_s": null,
+      "below_005_until_end_s": 0.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "feasible": 25
+      },
+      "first_feasible": 74,
+      "rejected_first": {
+        "road": 1,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 0,
+        "applied": false,
+        "reason": "h12_selected_stop",
+        "selectable_forward_count": 59,
+        "obstacle_clear": false
+      }
+    },
+    {
+      "mode": "lya",
+      "scene": "normal",
+      "source": "offline-ros-lya\\5156557507d846e28d4cc3364ac0d592\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 0,
+      "initial_speed": 6.29443946e-08,
+      "final_speed": 2.325631,
+      "first_command": 0.5,
+      "driven_progress_m": 9.59108,
+      "fully_out_s": null,
+      "below_005_until_end_s": null,
+      "tracker_example": [
+        3,
+        {
+          "mode": "lya",
+          "owner": "candidate",
+          "active": true,
+          "points_zx_m": [
+            [
+              1.0,
+              -0.12661491893818816
+            ],
+            [
+              2.0,
+              -0.3626098355179523
+            ],
+            [
+              3.0,
+              -0.49220998938709193
+            ]
+          ],
+          "target_zx_m": [
+            1.0,
+            -0.12661491893818816
+          ],
+          "requested_yaw_right_radps": -0.4367132545278951,
+          "checked_yaw_right_radps": -0.062208589351789315,
+          "checked_speed_mps": 1.099999988,
+          "reference_speed_mps": 2.0,
+          "target_heading_right_rad": -0.23175459907316218,
+          "reference_yaw_right_radps": 1.0287281613809236,
+          "lya_pose_speed_mps": 1.9747477433047604,
+          "lya_pose_yaw_ros_radps": 0.4367132545278951
+        }
+      ],
+      "owners": {
+        "edge_recovery": 17,
+        "candidate": 8
+      },
+      "reason": {
+        "feasible": 25
+      },
+      "first_feasible": 75,
+      "rejected_first": {
+        "road": 0,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 54,
+        "applied": false,
+        "reason": "h12_selected_motion",
+        "selectable_forward_count": 60,
+        "obstacle_clear": false
+      }
+    },
+    {
+      "mode": "lya",
+      "scene": "hardroll",
+      "source": "offline-ros-lya\\03297051bbf04e5b839eaa55fff337dc\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 1.82139742,
+      "final_speed": 6.419956e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.914032,
+      "fully_out_s": null,
+      "below_005_until_end_s": 1.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "feasible": 4,
+        "no_feasible_trajectory": 1,
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 19
+      },
+      "first_feasible": 15,
+      "rejected_first": {
+        "road": 60,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 0,
+        "applied": false,
+        "reason": "h12_selected_stop",
+        "selectable_forward_count": 0,
+        "obstacle_clear": false
+      }
+    },
+    {
+      "mode": "lya",
+      "scene": "crossing",
+      "source": "offline-ros-lya\\a3a07dd391e3495f8af1eb265788b29c\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 1.821398,
+      "final_speed": -1.4523367e-07,
+      "first_command": 0.0,
+      "driven_progress_m": 0.914032,
+      "fully_out_s": 0.299999982,
+      "below_005_until_end_s": 0.979999959,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "no_feasible_trajectory": 4,
+        "feasible": 1,
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 19
+      },
+      "first_feasible": 0,
+      "rejected_first": {
+        "road": 75,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 75,
+        "dynamics": 0
+      },
+      "first_launch": null
+    },
+    {
+      "mode": "lya",
+      "scene": "outside",
+      "source": "offline-ros-lya\\ea96e7e997d54d14864dbc084149da28\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 8.95875161e-08,
+      "final_speed": 8.892532e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.0,
+      "fully_out_s": 0.0,
+      "below_005_until_end_s": 0.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "checked_reverse_release": 1,
+        "executing_checked_reverse_release": 20,
+        "recovery_unknown_road": 4
+      },
+      "first_feasible": 1,
+      "rejected_first": {},
+      "first_launch": null
+    },
+    {
+      "mode": "lya",
+      "scene": "near",
+      "source": "offline-ros-lya\\88c2aa2dc78a48af97a498435b958999\\frames.jsonl",
+      "ok_frames": 25,
+      "zero_frames": 25,
+      "initial_speed": 3.14706661e-08,
+      "final_speed": 9.193287e-08,
+      "first_command": 0.0,
+      "driven_progress_m": 0.0,
+      "fully_out_s": null,
+      "below_005_until_end_s": 0.0,
+      "tracker_example": null,
+      "owners": {
+        "stop": 25
+      },
+      "reason": {
+        "feasible": 25
+      },
+      "first_feasible": 74,
+      "rejected_first": {
+        "road": 1,
+        "obstacle": 0,
+        "unobserved": 0,
+        "loss_of_camera_contingency": 0,
+        "dynamics": 0
+      },
+      "first_launch": {
+        "h12_index": 0,
+        "applied": false,
+        "reason": "h12_selected_stop",
+        "selectable_forward_count": 59,
+        "obstacle_clear": false
+      }
+    }
+  ],
+  "planner_wall_ms": {
+    "pp0": [
+      {
+        "mode": "pure_pursuit",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 54.64251,
+        "p95_ms": 69.8005586,
+        "max_ms": 85.851009,
+        "digest": "16253ca8133a028fb5617bf70067dab582b0f7d6c7a3a8dcf38c1cdeae689f9f"
+      },
+      {
+        "mode": "pure_pursuit",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 45.186391,
+        "p95_ms": 53.7772868,
+        "max_ms": 56.854349,
+        "digest": "16253ca8133a028fb5617bf70067dab582b0f7d6c7a3a8dcf38c1cdeae689f9f"
+      }
+    ],
+    "pp": [
+      {
+        "mode": "pure_pursuit",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 54.64251,
+        "p95_ms": 69.8005586,
+        "max_ms": 85.851009,
+        "digest": "16253ca8133a028fb5617bf70067dab582b0f7d6c7a3a8dcf38c1cdeae689f9f"
+      },
+      {
+        "mode": "pure_pursuit",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 43.847371,
+        "p95_ms": 54.3771946,
+        "max_ms": 58.644068,
+        "digest": "7c2b8dca239f97bb6d58a741aa5c637f4da0a7076e74e972288c3967a3a1c402"
+      }
+    ],
+    "lya": [
+      {
+        "mode": "lya",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 51.458101,
+        "p95_ms": 62.913810000000005,
+        "max_ms": 72.541323,
+        "digest": "8bdecf6cdb6d3c6299e1247e68c5f8c53ca48250c278b2c787830c0084d3c220"
+      },
+      {
+        "mode": "lya",
+        "frames": 25,
+        "repeats": 5,
+        "median_ms": 44.896146,
+        "p95_ms": 52.88471919999999,
+        "max_ms": 59.463007,
+        "digest": "e47e7f745574f9c6186058a92aad2f3a50e266cefd0c3cadb8e2ae079c0ae1e7"
+      }
+    ]
+  },
+  "vehicle_transport_wall": [
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 121,
+      "missing": 29,
+      "measured_command_hz": 12.1,
+      "reasons": {
+        "feasible": 121
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.827091,
+        "decode_and_projection": 1.275011,
+        "inference": 47.332309,
+        "restrict_predictions": 0.129574,
+        "local_transport_ms": 1.774759978055954,
+        "local_unpack_ms": 0.681609,
+        "planning_queue": 23.741973,
+        "max_ready_source_gap": 66.719787,
+        "processing_ms": 70.75373199768364,
+        "command_age_at_publish_ms": 150.174205
+      },
+      "median_ms": 155.078905,
+      "p95_ms": 230.753434,
+      "max_ms": 313.250388,
+      "longest_arrival_gap_ms": 169.603219,
+      "eligible_under_200ms": 98
+    },
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 129,
+      "missing": 21,
+      "measured_command_hz": 12.9,
+      "reasons": {
+        "feasible": 129
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.767172,
+        "decode_and_projection": 1.242018,
+        "inference": 26.737039,
+        "restrict_predictions": 0.131444,
+        "local_transport_ms": 1.9023169875144958,
+        "local_unpack_ms": 0.710999,
+        "planning_queue": 11.725705,
+        "max_ready_source_gap": 66.692228,
+        "processing_ms": 63.53523698635399,
+        "command_age_at_publish_ms": 129.760232
+      },
+      "median_ms": 133.889288,
+      "p95_ms": 202.1809246,
+      "max_ms": 253.155221,
+      "longest_arrival_gap_ms": 165.401864,
+      "eligible_under_200ms": 121
+    },
+    {
+      "controller": "lya",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 129,
+      "missing": 21,
+      "measured_command_hz": 12.9,
+      "reasons": {
+        "feasible": 129
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.801223,
+        "decode_and_projection": 1.257973,
+        "inference": 47.853426,
+        "restrict_predictions": 0.130844,
+        "local_transport_ms": 1.8873629868030548,
+        "local_unpack_ms": 0.638757,
+        "planning_queue": 10.646,
+        "max_ready_source_gap": 66.717135,
+        "processing_ms": 64.6432020002976,
+        "command_age_at_publish_ms": 139.487512
+      },
+      "median_ms": 143.187961,
+      "p95_ms": 202.45862739999998,
+      "max_ms": 234.953247,
+      "longest_arrival_gap_ms": 152.432919,
+      "eligible_under_200ms": 121
+    },
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 5,
+      "sent": 50,
+      "matched": 50,
+      "missing": 0,
+      "measured_command_hz": 5.0,
+      "reasons": {
+        "feasible": 50
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.799264,
+        "decode_and_projection": 1.2686389999999999,
+        "inference": 50.486729499999996,
+        "restrict_predictions": 0.14329999999999998,
+        "local_transport_ms": 1.3490684926509857,
+        "local_unpack_ms": 0.6381445,
+        "planning_queue": 0.1387575,
+        "max_ready_source_gap": 199.9957635,
+        "processing_ms": 52.34628698963206,
+        "command_age_at_publish_ms": 106.9166185
+      },
+      "median_ms": 110.628018,
+      "p95_ms": 148.23955089999998,
+      "max_ms": 224.922759,
+      "longest_arrival_gap_ms": 314.533213,
+      "eligible_under_200ms": 49
+    },
+    {
+      "controller": "lya",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 5,
+      "sent": 50,
+      "matched": 50,
+      "missing": 0,
+      "measured_command_hz": 5.0,
+      "reasons": {
+        "feasible": 50
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.8034295,
+        "decode_and_projection": 1.309728,
+        "inference": 52.567558500000004,
+        "restrict_predictions": 0.14373,
+        "local_transport_ms": 1.546095997095108,
+        "local_unpack_ms": 0.6402319999999999,
+        "planning_queue": 0.170362,
+        "max_ready_source_gap": 199.99789099999998,
+        "processing_ms": 53.31933900015429,
+        "command_age_at_publish_ms": 110.442786
+      },
+      "median_ms": 113.798957,
+      "p95_ms": 140.67051499999997,
+      "max_ms": 160.541597,
+      "longest_arrival_gap_ms": 254.806323,
+      "eligible_under_200ms": 50
+    }
+  ],
+  "gate": {
+    "pure-normal": {
+      "software": "vehicle gate + stock motor controller + DDS software CAN receiver",
+      "input": "Unity Twist sequence, freshly timestamped at its simulated capture cadence",
+      "feedback": "fixture wheel, IMU and idle joystick heartbeat",
+      "commands": 25,
+      "matches": 25,
+      "watchdog_stop": true,
+      "zero_frames_after_timeout": 31
+    },
+    "lya-crossing": {
+      "software": "vehicle gate + stock motor controller + DDS software CAN receiver",
+      "input": "Unity Twist sequence, freshly timestamped at its simulated capture cadence",
+      "feedback": "fixture wheel, IMU and idle joystick heartbeat",
+      "commands": 25,
+      "matches": 25,
+      "watchdog_stop": true,
+      "zero_frames_after_timeout": 29
+    }
+  },
+  "ablation": [
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 132,
+      "missing": 18,
+      "measured_command_hz": 13.2,
+      "reasons": {
+        "feasible": 132
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.759224,
+        "decode_and_projection": 1.2708075,
+        "inference": 25.8399305,
+        "restrict_predictions": 0.126323,
+        "local_transport_ms": 1.8658344894647598,
+        "local_unpack_ms": 0.7393624999999999,
+        "planning_queue": 26.8915035,
+        "max_ready_source_gap": 66.67623,
+        "pixel_prefetch_wait_ms": 0.00038,
+        "processing_ms": 66.36696599889547,
+        "command_age_at_publish_ms": 129.18543549999998
+      },
+      "median_ms": 133.047899,
+      "p95_ms": 208.3330091,
+      "max_ms": 239.205044,
+      "longest_arrival_gap_ms": 161.674463,
+      "eligible_under_200ms": 122
+    },
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 118,
+      "missing": 32,
+      "measured_command_hz": 11.8,
+      "reasons": {
+        "feasible": 118
+      },
+      "prefetched": 82,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.7544770000000001,
+        "decode_and_projection": 1.2116034999999998,
+        "inference": 26.21468,
+        "restrict_predictions": 0.124523,
+        "local_transport_ms": 1.8740665018558502,
+        "local_unpack_ms": 0.7207215,
+        "planning_queue": 30.8388955,
+        "max_ready_source_gap": 66.72778249999999,
+        "pixel_prefetch_wait_ms": 0.005921,
+        "processing_ms": 74.55553050385788,
+        "command_age_at_publish_ms": 149.514082
+      },
+      "median_ms": 153.8923125,
+      "p95_ms": 239.48404455,
+      "max_ms": 271.148058,
+      "longest_arrival_gap_ms": 173.941112,
+      "eligible_under_200ms": 96
+    },
+    {
+      "controller": "pure_pursuit",
+      "transport": "local_binary_dds",
+      "wall_seconds": 10,
+      "camera_hz": 15,
+      "sent": 150,
+      "matched": 130,
+      "missing": 20,
+      "measured_command_hz": 13.0,
+      "reasons": {
+        "feasible": 130
+      },
+      "prefetched": 0,
+      "median_stage_ms": {
+        "capture_to_image_callback": 0.7352609999999999,
+        "decode_and_projection": 1.2385115,
+        "inference": 26.7481955,
+        "restrict_predictions": 0.1281135,
+        "local_transport_ms": 1.9468889981508255,
+        "local_unpack_ms": 0.6961835000000001,
+        "planning_queue": 22.4060655,
+        "max_ready_source_gap": 66.68857249999999,
+        "pixel_prefetch_wait_ms": 0.00036,
+        "processing_ms": 65.0629785086494,
+        "command_age_at_publish_ms": 136.913992
+      },
+      "median_ms": 142.4044085,
+      "p95_ms": 214.36990179999998,
+      "max_ms": 251.98778,
+      "longest_arrival_gap_ms": 153.252667,
+      "eligible_under_200ms": 120
+    }
+  ]
+}

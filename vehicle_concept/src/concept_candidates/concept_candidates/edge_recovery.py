@@ -3,7 +3,7 @@ import numpy as np
 
 from concept_candidates.field_controls import (
     DIFFERENTIAL_SLEW, OUTWARD_RELEASE_SLEW, FORWARD_ACCEL, HALF_TREAD, TRACKING_HEADROOM,
-    WHEEL_SPEED_FRACTION, forward_control,
+    WHEEL_SPEED_FRACTION, forward_control, forward_request,
 )
 from concept_feasibility.response61515 import FIELD_YAW_TAU_S, motor_steering
 from concept_road.onboard625 import HALF_TRACK
@@ -193,7 +193,7 @@ def preview_control(edge, desired, z, x, heading, speed, yaw, previous, drive, d
     return forward_control(guarded, drive, speed, previous, dt, release_outward=release, previous_drive=previous_drive)
 
 
-def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace):
+def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, dt, pace, minimum=0.):
     """One proposal step; positive steer is clockwise. No direct motor output."""
     side, angle, normal_distance = edge[:3]
     relative_heading = np.asarray(heading)-angle
@@ -211,5 +211,6 @@ def edge_control(edge, z, x, heading, speed, yaw, applied_drive, applied_steer, 
     goal = np.where(approaching, np.minimum(pace, turning_drive), pace)
     drive = np.minimum(goal, np.minimum(applied_drive + FORWARD_ACCEL*dt_step,
                                         np.maximum(speed, 0.) + TRACKING_HEADROOM))
+    drive = forward_request(drive, minimum, np.minimum(pace, np.maximum(speed, 0.) + TRACKING_HEADROOM))
     return preview_control(edge, desired, z, x, heading, speed, yaw, applied_steer, drive, dt,
                            np.minimum(applied_drive, np.minimum(pace, np.maximum(speed, 0.) + TRACKING_HEADROOM)))

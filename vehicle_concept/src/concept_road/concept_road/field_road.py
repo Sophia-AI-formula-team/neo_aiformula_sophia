@@ -39,7 +39,7 @@ def _transport(rows, speed, yaw, dt):
     return np.column_stack((z, *(np.interp(z, depth, x) for depth, x in new)))
 
 
-def _connect_edge_samples(current, edges, labels, seed, green):
+def _connect_edge_samples(current, edges, labels, seed, green, top=0):
     """Follow a measured verge through gaps, checking the actual image at each step."""
     prefixes = {}
     for side in (0, 1):
@@ -72,7 +72,7 @@ def _connect_edge_samples(current, edges, labels, seed, green):
             predicted = np.polynomial.polynomial.polyval(z, line) + direction*.055
             scale = FOCAL/z
             center = int(round(CX + scale*predicted))
-            v = round(CY + HEIGHT*scale)
+            v = round(CY + HEIGHT*scale)-top
             pad, width = max(2, round(.07*scale)), max(3, round(.32*scale))
             reach = int(.27*scale)
             if not pad+width+reach < center < seed.shape[1]-pad-width-reach:
@@ -142,6 +142,52 @@ def ordered_marking_rows(depths, order, lines, openings=()):
     return out
 
 
+def field_pixels(image, raw, lane):
+    # Canonical pixels already contain the real camera -> nominal ground warp.
+    # Three rows suppress isolated paint pixels without erasing thin distant lines.
+    # All geometry reads ground rows below CY. Keep the vertical halo needed
+    # by both blurs and the turf opening at the farthest sampled row.
+    top = max(0, int(CY)-8)
+    image, raw, lane = image[top:], raw[top:], lane[top:]
+    raw_u8 = np.asarray(raw, dtype=np.uint8)
+    paint_u8 = np.asarray(lane, dtype=np.uint8)
+    vote = raw_u8.astype(np.float32)
+    seed_rows = cv2.blur(vote, (3, 3)) >= .45
+    # Small holes in a well supported body of B pixels are frequent under
+    # headlamps. At near rows use a wider sample in camera pixels.
+    near_image = slice(int(CY + HEIGHT * FOCAL / 2.5)-top, None)
+    near_vote = cv2.blur(vote[near_image], (39, 15))
+    seed_rows[near_image] |= near_vote >= .45
+    paint_rows = cv2.dilate(paint_u8, np.ones((3, 1), np.uint8)) != 0
+    b, g, r = (channel.astype(np.float32) for channel in cv2.split(image))
+    green = (g-r) / np.maximum(g+r, 32.)
+    green = cv2.blur(green, (3, 3))
+    blue = (b-g) / np.maximum(b+g, 32.)
+    blue = cv2.blur(blue, (3, 3))
+    light = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    patch = np.s_[int(CY)+15-top::6, 12:-12:6]
+    samples = green[patch][seed_rows[patch] & ~paint_rows[patch]]
+    if len(samples) >= 30:
+        # The B head may spill onto turf even in dark scenes. Compare to
+        # pavement in the same exposure; a few green pixels do not open a lane.
+        green_limit = max(.052, float(np.percentile(samples, 20)) + .057)
+        turf = (cv2.blur(green, (13, 5)) > green_limit).astype(np.uint8)
+        broad_turf = cv2.morphologyEx(turf, cv2.MORPH_OPEN, np.ones((5, 29), np.uint8))
+        # A broad connected segmentation near the car is positive evidence.
+        # In that case decide the outer edge at the paint/material transition
+        # below, rather than removing dim, green-tinted asphalt pixel by pixel.
+        near_coverage = cv2.blur(vote[near_image], (1, 11)).mean(axis=1)
+        broad_turf[near_image] &= (near_coverage[:, None] < .52)
+        seed_rows &= (broad_turf == 0) | paint_rows
+        # When B calls a uniformly saturated green area road, there is
+        # no asphalt colour anchor in this view. Do not learn turf as the
+        # pavement reference just because it occupies most of the frame.
+        if np.percentile(samples, 10) > .15:
+            seed_rows &= green < .10
+    seed_rows &= (light >= 9) & (light <= 248)
+    return seed_rows, paint_rows, green, blue, light, top
+
+
 class FieldRoad:
     """A fresh observer is needed for each run. Inputs contain no map or world pose."""
 
@@ -169,44 +215,7 @@ class FieldRoad:
                         history.append((points, age + dt))
             self._history = history
 
-        # Canonical pixels already contain the real camera -> nominal ground warp.
-        # Three rows suppress isolated paint pixels without erasing thin distant lines.
-        raw_u8 = np.asarray(raw, dtype=np.uint8)
-        paint_u8 = np.asarray(lane, dtype=np.uint8)
-        vote = raw_u8.astype(np.float32)
-        seed_rows = cv2.blur(vote, (3, 3)) >= .45
-        # Small holes in a well supported body of B pixels are frequent under
-        # headlamps. At near rows use a wider sample in camera pixels.
-        near_image = slice(int(CY + HEIGHT * FOCAL / 2.5), None)
-        near_vote = cv2.blur(vote[near_image], (39, 15))
-        seed_rows[near_image] |= near_vote >= .45
-        paint_rows = cv2.dilate(paint_u8, np.ones((3, 1), np.uint8)) != 0
-        rgb = np.asarray(image, dtype=np.float32)
-        green = (rgb[:, :, 1] - rgb[:, :, 2]) / np.maximum(rgb[:, :, 1] + rgb[:, :, 2], 32.)
-        green = cv2.blur(green, (3, 3))
-        blue = (rgb[:, :, 0] - rgb[:, :, 1]) / np.maximum(rgb[:, :, 0] + rgb[:, :, 1], 32.)
-        blue = cv2.blur(blue, (3, 3))
-        light = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        patch = np.s_[int(CY)+15::6, 12:-12:6]
-        samples = green[patch][seed_rows[patch] & ~paint_rows[patch]]
-        if len(samples) >= 30:
-            # The B head may spill onto turf even in dark scenes. Compare to
-            # pavement in the same exposure; a few green pixels do not open a lane.
-            green_limit = max(.052, float(np.percentile(samples, 20)) + .057)
-            turf = (cv2.blur(green, (13, 5)) > green_limit).astype(np.uint8)
-            broad_turf = cv2.morphologyEx(turf, cv2.MORPH_OPEN, np.ones((5, 29), np.uint8))
-            # A broad connected segmentation near the car is positive evidence.
-            # In that case decide the outer edge at the paint/material transition
-            # below, rather than removing dim, green-tinted asphalt pixel by pixel.
-            near_coverage = cv2.blur(vote[near_image], (1, 11)).mean(axis=1)
-            broad_turf[near_image] &= (near_coverage[:, None] < .52)
-            seed_rows &= (broad_turf == 0) | paint_rows
-            # When B calls a uniformly saturated green area road, there is
-            # no asphalt colour anchor in this view. Do not learn turf as the
-            # pavement reference just because it occupies most of the frame.
-            if np.percentile(samples, 10) > .15:
-                seed_rows &= green < .10
-        seed_rows &= (light >= 9) & (light <= 248)
+        seed_rows, paint_rows, green, blue, light, top = field_pixels(image, raw, lane)
         measured, target, edges, explanations = [], [], [], []
         previous_u = CX
         depths = np.linspace(.95, 12., 45)
@@ -215,8 +224,9 @@ class FieldRoad:
         observed_indices = []
         for i, z in enumerate(depths):
             v = round(CY + HEIGHT * FOCAL / z)
-            if not 0 <= v < len(raw_u8):
+            if not 0 <= v < len(raw):
                 continue
+            v -= top
             row_seed = seed_rows[v]
             if z <= 2.3:
                 # A water drop or a dark patch may split just the nearest scan
@@ -224,7 +234,7 @@ class FieldRoad:
                 # pixels and supported at the same lateral position on the next
                 # visible ground slice. Exterior paint still wins afterwards.
                 dv = .25
-                next_v = round(CY + HEIGHT*FOCAL/(z+dv))
+                next_v = round(CY + HEIGHT*FOCAL/(z+dv))-top
                 us = np.arange(len(row_seed))
                 next_u = np.rint(CX + (us-CX)*z/(z+dv)).astype(int)
                 across = cv2.morphologyEx(row_seed[None, :].astype(np.uint8), cv2.MORPH_CLOSE,
@@ -257,7 +267,7 @@ class FieldRoad:
                     if np.count_nonzero(direct & (abs(current[:,1+side]-side_x) < .35)) >= 2:
                         current[i,1+side] = partial[index,side]
                         explanations[i][side] = 'two_lane_observed_asphalt'
-            _connect_edge_samples(current, edges, explanations, seed_rows, green)
+            _connect_edge_samples(current, edges, explanations, seed_rows, green, top)
             valid = np.all(np.isfinite(current), axis=1)
             current, edges = current[valid], edges[valid]
             target = np.asarray(target)[valid]

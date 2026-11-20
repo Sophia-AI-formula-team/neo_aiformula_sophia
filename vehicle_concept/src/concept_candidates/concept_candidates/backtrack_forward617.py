@@ -196,6 +196,9 @@ class BacktrackSteer:
         horizon=float(self.last['audit'].get('horizon',5.))
         want_forward=bool(eligible.any()) if self.phase!='forward' else forward_count>0
         reversing=(not want_forward and self.budget is not None and self.used<self.budget and obs.speed<.04)
+        # The reverse dynamics only support the calibrated -0.2 m/s request.
+        params = getattr(self.base, 'p', {})
+        reversing = reversing and params.get('min_nonzero_speed_mps', 0.) <= .2 <= params.get('pace', 6.)
         if reversing:
             stop=MODEL['stop'];stop_distance=.3*stop['delay']+.3**2/(2*stop['deceleration'])
             remaining=max(0.,self.budget-self.used-stop_distance)

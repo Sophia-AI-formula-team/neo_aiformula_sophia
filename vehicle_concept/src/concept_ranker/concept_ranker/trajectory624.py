@@ -7,7 +7,6 @@ import numpy as np
 from concept_candidates.ranker617 import choose
 
 from concept_ranker.whole_lap621 import WholeLapSelector
-from concept_ranker.supported_launch import SupportedLaunch
 
 INPUTS=('speed_command','turn_command','nominal_progress','road_margin','obstacle_margin',
         'lateral_at_quarter','lateral_at_half','lateral_at_end','forward_at_end',
@@ -44,7 +43,6 @@ class TrajectorySelector(WholeLapSelector):
         cfg=json.loads(path.read_bytes())
         self.net=cfg.get('network')
         self.mode=cfg['mode']
-        self.launch = SupportedLaunch()
 
     def rank(self,features,allowed,baseline,audit,obs,*,launch_evidence=None):
         if self.mode=='baseline':
@@ -57,7 +55,14 @@ class TrajectorySelector(WholeLapSelector):
         final=base+raw
         pick=choose(final,allowed)
         if allowed[baseline] and final[pick]<=final[baseline]+1e-8:pick=baseline
-        pick, final, launch = self.launch.decide(pick, final, allowed, baseline, audit, obs, launch_evidence)
+        # A selected stop is a command. Never replace it with a launch or
+        # change the ranking scores after H12 has made the choice.
+        launch = None
+        if launch_evidence is not None:
+            launch = dict(h12_index=int(pick), applied=False,
+                          reason='h12_selected_stop' if table[pick,0] == 0 else 'h12_selected_motion',
+                          selectable_forward_count=int(np.count_nonzero(allowed & (table[:,0] > 0))),
+                          obstacle_clear=bool(launch_evidence.get('obstacle_clear')))
         assert allowed[pick] and table[pick,6]>0
         return pick,dict(baseline=int(baseline),selected=int(pick),eligible=allowed.tolist(),
                          final_scores=final.tolist(),base_scores=base.tolist(),score_adjustments=raw.tolist(),

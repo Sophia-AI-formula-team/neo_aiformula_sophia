@@ -1,4 +1,4 @@
-"""Allow a checked start when H12 prefers waiting on an observed clear corridor."""
+"""Historical 11/20 launch override for reproducing field logs in offline checks."""
 from collections import Counter
 
 import numpy as np

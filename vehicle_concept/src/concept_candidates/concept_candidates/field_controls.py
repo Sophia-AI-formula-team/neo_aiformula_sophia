@@ -19,6 +19,13 @@ HALF_TREAD = .30                # metres
 WHEEL_SPEED_FRACTION = .5       # |turn wheel speed| / straight wheel speed
 
 
+def forward_request(value, minimum, pace):
+    """Create a legal speed before simulating its swept path and stop."""
+    if np.isscalar(value) and np.isscalar(pace):
+        return min(max(value, minimum), pace) if value > 0. and pace >= minimum else 0.
+    return np.where((value > 0.) & (pace >= minimum), np.minimum(np.maximum(value, minimum), pace), 0.)
+
+
 def forward_ceiling(measured, dt, pace, *, initial_reference=0.):
     applied = max(initial_reference, 0., physical_applied_command()[0])
     return min(pace, applied + FORWARD_ACCEL * min(dt, .2),

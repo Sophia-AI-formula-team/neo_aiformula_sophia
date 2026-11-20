@@ -1,5 +1,6 @@
 """Foxy adapters for the single Concept CAN command path."""
 import json
+from collections import deque
 import math
 import time
 
@@ -37,6 +38,10 @@ class GateNode(Node):
             raise ValueError('max_auto_speed_mps must be in (0, 5]')
         self.add_on_set_parameters_callback(self.parameters)
         self.gate = Gate()
+        # Sampled by the existing status publisher; no extra CAN subscriber.
+        self.trace = dict(last_request=None, accepted=None, can_publish=None,
+                          last_invalid_state=None, received=0, accepted_count=0)
+        self.recent_requests = deque(maxlen=4)
         self.state_t = -math.inf
         self.state_at = -math.inf
         self.sender = self.declare_parameter('can_sender_node', '/aiformula_control/socket_can_sender').value
@@ -97,11 +102,18 @@ class GateNode(Node):
         msg.header.frame_id = 'can0'
         msg.id, msg.dlc, msg.data = 0x210, 8, list(data)
         self.can.publish(msg)
+        self.trace['can_publish'] = dict(stamp_ns=msg.header.stamp.sec * 10**9 + msg.header.stamp.nanosec,
+                                         data_hex=bytes(data).hex())
 
     def private_cmd(self, value):
         cmd = Twist()
         cmd.linear.x, cmd.angular.z = value
         self.cmd.publish(cmd)
+        accepted = self.trace['accepted']
+        if (accepted is not None and accepted['first_dispatch_ns'] is None and self.gate.enabled
+                and not self.gate.paused and not self.gate.manual_held and self.gate.ready
+                and self.gate.reason == 'auto_command_received' and value == self.gate.auto):
+            accepted['first_dispatch_ns'] = self.get_clock().now().nanoseconds
 
     def stop(self):
         self.private_cmd(ZERO)
@@ -127,6 +139,7 @@ class GateNode(Node):
         self.stop()
 
     def vehicle_state(self, msg):
+        data = {}
         try:
             data = json.loads(msg.data)
             stamp = data['t']
@@ -135,6 +148,9 @@ class GateNode(Node):
         except (KeyError, ValueError, TypeError):
             valid = False
         if not valid:
+            self.trace['last_invalid_state'] = dict(
+                received_ns=self.get_clock().now().nanoseconds,
+                reason=data.get('reason') if isinstance(data, dict) else 'invalid_message')
             self.state_at = -math.inf
             if not self.gate.paused:
                 self.gate.pause(self.now(), 'invalid_vehicle_state')
@@ -158,18 +174,33 @@ class GateNode(Node):
             self.stop()
 
     def auto(self, msg):
+        received = self.get_clock().now().nanoseconds
+        header = msg.header.stamp
+        speed, yaw = msg.twist.linear.x, msg.twist.angular.z
+        event = dict(capture_ns=header.sec * 10**9 + header.nanosec, received_ns=received,
+                     speed_mps=speed if math.isfinite(speed) else None,
+                     yaw_rps=yaw if math.isfinite(yaw) else None)
+        self.trace['received'] += 1
+        event['seq'] = self.trace['received']
+        self.recent_requests.append(event)
+        self.trace['last_request'] = event
         if (not self.gate.paused and not self.gate.manual_held
                 and not -self.limit <= msg.twist.linear.x <= self.limit):
+            event['result'] = 'auto_speed_limit'
             self.gate.pause(self.now(), 'auto_speed_limit')
             self.stop()
             return
         if not all(map(math.isfinite, (msg.twist.linear.x, msg.twist.angular.z))):
+            event['result'] = 'invalid_auto_command'
             if not self.gate.paused:
                 self.gate.pause(self.now(), 'invalid_auto_command')
                 self.stop()
             return
-        self.gate.command((msg.twist.linear.x, msg.twist.angular.z),
-                          seconds(msg.header.stamp), self.now(), time.monotonic())
+        event['result'] = self.gate.command((speed, yaw), seconds(header), self.now(), time.monotonic())
+        if event['result'] == 'accepted':
+            self.trace['accepted_count'] += 1
+            event['first_dispatch_ns'] = None
+            self.trace['accepted'] = event
 
     def motor(self, msg):
         if msg.id != 0x210 or msg.dlc != 8 or msg.is_extended or msg.is_rtr or msg.is_error:
@@ -241,6 +272,7 @@ class GateNode(Node):
         receipt_age = now-g.auto_at
         capture_age = stamp-g.auto_stamp if math.isfinite(g.auto_at) else math.inf
         self.status.publish(String(data=json.dumps(dict(output_enabled=g.enabled, paused=g.paused,
+            clock_trace=dict(self.trace, recent_requests=list(self.recent_requests)),
             manual_held=g.manual_held, estop=g.estop, mode=mode, reason=g.reason,
             t=stamp, max_auto_speed_mps=self.limit, linear_mps=g.sent[0], yaw_rps=g.sent[1],
             manual_yaw_limit_rps=max(abs(self.settings['scale_angular']), abs(self.settings['scale_angular_turbo'])),

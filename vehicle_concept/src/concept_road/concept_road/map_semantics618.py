@@ -39,10 +39,12 @@ def pavement_grid(image, raw, lane, boxes, projection):
     road=np.zeros_like(valid);paint=np.zeros_like(valid);pale=np.zeros_like(valid)
     if len(seed)>=100:
         colour=np.median(seed,axis=0)
-        chroma=np.linalg.norm(lab[:,:,1:]-colour[1:],axis=2)
+        da = lab[:,:,1] - colour[1]
+        db = lab[:,:,2] - colour[2]
+        chroma_sq = da*da + db*db
         lum=lab[:,:,0]-colour[0]
-        road=valid&(chroma<=12)&(lum>=-36)&(lum<=31)
-        pale=valid&(chroma<=13)&(lum>=24)
+        road=valid&(chroma_sq<=12**2)&(lum>=-36)&(lum<=31)
+        pale=valid&(chroma_sq<=13**2)&(lum>=24)
         beside=cv2.dilate(road.astype(np.uint8),np.ones((3,3),np.uint8))>0
         # A genuine white line needs reflectance evidence as well as proximity
         # to the network's paint prediction. Painted asphalt remains asphalt.
@@ -193,11 +195,20 @@ class SemanticMap:
         self.junctions=[]
 
     def grid_coordinates(self, points, pose):
-        return np.unique(np.floor(transform(points,pose)/CELL).astype(int),axis=0)
+        cells = np.floor(transform(points, pose) / CELL).astype(np.int64)
+        if not len(cells):
+            return cells
+        # The frame has a local metric extent. Row-major keys retain exactly
+        # np.unique(axis=0)'s lexicographic order, including negative positions.
+        low = cells.min(axis=0)
+        local = cells-low
+        width = int(local[:, 1].max()) + 1
+        keys = np.unique(local[:, 0]*width + local[:, 1])
+        return np.column_stack(np.divmod(keys, width)) + low
 
     def update(self, image, raw, lane, boxes, evidence, snapshot):
         pose,t=snapshot['pose'],snapshot['t']
-        asphalt,paint,rgb_pale,valid=pavement_grid(image,raw,lane,boxes,self.projection)
+        asphalt,paint,rgb_pale,valid = pavement_grid(image,raw,lane,boxes,self.projection)
         repairs=road_fills(snapshot['parts'],asphalt)
         changed_repairs=[]
         for kind,points in repairs:

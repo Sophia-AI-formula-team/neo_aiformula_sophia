@@ -29,6 +29,25 @@ def logged_case():
                 obs=SimpleNamespace(objects=[], dt=.2, speed=0.), evidence=evidence)
 
 
+def test_driver_respects_h12_stop_even_if_old_launch_would_drive(monkeypatch):
+    from pathlib import Path
+    from concept_ranker import sensor626, trajectory624
+
+    args = logged_case()
+    historical, _, _ = SupportedLaunch().decide(**args)
+    assert args['audit']['table'][historical, 0] > 0
+    selector = trajectory624.TrajectorySelector(Path(trajectory624.__file__).with_name('model-h12.json'), 2.)
+    monkeypatch.setattr(sensor626, 'encode', lambda *unused: None)
+    monkeypatch.setattr(trajectory624, 'corrections', lambda net, encoded: args['scores'])
+    obs = SimpleNamespace(road=[], heading=[], objects=[], speed=0., yaw=0.)
+    pick, ranking = selector.rank(None, args['allowed'], args['baseline'], args['audit'], obs,
+                                  launch_evidence=args['evidence'])
+    assert pick == 0 and args['audit']['table'][pick, 0] == 0
+    assert ranking['launch_decision']['reason'] == 'h12_selected_stop'
+    assert ranking['launch_decision']['selectable_forward_count'] == 2
+    np.testing.assert_array_equal(ranking['final_scores'], args['scores'])
+
+
 def test_logged_hold_only_displaced_with_measured_corridor_and_brake():
     args = logged_case()
     pick, scores, why = SupportedLaunch().decide(**args)

@@ -131,7 +131,7 @@ class SimIO(Node):
         self.command = (stamp_ns(msg.header.stamp), msg.twist.linear.x, msg.twist.angular.z)
 
     def reset(self, driver):
-        self.gate_pub.publish(json_message(dict(mode='paused', max_auto_speed_mps=TARGET,
+        self.gate_pub.publish(json_message(dict(t=driver.get_clock().now().nanoseconds/1e9, mode='paused', max_auto_speed_mps=TARGET,
                                                 output_enabled=False, paused=True)))
         wait_until(lambda: not driver.gate_driving, 'gate pause was not consumed')
         future = self.restart_client.call_async(Trigger.Request())
@@ -246,6 +246,8 @@ def main():
     # Match concept_drive.node.main after camera and ROS graph initialization.
     gc.collect()
     gc.freeze()
+    planner = threading.Thread(target=driver.run_onboard_planning)
+    planner.start()
     runner = threading.Thread(target=executor.spin, daemon=True)
     runner.start()
     try:
@@ -272,6 +274,8 @@ def main():
                         except OSError:
                             pass
     finally:
+        driver.stop_onboard_planning()
+        planner.join()
         executor.shutdown()
         gc.unfreeze()
         for node in (sim, camera, driver):

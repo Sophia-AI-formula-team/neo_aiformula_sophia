@@ -41,6 +41,8 @@ def instances(prediction, shape=(360, 640), image=None, *, field_ground=False, m
     Group only near-contained, aligned boxes, not merely intersecting boxes.
     The outer box supplies geometry; all members can supply class confidence.
     """
+    if not np.any((np.asarray(prediction['labels']) == 91) & (np.asarray(prediction['scores']) >= .15)):
+        return []
     height, width = shape[:2]
     colored = None
     if image is not None:

@@ -23,7 +23,10 @@ def compare(fixture, rows):
     fixture.until(lambda: fixture.service(fixture.enable, enable, success=None) == 'output_enabled',
                   'could not enable isolated software receiver', 8)
     fixture.mode('paused', 'output_enabled')
-    fixture.service(fixture.resume, Trigger.Request())
+    # Startup discovery of the joystick and feedback can lag the enable service.
+    # Pump real messages until the unmodified gate accepts the resume request.
+    fixture.until(lambda: fixture.service(fixture.resume, Trigger.Request(), success=None) == 'waiting_new_auto',
+                  'software gate did not receive its startup interlocks', 8)
     fixture.mode('auto', 'waiting_new_auto')
 
     results = []

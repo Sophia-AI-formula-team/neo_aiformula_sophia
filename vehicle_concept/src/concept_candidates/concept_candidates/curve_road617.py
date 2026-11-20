@@ -10,7 +10,7 @@ except ImportError:
 from concept_road.v3_model import Observation, DEFAULT_PARAMETERS, BODY_HALF_WIDTH
 
 from concept_feasibility.response61515 import advance, inverse_yaw, physical_motor_enabled, physical_applied_command
-from .field_controls import TRACKING_HEADROOM, forward_ceiling, forward_steering
+from .field_controls import forward_request, TRACKING_HEADROOM, forward_ceiling, forward_steering
 from .tracking import tracking_request
 from .edge_recovery import edge_control, preview_control
 
@@ -128,10 +128,18 @@ class RoadAwareCurvePlanner:
         physical = physical_motor_enabled()
         # The real applied pair still initializes the rollout and the brake branch.
         initial_reference = p.get('initial_ramp_reference_mps', 0.)
-        ceiling = p['pace']
+        ceiling = hard_limit = p['pace']
         if physical:
             ceiling = forward_ceiling(obs.speed, obs.dt, ceiling, initial_reference=initial_reference)
-        speeds = np.array([0., .25, .55, .8, 1.]) * ceiling
+            hard_limit = min(hard_limit, max(0., obs.speed) + TRACKING_HEADROOM)
+        minimum = p.get('min_nonzero_speed_mps', 0.)
+        ceiling = float(forward_request(ceiling, minimum, hard_limit))
+        p['forward_command_ceiling'] = ceiling
+        # LYA obtains both v and w from the target pose. Positive slots sharing
+        # the same target and physical ceiling describe the same motion.
+        scales = ([0., 1., 1., 1., 1.] if p.get('tracking_controller') == 'lya'
+                  else [0., .25, .55, .8, 1.])
+        speeds = forward_request(np.array(scales)*ceiling, minimum, p['pace'])
         commands = np.tile(speeds, len(targets))
         targets = np.repeat(targets, len(speeds))
         # The whole batch shares the same vehicle state, observations, parameters
@@ -149,7 +157,7 @@ class RoadAwareCurvePlanner:
             if len(duplicate_groups) and ceiling > 0.:
                 edge_slot = int((duplicate_groups[-1] + 1) * len(speeds) - 1)
                 first_drive, _ = edge_control(edge, 0., 0., 0., max(0., obs.speed), obs.yaw,
-                                              previous[0], previous[1], obs.dt, p['pace'])
+                                              previous[0], previous[1], obs.dt, p['pace'], minimum)
                 full_commands[edge_slot] = first_drive
         if edge_slot is None:
             representatives, inverse = distinct_requests(targets, commands)
@@ -214,7 +222,7 @@ class RoadAwareCurvePlanner:
                     if edge_slot is not None:
                         drive[-1], command_yaw[-1] = edge_control(
                             edge, z[-1], x[-1], heading[-1], speed[-1], yaw[-1],
-                            previous[0] if step == 0 else prior_drive[-1], last_yaw[-1], command_dt, p['pace'])
+                            previous[0] if step == 0 else prior_drive[-1], last_yaw[-1], command_dt, p['pace'], minimum)
                 else:
                     drive = requested_drive
                     command_yaw = inverse_yaw(desired, drive,

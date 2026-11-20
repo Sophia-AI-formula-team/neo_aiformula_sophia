@@ -89,16 +89,20 @@ class Gate:
 
     def command(self, value, source, stamp, now):
         if self.paused or self.estop or not self.enabled or self.manual_held:
-            return
+            return 'inactive'
         # Enforce deadlines even if a new callback runs before the watchdog tick.
         self.check_auto_time(stamp, now)
         if self.paused:
-            return
-        if (source <= max(self.resume_stamp, self.auto_stamp) or
-                not 0 <= stamp-source <= COMMAND_TIMEOUT or not all(map(math.isfinite, value))):
-            return
+            return 'timed_out'
+        if source <= max(self.resume_stamp, self.auto_stamp):
+            return 'before_resume_or_duplicate'
+        if not 0 <= stamp-source <= COMMAND_TIMEOUT:
+            return 'expired_or_future'
+        if not all(map(math.isfinite, value)):
+            return 'nonfinite'
         self.auto, self.auto_stamp, self.auto_at = value, source, now
         self.reason = 'auto_command_received'
+        return 'accepted'
 
     def demand(self, stamp, now):
         if not self.enabled or self.estop:
