@@ -20,3 +20,7 @@
 | 13:52:48 | 根据 1120-10 复盘，将 MapAssist 和独立 OA 的梯形上沿改为 0.55，实装静态验证 y=198。 |
 
 [LYA 回滚详情](LYA_ROLLBACK.md) · [录包索引](BAGS.md)
+
+## 下午收尾
+
+[下午时间线、16:04 实录复盘与 SSD 校验](mapassist-wrap-up/)

@@ -20,6 +20,15 @@
 
 [诊断图与 POV 视频](diagnostics/) · [MapAssist 场次](MAPASSIST.md) · [Concept 场次](CONCEPT.md) · [LYA 回滚](LYA_ROLLBACK.md) · [最早两场审阅资料](mapassist-red-light/)
 
+## 午后 MapAssist 补充录包
+
+| 原包目录 | 实际起止 JST | 消息数 | 原件归档 |
+| --- | --- | ---: | --- |
+| `rosbag2_2026_11_20-14_04_01` | 14:05:18.889–14:08:30.102 | 15,956 | [Google Drive 完整归档](https://drive.google.com/file/d/1KUYO5ucsqz-MujwCX0HIFFCwxWc-lsO3/view)，14:33 回读 SHA-256 通过。 |
+| `rosbag2_2026_11_20-16_03_08` | 16:04:01.910–16:09:36.630 | 164,563 | Extreme SSD 当日收尾目录，原包逐文件哈希与 SQLite 检查通过。[报告](mapassist-wrap-up/run-1604.md) · [SHA-256](mapassist-wrap-up/ssd-sha256.txt) |
+
+`rosbag2_2026_11_20-15_02_47` 仍缺原包，[15:06 的车端控制证据](mapassist-wrap-up/control-15-06.png)已归档。
+
 ## 归档文件与校验
 
 | 编号 | Drive 归档文件名 | 压缩字节数 | SHA-256 |
