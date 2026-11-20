@@ -19,6 +19,7 @@
 #include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/header.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include "common_cpp/camera.hpp"
@@ -52,7 +53,7 @@ private:
     void initConnections();
 
     void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg) const;
-    void findLaneLines(const cv::Mat& mask, const builtin_interfaces::msg::Time& timestamp,
+    void findLaneLines(const cv::Mat& mask, const std_msgs::msg::Header& header,
                        LaneLines& lane_lines) const;
     void publishAnnotatedMask(const cv::Mat& mask, const builtin_interfaces::msg::Time& timestamp,
                               const LaneLines& lane_lines) const;
@@ -158,6 +159,7 @@ class DynamicRoiProcessor;
 
 std::unique_ptr<DynamicRoiProcessor> g_dynamic_roi_processor;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_dynamic_roi_image_pub;
+rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_dynamic_roi_mask_pub;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_linear_fit_image_pub;
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr g_vehicle_fit_image_pub;
 
@@ -1071,6 +1073,33 @@ void blendPolygon(cv::Mat& image, const std::vector<cv::Point>& polygon, const c
     cv::polylines(image, polygons, true, color, 2, cv::LINE_AA);
 }
 
+// OA 2.2: export the lane interior, not the colored ROI search visualization.
+// An all-zero mask means that a usable pair of current lane fits is unavailable.
+void publishDynamicRoiMask(const cv::Mat& source, const std_msgs::msg::Header& header,
+                           const FrameResult& result) {
+    cv::Mat mask = cv::Mat::zeros(source.size(), CV_8U);
+    const auto& left = result.side_results[LEFT];
+    const auto& right = result.side_results[RIGHT];
+    if (left.status == "ok" && right.status == "ok" &&
+        left.current_line.valid && right.current_line.valid) {
+        for (int v = 0; v < mask.rows; ++v) {
+            const double l = left.current_line.a * v + left.current_line.b;
+            const double r = right.current_line.a * v + right.current_line.b;
+            if (!std::isfinite(l) || !std::isfinite(r) || l >= r || r < 0 || l >= mask.cols) continue;
+            const int lo = static_cast<int>(std::ceil(std::max(0.0, l)));
+            const int hi = static_cast<int>(std::floor(std::min(double(mask.cols - 1), r)));
+            if (hi >= lo) mask.row(v).colRange(lo, hi + 1).setTo(255);
+        }
+        cv::Mat global = cv::Mat::zeros(source.size(), CV_8U);
+        if (result.global_roi_polygon.size() >= 3) {
+            cv::fillPoly(global, std::vector<std::vector<cv::Point>>{result.global_roi_polygon}, 255);
+        }
+        cv::bitwise_and(mask, global, mask);
+    }
+    cv_bridge::CvImage output(header, "mono8", mask);
+    g_dynamic_roi_mask_pub->publish(*output.toImageMsg());
+}
+
 void publishDynamicRoiVisualization(const cv::Mat& source_mask, const builtin_interfaces::msg::Time& timestamp,
                                     const FrameResult& frame_result, const DynamicRoiProcessor& processor) {
     cv::Mat visualization = imageToBgr(source_mask);
@@ -1263,6 +1292,7 @@ void LaneLinePublisher::initConnections() {
                        create_publisher<sensor_msgs::msg::PointCloud2>("lane_lines/right", queue_size),
                        create_publisher<sensor_msgs::msg::PointCloud2>("lane_lines/center", queue_size)};
 
+    g_dynamic_roi_mask_pub = create_publisher<sensor_msgs::msg::Image>("dynamic_roi_mask", queue_size);
     g_dynamic_roi_image_pub = create_publisher<sensor_msgs::msg::Image>("dynamic_roi_image", queue_size);
     g_linear_fit_image_pub = create_publisher<sensor_msgs::msg::Image>("linear_fit_image", queue_size);
     g_vehicle_fit_image_pub = create_publisher<sensor_msgs::msg::Image>("vehicle_fit_image", queue_size);
@@ -1285,18 +1315,20 @@ void LaneLinePublisher::imageCallback(const sensor_msgs::msg::Image::SharedPtr m
     }
 
     LaneLines lane_lines;
-    findLaneLines(cv_img->image, msg->header.stamp, lane_lines);
+    findLaneLines(cv_img->image, msg->header, lane_lines);
     publishLaneLines(lane_lines, msg->header.stamp);
 }
 
-void LaneLinePublisher::findLaneLines(const cv::Mat& mask, const builtin_interfaces::msg::Time& timestamp,
+void LaneLinePublisher::findLaneLines(const cv::Mat& mask, const std_msgs::msg::Header& header,
                                       LaneLines& lane_lines) const {
+    const auto& timestamp = header.stamp;
     if (!g_dynamic_roi_processor) return;
 
     auto frame_result = g_dynamic_roi_processor->findLanePixels(mask);
     lane_lines.left.pixels = frame_result.side_results[LEFT].pixels;
     lane_lines.right.pixels = frame_result.side_results[RIGHT].pixels;
 
+    publishDynamicRoiMask(mask, header, frame_result);
     publishDynamicRoiVisualization(mask, timestamp, frame_result, *g_dynamic_roi_processor);
     publishLinearFitVisualization(mask, timestamp, frame_result);
     if (debug_) publishAnnotatedMask(frame_result.cleaned_mask, timestamp, lane_lines);
