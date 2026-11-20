@@ -1,5 +1,6 @@
 """Migrate only the Concept terminal and desktop launchers of the vehicle user."""
 import argparse
+from dataclasses import dataclass
 import fcntl
 import hashlib
 import json
@@ -9,11 +10,23 @@ import stat
 import subprocess
 import sys
 import tempfile
+from typing import Optional
 
 
 HERE = Path(__file__).resolve().parent
 LEGACY = json.loads((HERE.parent / "legacy-sha256.json").read_text(encoding="utf-8"))
 MODE = 0o755
+
+
+@dataclass(frozen=True)
+class Release:
+    source: Path
+    version: str
+    state_dir: str
+    previous: Optional["Release"] = None
+
+
+V6278 = Release(HERE, "V6.27.8", "concept-shortcuts-v6278")
 
 
 def digest(data):
@@ -62,7 +75,7 @@ def replace_link(path, target):
         os.replace(str(link), str(path))
 
 
-def old_link(path, command):
+def old_link(path, command, command_hashes):
     if path.parent != command.parent or not path.is_symlink():
         return False
     # Match the link identity, not the bytes of an unrelated external target.
@@ -71,12 +84,12 @@ def old_link(path, command):
         return path != command
     # A site may have moved the known wrapper to a second name in ~/.local/bin.
     return (target.parent == command.parent and not target.is_symlink() and target.is_file()
-            and target.stat().st_size < 65536 and digest(target.read_bytes()) == LEGACY["concept-live"])
+            and target.stat().st_size < 65536 and digest(target.read_bytes()) in command_hashes)
 
 
-def legacy_file(path, name):
+def known_file(path, hashes):
     return (not path.is_symlink() and path.is_file() and path.stat().st_size < 65536
-            and digest(path.read_bytes()) == LEGACY[name])
+            and digest(path.read_bytes()) in hashes)
 
 
 def xdg_desktop(home):
@@ -91,18 +104,31 @@ def xdg_desktop(home):
     return value if value != home else None
 
 
-def targets(home, desktop, menu):
-    command = home / ".local/bin/concept-live"
+def desktop_entry(command, version):
     # Exec is a desktop-entry string followed by the separate Exec quoting layer.
     # Protect literal %, quotation marks and reserved shell characters in home paths.
     executable = str(command).replace("%", "%%")
     for ch in ('\\', '"', '`', '$'):
         executable = executable.replace(ch, "\\" + ch)
     executable = executable.replace("\\", "\\\\")
-    entry = ('[Desktop Entry]\nVersion=1.0\nType=Application\nName=Concept\n'
-             'Comment=Start Concept V6.27.8 and choose a tracking controller\n'
+    return ('[Desktop Entry]\nVersion=1.0\nType=Application\nName=Concept\n'
+             f'Comment=Start Concept {version} and choose a tracking controller\n'
              f'Exec="{executable}"\nIcon=applications-engineering\nTerminal=true\n'
              'Categories=Science;\n').encode("utf-8")
+
+
+def accepted_hashes(command, release):
+    hashes = {name: {LEGACY[name]} for name in ("concept-live", "Concept.desktop")}
+    if release.previous:
+        old = release.previous
+        hashes["concept-live"].add(digest((old.source / "concept-live").read_bytes()))
+        hashes["Concept.desktop"].add(digest(desktop_entry(command, old.version)))
+    return hashes
+
+
+def targets(home, desktop, menu, release, hashes):
+    command = home / ".local/bin/concept-live"
+    entry = desktop_entry(command, release.version)
     dirs = {menu}
     if desktop is not None and desktop != home:
         dirs.add(desktop)
@@ -114,36 +140,49 @@ def targets(home, desktop, menu):
     for directory in known_dirs:
         rel = (directory / "Concept.desktop").relative_to(home)
         archived = old_runtime.glob("shortcut-backup-*/" + str(rel))
-        if os.path.lexists(home/rel) or any(legacy_file(p, "Concept.desktop") for p in archived):
+        if os.path.lexists(home/rel) or any(known_file(p, hashes["Concept.desktop"]) for p in archived):
             dirs.add(directory)
-    driver = (HERE / "concept-live").read_bytes()
+    driver = (release.source / "concept-live").read_bytes()
     wanted = {command: driver, **{folder/"Concept.desktop": entry for folder in dirs}}
     reserved = {"allnodes", "yolop", "mapassist", "lya"}
     if command.parent.is_dir():
         for path in command.parent.iterdir():
-            if path.name not in reserved and (old_link(path, command) or legacy_file(path, "concept-live")):
+            if path.name not in reserved and (old_link(path, command, hashes["concept-live"])
+                                              or known_file(path, hashes["concept-live"])):
                 wanted[path] = driver
     protected_icons = {"1120-"+name+".desktop" for name in reserved}
     for directory in dirs | set(known_dirs):
         if directory.is_dir():
             for path in directory.glob("*.desktop"):
-                if path.name not in protected_icons and legacy_file(path, "Concept.desktop"):
+                if path.name not in protected_icons and known_file(path, hashes["Concept.desktop"]):
                     wanted[path] = entry
     return {str(p.relative_to(home)): data for p, data in wanted.items()}
 
 
-def validate_runtime():
-    subprocess.run(["bash", str(HERE / "concept-live"), "--verify-install"], check=True)
+def validate_runtime(release):
+    subprocess.run(["bash", str(release.source / "concept-live"), "--verify-install"], check=True)
 
 
-def migrate(home, desktop, menu, action):
-    state = home_path(home, ".local/state/aiformula/concept-shortcuts-v6278/current.json")
+def migrate(home, desktop, menu, action, release=V6278):
+    state = home_path(home, f".local/state/aiformula/{release.state_dir}/current.json")
     receipt = json.loads(state.read_text(encoding="utf-8")) if state.exists() else None
     if action == "rollback" and receipt is None:
         print("No active Concept migration to roll back.")
         return
     entries = receipt["entries"] if receipt else {}
-    wanted = {} if action == "rollback" else targets(home, desktop, menu)
+    command = home / ".local/bin/concept-live"
+    hashes = accepted_hashes(command, release) if action != "rollback" else {}
+    wanted = {} if action == "rollback" else targets(home, desktop, menu, release, hashes)
+    if release.previous and action != "rollback":
+        previous_state = home_path(home, f".local/state/aiformula/{release.previous.state_dir}/current.json")
+        if previous_state.is_file():
+            previous = json.loads(previous_state.read_text(encoding="utf-8"))
+            for key in previous["entries"]:
+                path = home_path(home, key)
+                if key not in wanted and path.parent == command.parent and known_file(path, hashes["concept-live"]):
+                    wanted[key] = wanted[str(command.relative_to(home))]
+                elif key not in wanted and path.suffix == ".desktop" and known_file(path, hashes["Concept.desktop"]):
+                    wanted[key] = desktop_entry(command, release.version)
     if receipt:
         backup = home_path(home, receipt["backup"])
         # A changed XDG location must not orphan an earlier launch entry.
@@ -171,8 +210,8 @@ def migrate(home, desktop, menu, action):
                 raise ValueError(f"Shortcut changed after backup: {path}; preserve and inspect it.")
         else:
             old = current
-            known = LEGACY["concept-live" if path.parent == home/".local/bin" else "Concept.desktop"]
-            if current and current[0] not in (desired[0], known) and not old_link(path, home/".local/bin/concept-live"):
+            known = hashes["concept-live" if path.parent == command.parent else "Concept.desktop"]
+            if current and current[0] != desired[0] and current[0] not in known and not old_link(path, command, hashes["concept-live"]):
                 raise ValueError(f"Unrecognized content at {path}; inspect before replacing.")
             additions[rel] = {"original": current, "installed": desired}
         if current != (old if action == "rollback" else desired):
@@ -182,18 +221,18 @@ def migrate(home, desktop, menu, action):
         for rel in changes:
             print("install", home / rel)
         if not changes:
-            print("Concept shortcuts already match V6.27.8.")
+            print(f"Concept shortcuts already match {release.version}.")
         return
     if action == "check":
         if changes:
             raise ValueError("Missing or stale Concept shortcut(s): " + ", ".join(changes))
-        validate_runtime()
-        print("Verified V6.27.8 overlay and Concept shortcuts.")
+        validate_runtime(release)
+        print(f"Verified {release.version} overlay and Concept shortcuts.")
         return
     if action == "apply":
-        validate_runtime()
+        validate_runtime(release)
         if receipt and not changes and not additions:
-            print("Concept shortcuts already match V6.27.8.")
+            print(f"Concept shortcuts already match {release.version}.")
             return
         if receipt is None:
             state.parent.mkdir(parents=True, exist_ok=True)
@@ -246,7 +285,7 @@ def migrate(home, desktop, menu, action):
     print("Backup:", backup)
 
 
-def main():
+def main(release=V6278):
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
     for mode in ("apply", "check", "rollback"):
@@ -259,7 +298,7 @@ def main():
     lockpath.parent.mkdir(parents=True, exist_ok=True)
     with lockpath.open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        migrate(home, desktop, menu, args.action or "preview")
+        migrate(home, desktop, menu, args.action or "preview", release)
 
 
 if __name__ == "__main__":
