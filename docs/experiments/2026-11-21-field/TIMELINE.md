@@ -22,3 +22,5 @@
 ## 实车第一组及归档
 
 10:47:06–10:48:49 JST 回读第一组，保留当天原始 ROS 与 ZED 日志；四份 bag 已交接到 SSD。[操作时间、覆盖与结果](runs/experiment-01/REPORT.md)。
+
+10:48:59–10:52:25 JST 完成第一组日志发布、OA 2.3 构建和入口切换、手柄接管验证与 MapAssist B 车端卸载。[切换时间和测试明细](deployment/oa23/REPORT.md)。

@@ -1,0 +1,31 @@
+2026-11-21T10:51:38+09:00
+red_flag {"mapassist": {"manual_held": false, "manual_transition_ns": 0, "reason": "waiting_valid_mapping_inputs", "red_stop_required": true, "traffic_stop_flag": true}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "idle", "version": "oa_2_3"}}
+manual_hold_with_red_still_published {"mapassist": {"manual_held": true, "manual_transition_ns": 1795225910341130515, "reason": "waiting_valid_mapping_inputs", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": true, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_takeover", "version": "oa_2_3"}}
+manual_release {"mapassist": {"manual_held": false, "manual_transition_ns": 1795225910740723121, "reason": "waiting_valid_mapping_inputs", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_waiting_fresh_mask", "version": "oa_2_3"}}
+2026-11-21T10:51:54+09:00
+[INFO] [python3-4]: process started with pid [10646]
+[map_assist-1] [INFO] [1795225909.469233534] [map_assist]: Map assist: first lap learns in RAM; points use metres, x forward/y left. Initial avoidance state: False; unknown waits for a real False flag. Official map: /home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/semantic_local_planner_ros/share/semantic_local_planner_ros/config/aiformula_topomap.osm
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [python3-4]: sending signal 'SIGINT' to process[python3-4]
+[INFO] [obstacle_avoidance-3]: sending signal 'SIGINT' to process[obstacle_avoidance-3]
+[INFO] [python3-2]: sending signal 'SIGINT' to process[python3-2]
+[INFO] [map_assist-1]: sending signal 'SIGINT' to process[map_assist-1]
+[map_assist-1] Traceback (most recent call last):
+[map_assist-1]   File "/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist", line 11, in <module>
+[map_assist-1]     load_entry_point('semantic-local-planner-ros==0.4.5', 'console_scripts', 'map_assist')()
+[map_assist-1]   File "/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/semantic_local_planner_ros/lib/python3.8/site-packages/semantic_local_planner_ros/map_assist.py", line 1558, in main
+[map_assist-1]     rclpy.spin(node)
+[map_assist-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/__init__.py", line 191, in spin
+[map_assist-1]     executor.spin_once()
+[map_assist-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 711, in spin_once
+[map_assist-1]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[map_assist-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 697, in wait_for_ready_callbacks
+[map_assist-1]     return next(self._cb_iter)
+[map_assist-1]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/executors.py", line 593, in _wait_for_ready_callbacks
+[map_assist-1]     _rclpy.rclpy_wait(wait_set, timeout_nsec)
+[map_assist-1] KeyboardInterrupt
+[INFO] [python3-4]: process has finished cleanly [pid 10646]
+[INFO] [python3-2]: process has finished cleanly [pid 10642]
+[ERROR] [map_assist-1]: process has died [pid 10640, exit code -2, cmd '/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_p68ui47y -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+[obstacle_avoidance-3] OA exited: reset published, but no /point_flag subscriber was discovered; source restoration is unconfirmed.
+[INFO] [obstacle_avoidance-3]: process has finished cleanly [pid 10644]

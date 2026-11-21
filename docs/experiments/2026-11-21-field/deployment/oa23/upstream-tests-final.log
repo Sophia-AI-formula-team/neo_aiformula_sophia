@@ -1,0 +1,17 @@
+2026-11-21T10:50:37+09:00
+...........................................................F............ [ 88%]
+.........                                                                [100%]
+=================================== FAILURES ===================================
+_ MapAssistTests.test_red_automatically_avoids_forward_edge_and_emits_detour_only_on_new_odom _
+
+self = <test_map_assist.MapAssistTests testMethod=test_red_automatically_avoids_forward_edge_and_emits_detour_only_on_new_odom>
+
+    def test_red_automatically_avoids_forward_edge_and_emits_detour_only_on_new_odom(self):
+>       self.learned_official_loop()
+
+perception/semantic_planning_system/semantic_local_planner_ros/tests/test_map_assist.py:1145:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+perception/semantic_planning_system/semantic_local_planner_ros/tests/test_map_assist.py:552: in learned_official_loop
+    self.assertTrue(self.node.fusion_status["available"], self.node.fusion_status)
+E   AssertionError: False is not true : {'available': False, 'mode': 'odom_only', 'metric_source': 'odometry', 'recorded_length_m': 232.30627460881306, 'official_size_used': False, 'field_validation_required': True, 'reason': 'solver_budget_exhausted', 'final_length_m': 232.29743339850384}
+1 failed, 80 passed in 87.35 seconds

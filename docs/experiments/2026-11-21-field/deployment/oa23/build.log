@@ -1,0 +1,22 @@
+2026-11-21T10:49:28+09:00
+[1.178s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'launchers' is in: /home/vehicle/aiformula_runtime/2026-11-20-mapassist-av314/install/launchers, /home/workspace/install/launchers
+	'semantic_local_planner_ros' is in: /home/vehicle/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros, /home/workspace/install/semantic_local_planner_ros
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding launchers semantic_local_planner_ros
+
+This may be promoted to an error in a future release of colcon-override-check.
+Starting >>> semantic_vehicle_wiring
+Starting >>> motor_controller
+Finished <<< semantic_vehicle_wiring [2.73s]
+Starting >>> semantic_local_planner_ros
+Finished <<< motor_controller [2.73s]
+Finished <<< semantic_local_planner_ros [2.02s]
+Starting >>> launchers
+Finished <<< launchers [2.02s]
+
+Summary: 4 packages finished [7.47s]
+2026-11-21T10:49:37+09:00

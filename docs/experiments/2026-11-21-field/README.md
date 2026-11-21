@@ -20,3 +20,7 @@
 ## 第一组实验回读
 
 10:47–10:48 回读车端日志并交接四份完整 bag。详见[第一组回读报告](runs/experiment-01/REPORT.md)、[车端日志](runs/experiment-01/vehicle-logs/)与[录包索引](runs/experiment-01/SSD-README.md)。
+
+## OA 2.3 切换
+
+普通 MapAssist 已装车 OA 2.3，开启手柄交接。MapAssist B 的车端部署已卸载。[部署和隔离验证](deployment/oa23/REPORT.md)。

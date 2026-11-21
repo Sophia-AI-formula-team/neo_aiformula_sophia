@@ -1,0 +1,31 @@
+2026-11-21T10:51:08+09:00
+red_flag {"mapassist": {"manual_held": false, "manual_transition_ns": 0, "reason": "waiting_valid_mapping_inputs", "red_stop_required": true, "traffic_stop_flag": true}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "idle", "version": "oa_2_3"}}
+manual_hold_with_red_still_published {"mapassist": {"manual_held": true, "manual_transition_ns": 1795225879504047918, "reason": "manual_takeover", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": true, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_takeover", "version": "oa_2_3"}}
+manual_release {"mapassist": {"manual_held": false, "manual_transition_ns": 1795225879562840575, "reason": "waiting_valid_mapping_inputs", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_waiting_fresh_mask", "version": "oa_2_3"}}
+2026-11-21T10:51:23+09:00
+[obstacle_avoidance-3]   File "/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/oa_2_2.py", line 1188, in main
+[obstacle_avoidance-3]     node.destroy_node()
+[obstacle_avoidance-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1533, in destroy_node
+[obstacle_avoidance-3]     self.handle.destroy()
+[obstacle_avoidance-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[obstacle_avoidance-3]     self.__destroy()
+[obstacle_avoidance-3]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[obstacle_avoidance-3]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[obstacle_avoidance-3] KeyboardInterrupt
+[python3-2] Traceback (most recent call last):
+[python3-2]   File "/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py", line 100, in <module>
+[python3-2]     main()
+[python3-2]   File "/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py", line 94, in main
+[python3-2]     node.destroy_node()
+[python3-2]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/node.py", line 1533, in destroy_node
+[python3-2]     self.handle.destroy()
+[python3-2]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 95, in destroy
+[python3-2]     self.__destroy()
+[python3-2]   File "/opt/ros/foxy/lib/python3.8/site-packages/rclpy/handle.py", line 138, in __destroy
+[python3-2]     _rclpy_capsule.rclpy_pycapsule_destroy(self.__capsule)
+[python3-2] KeyboardInterrupt
+[ERROR] [python3-4]: process has died [pid 9941, exit code -2, cmd '/usr/bin/python3 /home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/mapassist_045/guarded_stop_wait.py'].
+[ERROR] [python3-2]: process has died [pid 9937, exit code -2, cmd '/usr/bin/python3 /home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/mapassist_045/fresh_oa_switch.py --ros-args -r /processed_point_a:=/semantic_drive/map_assist_045/point_a -r /processed_point_b:=/semantic_drive/map_assist_045/point_b -r /processed_point_c:=/semantic_drive/map_assist_045/point_c -r /filtered_lane_pose:=/semantic_drive/map_assist_045/filtered_lane_pose -r /filtered_omega_t:=/semantic_drive/map_assist_045/filtered_omega_t -p manual_state_topic:=/aiformula_control/motor_controller/gate_status'].
+[ERROR] [map_assist-1]: process has died [pid 9935, exit code -2, cmd '/home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_cxgbne9r -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+[obstacle_avoidance-3] OA exited: reset published, but no /point_flag subscriber was discovered; source restoration is unconfirmed.
+[ERROR] [obstacle_avoidance-3]: process has died [pid 9939, exit code 130, cmd '/usr/bin/python3 /home/vehicle/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/run_obstacle_avoidance.py oa_2_3 --ros-args -r /processed_point_a:=/oa_point_a -r /processed_point_b:=/oa_point_b -r /processed_point_c:=/oa_point_c -r /lane_stop_flag:=/point_flag -p manual_state_topic:=/aiformula_control/motor_controller/gate_status'].
