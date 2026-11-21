@@ -57,6 +57,8 @@ class MapAssist(Node):
             "odom_topic": "/aiformula_sensing/gyro_odometry_publisher/odom",
             "avoidance_flag_topic": "/lane_stop_flag",
             "oa_ready_topic": "",
+            "manual_state_topic": "",
+            "manual_oa_status_topic": "",
             "avoidance_initially_idle": False,
             "branch_active_topic": "/map_assist/branch_active",
             "reset_topic": "/map_assist/reset",
@@ -207,6 +209,10 @@ class MapAssist(Node):
         self.visual_motion_ready = False
         self.last_cmd_time = -math.inf
         self.velocity_gate_reason = "waiting_controller_command"
+        self.manual_held = False
+        self.manual_transition_ns = None
+        self.manual_signal_pending = False
+        self.manual_oa_pending = False
         self._fusion_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="map_fusion")
         self._fusion_future = None
         self._pending_fusion = None
@@ -220,6 +226,14 @@ class MapAssist(Node):
         self.create_subscription(Bool, self.p["avoidance_flag_topic"], self._on_avoidance, 10)
         if self.p["oa_ready_topic"]:
             self.create_subscription(Bool, self.p["oa_ready_topic"], self._on_oa_ready, 10)
+        if self.p["manual_state_topic"]:
+            from semantic_vehicle_wiring.manual_handoff import read_state
+
+            self._read_handoff_state = read_state
+            self.create_subscription(String, self.p["manual_state_topic"], self._on_manual_state, 1)
+            if self.p["manual_oa_status_topic"]:
+                self.create_subscription(String, self.p["manual_oa_status_topic"],
+                                         self._on_manual_oa_status, 1)
         self.create_subscription(Bool, self.p["branch_active_topic"], self._on_branch, 10)
         self.create_subscription(Bool, self.p["reset_topic"], self._on_reset, 10)
         self.status_pub = self.create_publisher(String, self.p["status_topic"], 10)
@@ -373,8 +387,58 @@ class MapAssist(Node):
             self.odom_stamp = None
             self._publish_path()  # Clear the previous latched reference.
 
+    def _on_manual_state(self, msg: String) -> None:
+        state = self._read_handoff_state(msg.data, self.get_clock().now().nanoseconds, "manual_held")
+        if state is None:
+            return
+        held, transition = state
+        if self.manual_transition_ns is not None and transition <= self.manual_transition_ns:
+            return
+        self.manual_held, self.manual_transition_ns = held, transition
+        if transition == 0:
+            return
+
+        self._clear_light_confirmation()
+        self.traffic_light_raw = "unknown"
+        self.last_red_observed_at = -math.inf
+        self.traffic_event_consumed = False
+        self.stop_flag = None
+        self._resume_vision("manual_takeover" if held else "manual_resume_vision")
+        self.manual_signal_pending = self.p["enable_traffic_control"] and not held
+        self.manual_oa_pending = bool(self.p["manual_oa_status_topic"])
+        if self.manual_oa_pending:
+            self.avoidance_active = None
+        self.excluded_since_sample = True
+        self._publish_velocity_stop_if_needed(time.monotonic())
+
+    def _on_manual_oa_status(self, msg: String) -> None:
+        if self.manual_held or not self.manual_transition_ns:
+            return
+        state = self._read_handoff_state(msg.data, self.get_clock().now().nanoseconds, "avoidance_active")
+        if state is not None and state[1] == self.manual_transition_ns:
+            if self.manual_oa_pending or self.avoidance_active is not state[0]:
+                self.manual_oa_pending = False
+                self._set_avoidance(state[0])
+
+    def _manual_hold_reason(self) -> Optional[str]:
+        if self.p["manual_state_topic"] and self.manual_transition_ns is None:
+            return "waiting_manual_state"
+        if self.manual_held:
+            return "manual_takeover"
+        if self.manual_oa_pending:
+            return "manual_waiting_fresh_obstacle_mask"
+        if self.manual_signal_pending:
+            return "manual_waiting_fresh_light_vote"
+        return None
+
     def _on_avoidance(self, msg: Bool) -> None:
-        active = bool(msg.data)
+        # Once a handoff starts, only the matching stamped OA status may
+        # select the source. A queued Bool does not identify its handoff.
+        if self.manual_held or (self.manual_transition_ns and self.p["manual_oa_status_topic"]):
+            return
+        self._set_avoidance(bool(msg.data))
+
+    def _set_avoidance(self, active: bool) -> None:
         previous = self.avoidance_active
         self.avoidance_active = active
         if active or previous is not False:
@@ -404,6 +468,8 @@ class MapAssist(Node):
                 and (not self.p["oa_ready_topic"] or now - self.oa_ready_time <= self.p["point_timeout_sec"]))
 
     def _on_light_state(self, msg: String) -> None:
+        if self.manual_held:
+            return
         state = str(msg.data).strip().lower()
         if state not in ("red", "unknown", *NON_RED_STATES):
             state = "unknown"
@@ -429,6 +495,9 @@ class MapAssist(Node):
             self.traffic_reason = "red_preview_unconfirmed"
             self.red_preview_unconfirmed = True
         self._update_light_vote(now, received_frame=True)
+        if self.manual_signal_pending and self.light_filter.snapshot(now)["ready"]:
+            if self._red_recently_confirmed(now) or (state != "red" and self.traffic_light != "red"):
+                self.manual_signal_pending = False
         self._publish_velocity_stop_if_needed(now)
 
     @property
@@ -444,6 +513,8 @@ class MapAssist(Node):
         self._stop_flag_time = time.monotonic()
 
     def _on_traffic_stop_flag(self, msg: Bool) -> None:
+        if self.manual_held:
+            return
         self.stop_flag = bool(msg.data)
         # The flag alone never starts or re-arms a red event.
         if self.reference is None and not self.stop_flag:
@@ -559,6 +630,9 @@ class MapAssist(Node):
         return self.p["enable_traffic_control"] and self.traffic_mode == "wait"
 
     def _velocity_hold_reason(self, now: float) -> Optional[str]:
+        manual_hold = self._manual_hold_reason()
+        if manual_hold:
+            return manual_hold
         if self._red_stop_required():
             return self.traffic_reason
         if self.avoidance_active is True:
@@ -581,14 +655,14 @@ class MapAssist(Node):
         if not all(math.isfinite(value) for value in values):
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = "invalid_controller_command"
-            if self._red_stop_required() or self.avoidance_active is not True:
+            if self._manual_hold_reason() or self._red_stop_required() or self.avoidance_active is not True:
                 self.cmd_pub.publish(Twist())
             return
         held = self._velocity_hold_reason(now)
         if held:
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = held
-            if self._red_stop_required() or self.avoidance_active is not True:
+            if self._manual_hold_reason() or self._red_stop_required() or self.avoidance_active is not True:
                 self.cmd_pub.publish(Twist())
             return
         self.last_cmd_time = now
@@ -599,7 +673,7 @@ class MapAssist(Node):
         if not self.p["enable_velocity_gate"] or self.cmd_pub is None:
             return
         # Outside a red stop, the downstream motor gate handles OA timeout.
-        if self.avoidance_active is True and not self._red_stop_required():
+        if self.avoidance_active is True and not (self._manual_hold_reason() or self._red_stop_required()):
             return
         held = self._velocity_hold_reason(now)
         if held or now - self.last_cmd_time > self.p["cmd_vel_timeout_sec"]:
@@ -975,6 +1049,9 @@ class MapAssist(Node):
         return callback
 
     def _output_block_reason(self, now: float) -> Optional[str]:
+        manual_hold = self._manual_hold_reason()
+        if manual_hold:
+            return manual_hold
         if self.avoidance_active is None:
             return "avoidance_state_unknown"
         if self.avoidance_active is True:
@@ -1068,7 +1145,7 @@ class MapAssist(Node):
         self.odom_frame, self.child_frame = frame, msg.child_frame_id
         # A red wait holds velocity but valid visual/odom samples remain usable.
         # Otherwise the next lap cannot approach across its own red-stop segment.
-        excluded = (self.avoidance_active is not False or self.branch_active
+        excluded = (self._manual_hold_reason() is not None or self.avoidance_active is not False or self.branch_active
                     or (self.p["enable_traffic_control"] and self.traffic_mode == "detour")
                     or not self._recording_points_valid(now))
         self.excluded_since_sample |= excluded
@@ -1461,6 +1538,9 @@ class MapAssist(Node):
                                              else self.detour_entry_progress - self.progress),
             "velocity_gate_reason": self.velocity_gate_reason if self.p["enable_velocity_gate"] else "disabled",
         }
+        if self.p["manual_state_topic"]:
+            payload["manual_transition_ns"] = self.manual_transition_ns
+            payload["manual_held"] = self.manual_held
         self.status_pub.publish(String(data=json.dumps(payload, ensure_ascii=False, allow_nan=False)))
 
     def close_fusion_worker(self) -> None:

@@ -33,6 +33,7 @@ def translate(text, now_ns, has_fresh_command):
     allowed = (
         has_fresh_command and route_ready
         and not red_stop
+        and source.get("manual_held") is not True
         and mode in ("normal", "prepare", "detour")
         # A mixed installation may still receive the earlier field policy.
         and source.get("traffic_reason") not in ("non_red_resume", "red_off_resume")
@@ -48,6 +49,8 @@ def translate(text, now_ns, has_fresh_command):
     )
     status["traffic_mode"] = "normal" if allowed else "wait"
     status["traffic_stop_required"] = not allowed
+    if "manual_transition_ns" in source:
+        status["manual_transition_ns"] = source["manual_transition_ns"]
     if allowed:
         status["traffic_reason"] = str(source.get("traffic_reason", "map_assist_ready"))
     elif red_stop:

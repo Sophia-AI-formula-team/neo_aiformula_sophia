@@ -75,7 +75,8 @@ class MotorController(Node):
             held, command = joystick_command(msg.axes, msg.buttons, self.joy_settings)
         except (ValueError, TypeError):
             return
-        self.gate.joy(held, command, time.monotonic())
+        self.gate.joy(held, command, time.monotonic(),
+                      ros_ns=self.get_clock().now().nanoseconds)
 
     def session_callback(self, msg):
         self.gate.session_message(msg.data, self.get_clock().now().nanoseconds, time.monotonic())
@@ -97,7 +98,9 @@ class MotorController(Node):
         if now - self.last_diagnostics >= 0.1:
             self.diagnostics_pub.publish(String(data=json.dumps(dict(
                 reason=self.gate.reason, semantic_active=self.gate.semantic_active,
-                manual_held=self.gate.manual_held, command=list(velocity),
+                manual_held=self.gate.manual_held,
+                manual_transition_ns=self.gate.manual_transition_ns,
+                stamp_ns=self.get_clock().now().nanoseconds, command=list(velocity),
                 can_data=[int(v) for v in self.frame_msg.data]))))
             self.last_diagnostics = now
 

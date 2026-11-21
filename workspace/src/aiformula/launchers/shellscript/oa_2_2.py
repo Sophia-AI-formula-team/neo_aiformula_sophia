@@ -37,7 +37,7 @@ class ConeMaskAvoider(Node):
         self.single_side_amp = float(self.declare_parameter('single_side_amp', 0.30).value)
         self.extra_safe_m    = float(self.declare_parameter('extra_safe_m', 0.40).value)
 
-        self.cone_thresh_px  = int(self.declare_parameter('cone_thresh_px', 1000).value)
+        self.cone_thresh_px  = int(self.declare_parameter('cone_thresh_px', 1200).value)
         self.cone_resume_px  = int(self.declare_parameter('cone_resume_px', 500).value)
 
         self.n_sample        = int(self.declare_parameter('n_sample', 45).value)
@@ -175,6 +175,16 @@ class ConeMaskAvoider(Node):
 
         self.last_path_px = None
 
+        self.manual_state_topic = str(self.declare_parameter('manual_state_topic', '').value)
+        self.manual_held = False
+        self.manual_transition_ns = None
+        self.manual_vision_ready = False
+        if self.manual_state_topic:
+            from semantic_vehicle_wiring.manual_handoff import read_state
+
+            self._read_handoff_state = read_state
+            self.create_subscription(String, self.manual_state_topic, self._on_manual_state, 1)
+
         self._publish_avoidance_flag()
         self.flag_timer = self.create_timer(0.2, self._publish_avoidance_flag)
         self.create_timer(0.03, self.tick)
@@ -191,10 +201,40 @@ class ConeMaskAvoider(Node):
             'direction': ('left' if self.avoid_direction == 1 else
                           'right' if self.avoid_direction == -1 else None),
             'odom_available': self.odom is not None, 'remaining_m': self.remaining_m,
+            'manual_held': self.manual_held,
+            'manual_transition_ns': self.manual_transition_ns if self.manual_vision_ready else None,
+            'stamp_ns': self.get_clock().now().nanoseconds,
         }, allow_nan=False)))
+
+    def _on_manual_state(self, msg):
+        state = self._read_handoff_state(msg.data, self.get_clock().now().nanoseconds, 'manual_held')
+        if state is None:
+            return
+        held, transition = state
+        if self.manual_transition_ns is not None and transition <= self.manual_transition_ns:
+            return
+        self.manual_held, self.manual_transition_ns = held, transition
+        if transition == 0:
+            return
+        self.manual_vision_ready = False
+        self.latest_mask = None
+        self.latest_vis_img = self.latest_vis_hdr = None
+        self.mask_received_ns = None
+        self.active_roi = None
+        self.roi_cache.clear()
+        self.roi_mode = 'static_missing'
+        self.stopped_since = None
+        self._finish_avoidance('manual_takeover' if held else 'manual_waiting_fresh_mask')
+
+    def _accept_handoff_image(self, msg):
+        return not self.manual_held and (
+            not self.manual_transition_ns or self._stamp(msg) > self.manual_transition_ns
+        )
 
     # ---------------- 回调：底图/Mask ----------------
     def cone_image_cb(self, msg: Image):
+        if not self._accept_handoff_image(msg):
+            return
         try:
             self.latest_vis_img = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
             self.latest_vis_hdr = msg.header
@@ -209,6 +249,8 @@ class ConeMaskAvoider(Node):
         return (stamp.sec * 1000000000 + stamp.nanosec) if stamp else 0
 
     def dynamic_roi_cb(self, msg):
+        if not self._accept_handoff_image(msg):
+            return
         try:
             if msg.encoding != 'mono8':
                 return  # Never interpret the colored debug overlay as a mask.
@@ -255,6 +297,8 @@ class ConeMaskAvoider(Node):
         return True
 
     def mask_cb(self, msg: Image):
+        if not self._accept_handoff_image(msg):
+            return
         try:
             stamp = self._stamp(msg)
             now = self.get_clock().now().nanoseconds
@@ -364,6 +408,8 @@ class ConeMaskAvoider(Node):
 
     # ---------------- 主循环（只负责状态切换与可视化） ----------------
     def tick(self):
+        if self.manual_held or (self.manual_state_topic and self.manual_transition_ns is None):
+            return
         if self.latest_vis_img is None or self.latest_mask is None:
             return
 
@@ -401,6 +447,12 @@ class ConeMaskAvoider(Node):
                     self.timer_handle = self.create_timer(self.triplet_period, self.avoidance_step)
             elif not self.lane_forward:
                 self._update_clear_observation(roi_total)
+            if self.manual_transition_ns and not self.manual_vision_ready:
+                # Acknowledge only after this fresh mask has chosen the point source.
+                self.manual_vision_ready = True
+                if self.lane_forward:
+                    self.execution_state = 'idle'
+                self._publish_avoidance_flag()
 
         self.draw_hud(vis, roi_cnt, roi_total, L_cnt, R_cnt)
         self.publish_dbg(vis)
@@ -502,6 +554,16 @@ class ConeMaskAvoider(Node):
 
         roi_mask = np.zeros((self.h, self.w), np.uint8)
         cv2.fillPoly(roi_mask, [roi_cnt.reshape(-1, 2)], 255)
+
+        # Match the lane publisher's 0.58 global ROI cutoff. Preserve the
+        # trapezoid's original horizontal bounds in every retained row.
+        roi_top = min(self.h - 1, int(self.h * 0.58 + 0.5))
+        if roi_top > tl[1]:
+            roi_mask[:roi_top] = 0
+            top_columns = np.flatnonzero(roi_mask[roi_top])
+            if top_columns.size:
+                roi_cnt[0, 0] = (top_columns[0], roi_top)
+                roi_cnt[1, 0] = (top_columns[-1], roi_top)
 
         if self.active_roi is not None and self.active_roi.shape == roi_mask.shape:
             roi_mask = cv2.bitwise_and(roi_mask, self.active_roi)
@@ -784,7 +846,7 @@ class ConeMaskAvoider(Node):
         fraction = (distance - start) / (end - start)
         return self.world_path[index] + fraction * (self.world_path[index + 1] - self.world_path[index])
 
-    def _finish_avoidance(self):
+    def _finish_avoidance(self, state='idle'):
         if self.timer_handle is not None:
             self.timer_handle.cancel()
             self.timer_handle = None
@@ -793,7 +855,7 @@ class ConeMaskAvoider(Node):
         self.clear_frames = 0
         self._reset_direction()
         self.lane_forward = True
-        self.execution_state = 'idle'
+        self.execution_state = state
         self._publish_avoidance_flag()
 
     def _observe_direction(self, mask):

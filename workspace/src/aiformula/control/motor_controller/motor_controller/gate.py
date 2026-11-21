@@ -42,6 +42,8 @@ class MotorGate:
         self.auto = self.manual = None
         self.auto_time = self.manual_time = None
         self.manual_held = False
+        self.manual_transition_ns = 0
+        self.manual_handoff_required = False
         self.auto_after = -math.inf
         self.semantic_active = False
         self.session = None
@@ -55,10 +57,14 @@ class MotorGate:
         self.semantic_reason = 'waiting_semantic_status'
         self.reason = 'waiting_command'
 
-    def joy(self, held, command, now):
+    def joy(self, held, command, now, *, ros_ns=None):
         if held != self.manual_held:
             self.auto = None
             self.auto_after = now
+            self.manual_transition_ns = max(self.manual_transition_ns + 1, ros_ns or 0)
+            if self.manual_handoff_required:
+                self.status_allowed = False
+                self.semantic_reason = 'waiting_manual_handoff'
         self.manual_held = held
         self.manual = tuple(command) if held else None
         self.manual_time = now
@@ -93,6 +99,7 @@ class MotorGate:
                 self.session_sequence = -1
                 self.status_time = self.status_source = None
                 self.status_allowed = False
+                self.manual_handoff_required = False
                 self.auto = None
                 self.auto_after = now
             if sequence <= self.session_sequence:
@@ -128,10 +135,19 @@ class MotorGate:
                 raise ValueError('missing or inconsistent semantic traffic decision')
             # MapAssist owns the red latch and green release. Its diagnostic
             # command/ABC readiness is not the existing LYA's command path.
-            self.status_allowed = not stop
+            previously_allowed = self.status_allowed
+            if 'manual_transition_ns' in d:
+                self.manual_handoff_required = True
+            transition = d.get('manual_transition_ns')
+            manual_ready = (
+                not self.manual_handoff_required
+                or (not self.manual_held and type(transition) is int
+                    and transition == self.manual_transition_ns)
+            )
+            self.status_allowed = not stop and manual_ready
             self.status_time, self.status_source = now, source
-            self.semantic_reason = reason
-            if not self.status_allowed:
+            self.semantic_reason = reason if manual_ready else 'waiting_manual_handoff'
+            if not self.status_allowed or (self.manual_handoff_required and not previously_allowed):
                 self.auto = None
                 self.auto_after = now
         except (ValueError, TypeError, KeyError):
