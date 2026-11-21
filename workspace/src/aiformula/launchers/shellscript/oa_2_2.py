@@ -28,8 +28,12 @@ class ConeMaskAvoider(Node):
     0.2 second heartbeat used by the existing map-assistance node.
     """
 
+    VERSION = 'oa_2_2'
+    REVISION = 'stability_1'
+    CHECK_SAME_PATH_WINDOW_JUMP = True
+
     def __init__(self):
-        super().__init__('oa_2_2')
+        super().__init__(self.VERSION)
 
         # ========= 参数 =========
         self.m_per_px        = float(self.declare_parameter('meters_per_pixel', 0.01).value)
@@ -170,6 +174,7 @@ class ConeMaskAvoider(Node):
         self.world_path = None
         self.path_cumulative = None
         self.path_frame = None
+        self.path_peak_index = None
         self.path_progress_m = 0.0
         self.remaining_m = None
 
@@ -193,7 +198,7 @@ class ConeMaskAvoider(Node):
         """Publish whether OA currently owns the path-point outputs."""
         self.pub_stop_flag.publish(Bool(data=not self.lane_forward))
         self.pub_status.publish(String(data=json.dumps({
-            'version': 'oa_2_2', 'revision': 'stability_1',
+            'version': self.VERSION, 'revision': self.REVISION,
             'direction_switch_count': self.direction_switch_count, 'roi_mode': self.roi_mode,
             'replan_reason': self.replan_reason, 'replan_count': self.replan_count,
             'state': self.execution_state, 'avoidance_active': not self.lane_forward,
@@ -429,9 +434,6 @@ class ConeMaskAvoider(Node):
             overlay[col_mask > 0] = (0, 0, 255)
             vis = cv2.addWeighted(overlay, 0.25, vis, 0.75, 0.0)
 
-        if self.last_path_px is not None and len(self.last_path_px) >= 2:
-            cv2.polylines(vis, [self.last_path_px], False, (255, 255, 0), 2)
-
         # Count detector messages, not repeated timer reads of the same mask.
         if self.mask_sequence != self.counted_mask_sequence:
             self.counted_mask_sequence = self.mask_sequence
@@ -454,6 +456,7 @@ class ConeMaskAvoider(Node):
                     self.execution_state = 'idle'
                 self._publish_avoidance_flag()
 
+        self.draw_path(vis)
         self.draw_hud(vis, roi_cnt, roi_total, L_cnt, R_cnt)
         self.publish_dbg(vis)
 
@@ -491,23 +494,29 @@ class ConeMaskAvoider(Node):
         # confirm it is time to return control.
         self.broadcast_triplet()
 
+    def _path_in_vehicle(self):
+        x, y, yaw, _ = self.odom
+        delta = self.world_path - np.array([x, y])
+        c, s = math.cos(yaw), math.sin(yaw)
+        return np.column_stack((c * delta[:, 0] + s * delta[:, 1],
+                                -s * delta[:, 0] + c * delta[:, 1]))
+
+    def _path_pixels(self, points):
+        return np.array([self.robot2px(p) for p in points], np.int32).reshape(-1, 1, 2)
+
     def _path_blocked(self, col_mask, points=None):
         if points is None:
             if self.world_path is None or self.odom is None:
                 return False
-            x, y, yaw, frame = self.odom
-            if frame != self.path_frame:
+            if self.odom[3] != self.path_frame:
                 return True
-            delta = self.world_path - np.array([x, y])
-            c, s = math.cos(yaw), math.sin(yaw)
-            points = np.column_stack((c * delta[:, 0] + s * delta[:, 1],
-                                      -s * delta[:, 0] + c * delta[:, 1]))
+            points = self._path_in_vehicle()
         points = np.asarray(points)
         points = points[points[:, 0] >= 0]
         if len(points) < 2:
             return False
         corridor = np.zeros(col_mask.shape, np.uint8)
-        pixels = np.array([self.robot2px(p) for p in points], np.int32).reshape(-1, 1, 2)
+        pixels = self._path_pixels(points)
         cv2.polylines(corridor, [pixels], False, 255,
                       max(1, int(math.ceil(2 * self.path_margin_m / self.m_per_px))))
         return bool(np.any((corridor > 0) & (col_mask > 0)))
@@ -584,6 +593,7 @@ class ConeMaskAvoider(Node):
         self.world_path = None
         self.path_cumulative = None
         self.path_frame = None
+        self.path_peak_index = None
         self.path_progress_m = 0.0
         self.remaining_m = None
         self.last_path_px = None
@@ -601,7 +611,7 @@ class ConeMaskAvoider(Node):
                 self.execution_state = 'planning_unavailable'
             return False
 
-        path, _, _, _, _ = plan
+        path, _, peak_index, _, _ = plan
         points = np.asarray(path, dtype=float)
         if points.ndim != 2 or points.shape[1] != 2 or not np.isfinite(points).all():
             self._discard_saved_path()
@@ -631,6 +641,7 @@ class ConeMaskAvoider(Node):
         self.world_path = world
         self.path_cumulative = np.concatenate(([0.0], np.cumsum(segment_lengths)))
         self.path_frame = frame
+        self.path_peak_index = peak_index
         self.path_progress_m = 0.0
         self.remaining_m = float(self.path_cumulative[-1])
 
@@ -638,9 +649,7 @@ class ConeMaskAvoider(Node):
             self.broadcast_triplet()
 
         if vis is not None:
-            dbg_px = [self.robot2px(p) for p in path]
-            self.last_path_px = np.array(dbg_px, dtype=np.int32).reshape(-1, 1, 2)
-            cv2.polylines(vis, [self.last_path_px], False, (255, 255, 0), 2)
+            self.last_path_px = self._path_pixels(path)
 
         return True
 
@@ -651,6 +660,7 @@ class ConeMaskAvoider(Node):
         self.pending_side, self.pending_since, self.pending_targets = None, None, None
         self.pending_sequence, self.pending_frames = -1, 0
         self.last_window_world, self.last_window_frame = None, None
+        self.last_window_path = None
         self.last_plan_ns = None
         self.last_plan_sequence = -1
         self.planned_mask = None
@@ -708,26 +718,23 @@ class ConeMaskAvoider(Node):
         if len(path) < 3:
             return None
 
-        desired_x = float(self.desired_x_m)
-
-        p_start = None
-        for i in range(1, len(path)):
-            x0, y0 = float(path[i - 1][0]), float(path[i - 1][1])
-            x1, y1 = float(path[i][0]), float(path[i][1])
-            if (x0 <= desired_x <= x1) or (x1 <= desired_x <= x0):
-                t = (desired_x - x0) / (x1 - x0 + 1e-12)
-                p_start = np.array([desired_x, y0 + t * (y1 - y0)], dtype=float)
-                break
-
-        if p_start is None:
-            p_start = path[1].copy()
-
+        p_start = self._point_at_lookahead_x(path)
         ys_list = [p[1] for p in path]
         idx_mid = int(np.argmax(ys_list)) if d == +1 else int(np.argmin(ys_list))
         p_mid = path[idx_mid].copy()
         p_end = path[-1].copy()
 
         return path, p_start, idx_mid, p_mid, p_end
+
+    def _point_at_lookahead_x(self, path):
+        desired_x = float(self.desired_x_m)
+        for i in range(1, len(path)):
+            x0, y0 = float(path[i - 1][0]), float(path[i - 1][1])
+            x1, y1 = float(path[i][0]), float(path[i][1])
+            if (x0 <= desired_x <= x1) or (x1 <= desired_x <= x0):
+                t = (desired_x - x0) / (x1 - x0 + 1e-12)
+                return np.array([desired_x, y0 + t * (y1 - y0)], dtype=float)
+        return path[1].copy()
 
     # ---------------- 发送剩余路径 ----------------
     def broadcast_triplet(self):
@@ -790,14 +797,25 @@ class ConeMaskAvoider(Node):
                                     else 'path_end_pose_unusable')
             return False
 
+        targets = self._select_window()
+        if targets is None:
+            self.execution_state = 'target_not_forward'
+            return False
+        if not self.publish_window(targets):
+            return False
+        self.execution_state = ('tracking_after_clear' if self.obstacle_cleared
+                                else 'tracking_avoidance')
+        return True
+
+    def _select_window(self):
         # Find three distinct forward points on the real path. If a close
         # target is behind the current vehicle, try a farther lookahead; never
         # substitute repeated end points or a guessed vehicle position.
+        x, y, yaw, _ = self.odom
         minimum = min(self.desired_x_m, self.remaining_m / 4.0)
         min_forward = min(self.desired_x_m, self.remaining_m / 2.0)
         step = min(self.point_spacing_m / 2.0, max(0.02, self.remaining_m / 16.0))
         c, s = math.cos(yaw), math.sin(yaw)
-        targets = None
         for attempt in range(17):
             first = minimum + attempt * step
             if first >= self.remaining_m - 1e-5:
@@ -814,16 +832,8 @@ class ConeMaskAvoider(Node):
                     and all(math.isfinite(a) and math.isfinite(b) and a > 1e-6 for a, b in trial)
                     and all(math.dist(a, b) >= self.min_point_spacing_m - 1e-9
                             for a, b in zip(trial, trial[1:]))):
-                targets = trial
-                break
-        if targets is None:
-            self.execution_state = 'target_not_forward'
-            return False
-        if not self.publish_window(targets):
-            return False
-        self.execution_state = ('tracking_after_clear' if self.obstacle_cleared
-                                else 'tracking_avoidance')
-        return True
+                return trial
+        return None
 
     def _publish_window_unchecked(self, points):
         group = PoseArray()
@@ -838,13 +848,15 @@ class ConeMaskAvoider(Node):
             pub.publish(Pose2D(x=x, y=y, theta=0.0))
         self.group_pub.publish(group)
 
-    def _point_at_progress(self, distance):
+    def _point_at_progress(self, distance, points=None):
+        if points is None:
+            points = self.world_path
         distance = max(0.0, min(float(distance), float(self.path_cumulative[-1])))
         index = min(int(np.searchsorted(self.path_cumulative, distance, side='right') - 1),
                     len(self.world_path) - 2)
         start, end = self.path_cumulative[index:index + 2]
         fraction = (distance - start) / (end - start)
-        return self.world_path[index] + fraction * (self.world_path[index + 1] - self.world_path[index])
+        return points[index] + fraction * (points[index + 1] - points[index])
 
     def _finish_avoidance(self, state='idle'):
         if self.timer_handle is not None:
@@ -948,7 +960,7 @@ class ConeMaskAvoider(Node):
             return self._hold_or_follow(col_mask, 'no_clear_candidate')
 
         # Install provisionally and use the actual ABC sampler for the preview.
-        fields = ('current_path', 'world_path', 'path_cumulative', 'path_frame',
+        fields = ('current_path', 'world_path', 'path_cumulative', 'path_frame', 'path_peak_index',
                   'path_progress_m', 'remaining_m', 'last_path_px', 'last_plan_ns',
                   'last_plan_sequence', 'planned_mask', 'replan_count', 'execution_state')
         saved = {key: getattr(self, key) for key in fields}
@@ -1001,7 +1013,8 @@ class ConeMaskAvoider(Node):
         if self._preview_only:
             self._preview_targets = np.asarray(points).copy()
             return True
-        if not self._window_continuous(points):
+        same_path = self.last_window_path is self.world_path
+        if (self.CHECK_SAME_PATH_WINDOW_JUMP or not same_path) and not self._window_continuous(points):
             self.execution_state = 'window_jump_rejected'
             return False
         self._publish_window_unchecked(points)
@@ -1011,6 +1024,7 @@ class ConeMaskAvoider(Node):
         self.last_window_world = np.column_stack((x + c*points[:, 0] - s*points[:, 1],
                                                  y + s*points[:, 0] + c*points[:, 1]))
         self.last_window_frame = frame
+        self.last_window_path = self.world_path
         return True
 
     # ---------------- 样条通用工具 ----------------
@@ -1121,6 +1135,10 @@ class ConeMaskAvoider(Node):
         return path
 
     # ---------------- HUD/DBG ----------------
+    def draw_path(self, vis):
+        if self.last_path_px is not None and len(self.last_path_px) >= 2:
+            cv2.polylines(vis, [self.last_path_px], False, (255, 255, 0), 2)
+
     def draw_hud(self, vis, roi_cnt, roi_total, L_cnt, R_cnt):
         if roi_cnt is not None:
             cv2.polylines(vis, [roi_cnt], True, (0, 255, 255), 2)
@@ -1157,9 +1175,9 @@ class ConeMaskAvoider(Node):
             self.get_logger().error(str(e))
 
 
-def main(args=None):
+def main(args=None, *, avoider_cls=ConeMaskAvoider):
     rclpy.init(args=args)
-    node = ConeMaskAvoider()
+    node = avoider_cls()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

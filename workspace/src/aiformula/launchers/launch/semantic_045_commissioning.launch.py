@@ -29,9 +29,10 @@ def planning_processes(context, share, directory, filtered, lya_command):
     start_oa = LaunchConfiguration("start_oa2").perform(context) == "true"
     algorithm = LaunchConfiguration("oa_algorithm").perform(context)
     handoff = LaunchConfiguration("manual_handoff").perform(context)
-    if handoff == "true" and start_oa and algorithm != "oa_2_2":
-        raise ValueError("manual_handoff requires oa_algorithm:=oa_2_2 when OA is started")
-    enabled = handoff == "true" or (handoff == "auto" and start_oa and algorithm == "oa_2_2")
+    oa_supports_handoff = algorithm in ("oa_2_2", "oa_2_3")
+    if handoff == "true" and start_oa and not oa_supports_handoff:
+        raise ValueError("manual_handoff requires oa_2_2 or oa_2_3 when OA is started")
+    enabled = handoff == "true" or (handoff == "auto" and start_oa and oa_supports_handoff)
     manual_topic = MOTOR_STATUS_TOPIC if enabled else ""
     manual_args = ["-p", f"manual_state_topic:={manual_topic}"] if manual_topic else []
     source = [(f"/processed_point_{label}", f"{PREFIX}/point_{label}") for label in "abc"]
@@ -83,9 +84,10 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("start_lya", default_value="true", choices=["true", "false"]),
         DeclareLaunchArgument("start_oa2", default_value="false", choices=["true", "false"]),
-        DeclareLaunchArgument("oa_algorithm", default_value="oa_2", choices=["oa_2", "oa_2_1", "oa_2_2"]),
+        DeclareLaunchArgument("oa_algorithm", default_value="oa_2",
+                              choices=["oa_2", "oa_2_1", "oa_2_2", "oa_2_3"]),
         DeclareLaunchArgument("manual_handoff", default_value="auto", choices=["auto", "true", "false"],
-                              description="Reset MapAssist and OA 2.2 on a motor joystick takeover."),
+                              description="Reset MapAssist and OA on a motor joystick takeover."),
         DeclareLaunchArgument("lane_point_topic_prefix", default_value="/processed_point_",
                               choices=["/processed_point_", "/original_processed_point_"]),
         DeclareLaunchArgument("vehicle_output", default_value="false", choices=["true", "false"],

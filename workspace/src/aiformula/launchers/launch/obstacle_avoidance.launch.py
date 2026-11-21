@@ -26,7 +26,7 @@ def avoidance_process(context, runner):
                 "-r", "/lane_stop_flag:=/point_flag",
                 *(
                     ["-p", f"manual_state_topic:={manual_topic}"]
-                    if algorithm == "oa_2_2" and manual_topic else []
+                    if algorithm in ("oa_2_2", "oa_2_3") and manual_topic else []
                 ),
             ],
             output="screen",
@@ -44,7 +44,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "algorithm",
             default_value="oa_neo",
-            choices=["oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", "oa_2_1", "oa_2_2"],
+            choices=["oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", "oa_2_1", "oa_2_2", "oa_2_3"],
             description="Existing obstacle-avoidance executable; oa_neo uses a B-spline.",
         ),
         DeclareLaunchArgument("manual_state_topic", default_value=""),
