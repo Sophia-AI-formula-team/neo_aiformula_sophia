@@ -24,3 +24,11 @@
 ## OA 2.3 切换
 
 普通 MapAssist 已装车 OA 2.3，开启手柄交接。MapAssist B 的车端部署已卸载。[部署和隔离验证](deployment/oa23/REPORT.md)。
+
+## 第一组复盘及后续改动
+
+- [Run 3 避障与停车复盘](runs/avoidance-stop-review/REPORT.md)给出 10:30:57.378 的门控、轮速和选点状态。
+- [OA 输出 11:02 实装](deployment/oa-output-1102/REPORT.md)记录固定 x 偏移移除和 A.y 半幅，以及车端哈希回读。
+- [A3 V14 与 A4 Lite 离线灯牌复核](runs/light-a3-a4l-replay/REPORT.md)记录原帧、灯态丢失恢复和阈值数据。
+- [OA 2.3 清障交还与手柄重置](deployment/oa23-clear-release/REPORT.md)通过本机隔离 ROS 验证，待装车。
+- [LanePoints 3 点门槛与 LYA 直线试算](deployment/lane0927oa-min3/REPORT.md)包含候选源码、补丁和 ROS 验证。11:22 JST 车机仍不可达，待装车。

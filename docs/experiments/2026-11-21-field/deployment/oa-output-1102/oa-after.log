@@ -1,0 +1,12 @@
+2026-11-21T11:02:10+09:00
+mapassist_entry=~/aiformula_runtime/2026-11-21-mapassist-oa23/field-launch
+53:    start_oa2:=true oa_algorithm:=oa_2_3 manual_handoff:=true start_lya:=false \
+8b4400731d3e7b087877f5c6b9b83239496162994de52d2b79145ad42f1200ca  ~/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/oa_2_3.py
+cba6bf3c49dcfd9933f154aa45e4383a843c1a8505429a2417a91fa4d03dd177  ~/aiformula_runtime/2026-11-21-mapassist-oa23/install/launchers/share/launchers/shellscript/oa_2_2.py
+ce8d9e83b9d745529ff106d9059d55f0bb928b8c93881416b4c7aacda3f3ab77  ~/aiformula_runtime/2026-11-21-oa22/e4866962ac24ba2ed8a7ee7d99523e7c239ba76a/install/launchers/share/launchers/shellscript/oa_2_2.py
+Vehicle readback: XYZ publishing functions compile; all x unchanged; only A y scaled.
+    'oa_algorithm':
+        One of: ['oa_2', 'oa_2_1', 'oa_2_2', 'oa_2_3']
+        (default: 'oa_2')
+
+   5599 /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch ~/aiformula_runtime/2026-11-21-mapassist-oa22/mapassist_allnodes.launch.py motor_cmd_topic:=/semantic_drive/map_assist_045/diagnostic_cmd_vel lane_point_topic_prefix:=/original_processed_point_ launch_yo

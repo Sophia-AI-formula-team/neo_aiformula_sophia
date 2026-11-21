@@ -1,0 +1,155 @@
+{
+  "fps": 15,
+  "duration_s": 61.666666666666664,
+  "scenes": [
+    {
+      "title": "01  OA window rejected",
+      "begin": "10:30:42.0",
+      "end": "10:30:53.8",
+      "video_start_s": 0.0,
+      "frames": 177,
+      "frames_with_boxes": 138,
+      "camera_hold_frames": 1,
+      "point_overlay": {
+        "Lane ABC": 40,
+        "Lane has no fresh ABC": 13,
+        "OA candidate only": 4,
+        "OA has no fresh ABC": 120
+      },
+      "gate": {
+        "semantic_go": 49,
+        "command_timeout": 109,
+        "manual_priority": 19
+      }
+    },
+    {
+      "title": "02  OA ends too soon",
+      "begin": "10:33:42.7",
+      "end": "10:33:48.0",
+      "video_start_s": 11.8,
+      "frames": 79,
+      "frames_with_boxes": 45,
+      "camera_hold_frames": 4,
+      "point_overlay": {
+        "Lane has no fresh ABC": 24,
+        "Lane ABC": 48,
+        "OA accepted": 7
+      },
+      "gate": {
+        "semantic_go": 75,
+        "no fresh gate status": 4
+      }
+    },
+    {
+      "title": "03  Near-cone stop",
+      "begin": "10:34:16.5",
+      "end": "10:34:25.0",
+      "video_start_s": 17.066666666666666,
+      "frames": 128,
+      "frames_with_boxes": 96,
+      "camera_hold_frames": 0,
+      "point_overlay": {
+        "Lane has no fresh ABC": 18,
+        "Lane ABC": 27,
+        "OA has no fresh ABC": 77,
+        "OA accepted": 6
+      },
+      "gate": {
+        "semantic_go": 59,
+        "command_timeout": 65,
+        "manual_priority": 4
+      }
+    },
+    {
+      "title": "04  Stop after manual pulse",
+      "begin": "10:34:28.7",
+      "end": "10:34:33.1",
+      "video_start_s": 25.6,
+      "frames": 66,
+      "frames_with_boxes": 56,
+      "camera_hold_frames": 2,
+      "point_overlay": {
+        "OA has no fresh ABC": 66
+      },
+      "gate": {
+        "manual_priority": 17,
+        "command_timeout": 47,
+        "no fresh gate status": 2
+      }
+    },
+    {
+      "title": "05  Restart while stationary",
+      "begin": "10:35:00.1",
+      "end": "10:35:08.6",
+      "video_start_s": 30.0,
+      "frames": 128,
+      "frames_with_boxes": 19,
+      "camera_hold_frames": 8,
+      "point_overlay": {
+        "No fresh point-source flag": 81,
+        "Lane has no fresh ABC": 35,
+        "Lane ABC": 12
+      },
+      "gate": {
+        "command_timeout": 20,
+        "semantic_status_timeout": 84,
+        "no fresh gate status": 6,
+        "semantic_go": 18
+      }
+    },
+    {
+      "title": "06  Light state drops out",
+      "begin": "10:35:11.8",
+      "end": "10:35:17.4",
+      "video_start_s": 38.53333333333333,
+      "frames": 84,
+      "frames_with_boxes": 61,
+      "camera_hold_frames": 4,
+      "point_overlay": {
+        "Lane has no fresh ABC": 36,
+        "Lane ABC": 48
+      },
+      "gate": {
+        "semantic_go": 71,
+        "no fresh gate status": 4,
+        "semantic_hold:red_wait_signal_lost": 9
+      }
+    },
+    {
+      "title": "07  Manual takeover, then stop",
+      "begin": "10:35:37.8",
+      "end": "10:35:46.6",
+      "video_start_s": 44.13333333333333,
+      "frames": 132,
+      "frames_with_boxes": 118,
+      "camera_hold_frames": 4,
+      "point_overlay": {
+        "Lane ABC": 22,
+        "Lane has no fresh ABC": 5,
+        "OA has no fresh ABC": 102,
+        "OA accepted": 3
+      },
+      "gate": {
+        "manual_priority": 102,
+        "no fresh gate status": 2,
+        "command_timeout": 28
+      }
+    },
+    {
+      "title": "08  Final timeout after reverse",
+      "begin": "10:35:57.8",
+      "end": "10:36:06.5",
+      "video_start_s": 52.93333333333333,
+      "frames": 131,
+      "frames_with_boxes": 109,
+      "camera_hold_frames": 0,
+      "point_overlay": {
+        "OA has no fresh ABC": 131
+      },
+      "gate": {
+        "manual_priority": 34,
+        "command_timeout": 97
+      }
+    }
+  ]
+}

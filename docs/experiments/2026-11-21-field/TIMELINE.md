@@ -24,3 +24,13 @@
 10:47:06–10:48:49 JST 回读第一组，保留当天原始 ROS 与 ZED 日志；四份 bag 已交接到 SSD。[操作时间、覆盖与结果](runs/experiment-01/REPORT.md)。
 
 10:48:59–10:52:25 JST 完成第一组日志发布、OA 2.3 构建和入口切换、手柄接管验证与 MapAssist B 车端卸载。[切换时间和测试明细](deployment/oa23/REPORT.md)。
+
+## 第一组复盘和 11 时后的变更
+
+| 时间 | 操作与结果 | 回执 |
+| --- | --- | --- |
+| 10:56–10:58 | 回读第一组避障与停车证据，对齐两份录包的选点、轮速与门控。 | [复盘](runs/avoidance-stop-review/REPORT.md) |
+| 11:01:54–11:02:10 | 实装 OA 发布坐标调整。两版均保持原 x，A.y 半幅；核对车端 SHA-256。 | [实装回执](deployment/oa-output-1102/REPORT.md) |
+| 11:09–11:12 | 复核 A3 V14 与 A4 Lite 对相同源帧的灯牌识别，并回查 Run 3 的 10:30:57.378 停车。 | [灯牌回放](runs/light-a3-a4l-replay/REPORT.md) · [Run 3](runs/avoidance-stop-review/REPORT.md#run-3-的-103057378-截帧) |
+| 11:15:17–11:17:12 | 修订 OA 2.3 自动交还选点和手柄重置。本机隔离 ROS 验证通过，SSH 失败，未装车。 | [清障与交还](deployment/oa23-clear-release/REPORT.md) |
+| 11:18:20–11:22:00 | LYA 直线试算、录包车道线点数统计、LanePoints 放宽版隔离 ROS 验证。多次 SSH 失败，未装车。 | [LanePoints 候选](deployment/lane0927oa-min3/REPORT.md) |

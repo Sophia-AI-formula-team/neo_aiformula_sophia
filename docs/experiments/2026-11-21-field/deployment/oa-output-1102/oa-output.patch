@@ -1,0 +1,24 @@
+--- a/oa_2_2.py
++++ b/oa_2_2.py
+@@ -768,7 +768,7 @@
+         group.header.stamp = self.get_clock().now().to_msg()
+         group.header.frame_id = 'oa_window'
+         for index, (pub, (px, py)) in enumerate(zip(self.triplet_pubs, points)):
+-            x = float(px) + 1.5
++            x = float(px)
+             y = float(py)
+             if index == 0:
+                 y *= 0.5
+--- a/oa_2_3.py
++++ b/oa_2_3.py
+@@ -49,6 +49,10 @@
+                 return targets
+         return None
+ 
++    def _publish_window_unchecked(self, points):
++        a, b, c = points
++        super()._publish_window_unchecked(((a[0], a[1] * 0.5), b, c))
++
+     def draw_path(self, vis):
+         if (self.world_path is not None and self.odom is not None
+                 and self.path_frame == self.odom[3]):

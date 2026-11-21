@@ -1,0 +1,26 @@
+[INFO] [1795227418.591282843] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795227418.593030564] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795227418.595417267] [data_processing_node]: Filtered => A(0.20,0.00), B(0.40,0.00), C(0.60,0.00); theta1=0.000, theta2=0.000, omega_t=0.000
+2026-11-21T11:16:58.647621+09:00 baseline reproduced: 3 clear masks, remaining 0 m, tracking error, flag still true
+[INFO] [1795227419.220770542] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795227419.222526574] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795227419.224938350] [data_processing_node]: Filtered => A(0.20,0.00), B(0.40,0.00), C(0.60,0.00); theta1=0.000, theta2=0.000, omega_t=0.000
+[INFO] [1795227419.278769038] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795227419.280148553] [data_processing_node]: Switched to /processed_point_* topics.
+[INFO] [1795227419.327180494] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+2026-11-21T11:16:59.327620+09:00 three distinct clear masks released OA despite 4 m old-path error; fresh lane ABC produced LYA input
+[INFO] [1795227419.330026477] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795227419.331293965] [data_processing_node]: Switched to /oa_point_* topics.
+2026-11-21T11:16:59.337599+09:00 one remaining pixel on the path vetoed release while total pixels were below threshold
+2026-11-21T11:16:59.340187+09:00 stale odometry invalidated clearance votes
+[INFO] [1795227419.341580122] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795227419.342729578] [data_processing_node]: Switched to /processed_point_* topics.
+[INFO] [1795227419.466339464] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+2026-11-21T11:16:59.466801+09:00 manual press reset OA, rejected masks while held and from before release, then restored fresh lane ABC
+[INFO] [1795227419.467729525] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795227419.469068392] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795227419.618049421] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795227419.619682671] [data_processing_node]: Switched to /processed_point_* topics.
+OA exited: sent /point_flag=false to restore the lane source.
+[INFO] [1795227421.795467220] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+2026-11-21T11:17:01.796174+09:00 OA runner restored lane selection after process exit

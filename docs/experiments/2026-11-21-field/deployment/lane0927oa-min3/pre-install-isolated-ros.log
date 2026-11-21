@@ -1,0 +1,23 @@
+[INFO] [1795227673.952341156] [lane_line_subscriber]: Using left boundary to estimate the center line.
+[INFO] [1795227673.953401354] [lane_line_subscriber]: Publish Pose2D(A): x=1.00, y=0.20, theta=0
+[INFO] [1795227673.954103194] [lane_line_subscriber]: Publish Pose2D(B): x=2.00, y=0.20, theta=0
+[INFO] [1795227673.954766062] [lane_line_subscriber]: Publish Pose2D(C): x=3.00, y=0.20, theta=0
+2026-11-21T11:21:13.955730+09:00 3/0/0 -> [(1.0, 0.2), (2.0, 0.2), (3.0, 0.2)]
+[INFO] [1795227673.958593461] [lane_line_subscriber]: Using right boundary to estimate the center line.
+[INFO] [1795227673.959443645] [lane_line_subscriber]: Publish Pose2D(A): x=1.00, y=-0.30, theta=0
+[INFO] [1795227673.960210089] [lane_line_subscriber]: Publish Pose2D(B): x=3.00, y=-0.30, theta=0
+[INFO] [1795227673.960954951] [lane_line_subscriber]: Publish Pose2D(C): x=4.00, y=-0.30, theta=0
+2026-11-21T11:21:13.961704+09:00 0/4/0 -> [(1.0, -0.3), (3.0, -0.3), (4.0, -0.3)]
+[INFO] [1795227673.964404506] [lane_line_subscriber]: Publish Pose2D(A): x=1.00, y=0.50, theta=0
+[INFO] [1795227673.965104740] [lane_line_subscriber]: Publish Pose2D(B): x=2.00, y=0.50, theta=0
+[INFO] [1795227673.965788142] [lane_line_subscriber]: Publish Pose2D(C): x=3.00, y=0.50, theta=0
+2026-11-21T11:21:13.966586+09:00 3/3/3 -> [(1.0, 0.5), (2.0, 0.5), (3.0, 0.5)]
+[INFO] [1795227673.969401127] [lane_line_subscriber]: Publish Pose2D(A): x=1.00, y=0.50, theta=0
+[INFO] [1795227673.970120916] [lane_line_subscriber]: Publish Pose2D(B): x=3.00, y=0.50, theta=0
+[INFO] [1795227673.970756825] [lane_line_subscriber]: Publish Pose2D(C): x=5.00, y=0.50, theta=0
+2026-11-21T11:21:13.971468+09:00 5/5/6 -> [(1.0, 0.5), (3.0, 0.5), (5.0, 0.5)]
+[WARN] [1795227673.974065859] [lane_line_subscriber]: Both boundaries have fewer than three points; publishing straight ABC.
+[INFO] [1795227673.974783344] [lane_line_subscriber]: Published default Pose2D (straight)
+2026-11-21T11:21:13.975468+09:00 2/2/0 -> [(1.5, 0.0), (2.0, 0.0), (3.0, 0.0)]
+[INFO] [1795227673.976587007] [lane_line_subscriber]: Receive stop flag: True
+2026-11-21T11:21:14.135667+09:00 OA ownership suppressed lane ABC
