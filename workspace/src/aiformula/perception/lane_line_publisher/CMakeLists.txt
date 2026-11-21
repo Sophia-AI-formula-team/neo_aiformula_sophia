@@ -9,6 +9,7 @@ find_package(cv_bridge REQUIRED)
 find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(common_cpp REQUIRED)
@@ -23,6 +24,7 @@ ament_target_dependencies(lane_line_publisher
   PCL
   pcl_conversions
   sensor_msgs
+  std_msgs
   Eigen3
   OpenCV
   common_cpp

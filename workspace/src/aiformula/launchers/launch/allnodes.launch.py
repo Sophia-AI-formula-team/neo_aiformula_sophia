@@ -157,6 +157,7 @@ def create_lane_line_publisher_node(context: LaunchContext) -> Tuple[Node]:
                 ("mask_image", topic_names["perception"]["mask_image"]),
                 ("annotated_mask_image", topic_names["perception"]["annotated_mask_image"]),
                 ("dynamic_roi_image", "/aiformula_perception/lane_line_publisher/dynamic_roi_image"),
+                ("dynamic_roi_mask", "/aiformula_perception/lane_line_publisher/dynamic_roi_mask"),
                 ("linear_fit_image", "/aiformula_perception/lane_line_publisher/linear_fit_image"),
                 ("vehicle_fit_image", "/aiformula_perception/lane_line_publisher/vehicle_fit_image"),
                 ("lane_lines/left", topic_names["perception"]["lane_lines"]["left"]),

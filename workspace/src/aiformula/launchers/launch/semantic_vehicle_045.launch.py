@@ -41,6 +41,9 @@ def _map_assist_node(context):
         "traffic_stop_flag_timeout_sec": float(LaunchConfiguration("traffic_stop_flag_timeout_sec").perform(context)),
         "avoidance_flag_topic": AVOIDANCE_TOPIC,
         "oa_ready_topic": OA_READY_TOPIC,
+        "manual_state_topic": LaunchConfiguration("manual_state_topic").perform(context),
+        "manual_oa_status_topic": LaunchConfiguration("manual_oa_status_topic").perform(context),
+        "oa_failover_guard": LaunchConfiguration("oa_failover_guard").perform(context) == "true",
         "branch_active_topic": BRANCH_TOPIC,
         "reset_topic": PREFIX + "/reset",
         "status_topic": PREFIX + "/status",
@@ -74,5 +77,8 @@ def generate_launch_description():
         DeclareLaunchArgument("traffic_stop_flag_topic",
                               description="Confirmed vehicle publisher of the continuous distance Bool."),
         DeclareLaunchArgument("traffic_stop_flag_timeout_sec", default_value="0.0"),
+        DeclareLaunchArgument("manual_state_topic", default_value=""),
+        DeclareLaunchArgument("manual_oa_status_topic", default_value=""),
+        DeclareLaunchArgument("oa_failover_guard", default_value="false", choices=["true", "false"]),
         OpaqueFunction(function=_map_assist_node),
     ])

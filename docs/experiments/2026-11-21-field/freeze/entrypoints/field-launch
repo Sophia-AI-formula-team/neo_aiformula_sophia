@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -eo pipefail
+name=${0##*/}
+release=$(dirname -- "$(readlink -f -- "$0")")
+runtime="$HOME/aiformula_runtime"
+field="$runtime/2026-11-20-mapassist-av314"
+oa22="$runtime/2026-11-21-oa22/e4866962ac24ba2ed8a7ee7d99523e7c239ba76a/install"
+prefix=/semantic_drive/map_assist_045
+
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+
+if [[ "$name" == allnodes ]]; then
+    unset COLCON_CURRENT_PREFIX
+    source "$oa22/lane_line_publisher/share/lane_line_publisher/package.bash"
+    unset COLCON_CURRENT_PREFIX
+    source "$release/install/motor_controller/share/motor_controller/package.bash"
+    [[ $(ros2 pkg prefix motor_controller) == "$release/install/motor_controller" ]]
+    [[ $(ros2 pkg prefix lane_line_publisher) == "$oa22/lane_line_publisher" ]]
+    [[ $(ros2 pkg prefix launchers) == /home/workspace/install/launchers ]]
+    launch="$release/mapassist_allnodes.launch.py"
+    if [[ ${1:-} == --verify-install && $# == 1 ]]; then
+        exec ros2 launch "$launch" --show-args
+    fi
+    [[ $# == 0 ]] || { echo 'Usage: allnodes [--verify-install]' >&2; exit 2; }
+    exec 9>"${XDG_RUNTIME_DIR:-$HOME}/aiformula-1120-${ROS_DOMAIN_ID:-0}-allnodes.lock"
+    flock -n 9 || { echo 'allnodes already running' >&2; exit 1; }
+    /usr/bin/python3 "$field/check_vehicle.py"
+    exec ros2 launch "$launch" motor_cmd_topic:="$prefix/diagnostic_cmd_vel" \
+        lane_point_topic_prefix:=/original_processed_point_ launch_yolop_a3:=false
+fi
+
+[[ "$name" == mapassist ]]
+source "$field/install/local_setup.bash"
+source "$release/install/local_setup.bash"
+for package in launchers semantic_local_planner_ros semantic_vehicle_wiring motor_controller; do
+    [[ $(ros2 pkg prefix "$package") == "$release/install/$package" ]]
+done
+
+if [[ ${1:-} == --verify-install && $# == 1 ]]; then
+    exec ros2 launch launchers semantic_045_commissioning.launch.py --show-args
+fi
+lane=${1:-outer}
+threshold=${2-50}
+if [[ $# -gt 2 || ! "$lane" =~ ^(inner|outer)$ || ! "$threshold" =~ ^[1-9][0-9]*$ ]]; then
+    echo 'Usage: mapassist [inner|outer] [positive-red-pixel-count]' >&2
+    exit 2
+fi
+exec 9>"${XDG_RUNTIME_DIR:-$HOME}/aiformula-1120-${ROS_DOMAIN_ID:-0}-mapassist.lock"
+flock -n 9 || { echo 'mapassist already running' >&2; exit 1; }
+/usr/bin/python3 "$release/wait-for-oa23-inputs.py"
+exec ros2 launch launchers semantic_045_commissioning.launch.py \
+    start_oa2:=true oa_algorithm:=oa_2_3 manual_handoff:=true start_lya:=false \
+    oa_initially_idle:=false lane_point_topic_prefix:=/original_processed_point_ \
+    lane:="$lane" red_pixel_stop_threshold:="$threshold" vehicle_output:=true

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -eo pipefail
+name=$(basename "$0")
+prefix=/semantic_drive/map_assist_045
+runtime="$HOME/aiformula_runtime"
+case "$name" in
+  yolop) exec bash "$runtime/2026-11-19-yolop-selection/yolop.launch" "$@" ;;
+  mapassist)
+    lane=${1:-outer}
+    threshold=${2-600}
+    if [[ $# -gt 2 || ( "$lane" != inner && "$lane" != outer ) || ! "$threshold" =~ ^[1-9][0-9]*$ ]]; then
+      echo 'Usage: mapassist [inner|outer] [positive-red-pixel-count]' >&2; exit 2
+    fi ;;
+  allnodes|lya) if [[ $# -ne 0 ]]; then echo "Usage: $name" >&2; exit 2; fi ;;
+  *) echo "Unknown vehicle command: $name" >&2; exit 2 ;;
+esac
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+exec 9>"${XDG_RUNTIME_DIR:-$HOME}/aiformula-1120-${ROS_DOMAIN_ID:-0}-$name.lock"
+flock -n 9 || { echo "$name already running" >&2; exit 1; }
+case "$name" in
+  allnodes)
+    # Use the actual November 19 vehicle Allnodes with lane_0927oa.
+    base=/home/workspace/install/launchers/share/launchers/launch/allnodes.launch.py
+    args=$(ros2 launch "$base" --show-args)
+    for key in motor_cmd_topic lane_point_topic_prefix launch_yolop_a3; do
+      grep -Fq "'$key'" <<<"$args" || { echo "Vehicle Allnodes missing $key" >&2; exit 1; }
+    done
+    /usr/bin/python3 "$runtime/2026-11-20-mapassist-av314/check_vehicle.py"
+    exec ros2 launch "$base" motor_cmd_topic:="$prefix/diagnostic_cmd_vel" \
+      lane_point_topic_prefix:=/original_processed_point_ launch_yolop_a3:=false ;;
+  mapassist)
+    install_dir="$runtime/2026-11-20-mapassist-av314/install"
+    source "$install_dir/local_setup.bash"
+    for pkg in launchers obsticle_avoidence semantic_vehicle_wiring semantic_planner_core semantic_local_planner_ros; do
+      if [[ "$(ros2 pkg prefix "$pkg")" != "$install_dir/$pkg" ]]; then
+        echo "Wrong ROS overlay for $pkg. Open a fresh vehicle terminal and check ros2 pkg prefix $pkg." >&2
+        exit 1
+      fi
+    done
+    oa_module=$(/usr/bin/python3 -c 'from obsticle_avoidence import oa_2; print(oa_2.__file__)')
+    if [[ "$oa_module" != "$install_dir/obsticle_avoidence/"* ]]; then
+      echo "Unexpected OA2 Python module: $oa_module. Check PYTHONPATH before starting MapAssist." >&2
+      exit 1
+    fi
+    exec ros2 launch launchers semantic_045_commissioning.launch.py lane:="$lane" red_pixel_stop_threshold:="$threshold" \
+      vehicle_output:=true start_oa2:=true oa_initially_idle:=false start_lya:=false \
+      lane_point_topic_prefix:=/original_processed_point_ ;;
+  lya)
+    exec ros2 run trajectory_follower lya_follower_connected_omegat_global --ros-args \
+      -r "/filtered_lane_pose:=$prefix/filtered_lane_pose" \
+      -r "/filtered_omega_t:=$prefix/filtered_omega_t" \
+      -r "/aiformula_control/game_pad/cmd_vel:=$prefix/lya_cmd_vel" ;;
+esac

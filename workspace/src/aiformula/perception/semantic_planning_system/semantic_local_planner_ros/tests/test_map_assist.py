@@ -448,6 +448,106 @@ class MapAssistTests(unittest.TestCase):
         self.node = self.module.MapAssist()
         self.start_session()
 
+    def manual_node(self):
+        wiring = self.system.parent.parent / "control" / "semantic_vehicle_wiring"
+        self.parameter_overrides.update(manual_state_topic="/test/manual", manual_oa_status_topic="/test/oa")
+        with patch.object(sys, "path", [str(wiring)] + sys.path):
+            self.traffic_node()
+        self.handoff_message("/test/manual", "manual_held", False, 0)
+        self.ready_visual_motion()
+
+    def handoff_message(self, topic, key, value, transition=None):
+        stamp = self.node.get_clock().now().nanoseconds
+        if transition is None:
+            transition = stamp
+        message = {key: value, "manual_transition_ns": transition, "stamp_ns": stamp}
+        self.node.subscriptions[topic](DataMessage(json.dumps(message)))
+        return transition
+
+    def test_oa_fault_and_heartbeat_loss_hold_automatic_command_after_lane_release(self):
+        wiring = self.system.parent.parent / "control" / "semantic_vehicle_wiring"
+        self.parameter_overrides.update(oa_failover_guard=True, manual_oa_status_topic="/test/oa")
+        with patch.object(sys, "path", [str(wiring)] + sys.path):
+            self.traffic_node()
+
+        def status(fault):
+            now = self.node.get_clock().now().nanoseconds
+            self.node.subscriptions["/test/oa"](DataMessage(json.dumps(dict(stamp_ns=now, fault=fault, avoidance_active=False))))
+
+        cmd = Twist()
+        cmd.linear.x = 2.0
+        status(None)
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(cmd)
+        self.assertEqual(self.node.cmd_pub.messages[-1].linear.x, 2.0)
+
+        self.advance(0.05)
+        status("window_timeout")
+        self.node._on_avoidance(DataMessage(False))
+        self.assertIs(self.node.avoidance_active, False)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.assertEqual(self.node.velocity_gate_reason, "oa_fault:window_timeout")
+
+        self.advance(0.05)
+        status(None)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(cmd)
+        self.assertEqual(self.node.cmd_pub.messages[-1].linear.x, 2.0)
+
+        self.advance(0.7)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.assertEqual(self.node.velocity_gate_reason, "oa_health_timeout")
+
+    def test_manual_release_discards_old_red_and_needs_fresh_vision(self):
+        self.manual_node()
+        self.confirm_light("red", stop_flag=True)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        samples = self.node.samples
+
+        pressed = self.handoff_message("/test/manual", "manual_held", True)
+        self.assertIs(self.node.samples, samples)
+        self.assertFalse(self.node.stop_committed)
+        self.node._on_light_state(DataMessage("red"))
+        self.assertEqual(self.node.traffic_light_raw, "unknown")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+
+        self.advance(.05)
+        released = self.handoff_message("/test/manual", "manual_held", False)
+        self.confirm_light("unknown")
+        self.node._on_avoidance(DataMessage(False))
+        self.handoff_message("/test/oa", "avoidance_active", False, pressed)
+        self.assertEqual(self.node._velocity_hold_reason(self.now), "manual_waiting_fresh_obstacle_mask")
+
+        self.handoff_message("/test/oa", "avoidance_active", False, released)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.advance(self.node.p["resume_delay_sec"] + .01)
+        self.odom()
+        self.triplet()
+        self.node._tick()
+        moving = self.command()
+        self.node._on_controller_cmd(moving)
+        self.assertEqual(self.twist_values(self.node.cmd_pub.messages[-1]), self.twist_values(moving))
+
+    def test_new_red_stops_again_even_when_fresh_oa_is_active(self):
+        self.manual_node()
+        self.handoff_message("/test/manual", "manual_held", True)
+        self.advance(.05)
+        released = self.handoff_message("/test/manual", "manual_held", False)
+        self.handoff_message("/test/oa", "avoidance_active", True, released)
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+        self.confirm_light("red", stop_flag=True)
+        self.assertTrue(self.node.avoidance_active)
+        self.assertEqual(self.node.traffic_mode, "wait")
+        self.node._on_controller_cmd(self.command())
+        self.assert_stopped()
+
     def confirm_light(self, state, *, refresh_points=True, oa_command=None, stop_flag=None):
         """Feed real 10 Hz observations for a full window, without control ticks."""
         if stop_flag is not None:
