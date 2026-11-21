@@ -32,3 +32,7 @@
 - [A3 V14 与 A4 Lite 离线灯牌复核](runs/light-a3-a4l-replay/REPORT.md)记录原帧、灯态丢失恢复和阈值数据。
 - [OA 2.3 清障交还与手柄重置](deployment/oa23-clear-release/REPORT.md)通过本机隔离 ROS 验证，待装车。
 - [LanePoints 3 点门槛与 LYA 直线试算](deployment/lane0927oa-min3/REPORT.md)包含候选源码、补丁和 ROS 验证。11:22 JST 车机仍不可达，待装车。
+
+## 车端冻结
+
+12:04 JST，OA 2.3 故障交还、LanePoints 放宽版和 A3 V14 饱和度 45 已在 Jetson 回读。五个现场快捷方式、安装哈希、手柄与故障隔离验证随日期标签冻结。[field-2026-11-21-oa23 冻结目录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/field-2026-11-21-oa23/docs/experiments/2026-11-21-field/freeze) · [OA 2.3 合并 PR](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/pull/56)

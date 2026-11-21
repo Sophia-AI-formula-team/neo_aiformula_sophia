@@ -34,3 +34,5 @@
 | 11:09–11:12 | 复核 A3 V14 与 A4 Lite 对相同源帧的灯牌识别，并回查 Run 3 的 10:30:57.378 停车。 | [灯牌回放](runs/light-a3-a4l-replay/REPORT.md) · [Run 3](runs/avoidance-stop-review/REPORT.md#run-3-的-103057378-截帧) |
 | 11:15:17–11:17:12 | 修订 OA 2.3 自动交还选点和手柄重置。本机隔离 ROS 验证通过，SSH 失败，未装车。 | [清障与交还](deployment/oa23-clear-release/REPORT.md) |
 | 11:18:20–11:22:00 | LYA 直线试算、录包车道线点数统计、LanePoints 放宽版隔离 ROS 验证。多次 SSH 失败，未装车。 | [LanePoints 候选](deployment/lane0927oa-min3/REPORT.md) |
+
+11:53–12:04 JST 完成 A3 S45 装车、OA 2.3 故障交还更新、Jetson 隔离验证与日期冻结。[现场冻结](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/field-2026-11-21-oa23/docs/experiments/2026-11-21-field/freeze)
