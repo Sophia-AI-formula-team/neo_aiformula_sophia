@@ -112,6 +112,38 @@ class GateTests(unittest.TestCase):
         self.command();self.g.joy(True,(.2,.3),self.t);self.t+=.01;self.g.joy(False,ZERO,self.t)
         self.assertEqual(self.out(),ZERO);self.t+=.01;self.command();self.assertEqual(self.out(),(1.,.3))
 
+    def test_coordinated_release_requires_matching_reset_and_new_velocity(self):
+        self.session()
+
+        def status(transition):
+            data = dict(ros_time_sec=self.t, traffic_policy='stop_wait', traffic_mode='normal',
+                        traffic_stop_required=False, traffic_reason='normal',
+                        manual_transition_ns=transition)
+            self.g.status(json.dumps(data), round(self.t * 1e9), self.t)
+
+        status(0)
+        self.t += .01
+        self.g.joy(True, (.2, .3), self.t, ros_ns=round(self.t * 1e9))
+        self.assertEqual(self.out(), (.2, .3))
+        self.t += .01
+        released = round(self.t * 1e9)
+        self.g.joy(False, ZERO, self.t, ros_ns=released)
+        self.t += .01
+        status(0)
+        self.command()
+        self.assertEqual(self.out(), ZERO)
+        self.t += .01
+        self.status()  # An older adapter omits the handoff acknowledgement.
+        self.command()
+        self.assertEqual(self.out(), ZERO)
+        self.t += .01
+        self.command()
+        status(released)
+        self.assertEqual(self.out(), ZERO)
+        self.t += .01
+        self.command()
+        self.assertEqual(self.out(), (1., .3))
+
     def test_manual_can_take_over_semantic_crash(self):
         self.enabled();self.t+=1;self.g.joy(True,(.1,.1),self.t);self.assertEqual(self.out(),(.1,.1))
 

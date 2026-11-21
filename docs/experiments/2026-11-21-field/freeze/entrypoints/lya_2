@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+source /opt/ros/foxy/setup.bash
+source /home/workspace/install/setup.bash
+source "$HOME/aiformula_runtime/2026-11-21-lya-2/install/local_setup.bash"
+
+# Both terminal entries publish the MapAssist LYA command topic.
+exec 9>"${XDG_RUNTIME_DIR:-$HOME}/aiformula-1120-${ROS_DOMAIN_ID:-0}-lya.lock"
+flock -n 9 || { echo 'lya or lya_2 is already running' >&2; exit 1; }
+exec ros2 run lya_2 lya_2 "$@"
