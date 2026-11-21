@@ -7,3 +7,7 @@
 | 暂无 | 08:39:41 盘点 | 当日录包清单 | 暂无录包条目 | — | 大录包等待现场转移后归档到 Drive |
 
 有新录包时按方案和实际录制时间建条目，记录跑了什么、观察结果、文件大小和 SHA-256。转移前登记源位置；Drive 归档核验后补链接和状态。
+
+## 10:48 JST 外置盘交接
+
+四份原包已在 Extreme SSD 的 `2026-11-21 Experiment 01/bags` 目录完成逐文件 SHA-256 校验。见[录包列表及内容](runs/experiment-01/SSD-README.md)与[校验清单](runs/experiment-01/SSD-SHA256SUMS)。

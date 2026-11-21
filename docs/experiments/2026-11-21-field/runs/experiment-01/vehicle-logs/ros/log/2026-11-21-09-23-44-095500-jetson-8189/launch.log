@@ -1,0 +1,18 @@
+1795220624.1008909 [INFO] [launch]: All log files can be found below /home/vehicle/.ros/log/2026-11-21-09-23-44-095500-jetson-8189
+1795220624.1014802 [INFO] [launch]: Default logging verbosity is set to INFO
+1795220624.2633493 [INFO] [python3-1]: process started with pid [8201]
+1795220624.2649364 [INFO] [obstacle_avoidance-2]: process started with pid [8203]
+1795220624.2656147 [INFO] [map_assist-3]: process started with pid [8205]
+1795220624.2660341 [INFO] [python3-4]: process started with pid [8207]
+1795220624.2665362 [INFO] [python3-5]: process started with pid [8209]
+1795220635.1874585 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795220635.1906583 [INFO] [python3-5]: sending signal 'SIGINT' to process[python3-5]
+1795220635.1914737 [INFO] [python3-4]: sending signal 'SIGINT' to process[python3-4]
+1795220635.1921525 [INFO] [map_assist-3]: sending signal 'SIGINT' to process[map_assist-3]
+1795220635.1951954 [INFO] [obstacle_avoidance-2]: sending signal 'SIGINT' to process[obstacle_avoidance-2]
+1795220635.1974289 [INFO] [python3-1]: sending signal 'SIGINT' to process[python3-1]
+1795220635.2943821 [INFO] [python3-5]: process has finished cleanly [pid 8209]
+1795220635.3529179 [INFO] [python3-1]: process has finished cleanly [pid 8201]
+1795220635.4507065 [ERROR] [map_assist-3]: process has died [pid 8205, exit code -2, cmd '/home/vehicle/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_qxbkybjd -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+1795220635.5396152 [INFO] [python3-4]: process has finished cleanly [pid 8207]
+1795220638.2795193 [INFO] [obstacle_avoidance-2]: process has finished cleanly [pid 8203]

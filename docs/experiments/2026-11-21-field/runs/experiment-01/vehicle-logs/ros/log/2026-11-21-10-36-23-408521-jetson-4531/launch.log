@@ -1,0 +1,7 @@
+1795224983.4160373 [INFO] [launch]: All log files can be found below /home/vehicle/.ros/log/2026-11-21-10-36-23-408521-jetson-4531
+1795224983.4165466 [INFO] [launch]: Default logging verbosity is set to INFO
+1795224985.6522293 [INFO] [yolop_a3_v14-1]: process started with pid [4557]
+1795225313.7739718 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795225313.9585326 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+1795225314.1599205 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+1795225314.2254579 [ERROR] [yolop_a3_v14-1]: process has died [pid 4557, exit code -2, cmd '/home/vehicle/aiformula_runtime/yolop_a3_v14_20261012/venv/bin/python3 /home/vehicle/aiformula_runtime/yolop_a3_v14_20261012/run_a3.py --ros-args -r __ns:=/aiformula_perception -p weights:=/home/vehicle/aiformula_runtime/yolop_a3_v14_20261012/upstream/YOLOP_A3_Deploy/weights/shared_best.pth -p device:=cuda -p score_threshold:=0.5 -p use_sim_time:=false -p input_image_topic:=/aiformula_sensing/zed_node/left_image/undistorted -r pub_mask_image:=/aiformula_perception/road_detector/mask_image -r pub_annotated_mask_image:=/aiformula_visualization/road_detector/annotated_mask_image -r /cone_mask:=/cone_mask -r /cone_bbox_image:=/cone_bbox_image -r /aiformula_perception/yolop_a3/detections:=/aiformula_perception/yolop_a3/detections -r /traffic_light/state:=/aiformula_perception/yolop_a3/traffic_light/state -r /red_pixels_count:=/aiformula_perception/yolop_a3/red_pixels_count'].

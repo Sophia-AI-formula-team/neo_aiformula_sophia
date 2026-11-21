@@ -1,0 +1,119 @@
+{
+  "rosbag2_2026_11_21-10_30_00": {
+    "exported_messages": 32007,
+    "bag_messages": 35824,
+    "columns": {
+      "/original_processed_point_c": 415,
+      "/semantic_drive/map_assist_045/filtered_omega_t": 414,
+      "/aiformula_control/motor_controller/reference_signal": 1624,
+      "/aiformula_sensing/vehicle_info": 1867,
+      "/aiformula_control/joy_node/joy": 1378,
+      "/tf": 1730,
+      "/aiformula_sensing/zed_node/left/camera_info": 1343,
+      "/semantic_drive/map_assist_045/diagnostic_cmd_vel": 477,
+      "/semantic_drive/map_status": 330,
+      "/tf_static": 1384,
+      "/flag_stop": 1242,
+      "/aiformula_perception/yolop_a3/red_pixels_count": 1238,
+      "/aiformula_sensing/vectornav/imu": 1382,
+      "/aiformula_sensing/vectornav/velocity_body": 1382,
+      "/original_processed_point_a": 414,
+      "/semantic_drive/map_assist_045/point_a": 413,
+      "/semantic_drive/map_assist_045/point_c": 413,
+      "/semantic_drive/map_assist_045/point_b": 413,
+      "/semantic_drive/map_assist_045/filtered_lane_pose": 413,
+      "/aiformula_sensing/gyro_odometry_publisher/odom": 1197,
+      "/aiformula_control/joy_node/joy_l2_throttle": 1377,
+      "/aiformula_sensing/rear_potentiometer/yaw": 1501,
+      "/cone_pixels_count": 1447,
+      "/oa/status": 499,
+      "/point_flag": 499,
+      "/semantic_drive/motor_session": 973,
+      "/aiformula_sensing/vectornav/gnss": 1381,
+      "/semantic_drive/map_assist_045/status": 329,
+      "/aiformula_perception/yolop_a3/traffic_light/state": 1236,
+      "/original_processed_point_b": 413,
+      "/aiformula_perception/yolop_a3/detections": 1236,
+      "/aiformula_control/motor_controller/gate_status": 939,
+      "/semantic_drive/map_assist_045/pixel_stop_status": 99,
+      "/semantic_drive/map_assist_045/lya_cmd_vel": 305,
+      "/semantic_drive/map_assist_045/oa_triplet": 1,
+      "/semantic_drive/map_assist_045/oa_ready": 1,
+      "/aiformula_control/game_pad/cmd_vel": 302
+    },
+    "diagnostic_states": {
+      "oa_versions": {
+        "oa_2_2": 499
+      },
+      "map_phase": {
+        "learning": 329
+      },
+      "gate_state": {
+        "semantic_go": 337,
+        "command_timeout": 418,
+        "manual_priority": 182,
+        "manual_joy_timeout": 2
+      }
+    }
+  },
+  "rosbag2_2026_11_21-10_31_49": {
+    "exported_messages": 56120,
+    "bag_messages": 62033,
+    "columns": {
+      "/aiformula_sensing/vectornav/imu": 2157,
+      "/original_processed_point_c": 1224,
+      "/aiformula_sensing/vehicle_info": 2308,
+      "/semantic_drive/motor_session": 1540,
+      "/tf": 2210,
+      "/semantic_drive/map_assist_045/point_c": 1101,
+      "/semantic_drive/map_assist_045/diagnostic_cmd_vel": 1144,
+      "/aiformula_sensing/zed_node/left/camera_info": 2142,
+      "/aiformula_control/joy_node/joy": 2152,
+      "/tf_static": 2154,
+      "/cone_pixels_count": 1893,
+      "/aiformula_sensing/vectornav/velocity_body": 2153,
+      "/aiformula_sensing/gyro_odometry_publisher/odom": 2084,
+      "/aiformula_control/motor_controller/reference_signal": 2188,
+      "/aiformula_sensing/rear_potentiometer/yaw": 2167,
+      "/aiformula_control/joy_node/joy_l2_throttle": 2151,
+      "/aiformula_control/motor_controller/gate_status": 1663,
+      "/oa_1b/traffic_light/state": 1561,
+      "/oa_1b/flag_stop": 1560,
+      "/oa_1b/detections": 1560,
+      "/aiformula_perception/yolop_a3/red_pixels_count": 1904,
+      "/aiformula_perception/yolop_a3/traffic_light/state": 1903,
+      "/aiformula_perception/yolop_a3/detections": 1904,
+      "/original_processed_point_a": 1214,
+      "/original_processed_point_b": 1214,
+      "/aiformula_sensing/vectornav/gnss": 2152,
+      "/point_flag": 781,
+      "/oa/status": 781,
+      "/semantic_drive/map_assist_045/point_a": 1100,
+      "/semantic_drive/map_assist_045/filtered_omega_t": 1107,
+      "/semantic_drive/map_assist_045/filtered_lane_pose": 1107,
+      "/semantic_drive/map_assist_045/point_b": 1100,
+      "/semantic_drive/map_assist_045/status": 495,
+      "/semantic_drive/map_status": 495,
+      "/aiformula_control/game_pad/cmd_vel": 669,
+      "/semantic_drive/map_assist_045/lya_cmd_vel": 1059,
+      "/semantic_drive/map_assist_045/oa_triplet": 9,
+      "/semantic_drive/map_assist_045/oa_ready": 13,
+      "/semantic_drive/map_assist_045/detour_path": 1
+    },
+    "diagnostic_states": {
+      "gate_state": {
+        "semantic_go": 726,
+        "manual_priority": 378,
+        "command_timeout": 499,
+        "semantic_status_timeout": 51,
+        "semantic_hold:red_wait_signal_lost": 9
+      },
+      "oa_versions": {
+        "oa_2_2": 781
+      },
+      "map_phase": {
+        "learning": 495
+      }
+    }
+  }
+}

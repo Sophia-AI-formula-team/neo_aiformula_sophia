@@ -1,0 +1,16 @@
+1795224561.4685674 [INFO] [launch]: All log files can be found below /home/vehicle/.ros/log/2026-11-21-10-29-21-455189-jetson-3305
+1795224561.4690280 [INFO] [launch]: Default logging verbosity is set to INFO
+1795224561.6458068 [INFO] [python3-1]: process started with pid [3342]
+1795224561.6467948 [INFO] [obstacle_avoidance-2]: process started with pid [3344]
+1795224561.6474092 [INFO] [map_assist-3]: process started with pid [3346]
+1795224561.6479123 [INFO] [python3-4]: process started with pid [3348]
+1795224561.6481493 [INFO] [python3-5]: process started with pid [3350]
+1795224561.6484735 [INFO] [motor_gate_session-6]: process started with pid [3352]
+1795224711.2958498 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795224711.4084790 [INFO] [python3-1]: process has finished cleanly [pid 3342]
+1795224711.4134321 [INFO] [python3-5]: process has finished cleanly [pid 3350]
+1795224711.4502656 [INFO] [python3-4]: process has finished cleanly [pid 3348]
+1795224711.4886980 [ERROR] [map_assist-3]: process has died [pid 3346, exit code -2, cmd '/home/vehicle/aiformula_runtime/2026-11-20-mapassist-av314/install/semantic_local_planner_ros/lib/semantic_local_planner_ros/map_assist --ros-args -r __node:=map_assist -r __ns:=/ --params-file /tmp/launch_params_9yvm7l0g -r /aiformula_control/game_pad/cmd_vel:=/semantic_drive/map_assist_045/lya_cmd_vel -r /map_assist/detour_path:=/semantic_drive/map_assist_045/detour_path'].
+1795224711.5874953 [INFO] [motor_gate_session-6]: process has finished cleanly [pid 3352]
+1795224713.3184350 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+1795224713.8707051 [INFO] [obstacle_avoidance-2]: process has finished cleanly [pid 3344]

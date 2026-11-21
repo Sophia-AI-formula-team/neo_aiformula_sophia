@@ -16,3 +16,7 @@
 - [录包索引](BAGS.md)供现场包编号、转移与 Drive 归档使用。
 
 车端首个本机原始快照为 `20261121T083948+0900/vehicle-logs.tar.gz`，494,783 字节，62 个文件。SHA-256 为 `c5e373f6f51a2d2ae91a4320a6238951fa6db26506f197f68b739c48044062ca`。ROS 文件中有 18 份有内容，另有 27 份空文件由本机原始快照保留。GitHub 中发布的是脱敏文本。08:39:24 的收尾检查显示实验启动组、相机进程与录包器均已退出。
+
+## 第一组实验回读
+
+10:47–10:48 回读车端日志并交接四份完整 bag。详见[第一组回读报告](runs/experiment-01/REPORT.md)、[车端日志](runs/experiment-01/vehicle-logs/)与[录包索引](runs/experiment-01/SSD-README.md)。
