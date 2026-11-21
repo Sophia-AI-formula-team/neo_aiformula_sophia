@@ -27,6 +27,35 @@ class FreshOaSwitch(DataProcessingNode):
             self._read_handoff_state = read_state
             self.create_subscription(String, manual_topic, self.manual_callback, 1)
 
+        self.oa_health_stamp = None
+        self.oa_fault = None
+        health_topic = self.declare_parameter("oa_health_topic", "").value
+        self.oa_health_enabled = bool(health_topic)
+        if health_topic:
+            from semantic_vehicle_wiring.manual_handoff import MAX_AGE_NS, read_oa_health
+
+            self._read_oa_health = read_oa_health
+            self.oa_health_max_age_ns = MAX_AGE_NS
+            self.release_flag = self.create_publisher(Bool, "/point_flag", 10)
+            self.create_subscription(String, health_topic, self.oa_health_callback, 10)
+            self.create_timer(0.05, self.check_oa_health)
+
+    def oa_health_callback(self, message):
+        health = self._read_oa_health(message.data, self.get_clock().now().nanoseconds)
+        if health is not None and (self.oa_health_stamp is None or health[0] > self.oa_health_stamp):
+            self.oa_health_stamp, self.oa_fault, _ = health
+            self.check_oa_health()
+
+    def check_oa_health(self):
+        if self.current_source != "oa":
+            return
+        now = self.get_clock().now().nanoseconds
+        if (self.oa_fault is not None or self.oa_health_stamp is None
+                or not 0 <= now - self.oa_health_stamp <= self.oa_health_max_age_ns):
+            message = Bool(data=False)
+            self.flag_callback(message)
+            self.release_flag.publish(message)
+
     def manual_callback(self, message):
         now = self.get_clock().now().nanoseconds
         state = self._read_handoff_state(message.data, now, "manual_held")
@@ -45,6 +74,11 @@ class FreshOaSwitch(DataProcessingNode):
         self.oa_ready.publish(Bool(data=False))
 
     def flag_callback(self, message):
+        if message.data and self.oa_health_enabled:
+            now = self.get_clock().now().nanoseconds
+            if (self.oa_fault is not None or self.oa_health_stamp is None
+                    or not 0 <= now - self.oa_health_stamp <= self.oa_health_max_age_ns):
+                return
         previous_source = self.current_source
         super().flag_callback(message)
         if self.current_source != previous_source:

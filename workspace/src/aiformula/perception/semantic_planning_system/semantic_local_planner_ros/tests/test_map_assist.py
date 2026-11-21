@@ -464,6 +464,44 @@ class MapAssistTests(unittest.TestCase):
         self.node.subscriptions[topic](DataMessage(json.dumps(message)))
         return transition
 
+    def test_oa_fault_and_heartbeat_loss_hold_automatic_command_after_lane_release(self):
+        wiring = self.system.parent.parent / "control" / "semantic_vehicle_wiring"
+        self.parameter_overrides.update(oa_failover_guard=True, manual_oa_status_topic="/test/oa")
+        with patch.object(sys, "path", [str(wiring)] + sys.path):
+            self.traffic_node()
+
+        def status(fault):
+            now = self.node.get_clock().now().nanoseconds
+            self.node.subscriptions["/test/oa"](DataMessage(json.dumps(dict(stamp_ns=now, fault=fault, avoidance_active=False))))
+
+        cmd = Twist()
+        cmd.linear.x = 2.0
+        status(None)
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(cmd)
+        self.assertEqual(self.node.cmd_pub.messages[-1].linear.x, 2.0)
+
+        self.advance(0.05)
+        status("window_timeout")
+        self.node._on_avoidance(DataMessage(False))
+        self.assertIs(self.node.avoidance_active, False)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.assertEqual(self.node.velocity_gate_reason, "oa_fault:window_timeout")
+
+        self.advance(0.05)
+        status(None)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.ready_visual_motion()
+        self.node._on_controller_cmd(cmd)
+        self.assertEqual(self.node.cmd_pub.messages[-1].linear.x, 2.0)
+
+        self.advance(0.7)
+        self.node._on_controller_cmd(cmd)
+        self.assert_stopped()
+        self.assertEqual(self.node.velocity_gate_reason, "oa_health_timeout")
+
     def test_manual_release_discards_old_red_and_needs_fresh_vision(self):
         self.manual_node()
         self.confirm_light("red", stop_flag=True)

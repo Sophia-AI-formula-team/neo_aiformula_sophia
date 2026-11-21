@@ -59,6 +59,7 @@ class MapAssist(Node):
             "oa_ready_topic": "",
             "manual_state_topic": "",
             "manual_oa_status_topic": "",
+            "oa_failover_guard": False,
             "avoidance_initially_idle": False,
             "branch_active_topic": "/map_assist/branch_active",
             "reset_topic": "/map_assist/reset",
@@ -213,6 +214,8 @@ class MapAssist(Node):
         self.manual_transition_ns = None
         self.manual_signal_pending = False
         self.manual_oa_pending = False
+        self.oa_health_stamp = None
+        self.oa_fault = None
         self._fusion_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="map_fusion")
         self._fusion_future = None
         self._pending_fusion = None
@@ -231,9 +234,14 @@ class MapAssist(Node):
 
             self._read_handoff_state = read_state
             self.create_subscription(String, self.p["manual_state_topic"], self._on_manual_state, 1)
-            if self.p["manual_oa_status_topic"]:
-                self.create_subscription(String, self.p["manual_oa_status_topic"],
-                                         self._on_manual_oa_status, 1)
+        if self.p["oa_failover_guard"]:
+            from semantic_vehicle_wiring.manual_handoff import MAX_AGE_NS, read_oa_health
+
+            self._read_oa_health = read_oa_health
+            self.oa_health_max_age_ns = MAX_AGE_NS
+        if self.p["manual_oa_status_topic"]:
+            self.create_subscription(String, self.p["manual_oa_status_topic"],
+                                     self._on_manual_oa_status, 10)
         self.create_subscription(Bool, self.p["branch_active_topic"], self._on_branch, 10)
         self.create_subscription(Bool, self.p["reset_topic"], self._on_reset, 10)
         self.status_pub = self.create_publisher(String, self.p["status_topic"], 10)
@@ -412,9 +420,24 @@ class MapAssist(Node):
         self._publish_velocity_stop_if_needed(time.monotonic())
 
     def _on_manual_oa_status(self, msg: String) -> None:
+        now_ns = self.get_clock().now().nanoseconds
+        if self.p["oa_failover_guard"]:
+            health = self._read_oa_health(msg.data, now_ns)
+            if health is None or (self.oa_health_stamp is not None and health[0] <= self.oa_health_stamp):
+                return
+            held = self._oa_health_hold_reason()
+            self.oa_health_stamp, self.oa_fault, active = health
+            if self.oa_fault is not None:
+                self._publish_velocity_stop_if_needed(time.monotonic())
+            elif held:
+                self.used_seq = dict(self.point_seq)
+                self.visual_motion_ready = self.detour_motion_ready = False
+                self.last_cmd_time = self.oa_ready_time = -math.inf
+            if not self.manual_held and not self.manual_transition_ns and self.avoidance_active is not active:
+                self._set_avoidance(active)
         if self.manual_held or not self.manual_transition_ns:
             return
-        state = self._read_handoff_state(msg.data, self.get_clock().now().nanoseconds, "avoidance_active")
+        state = self._read_handoff_state(msg.data, now_ns, "avoidance_active")
         if state is not None and state[1] == self.manual_transition_ns:
             if self.manual_oa_pending or self.avoidance_active is not state[0]:
                 self.manual_oa_pending = False
@@ -434,7 +457,12 @@ class MapAssist(Node):
     def _on_avoidance(self, msg: Bool) -> None:
         # Once a handoff starts, only the matching stamped OA status may
         # select the source. A queued Bool does not identify its handoff.
-        if self.manual_held or (self.manual_transition_ns and self.p["manual_oa_status_topic"]):
+        if self.manual_held:
+            return
+        if self.p["oa_failover_guard"] and (msg.data or not self._oa_health_hold_reason()):
+            return
+        if (self.manual_transition_ns and self.p["manual_oa_status_topic"]
+                and (msg.data or not self._oa_health_hold_reason())):
             return
         self._set_avoidance(bool(msg.data))
 
@@ -629,12 +657,24 @@ class MapAssist(Node):
     def _red_stop_required(self) -> bool:
         return self.p["enable_traffic_control"] and self.traffic_mode == "wait"
 
+    def _oa_health_hold_reason(self) -> Optional[str]:
+        if not self.p["oa_failover_guard"]:
+            return None
+        now = self.get_clock().now().nanoseconds
+        if (self.oa_health_stamp is None
+                or not 0 <= now - self.oa_health_stamp <= self.oa_health_max_age_ns):
+            return "oa_health_timeout"
+        return "oa_fault:" + self.oa_fault if self.oa_fault else None
+
     def _velocity_hold_reason(self, now: float) -> Optional[str]:
         manual_hold = self._manual_hold_reason()
         if manual_hold:
             return manual_hold
         if self._red_stop_required():
             return self.traffic_reason
+        oa_hold = self._oa_health_hold_reason()
+        if oa_hold:
+            return oa_hold
         if self.avoidance_active is True:
             return None if self._oa_command_ready(now) else "waiting_fresh_oa_triplet"
         blocked = self._output_block_reason(now)
@@ -655,14 +695,16 @@ class MapAssist(Node):
         if not all(math.isfinite(value) for value in values):
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = "invalid_controller_command"
-            if self._manual_hold_reason() or self._red_stop_required() or self.avoidance_active is not True:
+            if (self._manual_hold_reason() or self._red_stop_required()
+                    or self._oa_health_hold_reason() or self.avoidance_active is not True):
                 self.cmd_pub.publish(Twist())
             return
         held = self._velocity_hold_reason(now)
         if held:
             self.last_cmd_time = -math.inf
             self.velocity_gate_reason = held
-            if self._manual_hold_reason() or self._red_stop_required() or self.avoidance_active is not True:
+            if (self._manual_hold_reason() or self._red_stop_required()
+                    or self._oa_health_hold_reason() or self.avoidance_active is not True):
                 self.cmd_pub.publish(Twist())
             return
         self.last_cmd_time = now
@@ -673,7 +715,8 @@ class MapAssist(Node):
         if not self.p["enable_velocity_gate"] or self.cmd_pub is None:
             return
         # Outside a red stop, the downstream motor gate handles OA timeout.
-        if self.avoidance_active is True and not (self._manual_hold_reason() or self._red_stop_required()):
+        if self.avoidance_active is True and not (
+                self._manual_hold_reason() or self._red_stop_required() or self._oa_health_hold_reason()):
             return
         held = self._velocity_hold_reason(now)
         if held or now - self.last_cmd_time > self.p["cmd_vel_timeout_sec"]:

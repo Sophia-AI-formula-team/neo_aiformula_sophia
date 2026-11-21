@@ -16,6 +16,57 @@ class ConeMaskAvoider(BaseAvoider):
     # Run the jump check when replacing the path, where it tests a route change.
     CHECK_SAME_PATH_WINDOW_JUMP = False
 
+    def __init__(self):
+        self.fault = None
+        self.last_window_ns = None
+        super().__init__()
+
+    def tick(self):
+        if self.fault is not None:
+            self._clear_fault_when_safe()
+            return
+        super().tick()
+        if self.lane_forward:
+            return
+        if self.latest_mask is None or self.latest_vis_img is None or self.odom is None:
+            reason = 'missing_input'
+        elif not self._inputs_fresh():
+            reason = self.execution_state
+        else:
+            now = self.get_clock().now().nanoseconds
+            if self.last_window_ns is None:
+                self.last_window_ns = now
+            # Let the existing stationary rebase finish before giving up ownership.
+            deadline = (self.sensor_timeout + self.switch_confirm_seconds) * 1e9
+            if now - self.last_window_ns < deadline:
+                return
+            reason = 'window_timeout'
+        self.fault = reason
+        self._finish_avoidance('oa_fault')
+
+    def _clear_fault_when_safe(self):
+        if (self.odom is None or self.latest_mask is None or self.latest_vis_img is None
+                or not self._inputs_fresh()):
+            self.clear_frames = 0
+            return
+        if self.mask_sequence == self.counted_mask_sequence:
+            return
+        self.counted_mask_sequence = self.mask_sequence
+        self.h, self.w = self.latest_vis_img.shape[:2]
+        self.cx = self.w // 2
+        _, pixels, _, _, _ = self._compute_roi_counts(self.latest_vis_img, self.latest_mask)
+        # After the route is discarded, there is no corridor to validate.
+        self.clear_frames = self.clear_frames + 1 if pixels == 0 else 0
+        if self.clear_frames >= self.clear_confirm_frames:
+            self.fault = None
+            self._finish_avoidance('fault_cleared')
+
+    def _finish_avoidance(self, state='idle'):
+        self.last_window_ns = None
+        if state in ('manual_takeover', 'manual_waiting_fresh_mask'):
+            self.fault = None
+        super()._finish_avoidance(state)
+
     def _path_end_row(self):
         # A nonempty planning mask has at least one row in the effective ROI.
         _, roi = self._roi_geometry()
@@ -53,6 +104,11 @@ class ConeMaskAvoider(BaseAvoider):
             if group[0, 0] > 1e-6 and np.all(np.diff(group[:, 0]) > 1e-6):
                 return group
         return None
+
+    def _publish_window_unchecked(self, points):
+        a, b, c = points
+        super()._publish_window_unchecked(((a[0], a[1] * 0.5), b, c))
+        self.last_window_ns = self.get_clock().now().nanoseconds
 
     def draw_path(self, vis):
         if (self.world_path is not None and self.odom is not None

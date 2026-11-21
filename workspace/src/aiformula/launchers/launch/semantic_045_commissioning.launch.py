@@ -35,6 +35,9 @@ def planning_processes(context, share, directory, filtered, lya_command):
     enabled = handoff == "true" or (handoff == "auto" and start_oa and oa_supports_handoff)
     manual_topic = MOTOR_STATUS_TOPIC if enabled else ""
     manual_args = ["-p", f"manual_state_topic:={manual_topic}"] if manual_topic else []
+    fault_guard = start_oa and algorithm == "oa_2_3"
+    if fault_guard:
+        manual_args.extend(["-p", f"oa_health_topic:={OA_STATUS_TOPIC}"])
     source = [(f"/processed_point_{label}", f"{PREFIX}/point_{label}") for label in "abc"]
     switch_args = [arg for old, new in source + filtered for arg in ("-r", f"{old}:={new}")]
     planner = GroupAction([
@@ -48,7 +51,8 @@ def planning_processes(context, share, directory, filtered, lya_command):
                 "traffic_stop_flag_topic": LaunchConfiguration("traffic_stop_flag_topic"),
                 "traffic_stop_flag_timeout_sec": "0.5",
                 "manual_state_topic": manual_topic,
-                "manual_oa_status_topic": OA_STATUS_TOPIC if enabled and start_oa else "",
+                "manual_oa_status_topic": OA_STATUS_TOPIC if (enabled and start_oa) or fault_guard else "",
+                "oa_failover_guard": "true" if fault_guard else "false",
             }.items(),
         ),
     ])

@@ -1,0 +1,45 @@
+--- a/workspace/src/aiformula/perception/lane_points/lane_points/lane_0927oa.py
++++ b/workspace/src/aiformula/perception/lane_points/lane_points/lane_0927oa.py
+@@ -8,6 +8,8 @@
+ from std_msgs.msg import Bool 
+ 
+ class LaneLineSubscriber(Node):
++    MIN_LANE_POINTS = 3
++
+     def __init__(self, a, b, c):
+         super().__init__('lane_line_subscriber')
+ 
+@@ -100,12 +102,12 @@
+         left_count = len(self.left_points)
+         right_count = len(self.right_points)
+ 
+-        required_points = max(self.a, self.b, self.c) + 1
++        required_points = self.MIN_LANE_POINTS
+         if left_count >= required_points and right_count >= required_points:
+-            if center_count >= required_points:
++            if center_count > max(self.a, self.b, self.c):
+                 self.do_publish_points_by_center(current_time)
+                 return
+-            if center_count >= 3:
++            if center_count >= self.MIN_LANE_POINTS:
+                 a = self.center_points[0]
+                 b = self.center_points[center_count // 2]
+                 c = self.center_points[-1]
+@@ -185,13 +187,13 @@
+     #   仅一侧可用时，通过平移来模拟 center，然后发布
+     # -------------------------------------------------------------
+     def do_publish_points_by_one_side(self, side_points, side, current_time):
+-        if len(side_points) <= max(self.a, self.b, self.c):
++        if len(side_points) < self.MIN_LANE_POINTS:
+             self.get_logger().warning(f"Side {side} not enough points => skip.")
+             return
+ 
+-        pa = side_points[self.a]
+-        pb = side_points[self.b]
+-        pc = side_points[self.c]
++        c = min(self.c, len(side_points) - 1)
++        b = min(self.b, c - 1)
++        pa, pb, pc = side_points[self.a], side_points[b], side_points[c]
+ 
+         # 根据左右线决定往 Y 轴正/负方向平移
+         if side == 'left':

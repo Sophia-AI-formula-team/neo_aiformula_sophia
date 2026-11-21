@@ -197,7 +197,6 @@ class ConeMaskAvoider(Node):
 
     def _publish_avoidance_flag(self):
         """Publish whether OA currently owns the path-point outputs."""
-        self.pub_stop_flag.publish(Bool(data=not self.lane_forward))
         self.pub_status.publish(String(data=json.dumps({
             'version': self.VERSION, 'revision': self.REVISION,
             'direction_switch_count': self.direction_switch_count, 'roi_mode': self.roi_mode,
@@ -208,9 +207,11 @@ class ConeMaskAvoider(Node):
                           'right' if self.avoid_direction == -1 else None),
             'odom_available': self.odom is not None, 'remaining_m': self.remaining_m,
             'manual_held': self.manual_held,
+            'fault': getattr(self, 'fault', None),
             'manual_transition_ns': self.manual_transition_ns if self.manual_vision_ready else None,
             'stamp_ns': self.get_clock().now().nanoseconds,
         }, allow_nan=False)))
+        self.pub_stop_flag.publish(Bool(data=not self.lane_forward))
 
     def _on_manual_state(self, msg):
         state = self._read_handoff_state(msg.data, self.get_clock().now().nanoseconds, 'manual_held')
@@ -479,8 +480,10 @@ class ConeMaskAvoider(Node):
 
         _, roi_total, _, _, col_mask = self._compute_roi_counts(vis, self.latest_mask)
 
-        # Check every current path even for small newly intruding obstacles.
-        if roi_total >= self.cone_resume_px or self._path_blocked(col_mask):
+        # An empty mask cannot intersect the old route, even if odometry
+        # changed frames. With any obstacle pixels, keep the corridor check.
+        check_path = roi_total > 0 or not self.RELEASE_ON_CONFIRMED_CLEAR
+        if roi_total >= self.cone_resume_px or (check_path and self._path_blocked(col_mask)):
             self.clear_frames = 0
             self.obstacle_cleared = False
             self._maybe_replan(col_mask, vis)
