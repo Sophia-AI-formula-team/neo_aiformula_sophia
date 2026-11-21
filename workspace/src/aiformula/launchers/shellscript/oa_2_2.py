@@ -31,6 +31,8 @@ class ConeMaskAvoider(Node):
     VERSION = 'oa_2_2'
     REVISION = 'stability_1'
     CHECK_SAME_PATH_WINDOW_JUMP = True
+    DEFAULT_CONE_THRESH_PX = 1200
+    RELEASE_ON_CONFIRMED_CLEAR = False
 
     def __init__(self):
         super().__init__(self.VERSION)
@@ -41,7 +43,8 @@ class ConeMaskAvoider(Node):
         self.single_side_amp = float(self.declare_parameter('single_side_amp', 0.30).value)
         self.extra_safe_m    = float(self.declare_parameter('extra_safe_m', 0.40).value)
 
-        self.cone_thresh_px  = int(self.declare_parameter('cone_thresh_px', 1200).value)
+        self.cone_thresh_px  = int(self.declare_parameter(
+            'cone_thresh_px', self.DEFAULT_CONE_THRESH_PX).value)
         self.cone_resume_px  = int(self.declare_parameter('cone_resume_px', 500).value)
 
         self.n_sample        = int(self.declare_parameter('n_sample', 45).value)
@@ -103,7 +106,6 @@ class ConeMaskAvoider(Node):
         self.planned_mask = None
         self.replan_reason = 'initial'
         self.replan_count = 0
-        self.force_direction_review = False
 
         self.switch_advantage = float(self.declare_parameter('switch_advantage', 0.25).value)
         self.switch_confirm_frames = int(self.declare_parameter('switch_confirm_frames', 3).value)
@@ -120,7 +122,6 @@ class ConeMaskAvoider(Node):
         self.measured_yaw_rate = None
         self.stopped_since = None
         self._preview_only = False
-        self._preview_targets = None
         self.direction_switch_count = 0
         # ========= ROS IO =========
         self.bridge = CvBridge()
@@ -228,7 +229,6 @@ class ConeMaskAvoider(Node):
         self.active_roi = None
         self.roi_cache.clear()
         self.roi_mode = 'static_missing'
-        self.stopped_since = None
         self._finish_avoidance('manual_takeover' if held else 'manual_waiting_fresh_mask')
 
     def _accept_handoff_image(self, msg):
@@ -486,6 +486,10 @@ class ConeMaskAvoider(Node):
             self._maybe_replan(col_mask, vis)
             return
 
+        if self.RELEASE_ON_CONFIRMED_CLEAR and self.obstacle_cleared:
+            self._finish_avoidance('obstacle_clear')
+            return
+
         if not self.obstacle_cleared and self.execution_state in (
             'waiting_for_direction_recheck', 'switching_avoid_direction',
         ):
@@ -551,10 +555,7 @@ class ConeMaskAvoider(Node):
         else:
             self.broadcast_triplet()
 
-    def _compute_roi_counts(self, vis, mask):
-        if mask.shape[:2] != vis.shape[:2]:
-            mask = cv2.resize(mask, (vis.shape[1], vis.shape[0]), cv2.INTER_NEAREST)
-
+    def _roi_geometry(self):
         tl = (int(self.w * self.trap_left_ratio), int(self.h * self.trap_top_ratio))
         tr = (int(self.w * self.trap_right_ratio), int(self.h * self.trap_top_ratio))
         bl = (int(self.w * self.trap_bottom_left_ratio), self.h)
@@ -578,6 +579,13 @@ class ConeMaskAvoider(Node):
             roi_mask = cv2.bitwise_and(roi_mask, self.active_roi)
         elif self.active_roi is not None:
             self.roi_mode = 'static_shape_mismatch'
+        return roi_cnt, roi_mask
+
+    def _compute_roi_counts(self, vis, mask):
+        if mask.shape[:2] != vis.shape[:2]:
+            mask = cv2.resize(mask, (vis.shape[1], vis.shape[0]), cv2.INTER_NEAREST)
+
+        roi_cnt, roi_mask = self._roi_geometry()
         col_mask = cv2.bitwise_and(mask, roi_mask)
         roi_total = int(cv2.countNonZero(col_mask))
 
@@ -664,6 +672,10 @@ class ConeMaskAvoider(Node):
         self.last_plan_ns = None
         self.last_plan_sequence = -1
         self.planned_mask = None
+        self._selected_plan = None
+        self._candidate_side = None
+        self._preview_targets = None
+        self.force_direction_review = False
         self.avoid_direction = None
         self.offset_amplitude = None
         self.direction_checked_at_ns = None
@@ -706,7 +718,7 @@ class ConeMaskAvoider(Node):
         amp_m = abs(self.offset_amplitude)
 
         p0_m = self.px2robot((self.cx, self.h))
-        p1_m = self.px2robot((self.cx, int(self.h * self.trap_top_ratio)))
+        p1_m = self.px2robot((self.cx, self._path_end_row()))
 
         path = self.build_path(
             p0_m, p1_m, d, amp_m,
@@ -725,6 +737,9 @@ class ConeMaskAvoider(Node):
         p_end = path[-1].copy()
 
         return path, p_start, idx_mid, p_mid, p_end
+
+    def _path_end_row(self):
+        return int(self.h * self.trap_top_ratio)
 
     def _point_at_lookahead_x(self, path):
         desired_x = float(self.desired_x_m)
@@ -865,6 +880,7 @@ class ConeMaskAvoider(Node):
         self._discard_saved_path()
         self.obstacle_cleared = False
         self.clear_frames = 0
+        self.stopped_since = None
         self._reset_direction()
         self.lane_forward = True
         self.execution_state = state
