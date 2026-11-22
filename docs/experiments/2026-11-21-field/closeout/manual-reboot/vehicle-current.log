@@ -1,0 +1,6 @@
+2026-11-21T12:13:54+09:00
+can0             DOWN           <NOARP,ECHO>
+can_bringup executable
+2587 /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch /home/control/aiformula_runtime/2026-11-21-mapassist-oa23/mapassist_allnodes.launch.py motor_cmd_topic:=/semantic_drive/map_assist_045/diagnostic_cmd_vel lane_point_topic_prefix:=/original_processed_point_ launch_yolop_a3:=false
+2026-11-21-12-12-12-696921-control-desktop-2587
+1795230732.9000325 [INFO] [allnodes.can_ready]: Waiting up to 120.0s for CAN interface 'can0'

@@ -1,0 +1,171 @@
+{
+  "topic_counts": {
+    "/concept/internal/motor_can": 5291,
+    "/concept/internal/motor_cmd": 2716,
+    "/concept/vehicle_state": 1122,
+    "/aiformula_sensing/vehicle_info": 22620,
+    "/aiformula_control/joy_node/joy_l2_throttle": 1191,
+    "/aiformula_sensing/vectornav/imu": 1135,
+    "/concept/gate/status": 677
+  },
+  "auto_commands": 0,
+  "decisions": 0,
+  "gate_received_max": 0,
+  "gate_mode_reasons": {
+    "output_enabled": 18,
+    "waiting_new_auto": 219,
+    "operator_pause": 189,
+    "manual_takeover": 114,
+    "manual_released": 123,
+    "output_disabled": 14
+  },
+  "auto_zero_count": 219,
+  "auto_gate_samples": 219,
+  "wheel_max_abs_rpm": 349,
+  "wheel_nonzero_samples": 117,
+  "vehicle_state_valid": 1122,
+  "perception_image_timing": {
+    "frames": 603,
+    "median_ms": 156.966696,
+    "min_ms": 139.900696,
+    "max_ms": 239.732602,
+    "above_500ms": 0
+  },
+  "gate_transitions": [
+    [
+      "2026-11-21T12:33:59.107+09:00",
+      "paused",
+      "output_enabled"
+    ],
+    [
+      "2026-11-21T12:33:59.886+09:00",
+      "auto",
+      "waiting_new_auto"
+    ],
+    [
+      "2026-11-21T12:34:02.609+09:00",
+      "paused",
+      "operator_pause"
+    ],
+    [
+      "2026-11-21T12:34:07.106+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:07.427+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:07.768+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:08.027+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:08.475+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:08.668+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:11.246+09:00",
+      "paused",
+      "operator_pause"
+    ],
+    [
+      "2026-11-21T12:34:22.087+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:23.628+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:23.848+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:24.927+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:25.386+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:25.466+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:25.706+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:25.866+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:26.066+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:26.207+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:26.586+09:00",
+      "manual",
+      "manual_takeover"
+    ],
+    [
+      "2026-11-21T12:34:26.646+09:00",
+      "paused",
+      "manual_released"
+    ],
+    [
+      "2026-11-21T12:34:32.666+09:00",
+      "auto",
+      "waiting_new_auto"
+    ],
+    [
+      "2026-11-21T12:34:35.506+09:00",
+      "paused",
+      "operator_pause"
+    ],
+    [
+      "2026-11-21T12:34:39.029+09:00",
+      "auto",
+      "waiting_new_auto"
+    ],
+    [
+      "2026-11-21T12:34:55.285+09:00",
+      "disabled",
+      "output_disabled"
+    ],
+    [
+      "2026-11-21T12:34:56.546+09:00",
+      "paused",
+      "output_enabled"
+    ]
+  ]
+}

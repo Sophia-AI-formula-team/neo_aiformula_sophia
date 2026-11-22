@@ -11,3 +11,9 @@
 ## 10:48 JST 外置盘交接
 
 四份原包已在 Extreme SSD 的 `2026-11-21 Experiment 01/bags` 目录完成逐文件 SHA-256 校验。见[录包列表及内容](runs/experiment-01/SSD-README.md)与[校验清单](runs/experiment-01/SSD-SHA256SUMS)。
+
+## 最终归档状态（11 月 22 日）
+
+- 上述上午四包已转入实验 Drive，30 个数据分卷全部回读校验。SSD 交接记录保留为历史状态。参见[目录及数据校验](closeout/morning-bags/REPORT.md)。
+- Concept 下午场次的原包、诊断导出和状态请见[Concept 日志与录包索引](../2026-11-21-concept/field-closeout/README.md)。13:52、13:58 完整包的回读通过校验，13:36 仅有诊断导出和元数据。
+- [共同收尾索引](CLOSEOUT.md)记录完整证据范围。

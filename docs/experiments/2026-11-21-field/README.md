@@ -1,6 +1,6 @@
 # 2026 年 11 月 21 日实车实验记录
 
-时间均为 JST。本次归档截至车端首批日志采集完成的 08:39:50。准备分支为 `experiment/vehicle-prep-20261121`，基线 `dff29d12e805f38f6fb34027b5f93789f4a59e3f`。
+时间均为 JST。首批车端日志于 08:39:50 采集完成。准备分支为 `experiment/vehicle-prep-20261121`，基线 `dff29d12e805f38f6fb34027b5f93789f4a59e3f`。
 
 | 方案 | 装车版本 | 已验证 | 待实车确认 |
 | --- | --- | --- | --- |
@@ -36,3 +36,7 @@
 ## 车端冻结
 
 12:04 JST，OA 2.3 故障交还、LanePoints 放宽版和 A3 V14 饱和度 45 已在 Jetson 回读。五个现场快捷方式、安装哈希、手柄与故障隔离验证随日期标签冻结。[field-2026-11-21-oa23 冻结目录](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/field-2026-11-21-oa23/docs/experiments/2026-11-21-field/freeze) · [OA 2.3 合并 PR](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/pull/56)
+
+## 11 月 22 日收尾归档
+
+[共同收尾索引](CLOSEOUT.md)汇总 MapAssist 工作区与 OA 回放、下午 Concept 日志，以及已校验的录包和待取回的文件。

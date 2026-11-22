@@ -1,0 +1,280 @@
+2026-11-21T13:05:31+09:00
+
+=== allnodes --verify-install ===
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'lane_point_topic_prefix':
+        Topic prefix for the A, B and C points from lane_points. Valid choices are: ['/processed_point_', '/original_processed_point_']
+        (default: '/processed_point_')
+
+    'launch_yolop_a3':
+        Start A3 V14 on the existing lane/object topics.
+        (default: 'false')
+
+    'launch_legacy_road_detector':
+        Enable the archived lane-only detector instead of a separately launched YOLOP detector.
+        (default: 'false')
+
+    'legacy_yolop_path':
+        no description given
+        (default: '/home/workspace/src/aiformula/perception/road_detector/road_detector/yolop_legacy_20261005')
+
+    'weight_path':
+        no description given
+        (default: '/home/workspace/src/aiformula/perception/road_detector/weights/123.pth')
+
+    'use_architecture':
+        no description given
+        (default: '0')
+
+    'camera_sn':
+        no description given
+        (default: '[camera-serial]')
+
+    'camera_resolution':
+        no description given
+        (default: 'nHD')
+
+    'camera_frame_id':
+        no description given
+        (default: 'zed_left_camera_optical_frame')
+
+    'grab_resolution':
+        no description given
+        (default: 'HD1080')
+
+    'grab_frame_rate':
+        no description given
+        (default: '15')
+
+    'pub_downscale_factor':
+        no description given
+        (default: '3.0')
+
+    'use_sim_time':
+        no description given
+        (default: 'false')
+
+    'odometry_imu_topic':
+        no description given
+        (default: '/aiformula_sensing/vectornav/imu')
+
+    'vehicle_name':
+        no description given
+        (default: 'ai_car1')
+
+    'use_joint_state_publisher':
+        no description given
+        (default: 'true')
+
+    'lane_debug':
+        no description given
+        (default: 'true')
+
+    'game_pad':
+        no description given
+        (default: 'dualshock4')
+
+    'button_layout_config':
+        no description given
+        (default: '/home/workspace/install/launchers/share/launchers/config/gamepad/' + LaunchConfig('game_pad') + '.yaml')
+
+    'motor_cmd_topic':
+        no description given
+        (default: '/aiformula_control/game_pad/cmd_vel')
+
+    'can_interface':
+        no description given
+        (default: 'can0')
+
+    'can_ready_timeout_sec':
+        no description given
+        (default: '120.0')
+
+    'receiver_interval_sec':
+        no description given
+        (default: '0.1')
+
+    'sender_timeout_sec':
+        no description given
+        (default: '0.01')
+
+    'enable_can_fd':
+        no description given
+        (default: 'false')
+
+    'launch_rviz':
+        no description given
+        (default: 'true')
+
+    'launch_image_view':
+        no description given
+        (default: 'false')
+
+    'image_view_topic':
+        no description given
+        (default: '/aiformula_perception/lane_line_publisher/vehicle_fit_image')
+
+    'config_common_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml')
+
+    'config_camera_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml')
+exit=0
+
+=== mapassist --verify-install ===
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'start_lya':
+        One of: ['true', 'false']
+        (default: 'true')
+
+    'start_oa2':
+        One of: ['true', 'false']
+        (default: 'false')
+
+    'oa_algorithm':
+        One of: ['oa_2', 'oa_2_1', 'oa_2_2', 'oa_2_3']
+        (default: 'oa_2')
+
+    'manual_handoff':
+        Reset MapAssist and OA on a motor joystick takeover. Valid choices are: ['auto', 'true', 'false']
+        (default: 'auto')
+
+    'lane_point_topic_prefix':
+        One of: ['/processed_point_', '/original_processed_point_']
+        (default: '/processed_point_')
+
+    'vehicle_output':
+        Connect legacy stop_wait and activate the motor session Valid choices are: ['true', 'false']
+        (default: 'false')
+
+    'oa_initially_idle':
+        Start on the normal lane when standalone OA is off Valid choices are: ['true', 'false']
+        (default: 'true')
+
+    'lane':
+        One of: ['inner', 'outer']
+
+    'traffic_stop_flag_topic':
+        no description given
+        (default: '/flag_stop')
+
+    'red_pixel_stop_threshold':
+        no description given
+        (default: '600')
+exit=0
+
+=== lya --verify-install ===
+trajectory_follower enhanced_lya_record
+trajectory_follower lya_0221
+trajectory_follower lya_avoid_preset
+trajectory_follower lya_baseline_follower_fixedpath_record
+trajectory_follower lya_follower
+trajectory_follower lya_follower_0122
+trajectory_follower lya_follower_connected
+trajectory_follower lya_follower_connected_global
+trajectory_follower lya_follower_connected_omegat_global
+trajectory_follower lya_follower_fixedpath
+trajectory_follower lya_follower_fixedpath_record
+trajectory_follower lya_oa
+trajectory_follower lya_precircle
+trajectory_follower lya_preset
+trajectory_follower lya_record
+trajectory_follower lya_superrecord
+trajectory_follower lya_superrecord2
+trajectory_follower p_follower
+trajectory_follower p_follower_connected
+trajectory_follower pid_follower
+trajectory_follower pid_follower_connected
+trajectory_follower pid_follower_connected_global
+trajectory_follower pid_preset
+trajectory_follower pp_preset
+exit=0
+
+=== lya_2 --verify-install ===
+lya_2 lya_2
+exit=0
+
+=== yolop --verify-install ===
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'deployment_root':
+        no description given
+        (default: '/home/workspace/src/aiformula/perception/road_detector/road_detector/YOLOP_A3_Deploy')
+
+    'python_executable':
+        no description given
+        (default: '/home/dependencies/ai-formula-python/yolop-a3-v14/bin/python3')
+
+    'start_camera':
+        no description given
+        (default: 'true')
+
+    'start_lane_publisher':
+        no description given
+        (default: 'true')
+
+    'shadow':
+        no description given
+        (default: 'false')
+
+    'device':
+        no description given
+        (default: 'cuda')
+
+    'score_threshold':
+        no description given
+        (default: '0.5')
+
+    'input_image_topic':
+        no description given
+        (default: '/aiformula_sensing/zed_node/left_image/undistorted')
+
+    'camera_sn':
+        no description given
+        (default: '[camera-serial]')
+
+    'camera_resolution':
+        no description given
+        (default: 'nHD')
+
+    'camera_frame_id':
+        no description given
+        (default: 'zed_left_camera_optical_frame')
+
+    'grab_resolution':
+        no description given
+        (default: 'HD1080')
+
+    'grab_frame_rate':
+        no description given
+        (default: '15')
+
+    'pub_downscale_factor':
+        no description given
+        (default: '3.0')
+
+    'use_sim_time':
+        no description given
+        (default: 'false')
+
+    'vehicle_name':
+        no description given
+        (default: 'ai_car1')
+
+    'lane_debug':
+        no description given
+        (default: 'true')
+
+    'config_common_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/common.yaml')
+
+    'config_camera_path':
+        no description given
+        (default: '/home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml')
+exit=0
+2026-11-21T13:05:40+09:00

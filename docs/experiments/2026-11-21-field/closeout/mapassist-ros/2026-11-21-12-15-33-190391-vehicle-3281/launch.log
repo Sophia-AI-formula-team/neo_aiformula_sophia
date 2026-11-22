@@ -1,0 +1,56 @@
+1795230933.1967499 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-21-12-15-33-190391-control-desktop-3281
+1795230933.1972163 [INFO] [launch]: Default logging verbosity is set to INFO
+1795230933.3286965 [INFO] [allnodes.can_ready]: Waiting up to 120.0s for CAN interface 'can0'
+1795230933.3291163 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795230933.7311985 [INFO] [lane_line_publisher-6]: process started with pid [3345]
+1795230933.7319002 [INFO] [motor_controller-11]: process started with pid [3355]
+1795230933.7322481 [INFO] [gyro_odometry_publisher-14]: process started with pid [3381]
+1795230933.7324946 [INFO] [rear_potentiometer-15]: process started with pid [3385]
+1795230933.7336085 [INFO] [robot_state_publisher-1]: process started with pid [3335]
+1795230933.7349830 [INFO] [joint_state_publisher-2]: process started with pid [3337]
+1795230933.7353649 [INFO] [zed_wrapper-3]: process started with pid [3339]
+1795230933.7356725 [INFO] [vectornav-4]: process started with pid [3341]
+1795230933.7359443 [INFO] [vn_sensor_msgs-5]: process started with pid [3343]
+1795230933.7362325 [INFO] [lane_0927oa-7]: process started with pid [3347]
+1795230933.7364943 [INFO] [joy_node-8]: process started with pid [3349]
+1795230933.7367482 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [3351]
+1795230933.7369957 [INFO] [teleop_node-10]: process started with pid [3353]
+1795230933.7372885 [INFO] [socket_can_receiver_node_exe-12]: process started with pid [3358]
+1795230933.7375538 [INFO] [socket_can_sender_node_exe-13]: process started with pid [3378]
+1795230933.7672269 [teleop_node-10] [0m[INFO] [1795230933.766407873] [TeleopTwistJoy]: Teleop enable button 6.[0m
+1795230933.7678401 [teleop_node-10] [0m[INFO] [1795230933.766556838] [TeleopTwistJoy]: Turbo on button 4.[0m
+1795230933.7679994 [teleop_node-10] [0m[INFO] [1795230933.766566084] [TeleopTwistJoy]: Linear axis x on 1 at scale 3.500000.[0m
+1795230933.7681348 [teleop_node-10] [0m[INFO] [1795230933.766576610] [TeleopTwistJoy]: Turbo for linear axis x is scale 3.600000.[0m
+1795230933.7682436 [teleop_node-10] [0m[INFO] [1795230933.766581537] [TeleopTwistJoy]: Angular axis yaw on 3 at scale 0.700000.[0m
+1795230933.7683356 [teleop_node-10] [0m[INFO] [1795230933.766587008] [TeleopTwistJoy]: Turbo for angular axis yaw is scale 1.000000.[0m
+1795230933.8117342 [vectornav-4] [0m[INFO] [1795230933.810930398] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY[0m
+1795230933.8822646 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795230933.8836429 [robot_state_publisher-1] Link base_link had 4 children
+1795230933.8848598 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795230933.8850908 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795230933.8851981 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795230933.8852863 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795230933.8854125 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795230933.8855863 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795230933.8860493 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795230933.8862660 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795230933.8865385 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795230933.9004896 [vectornav-4] [0m[INFO] [1795230933.899479409] [aiformula_sensing.vectornav]: Connected to /dev/serial/by-id/usb-FTDI_USB-RS232-WE_AV0LG0YM-if00-port0 @ 115200 baud[0m
+1795230933.9008391 [vectornav-4] [0m[INFO] [1795230933.899619959] [aiformula_sensing.vectornav]: Model: VN-200T-CR[0m
+1795230933.9010208 [vectornav-4] [0m[INFO] [1795230933.899633941] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0[0m
+1795230933.9011285 [vectornav-4] [0m[INFO] [1795230933.899642195] [aiformula_sensing.vectornav]: Hardware Version : 3[0m
+1795230933.9012246 [vectornav-4] [0m[INFO] [1795230933.899648914] [aiformula_sensing.vectornav]: Serial Number : [serial][0m
+1795230933.9013412 [vectornav-4] [0m[INFO] [1795230933.899655601] [aiformula_sensing.vectornav]: User Tag : ""[0m
+1795230933.9859948 [vectornav-4] [0m[INFO] [1795230933.985283445] [aiformula_sensing.vectornav]: GPS Mode       : 0[0m
+1795230933.9863684 [vectornav-4] [0m[INFO] [1795230933.985377668] [aiformula_sensing.vectornav]: GPS PPS Source : 0[0m
+1795230933.9909329 [vectornav-4] [0m[INFO] [1795230933.990287787] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)[0m
+1795230933.9966962 [vectornav-4] [0m[INFO] [1795230933.996316966] [aiformula_sensing.vectornav]: Reconnect Timeout : 500[0m
+1795230945.7470419 [INFO] [rviz2-16]: process started with pid [3756]
+1795230946.9663928 [rviz2-16] [0m[INFO] [1795230946.965823721] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795230946.9671314 [rviz2-16] [0m[INFO] [1795230946.966049484] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)[0m
+1795230947.0276430 [rviz2-16] [0m[INFO] [1795230947.027123978] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795230947.3336148 [rviz2-16] [0m[INFO] [1795230947.333110958] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795230947.3769715 [rviz2-16] [0m[INFO] [1795230947.376251921] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795230947.4101405 [rviz2-16] [0m[INFO] [1795230947.409288310] [rviz2]: Stereo is NOT SUPPORTED[0m
+1795230966.0364919 [joy_node-8] [0m[INFO] [1795230966.035464607] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization[0m
+1795230966.0377576 [joy_node-8] [0m[INFO] [1795230966.035775751] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000[0m

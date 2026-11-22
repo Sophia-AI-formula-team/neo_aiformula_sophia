@@ -1,0 +1,23 @@
+2026-11-21T13:07:24+09:00
+Starting >>> simtest_mixed
+Starting >>> simtest_speed
+[0.906s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'launchers' is in: /home/workspace/install/launchers
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding launchers
+
+This may be promoted to an error in a future release of colcon-override-check.
+Finished <<< simtest_mixed [2.24s]
+Starting >>> simtest_stop
+Finished <<< simtest_speed [2.25s]
+Starting >>> simtest_turn
+Finished <<< simtest_turn [2.22s]
+Starting >>> launchers
+Finished <<< simtest_stop [2.30s]
+Finished <<< launchers [0.23s]
+
+Summary: 5 packages finished [5.34s]
+2026-11-21T13:07:30+09:00

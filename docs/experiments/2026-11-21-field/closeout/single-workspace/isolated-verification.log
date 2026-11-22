@@ -1,0 +1,50 @@
+2026-11-21T13:05:01+09:00
+/home/workspace/install/obsticle_avoidence/lib/python3.8/site-packages/obsticle_avoidence/oa_2_3.py
+[INFO] [1795233904.616288638] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233904.625826860] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795233904.632903459] [data_processing_node]: Filtered => A(0.20,0.00), B(0.40,0.00), C(0.60,0.00); theta1=0.000, theta2=0.000, omega_t=0.000
+[INFO] [1795233904.681868973] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795233904.683951210] [data_processing_node]: Switched to /processed_point_* topics.
+2026-11-21T13:05:04.729681+09:00 three distinct clear masks released OA despite 4 m old-path error; fresh lane ABC produced LYA input
+[INFO] [1795233904.728992670] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+[INFO] [1795233904.733285004] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233904.735306209] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795233904.741033194] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795233904.743008279] [data_processing_node]: Switched to /processed_point_* topics.
+2026-11-21T13:05:04.745762+09:00 odom frame reinitialized and an empty current mask released OA after three votes
+[INFO] [1795233904.745338874] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+[INFO] [1795233904.763960209] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233904.771403840] [data_processing_node]: Switched to /oa_point_* topics.
+2026-11-21T13:05:04.810568+09:00 one remaining pixel on the path vetoed release while total pixels were below threshold
+2026-11-21T13:05:04.822533+09:00 stale odometry reset OA and returned the point source
+[INFO] [1795233904.820696508] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795233904.822387198] [data_processing_node]: Switched to /processed_point_* topics.
+2026-11-21T13:05:04.834317+09:00 fault cleared after three fresh empty masks
+[INFO] [1795233904.836013371] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233904.837617776] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795233904.840049251] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+2026-11-21T13:05:04.850620+09:00 no usable window timed out and returned the point source
+[INFO] [1795233904.850480217] [data_processing_node]: Switched to /processed_point_* topics.
+2026-11-21T13:05:04.959458+09:00 manual press reset OA, rejected masks while held and from before release, then restored fresh lane ABC
+[INFO] [1795233904.959032640] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+[INFO] [1795233905.013040808] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233905.015037848] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795233905.131264306] [data_processing_node]: Filtered => A(0.30,0.13), B(0.32,0.28), C(1.51,0.00); theta1=1.441, theta2=-0.230, omega_t=-16.709
+2026-11-21T13:05:05.132202+09:00 mask-triggered OA produced forward ABC with A.y halved and made the selector ready
+[INFO] [1795233905.152936309] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+[INFO] [1795233905.158672734] [data_processing_node]: Switched to /processed_point_* topics.
+[INFO] [1795233905.163726367] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+2026-11-21T13:05:05.164166+09:00 mask-triggered OA subsequently returned to lane ABC on confirmed clearance
+[INFO] [1795233905.169420578] [data_processing_node]: Flag True received. Switching subscription to /oa_point_* topics.
+[INFO] [1795233905.176882321] [data_processing_node]: Switched to /oa_point_* topics.
+[INFO] [1795233905.800490101] [data_processing_node]: Flag False received. Switching subscription to /processed_point_* topics.
+2026-11-21T13:05:05.805757+09:00 missing OA heartbeat returned the point source without the OA process
+[INFO] [1795233905.802706791] [data_processing_node]: Switched to /processed_point_* topics.
+[INFO] [1795233905.805408322] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+OA exited: sent /point_flag=false to restore the lane source.
+2026-11-21T13:05:08.298463+09:00 OA runner restored lane selection after process exit
+[INFO] [1795233908.297345744] [data_processing_node]: Filtered => A(2.00,0.10), B(3.00,0.10), C(4.00,0.10); theta1=0.000, theta2=0.000, omega_t=0.000
+red_flag {"mapassist": {"manual_held": false, "manual_transition_ns": 0, "reason": "red_wait_first_lap", "red_stop_required": true, "traffic_stop_flag": true}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "idle", "version": "oa_2_3"}}
+manual_hold_with_red_still_published {"mapassist": {"manual_held": true, "manual_transition_ns": 1795233915797622512, "reason": "manual_takeover", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": true, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_takeover", "version": "oa_2_3"}}
+manual_release {"mapassist": {"manual_held": false, "manual_transition_ns": 1795233916084665713, "reason": "manual_waiting_fresh_obstacle_mask", "red_stop_required": false, "traffic_stop_flag": null}, "oa": {"manual_held": false, "manual_transition_ns": null, "replan_reason": "initial", "state": "manual_waiting_fresh_mask", "version": "oa_2_3"}}
+2026-11-21T13:05:19+09:00

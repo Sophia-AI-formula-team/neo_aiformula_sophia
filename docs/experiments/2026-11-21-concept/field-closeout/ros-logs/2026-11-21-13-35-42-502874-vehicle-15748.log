@@ -1,0 +1,116 @@
+1795235742.5094073 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-21-13-35-42-502874-control-desktop-15748
+1795235742.5098708 [INFO] [launch]: Default logging verbosity is set to INFO
+1795235745.7768366 [INFO] [launch.user]: Concept tracking controller: lya
+1795235747.7157605 [INFO] [allnodes.can_ready]: Waiting up to 10.0s for CAN interface 'can0'
+1795235747.7167625 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795235748.0133042 [INFO] [gyro_odometry_publisher-6]: process started with pid [15786]
+1795235748.0174870 [INFO] [rear_potentiometer-7]: process started with pid [15788]
+1795235748.0193968 [INFO] [robot_state_publisher-1]: process started with pid [15776]
+1795235748.0198090 [INFO] [joint_state_publisher-2]: process started with pid [15778]
+1795235748.0200055 [INFO] [zed_wrapper-3]: process started with pid [15780]
+1795235748.0201588 [INFO] [vectornav-4]: process started with pid [15782]
+1795235748.0202942 [INFO] [vn_sensor_msgs-5]: process started with pid [15784]
+1795235748.0215883 [INFO] [joy_node-8]: process started with pid [15790]
+1795235748.0220156 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [15792]
+1795235748.0227256 [INFO] [socket_can_receiver_node_exe-10]: process started with pid [15794]
+1795235748.0235906 [INFO] [socket_can_sender_node_exe-11]: process started with pid [15796]
+1795235748.0240264 [INFO] [concept_yolop_node-12]: process started with pid [15798]
+1795235748.0243816 [INFO] [motor_controller-13]: process started with pid [15869]
+1795235748.0246520 [INFO] [concept_vehicle_state-14]: process started with pid [15874]
+1795235748.0249147 [INFO] [concept_control_gate-15]: process started with pid [15876]
+1795235748.0252278 [INFO] [drive-16]: process started with pid [15878]
+1795235748.0256093 [INFO] [visualization-17]: process started with pid [15882]
+1795235748.0262160 [INFO] [panel-18]: process started with pid [15891]
+1795235748.0379200 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795235748.0394669 [robot_state_publisher-1] Link base_link had 4 children
+1795235748.0397904 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795235748.0398848 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795235748.0399628 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795235748.0400326 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795235748.0400963 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795235748.0401597 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795235748.0402226 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795235748.0402834 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795235748.0403435 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795235748.0404065 [robot_state_publisher-1] [INFO] [1795235747.942213603] [aiformula_sensing.robot_state_publisher]: got segment base_footprint
+1795235748.0404713 [robot_state_publisher-1] [INFO] [1795235747.942381414] [aiformula_sensing.robot_state_publisher]: got segment base_link
+1795235748.0409000 [robot_state_publisher-1] [INFO] [1795235747.942396327] [aiformula_sensing.robot_state_publisher]: got segment caster_back_link
+1795235748.0409844 [robot_state_publisher-1] [INFO] [1795235747.942403751] [aiformula_sensing.robot_state_publisher]: got segment wheel_left_link
+1795235748.0410533 [robot_state_publisher-1] [INFO] [1795235747.942410375] [aiformula_sensing.robot_state_publisher]: got segment wheel_right_link
+1795235748.0411198 [robot_state_publisher-1] [INFO] [1795235747.942416423] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_center
+1795235748.0411856 [robot_state_publisher-1] [INFO] [1795235747.942422823] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_link
+1795235748.0412481 [robot_state_publisher-1] [INFO] [1795235747.942428839] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_frame
+1795235748.0413110 [robot_state_publisher-1] [INFO] [1795235747.943841508] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_optical_frame
+1795235748.0414023 [robot_state_publisher-1] [INFO] [1795235747.943888261] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_frame
+1795235748.0414660 [robot_state_publisher-1] [INFO] [1795235747.943898597] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_optical_frame
+1795235748.0422900 [vectornav-4] [INFO] [1795235747.946419544] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795235748.0524056 [vectornav-4] [INFO] [1795235748.040539962] [aiformula_sensing.vectornav]: Connected to /dev/serial/by-id/usb-FTDI_USB-RS232-WE_AV0LG0YM-if00-port0 @ 115200 baud
+1795235748.0527959 [vectornav-4] [INFO] [1795235748.040662301] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795235748.0546460 [vectornav-4] [INFO] [1795235748.040675741] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795235748.0569000 [vectornav-4] [INFO] [1795235748.040682877] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795235748.0577176 [vectornav-4] [INFO] [1795235748.040689757] [aiformula_sensing.vectornav]: Serial Number : [serial]
+1795235748.0578632 [vectornav-4] [INFO] [1795235748.040696861] [aiformula_sensing.vectornav]: User Tag : ""
+1795235748.1494715 [vectornav-4] [INFO] [1795235748.148823289] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795235748.1500628 [vectornav-4] [INFO] [1795235748.148922939] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795235748.1559198 [vectornav-4] [INFO] [1795235748.155100919] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795235748.1631532 [vectornav-4] [INFO] [1795235748.161321332] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795235748.6760795 [joy_node-8] [INFO] [1795235748.675294053] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795235748.6775222 [joy_node-8] [INFO] [1795235748.677042152] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000
+1795236108.5845420 [WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+1795236114.2397850 [ERROR] [visualization-17]: process[visualization-17] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2409837 [ERROR] [drive-16]: process[drive-16] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2418065 [ERROR] [concept_control_gate-15]: process[concept_control_gate-15] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2426183 [ERROR] [concept_vehicle_state-14]: process[concept_vehicle_state-14] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2434690 [ERROR] [motor_controller-13]: process[motor_controller-13] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2442429 [ERROR] [concept_yolop_node-12]: process[concept_yolop_node-12] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2449393 [ERROR] [socket_can_sender_node_exe-11]: process[socket_can_sender_node_exe-11] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2456391 [ERROR] [socket_can_receiver_node_exe-10]: process[socket_can_receiver_node_exe-10] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2463193 [ERROR] [l2_throttle_joy_remap.py-9]: process[l2_throttle_joy_remap.py-9] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2469954 [ERROR] [joy_node-8]: process[joy_node-8] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2477045 [ERROR] [rear_potentiometer-7]: process[rear_potentiometer-7] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2485135 [ERROR] [gyro_odometry_publisher-6]: process[gyro_odometry_publisher-6] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2496626 [ERROR] [vn_sensor_msgs-5]: process[vn_sensor_msgs-5] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2507207 [ERROR] [vectornav-4]: process[vectornav-4] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2519257 [ERROR] [zed_wrapper-3]: process[zed_wrapper-3] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2542181 [ERROR] [joint_state_publisher-2]: process[joint_state_publisher-2] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2567663 [ERROR] [robot_state_publisher-1]: process[robot_state_publisher-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236114.2599893 [INFO] [visualization-17]: sending signal 'SIGTERM' to process[visualization-17]
+1795236114.2742250 [INFO] [drive-16]: sending signal 'SIGTERM' to process[drive-16]
+1795236114.2868536 [INFO] [concept_control_gate-15]: sending signal 'SIGTERM' to process[concept_control_gate-15]
+1795236114.2996135 [INFO] [concept_vehicle_state-14]: sending signal 'SIGTERM' to process[concept_vehicle_state-14]
+1795236114.3123510 [INFO] [motor_controller-13]: sending signal 'SIGTERM' to process[motor_controller-13]
+1795236114.3227882 [ERROR] [concept_control_gate-15]: process has died [pid 15876, exit code -15, cmd '/home/control/concept_1121_ws/install/concept_control_gate/lib/concept_control_gate/concept_control_gate --ros-args --params-file /tmp/launch_params_rhaf1k59 --params-file /home/control/concept_1121_ws/install/launchers/share/launchers/config/gamepad/dualshock4.yaml --params-file /tmp/launch_params_x00q_9yi'].
+1795236114.3348408 [INFO] [concept_yolop_node-12]: sending signal 'SIGTERM' to process[concept_yolop_node-12]
+1795236114.3408575 [ERROR] [motor_controller-13]: process has died [pid 15869, exit code -15, cmd '/home/workspace/install/motor_controller/lib/motor_controller/motor_controller --ros-args -r __node:=motor_controller -r __ns:=/concept/hardware --params-file /tmp/launch_params_is5jpk6d --params-file /home/workspace/install/vehicle/share/vehicle/config/wheel.yaml --params-file /home/workspace/install/motor_controller/share/motor_controller/config/motor_controller.yaml --params-file /home/control/concept_1121_ws/install/launchers/share/launchers/config/gamepad/dualshock4.yaml -r sub_speed_command:=/concept/internal/motor_cmd -r pub_can:=/concept/internal/motor_can -r /aiformula_control/joy_node/joy_l2_throttle:=/concept/internal/unused_motor_joy -r /semantic_drive/motor_session:=/concept/internal/unused_motor_session -r /semantic_drive/map_status:=/concept/internal/unused_motor_map_status'].
+1795236114.3491597 [INFO] [socket_can_sender_node_exe-11]: sending signal 'SIGTERM' to process[socket_can_sender_node_exe-11]
+1795236114.3621380 [ERROR] [concept_vehicle_state-14]: process has died [pid 15874, exit code -15, cmd '/home/control/concept_1121_ws/install/concept_vehicle_state/lib/concept_vehicle_state/concept_vehicle_state --ros-args --params-file /tmp/launch_params_cpbqeio2'].
+1795236114.3637471 [ERROR] [visualization-17]: process has died [pid 15882, exit code -15, cmd '/home/control/concept_1121_ws/install/concept_visualization/lib/concept_visualization/visualization --ros-args --params-file /tmp/launch_params_kif062xg'].
+1795236114.3724279 [INFO] [socket_can_receiver_node_exe-10]: sending signal 'SIGTERM' to process[socket_can_receiver_node_exe-10]
+1795236114.3801968 [ERROR] [drive-16]: process has died [pid 15878, exit code -15, cmd '/home/control/concept_1121_ws/install/concept_drive/lib/concept_drive/drive --ros-args --params-file /tmp/launch_params_wjp7uv0h --params-file /tmp/launch_params_evx7opug'].
+1795236114.3815572 [ERROR] [socket_can_sender_node_exe-11]: process has died [pid 15796, exit code -15, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_sender_node_exe --ros-args -r __node:=socket_can_sender -r __ns:=/aiformula_control --params-file /tmp/launch_params_a2jgrusx --params-file /tmp/launch_params_kw93d78c -r to_can_bus:=/aiformula_control/motor_controller/reference_signal'].
+1795236114.3886747 [INFO] [l2_throttle_joy_remap.py-9]: sending signal 'SIGTERM' to process[l2_throttle_joy_remap.py-9]
+1795236114.3953028 [ERROR] [socket_can_receiver_node_exe-10]: process has died [pid 15794, exit code -15, cmd '/home/workspace/install/ros2_socketcan/lib/ros2_socketcan/socket_can_receiver_node_exe --ros-args -r __node:=socket_can_receiver -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_ec0chqm4 --params-file /tmp/launch_params_1fchiiua -r from_can_bus:=/aiformula_sensing/vehicle_info'].
+1795236114.4012117 [INFO] [joy_node-8]: sending signal 'SIGTERM' to process[joy_node-8]
+1795236114.4177105 [INFO] [rear_potentiometer-7]: sending signal 'SIGTERM' to process[rear_potentiometer-7]
+1795236114.4323556 [ERROR] [l2_throttle_joy_remap.py-9]: process has died [pid 15792, exit code -15, cmd '/home/control/concept_1121_ws/install/launchers/lib/launchers/l2_throttle_joy_remap.py --ros-args -r __node:=l2_throttle_joy_remap -r __ns:=/aiformula_control --params-file /tmp/launch_params_8jzvms8c -r joy_in:=/aiformula_control/joy_node/joy -r joy_out:=/aiformula_control/joy_node/joy_l2_throttle'].
+1795236114.4415529 [INFO] [gyro_odometry_publisher-6]: sending signal 'SIGTERM' to process[gyro_odometry_publisher-6]
+1795236114.4454978 [ERROR] [rear_potentiometer-7]: process has died [pid 15788, exit code -15, cmd '/home/workspace/install/rear_potentiometer/lib/rear_potentiometer/rear_potentiometer --ros-args -r __node:=rear_potentiometer -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_9ewmzzdh -r pub_rear_wheel_yaw:=/aiformula_sensing/rear_potentiometer/yaw -r sub_can:=/aiformula_sensing/vehicle_info'].
+1795236114.4523542 [INFO] [vn_sensor_msgs-5]: sending signal 'SIGTERM' to process[vn_sensor_msgs-5]
+1795236114.4675751 [ERROR] [gyro_odometry_publisher-6]: process has died [pid 15786, exit code -15, cmd '/home/workspace/install/odometry_publisher/lib/odometry_publisher/gyro_odometry_publisher --ros-args -r __node:=gyro_odometry_publisher -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_s59dy1pv --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/wheel.yaml --params-file /home/workspace/install/odometry_publisher/share/odometry_publisher/config/gyro_odometry_publisher.yaml --params-file /tmp/launch_params_lxpdg7s_ -r sub_imu:=/aiformula_sensing/vectornav/imu -r sub_can:=/aiformula_sensing/vehicle_info -r pub_odometry:=/aiformula_sensing/gyro_odometry_publisher/odom'].
+1795236114.4756274 [INFO] [vectornav-4]: sending signal 'SIGTERM' to process[vectornav-4]
+1795236114.4795651 [ERROR] [vn_sensor_msgs-5]: process has died [pid 15784, exit code -15, cmd '/home/workspace/install/vectornav/lib/vectornav/vn_sensor_msgs --ros-args -r __node:=vn_sensor_msgs -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_qofokctc --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml -r vectornav/imu:=/aiformula_sensing/vectornav/imu'].
+1795236114.4820285 [INFO] [zed_wrapper-3]: sending signal 'SIGTERM' to process[zed_wrapper-3]
+1795236114.4950502 [INFO] [joint_state_publisher-2]: sending signal 'SIGTERM' to process[joint_state_publisher-2]
+1795236114.4960392 [ERROR] [vectornav-4]: process has died [pid 15782, exit code -15, cmd '/home/workspace/install/vectornav/lib/vectornav/vectornav --ros-args -r __node:=vectornav -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_grwuk41j --params-file /home/workspace/install/vectornav/share/vectornav/config/vectornav.yaml'].
+1795236114.5001819 [INFO] [robot_state_publisher-1]: sending signal 'SIGTERM' to process[robot_state_publisher-1]
+1795236114.5029218 [joy_node-8] [INFO] [1795236114.412129244] [aiformula_control.joy_node]: Unknown event type 256
+1795236114.5042760 [ERROR] [robot_state_publisher-1]: process has died [pid 15776, exit code -15, cmd '/opt/ros/foxy/lib/robot_state_publisher/robot_state_publisher --ros-args -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_hukgqjo1 --params-file /tmp/launch_params_ts0qfb5z'].
+1795236114.5051665 [ERROR] [joint_state_publisher-2]: process has died [pid 15778, exit code -15, cmd '/opt/ros/foxy/lib/joint_state_publisher/joint_state_publisher /tmp/concept-chassis-9um6rjz0/ai_car1.urdf --ros-args -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_50k35bw8'].
+1795236114.5369415 [ERROR] [zed_wrapper-3]: process has died [pid 15780, exit code -15, cmd '/home/workspace/install/zed_wrapper/lib/zed_wrapper/zed_wrapper --ros-args -r __node:=zed_node -r __ns:=/aiformula_sensing --params-file /tmp/launch_params_97idg9ay --params-file /tmp/concept-chassis-9um6rjz0/zed-common.yaml --params-file /home/workspace/install/vehicle/share/vehicle/config/zedx/zedx.yaml --params-file /tmp/launch_params_dix9bdt5 -r ~/left/image_rect_color:=/aiformula_sensing/zed_node/left_image/undistorted -r ~/right/image_rect_color:=/aiformula_sensing/zed_node/right_image/undistorted -r ~/imu/data:=/aiformula_sensing/zed_node/imu'].
+1795236114.9276989 [ERROR] [concept_yolop_node-12]: process has died [pid 15798, exit code -15, cmd '/home/control/concept_1121_ws/install/concept_yolop/lib/concept_yolop/concept_yolop_node --ros-args --params-file /tmp/launch_params_m9oe8s39 --params-file /tmp/launch_params_du76apla'].
+1795236119.2404623 [ERROR] [joy_node-8]: process[joy_node-8] failed to terminate '10.0' seconds after receiving 'SIGTERM', escalating to 'SIGKILL'
+1795236119.2435069 [INFO] [joy_node-8]: sending signal 'SIGKILL' to process[joy_node-8]
+1795236119.3238723 [ERROR] [joy_node-8]: process has died [pid 15790, exit code -9, cmd '/opt/ros/foxy/lib/joy/joy_node --ros-args -r __node:=joy_node -r __ns:=/aiformula_control --params-file /tmp/launch_params_q9ayek3d --params-file /home/control/concept_1121_ws/install/launchers/share/launchers/config/joy.yaml -r joy:=/aiformula_control/joy_node/joy'].
+1795236154.2698131 [ERROR] [panel-18]: process[panel-18] failed to terminate '45' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+1795236154.2718318 [INFO] [panel-18]: sending signal 'SIGTERM' to process[panel-18]
+1795236154.4280975 [INFO] [panel-18]: process has finished cleanly [pid 15891]

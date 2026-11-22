@@ -1,0 +1,31 @@
+[
+  {
+    "id": "approach",
+    "root": "alternate",
+    "title": "首组 ABC 被丢弃",
+    "subtitle": "11-20 现场录包回放 · 首组 ABC 比选点器记下的换源时刻早约 19 ms",
+    "trim": 0.5,
+    "tail": 1.6,
+    "max_px": 2200
+  },
+  {
+    "id": "roi",
+    "root": "alternate",
+    "title": "动态 ROI 裁掉了多少像素",
+    "subtitle": "11-20 现场录包对照 · 框与车道点云同源的画面里，裁剪前后都已超过门槛",
+    "trim": 0.5,
+    "tail": 0.5,
+    "max_px": 13000,
+    "hold": 1795158568872453000,
+    "hold_seconds": 1.2
+  },
+  {
+    "id": "near",
+    "root": "prepared",
+    "title": "有接管标志，还在等有效路径",
+    "subtitle": "11-21 现场录包回放 · 锥桶前缺可配对的车道线，动态组回退静态",
+    "trim": 0.25,
+    "tail": 1.05,
+    "max_px": 3000
+  }
+]

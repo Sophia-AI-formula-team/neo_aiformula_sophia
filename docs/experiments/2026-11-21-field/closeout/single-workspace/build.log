@@ -1,0 +1,44 @@
+2026-11-21T13:01:39+09:00
+2026-11-21T13:01:40+09:00
+[0.981s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'launchers' is in: /home/workspace/install/launchers
+	'semantic_planner_core' is in: /home/workspace/install/semantic_planner_core
+	'semantic_local_planner_ros' is in: /home/workspace/install/semantic_local_planner_ros
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding launchers semantic_local_planner_ros semantic_planner_core
+
+This may be promoted to an error in a future release of colcon-override-check.
+Starting >>> semantic_planner_core
+Starting >>> semantic_vehicle_wiring
+Finished <<< semantic_vehicle_wiring [2.46s]
+Starting >>> lane_points
+Finished <<< semantic_planner_core [2.96s]
+Starting >>> trajectory_follower
+Finished <<< lane_points [1.81s]
+Starting >>> lane_line_publisher
+Finished <<< trajectory_follower [1.82s]
+Starting >>> semantic_local_planner_ros
+Finished <<< semantic_local_planner_ros [1.82s]
+Starting >>> lya_2
+Finished <<< lya_2 [1.77s]
+Starting >>> obsticle_avoidence
+Finished <<< obsticle_avoidence [1.84s]
+Starting >>> yolop_a3_perception
+Finished <<< yolop_a3_perception [1.79s]
+Finished <<< lane_line_publisher [35.6s]
+Starting >>> launchers
+--- stderr: lane_line_publisher
+** WARNING ** io features related to pcap will be disabled
+** WARNING ** io features related to png will be disabled
+** WARNING ** io features related to libusb-1.0 will be disabled
+---
+Finished <<< launchers [0.48s]
+Starting >>> motor_controller
+Finished <<< motor_controller [1.87s]
+
+Summary: 11 packages finished [42.9s]
+  1 package had stderr output: lane_line_publisher
+2026-11-21T13:02:23+09:00

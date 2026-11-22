@@ -36,3 +36,13 @@
 | 11:18:20–11:22:00 | LYA 直线试算、录包车道线点数统计、LanePoints 放宽版隔离 ROS 验证。多次 SSH 失败，未装车。 | [LanePoints 候选](deployment/lane0927oa-min3/REPORT.md) |
 
 11:53–12:04 JST 完成 A3 S45 装车、OA 2.3 故障交还更新、Jetson 隔离验证与日期冻结。[现场冻结](https://github.com/Sophia-AI-formula-team/neo_aiformula_sophia/tree/field-2026-11-21-oa23/docs/experiments/2026-11-21-field/freeze)
+
+## 中午、下午及收尾归档
+
+| 时间 | 操作与结果 | 回执 |
+| --- | --- | --- |
+| 11-21 12:10–12:33 | 回读 Allnodes、MapAssist、LYA 与手柄故障重启环节。 | [车端 ROS](closeout/mapassist-ros/README.md) · [手柄](closeout/manual-reboot/REPORT.md) |
+| 11-21 12:40–12:51 | OA 接管计时与实车 bag 离线回放。 | [合成计时](closeout/oa23-takeover/REPORT.md) · [bag 回放](closeout/oa23-bag-replay/REPORT.md) |
+| 11-21 12:58–13:15 | 统一主工作区、迁移 OA 源码、验证入口和清理旧工作区。 | [整合回执](closeout/single-workspace/REPORT.md) |
+| 11-21 13:36–14:02 | Concept 三次录包及末次车端清单。 | [Concept 收尾](../2026-11-21-concept/field-closeout/README.md) |
+| 11-22 15:40 起 | 两会话汇总并回读核对 Drive 与 Neo。 | [共同收尾索引](CLOSEOUT.md) |

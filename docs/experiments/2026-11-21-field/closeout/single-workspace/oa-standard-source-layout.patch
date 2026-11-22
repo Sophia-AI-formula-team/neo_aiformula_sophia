@@ -1,0 +1,98 @@
+From 4f075e54ea3053b228e0ca13df76c46b6b2fb024 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Sat, 21 Nov 2026 13:09:03 +0900
+Subject: [PATCH] Install OA 2.x in the obstacle avoidance perception package
+
+---
+ .../launchers/shellscript/run_obstacle_avoidance.py      | 9 +--------
+ .../obsticle_avoidence/obsticle_avoidence}/oa_2_1.py     | 0
+ .../obsticle_avoidence/obsticle_avoidence}/oa_2_2.py     | 0
+ .../obsticle_avoidence/obsticle_avoidence}/oa_2_3.py     | 2 +-
+ .../aiformula/perception/obsticle_avoidence/package.xml  | 2 ++
+ .../src/aiformula/perception/obsticle_avoidence/setup.py | 3 +++
+ 6 files changed, 7 insertions(+), 9 deletions(-)
+ rename workspace/src/aiformula/{launchers/shellscript => perception/obsticle_avoidence/obsticle_avoidence}/oa_2_1.py (100%)
+ rename workspace/src/aiformula/{launchers/shellscript => perception/obsticle_avoidence/obsticle_avoidence}/oa_2_2.py (100%)
+ rename workspace/src/aiformula/{launchers/shellscript => perception/obsticle_avoidence/obsticle_avoidence}/oa_2_3.py (98%)
+
+diff --git a/workspace/src/aiformula/launchers/shellscript/run_obstacle_avoidance.py b/workspace/src/aiformula/launchers/shellscript/run_obstacle_avoidance.py
+index 7294658..42f0f29 100644
+--- a/workspace/src/aiformula/launchers/shellscript/run_obstacle_avoidance.py
++++ b/workspace/src/aiformula/launchers/shellscript/run_obstacle_avoidance.py
+@@ -15,8 +15,7 @@ import sys
+ import time
+ 
+ 
+-SCRIPT_ALGORITHMS = ("oa_2_1", "oa_2_2", "oa_2_3")
+-ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", *SCRIPT_ALGORITHMS)
++ALGORITHMS = ("oa_neo", "oa_neo_nurbs", "oa_neo_ubs", "oa_2", "oa_2_1", "oa_2_2", "oa_2_3")
+ 
+ 
+ def reset_lane_source():
+@@ -101,12 +100,6 @@ def main(argv=None):
+     parser.add_argument("ros_args", nargs=argparse.REMAINDER)
+     arguments = parser.parse_args(argv)
+ 
+-    if arguments.algorithm in SCRIPT_ALGORITHMS:
+-        script = os.path.join(os.path.dirname(os.path.abspath(__file__)), arguments.algorithm + ".py")
+-        if not os.path.isfile(script):
+-            parser.error("Installed avoidance script not found: {}".format(script))
+-        return run_child([sys.executable, script] + arguments.ros_args)
+-
+     from ament_index_python.packages import get_package_prefix
+ 
+     executable = os.path.join(
+diff --git a/workspace/src/aiformula/launchers/shellscript/oa_2_1.py b/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_1.py
+similarity index 100%
+rename from workspace/src/aiformula/launchers/shellscript/oa_2_1.py
+rename to workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_1.py
+diff --git a/workspace/src/aiformula/launchers/shellscript/oa_2_2.py b/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_2.py
+similarity index 100%
+rename from workspace/src/aiformula/launchers/shellscript/oa_2_2.py
+rename to workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_2.py
+diff --git a/workspace/src/aiformula/launchers/shellscript/oa_2_3.py b/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_3.py
+similarity index 98%
+rename from workspace/src/aiformula/launchers/shellscript/oa_2_3.py
+rename to workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_3.py
+index 4080934..b684e46 100644
+--- a/workspace/src/aiformula/launchers/shellscript/oa_2_3.py
++++ b/workspace/src/aiformula/perception/obsticle_avoidence/obsticle_avoidence/oa_2_3.py
+@@ -4,7 +4,7 @@
+ import cv2
+ import numpy as np
+ 
+-from oa_2_2 import ConeMaskAvoider as BaseAvoider, main as run_avoider
++from .oa_2_2 import ConeMaskAvoider as BaseAvoider, main as run_avoider
+ 
+ 
+ class ConeMaskAvoider(BaseAvoider):
+diff --git a/workspace/src/aiformula/perception/obsticle_avoidence/package.xml b/workspace/src/aiformula/perception/obsticle_avoidence/package.xml
+index b2d3016..d788c4a 100644
+--- a/workspace/src/aiformula/perception/obsticle_avoidence/package.xml
++++ b/workspace/src/aiformula/perception/obsticle_avoidence/package.xml
+@@ -13,6 +13,8 @@
+   <exec_depend>sensor_msgs</exec_depend>
+   <exec_depend>rclpy</exec_depend>
+   <exec_depend>cv_bridge</exec_depend>
++  <exec_depend>nav_msgs</exec_depend>
++  <exec_depend>semantic_vehicle_wiring</exec_depend>
+ 
+   <test_depend>ament_copyright</test_depend>
+   <test_depend>ament_flake8</test_depend>
+diff --git a/workspace/src/aiformula/perception/obsticle_avoidence/setup.py b/workspace/src/aiformula/perception/obsticle_avoidence/setup.py
+index 65dc678..6ebe706 100644
+--- a/workspace/src/aiformula/perception/obsticle_avoidence/setup.py
++++ b/workspace/src/aiformula/perception/obsticle_avoidence/setup.py
+@@ -26,6 +26,9 @@ setup(
+         'odom_path_recorder = obsticle_avoidence.odom_path_recorder:main',
+         'data_record = obsticle_avoidence.data_record:main',
+         'oa_2 = obsticle_avoidence.oa_2:main',
++        'oa_2_1 = obsticle_avoidence.oa_2_1:main',
++        'oa_2_2 = obsticle_avoidence.oa_2_2:main',
++        'oa_2_3 = obsticle_avoidence.oa_2_3:main',
+         ],
+     },
+ )
+-- 
+2.56.1
+

@@ -1,0 +1,58 @@
+1795237059.9529345 [INFO] [launch]: All log files can be found below /home/control/.ros/log/2026-11-21-13-57-39-945006-control-desktop-17808
+1795237059.9534140 [INFO] [launch]: Default logging verbosity is set to INFO
+1795237063.0100994 [INFO] [launch.user]: Concept tracking controller: pure_pursuit
+1795237064.9480984 [INFO] [allnodes.can_ready]: Waiting up to 10.0s for CAN interface 'can0'
+1795237064.9491572 [INFO] [allnodes.can_ready]: CAN interface 'can0' is ready
+1795237065.2216480 [INFO] [gyro_odometry_publisher-6]: process started with pid [17846]
+1795237065.2221570 [INFO] [rear_potentiometer-7]: process started with pid [17848]
+1795237065.2235966 [INFO] [robot_state_publisher-1]: process started with pid [17836]
+1795237065.2238703 [INFO] [joint_state_publisher-2]: process started with pid [17838]
+1795237065.2240193 [INFO] [zed_wrapper-3]: process started with pid [17840]
+1795237065.2241495 [INFO] [vectornav-4]: process started with pid [17842]
+1795237065.2242737 [INFO] [vn_sensor_msgs-5]: process started with pid [17844]
+1795237065.2244360 [INFO] [joy_node-8]: process started with pid [17850]
+1795237065.2245605 [INFO] [l2_throttle_joy_remap.py-9]: process started with pid [17852]
+1795237065.2246780 [INFO] [socket_can_receiver_node_exe-10]: process started with pid [17854]
+1795237065.2247937 [INFO] [socket_can_sender_node_exe-11]: process started with pid [17856]
+1795237065.2249086 [INFO] [concept_yolop_node-12]: process started with pid [17870]
+1795237065.2250209 [INFO] [motor_controller-13]: process started with pid [17932]
+1795237065.2251353 [INFO] [concept_vehicle_state-14]: process started with pid [17935]
+1795237065.2252467 [INFO] [concept_control_gate-15]: process started with pid [17937]
+1795237065.2253580 [INFO] [drive-16]: process started with pid [17939]
+1795237065.2254672 [INFO] [visualization-17]: process started with pid [17941]
+1795237065.2255745 [INFO] [panel-18]: process started with pid [17943]
+1795237065.2292500 [robot_state_publisher-1] Parsing robot urdf xml string.
+1795237065.2294576 [robot_state_publisher-1] Link base_link had 4 children
+1795237065.2295499 [robot_state_publisher-1] Link caster_back_link had 0 children
+1795237065.2296293 [robot_state_publisher-1] Link wheel_left_link had 0 children
+1795237065.2297029 [robot_state_publisher-1] Link wheel_right_link had 0 children
+1795237065.2297733 [robot_state_publisher-1] Link zed_camera_link had 1 children
+1795237065.2298427 [robot_state_publisher-1] Link zed_camera_center had 2 children
+1795237065.2299104 [robot_state_publisher-1] Link zed_left_camera_frame had 1 children
+1795237065.2299767 [robot_state_publisher-1] Link zed_left_camera_optical_frame had 0 children
+1795237065.2300403 [robot_state_publisher-1] Link zed_right_camera_frame had 1 children
+1795237065.2301021 [robot_state_publisher-1] Link zed_right_camera_optical_frame had 0 children
+1795237065.2301648 [robot_state_publisher-1] [INFO] [1795237065.175199873] [aiformula_sensing.robot_state_publisher]: got segment base_footprint
+1795237065.2302303 [robot_state_publisher-1] [INFO] [1795237065.175360835] [aiformula_sensing.robot_state_publisher]: got segment base_link
+1795237065.2302935 [robot_state_publisher-1] [INFO] [1795237065.175379748] [aiformula_sensing.robot_state_publisher]: got segment caster_back_link
+1795237065.2303565 [robot_state_publisher-1] [INFO] [1795237065.175389220] [aiformula_sensing.robot_state_publisher]: got segment wheel_left_link
+1795237065.2304184 [robot_state_publisher-1] [INFO] [1795237065.175395780] [aiformula_sensing.robot_state_publisher]: got segment wheel_right_link
+1795237065.2305253 [robot_state_publisher-1] [INFO] [1795237065.175402020] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_center
+1795237065.2305927 [robot_state_publisher-1] [INFO] [1795237065.175408132] [aiformula_sensing.robot_state_publisher]: got segment zed_camera_link
+1795237065.2306576 [robot_state_publisher-1] [INFO] [1795237065.175413988] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_frame
+1795237065.2307229 [robot_state_publisher-1] [INFO] [1795237065.175420324] [aiformula_sensing.robot_state_publisher]: got segment zed_left_camera_optical_frame
+1795237065.2308176 [robot_state_publisher-1] [INFO] [1795237065.175426533] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_frame
+1795237065.2308853 [robot_state_publisher-1] [INFO] [1795237065.175432293] [aiformula_sensing.robot_state_publisher]: got segment zed_right_camera_optical_frame
+1795237065.2312901 [vectornav-4] [INFO] [1795237065.204755245] [aiformula_sensing.vectornav]: Set port to ASYNCY_LOW_LATENCY
+1795237065.2824674 [vectornav-4] [INFO] [1795237065.278489850] [aiformula_sensing.vectornav]: Connected to /dev/serial/by-id/usb-FTDI_USB-RS232-WE_AV0LG0YM-if00-port0 @ 115200 baud
+1795237065.2826529 [vectornav-4] [INFO] [1795237065.278600412] [aiformula_sensing.vectornav]: Model: VN-200T-CR
+1795237065.2827458 [vectornav-4] [INFO] [1795237065.278614492] [aiformula_sensing.vectornav]: Firmware Version: 2.1.0.0
+1795237065.2828248 [vectornav-4] [INFO] [1795237065.278623196] [aiformula_sensing.vectornav]: Hardware Version : 3
+1795237065.2828970 [vectornav-4] [INFO] [1795237065.278630716] [aiformula_sensing.vectornav]: Serial Number : [serial]
+1795237065.2829678 [vectornav-4] [INFO] [1795237065.278637884] [aiformula_sensing.vectornav]: User Tag : ""
+1795237065.3801081 [vectornav-4] [INFO] [1795237065.379361611] [aiformula_sensing.vectornav]: GPS Mode       : 0
+1795237065.3804677 [vectornav-4] [INFO] [1795237065.379483597] [aiformula_sensing.vectornav]: GPS PPS Source : 0
+1795237065.4040854 [vectornav-4] [INFO] [1795237065.403327994] [aiformula_sensing.vectornav]: GPS Offset     : (0.000000, 0.000000, 0.000000)
+1795237065.4100409 [vectornav-4] [INFO] [1795237065.409318430] [aiformula_sensing.vectornav]: Reconnect Timeout : 500
+1795237065.8761539 [joy_node-8] [INFO] [1795237065.875373140] [aiformula_control.joy_node]: No haptic (rumble) available, skipping initialization
+1795237065.8769834 [joy_node-8] [INFO] [1795237065.875668569] [aiformula_control.joy_node]: Opened joystick: Wireless Controller.  deadzone: 0.300000

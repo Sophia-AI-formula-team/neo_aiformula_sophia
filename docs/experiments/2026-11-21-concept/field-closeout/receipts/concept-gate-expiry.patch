@@ -1,0 +1,34 @@
+--- a/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
++++ b/vehicle_concept/src/concept_control_gate/concept_control_gate/core.py
+@@ -4,6 +4,7 @@
+ ZERO = (0.0, 0.0)
+ ZERO_FRAME = bytes(8)
+ COMMAND_TIMEOUT = .5
++AUTO_CAPTURE_HOLD_TIMEOUT = .7
+ CAN_TIMEOUT = .1
+ 
+ 
+@@ -77,15 +78,16 @@
+                 and 0 <= stamp-self.auto_stamp <= COMMAND_TIMEOUT)
+ 
+     def check_auto_time(self, stamp, now):
+-        if self.auto_at == -math.inf or self.auto_is_fresh(stamp, now):
++        if self.auto_at == -math.inf:
+             return
+-        age = stamp-self.auto_stamp
+-        if (0 <= now-self.auto_at <= COMMAND_TIMEOUT
+-                and age > COMMAND_TIMEOUT):
+-            if self.reason != 'waiting_fresh_auto':
+-                self.barrier(stamp, 'waiting_fresh_auto')
+-        else:
++        capture_age = stamp - self.auto_stamp
++        receipt_age = now - self.auto_at
++        if not 0 <= receipt_age <= COMMAND_TIMEOUT or capture_age < 0:
+             self.pause(stamp, 'auto_timeout')
++        elif capture_age > AUTO_CAPTURE_HOLD_TIMEOUT and self.reason != 'waiting_fresh_auto':
++            # Reuse only the last accepted request during a short capture-age gap.
++            # Late incoming requests still use the original acceptance deadline.
++            self.barrier(stamp, 'waiting_fresh_auto')
+ 
+     def command(self, value, source, stamp, now):
+         if self.paused or self.estop or not self.enabled or self.manual_held:

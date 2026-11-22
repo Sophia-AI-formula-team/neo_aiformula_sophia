@@ -1,0 +1,143 @@
+{
+  "1352": {
+    "archive": "concept_20261121_135256_e4c22b0f61164f81a75acc100422de85",
+    "sqlite_counts": {
+      "/aiformula_sensing/vectornav/imu": 4261,
+      "/aiformula_sensing/vehicle_info": 66409,
+      "/concept/vehicle_state": 4273,
+      "/aiformula_control/joy_node/joy_l2_throttle": 9809,
+      "/concept/auto_cmd": 418,
+      "/concept/decision": 1394,
+      "/concept/internal/motor_cmd": 10168,
+      "/concept/gate/estop": 0,
+      "/concept/gate/status": 6798,
+      "/concept/internal/motor_can": 19919,
+      "/concept/panel/screenshot/compressed": 3241,
+      "/concept/perception/overlay/compressed": 2651
+    },
+    "auto_cmd": {
+      "samples": 418,
+      "zero_linear": 16,
+      "min_linear": 0.0,
+      "max_linear": 0.5
+    },
+    "motor_cmd": {
+      "samples": 10168,
+      "zero_linear": 985,
+      "min_linear": 0.0,
+      "max_linear": 1.75
+    },
+    "gate_mode_reason": [
+      {
+        "mode": "manual",
+        "reason": "joy_timeout",
+        "samples": 6458
+      },
+      {
+        "mode": "paused",
+        "reason": "manual_released",
+        "samples": 151
+      },
+      {
+        "mode": "manual",
+        "reason": "manual_takeover",
+        "samples": 135
+      },
+      {
+        "mode": "disabled",
+        "reason": "manual_released",
+        "samples": 27
+      },
+      {
+        "mode": "disabled",
+        "reason": "manual_takeover",
+        "samples": 16
+      },
+      {
+        "mode": "paused",
+        "reason": "output_enabled",
+        "samples": 7
+      },
+      {
+        "mode": "manual",
+        "reason": "zero_requested",
+        "samples": 3
+      },
+      {
+        "mode": "disabled",
+        "reason": "motor_timeout",
+        "samples": 1
+      }
+    ],
+    "gate_last_received": 810,
+    "gate_last_accepted": 61
+  },
+  "1358": {
+    "archive": "concept_20261121_135801_df4548361af34dc783aee9a750e31acc",
+    "sqlite_counts": {
+      "/concept/decision": 275,
+      "/aiformula_control/joy_node/joy_l2_throttle": 861,
+      "/aiformula_sensing/vehicle_info": 11602,
+      "/concept/vehicle_state": 877,
+      "/concept/auto_cmd": 269,
+      "/concept/internal/motor_cmd": 2092,
+      "/concept/gate/estop": 0,
+      "/concept/gate/status": 506,
+      "/concept/internal/motor_can": 4090,
+      "/aiformula_sensing/vectornav/imu": 871,
+      "/concept/perception/overlay/compressed": 545,
+      "/concept/panel/screenshot/compressed": 666
+    },
+    "auto_cmd": {
+      "samples": 269,
+      "zero_linear": 159,
+      "min_linear": 0.0,
+      "max_linear": 2.3150799999999983
+    },
+    "motor_cmd": {
+      "samples": 2092,
+      "zero_linear": 1705,
+      "min_linear": 0.0,
+      "max_linear": 2.3150799999999983
+    },
+    "gate_mode_reason": [
+      {
+        "mode": "auto",
+        "reason": "auto_command_received",
+        "samples": 264
+      },
+      {
+        "mode": "paused",
+        "reason": "invalid_vehicle_state",
+        "samples": 138
+      },
+      {
+        "mode": "paused",
+        "reason": "output_enabled",
+        "samples": 33
+      },
+      {
+        "mode": "disabled",
+        "reason": "motor_timeout",
+        "samples": 31
+      },
+      {
+        "mode": "disabled",
+        "reason": "output_disabled",
+        "samples": 20
+      },
+      {
+        "mode": "auto",
+        "reason": "waiting_new_auto",
+        "samples": 10
+      },
+      {
+        "mode": "auto",
+        "reason": "zero_requested",
+        "samples": 10
+      }
+    ],
+    "gate_last_received": 298,
+    "gate_last_accepted": 134
+  }
+}
